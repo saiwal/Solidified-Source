@@ -34,6 +34,7 @@ export interface AttachmentStore {
   addPhotos: (photos: Photo[]) => void;
   remove: (id: string) => void;
   setAltText: (id: string, text: string) => void;
+  setAltByUrl: (url: string, text: string) => void;
   insertBBCode: (id: string) => string;
   /** Apply post ACL to all attachments (now and future uploads). null = use channel defaults. */
   setAcl: (acl: FileAcl | null) => void;

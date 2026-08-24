@@ -1,5 +1,6 @@
 import TurndownService from "turndown";
 import type { MimeType } from "../types/editor.types";
+import { bbAlt } from "../attachments/insertHelpers";
 
 const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
 
@@ -110,7 +111,9 @@ function nodeTobbcode(node: Node): string {
 
     case "a": {
       const href = el.getAttribute("href") ?? "";
-      return `[url=${href}]${children()}[/url]`;
+      // …and the matching zrl link wrapper around a photo (see the img case).
+      const tag = el.classList.contains("zrl") ? "zrl" : "url";
+      return `[${tag}=${href}]${children()}[/${tag}]`;
     }
 
     case "img": {
@@ -119,6 +122,11 @@ function nodeTobbcode(node: Node): string {
       if (el.classList.contains("emoji")) return el.getAttribute("alt") ?? "";
 
       const src = el.getAttribute("src") ?? "";
+      // class="zrl" marks an image that came from [zmg] (a hub-hosted photo).
+      // It has to go back out as [zmg], not [img]: the zrl class is what
+      // carries magic-auth to the remote hub, so a private photo would stop
+      // loading for remote viewers after one WYSIWYG round-trip.
+      const tag = el.classList.contains("zrl") ? "zmg" : "img";
       // "Image/photo" is the default alt bbcodeToHtml stamps on images that
       // had none — writing it back would grow every round-trip.
       const alt0 = el.getAttribute("alt") ?? "";
@@ -136,8 +144,8 @@ function nodeTobbcode(node: Node): string {
       // round-trip through this editor — must be preserved, not just
       // stamped once on insert.
       if (el.classList.contains("bb-latex-img")) attrs.push(`class='bb-latex-img'`);
-      if (alt) attrs.push(`alt="${alt}"`);
-      return attrs.length ? `[img ${attrs.join(" ")}]${src}[/img]` : `[img]${src}[/img]`;
+      if (alt) attrs.push(bbAlt(alt));
+      return attrs.length ? `[${tag} ${attrs.join(" ")}]${src}[/${tag}]` : `[${tag}]${src}[/${tag}]`;
     }
 
     case "video": {

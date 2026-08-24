@@ -5,6 +5,7 @@ import type { FileMeta, FileAcl } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
 import type { Attachment, AttachmentStore } from "./types";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
+import { bbAlt } from "./insertHelpers";
 
 // ── Serialisable subset saved to IDB ─────────────────────────────────────────
 // File objects and blob: URLs are ephemeral and cannot survive a page reload,
@@ -274,6 +275,15 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     update(id, { altText: text });
   }
 
+  /**
+   * Alt edited on the other side — the editor's image popup, which only knows
+   * the image's URL — so the chip's ALT badge keeps showing what the body
+   * actually says. No-op for images that aren't attachments of this composer.
+   */
+  function setAltByUrl(url: string, text: string) {
+    setState("items", (a) => a.insertUrl === url, { altText: text });
+  }
+
   function insertBBCode(id: string): string {
     const item = state.items.find((a) => a.id === id);
     if (!item || !item.insertUrl) return "";
@@ -283,7 +293,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
         return `[zrl=${item.photoPageUrl}][zmg=${item.insertUrl}]${label}[/zmg][/zrl]`;
       }
       return item.altText?.trim()
-        ? `[img alt="${item.altText.trim()}"]${item.insertUrl}[/img]`
+        ? `[img ${bbAlt(item.altText)}]${item.insertUrl}[/img]`
         : `[img]${item.insertUrl}[/img]`;
     }
     // Note: do NOT also append an [attachment] tag here for video/audio.
@@ -372,7 +382,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     void storageDel(DRAFT_KEY);
   }
 
-  return { attachments, uploading, addUploads, addVideoWithThumbnail, addCloudFiles, addPhotos, remove, setAltText, insertBBCode, setAcl, clear };
+  return { attachments, uploading, addUploads, addVideoWithThumbnail, addCloudFiles, addPhotos, remove, setAltText, setAltByUrl, insertBBCode, setAcl, clear };
 }
 
 // Prevent adding the same hash or resourceId twice

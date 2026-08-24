@@ -150,12 +150,13 @@ export function createComposerStore(
     else storageDel(DRAFT_KEY);
   });
 
-  async function submit(extra: ComposerMeta = {}) {
-    if (!body().trim() || submitting()) return;
+  async function submit(extra: ComposerMeta = {}, bodyOverride?: string) {
+    const submitBody = bodyOverride ?? body();
+    if (!submitBody.trim() || submitting()) return;
     setError(null);
     setSubmitting(true);
     try {
-      await submitFn(body(), {
+      await submitFn(submitBody, {
         title:    title(),
         summary:  summary(),
         slug:     slug(),
@@ -206,7 +207,15 @@ export function createComposerStore(
       .slice(0, 80);
   }
 
-  async function saveAsDraft(extra?: Record<string, unknown>): Promise<void> {
+  // bodyOverride: for composers whose real body is assembled from sub-forms
+  // rather than typed into the editor (CardComposer's quote/definition/link
+  // templates), body() is empty and would save a blank draft. Same override
+  // the submit() path takes, for the same reason.
+  async function saveAsDraft(
+    extra?: Record<string, unknown>,
+    bodyOverride?: string,
+  ): Promise<void> {
+    const draftBody = bodyOverride ?? body();
     const now = Date.now();
     // Reuse the loaded draft's mid so this updates it in place instead of
     // creating a new draft item every time — saveServerDraft() picks
@@ -217,8 +226,8 @@ export function createComposerStore(
       serverMid: existingId ?? undefined,
       created: existingId ? (loadedDraftCreated() ?? now) : now,
       updated: now,
-      preview: makeDraftPreview(body()),
-      body: body(),
+      preview: makeDraftPreview(draftBody),
+      body: draftBody,
       title: title(),
       summary: summary(),
       slug: slug(),

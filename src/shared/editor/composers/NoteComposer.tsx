@@ -117,6 +117,7 @@ export default function NoteComposer(props: Props) {
             here. */}
         <div class={props.fill ? "flex-1 min-h-[340px] flex flex-col" : undefined}>
           <RichEditor
+            onImageAlt={(src, alt) => attach?.setAltByUrl(src, alt)}
             body={store.body()}
             onInput={store.setBody}
             capabilities={caps}

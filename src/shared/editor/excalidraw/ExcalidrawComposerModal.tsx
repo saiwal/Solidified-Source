@@ -11,6 +11,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import ExcalidrawCanvas, { type ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
+import { bbAlt } from "../attachments/insertHelpers";
 
 interface Props {
   onClose: () => void;
@@ -37,7 +38,7 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
       const res = await wallAttach(currentNick(), file);
       const url = res.isPhoto && res.src ? res.src : null;
       if (!url) throw new Error("Upload succeeded but returned no image URL.");
-      props.onInsert(`[img alt="Excalidraw drawing"]${url}[/img]`);
+      props.onInsert(`[img ${bbAlt("Excalidraw drawing")}]${url}[/img]`);
       props.onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

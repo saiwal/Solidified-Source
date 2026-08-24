@@ -98,6 +98,7 @@ export default function CommentComposer(props: Props) {
 
         <div ref={wiring.wrapperRef} class="flex-1 min-w-0">
           <RichEditor
+            onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             onInput={store.setBody}
             capabilities={caps}

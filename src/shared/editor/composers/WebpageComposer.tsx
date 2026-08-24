@@ -22,7 +22,7 @@ const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
 import AclPicker, { type AclMode } from "../components/AclPicker";
 import { useAclState, splitAclEntries } from "../components/useAclState";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
@@ -369,6 +369,7 @@ export default function WebpageComposer(props: Props) {
       {/* Editor */}
       <div ref={wiring.wrapperRef}>
         <RichEditor
+          onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
           body={store.body()}
           onInput={store.setBody}
           capabilities={caps}
@@ -384,6 +385,9 @@ export default function WebpageComposer(props: Props) {
           accept="files"
           onInsert={(bbcode) => {
             store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+          }}
+          onAltChange={(att) => {
+            store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
           }}
           tab={store.tab()}
           onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}

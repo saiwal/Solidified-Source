@@ -22,7 +22,7 @@ import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
 import { useAclState } from "../components/useAclState";
 import type { AclMode } from "../components/AclPicker";
 import { useCategoryTags } from "../components/useCategoryTags";
@@ -386,6 +386,7 @@ export default function ArticleComposer(props: Props) {
           wrapper comment for why min-h-0/auto both fail here. */}
       <div ref={wiring.wrapperRef} class="flex-1 min-h-[360px] flex flex-col">
         <RichEditor
+          onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
           body={store.body()}
           onInput={onBodyChange}
           capabilities={caps}
@@ -402,6 +403,9 @@ export default function ArticleComposer(props: Props) {
           accept="both"
           onInsert={(bbcode) => {
             store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+          }}
+          onAltChange={(att) => {
+            store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
           }}
           tab={store.tab()}
           onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}

@@ -19,6 +19,8 @@ import HeadingToolDropdown from "../components/HeadingToolDropdown";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled, isModuleActive } from "@utsukta/spa-core/module-registry";
 import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
+import { fetchLinkMeta, linkMetaToBbcode, linkMetaToHtml } from "../lib/linkMeta";
+import { readAlt } from "../attachments/insertHelpers";
 
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
 const CardPickerModal = lazy(() => import("../cards/CardPickerModal"));
@@ -38,6 +40,8 @@ interface Props {
 export default function EditorToolbar(props: Props) {
   const { t } = useI18n();
   const [latexOpen, setLatexOpen] = createSignal(false);
+  // True while the insert-URL button is scraping the pasted URL.
+  const [linkLoading, setLinkLoading] = createSignal(false);
   const [cardPickerOpen, setCardPickerOpen] = createSignal(false);
   const [excalidrawOpen, setExcalidrawOpen] = createSignal(false);
   const installedApps = useInstalledApps();
@@ -231,11 +235,24 @@ export default function EditorToolbar(props: Props) {
     );
   };
 
-  const link = () => {
+  // Linking selected text is "make this a link" and stays literal. With no
+  // selection the user is dropping in a bare URL, so we scrape it (see
+  // ../lib/linkMeta) and insert a title/thumbnail/quote preview instead.
+  // A failed scrape degrades to the plain link the button always produced.
+  const link = async () => {
     if (isSource()) {
+      const ta = props.textareaRef();
+      const hasSel = !!ta && ta.selectionEnd > ta.selectionStart;
       const u = prompt("URL:");
       if (!u) return;
-      wrapSource(`[url=${u}]`, "[/url]");
+      if (hasSel) {
+        wrapSource(`[url=${u}]`, "[/url]");
+        return;
+      }
+      setLinkLoading(true);
+      const meta = await fetchLinkMeta(u);
+      setLinkLoading(false);
+      insertSource(linkMetaToBbcode(u, meta));
       return;
     }
     // Save selection before prompt() steals focus and clears contenteditable selection
@@ -247,18 +264,20 @@ export default function EditorToolbar(props: Props) {
     const hasText = savedRange && !savedRange.collapsed;
     const url = prompt("URL:");
     if (!url) return;
+    if (hasText) {
+      el.focus();
+      sel!.removeAllRanges();
+      sel!.addRange(savedRange!);
+      document.execCommand("createLink", false, url);
+      return;
+    }
+    setLinkLoading(true);
+    const meta = await fetchLinkMeta(url);
+    setLinkLoading(false);
+    // Restore the caret *after* the await too — focus moved during the fetch.
     el.focus();
     if (savedRange) { sel!.removeAllRanges(); sel!.addRange(savedRange); }
-    if (hasText) {
-      document.execCommand("createLink", false, url);
-    } else {
-      const a = document.createElement("a");
-      a.href = url;
-      a.textContent = url;
-      const tmp = document.createElement("div");
-      tmp.appendChild(a);
-      document.execCommand("insertHTML", false, tmp.innerHTML);
-    }
+    document.execCommand("insertHTML", false, linkMetaToHtml(url, meta));
   };
 
   const img = () => {
@@ -317,9 +336,10 @@ export default function EditorToolbar(props: Props) {
     const trimmed = text.trim();
     const isBlock = trimmed.startsWith("[center]");
     const inner = isBlock ? trimmed.slice("[center]".length, -"[/center]".length) : trimmed;
-    const m = /^\[img width='(\d+)' class='bb-latex-img' alt="([^"]*)"\](.+)\[\/img\]$/s.exec(inner);
+    const m = /^\[img width='(\d+)' class='bb-latex-img' ([^\]]*)\](.+)\[\/img\]$/s.exec(inner);
     if (!m) return;
-    const [, width, alt, src] = m;
+    const [, width, altAttr, src] = m;
+    const alt = readAlt(altAttr);
     // Constrain to the un-scaled width so the retina (3x) raster displays at
     // its intended inline size — same convention as applyImgWidth() below.
     // class="bb-latex-img" (see index.css) overrides Tailwind preflight's
@@ -336,9 +356,10 @@ export default function EditorToolbar(props: Props) {
       insertSource(bbcode);
       return;
     }
-    const m = /^\[img alt="([^"]*)"\](.+)\[\/img\]$/.exec(bbcode);
+    const m = /^\[img ([^\]]*)\](.+)\[\/img\]$/.exec(bbcode);
     if (!m) return;
-    const [, alt, src] = m;
+    const [, altAttr, src] = m;
+    const alt = readAlt(altAttr);
     exec("insertHTML", `<img src="${src}" alt="${alt}" />`);
   };
 
@@ -461,8 +482,8 @@ export default function EditorToolbar(props: Props) {
 
           {/* ── Group 5: Insert ── */}
           <Sep />
-          <Btn title={t("editor.link")} onPress={link}>
-            <MdOutlineLink class="w-4 h-4" />
+          <Btn title={t("editor.link")} onPress={link} disabled={linkLoading()}>
+            <MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />
           </Btn>
           <Btn title="Image [img]" onPress={img}>
             <MdOutlineImage class="w-4 h-4" />

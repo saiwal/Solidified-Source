@@ -22,18 +22,35 @@ export interface TemplateFields {
   defTerm: string;
   defBody: string;
   linkUrl: string;
+  /** Fallback link label only. The composer has no input for it — the card's
+   *  own Title is the label — but parseTemplate still fills it from a stored
+   *  body so an older card whose label diverged from its title survives a
+   *  round-trip. */
   linkTitle: string;
   linkNote: string;
+  /** og:image from /spa/link-meta. Only emitted when includeImage is set. */
+  linkImage: string;
 }
 
 export const emptyTemplateFields = (): TemplateFields => ({
   quoteText: "", quoteAttribution: "",
   defTerm: "", defBody: "",
-  linkUrl: "", linkTitle: "", linkNote: "",
+  linkUrl: "", linkTitle: "", linkNote: "", linkImage: "",
 });
 
+export interface ComposeOptions {
+  /** The card's Title field — the link template uses it as the [url] label. */
+  title?: string;
+  /** Prepend [url=…][img]linkImage[/img][/url] to a link body. */
+  includeImage?: boolean;
+}
+
 /** Assemble a body from a template's parts. "" means "not complete yet". */
-export function composeTemplate(template: CardTemplate, f: TemplateFields): string {
+export function composeTemplate(
+  template: CardTemplate,
+  f: TemplateFields,
+  opts: ComposeOptions = {},
+): string {
   switch (template) {
     case "quote": {
       const text = f.quoteText.trim();
@@ -50,9 +67,12 @@ export function composeTemplate(template: CardTemplate, f: TemplateFields): stri
     case "link": {
       const url = f.linkUrl.trim();
       if (!url) return "";
-      const label = f.linkTitle.trim() || url;
+      const label = opts.title?.trim() || f.linkTitle.trim() || url;
       const note = f.linkNote.trim();
-      return `[url=${url}]${label}[/url]${note ? `\n${note}` : ""}`;
+      const img = opts.includeImage && f.linkImage.trim()
+        ? `[url=${url}][img]${f.linkImage.trim()}[/img][/url]\n`
+        : "";
+      return `${img}[url=${url}]${label}[/url]${note ? `\n${note}` : ""}`;
     }
     default:
       return "";
@@ -68,13 +88,26 @@ export function sniffTemplate(body: string): CardTemplate | null {
   return null;
 }
 
+/** The optional leading [url=…][img]…[/img][/url] thumbnail of a link body. */
+const LINK_IMAGE_RE = /^\s*\[url=.*?\]\[img\](.*?)\[\/img\]\[\/url\]\s*/i;
+
 /** Unpack a stored body back into template sub-form fields. */
 export function parseTemplate(body: string): Partial<TemplateFields> {
   const q = body.match(/^\s*\[quote(?:=["']?(.*?)["']?)?\]([\s\S]*?)\[\/quote\]\s*$/i);
   if (q) return { quoteAttribution: q[1]?.trim() ?? "", quoteText: q[2].trim() };
 
-  const l = body.match(/^\s*\[url=(.*?)\]([\s\S]*?)\[\/url\]([\s\S]*)$/i);
-  if (l) return { linkUrl: l[1].trim(), linkTitle: l[2].trim(), linkNote: l[3].trim() };
+  // Strip the thumbnail first so the label match below doesn't bind to it.
+  const img = body.match(LINK_IMAGE_RE);
+  const rest = img ? body.slice(img[0].length) : body;
+  const l = rest.match(/^\s*\[url=(.*?)\]([\s\S]*?)\[\/url\]([\s\S]*)$/i);
+  if (l) {
+    return {
+      linkUrl: l[1].trim(),
+      linkTitle: l[2].trim(),
+      linkNote: l[3].trim(),
+      linkImage: img ? img[1].trim() : "",
+    };
+  }
 
   const d = body.match(/^\s*\[b\]([\s\S]*?)\[\/b\]([\s\S]*)$/i);
   if (d) return { defTerm: d[1].trim(), defBody: d[2].trim() };

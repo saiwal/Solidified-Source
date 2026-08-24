@@ -21,6 +21,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { renderLatexPreview, renderLatexToPngFile, LatexRenderError } from "./renderLatexImage";
+import { bbAlt } from "../attachments/insertHelpers";
 
 interface Props {
   mode: "image" | "live";
@@ -72,7 +73,7 @@ const LatexComposerModal: Component<Props> = (props) => {
     // `img { display: block }`, which would otherwise both break inline flow
     // with surrounding text and defeat the [center] wrapper's text-align on
     // block equations.
-    const img = `[img width='${width}' class='bb-latex-img' alt="${alt}"]${url}[/img]`;
+    const img = `[img width='${width}' class='bb-latex-img' ${bbAlt(alt)}]${url}[/img]`;
     return displayMode() ? `\n[center]${img}[/center]\n` : img;
   }
 

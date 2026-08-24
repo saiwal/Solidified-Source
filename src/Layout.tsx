@@ -309,11 +309,15 @@ const Layout: ParentComponent = (props) => {
           {/* ═══════════════════════════════════════════════════════
               MAIN CONTENT
           ═══════════════════════════════════════════════════════ */}
+          {/* scrollbar-gutter:stable — always reserve the scrollbar's width so
+              centered content (e.g. the composers' max-w-3xl column) doesn't
+              shift sideways when a view's height crosses the overflow
+              threshold, as switching card templates does. */}
           <main
             id="main-content"
             ref={setMainRef}
             onScroll={onMainScroll}
-            class="flex-1 overflow-y-auto p-4 lg:p-6 pb-16 lg:pb-6 relative flex flex-col"
+            class="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-4 lg:p-6 pb-16 lg:pb-6 relative flex flex-col"
           >
             <div class="flex flex-col flex-1">
               <span class="sr-only" aria-live="polite" aria-atomic="true">

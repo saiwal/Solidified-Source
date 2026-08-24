@@ -22,7 +22,7 @@ import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
 import { useAclState } from "../components/useAclState";
 import type { AclMode } from "../components/AclPicker";
 import { useCategoryTags } from "../components/useCategoryTags";
@@ -34,6 +34,7 @@ import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/
 import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
+import { fetchLinkMeta } from "../lib/linkMeta";
 import {
   CARD_TEMPLATES, composeTemplate, parseTemplate, sniffTemplate, emptyTemplateFields,
   type CardTemplate, type TemplateFields,
@@ -126,11 +127,55 @@ export default function CardComposer(props: Props) {
   const setField = (k: keyof TemplateFields) => (v: string) =>
     setFields((f) => ({ ...f, [k]: v }));
 
+  // Whether a fetched og:image gets prepended to a link body. Off by default —
+  // the thumbnail is offered, not imposed.
+  const [includeImage, setIncludeImage] = createSignal(false);
+
   // The body actually submitted: the editor's for freeform, an assembled one
   // otherwise. Kept as a function so the submit path and the disabled-state
   // check can't disagree about what will be saved.
   function composedBody(): string {
-    return template() === "freeform" ? store.body() : composeTemplate(template(), fields());
+    return template() === "freeform"
+      ? store.body()
+      : composeTemplate(template(), fields(), {
+          title: store.title(),
+          includeImage: includeImage(),
+        });
+  }
+
+  // ── Link metadata — fill Title/Summary/Slug from the page at linkUrl ───────
+  // Scraping happens server-side (/spa/link-meta wraps core's Linkinfo
+  // scraper); CORS makes fetching an arbitrary page from the browser a
+  // non-starter anyway.
+  const [metaLoading, setMetaLoading] = createSignal(false);
+  const [metaError, setMetaError] = createSignal(false);
+  // The URL the last successful/attempted fetch was for, so blurring the field
+  // repeatedly doesn't refetch the same page.
+  const [fetchedUrl, setFetchedUrl] = createSignal("");
+
+  async function loadLinkMeta(force = false) {
+    const url = fields().linkUrl.trim();
+    if (!/^https?:\/\//i.test(url)) return;
+    if (!force && url === fetchedUrl()) return;
+    setMetaLoading(true);
+    setMetaError(false);
+    setFetchedUrl(url);
+    const data = await fetchLinkMeta(url);
+    setMetaLoading(false);
+    if (!data) {
+      setMetaError(true);
+      setFetchedUrl("");   // let a retry through
+      return;
+    }
+    // Auto-fetch (on blur) only fills what's still empty, so it can never
+    // clobber something typed by hand; the explicit button forces an
+    // overwrite, since clicking it *is* the request to re-fill.
+    if (data.title && (force || !store.title().trim())) {
+      store.setTitle(data.title);
+      if (force || !store.slug().trim()) store.setSlug(slugify(data.title));
+    }
+    if (data.text && (force || !store.summary().trim())) store.setSummary(data.text);
+    setFields((f) => ({ ...f, linkImage: data.image }));
   }
   const [deck, setDeck] = createSignal(props.initial?.deck?.name ?? "");
   const [deckOrder, setDeckOrder] =
@@ -223,7 +268,7 @@ export default function CardComposer(props: Props) {
       method: "POST",
       body: JSON.stringify({
         post_id:  isEditing() ? props.initial!.iid : undefined,
-        body:     withFileAttachments(template() === "freeform" ? body : composedBody()),
+        body:     withFileAttachments(body),
         title:    meta.title    ?? "",
         summary:  meta.summary  ?? "",
         slug:     meta.slug     ?? "",
@@ -269,14 +314,26 @@ export default function CardComposer(props: Props) {
     // without unpacking the stored body back into their sub-forms, reopening a
     // quote/definition/link card for editing would show empty fields and save
     // an empty body over it.
-    setFields((f) => ({ ...f, ...parseTemplate(props.initial!.body) }));
+    const parsed = parseTemplate(props.initial.body);
+    setFields((f) => ({ ...f, ...parsed }));
+    // A stored thumbnail means the box was ticked when this card was saved —
+    // without restoring that, re-saving would silently drop the image.
+    if (parsed.linkImage) setIncludeImage(true);
+    // The URL is already described by the card, so don't auto-fetch over the
+    // author's own edits the first time the field is blurred.
+    if (parsed.linkUrl) setFetchedUrl(parsed.linkUrl);
   }
 
   // ── Draft extra — template, deck, and ACL, which createComposerStore
   // doesn't know about ──
   function buildDraftExtra(): Record<string, unknown> {
     const mode = acl.mode();
-    const extra: Record<string, unknown> = { aclMode: mode, template: template(), deck: deck(), deckOrder: deckOrder() };
+    const extra: Record<string, unknown> = {
+      aclMode: mode, template: template(), deck: deck(), deckOrder: deckOrder(),
+      // The assembled templates keep their parts here, not in store.body —
+      // without this a quote/link/definition draft reloads with empty inputs.
+      fields: fields(), includeImage: includeImage(),
+    };
     if (mode === "custom") {
       extra.allow = [...acl.allowEntries()];
       extra.deny = [...acl.denyEntries()];
@@ -293,6 +350,10 @@ export default function CardComposer(props: Props) {
     if (typeof extra.template === "string") setTemplate(extra.template as CardTemplate);
     if (typeof extra.deck === "string") setDeck(extra.deck);
     if (typeof extra.deckOrder === "number") setDeckOrder(extra.deckOrder);
+    if (extra.fields && typeof extra.fields === "object") {
+      setFields((f) => ({ ...f, ...(extra.fields as Partial<TemplateFields>) }));
+    }
+    if (typeof extra.includeImage === "boolean") setIncludeImage(extra.includeImage);
   });
 
   // ── Mention + emoji autocomplete ─────────────────────────────────────────────
@@ -322,7 +383,14 @@ export default function CardComposer(props: Props) {
   };
 
   return (
-    <div class="flex flex-col flex-1 min-h-0 max-w-3xl mx-auto gap-4 py-6 px-4">
+    // No mx-auto here, deliberately: every mount point (CardsHeaderWidget's
+    // CardModal, CardComposerModal, CardView's edit dialog) puts this in a
+    // `flex flex-col` modal body that is already w-full max-w-3xl and already
+    // centred. An auto cross-axis margin on a flex item overrides
+    // align-self: stretch, so the composer would size to fit-content instead
+    // of the row — and since the three assembled templates hide the editor
+    // (the one wide child), the quote/definition/link tabs visibly shrank.
+    <div class="flex flex-col flex-1 min-h-0 max-w-3xl gap-4 py-6 px-4">
       {/* Meta fields — fixed height, above the editor */}
       <div class="shrink-0 space-y-4">
         {/* Title */}
@@ -450,20 +518,58 @@ export default function CardComposer(props: Props) {
           </Show>
 
           <Show when={template() === "link"}>
-            <input
-              type="url"
-              placeholder={t("cards.link_url")}
-              value={fields().linkUrl}
-              onInput={(e) => setField("linkUrl")(e.currentTarget.value)}
-              class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-            />
-            <input
-              type="text"
-              placeholder={t("cards.link_title")}
-              value={fields().linkTitle}
-              onInput={(e) => setField("linkTitle")(e.currentTarget.value)}
-              class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-            />
+            {/* URL + fetch. Blur auto-fills the empty fields above; the button
+                forces a re-fetch that overwrites them. */}
+            <div class="flex items-center gap-2">
+              <input
+                type="url"
+                placeholder={t("cards.link_url")}
+                value={fields().linkUrl}
+                onInput={(e) => {
+                  setField("linkUrl")(e.currentTarget.value);
+                  setMetaError(false);
+                }}
+                onBlur={() => void loadLinkMeta()}
+                class={`flex-1 min-w-0 px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
+              />
+              <IconButton
+                title={metaLoading() ? t("cards.link_fetching") : t("cards.link_fetch")}
+                onClick={() => void loadLinkMeta(true)}
+              >
+                <svg
+                  class="w-4 h-4"
+                  classList={{ "animate-spin": metaLoading() }}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </IconButton>
+            </div>
+
+            <Show when={metaError()}>
+              <p class="text-xs text-red-500">{t("cards.link_fetch_failed")}</p>
+            </Show>
+
+            {/* Fetched thumbnail — opt in, since not every link wants one. */}
+            <Show when={fields().linkImage}>
+              <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeImage()}
+                  onChange={(e) => setIncludeImage(e.currentTarget.checked)}
+                  class="accent-accent"
+                />
+                <img
+                  src={fields().linkImage}
+                  alt=""
+                  class="w-16 h-10 object-cover rounded border border-rim"
+                  onError={() => setFields((f) => ({ ...f, linkImage: "" }))}
+                />
+                {t("cards.link_include_image")}
+              </label>
+            </Show>
+
             <textarea
               rows="3"
               placeholder={t("cards.link_note")}
@@ -487,6 +593,7 @@ export default function CardComposer(props: Props) {
         classList={{ hidden: template() !== "freeform" }}
       >
         <RichEditor
+          onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
           body={store.body()}
           onInput={onBodyChange}
           capabilities={caps}
@@ -503,6 +610,9 @@ export default function CardComposer(props: Props) {
           accept="both"
           onInsert={(bbcode) => {
             store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+          }}
+          onAltChange={(att) => {
+            store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
           }}
           tab={store.tab()}
           onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
@@ -557,8 +667,8 @@ export default function CardComposer(props: Props) {
             <SecondaryButton onClick={() => props.onCancel?.()}>
               {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
             </SecondaryButton>
-            <Show when={store.body().trim()}>
-              <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
+            <Show when={composedBody().trim()}>
+              <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra(), composedBody())}>
                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
@@ -592,6 +702,12 @@ export default function CardComposer(props: Props) {
                 acl.reset();
                 categoryTags.setPendingCategory("");
                 enc.reset();
+                // store.reset() only knows about the editor body — the
+                // assembled templates keep theirs here.
+                setFields(emptyTemplateFields());
+                setIncludeImage(false);
+                setFetchedUrl("");
+                setMetaError(false);
               }}
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -605,7 +721,7 @@ export default function CardComposer(props: Props) {
                 !composedBody().trim() ||
                 !store.title().trim()
               }
-              onClick={() => void store.submit()}
+              onClick={() => void store.submit({}, composedBody())}
             >
               {store.submitting()
                 ? t("editor.saving")

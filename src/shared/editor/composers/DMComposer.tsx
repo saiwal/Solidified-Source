@@ -260,6 +260,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
             wrapper comment for why min-h-0/auto both fail here. */}
         <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-[360px]">
           <RichEditor
+            onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             onInput={store.setBody}
             capabilities={caps}

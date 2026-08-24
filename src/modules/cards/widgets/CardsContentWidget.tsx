@@ -1,27 +1,53 @@
 // The card board: a masonry pinboard rather than the chronological list the
 // articles module uses, since cards are peers with no reading order.
 //
-// Masonry is CSS multi-column, not a grid or a virtualiser. `columns-*` packs
-// items of unequal height with no dead space and needs no measurement pass.
+// Masonry is a round-robin split across N flex columns (splitIntoColumns +
+// useColumnCount, the same helpers the gridTop slot and ScrapbookView use),
+// NOT CSS multi-column. `columns-*` is column-major: it fills column 1 top to
+// bottom before starting column 2, so the newest card sits above the second
+// card rather than beside it and the board reads top-to-bottom. Round-robin
+// assigns card i to column i % n, so it reads left-to-right across the row
+// while still packing columns of unequal height with no measurement pass.
+// See Slot.tsx's gridTop comment for the same reasoning.
+//
 // ponytail: deliberately unvirtualised at v1 — masonry and virtualisation
 // don't compose (a virtualiser needs to know row heights that the column
 // packer decides), and the store's own pagination caps what's mounted. Revisit
 // only if a board of many hundreds of cards is a real workload.
 
-import { createEffect, onCleanup, Show, For } from "solid-js";
+import { createEffect, createMemo, createSignal, onCleanup, Show, For } from "solid-js";
 import { MdOutlineStyle } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
+import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
 import { posts, loading, hasMore, loadCards, resetPosts, loadMore } from "../store";
 import CardFace from "../components/CardFace";
 import { useIsCardsList } from "../lib/isCardsList";
 
+// 20rem minimum column with a ceiling of 3 reproduces the density the old
+// `columns-1 sm:columns-2 lg:columns-3` gave: 3 columns across the full
+// max-w-5xl board, 2 around tablet width, 1 on phones. (ScrapbookView's 16rem
+// suits its image tiles; a card carries a title and a text excerpt and reads
+// badly below ~320px.) useColumnCount measures the container, not the
+// viewport, so the right sidebar's width is already accounted for.
+const MIN_COLUMN_REM = 20;
+const MAX_COLUMNS = 3;
+
 function CardsBoardSkeleton() {
+  const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
+  const colCount = useColumnCount(gridEl, MIN_COLUMN_REM, MAX_COLUMNS);
+  const columns = createMemo(() => splitIntoColumns(Array(6).fill(0), colCount()));
   return (
-    <div class="columns-1 sm:columns-2 lg:columns-3 gap-4">
-      <For each={Array(6).fill(0)}>
-        {() => <div class="break-inside-avoid mb-4 h-64 rounded-2xl bg-elevated animate-pulse" />}
+    <div class="flex gap-4 items-start" ref={setGridEl}>
+      <For each={columns()}>
+        {(col) => (
+          <div class="flex-1 flex flex-col gap-4 min-w-0">
+            <For each={col}>
+              {() => <div class="h-64 rounded-2xl bg-elevated animate-pulse" />}
+            </For>
+          </div>
+        )}
       </For>
     </div>
   );
@@ -32,6 +58,9 @@ export default function CardsContentWidget() {
   const { t } = useI18n();
   const nick = usePageNick();
   const isList = useIsCardsList();
+  const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
+  const colCount = useColumnCount(gridEl, MIN_COLUMN_REM, MAX_COLUMNS);
+  const columns = createMemo(() => splitIntoColumns(posts(), colCount()));
   let initialized = false;
 
   createEffect(() => {
@@ -57,11 +86,15 @@ export default function CardsContentWidget() {
               </div>
             }
           >
-            <div class="columns-1 sm:columns-2 lg:columns-3 gap-4">
-              <For each={posts()}>
-                {(post) => (
-                  <div class="break-inside-avoid mb-4">
-                    <CardFace card={post} nick={nick()} canEmbed={!!auth()?.isLocal} />
+            <div class="flex gap-4 items-start" ref={setGridEl}>
+              <For each={columns()}>
+                {(col) => (
+                  <div class="flex-1 flex flex-col gap-4 min-w-0">
+                    <For each={col}>
+                      {(post) => (
+                        <CardFace card={post} nick={nick()} canEmbed={!!auth()?.isLocal} />
+                      )}
+                    </For>
                   </div>
                 )}
               </For>

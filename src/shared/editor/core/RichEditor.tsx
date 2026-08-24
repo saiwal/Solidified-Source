@@ -22,6 +22,11 @@ interface Props {
    * which would dump the image into the WYSIWYG as an inline base64 blob.
    */
   onPasteFiles?: (files: File[]) => void;
+  /**
+   * Alt text changed in the image popup, reported by image URL — lets the
+   * composer sync it back onto the matching attachment chip's ALT badge.
+   */
+  onImageAlt?: (src: string, alt: string) => void;
   placeholder?: string;
   minHeight?: string;
   /** Caps the editing surface's growth — it scrolls internally past this. */
@@ -127,8 +132,15 @@ export default function RichEditor(props: Props) {
   // one never blurs the editor. Scoped to bbcode mode — markdown/html source
   // (wiki, webpage editors) already renders correctly without this pass, and
   // round-tripping through marked/Turndown here would risk lossy rewrites.
-  const onEditorBlur = () => {
+  const onEditorBlur = (e: FocusEvent) => {
     if (!editorRef) return;
+    // Focus moving into the image popup must NOT re-render the surface: that
+    // replaces every node, so the <img> imgSel() holds is detached and each
+    // width/alt edit lands on an orphan — the popup looked dead. Its buttons
+    // additionally preventDefault on mousedown (like the toolbar's) since not
+    // every browser focuses a button on click, which would leave no
+    // relatedTarget to test here.
+    if (popupRef?.contains(e.relatedTarget as Node)) return;
     if (mime() === "text/bbcode") {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
@@ -203,6 +215,7 @@ export default function RichEditor(props: Props) {
     // Alt ends up in a single-line [img alt="..."] tag, so collapse any
     // newlines from the textarea into spaces before writing it back.
     sel.el.alt = text.trim().replace(/\s+/g, " ");
+    props.onImageAlt?.(sel.el.getAttribute("src") ?? "", sel.el.alt);
     onEditorInput();
   };
 
@@ -343,6 +356,12 @@ export default function RichEditor(props: Props) {
             class="fixed z-[70] flex flex-col gap-1.5 px-2 py-1.5 rounded-lg border border-rim
                    bg-surface shadow-xl"
             style={popupStyle()}
+            onMouseDown={(e) => {
+              // Keep focus (and thus the live DOM) in the editor for the
+              // buttons; the width/alt fields still need to take it.
+              const tag = (e.target as HTMLElement).tagName;
+              if (tag !== "INPUT" && tag !== "TEXTAREA") e.preventDefault();
+            }}
           >
             <div class="flex items-center gap-1">
               <For each={[25, 50, 75] as const}>

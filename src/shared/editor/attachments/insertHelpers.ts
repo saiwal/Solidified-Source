@@ -1,8 +1,27 @@
 import type { MimeType } from "../types/editor.types";
 import type { Attachment } from "./types";
 
-// Matches [img]url[/img] and [img alt="text"]url[/img]
-const IMG_RE = /\[img(?:\s+alt="([^"]*)")?\](.+?)\[\/img\]/gi;
+/**
+ * bbcode alt attribute, in the ONLY double-quoted form core understands:
+ * bb_imgoptions() (include/bbcode.php) reads alt='…' or alt=&quot;…&quot; and
+ * silently drops a raw alt="…" — which this editor used to emit, so alt text
+ * vanished server-side and grew a pair of literal quotes on every WYSIWYG
+ * round-trip here. &quot; over ' because alt text contains apostrophes.
+ */
+export function bbAlt(alt: string): string {
+  // '[' / ']' end the tag; a literal quote would end the attribute.
+  const clean = alt.replace(/[[\]]/g, "").replace(/&quot;|"/g, "'").replace(/\s+/g, " ").trim();
+  return `alt=&quot;${clean}&quot;`;
+}
+
+/** Reads an alt attribute out of an [img …] tag's attribute string. */
+export function readAlt(attrs: string): string {
+  const m = /alt=(?:&quot;(.*?)&quot;|"([^"]*)"|'([^']*)')/i.exec(attrs);
+  return m ? (m[1] ?? m[2] ?? m[3] ?? "") : "";
+}
+
+// Matches [img]url[/img] and [img <attrs>]url[/img]
+const IMG_RE = /\[img(?:\s+([^\]]*))?\](.+?)\[\/img\]/gi;
 const ATTACH_RE = /\[attachment\](.+?)\[\/attachment\]/gi;
 
 /**
@@ -14,17 +33,18 @@ export function bbcodeToInsert(bbcode: string, mime: MimeType): string {
 
   if (mime === "text/markdown") {
     return bbcode
-      .replace(IMG_RE, (_, alt: string | undefined, url: string) =>
-        `![${alt ?? ""}](${url})`,
+      .replace(IMG_RE, (_, attrs: string | undefined, url: string) =>
+        `![${readAlt(attrs ?? "")}](${url})`,
       )
       .replace(ATTACH_RE, (_, url: string) => `[attachment](${url})`);
   }
 
   // text/html
   return bbcode
-    .replace(IMG_RE, (_, alt: string | undefined, url: string) =>
-      alt ? `<img src="${url}" alt="${alt}" />` : `<img src="${url}" />`,
-    )
+    .replace(IMG_RE, (_, attrs: string | undefined, url: string) => {
+      const alt = readAlt(attrs ?? "");
+      return alt ? `<img src="${url}" alt="${alt}" />` : `<img src="${url}" />`;
+    })
     .replace(ATTACH_RE, (_, url: string) => `<a href="${url}">${url}</a>`);
 }
 
@@ -62,11 +82,11 @@ export function patchInsertedAlt(body: string, att: Attachment, mime: MimeType):
   // bbcode — upload form: [img]url[/img] with optional attributes (width from
   // the resize popup must survive, so only the alt attribute is swapped out).
   body = body.replace(
-    new RegExp(`\\[img([^\\]]*)\\]${esc}\\[/img\\]`, "gi"),
-    (_m, attrs: string) => {
-      let a = attrs.replace(/\s*alt=("[^"]*"|'[^']*')/i, "").trim();
-      if (alt) a = a ? `${a} alt="${alt}"` : `alt="${alt}"`;
-      return a ? `[img ${a}]${url}[/img]` : `[img]${url}[/img]`;
+    new RegExp(`\\[([zi])mg([^\\]]*)\\]${esc}\\[/[zi]mg\\]`, "gi"),
+    (_m, tag: string, attrs: string) => {
+      let a = attrs.replace(/\s*alt=(&quot;.*?&quot;|"[^"]*"|'[^']*')/i, "").trim();
+      if (alt) a = a ? `${a} ${bbAlt(alt)}` : bbAlt(alt);
+      return a ? `[${tag}mg ${a}]${url}[/${tag}mg]` : `[${tag}mg]${url}[/${tag}mg]`;
     },
   );
   return body;
