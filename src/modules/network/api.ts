@@ -134,6 +134,11 @@ export type AclSearchParams = {
   count?: number;
 };
 
+/** decodeURIComponent, but never throws on a hash that isn't valid encoding. */
+function decodeXid(xid: string): string {
+  try { return decodeURIComponent(xid); } catch { return xid; }
+}
+
 export async function fetchConnections(params: AclSearchParams = {}): Promise<AclConnection[]> {
   const qs = new URLSearchParams();
   if (params.search) qs.set('search', params.search);
@@ -145,12 +150,20 @@ export async function fetchConnections(params: AclSearchParams = {}): Promise<Ac
   if (!res.ok) return [];
   const data = await res.json();
   const items: AclConnection[] = data.items ?? [];
-  // Core marks groups/profiles/forums with a placeholder image path that
-  // doesn't resolve under the SPA origin — drop it so consumers render
-  // their icon fallback instead of a broken <img>
-  return items.map((c) =>
-    c.photo?.endsWith('twopeople.png') ? { ...c, photo: undefined } : c,
-  );
+  // Two fixups on the way out:
+  // - xid: core urlencodes the hash in /acl output (Acl.php: $g['hash'] =
+  //   urlencode(...)) and decodes it again in its own widget (view/js/acl.js).
+  //   For zot6 base64url hashes that's a no-op, but an ActivityPub xchan_hash is
+  //   the actor URL — left encoded it matches no contact, and its %XX escapes
+  //   blow up Activity::map_acl()'s vsprintf when the ACL is federated.
+  // - photo: core marks groups/profiles/forums with a placeholder image path that
+  //   doesn't resolve under the SPA origin — drop it so consumers render their
+  //   icon fallback instead of a broken <img>.
+  return items.map((c) => ({
+    ...c,
+    xid: decodeXid(c.xid),
+    photo: c.photo?.endsWith('twopeople.png') ? undefined : c.photo,
+  }));
 }
 
 export async function fetchFolders(): Promise<string[]> {
