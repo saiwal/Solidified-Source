@@ -1910,8 +1910,11 @@ export type RawDictionary = {
     definition_term:      string;
     definition_body:      string;
     link_url:             string;
-    link_title:           string;
     link_note:            string;
+    link_fetch:           string;
+    link_fetching:        string;
+    link_fetch_failed:    string;
+    link_include_image:   string;
     // Decks
     part_of_deck:         string;
     view_full_deck:       string;

@@ -56,8 +56,11 @@ export const cards: RawDictionary["cards"] = {
   definition_term:     "Term",
   definition_body:     "Definition",
   link_url:            "URL",
-  link_title:          "Title",
   link_note:           "Note",
+  link_fetch:          "Fetch page details",
+  link_fetching:       "Fetching…",
+  link_fetch_failed:   "Couldn’t read that page",
+  link_include_image:  "Include image",
   // Decks
   part_of_deck:      "Card {{order}} of deck “{{name}}”",
   view_full_deck:    "View full deck",

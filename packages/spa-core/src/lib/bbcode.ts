@@ -459,10 +459,15 @@ function bbImgOptions(
   attributes: string,
   src: string
 ): string {
+  // Core's bb_imgoptions only reads the '…' and &quot;…&quot; forms; the raw
+  // "…" form is accepted here too so posts written by older builds of this
+  // editor (which emitted alt="…") still render their alt text.
   const attr = (name: string): string => {
     let m = attributes.match(new RegExp(`${name}='(.*?)'`, "i"));
     if (m) return m[1];
     m = attributes.match(new RegExp(`${name}=&quot;(.*?)&quot;`, "i"));
+    if (m) return m[1];
+    m = attributes.match(new RegExp(`${name}="(.*?)"`, "i"));
     return m ? m[1] : "";
   };
 
@@ -488,7 +493,10 @@ function bbImgOptions(
   }
   if (attributes.includes("float=left")) float_ = "left";
   if (attributes.includes("float=right")) float_ = "right";
-  if (!alt) {
+  // Legacy [img=WxH float=left alt=unquoted text] only — an unquoted match on
+  // the modern form would swallow the surrounding quotes (and any attribute
+  // that follows alt=) into the alt text.
+  if (!alt && eqOrSpace === "=") {
     const altM = attributes.match(/alt=(.+)/i);
     if (altM) alt = altM[1];
   }
