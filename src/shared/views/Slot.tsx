@@ -16,6 +16,7 @@ import {
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
+import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import {
   layoutFor,
   pageLayoutFor,
@@ -46,6 +47,9 @@ import WidgetArrangementEditor, {
 } from "./WidgetArrangementEditor";
 import type { WidgetSlotName } from "@utsukta/spa-core/types/module.types";
 
+const MAX_COLUMNS = 4;
+const COLUMN_INDEXES = Array.from({ length: MAX_COLUMNS }, (_, i) => i);
+
 interface SlotProps {
   name: WidgetSlotName;
   moduleId?: string;
@@ -66,6 +70,7 @@ const Slot: Component<SlotProps> = (props) => {
   const location = useLocation();
   const installedApps = useInstalledApps();
   const viewerRole = useViewerRole();
+  const auth = useAuth();
   const { t } = useI18n();
 
   const activeModuleId = () => {
@@ -82,10 +87,18 @@ const Slot: Component<SlotProps> = (props) => {
   const isLocalViewer = () => viewerRole() === "owner" || viewerRole() === "local";
   const visibleToViewer = (w: RegisteredWidget) => w.visitorVisible !== false || isLocalViewer();
 
+  // auth() is undefined until the boot /spa/pconfig fetch lands, and until then
+  // viewerRole() reports "anonymous" — which resolves the *page owner's* layout
+  // instead of yours and drops every visitorVisible:false widget. Resolving
+  // against that gives a hard load a different widget set than a client-side
+  // navigation to the same page. Render nothing until the role is real.
+  const authReady = () => auth() !== undefined;
+
   const widgetVersion = getWidgetVersion();
   // Reactive: re-derives when new modules register widgets after async import
   const globalWidgets = createMemo(() => {
     widgetVersion(); // track
+    if (!authReady()) return [];
     return resolveGlobalSlots(props.name)
       .filter(visibleToViewer)
       .map((w) => ({ widget: w, Widget: getLazy(w.loader) }));
@@ -99,6 +112,7 @@ const Slot: Component<SlotProps> = (props) => {
   let entryCache = new Map<string, ResolvedEntry>();
   const localEntries = createMemo<ResolvedEntry[]>(() => {
     widgetVersion(); // track
+    if (!authReady()) return [];
     const moduleId = activeModuleId();
     const apps = installedApps();
     if (!isModuleActive(moduleId, apps, disabledFrontendModules())) return [];
@@ -294,8 +308,18 @@ const Slot: Component<SlotProps> = (props) => {
   );
 
   const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
-  const columnCount = isGridTop ? useColumnCount(gridEl, 16, 4) : () => 1;
-  const columnIndexes = createMemo(() => Array.from({ length: columnCount() }, (_, i) => i));
+  const columnCount = isGridTop ? useColumnCount(gridEl, 16, MAX_COLUMNS) : () => 1;
+  // Fixed set of column containers, hidden individually when they hold nothing.
+  // columnCount() only decides how the entries are *distributed*; it must not
+  // decide how many <div>s exist. It is derived from a ResizeObserver on the
+  // grid element, which cannot exist until the slot has content, so it is
+  // always 1 for the render that first mounts the grid and corrects to its
+  // real value immediately after — and growing the outer <For>'s array in that
+  // window left columns 1..n-1 out of the DOM until something else forced the
+  // slot to re-render (e.g. navigating away and back).
+  const columnIndexes = COLUMN_INDEXES;
+  const columnHasContent = (i: number) =>
+    (globalColumns()[i]?.length ?? 0) + (localColumns()[i]?.length ?? 0) > 0;
   const globalColumns = createMemo(() => splitIntoColumns(globalWidgets(), columnCount()));
   const localColumns = createMemo(() => splitIntoColumns(localEntries(), columnCount()));
 
@@ -390,9 +414,12 @@ const Slot: Component<SlotProps> = (props) => {
         fallback={
           <SlotRegionBox label={slotLabel()}>
             <div class="flex gap-4 items-start mb-4" ref={setGridEl}>
-              <For each={columnIndexes()}>
+              <For each={columnIndexes}>
                 {(colIndex) => (
-                  <div class="flex-1 flex flex-col min-w-0">
+                  <div
+                    class="flex flex-col min-w-0"
+                    classList={{ "flex-1": columnHasContent(colIndex), hidden: !columnHasContent(colIndex) }}
+                  >
                     {globalColumnItems(colIndex)}
                     <For each={localColumns()[colIndex] ?? []}>
                       {(entry) => (
@@ -424,9 +451,12 @@ const Slot: Component<SlotProps> = (props) => {
         }
       >
         <div class="flex gap-4 items-start mb-4" ref={setGridEl}>
-          <For each={columnIndexes()}>
+          <For each={columnIndexes}>
             {(colIndex) => (
-              <div class="flex-1 flex flex-col min-w-0">
+              <div
+                class="flex flex-col min-w-0"
+                classList={{ "flex-1": columnHasContent(colIndex), hidden: !columnHasContent(colIndex) }}
+              >
                 {globalColumnItems(colIndex)}
                 <For each={localColumns()[colIndex] ?? []}>
                   {(entry) => {

@@ -68,6 +68,7 @@ registerModule({
       slot: "gridTop",
       defaultModules: ["hq"],
       contexts: ["hq"],
+      visitorVisible: false,
       helpTarget: "widgets.drafts",
     },
     {
