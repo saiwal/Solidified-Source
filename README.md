@@ -266,30 +266,30 @@ All responses use a consistent JSON envelope — `Response::send()`, `Response::
 
 | Area | Library | Version |
 |---|---|---|
-| Framework | Solid.js | 1.9.10 |
-| Router | @solidjs/router | 0.16.1 |
-| Data fetching | @tanstack/solid-query | 5.101.2 |
-| List virtualization | @tanstack/solid-virtual | 3.13.30 |
-| Styling | Tailwind CSS | 4.2.1 |
+| Framework | Solid.js | 1.9.15 |
+| Router | @solidjs/router | 1.0.0 |
+| Data fetching | @tanstack/solid-query | 5.102.3 |
+| List virtualization | @tanstack/solid-virtual | 3.13.37 |
+| Styling | Tailwind CSS | 4.3.3 |
 | Icons | solid-icons | 1.2.0 |
 | Animations | solid-motionone | 1.0.4 |
 | i18n | @solid-primitives/i18n | 2.2.1 |
-| Responsive/media queries | @solid-primitives/media | 2.3.5 |
-| Markdown | marked | 18.0.0 |
-| HTML sanitization | dompurify | 3.3.1 |
-| BBCode | @bbob/parser + @bbob/html | 4.3.1 |
+| Responsive/media queries | @solid-primitives/media | 2.3.6 |
+| Markdown | marked | 18.0.11 |
+| HTML sanitization | dompurify | 3.4.14 |
+| BBCode | @bbob/parser + @bbob/html | 4.4.1 |
 | HTML → BBCode | turndown | 7.2.4 |
-| Draft persistence | idb-keyval (IndexedDB) | 6.2.2 |
-| Popovers | @floating-ui/dom | 1.7.6 |
+| Draft persistence | idb-keyval (IndexedDB) | 6.3.0 |
+| Popovers | @floating-ui/dom | 1.8.0 |
 | Video/audio player | plyr | 3.8.4 |
 | Photo lightbox | photoswipe | 5.4.4 |
 | Image editor | filerobot-image-editor | 5.0.0-beta.159 |
-| Math rendering | katex | 0.16.22 |
+| Math rendering | katex | 0.18.4 |
 | QR codes | qrcode | 1.5.4 |
 | End-to-end encryption | libsodium-wrappers | 0.8.4 |
-| Service worker | Workbox | 7.4.0 |
-| Build tool | Vite | 8.1.0 |
-| TypeScript | — | 6.0.3 |
+| Service worker | Workbox | 7.4.1 |
+| Build tool | Vite | 8.2.2 |
+| TypeScript | — | 7.0.2 |
 
 ---
 

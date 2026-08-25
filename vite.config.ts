@@ -127,19 +127,21 @@ export default defineConfig({
     serveFFmpegCore(),
     solid(),
     viteStaticCopy({
+      // v4 preserves the whole matched path under `dest`; stripBase drops the
+      // leading source segments to keep the v3 deploy layout.
       targets: [
-        { src: "src/docs", dest: "../" },
-        { src: "src/img", dest: "../" },
-        { src: "src/mod", dest: "../" },
-        { src: "src/php", dest: "../" },
-        { src: "src/hooks", dest: "../" },
-        { src: "src/composer.json", dest: "../" },
+        { src: "src/docs", dest: "../", rename: { stripBase: 1 } },
+        { src: "src/img", dest: "../", rename: { stripBase: 1 } },
+        { src: "src/mod", dest: "../", rename: { stripBase: 1 } },
+        { src: "src/php", dest: "../", rename: { stripBase: 1 } },
+        { src: "src/hooks", dest: "../", rename: { stripBase: 1 } },
+        { src: "src/composer.json", dest: "../", rename: { stripBase: 1 } },
         // Shared Router/Handlers — deployed alongside this theme so its composer.json's
         // path repository (utsukta/spa-core) can resolve via a same-directory relative path.
-        { src: "packages/spa-core/php", dest: "../", rename: "spa-core" },
-        { src: `${FFMPEG_CORE_DIR}/ffmpeg-core.js`,   dest: "ffmpeg" },
-        { src: `${FFMPEG_CORE_DIR}/ffmpeg-core.wasm`, dest: "ffmpeg" },
-        { src: FFMPEG_WORKER_SRC,                     dest: "ffmpeg" },
+        { src: "packages/spa-core/php", dest: "../spa-core", rename: { stripBase: 3 } },
+        { src: `${FFMPEG_CORE_DIR}/ffmpeg-core.js`,   dest: "ffmpeg", rename: { stripBase: true } },
+        { src: `${FFMPEG_CORE_DIR}/ffmpeg-core.wasm`, dest: "ffmpeg", rename: { stripBase: true } },
+        { src: FFMPEG_WORKER_SRC,                     dest: "ffmpeg", rename: { stripBase: true } },
       ],
     }),
     templateThemeSlug(),
