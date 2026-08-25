@@ -17,7 +17,11 @@ export function relativeTick(): void {
   tick();
 }
 
-export default function formatPostDate(dateStr: string, locale = "en"): string {
+export default function formatPostDate(
+  dateStr: string,
+  locale = "en",
+  style: Intl.RelativeTimeFormatStyle = "long",
+): string {
   ensureTicking();
   tick();
   const date = new Date(dateStr + "Z");
@@ -27,7 +31,7 @@ export default function formatPostDate(dateStr: string, locale = "en"): string {
   const diffMins = Math.round(diffSecs / 60);
   const diffHours = Math.round(diffMins / 60);
   const diffDays = Math.round(diffHours / 24);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style });
   if (Math.abs(diffSecs) < 60)  return rtf.format(diffSecs, "second");
   if (Math.abs(diffMins) < 60)  return rtf.format(diffMins, "minute");
   if (Math.abs(diffHours) < 24) return rtf.format(diffHours, "hour");

@@ -40,7 +40,7 @@ export default function SiteCredits() {
           )}
         </Show>
         {" · "}
-        {t("widgets.credits_theme")}: Solidified - {themeLabel()}
+        {t("widgets.credits_theme")}: Solidified{__THEME_VERSION__ ? ` v${__THEME_VERSION__}` : ""} - {themeLabel()}
       </p>
     </footer>
   );

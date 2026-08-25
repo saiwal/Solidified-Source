@@ -148,6 +148,10 @@ export default defineConfig({
   ],
   define: {
     __THEME_SLUG__: JSON.stringify(THEME_SLUG),
+    // Version lives in the theme.php header comment — the one Hubzilla reads.
+    __THEME_VERSION__: JSON.stringify(
+      readFileSync("src/php/theme.php", "utf-8").match(/^[\s*]*Version:\s*(.+)$/m)?.[1].trim() ?? "",
+    ),
   },
   build: {
     outDir: OUT_DIR,

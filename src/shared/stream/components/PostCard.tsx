@@ -1120,7 +1120,7 @@ export default function PostCard(props: {
                   title={expiresTitle()}
                 >
                   <MdOutlineTimer size={10} />
-                  {formatPostDate(props.post.expires!, locale())}
+                  <span class="hidden sm:inline">{formatPostDate(props.post.expires!, locale(), "narrow")}</span>
                 </span>
               </Show>
               <Show when={isScheduled()}>
@@ -1129,7 +1129,7 @@ export default function PostCard(props: {
                   title={scheduledTitle()}
                 >
                   <MdOutlineSchedule size={10} />
-                  {t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale())}
+                  <span class="hidden sm:inline">{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale(), "narrow")}</span>
                 </span>
               </Show>
               <Show when={isDirectMessage()}>
@@ -1155,10 +1155,11 @@ export default function PostCard(props: {
                   )}
                 </Show>
                 <span
-                  class="text-xs text-muted"
+                  class="text-xs text-muted whitespace-nowrap"
                   title={new Date(props.post.created + "Z").toLocaleString(locale())}
                 >
-                  {formatPostDate(props.post.created, locale())}
+                  <span class="sm:hidden">{formatPostDate(props.post.created, locale(), "narrow")}</span>
+                  <span class="hidden sm:inline">{formatPostDate(props.post.created, locale())}</span>
                 </span>
               </span>
             </div>
@@ -1718,11 +1719,11 @@ export default function PostCard(props: {
             />
           </Show>
         </AuthorPopover>
-        <div class="flex flex-col">
+        <div class="flex flex-col min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap">
             <a
               href={`/chanview?f=&hash=${encodeURIComponent(props.post.authorHash || props.post.authorUrl)}`}
-              class="font-semibold text-txt hover:underline"
+              class="font-semibold text-txt hover:underline truncate"
             >
               {props.post.authorName}
             </a>
@@ -1787,7 +1788,7 @@ export default function PostCard(props: {
               title={t("post.reply_indicator")}
             >
               <MdOutlineReply size={11} />
-              <span>{t("post.reply_badge")}</span>
+              <span class="hidden sm:inline">{t("post.reply_badge")}</span>
             </span>
           </Show>
           <Show when={isExpired()}>
@@ -1804,7 +1805,7 @@ export default function PostCard(props: {
               title={expiresTitle()}
             >
               <MdOutlineTimer size={11} />
-              <span>{formatPostDate(props.post.expires!, locale())}</span>
+              <span class="hidden sm:inline">{formatPostDate(props.post.expires!, locale(), "narrow")}</span>
             </span>
           </Show>
           <Show when={isScheduled()}>
@@ -1813,15 +1814,17 @@ export default function PostCard(props: {
               title={scheduledTitle()}
             >
               <MdOutlineSchedule size={11} />
-              <span>{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale())}</span>
+              <span class="hidden sm:inline">{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale(), "narrow")}</span>
             </span>
           </Show>
           <Show when={isDirectMessage()}>
             <DmBadge size="md" />
           </Show>
           <Show when={isUnseen()}>
-            <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none">
-              {t("post.new_badge")}
+            <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none"
+              title={t("post.new_badge")}>
+              <span class="hidden sm:inline">{t("post.new_badge")}</span>
+              <span class="sm:hidden block w-1.5 h-1.5 rounded-full bg-accent-fg" />
             </span>
           </Show>
           <span class="flex items-center gap-1">
@@ -1837,10 +1840,11 @@ export default function PostCard(props: {
               )}
             </Show>
             <span
-              class="text-sm text-muted"
+              class="text-sm text-muted whitespace-nowrap"
               title={new Date(props.post.created + "Z").toLocaleString(locale())}
             >
-              {formatPostDate(props.post.created, locale())}
+              <span class="sm:hidden">{formatPostDate(props.post.created, locale(), "narrow")}</span>
+              <span class="hidden sm:inline">{formatPostDate(props.post.created, locale())}</span>
             </span>
           </span>
         </div>
