@@ -349,16 +349,23 @@ export default function PostCard(props: {
   // Detect event posts: prefer pre-parsed eventData from mapper, fall back to
   // parsing the body directly (handles cases where obj_type wasn't "Event").
   const isUnseen = () => props.post.flags.includes("unseen");
-  const isExpired = () => props.post.flags.includes("expired");
+  // Scheduling and expiry are the author's own housekeeping — nobody else's business.
+  const isOwn = () => {
+    const a = auth();
+    if (!a?.isLocal || !a.nick) return false;
+    return props.post.authorAddress === `${a.nick}@${window.location.hostname}`;
+  };
+  const isExpired = () => isOwn() && props.post.flags.includes("expired");
   // Expiry set and still in the future — the post will self-destruct.
   const isExpiring = () =>
+    isOwn() &&
     !isExpired() &&
     !!props.post.expires &&
     new Date(props.post.expires + "Z").getTime() > Date.now();
   const expiresTitle = () =>
     `${t("post.expires")}: ${new Date(props.post.expires! + "Z").toLocaleString(locale())}`;
   // Delayed publish — created holds the future publish time until the cron fires.
-  const isScheduled = () => props.post.flags.includes("scheduled");
+  const isScheduled = () => isOwn() && props.post.flags.includes("scheduled");
   const scheduledTitle = () =>
     `${t("post.scheduled_title")}: ${new Date(props.post.created + "Z").toLocaleString(locale())}`;
   // item_private === 2 — a direct message between individuals (classic Hubzilla's
@@ -589,12 +596,7 @@ export default function PostCard(props: {
 
   // Edit: same author-address gate as delete
   const canEdit = () => {
-    const a = auth();
-    if (!props.handlers.onEdit || !a?.isLocal || !a.nick) return false;
-    const viewerAddr = `${a.nick}@${window.location.hostname}`;
-    return (
-      !!props.post.authorAddress && props.post.authorAddress === viewerAddr
-    );
+    return !!props.handlers.onEdit && !!props.post.authorAddress && isOwn();
   };
 
   async function startEdit() {

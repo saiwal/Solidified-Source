@@ -43,6 +43,7 @@ registerModule({
       defaultModules: ["help"],
       contexts: "any",
       helpTarget: "widgets.guided_tours",
+      visitorVisible: false,
     },
 
     {
