@@ -200,14 +200,19 @@ function nodeTobbcode(node: Node): string {
     case "td":  return children();
 
     case "details": {
-      const summary = el.querySelector("summary")?.textContent?.trim() ?? "";
+      // bbcode.ts renders [open] and [spoiler] both as <details>, told apart
+      // by class; the default summary is generated, not authored, so it must
+      // not come back as an explicit =title.
+      const tag = el.classList.contains("bb-open") ? "open" : "spoiler";
+      const text = el.querySelector("summary")?.textContent?.trim() ?? "";
+      const summary = text === "Spoiler" || text === "Click to open/close" ? "" : text;
       const bodyParts = Array.from(el.childNodes)
         .filter(n => (n as Element).tagName?.toLowerCase() !== "summary")
         .map(nodeTobbcode)
         .join("");
       return summary
-        ? `[spoiler=${summary}]${bodyParts}[/spoiler]`
-        : `[spoiler]${bodyParts}[/spoiler]`;
+        ? `[${tag}=${summary}]${bodyParts}[/${tag}]`
+        : `[${tag}]${bodyParts}[/${tag}]`;
     }
     case "summary": return "";
 

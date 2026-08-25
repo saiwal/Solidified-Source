@@ -5,7 +5,7 @@
  * showed "Heading…"/H1…H6 as visible text on the toolbar itself.
  */
 
-import { Show, For } from "solid-js";
+import { Show, For, createSignal } from "solid-js";
 import { MdOutlineTitle } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
@@ -23,10 +23,25 @@ export default function HeadingToolDropdown(props: HeadingToolDropdownProps) {
   const { open, setOpen, toggle: toggleOpen, floatStyle, setTriggerRef, setPanelRef } =
     useDropdown({ placement: "bottom-start", offset: 4 });
 
+  // Read on open, while the editor selection is still intact (the trigger and
+  // the panel items suppress mousedown, so it survives the whole interaction).
+  const [active, setActive] = createSignal("");
   function toggle() {
     if (props.disabled) return;
+    if (!open()) {
+      const cur = (document.queryCommandValue("formatBlock") || "").toLowerCase();
+      setActive(/^h[1-6]$/.test(cur) ? cur : "p");
+    }
     toggleOpen();
   }
+
+  const itemClass = (value: string) =>
+    "flex items-center gap-1.5 px-3 py-1.5 text-xs hover:bg-elevated transition-colors text-left " +
+    (active() === value ? "text-accent font-semibold" : "text-txt");
+
+  const Check = (p: { on: boolean }) => (
+    <span class="w-3 shrink-0">{p.on ? "\u2713" : ""}</span>
+  );
 
   function select(value: string) {
     props.onSelect(value);
@@ -60,18 +75,22 @@ export default function HeadingToolDropdown(props: HeadingToolDropdownProps) {
         >
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("p")}
-            class="px-3 py-1.5 text-xs text-txt hover:bg-elevated transition-colors text-left"
+            class={itemClass("p")}
           >
+            <Check on={active() === "p"} />
             {t("editor.paragraph_label")}
           </button>
           <For each={LEVELS}>
             {(level) => (
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => select(level)}
-                class="px-3 py-1.5 text-xs text-txt hover:bg-elevated transition-colors text-left uppercase"
+                class={itemClass(level) + " uppercase"}
               >
+                <Check on={active() === level} />
                 {level}
               </button>
             )}

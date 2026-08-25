@@ -106,6 +106,19 @@ export default function RichEditor(props: Props) {
         range.collapse(false);
         sel?.removeAllRanges();
         sel?.addRange(range);
+        // Follow the caret: an inserted image sits below the fold, and its
+        // height is only known once it loads, so scroll again on load.
+        const el = editorRef;
+        const follow = () => {
+          el.scrollTop = el.scrollHeight;
+          // block:"nearest" also nudges any outer scroller (page-flow
+          // composers, where the surface itself never scrolls).
+          el.lastElementChild?.scrollIntoView({ block: "nearest" });
+        };
+        follow();
+        el.querySelectorAll("img").forEach((img) => {
+          if (!img.complete) img.addEventListener("load", follow, { once: true });
+        });
       }
     }
   });

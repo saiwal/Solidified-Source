@@ -5,7 +5,7 @@
  * panel pattern instead of a native <select>.
  */
 
-import { Show } from "solid-js";
+import { Show, createSignal } from "solid-js";
 import { MdOutlineFormat_list_bulleted, MdOutlineFormat_list_numbered } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
@@ -22,10 +22,28 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
   const { open, setOpen, toggle: toggleOpen, floatStyle, setTriggerRef, setPanelRef } =
     useDropdown({ placement: "bottom-start", offset: 4 });
 
+  // Read on open, while the editor selection is still intact (trigger and
+  // items both suppress mousedown, so it survives the whole interaction).
+  const [active, setActive] = createSignal<ListKind | "">("");
+  function currentKind(): ListKind | "" {
+    if (document.queryCommandState("insertUnorderedList")) return "bullet";
+    if (!document.queryCommandState("insertOrderedList")) return "";
+    const node = window.getSelection()?.anchorNode;
+    const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element | null);
+    const ol = el?.closest?.("ol");
+    // listAlpha() marks its list with both the class and the inline style.
+    return ol?.classList.contains("listloweralpha") ? "alpha" : "number";
+  }
+
   function toggle() {
     if (props.disabled) return;
+    if (!open()) setActive(currentKind());
     toggleOpen();
   }
+
+  const itemClass = (kind: ListKind) =>
+    "flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-elevated transition-colors text-left " +
+    (active() === kind ? "text-accent font-semibold" : "text-txt");
 
   function select(kind: ListKind) {
     props.onSelect(kind);
@@ -59,24 +77,27 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
         >
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("bullet")}
-            class="flex items-center gap-2 px-3 py-1.5 text-xs text-txt hover:bg-elevated transition-colors text-left"
+            class={itemClass("bullet")}
           >
             <MdOutlineFormat_list_bulleted class="w-4 h-4 shrink-0" />
             {t("editor.bullet_list")}
           </button>
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("number")}
-            class="flex items-center gap-2 px-3 py-1.5 text-xs text-txt hover:bg-elevated transition-colors text-left"
+            class={itemClass("number")}
           >
             <MdOutlineFormat_list_numbered class="w-4 h-4 shrink-0" />
             {t("editor.numbered_list")}
           </button>
           <button
             type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("alpha")}
-            class="flex items-center gap-2 px-3 py-1.5 text-xs text-txt hover:bg-elevated transition-colors text-left"
+            class={itemClass("alpha")}
           >
             <span class="w-4 h-4 shrink-0 flex items-center justify-center text-[0.625rem] font-semibold">abc</span>
             {t("editor.lettered_list")}

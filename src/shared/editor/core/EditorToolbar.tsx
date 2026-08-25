@@ -6,8 +6,8 @@ import {
   MdOutlineFormat_bold, MdOutlineFormat_italic, MdOutlineFormat_underlined,
   MdOutlineFormat_strikethrough, MdOutlineHighlight,
   MdOutlineFormat_color_text, MdOutlineFont_download, MdOutlineFormat_size,
-  MdOutlineFormat_quote, MdFillFormat_quote, MdOutlineCode, MdOutlineHorizontal_rule,
-  MdOutlineVideocam, MdOutlineAudiotrack, MdOutlineFunctions, MdOutlineStyle,
+  MdOutlineFormat_quote, MdOutlineCode, MdOutlineHorizontal_rule,
+  MdOutlineFunctions, MdOutlineStyle,
   MdOutlineTable_chart, MdOutlineVisibility_off, MdOutlineFormat_clear,
   MdOutlineBrush,
 } from "solid-icons/md";
@@ -179,15 +179,19 @@ export default function EditorToolbar(props: Props) {
     }
   };
 
-  const quote = () => isSource() ? wrapSource("[quote]", "[/quote]") : exec("formatBlock", "blockquote");
-
-  const quoteAuthor = () => {
-    const a = prompt("Author name:");
-    if (!a) return;
+  // One button, one prompt: an author gives [quote=Author], empty (just OK)
+  // gives a plain quote. Cancel aborts.
+  const quote = () => {
+    const a = prompt("Author name (leave empty for a plain quote):");
+    if (a === null) return;
+    if (!a.trim()) {
+      isSource() ? wrapSource("[quote]", "[/quote]") : exec("formatBlock", "blockquote");
+      return;
+    }
     if (isSource()) {
-      wrapSource(`[quote=${a}]`, "[/quote]");
+      wrapSource(`[quote=${a.trim()}]`, "[/quote]");
     } else {
-      wrapHtml(`<span class="bb-quote">${a} wrote:</span><blockquote>`, "</blockquote>");
+      wrapHtml(`<span class="bb-quote">${a.trim()} wrote:</span><blockquote>`, "</blockquote>");
     }
   };
 
@@ -280,35 +284,32 @@ export default function EditorToolbar(props: Props) {
     document.execCommand("insertHTML", false, linkMetaToHtml(url, meta));
   };
 
-  const img = () => {
-    const u = prompt("Image URL:");
+  // One button for image/video/audio: the URL's extension already says which
+  // it is, so asking the user to pick first is a click they can't get wrong
+  // but still have to make. Unknown extension falls back to an image (what
+  // the plain [img] button always did).
+  const media = () => {
+    const u = prompt("Media URL:");
     if (!u) return;
+    const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(u)?.[1]?.toLowerCase() ?? "";
+    if (/^(mp4|webm|ogv|mov|m4v)$/.test(ext)) {
+      isSource()
+        ? insertSource(`[video]${u}[/video]`)
+        : exec("insertHTML", `<video src="${u}" controls preload="none" style="max-width:100%"></video>`);
+      return;
+    }
+    if (/^(mp3|ogg|oga|wav|m4a|flac|opus|aac)$/.test(ext)) {
+      isSource()
+        ? insertSource(`[audio]${u}[/audio]`)
+        : exec("insertHTML", `<audio src="${u}" controls preload="none"></audio>`);
+      return;
+    }
     isSource() ? insertSource(`[img]${u}[/img]`) : exec("insertImage", u);
-  };
-
-  const video = () => {
-    const u = prompt("Video URL:");
-    if (!u) return;
-    if (isSource()) {
-      insertSource(`[video]${u}[/video]`);
-    } else {
-      exec("insertHTML", `<video src="${u}" controls preload="none" style="max-width:100%"></video>`);
-    }
-  };
-
-  const audio = () => {
-    const u = prompt("Audio URL:");
-    if (!u) return;
-    if (isSource()) {
-      insertSource(`[audio]${u}[/audio]`);
-    } else {
-      exec("insertHTML", `<audio src="${u}" controls preload="none"></audio>`);
-    }
   };
 
   // The text/bbcode is built by LatexComposerModal (it knows inline vs.
   // block, and image vs. live mode); here we just splice it in, mirroring
-  // how img()/video()/audio() insert raw bbcode for source and a real DOM
+  // how media() inserts raw bbcode for source and a real DOM
   // node for wysiwyg.
   // The compact [card=<id>][/card] token is plain text in both tabs: in
   // wysiwyg the blur pass (RichEditor.onEditorBlur) swaps it for the rendered
@@ -450,7 +451,10 @@ export default function EditorToolbar(props: Props) {
                 const el = props.editorRef();
                 if (!el) return;
                 el.focus();
-                document.execCommand("formatBlock", false, val);
+                // Picking the level the caret is already in removes it —
+                // queryCommandValue reports the current block tag ("h2", "p").
+                const cur = (document.queryCommandValue("formatBlock") || "").toLowerCase();
+                document.execCommand("formatBlock", false, cur === val ? "p" : val);
               }}
             />
           </Show>
@@ -459,9 +463,6 @@ export default function EditorToolbar(props: Props) {
           </Btn>
           <Show when={isFull()}>
             <>
-              <Btn title="Quote with author [quote=Author]" onPress={quoteAuthor}>
-                <MdFillFormat_quote class="w-4 h-4" />
-              </Btn>
               <Btn title={t("editor.code_block")} onPress={code}>
                 <MdOutlineCode class="w-4 h-4" />
               </Btn>
@@ -488,14 +489,8 @@ export default function EditorToolbar(props: Props) {
           <Btn title={t("editor.link")} onPress={link} disabled={linkLoading()}>
             <MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />
           </Btn>
-          <Btn title="Image [img]" onPress={img}>
+          <Btn title="Media [img] [video] [audio]" onPress={media}>
             <MdOutlineImage class="w-4 h-4" />
-          </Btn>
-          <Btn title="Video [video]" onPress={video}>
-            <MdOutlineVideocam class="w-4 h-4" />
-          </Btn>
-          <Btn title="Audio [audio]" onPress={audio}>
-            <MdOutlineAudiotrack class="w-4 h-4" />
           </Btn>
           <Btn title={t("editor.latex_toolbar_title")} onPress={() => setLatexOpen(true)}>
             <MdOutlineFunctions class="w-4 h-4" />
@@ -571,7 +566,7 @@ function Sep() {
   return <span class="w-px h-4 bg-rim mx-0.5 self-center" />;
 }
 
-function Btn(props: { title: string; onPress: () => void; children: any; disabled?: boolean }) {
+function Btn(props: { title: string; onPress: (e: MouseEvent) => void; children: any; disabled?: boolean }) {
   return (
     <button
       type="button"
@@ -579,7 +574,7 @@ function Btn(props: { title: string; onPress: () => void; children: any; disable
       disabled={props.disabled}
       onMouseDown={(e) => {
         e.preventDefault();
-        if (!props.disabled) props.onPress();
+        if (!props.disabled) props.onPress(e);
       }}
       class={
         "px-1.5 py-0.5 rounded transition-colors " +

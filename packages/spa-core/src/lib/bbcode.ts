@@ -422,7 +422,9 @@ function bbOpenTag(title: string, body: string): string {
 }
 
 function bbSpoilerTag(title: string, body: string): string {
-  const label = title ? `${title} spoiler` : "Spoiler";
+  // Just the title — appending " spoiler" to it also fed the editor's
+  // details→[spoiler=…] round-trip, so the word piled up on every edit.
+  const label = title || "Spoiler";
   return `<details class="bb-spoiler"><summary>${label}</summary><blockquote>${body}</blockquote></details>`;
 }
 
