@@ -9,7 +9,10 @@ import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { mountPlyr } from "@utsukta/spa-core/lib/usePlyr";
 
+import type { ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
+
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
+const ExcalidrawCanvas = lazy(() => import("@/modules/excalidraw/ExcalidrawCanvas"));
 const VideoEditor = lazy(() =>
   import("@/modules/tools/components/VideoEditor").then((m) => ({ default: m.VideoEditor })),
 );
@@ -102,6 +105,24 @@ const FilePreviewModal: Component<Props> = (props) => {
   const [editingImage, setEditingImage] = createSignal<File | null>(null);
   const [editingVideo, setEditingVideo] = createSignal<File | null>(null);
   const [savingEdit, setSavingEdit] = createSignal(false);
+  const [sceneError, setSceneError] = createSignal("");
+
+  // .excalidraw scenes (and scene-embedded PNGs) render in a read-only canvas
+  // rather than downloading as raw JSON.
+  async function loadScene(api: ExcalidrawExport) {
+    try {
+      const res = await fetch(props.url, { credentials: "include" });
+      if (!res.ok) throw new Error(`fetch ${res.status}`);
+      const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+      if (contentType.startsWith("text/html")) {
+        throw new Error(`server returned "${contentType}" instead of the file`);
+      }
+      await api.loadScene(await res.blob());
+    } catch (err) {
+      logFetchFailure("excalidraw", props.url, err);
+      setSceneError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   const [text] = createResource(
     () => (isText() && !tooLarge() ? props.url : undefined),
@@ -273,6 +294,24 @@ const FilePreviewModal: Component<Props> = (props) => {
                     </button>
                   </div>
                 </Show>
+              </Show>
+            </Show>
+
+            <Show when={kind() === "excalidraw"}>
+              <Show
+                when={!sceneError()}
+                fallback={
+                  <p class="text-sm text-red-500">
+                    Couldn't load drawing.{" "}
+                    <a href={props.url} download={props.filename} class="underline">Download instead</a>
+                  </p>
+                }
+              >
+                <div class="h-[80vh] rounded-lg border border-rim overflow-hidden">
+                  <Suspense fallback={<p class="text-sm text-muted p-4">Loading…</p>}>
+                    <ExcalidrawCanvas viewMode onReady={(api) => void loadScene(api)} />
+                  </Suspense>
+                </div>
               </Show>
             </Show>
 

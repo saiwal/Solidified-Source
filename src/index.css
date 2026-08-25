@@ -532,3 +532,12 @@ img.emoji.single-emoji {
 img.emoji.single-emoji:hover {
   transform: scale(1.6);
 }
+
+/* Excalidraw minimal mode (composer): the Library button has no UIOptions flag,
+   so hide it by class.
+   ponytail: targets Excalidraw's internal class; drop if upstream adds a flag. */
+.excalidraw-minimal .layer-ui__wrapper__top-right { display: none; }
+
+/* The canvas is drawn with viewBackgroundColor: "transparent" so the wrapper's
+   themed bg-surface shows through — make sure nothing repaints over it. */
+.excalidraw, .excalidraw .excalidraw__canvas { background: transparent; }

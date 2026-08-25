@@ -1,4 +1,5 @@
 import {
+  createEffect,
   createSignal,
   Show,
   For,
@@ -14,6 +15,13 @@ export type FilesPickerAccept = "files" | "photos" | "both";
 interface BreadcrumbEntry {
   name: string;
   hash: string;
+  /** Path within the cloud, e.g. "Documents/Invoices" — "" at root. */
+  displayPath: string;
+}
+
+export interface PickerFolder {
+  hash: string;
+  displayPath: string;
 }
 
 interface Props {
@@ -21,12 +29,18 @@ interface Props {
   accept: FilesPickerAccept;
   selected: () => Set<string>;
   onToggle: (file: FileMeta) => void;
+  /** Fired on navigation, for callers picking a destination folder. */
+  onFolderChange?: (folder: PickerFolder) => void;
 }
 
 const FilesPicker: Component<Props> = (props) => {
   const { t } = useI18n();
   const [crumbs, setCrumbs] = createSignal<BreadcrumbEntry[]>([]);
   const currentHash = () => crumbs()[crumbs().length - 1]?.hash ?? "";
+  const currentPath = () => crumbs()[crumbs().length - 1]?.displayPath ?? "";
+  createEffect(() =>
+    props.onFolderChange?.({ hash: currentHash(), displayPath: currentPath() }),
+  );
 
   const [items] = createQueryResource(
     "files-folder",
@@ -35,7 +49,10 @@ const FilesPicker: Component<Props> = (props) => {
   );
 
   function enterFolder(folder: FileMeta) {
-    setCrumbs((prev) => [...prev, { name: folder.filename, hash: folder.hash }]);
+    setCrumbs((prev) => [
+      ...prev,
+      { name: folder.filename, hash: folder.hash, displayPath: folder.display_path },
+    ]);
   }
 
   function navToCrumb(idx: number) {

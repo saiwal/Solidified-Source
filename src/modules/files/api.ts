@@ -56,6 +56,33 @@ export async function listFolderMeta(
   return { items: json.data ?? [], canWrite: !!json.meta?.can_write };
 }
 
+/**
+ * Map an <AclPicker> selection ("{type}:{xid}" keys) onto the FileAcl shape the
+ * permissions endpoint expects. Shared by the files permissions panel and the
+ * Excalidraw save dialog.
+ */
+export function aclFromPickerKeys(
+  mode: "public" | "connections" | "me" | "custom",
+  allowKeys: Iterable<string>,
+  denyKeys: Iterable<string>,
+): Partial<FileAcl> {
+  const allow_cid: string[] = [], allow_gid: string[] = [];
+  const deny_cid:  string[] = [], deny_gid:  string[] = [];
+  if (mode === "custom") {
+    const split = (keys: Iterable<string>, cid: string[], gid: string[]) => {
+      for (const key of keys) {
+        const [type, ...rest] = key.split(":");
+        const xid = rest.join(":");
+        if (type === "c") cid.push(xid);
+        else if (type === "g") gid.push(xid);
+      }
+    };
+    split(allowKeys, allow_cid, allow_gid);
+    split(denyKeys, deny_cid, deny_gid);
+  }
+  return { allow_cid, allow_gid, deny_cid, deny_gid, scope: mode === "me" ? "private" : undefined };
+}
+
 /** Update ACL for a file or folder. group_allow / contact_allow are arrays of hashes. */
 export async function updatePermissions(
   nick: string,

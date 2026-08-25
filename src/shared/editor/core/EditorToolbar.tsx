@@ -348,16 +348,19 @@ export default function EditorToolbar(props: Props) {
     exec("insertHTML", isBlock ? `<div style="text-align:center">${html}</div>` : html);
   };
 
-  // Always a flat [img] tag — unlike insertLatex/insertCard, no source-vs-live
-  // or content-type branching needed since a plain hosted image works in
-  // every editor context.
+  // Either a flat [img] tag (drawing inserted as an image) or an
+  // [attachment] tag (the .excalidraw scene inserted as a file). Only the
+  // former has a live preview; the attachment goes in as literal bbcode.
   const insertExcalidraw = (bbcode: string) => {
     if (isSource()) {
       insertSource(bbcode);
       return;
     }
     const m = /^\[img ([^\]]*)\](.+)\[\/img\]$/.exec(bbcode);
-    if (!m) return;
+    if (!m) {
+      exec("insertText", bbcode);
+      return;
+    }
     const [, altAttr, src] = m;
     const alt = readAlt(altAttr);
     exec("insertHTML", `<img src="${src}" alt="${alt}" />`);

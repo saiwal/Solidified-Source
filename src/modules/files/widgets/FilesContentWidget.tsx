@@ -26,6 +26,7 @@ import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/edito
 import {
   listFolderMeta,
   updatePermissions,
+  aclFromPickerKeys,
   uploadFile,
   deleteItem,
   createFolder,
@@ -131,29 +132,10 @@ const PermissionsPanel: Component<{
     setBusy(true);
     setErr("");
     try {
-      const m = mode();
-      let allow_cid: string[] = [], allow_gid: string[] = [];
-      let deny_cid: string[]  = [], deny_gid: string[]  = [];
-
-      if (m === "custom") {
-        for (const key of allowKeys()) {
-          const [type, ...rest] = key.split(":");
-          const xid = rest.join(":");
-          if (type === "c") allow_cid.push(xid);
-          else if (type === "g") allow_gid.push(xid);
-        }
-        for (const key of denyKeys()) {
-          const [type, ...rest] = key.split(":");
-          const xid = rest.join(":");
-          if (type === "c") deny_cid.push(xid);
-          else if (type === "g") deny_gid.push(xid);
-        }
-      }
-
       const updated = await updatePermissions(
         props.nick,
         props.item.hash,
-        { allow_cid, allow_gid, deny_cid, deny_gid, scope: m === "me" ? "private" : undefined },
+        aclFromPickerKeys(mode(), allowKeys(), denyKeys()),
         recurse()
       );
       props.onSaved(updated);

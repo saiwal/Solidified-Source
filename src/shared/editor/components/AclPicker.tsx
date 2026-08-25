@@ -169,7 +169,10 @@ const AclPicker: Component<AclPickerProps> = (props) => {
         </svg>
       </button>
 
-      {/* Dropdown — Portal to escape the modal's z-50 stacking context */}
+      {/* Dropdown — Portal to escape the host modal's stacking context. The
+          z has to clear every modal that can contain this picker (the deepest
+          today is the Excalidraw save dialog at z-90), or the panel opens
+          behind the modal and reads as "the dropdown doesn't open". */}
       <Show when={open()}>
         <Portal>
           <div
@@ -180,7 +183,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
               transition: { duration: 0.15 },
             }}
             style={floatStyle()}
-            class={`z-[60] rounded-xl border border-rim bg-surface shadow-xl overflow-hidden
+            class={`z-[200] rounded-xl border border-rim bg-surface shadow-xl overflow-hidden
                     flex flex-col max-h-96 ${props.mode === "custom" ? "w-80" : "w-56"}`}
           >
           {/* Mode options */}
