@@ -41,6 +41,11 @@ import { resolveNotifyPath, connectionRequestId } from "@utsukta/spa-core/lib/no
 import { openConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
 import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
 import { relativeTick } from "@utsukta/spa-core/lib/date";
+import {
+  fetchManageApi,
+  switchChannel,
+  type ManagedChannel,
+} from "@/modules/manage/api";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -645,6 +650,77 @@ function NoticesSection(props: {
   );
 }
 
+// ── OtherChannelsSection ──────────────────────────────────────────────────────
+// Mirrors Zotlabs\Widget\Channel_activities::get_channels_activity(): the other
+// channels of this account that have pending intros or unseen alerts.
+
+function OtherChannelsSection(props: { channels: ManagedChannel[] }) {
+  const { t } = useI18n();
+  const [switching, setSwitching] = createSignal<number | null>(null);
+
+  const footer = (c: ManagedChannel) => {
+    const parts: string[] = [];
+    if (c.intros)
+      parts.push(
+        `${c.intros} ${t(c.intros === 1 ? "notify.other_conn" : "notify.other_conn_plural")}`,
+      );
+    if (c.notices)
+      parts.push(
+        `${c.notices} ${t(c.notices === 1 ? "notify.other_notice" : "notify.other_notice_plural")}`,
+      );
+    return parts.join(", ");
+  };
+
+  // Hard nav, not router navigate: change_channel() swapped the session channel,
+  // so every SPA store (auth, nav, streams) is scoped to the old one.
+  const go = async (c: ManagedChannel) => {
+    if (switching()) return;
+    setSwitching(c.channel_id);
+    try {
+      const { redirect_to } = await switchChannel(c.channel_id);
+      window.location.href = redirect_to;
+    } catch {
+      setSwitching(null);
+    }
+  };
+
+  return (
+    <div class="border border-rim rounded-xl overflow-hidden">
+      <div class="px-1 py-1 space-y-0.5 bg-elevated max-h-80 overflow-y-auto">
+        <For each={props.channels}>
+          {(c) => (
+            <button
+              onClick={() => go(c)}
+              disabled={switching() !== null}
+              class="w-full flex gap-2 items-center px-2 py-1.5 rounded-lg text-left
+                     transition-colors hover:bg-surface disabled:opacity-50"
+            >
+              <Show when={c.photo}>
+                <img
+                  src={c.photo}
+                  alt={c.channel_name}
+                  class="w-7 h-7 rounded-full shrink-0 object-cover"
+                />
+              </Show>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-txt font-semibold truncate">
+                  {c.channel_name}
+                </p>
+                <p class="text-[0.625rem] text-muted truncate">
+                  {c.channel_address}
+                </p>
+              </div>
+              <span class="text-[0.625rem] text-accent shrink-0">
+                {footer(c)}
+              </span>
+            </button>
+          )}
+        </For>
+      </div>
+    </div>
+  );
+}
+
 // ── AnnouncementsSection ──────────────────────────────────────────────────────
 
 function AnnouncementsSection(props: {
@@ -800,6 +876,7 @@ export default function NotificationsAside() {
   const [modalUuid, setModalUuid] = createSignal<string | null>(null);
   const [showNotices, setShowNotices] = createSignal(false);
   const [showAnnouncements, setShowAnnouncements] = createSignal(false);
+  const [showOtherChannels, setShowOtherChannels] = createSignal(false);
   const [openSection, setOpenSection] = createSignal<string | null>(null);
 
   const [announcements, { refetch: refetchAnnouncements, mutate: mutateAnnouncements }] =
@@ -810,6 +887,20 @@ export default function NotificationsAside() {
     );
 
   const [seenAnnouncementId, setSeenAnnouncementId] = createSignal(getLastSeenAnnouncementId());
+
+  // Other channels of this account needing attention. /spa/manage 403s for
+  // delegated sessions — the error just means "no section", never a toast.
+  const [manageData, { refetch: refetchManage }] = createQueryResource(
+    "manage-channels",
+    () => (booted() && auth()?.isLoggedIn ? true : null),
+    fetchManageApi,
+  );
+
+  const otherChannels = createMemo(() =>
+    (manageData()?.channels ?? []).filter(
+      (c) => !c.is_current && (c.intros > 0 || c.notices > 0),
+    ),
+  );
 
   const hasNewAnnouncements = createMemo(() => {
     const list = announcements();
@@ -1062,6 +1153,7 @@ export default function NotificationsAside() {
     setRefreshing(true);
     try {
       await doFetchCounts();
+      refetchManage();
     } finally {
       setRefreshing(false);
     }
@@ -1157,6 +1249,23 @@ export default function NotificationsAside() {
                 <MdOutlineCampaign class="w-4 h-4" />
               </button>
             </Show>
+            <Show when={otherChannels().length > 0}>
+              <button
+                onClick={() => setShowOtherChannels((v) => !v)}
+                title={t("notify.other_channels")}
+                class="relative p-1 rounded transition-colors"
+                classList={{
+                  "text-accent bg-accent-muted": showOtherChannels(),
+                  "text-subtle hover:text-txt hover:bg-elevated":
+                    !showOtherChannels(),
+                }}
+              >
+                <MdFillHome class="w-4 h-4" />
+                <Show when={!showOtherChannels()}>
+                  <span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
+                </Show>
+              </button>
+            </Show>
             <Show when={booted() && auth()?.isLoggedIn}>
               <button
                 onClick={toggleAnnouncements}
@@ -1198,6 +1307,10 @@ export default function NotificationsAside() {
 
         <Show when={showNotices()}>
           <NoticesSection open={showNotices()} onOpenModal={setModalUuid} />
+        </Show>
+
+        <Show when={showOtherChannels() && otherChannels().length > 0}>
+          <OtherChannelsSection channels={otherChannels()} />
         </Show>
 
         <Show when={showAnnouncements()}>
@@ -1285,7 +1398,8 @@ export default function NotificationsAside() {
             booted() &&
             auth()?.isLoggedIn &&
             activeBuckets().length === 0 &&
-            notices().length === 0
+            notices().length === 0 &&
+            otherChannels().length === 0
           }
         >
           <p class="flex items-center justify-center gap-1.5 py-1.5 text-[0.6875rem] text-subtle">

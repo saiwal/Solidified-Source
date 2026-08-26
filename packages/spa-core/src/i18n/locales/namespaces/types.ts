@@ -2729,6 +2729,11 @@ export type RawDictionary = {
     conn_polling:     string;
     conn_disconnected: string;
     fallback_sender:  string;
+    other_channels:   string;
+    other_conn:       string;
+    other_conn_plural: string;
+    other_notice:     string;
+    other_notice_plural: string;
   };
   moderate: {
     title:                   string;

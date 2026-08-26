@@ -30,4 +30,9 @@ export const notify: RawDictionary["notify"] = {
   conn_polling:     "Polling",
   conn_disconnected: "Disconnected",
   fallback_sender:  "Hubzilla",
+  other_channels: "Other channels",
+  other_conn: "new connection",
+  other_conn_plural: "new connections",
+  other_notice: "alert",
+  other_notice_plural: "alerts",
 };

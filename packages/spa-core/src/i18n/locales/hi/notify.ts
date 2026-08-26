@@ -30,4 +30,9 @@ export const notify: RawDictionary["notify"] = {
   conn_polling:     "पोलिंग",
   conn_disconnected: "डिस्कनेक्ट",
   fallback_sender:  "Hubzilla",
+  other_channels: "अन्य चैनल",
+  other_conn: "नया कनेक्शन",
+  other_conn_plural: "नए कनेक्शन",
+  other_notice: "सूचना",
+  other_notice_plural: "सूचनाएँ",
 };

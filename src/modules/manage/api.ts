@@ -8,6 +8,7 @@ export interface ManagedChannel {
   photo: string;
   url: string;
   intros: number;
+  notices: number;
 }
 
 export interface ManagedDelegate {
