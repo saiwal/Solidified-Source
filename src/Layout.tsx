@@ -373,12 +373,20 @@ const Layout: ParentComponent = (props) => {
                 </ErrorBoundary>
               </div>
 
+            </div>
+						<Show when={!hidesWidgetSlots()}>
+                <div class="mt-auto">
+                  <Slot name="footer" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
+                  <SiteCredits />
+                </div>
+              </Show>
+
               <Show when={showScrollTop()}>
                 <button
                   onClick={() =>
                     mainRef()?.scrollTo({ top: 0, behavior: "smooth" })
                   }
-                  class="sticky bottom-2 lg:bottom-14 xl:bottom-2 self-end z-10
+                  class="sticky bottom-2 lg:bottom-14 xl:bottom-2 self-end shrink-0 z-10 -mt-10
                          w-10 h-10 rounded-full flex items-center justify-center
                          bg-elevated border border-rim
                          shadow hover:shadow-md transition-all"
@@ -398,13 +406,6 @@ const Layout: ParentComponent = (props) => {
                     />
                   </svg>
                 </button>
-              </Show>
-            </div>
-						<Show when={!hidesWidgetSlots()}>
-                <div class="mt-auto">
-                  <Slot name="footer" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
-                  <SiteCredits />
-                </div>
               </Show>
 
           </main>
