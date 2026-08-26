@@ -3,7 +3,6 @@ import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive } from "@utsukta/spa-core/module-registry";
 
@@ -183,8 +182,22 @@ export default function ChannelActivitiesWidget() {
   );
 }
 
+// Short absolute date — "Jul 30", with a year suffix once it is stale.
+// Same treatment DraftsWidget gives its dates.
+function formatDate(when: string): string {
+  const d = new Date(when.replace(" ", "T"));
+  if (isNaN(d.getTime())) return when;
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString(undefined, opts);
+}
+
+function fullDate(when: string): string {
+  const d = new Date(when.replace(" ", "T"));
+  return isNaN(d.getTime()) ? when : d.toLocaleString();
+}
+
 function ItemRows(props: { items: ActivityItem[] }) {
-  const { t } = useI18n();
   const navigate = useNavigate();
 
   return (
@@ -192,14 +205,24 @@ function ItemRows(props: { items: ActivityItem[] }) {
       {(i, idx) => (
         <button
           onClick={() => navigate(i.url)}
-          class="w-full text-left px-3.5 py-2 hover:bg-elevated transition-colors"
+          class="w-full text-left px-3.5 py-2 flex items-start justify-between gap-2.5
+                 hover:bg-elevated transition-colors"
           classList={{ "border-b border-rim": idx() < props.items.length - 1 }}
         >
-          <p class="text-sm font-medium text-txt truncate">{i.title}</p>
-          <Show when={i.summary}>
-            <p class="text-xs text-muted truncate">{i.summary}</p>
-          </Show>
-          <p class="text-xs text-muted">{relativeTime(i.edited, t)}</p>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-txt truncate leading-snug">
+              {i.title}
+            </p>
+            <Show when={i.summary}>
+              <p class="text-xs text-muted truncate mt-0.5">{i.summary}</p>
+            </Show>
+          </div>
+          <span
+            class="text-[0.625rem] text-muted/60 tabular-nums shrink-0"
+            title={fullDate(i.edited)}
+          >
+            {formatDate(i.edited)}
+          </span>
         </button>
       )}
     </For>
