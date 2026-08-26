@@ -1,10 +1,12 @@
 import {
   createSignal,
   createMemo,
+  createEffect,
   For,
   Show,
   type Component,
 } from "solid-js";
+import { useLocation } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -431,10 +433,30 @@ export default function FilesContentWidget() {
   const viewerRole = useViewerRole();
   const isOwner = () => viewerRole() === "owner";
 
-  // Navigation stack — start at root
-  const [navStack, setNavStack] = createSignal<FolderFrame[]>([
-    { hash: "", displayPath: "", label: nick() },
-  ]);
+  // Navigation stack — starts at root, unless the URL names a folder.
+  // ?folder=<hash>&path=<display_path> is how anything outside this module
+  // deep-links into a subfolder (the widget has no path→hash resolver, so the
+  // linker passes the hash it already knows). Kept as a one-level jump: the
+  // breadcrumb shows root › folder rather than every ancestor.
+  const location = useLocation();
+
+  function seedStack(): FolderFrame[] {
+    const root = { hash: "", displayPath: "", label: nick() };
+    const params = new URLSearchParams(location.search);
+    const hash = params.get("folder");
+    if (!hash) return [root];
+    const path = params.get("path") ?? "";
+    const label = path.replace(/\/+$/, "").split("/").pop() || hash;
+    return [root, { hash, displayPath: path, label }];
+  }
+
+  const [navStack, setNavStack] = createSignal<FolderFrame[]>(seedStack());
+
+  // Same route, different ?folder — the view is not remounted, so re-seed.
+  createEffect(() => {
+    location.search;
+    setNavStack(seedStack());
+  });
   const current = createMemo(() => navStack()[navStack().length - 1]);
 
   // File listing — refetches whenever current folder hash changes
