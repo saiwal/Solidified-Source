@@ -1,5 +1,6 @@
 import { createEffect, onCleanup, Show } from "solid-js";
-import { useParams } from "@solidjs/router";
+import { useParams, A } from "@solidjs/router";
+import { MdOutlineEdit_note } from "solid-icons/md";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
@@ -98,9 +99,21 @@ export default function PageView() {
           <ArticleToc entries={toc()} activeId={activeId()} label={t("webpages.on_this_page")} />
 
           <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl bg-surface rounded-xl border border-rim p-6 space-y-4">
-            <Show when={detail()!.title}>
-              <h1 class="text-2xl font-bold text-txt">{detail()!.title}</h1>
-            </Show>
+            <div class="flex items-start gap-3">
+              <Show when={detail()!.title}>
+                <h1 class="flex-1 text-2xl font-bold text-txt">{detail()!.title}</h1>
+              </Show>
+              <Show when={isPageOwner()}>
+                <A
+                  href={`/webpages/${nick()}/edit/${detail()!.iid}`}
+                  class="ml-auto p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
+                  title={t("webpages.edit") as string}
+                  aria-label={t("webpages.edit") as string}
+                >
+                  <MdOutlineEdit_note size={18} />
+                </A>
+              </Show>
+            </div>
             <div
               ref={bodyRef}
               class="prose dark:prose-invert max-w-none"

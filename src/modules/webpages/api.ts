@@ -14,6 +14,7 @@ export type WebPage = {
 };
 
 export type WebPageDetail = {
+  iid: number;
   uuid: string;
   mid: string;
   title: string;

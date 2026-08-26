@@ -1682,6 +1682,17 @@ export type RawDictionary = {
     new_webpage:           string;
     new_wiki_page:         string;
     new_article:           string;
+    channel_activities: string;
+    ca_photos: string;
+    ca_uploads: string;
+    ca_documents: string;
+    ca_audio: string;
+    ca_video: string;
+    ca_webpages: string;
+    ca_wiki: string;
+    ca_articles: string;
+    ca_cards: string;
+    ca_empty: string;
   };
   channel: {
     no_posts:           string;

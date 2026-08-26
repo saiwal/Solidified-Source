@@ -39,9 +39,6 @@ registerModule({
       contexts: "any",
       helpTarget: "widgets.quick_compose_btns",
     },
-    // The dashboard itself, in the gridTop banner slot Layout.tsx already
-    // renders above the routed view — same slot the "sleek" blocks.* / _top
-    // widgets use, so users can rearrange, remove, or add to these too.
     {
       id: "hq.composer",
       label: () => useI18n().t("hq.post_composer"),
@@ -60,7 +57,16 @@ registerModule({
       contexts: "any",
       helpTarget: "widgets.quick_composer",
     },
-
+    {
+      id: "hq.channel_activities",
+      label: () => useI18n().t("hq.channel_activities"),
+      loader: () => import("./widgets/ChannelActivitiesWidget"),
+      slot: "gridTop",
+      defaultModules: ["hq"],
+      contexts: "any",
+      visitorVisible: false,
+      helpTarget: "widgets.channel_activities",
+    },
     {
       id: "hq.drafts",
       label: () => useI18n().t("hq.drafts"),
