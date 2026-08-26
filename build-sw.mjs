@@ -126,6 +126,20 @@ const { count, size } = await generateSW({
         expiration: { maxEntries: 20, maxAgeSeconds: 30 * 86400 },
         cacheableResponse: { statuses: [200] },
         matchOptions: { ignoreVary: true },
+        // Nothing cached for *this* URL: serve the shell warmed at install
+        // (see SHELL_URL below). Every SPA route gets the same HTML, so any
+        // deep link boots offline. handlerDidError only fires when the network
+        // genuinely failed, so online navigations to real Hubzilla endpoints
+        // (/cloud downloads, classic pages, OWA) are untouched — which is why
+        // this is not workbox's navigateFallback.
+        plugins: [
+          {
+            handlerDidError: async () =>
+              (await caches.match('/hq', { cacheName: 'app-shell', ignoreVary: true })) ||
+              // Warm failed at install; any earlier real navigation will do.
+              caches.match('/', { cacheName: 'app-shell', ignoreVary: true }),
+          },
+        ],
       },
     },
     {
@@ -180,6 +194,41 @@ const { count, size } = await generateSW({
 // no notion of Web Push. Append a plain push/notificationclick listener to the
 // generated file rather than switching to injectManifest for this one addition.
 const PUSH_SW_SNIPPET = `
+// The PWA launches at start_url /hq, but /hq is only ever reached by the
+// client-side redirect in App.tsx — so no navigation response for it exists,
+// and the first-ever visit isn't SW-controlled either. Without this warm, a
+// first launch while offline gets no HTML at all and renders blank.
+// /spa/pconfig + /spa/nav are the only two requests the chrome needs to render.
+self.addEventListener('install', function (event) {
+  event.waitUntil(
+    Promise.all([
+      ['/hq', 'app-shell'],
+      ['/spa/pconfig', 'theme-api'],
+      ['/spa/nav', 'theme-api'],
+    ].map(function (pair) {
+      return Promise.all([
+        fetch(pair[0], { credentials: 'same-origin', cache: 'reload' }),
+        caches.open(pair[1]),
+      ]).then(function (r) {
+        var res = r[0];
+        if (!res.ok) return;
+        // A Response with the redirect flag set cannot be handed to a
+        // navigation's respondWith() — the browser throws and the launch fails
+        // with "unable to open". /hq redirects for a logged-out install, so
+        // rebuild the response body-first to clear the flag before storing.
+        return res.blob().then(function (body) {
+          return r[1].put(
+            pair[0],
+            new Response(body, { status: 200, headers: res.headers }),
+          );
+        });
+      });
+      // A failed warm must never fail the install — no SW at all is far worse
+      // than a cold cache.
+    })).catch(function () {})
+  );
+});
+
 self.addEventListener('push', function (event) {
   var data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) {}
