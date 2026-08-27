@@ -104,12 +104,11 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { postHeightPx } from "@utsukta/spa-core/store/post-height";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
 
 export type { StreamHandlers as PostActions };
-
-const BODY_COLLAPSED_MAX_PX = 310;
 
 function subtreeContainsUuid(nodes: ThreadNode[], uuid: string): boolean {
   for (const node of nodes) {
@@ -318,7 +317,8 @@ export default function PostCard(props: {
   const checkBodyOverflow = () => {
     const el = bodyRef();
     if (!el) return;
-    setBodyOverflows(el.scrollHeight > BODY_COLLAPSED_MAX_PX);
+    const max = postHeightPx();
+    setBodyOverflows(max > 0 && el.scrollHeight > max);
   };
   // Captured on mouseup (while the selection still exists) rather than on the
   // Reply click itself — clicking the Reply button collapses the selection
@@ -772,8 +772,9 @@ export default function PostCard(props: {
     onCleanup(() => observer.disconnect());
   });
 
-  onMount(() => {
+  createEffect(() => {
     if (props.compact || props.seamless) return;
+    postHeightPx(); // re-measure when the user changes the setting
     checkBodyOverflow();
     const imgs = bodyRef()?.querySelectorAll("img");
     imgs?.forEach((img) => {
@@ -1877,7 +1878,7 @@ export default function PostCard(props: {
                 "max-height":
                   props.seamless || bodyExpanded() || !bodyOverflows()
                     ? "none"
-                    : `${BODY_COLLAPSED_MAX_PX}px`,
+                    : `${postHeightPx()}px`,
               }}
             >
               <div

@@ -12,6 +12,7 @@ export interface DisplaySettings {
   bg_url: string;
   bg_fit: "tile" | "cover";
   scroll_style: "endless" | "load_more";
+  post_height: number;
   corner_radius: "none" | "sm" | "default" | "lg" | "xl";
   comment_order: "oldest_first" | "newest_first";
   thread_mode: "threaded" | "flat";

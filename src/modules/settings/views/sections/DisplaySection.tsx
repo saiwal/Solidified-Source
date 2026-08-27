@@ -6,6 +6,7 @@ import { applyTypography, type FontSize, type FontFamily } from "@utsukta/spa-co
 import { useThreadMode, setThreadMode } from "@utsukta/spa-core/store/thread-mode";
 import { useListBehavior, setListBehavior, type ListBehavior } from "@utsukta/spa-core/store/list-behavior";
 import { useScrollStyle, setScrollStyle, type ScrollStyle } from "@utsukta/spa-core/store/scroll-style";
+import { usePostHeight, setPostHeight } from "@utsukta/spa-core/store/post-height";
 import { useCommentOrder, setCommentOrder, type CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
@@ -35,6 +36,7 @@ export default function DisplaySection() {
   const threadMode = useThreadMode();
   const listBehavior = useListBehavior();
   const scrollStyle = useScrollStyle();
+  const postHeight = usePostHeight();
   const commentOrder = useCommentOrder();
   const { customColors, updateCustomColors, switchTheme } = useTheme();
 
@@ -50,7 +52,7 @@ export default function DisplaySection() {
     fetcher: fetchDisplaySettings,
     saver: saveDisplaySettings,
     numericFields: [
-      "update_interval", "itemspage",
+      "update_interval", "itemspage", "post_height",
       "start_menu", "show_emoji_images",
     ],
     checkboxFields: ["start_menu", "show_emoji_images"],
@@ -70,6 +72,7 @@ export default function DisplaySection() {
       initTheme(d.color_scheme as ThemeId, d.custom_theme_colors);
     }
     if (d.scroll_style) setScrollStyle(d.scroll_style as ScrollStyle);
+    if (d.post_height !== undefined) setPostHeight(Number(d.post_height));
     if (d.comment_order) setCommentOrder(d.comment_order as CommentOrder);
     if (d.thread_mode) setThreadMode(d.thread_mode === "threaded");
     if (d.corner_radius) {
@@ -444,6 +447,22 @@ export default function DisplaySection() {
                 </label>
               ))}
             </div>
+          </Field>
+
+          {/* Post height */}
+          <Field label={t("settings.post_height")} hint={t("settings.post_height_hint")}>
+            <input
+              type="number"
+              name="post_height"
+              min="0"
+              max="5000"
+              step="10"
+              value={postHeight()}
+              onChange={(e) => setPostHeight(e.currentTarget.valueAsNumber)}
+              class="w-32 px-3 py-2 rounded-lg border border-rim bg-surface text-txt
+                     hover:border-rim-strong focus:outline-none focus:border-rim-strong
+                     transition-colors text-sm"
+            />
           </Field>
 
           {/* Scroll style */}

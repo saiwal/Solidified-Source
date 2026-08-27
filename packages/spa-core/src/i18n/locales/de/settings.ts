@@ -122,6 +122,8 @@ export const settings: RawDictionary["settings"] = {
   list_view_behavior_inbox:     "Posteingang — erweitert sich inline",
   comment_view:            "Kommentaransicht",
   comment_view_hint:       "Wie Antworten unter Beiträgen angezeigt werden. Wird sofort wirksam.",
+  post_height:               "Beitragshöhe",
+  post_height_hint:          "Wie hoch ein Beitrag in Pixeln werden darf, bevor er hinter einem „Mehr anzeigen“-Verlauf eingeklappt wird. 0 = nie einklappen. Wird sofort wirksam.",
   scroll_style:            "Scroll-Stil",
   scroll_style_hint:       "Wie weitere Beiträge geladen werden, wenn du das Ende erreichst. Wird sofort wirksam.",
   scroll_style_endless:    "Endloses Scrollen",

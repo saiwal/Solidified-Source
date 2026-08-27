@@ -1212,6 +1212,8 @@ export type RawDictionary = {
     list_view_behavior_inbox:     string;
     comment_view:            string;
     comment_view_hint:       string;
+    post_height:             string;
+    post_height_hint:        string;
     scroll_style:            string;
     scroll_style_hint:       string;
     scroll_style_endless:    string;
