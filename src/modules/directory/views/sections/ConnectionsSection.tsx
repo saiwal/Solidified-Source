@@ -224,18 +224,6 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
             </Show>
           </Show>
           <button
-            onClick={() => setExpanded((e) => !e)}
-            class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-            title={t("directory.details")}
-          >
-            <svg
-              class={`w-3.5 h-3.5 transition-transform ${expanded() ? "rotate-180" : ""}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <button
             onClick={() => setEditOpen(true)}
             class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
             title={t("directory.edit")}
@@ -251,6 +239,18 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3H4" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
+            title={t("directory.details")}
+          >
+            <svg
+              class={`w-3.5 h-3.5 transition-transform ${expanded() ? "rotate-180" : ""}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
         </div>

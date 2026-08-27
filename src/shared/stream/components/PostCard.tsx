@@ -1132,10 +1132,6 @@ export default function PostCard(props: {
               <Show when={isDirectMessage()}>
                 <DmBadge />
               </Show>
-              {/* Padlock on private items — classic's lockview (conv_item.tpl:83) */}
-              <Show when={isPrivate() && props.post.iid && auth()?.isLocal}>
-                <LockviewPopover type="item" id={props.post.iid!} />
-              </Show>
               <Show when={props.post.location}>
                 <span class="flex items-center gap-0.5 min-w-0 text-[0.625rem] text-muted">
                   <MdOutlineLocation_on size={10} class="shrink-0" />
@@ -1704,6 +1700,10 @@ export default function PostCard(props: {
         </AuthorPopover>
         <div class="flex flex-col min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap">
+            {/* Padlock on private items — classic's lockview (conv_item.tpl:83) */}
+            <Show when={isPrivate() && props.post.iid && auth()?.isLocal}>
+              <LockviewPopover type="item" id={props.post.iid!} size={12} />
+            </Show>
             <a
               href={`/chanview?f=&hash=${encodeURIComponent(props.post.authorHash || props.post.authorUrl)}`}
               class="font-semibold text-txt hover:underline truncate"
@@ -1802,9 +1802,6 @@ export default function PostCard(props: {
           </Show>
           <Show when={isDirectMessage()}>
             <DmBadge size="md" />
-          </Show>
-          <Show when={isPrivate() && props.post.iid && auth()?.isLocal}>
-            <LockviewPopover type="item" id={props.post.iid!} size={12} />
           </Show>
           <Show when={isUnseen()}>
             <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none"
