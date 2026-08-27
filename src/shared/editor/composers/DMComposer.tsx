@@ -66,22 +66,35 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   // search already filters to this set (ACL type "m"), but recipients seeded
   // directly via `initialRecipients` (Send DM from a profile/connection)
   // bypass that filter, so we check them here too.
-  const [permittedXids, setPermittedXids] = createSignal<Set<string> | null>(null);
-  function refreshPermittedXids() {
+  const [permitted, setPermitted] = createSignal<AclEntry[] | null>(null);
+  function refreshPermitted() {
     void fetchConnections({ type: "m", count: 500 })
-      .then((list) => setPermittedXids(new Set(list.map((c) => c.xid))))
+      .then((list) => setPermitted(list))
       .catch(() => {});
   }
-  refreshPermittedXids();
+  refreshPermitted();
   // Re-check on every add/remove — a recipient seeded via `initialRecipients`
   // (Send DM from a profile/connection) can otherwise be judged against a
   // permission snapshot taken before that fetch has resolved.
-  createEffect(on(recipients, () => refreshPermittedXids(), { defer: true }));
+  createEffect(on(recipients, () => refreshPermitted(), { defer: true }));
+
+  // One identity can own several xchan rows (a channel seen over both zot6 and
+  // ActivityPub), and /acl?type=m returns only the one the abook uses. A seeded
+  // recipient carries whichever hash its source resolved, so fall back to
+  // matching on address — otherwise a perfectly permitted contact is reported
+  // as blocked, and the ACL would be built from a hash the abook doesn't hold.
+  const permittedFor = (r: AclEntry): AclEntry | null => {
+    const list = permitted();
+    if (!list) return null;
+    const addr = (r.link || r.nick || "").toLowerCase();
+    return list.find((c) =>
+      c.xid === r.xid || (!!addr && (c.link || "").toLowerCase() === addr)
+    ) ?? null;
+  };
 
   const unpermittedRecipients = () => {
-    const permitted = permittedXids();
-    if (!permitted) return [];
-    return recipients().filter((r) => !permitted.has(r.xid));
+    if (!permitted()) return [];
+    return recipients().filter((r) => !permittedFor(r));
   };
 
   function addRecipient(entry: AclEntry) {
@@ -118,7 +131,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
       mimetype: meta.mimetype ?? "text/bbcode",
       profile_uid: props.profileUid,
       scope: "custom",
-      contact_allow: recipients().map((r) => r.xid),
+      contact_allow: recipients().map((r) => permittedFor(r)?.xid ?? r.xid),
       group_allow: [] as string[],
       contact_deny: [] as string[],
       group_deny: [] as string[],
