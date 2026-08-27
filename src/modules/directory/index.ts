@@ -9,8 +9,17 @@ export const CONNECTIONS_ITEMS: SubPageItem[] = [
     path: "privacy-groups",
     label: () => useI18n().t("directory.privacy_groups"),
     context: "owner",
-    dividerAfter: true,
     requiresApp: "/group",
+  },
+  // Guest tokens are pseudo-contacts (they carry a real xchan + abook row and
+  // are granted access like any connection), so they belong with connections
+  // rather than in their own top-level nav entry.
+  {
+    path: "guest-access",
+    label: () => useI18n().t("guest_access.title"),
+    context: "owner",
+    dividerAfter: true,
+    requiresApp: "/tokens",
   },
   {
     path: "people",

@@ -340,8 +340,22 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                       </Show>
 
                       <span class="flex flex-col min-w-0 flex-1">
-                        <span class="truncate text-xs font-medium text-txt">
-                          {c.name}
+                        <span class="flex items-center gap-1 min-w-0">
+                          <span class="truncate text-xs font-medium text-txt">
+                            {c.name}
+                          </span>
+                          {/* Guest tokens come back from /acl as ordinary
+                              contacts; without this they're indistinguishable
+                              from a real connection when setting an audience.
+                              /acl leaves `net` empty for them (its atoken block
+                              omits the key), so key off the guest: address that
+                              atoken_xchan() always builds. */}
+                          <Show when={c.nick?.startsWith("guest:")}>
+                            <span class="shrink-0 px-1 py-px rounded text-[0.5625rem] font-medium
+                                         bg-amber-500/15 text-amber-600 dark:text-amber-500">
+                              {t("share.guest_access_title")}
+                            </span>
+                          </Show>
                         </span>
                         <Show when={c.link}>
                           <span class="truncate text-[0.625rem] text-muted">

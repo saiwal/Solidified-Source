@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import type { LockviewType } from "../lib/lockview-api";
 
 /** One copyable BBCode snippet offered in the share modal. */
 export interface ShareEmbed {
@@ -21,6 +22,13 @@ export interface ShareTarget {
   /** BBCode seed for "share as post". Omitted = that option is hidden. */
   postBody?: string;
   embed?: ShareEmbed[];
+  /**
+   * Identifies this resource to /spa/lockview, which returns who can see it
+   * plus any guest-access (?zat=) links. Only set for the types core's
+   * Lockview understands; absent = no guest section, which is the right
+   * default for things with no Lockview equivalent (articles, cards, webpages).
+   */
+  lockview?: { type: LockviewType; id: number | string };
 }
 
 // Global — lets any entity (post, article, card, photo, file, webpage) open

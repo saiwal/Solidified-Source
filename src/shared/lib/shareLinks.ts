@@ -84,6 +84,7 @@ export function shareTargetForPost(post: Post): ShareTarget {
     embed: post.iid && !isPrivate
       ? [{ labelKey: "share.embed_bbcode", code: `[share=${post.iid}][/share]` }]
       : undefined,
+    lockview: post.iid ? { type: "item", id: post.iid } : undefined,
   };
 }
 
@@ -143,6 +144,7 @@ export function shareTargetForPhoto(nick: string, p: PhotoLike): ShareTarget {
     summary: p.description?.trim(),
     postBody,
     embed: [{ labelKey: "share.embed_bbcode", code: `[zmg]${medium}[/zmg]` }],
+    lockview: { type: "photo", id: p.resource_id },
   };
 }
 
@@ -167,6 +169,7 @@ export function shareTargetForFile(nick: string, f: FileMeta): ShareTarget {
     title: f.filename,
     postBody: `[zrl=${url}]${f.filename}[/zrl]`,
     embed,
+    lockview: f.id && !f.is_dir ? { type: "attach", id: f.id } : undefined,
   };
 }
 

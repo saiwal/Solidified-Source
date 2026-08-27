@@ -1,4 +1,4 @@
-import { createSignal, Show, For, lazy, type Component } from "solid-js";
+import { createSignal, createMemo, Show, For, lazy, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import {
   MdOutlineContent_copy,
@@ -12,6 +12,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { ShareTarget } from "@utsukta/spa-core/store/share";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { fetchLockview } from "@utsukta/spa-core/lib/lockview-api";
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
 
@@ -41,6 +43,27 @@ const ShareModal: Component<Props> = (props) => {
   const [note, setNote] = createSignal("");
   const [sending, setSending] = createSignal(false);
 
+  // Who can see this, and any guest-access links. Only the owner gets an
+  // answer — the endpoint refuses other channels' items — so don't even ask
+  // unless we're local and the target names a Lockview-addressable resource.
+  const lockviewKey = createMemo(() => {
+    const lv = props.target.lockview;
+    return lv && auth()?.isLocal ? `${lv.type}/${lv.id}` : null;
+  });
+  const [lockview] = createQueryResource("lockview", lockviewKey, (key) => {
+    const [type, id] = key.split("/");
+    return fetchLockview(type as never, id);
+  });
+
+  const guests = () => lockview()?.guests ?? [];
+  const [guestId, setGuestId] = createSignal<number | null>(null);
+  const activeGuest = () => guests().find((g) => g.id === guestId()) ?? null;
+
+  // Everything downstream (copy, native share, email, share-as-post) reads
+  // this, so picking a guest carries the credential consistently instead of
+  // only into whichever affordance happened to be wired for it.
+  const shareUrl = () => activeGuest()?.url ?? props.target.url;
+
   const canPost = () => auth()?.isLocal === true && !!props.target.postBody;
   const canNativeShare = () => typeof navigator !== "undefined" && "share" in navigator;
 
@@ -55,13 +78,13 @@ const ShareModal: Component<Props> = (props) => {
 
   function nativeShare() {
     navigator
-      .share({ title: props.target.title, text: props.target.summary, url: props.target.url })
+      .share({ title: props.target.title, text: props.target.summary, url: shareUrl() })
       // AbortError just means the user dismissed the sheet — not worth a toast.
       .catch(() => {});
   }
 
   function mailtoHref() {
-    const body = [props.target.summary, props.target.url].filter(Boolean).join("\n\n");
+    const body = [props.target.summary, shareUrl()].filter(Boolean).join("\n\n");
     return `mailto:?subject=${encodeURIComponent(props.target.title)}&body=${encodeURIComponent(body)}`;
   }
 
@@ -76,6 +99,7 @@ const ShareModal: Component<Props> = (props) => {
         body: JSON.stringify({
           to: to(),
           url: props.target.url,
+          zat: activeGuest()?.url ? new URL(activeGuest()!.url).searchParams.get("zat") : undefined,
           title: props.target.title,
           note: note(),
         }),
@@ -125,7 +149,7 @@ const ShareModal: Component<Props> = (props) => {
                 {/* Link */}
                 <CopyRow
                   label={t("share.link") as string}
-                  value={props.target.url}
+                  value={shareUrl()}
                   copyLabel={t("share.copy") as string}
                   onCopy={copy}
                 />
@@ -192,6 +216,31 @@ const ShareModal: Component<Props> = (props) => {
                       {sending() ? t("share.email_sending") : t("share.email_send")}
                     </button>
                   </form>
+                </Show>
+
+                {/* Guest access — only guests already in this item's audience
+                    appear here; a token is not a skeleton key. */}
+                <Show when={guests().length > 0}>
+                  <div class="space-y-1 rounded-lg border border-rim p-3">
+                    <label class="block text-xs font-semibold text-txt">
+                      {t("share.guest_access_title")}
+                    </label>
+                    <select
+                      value={guestId() ?? ""}
+                      onChange={(e) => setGuestId(e.currentTarget.value ? Number(e.currentTarget.value) : null)}
+                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                    >
+                      <option value="">{t("share.use_plain_link")}</option>
+                      <For each={guests()}>
+                        {(g) => <option value={g.id}>{g.name}</option>}
+                      </For>
+                    </select>
+                    <Show when={activeGuest()}>
+                      <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                        {t("share.guest_access_warning")}
+                      </p>
+                    </Show>
+                  </div>
                 </Show>
 
                 {/* BBCode embed snippets */}
