@@ -30,8 +30,24 @@ function excerptFromBody(body: string, maxLen = 200): string {
 
 export function buildArticleShareBody(
   nick: string,
-  article: ArticleLinkable & { title: string; summary?: string; body?: string; viewUrl?: string },
+  article: ArticleLinkable & {
+    title: string;
+    summary?: string;
+    body?: string;
+    viewUrl?: string;
+    iid?: number;
+    item_private?: number;
+  },
 ): string {
+  // Public articles embed like classic Hubzilla: the compact [share=<id>]
+  // token is expanded server-side (Item.php expandShareTags) into a full
+  // [share …]…[/share] block linking at /articles/<nick>/<slug>. [share]
+  // refuses item_private outright, so restricted articles keep the older
+  // link + quote form rather than dead-ending on a 422 at save.
+  if (article.iid && !article.item_private) {
+    return `\n[share=${article.iid}][/share]\n`;
+  }
+
   const link  = articleShareUrl(nick, article);
   const title = article.title?.trim() || link;
   let body = `[url=${link}]${title}[/url]`;
