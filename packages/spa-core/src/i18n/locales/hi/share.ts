@@ -1,0 +1,27 @@
+import type { RawDictionary } from "../namespaces/types";
+
+export const share: RawDictionary["share"] = {
+  title:                "साझा करें",
+  action:               "साझा करें",
+  close:                "बंद करें",
+  link:                 "लिंक",
+  copy:                 "कॉपी करें",
+  copied:               "क्लिपबोर्ड पर कॉपी हो गया",
+  copy_failed:          "कॉपी नहीं हो सका",
+  native_share:         "साझा करें…",
+  share_as_post:        "पोस्ट के रूप में साझा करें",
+  email:                "ईमेल",
+  email_client:         "मेरे मेल ऐप से ईमेल करें",
+  email_site:           "इस साइट से ईमेल करें",
+  email_to:             "प्रति",
+  email_to_placeholder: "name@example.com, another@example.com",
+  email_to_hint:        "अल्पविराम से अलग करके 5 तक पते डालें।",
+  email_note:           "टिप्पणी (वैकल्पिक)",
+  email_send:           "भेजें",
+  email_sending:        "भेजा जा रहा है…",
+  email_sent:           "ईमेल भेज दिया गया",
+  email_failed:         "ईमेल नहीं भेजा जा सका",
+  embed_bbcode:         "एम्बेड कोड",
+  attachment_bbcode:    "अटैचमेंट कोड",
+  link_bbcode:          "लिंक कोड",
+};

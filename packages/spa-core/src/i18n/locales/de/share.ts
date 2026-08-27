@@ -1,0 +1,27 @@
+import type { RawDictionary } from "../namespaces/types";
+
+export const share: RawDictionary["share"] = {
+  title:                "Teilen",
+  action:               "Teilen",
+  close:                "Schließen",
+  link:                 "Link",
+  copy:                 "Kopieren",
+  copied:               "In die Zwischenablage kopiert",
+  copy_failed:          "Kopieren fehlgeschlagen",
+  native_share:         "Teilen…",
+  share_as_post:        "Als Beitrag teilen",
+  email:                "E-Mail",
+  email_client:         "E-Mail über mein E-Mail-Programm",
+  email_site:           "E-Mail über diese Seite",
+  email_to:             "An",
+  email_to_placeholder: "name@beispiel.de, weitere@beispiel.de",
+  email_to_hint:        "Bis zu 5 Adressen, durch Kommas getrennt.",
+  email_note:           "Notiz (optional)",
+  email_send:           "Senden",
+  email_sending:        "Wird gesendet…",
+  email_sent:           "E-Mail gesendet",
+  email_failed:         "E-Mail konnte nicht gesendet werden",
+  embed_bbcode:         "Einbettungscode",
+  attachment_bbcode:    "Anhang-Code",
+  link_bbcode:          "Link-Code",
+};

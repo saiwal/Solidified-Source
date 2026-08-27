@@ -4,6 +4,8 @@ import { useAuth } from '@utsukta/spa-core/store/auth-store';
 import { usePageNick, useViewerRole } from '@utsukta/spa-core/store/site-config';
 import { pages, loading, loadWebpages, removePage } from '../store';
 import type { WebPage } from '../api';
+import { openShare } from '@utsukta/spa-core/store/share';
+import { shareTargetForWebpage } from '@/shared/lib/shareLinks';
 import { useI18n } from '@utsukta/spa-core/i18n';
 import {
   MdOutlineDescription,
@@ -11,6 +13,7 @@ import {
   MdFillLock_open,
   MdFillDelete,
   MdOutlineEdit_note,
+  MdOutlineShare,
 } from 'solid-icons/md';
 import { useIsWebpagesList } from '../lib/isWebpagesList';
 
@@ -84,6 +87,15 @@ function PageRow(props: {
               d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </a>
+
+        {/* Share */}
+        <button
+          onClick={() => openShare(shareTargetForWebpage(props.nick, props.page))}
+          class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
+          title={t('share.action') as string}
+        >
+          <MdOutlineShare size={14} />
+        </button>
 
         <Show when={props.isOwner}>
           {/* Edit */}

@@ -24,6 +24,7 @@ import { motion } from "solid-motionone";
 import ToastContainer from "@/shared/views/ToastContainer";
 import ConnectionRequestModalHost from "@/shared/views/ConnectionRequestModalHost";
 import FeedModalHost from "@/shared/views/FeedModalHost";
+import ShareModalHost from "@/shared/views/ShareModalHost";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePWA } from "@/pwa";
 import DOMPurify from "dompurify";
@@ -147,6 +148,7 @@ const Layout: ParentComponent = (props) => {
       <ToastContainer />
       <ConnectionRequestModalHost />
       <FeedModalHost />
+      <ShareModalHost />
       <Show when={isRouting()}>
         <div
           class="fixed top-0 inset-x-0 z-[150] h-[2px] overflow-hidden"

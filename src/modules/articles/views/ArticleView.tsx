@@ -9,11 +9,11 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useParams, A, useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { fetchArticle, deleteArticle } from "../api";
-import { articlePath, articleShareUrl, buildArticleShareBody } from "../lib/articleLinks";
+import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
+import { openShare } from "@utsukta/spa-core/store/share";
 import ArticleComposer from "@/shared/editor/composers/ArticleComposer";
 import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
-import PostComposer from "@/shared/editor/composers/PostComposer";
 import { languageLabel } from "@utsukta/spa-core/lib/languages";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
@@ -23,13 +23,12 @@ import ArticleToc from "@/shared/views/ArticleToc";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
-import { BiRegularEdit, BiRegularTrash, BiRegularCheck } from "solid-icons/bi";
+import { BiRegularEdit, BiRegularTrash } from "solid-icons/bi";
 import {
   MdOutlineThumb_up,
   MdOutlineThumb_down,
   MdFillChat,
   MdOutlineShare,
-  MdOutlineContent_copy,
   MdOutlineTranslate,
 } from "solid-icons/md";
 import { apiToggleLike, apiToggleDislike, apiDeleteItem, apiEditItem } from "@utsukta/spa-core/lib/item-api";
@@ -230,17 +229,10 @@ export default function ArticleView() {
 
   // Comment composer visibility
   const [replyOpen, setReplyOpen] = createSignal(false);
-  const [shareOpen, setShareOpen] = createSignal(false);
-  const [linkCopied, setLinkCopied] = createSignal(false);
 
-  function copyArticleLink() {
+  function shareArticle() {
     const art = data()?.article;
-    if (!art) return;
-    navigator.clipboard.writeText(articleShareUrl(nick(), art)).then(() => {
-      setLinkCopied(true);
-      toast.success(t("articles.link_copied"));
-      setTimeout(() => setLinkCopied(false), 1500);
-    });
+    if (art) openShare(shareTargetForArticle(nick(), art));
   }
 
   function handleLike() {
@@ -585,29 +577,13 @@ export default function ArticleView() {
 
                   <button
                     type="button"
-                    onClick={copyArticleLink}
-                    title={t("articles.copy_link")}
-                    class={`${auth()?.isLocal ? "" : "ml-auto "}flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                           transition-colors hover:bg-overlay text-muted hover:text-txt`}
+                    onClick={shareArticle}
+                    title={t("share.action")}
+                    class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                           transition-colors hover:bg-overlay text-muted hover:text-txt"
                   >
-                    <Show when={linkCopied()} fallback={<MdOutlineContent_copy size={17} />}>
-                      <BiRegularCheck size={17} class="text-accent" />
-                    </Show>
+                    <MdOutlineShare size={17} />
                   </button>
-
-                  {/* Quote-share posts to the viewer's own wall — needs a local channel on this server */}
-                  <Show when={auth()?.isLocal}>
-                    <button
-                      type="button"
-                      onClick={() => setShareOpen(v => !v)}
-                      title={t("articles.share")}
-                      class={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay
-                             ${shareOpen() ? "text-accent" : "text-muted hover:text-txt"}`}
-                    >
-                      <MdOutlineShare size={17} />
-                    </button>
-                  </Show>
 
                   <Show when={auth()?.isLoggedIn}>
                     <button
@@ -652,16 +628,6 @@ export default function ArticleView() {
                     </button>
                   </Show>
                 </div>
-
-                {/* Share composer */}
-                <Show when={shareOpen()}>
-                  <PostComposer
-                    open={true}
-                    onClose={() => setShareOpen(false)}
-                    profileUid={auth()?.uid ?? 0}
-                    initialBody={buildArticleShareBody(nick(), d().article)}
-                  />
-                </Show>
 
                 {/* Comment composer */}
                 <Show when={replyOpen() && d().article.iid && d().article.profileUid}>

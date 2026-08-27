@@ -14,7 +14,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDeckDetail } from "../api";
-import { cardPath } from "../lib/cardLinks";
+import { cardPath } from "@/shared/lib/shareLinks";
 
 interface DeckItem {
   name: string;

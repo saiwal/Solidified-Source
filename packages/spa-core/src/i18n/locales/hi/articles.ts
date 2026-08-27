@@ -24,9 +24,6 @@ export const articles: RawDictionary["articles"] = {
   delete:           "हटाएँ",
   deleting:         "हटाया जा रहा है…",
   delete_failed:    "हटाने में विफल",
-  share:            "लेख साझा करें",
-  copy_link:        "लिंक कॉपी करें",
-  link_copied:      "लिंक क्लिपबोर्ड पर कॉपी किया गया",
   // Drafts widget
   drafts:           "लेख ड्राफ़्ट",
   no_drafts:        "कोई ड्राफ़्ट लेख नहीं",

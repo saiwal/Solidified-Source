@@ -31,7 +31,6 @@ export const files_mod: RawDictionary["files_mod"] = {
   delete:           "हटाएँ",
   permissions_title: "अनुमतियाँ",
   more_actions:     "अधिक विकल्प",
-  info:             "जानकारी",
   menu_permissions: "अनुमतियाँ समायोजित करें",
   rename:           "नाम बदलें",
   move_or_copy:     "स्थानांतरित करें या कॉपी करें",
@@ -44,9 +43,4 @@ export const files_mod: RawDictionary["files_mod"] = {
   move_here:        "यहाँ स्थानांतरित करें",
   copy_here:        "यहाँ कॉपी करें",
   categories_placeholder: "एक श्रेणी जोड़ें…",
-  attachment_bbcode: "अटैचमेंट BBCode",
-  embed_bbcode:     "एम्बेड BBCode",
-  link_bbcode:      "लिंक BBCode",
-  copy_btn:         "कॉपी करें",
-  copied:           "कॉपी हो गया",
 };

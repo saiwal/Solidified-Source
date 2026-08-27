@@ -725,7 +725,6 @@ export type RawDictionary = {
   };
   post: {
     like: string; dislike: string; repeat: string; reshare_with_comment: string;
-    copy_embed_code: string;
     more_sharing: string; star: string; unstar: string; pin: string; unpin: string; pinned_indicator: string; follow: string; unfollow: string;
     follow_for_notifs: string; unfollow_post: string; statistics: string; post_statistics: string;
     view_source: string; import_post: string; import: string; original: string; toggle_comments: string;
@@ -1820,7 +1819,6 @@ export type RawDictionary = {
     nsfw_unmark:          string;
     nsfw_error:           string;
     nsfw_show:            string;
-    share:                string;
   };
   articles: {
     title:            string;
@@ -1846,9 +1844,6 @@ export type RawDictionary = {
     delete:           string;
     deleting:         string;
     delete_failed:    string;
-    share:            string;
-    copy_link:        string;
-    link_copied:      string;
     drafts:           string;
     no_drafts:        string;
     empty_draft:      string;
@@ -1901,12 +1896,7 @@ export type RawDictionary = {
     deleting:             string;
     // Delete failed
     delete_failed:        string;
-    share:                string;
-    copy_link:            string;
-    link_copied:          string;
     // Embedding
-    copy_embed:           string;
-    embed_copied:         string;
     insert_card:          string;
     card_picker_search:   string;
     card_picker_empty:    string;
@@ -2159,7 +2149,6 @@ export type RawDictionary = {
     permissions_title: string;
     // Kebab menu + new actions
     more_actions:     string;
-    info:             string;
     menu_permissions: string;
     rename:           string;
     move_or_copy:     string;
@@ -2172,11 +2161,6 @@ export type RawDictionary = {
     move_here:        string;
     copy_here:        string;
     categories_placeholder: string;
-    attachment_bbcode: string;
-    embed_bbcode:     string;
-    link_bbcode:      string;
-    copy_btn:         string;
-    copied:           string;
   };
   wiki: {
     wikis:            string;
@@ -2636,6 +2620,31 @@ export type RawDictionary = {
     catalog_save_item:   string;
     catalog_delete:      string;
     catalog_no_items:    string;
+  };
+  share: {
+    title:                string;
+    action:               string;
+    close:                string;
+    link:                 string;
+    copy:                 string;
+    copied:               string;
+    copy_failed:          string;
+    native_share:         string;
+    share_as_post:        string;
+    email:                string;
+    email_client:         string;
+    email_site:           string;
+    email_to:             string;
+    email_to_placeholder: string;
+    email_to_hint:        string;
+    email_note:           string;
+    email_send:           string;
+    email_sending:        string;
+    email_sent:           string;
+    email_failed:         string;
+    embed_bbcode:         string;
+    attachment_bbcode:    string;
+    link_bbcode:          string;
   };
   bookmarks: {
     title:            string;

@@ -34,7 +34,6 @@ export const files_mod: RawDictionary["files_mod"] = {
   permissions_title: "Permissions",
   // Kebab menu + new actions
   more_actions:     "More actions",
-  info:             "Info",
   menu_permissions: "Adjust Permissions",
   rename:           "Rename",
   move_or_copy:     "Move or Copy",
@@ -47,9 +46,4 @@ export const files_mod: RawDictionary["files_mod"] = {
   move_here:        "Move here",
   copy_here:        "Copy here",
   categories_placeholder: "Add a category…",
-  attachment_bbcode: "Attachment BBCode",
-  embed_bbcode:     "Embed BBCode",
-  link_bbcode:      "Link BBCode",
-  copy_btn:         "Copy",
-  copied:           "Copied",
 };

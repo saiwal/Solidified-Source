@@ -1,16 +1,14 @@
-import { createEffect, createSignal, onCleanup, Show, For, Index } from "solid-js";
-import { MdOutlineArticle, MdOutlineShare, MdOutlineContent_copy } from "solid-icons/md";
-import { BiRegularCheck } from "solid-icons/bi";
+import { createEffect, onCleanup, Show, For, Index } from "solid-js";
+import { MdOutlineArticle, MdOutlineShare } from "solid-icons/md";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import PostComposer from "@/shared/editor/composers/PostComposer";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { posts, loading, hasMore, loadArticles, resetPosts, loadMore } from "../store";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-import { articlePath, articleShareUrl, buildArticleShareBody } from "../lib/articleLinks";
+import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
+import { openShare } from "@utsukta/spa-core/store/share";
 import { useIsArticlesList } from "../lib/isArticlesList";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -45,19 +43,9 @@ function formatDate(iso: string, locale: string): string {
 
 // ── card ──────────────────────────────────────────────────────────────────────
 
-function ArticleCard(props: { post: Post; nick: string; onOpen: () => void; onShare?: () => void }) {
+function ArticleCard(props: { post: Post; nick: string; onOpen: () => void }) {
   const { t, locale } = useI18n();
   const ex = () => excerpt(props.post);
-  const [linkCopied, setLinkCopied] = createSignal(false);
-
-  function copyLink(e: MouseEvent) {
-    e.stopPropagation();
-    navigator.clipboard.writeText(articleShareUrl(props.nick, props.post)).then(() => {
-      setLinkCopied(true);
-      toast.success(t("articles.link_copied"));
-      setTimeout(() => setLinkCopied(false), 1500);
-    });
-  }
 
   return (
     <article
@@ -111,26 +99,13 @@ function ArticleCard(props: { post: Post; nick: string; onOpen: () => void; onSh
         </Show>
         <button
           type="button"
-          onClick={copyLink}
-          title={t("articles.copy_link")}
-          class={`${props.onShare ? "" : "ml-auto "}p-1 rounded-md text-muted hover:text-accent hover:bg-accent/10
-                 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100`}
+          onClick={(e) => { e.stopPropagation(); openShare(shareTargetForArticle(props.nick, props.post)); }}
+          title={t("share.action")}
+          class="ml-auto p-1 rounded-md text-muted hover:text-accent hover:bg-accent/10
+                 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
-          <Show when={linkCopied()} fallback={<MdOutlineContent_copy size={15} />}>
-            <BiRegularCheck size={15} class="text-accent" />
-          </Show>
+          <MdOutlineShare size={15} />
         </button>
-        <Show when={props.onShare}>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); props.onShare!(); }}
-            title={t("articles.share")}
-            class="ml-auto p-1 rounded-md text-muted hover:text-accent hover:bg-accent/10
-                   transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
-          >
-            <MdOutlineShare size={15} />
-          </button>
-        </Show>
       </div>
     </article>
   );
@@ -163,7 +138,6 @@ export default function ArticlesContentWidget() {
   const nick = usePageNick();
   const isList = useIsArticlesList();
   const navigate = useNavigate();
-  const [sharePost, setSharePost] = createSignal<Post | null>(null);
   let initialized = false;
 
   createEffect(() => {
@@ -200,7 +174,6 @@ export default function ArticlesContentWidget() {
                     post={post}
                     nick={nick()}
                     onOpen={() => goToArticle(post)}
-                    onShare={auth() ? () => setSharePost(post) : undefined}
                   />
                 )}
               </For>
@@ -222,15 +195,6 @@ export default function ArticlesContentWidget() {
               <p class="text-center py-2 text-xs text-muted">{t("articles.all_loaded")}</p>
             </Show>
           </Show>
-        </Show>
-
-        <Show when={sharePost() !== null}>
-          <PostComposer
-            open={true}
-            onClose={() => setSharePost(null)}
-            profileUid={auth()?.uid ?? 0}
-            initialBody={buildArticleShareBody(nick(), sharePost()!)}
-          />
         </Show>
       </div>
     </Show>

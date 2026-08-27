@@ -9,24 +9,22 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useParams, A, useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { fetchCard, deleteCard } from "../api";
-import { cardPath, cardShareUrl, buildCardShareBody, cardEmbedCode } from "../lib/cardLinks";
+import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
+import { openShare } from "@utsukta/spa-core/store/share";
 import CardComposer from "@/shared/editor/composers/CardComposer";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
-import PostComposer from "@/shared/editor/composers/PostComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
-import { BiRegularEdit, BiRegularTrash, BiRegularCheck } from "solid-icons/bi";
+import { BiRegularEdit, BiRegularTrash } from "solid-icons/bi";
 import {
   MdOutlineThumb_up,
   MdOutlineThumb_down,
   MdFillChat,
   MdOutlineShare,
-  MdOutlineContent_copy,
-  MdOutlineData_object,
 } from "solid-icons/md";
 import { apiToggleLike, apiToggleDislike, apiDeleteItem, apiEditItem } from "@utsukta/spa-core/lib/item-api";
 import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
@@ -223,30 +221,12 @@ export default function CardView() {
 
   // Comment composer visibility
   const [replyOpen, setReplyOpen] = createSignal(false);
-  const [shareOpen, setShareOpen] = createSignal(false);
-  const [linkCopied, setLinkCopied] = createSignal(false);
-  const [embedCopied, setEmbedCopied] = createSignal(false);
 
-  // Puts the [card=<iid>][/card] token on the clipboard so the card can be
-  // dropped into any post or comment composer.
-  function copyEmbed() {
-    const iid = data()?.card.iid;
-    if (!iid) return;
-    navigator.clipboard.writeText(cardEmbedCode(iid)).then(() => {
-      setEmbedCopied(true);
-      toast.success(t("cards.embed_copied"));
-      setTimeout(() => setEmbedCopied(false), 1500);
-    });
-  }
-
-  function copyCardLink() {
-    const art = data()?.card;
-    if (!art) return;
-    navigator.clipboard.writeText(cardShareUrl(nick(), art)).then(() => {
-      setLinkCopied(true);
-      toast.success(t("cards.link_copied"));
-      setTimeout(() => setLinkCopied(false), 1500);
-    });
+  // Link, [card=<iid>][/card] embed token and quote-share all live in the
+  // shared share popup now.
+  function shareCard() {
+    const card = data()?.card;
+    if (card) openShare(shareTargetForCard(nick(), card));
   }
 
   function handleLike() {
@@ -550,44 +530,13 @@ export default function CardView() {
 
                   <button
                     type="button"
-                    onClick={copyCardLink}
-                    title={t("cards.copy_link")}
-                    class={`${auth()?.isLocal ? "" : "ml-auto "}flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                           transition-colors hover:bg-overlay text-muted hover:text-txt`}
+                    onClick={shareCard}
+                    title={t("share.action")}
+                    class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                           transition-colors hover:bg-overlay text-muted hover:text-txt"
                   >
-                    <Show when={linkCopied()} fallback={<MdOutlineContent_copy size={17} />}>
-                      <BiRegularCheck size={17} class="text-accent" />
-                    </Show>
+                    <MdOutlineShare size={17} />
                   </button>
-
-                  {/* Embed token — only useful to someone who can compose here */}
-                  <Show when={auth()?.isLocal && d().card.iid}>
-                    <button
-                      type="button"
-                      onClick={copyEmbed}
-                      title={t("cards.copy_embed")}
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay text-muted hover:text-txt"
-                    >
-                      <Show when={embedCopied()} fallback={<MdOutlineData_object size={17} />}>
-                        <BiRegularCheck size={17} class="text-accent" />
-                      </Show>
-                    </button>
-                  </Show>
-
-                  {/* Quote-share posts to the viewer's own wall — needs a local channel on this server */}
-                  <Show when={auth()?.isLocal}>
-                    <button
-                      type="button"
-                      onClick={() => setShareOpen(v => !v)}
-                      title={t("cards.share")}
-                      class={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay
-                             ${shareOpen() ? "text-accent" : "text-muted hover:text-txt"}`}
-                    >
-                      <MdOutlineShare size={17} />
-                    </button>
-                  </Show>
 
                   <Show when={auth()?.isLoggedIn}>
                     <button
@@ -623,16 +572,6 @@ export default function CardView() {
                     </button>
                   </Show>
                 </div>
-
-                {/* Share composer */}
-                <Show when={shareOpen()}>
-                  <PostComposer
-                    open={true}
-                    onClose={() => setShareOpen(false)}
-                    profileUid={auth()?.uid ?? 0}
-                    initialBody={buildCardShareBody(nick(), d().card)}
-                  />
-                </Show>
 
                 {/* Comment composer */}
                 <Show when={replyOpen() && d().card.iid && d().card.profileUid}>

@@ -9,7 +9,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchArticle } from "../api";
-import { articlePath } from "../lib/articleLinks";
+import { articlePath } from "@/shared/lib/shareLinks";
 
 function excerpt(bbcodeText: string, max = 200): string {
   const text = bbcodeText.replace(/\[[^\]]{0,60}\]/g, "").replace(/\s+/g, " ").trim();

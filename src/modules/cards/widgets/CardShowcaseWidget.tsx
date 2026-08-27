@@ -7,7 +7,6 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchCard } from "../api";
 import CardFace from "../components/CardFace";
@@ -25,7 +24,6 @@ function EditHint(props: { text: string }) {
 export default function CardShowcaseWidget(props: WidgetProps) {
   const { t } = useI18n();
   const nick = usePageNick();
-  const auth = useAuth();
   const uuid = () => String(props.config?.uuid ?? "");
 
   const [card] = createQueryResource(
@@ -42,7 +40,7 @@ export default function CardShowcaseWidget(props: WidgetProps) {
 
       <Show when={!card.loading}>
         <Show when={card()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
-          {(c) => <CardFace card={c()} nick={nick()} canEmbed={!!auth()?.isLocal} />}
+          {(c) => <CardFace card={c()} nick={nick()} />}
         </Show>
       </Show>
     </Show>

@@ -7,7 +7,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchSeriesDetail, renameSeries, reorderSeries } from "../api";
-import { articlePath } from "../lib/articleLinks";
+import { articlePath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 
 export default function SeriesView() {

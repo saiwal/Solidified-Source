@@ -27,12 +27,7 @@ export const cards: RawDictionary["cards"] = {
   deleting:         "हटाया जा रहा है…",
   // Delete failed
   delete_failed:    "हटाना विफल",
-  share:            "कार्ड साझा करें",
-  copy_link:        "लिंक कॉपी करें",
-  link_copied:      "लिंक क्लिपबोर्ड पर कॉपी हो गया",
   // Embedding
-  copy_embed:       "एम्बेड कॉपी करें",
-  embed_copied:     "एम्बेड कोड क्लिपबोर्ड पर कॉपी हो गया",
   insert_card:      "कार्ड डालें",
   card_picker_search: "अपने कार्ड खोजें…",
   card_picker_empty:  "कोई कार्ड नहीं मिला।",

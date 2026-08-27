@@ -92,7 +92,7 @@ export default function CardsContentWidget() {
                   <div class="flex-1 flex flex-col gap-4 min-w-0">
                     <For each={col}>
                       {(post) => (
-                        <CardFace card={post} nick={nick()} canEmbed={!!auth()?.isLocal} />
+                        <CardFace card={post} nick={nick()} />
                       )}
                     </For>
                   </div>

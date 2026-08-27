@@ -34,16 +34,9 @@ import "photoswipe/style.css";
 const variantSrc = (src: string, size: number) =>
   src.replace(/-\d+(\.[^.]+)$/, `-${size}$1`);
 
-function buildShareBody(src: string, title: string, description: string): string {
-  const medium = variantSrc(src, 2);
-  let body = `[img]${medium}[/img]`;
-  if (title) body += `\n\n[b]${title}[/b]`;
-  if (description) body += `\n${description}`;
-  return body;
-}
-
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
-import PostComposer from "@/shared/editor/composers/PostComposer";
+import { openShare } from "@utsukta/spa-core/store/share";
+import { shareTargetForPhoto } from "@/shared/lib/shareLinks";
 import CommentThread from "@/shared/views/CommentThread";
 import AclEditor from "../components/AclEditor";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
@@ -392,7 +385,6 @@ function AlbumGrid() {
   const [pendingDelete, setPendingDelete] = createSignal<string | null>(null);
 
   // Share composer
-  const [shareBody, setShareBody] = createSignal<string | null>(null);
 
   // ACL editor
   const [aclOpen, setAclOpen] = createSignal(false);
@@ -690,14 +682,6 @@ function AlbumGrid() {
       </Show>
 
       {/* Share composer — Show forces remount so initialBody is captured correctly */}
-      <Show when={shareBody() !== null}>
-        <PostComposer
-          open={true}
-          onClose={() => setShareBody(null)}
-          profileUid={auth()?.uid ?? 0}
-          initialBody={shareBody()!}
-        />
-      </Show>
 
       {/* Photo grid */}
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -745,14 +729,13 @@ function AlbumGrid() {
                   </Show>
                 </Show>
 
-                {/* Share button — quote-posts to the viewer's own wall, needs a local channel */}
-                <Show when={auth()?.isLocal && !selectMode()}>
+                <Show when={!selectMode()}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShareBody(buildShareBody(photo.src, photo.title, photo.description));
+                      openShare(shareTargetForPhoto(nick(), photo));
                     }}
-                    title={t("photos.share")}
+                    title={t("share.action")}
                     class="absolute bottom-1.5 left-1.5 p-1 rounded-lg bg-black/50 text-white
                            opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                   >
@@ -843,7 +826,6 @@ function ImageView() {
   const { t }     = useI18n();
   const d         = detail;
 
-  const [shareOpen, setShareOpen]         = createSignal(false);
   const [replyOpen, setReplyOpen]         = createSignal(false);
   const [showComments, setShowComments]   = createSignal(true);
   const [threaded, setThreaded]           = createSignal(true);
@@ -1183,16 +1165,6 @@ function ImageView() {
 
   return (
     <div class="flex flex-col gap-4">
-      {/* Share composer — Show forces remount so initialBody is captured correctly */}
-      <Show when={shareOpen() && !!d()}>
-        <PostComposer
-          open={true}
-          onClose={() => setShareOpen(false)}
-          profileUid={auth()?.uid ?? 0}
-          initialBody={buildShareBody(d()!.src, d()!.title, d()!.description)}
-        />
-      </Show>
-
       {/* Image editor overlay */}
       <Show when={editFile()}>
         {(file) => (
@@ -1433,18 +1405,14 @@ function ImageView() {
               </button>
             </Show>
 
-            {/* Share — quote-posts to the viewer's own wall, needs a local channel — pushed to right */}
-            <Show when={auth()?.isLocal}>
-              <button
-                onClick={() => setShareOpen(v => !v)}
-                title={t("photos.share")}
-                class={`ml-auto flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                       transition-colors hover:bg-overlay
-                       ${shareOpen() ? 'text-accent' : 'text-muted hover:text-txt'}`}
-              >
-                <MdOutlineShare size={17} />
-              </button>
-            </Show>
+            <button
+              onClick={() => { const p = d(); if (p) openShare(shareTargetForPhoto(nick(), p)); }}
+              title={t("share.action")}
+              class="ml-auto flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
+                     transition-colors hover:bg-overlay text-muted hover:text-txt"
+            >
+              <MdOutlineShare size={17} />
+            </button>
 
             {/* Reply */}
             <Show when={auth()?.isLoggedIn && d()?.item_id}>

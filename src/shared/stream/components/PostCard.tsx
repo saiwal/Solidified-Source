@@ -11,6 +11,8 @@ import {
   type JSX,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+import { openShare } from "@utsukta/spa-core/store/share";
+import { shareTargetForPost } from "@/shared/lib/shareLinks";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import AuthorPopover from "./AuthorPopover";
 import { PlatformIcon, networkBadge } from "./PlatformIcons";
@@ -52,7 +54,6 @@ import {
   MdOutlineLocation_on,
   MdOutlineTimer,
   MdOutlineSchedule,
-  MdOutlineContent_copy,
   MdOutlineCheck,
   MdOutlineClose,
   MdOutlineFlag,
@@ -214,13 +215,6 @@ export default function PostCard(props: {
   const [replyOpen, setReplyOpen] = createSignal(false);
   const [replyQuote, setReplyQuote] = createSignal("");
   const [reshareOpen, setReshareOpen] = createSignal(false);
-  const [shareEmbedCopied, setShareEmbedCopied] = createSignal(false);
-  function copyShareEmbed() {
-    navigator.clipboard.writeText(`[share=${props.post.iid}][/share]`).then(() => {
-      setShareEmbedCopied(true);
-      setTimeout(() => setShareEmbedCopied(false), 1500);
-    });
-  }
   const [showComments, setShowComments] = createSignal(
     !!props.initiallyExpanded ||
       openedByMid.has(props.post.mid) ||
@@ -1392,33 +1386,17 @@ export default function PostCard(props: {
             </button>
           </Show>
 
-          <Show
-            when={
-              canDelete() ||
-              canEdit() ||
-              canFollow() ||
-              canPin() ||
-              canAddToCalendar() ||
-              canViewSource() ||
-              canDeliveryReport() ||
-              props.post.likeCount > 0 ||
-              props.post.dislikeCount > 0 ||
-              props.post.repeatCount > 0 ||
-              !!props.post.permalink
-            }
-          >
-            <div ref={setMoreDropdownRef} class="relative">
-              <button
-                onClick={openMoreDropdown}
-                title={t("post.more_actions")}
-                class={`flex items-center px-1 py-1 rounded-md text-xs
-                       transition-colors hover:bg-overlay
-                       ${moreDropdownOpen() ? "text-accent" : "text-subtle"}`}
-              >
-                <MdFillMore_vert size={14} />
-              </button>
-            </div>
-          </Show>
+          <div ref={setMoreDropdownRef} class="relative">
+            <button
+              onClick={openMoreDropdown}
+              title={t("post.more_actions")}
+              class={`flex items-center px-1 py-1 rounded-md text-xs
+                     transition-colors hover:bg-overlay
+                     ${moreDropdownOpen() ? "text-accent" : "text-subtle"}`}
+            >
+              <MdFillMore_vert size={14} />
+            </button>
+          </div>
           <Portal>
             <Show when={moreDropdownOpen()}>
               <div
@@ -1426,6 +1404,17 @@ export default function PostCard(props: {
                 class="z-[9999] min-w-[9rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
                 style={moreDropdownStyle()}
               >
+                {/* Share — the only entry every viewer gets; reshare below is local-only */}
+                <button
+                  onClick={() => {
+                    openShare(shareTargetForPost(props.post));
+                    setMoreDropdownOpen(false);
+                  }}
+                  class="w-full flex items-center gap-2 px-3 py-2 text-xs text-txt hover:bg-overlay transition-colors text-left"
+                >
+                  <MdOutlineShare size={13} />
+                  <span>{t("share.action")}</span>
+                </button>
                 <Show when={canFollow()}>
                   <button
                     onClick={() => {
@@ -1584,19 +1573,6 @@ export default function PostCard(props: {
                 >
                   <BiSolidShareAlt size={13} />
                   <span>{t("post.reshare_with_comment")} #{props.post.iid}</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyShareEmbed();
-                  }}
-                  title={t("post.copy_embed_code")}
-                  aria-label={t("post.copy_embed_code")}
-                  class="p-0.5 rounded hover:bg-surface transition-colors text-muted hover:text-txt shrink-0"
-                >
-                  <Show when={shareEmbedCopied()} fallback={<MdOutlineContent_copy size={13} />}>
-                    <MdOutlineCheck size={13} class="text-accent" />
-                  </Show>
                 </button>
               </div>
             </div>
@@ -2193,6 +2169,17 @@ export default function PostCard(props: {
             class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
             style={moreDropdownStyle()}
           >
+            {/* Share — the only entry every viewer gets; reshare below is local-only */}
+            <button
+              onClick={() => {
+                openShare(shareTargetForPost(props.post));
+                setMoreDropdownOpen(false);
+              }}
+              class="w-full flex items-center gap-2 px-3 py-2 text-xs text-txt hover:bg-overlay transition-colors text-left"
+            >
+              <MdOutlineShare size={13} />
+              <span>{t("share.action")}</span>
+            </button>
             <Show when={canFollow()}>
               <button
                 onClick={() => {
@@ -2364,19 +2351,6 @@ export default function PostCard(props: {
               >
                 <BiSolidShareAlt size={15} />
                 <span>{t("post.reshare_with_comment")} #{props.post.iid}</span>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  copyShareEmbed();
-                }}
-                title={t("post.copy_embed_code")}
-                aria-label={t("post.copy_embed_code")}
-                class="p-0.5 rounded hover:bg-surface transition-colors text-muted hover:text-txt shrink-0"
-              >
-                <Show when={shareEmbedCopied()} fallback={<MdOutlineContent_copy size={15} />}>
-                  <MdOutlineCheck size={15} class="text-accent" />
-                </Show>
               </button>
             </div>
           </div>

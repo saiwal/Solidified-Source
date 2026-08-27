@@ -1,3 +1,4 @@
+import { davPath } from "@/shared/lib/shareLinks";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -273,10 +274,7 @@ export async function wallAttach(
 // ── WebDAV helpers (upload, delete, mkdir) ────────────────────────────────────
 
 /** Build the WebDAV path for a file/folder from its display_path. */
-export function davPath(nick: string, displayPath: string): string {
-  const encoded = displayPath.split("/").map(encodeURIComponent).join("/");
-  return `/cloud/${nick}/${encoded}`;
-}
+export { davPath };
 
 /** Build the WebDAV directory path for the current folder. */
 export function davDirPath(nick: string, folderDisplayPath: string): string {

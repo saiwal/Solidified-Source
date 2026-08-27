@@ -37,14 +37,15 @@ import {
 } from "../api";
 import type { FileMeta, FileAcl } from "../api";
 import FileActionsMenu, { type FileAction } from "../views/FileActionsMenu";
-import FileInfoModal from "../views/FileInfoModal";
+import { openShare } from "@utsukta/spa-core/store/share";
+import { shareTargetForFile } from "@/shared/lib/shareLinks";
 import RenameModal from "../views/RenameModal";
 import MoveCopyModal from "../views/MoveCopyModal";
 import CategoriesModal from "../views/CategoriesModal";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 
-type ModalKind = "info" | "rename" | "moveCopy" | "categories";
+type ModalKind = "rename" | "moveCopy" | "categories";
 
 type ViewMode   = "list" | "grid";
 type SortField  = "name" | "size" | "date";
@@ -616,6 +617,10 @@ export default function FilesContentWidget() {
       handleDelete(item);
       return;
     }
+    if (action === "share") {
+      openShare(shareTargetForFile(nick(), item));
+      return;
+    }
     setActiveModal({ kind: action, item });
   }
 
@@ -882,13 +887,6 @@ export default function FilesContentWidget() {
       </Show>
 
       {/* ── Kebab menu modals ── */}
-      <Show when={activeModal()?.kind === "info"}>
-        <FileInfoModal
-          item={activeModal()!.item}
-          nick={nick()}
-          onClose={() => setActiveModal(null)}
-        />
-      </Show>
       <Show when={activeModal()?.kind === "rename"}>
         <RenameModal
           item={activeModal()!.item}

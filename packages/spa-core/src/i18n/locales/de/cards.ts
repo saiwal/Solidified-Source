@@ -27,12 +27,7 @@ export const cards: RawDictionary["cards"] = {
   deleting:         "Wird gelöscht…",
   // Delete failed
   delete_failed:    "Löschen fehlgeschlagen",
-  share:            "Karte teilen",
-  copy_link:        "Link kopieren",
-  link_copied:      "Link in die Zwischenablage kopiert",
   // Embedding
-  copy_embed:       "Einbettung kopieren",
-  embed_copied:     "Einbettungscode in die Zwischenablage kopiert",
   insert_card:      "Karte einfügen",
   card_picker_search: "Eigene Karten durchsuchen…",
   card_picker_empty:  "Keine Karten gefunden.",

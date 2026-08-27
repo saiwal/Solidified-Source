@@ -9,12 +9,11 @@
 import { Show, For, createSignal } from "solid-js";
 import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
-import { BiRegularCheck } from "solid-icons/bi";
-import { MdOutlineData_object, MdOutlineFormat_quote, MdOutlineMenu_book,
+import { MdOutlineShare, MdOutlineFormat_quote, MdOutlineMenu_book,
          MdOutlineLink, MdOutlineNotes } from "solid-icons/md";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-import { cardPath, cardEmbedCode } from "../lib/cardLinks";
+import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
+import { openShare } from "@utsukta/spa-core/store/share";
 
 const PATTERN = `${import.meta.env.BASE_URL}patterns/cardboard.png`;
 
@@ -47,10 +46,9 @@ function quoteParts(body: string): { text: string; attribution: string } | null 
   return { attribution: m[1].trim(), text: m[2].trim() };
 }
 
-export default function CardFace(props: { card: Post; nick: string; canEmbed?: boolean }) {
+export default function CardFace(props: { card: Post; nick: string }) {
   const { t } = useI18n();
   const [flipped, setFlipped] = createSignal(false);
-  const [embedCopied, setEmbedCopied] = createSignal(false);
 
   const template = () => props.card.template || "freeform";
   const cover = () => coverOf(props.card.rawBody ?? props.card.body ?? "");
@@ -60,17 +58,6 @@ export default function CardFace(props: { card: Post; nick: string; canEmbed?: b
   const summary = () =>
     props.card.summary?.trim() || excerpt(props.card.rawBody ?? props.card.body ?? "");
 
-  function copyEmbed(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    const iid = props.card.iid;
-    if (!iid) return;
-    navigator.clipboard.writeText(cardEmbedCode(iid)).then(() => {
-      setEmbedCopied(true);
-      toast.success(t("cards.embed_copied"));
-      setTimeout(() => setEmbedCopied(false), 1500);
-    });
-  }
 
   return (
     <div
@@ -161,18 +148,18 @@ export default function CardFace(props: { card: Post; nick: string; canEmbed?: b
             >
               {t("cards.read_full_card")}
             </A>
-            <Show when={props.canEmbed && props.card.iid}>
-              <button
-                type="button"
-                onClick={copyEmbed}
-                title={t("cards.copy_embed")}
-                class="ml-auto p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
-              >
-                <Show when={embedCopied()} fallback={<MdOutlineData_object size={15} />}>
-                  <BiRegularCheck size={15} class="text-accent" />
-                </Show>
-              </button>
-            </Show>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openShare(shareTargetForCard(props.nick, props.card));
+              }}
+              title={t("share.action")}
+              class="ml-auto p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
+            >
+              <MdOutlineShare size={15} />
+            </button>
           </div>
         </div>
       </div>

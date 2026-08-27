@@ -6,7 +6,6 @@ export const post: RawDictionary["post"] = {
   dislike:              "Gefällt mir nicht",
   repeat:               "Wiederholen",
   reshare_with_comment: "Mit Kommentar teilen",
-  copy_embed_code:      "Einbettungscode kopieren",
   more_sharing:         "Weitere Teilen-Optionen",
   star:                 "Markieren",
   unstar:               "Markierung entfernen",

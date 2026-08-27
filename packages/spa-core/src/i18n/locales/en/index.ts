@@ -29,6 +29,7 @@ import { manage }     from "./manage";
 import { pubstream }  from "./pubstream";
 import { admin }      from "./admin";
 import { cart }       from "./cart";
+import { share }      from "./share";
 import { bookmarks }  from "./bookmarks";
 import { profiles }   from "./profiles";
 import { notepad }    from "./notepad";
@@ -69,6 +70,7 @@ export const dict: RawDictionary = {
   pubstream,
   admin,
   cart,
+  share,
   bookmarks,
   profiles,
   notepad,

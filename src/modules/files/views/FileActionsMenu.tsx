@@ -4,7 +4,7 @@ import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import {
   MdFillMore_vert,
   MdFillLock,
-  MdOutlineInfo,
+  MdOutlineShare,
   MdOutlineDrive_file_rename_outline,
   MdOutlineDrive_file_move,
   MdOutlineLabel,
@@ -15,7 +15,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { downloadUrl } from "../api";
 import type { FileMeta } from "../api";
 
-export type FileAction = "permissions" | "info" | "rename" | "moveCopy" | "categories" | "delete";
+export type FileAction = "permissions" | "share" | "rename" | "moveCopy" | "categories" | "delete";
 
 interface Props {
   item: FileMeta;
@@ -62,7 +62,7 @@ const FileActionsMenu: Component<Props> = (props) => {
             class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
             style={floatStyle()}
           >
-            <MenuItem icon={<MdOutlineInfo size={14} />} label={t("files_mod.info") as string} onClick={() => act("info")} />
+            <MenuItem icon={<MdOutlineShare size={14} />} label={t("share.action") as string} onClick={() => act("share")} />
             {/* ACL changes stay owner-only, even with write_storage access */}
             <Show when={props.isOwner}>
               <MenuItem icon={<MdFillLock size={14} />} label={t("files_mod.menu_permissions") as string} onClick={() => act("permissions")} />
