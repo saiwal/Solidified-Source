@@ -102,6 +102,9 @@ import type { EventData } from "@utsukta/spa-core/types/post.types";
 import AttachmentList from "./AttachmentList";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { useNavData } from "@utsukta/spa-core/store/nav-store";
+import { useOsmMap } from "@utsukta/spa-core/lib/useOsmMap";
+import { DEFAULT_TMS, osmLink, osmSearchLink, parseCoord } from "@utsukta/spa-core/lib/osm";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { postHeightPx } from "@utsukta/spa-core/store/post-height";
@@ -306,7 +309,9 @@ export default function PostCard(props: {
   const auth = useAuth();
   let cardRef!: HTMLDivElement;
   const [bodyRef, setBodyRef] = createSignal<HTMLElement>();
+  const navData = useNavData();
   usePlyr(bodyRef, () => props.post.body);
+  useOsmMap(bodyRef, () => props.post.body, () => props.post.coord);
   const [bodyExpanded, setBodyExpanded] = createSignal(false);
   const [bodyOverflows, setBodyOverflows] = createSignal(false);
   // Read-only on purpose: bodyRef is the *inner* body div — the collapse
@@ -366,10 +371,14 @@ export default function PostCard(props: {
   // item_private === 2 — a direct message between individuals (classic Hubzilla's
   // bi-envelope lock icon), distinct from a merely-private post (item_private === 1).
   const isDirectMessage = () => isDM(props.post);
-  const locationHref = () =>
-    props.post.coord
-      ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(props.post.coord)}`
-      : undefined;
+  // Core's openstreetmap addon (render_location hook) links a post's
+  // coordinates to the map and a bare place name to a Nominatim search;
+  // mirror that, against whatever tile server the addon is configured with.
+  const locationHref = () => {
+    const c = props.post.coord ? parseCoord(props.post.coord) : null;
+    if (c) return osmLink(c, navData()?.osm?.zoom ?? 16, navData()?.osm?.tmsserver || DEFAULT_TMS);
+    return props.post.location ? osmSearchLink(props.post.location) : undefined;
+  };
   const isRepeat = () => props.post.verb === "Announce";
   const authorAddressLabel = () =>
     props.post.authorAddress || networkBadge(props.post.authorNetwork)?.label;
@@ -1136,8 +1145,11 @@ export default function PostCard(props: {
               <Show when={props.post.location}>
                 <span class="flex items-center gap-0.5 min-w-0 text-[0.625rem] text-muted">
                   <MdOutlineLocation_on size={10} class="shrink-0" />
-                  <span
-                    class="truncate max-w-[8rem] [&_a]:hover:underline"
+                  <a
+                    href={locationHref()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="truncate max-w-[8rem] hover:underline"
                     innerHTML={props.post.location}
                   />
                 </span>

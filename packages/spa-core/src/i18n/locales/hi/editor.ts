@@ -237,6 +237,16 @@ export const editor: RawDictionary["editor"] = {
   excalidraw_save_title:    "ड्रॉइंग क्लाउड में सहेजें",
   excalidraw_folder:        "गंतव्य फ़ोल्डर",
   excalidraw_acl:           "यह फ़ाइल कौन देख सकता है",
+  map_toolbar_title:        "मानचित्र जोड़ें",
+  map_modal_title:          "मानचित्र जोड़ें",
+  map_place:                "स्थान",
+  map_place_placeholder:    "सिडनी, ऑस्ट्रेलिया",
+  map_use_browser:          "मेरा स्थान उपयोग करें",
+  map_locating:             "स्थान पता किया जा रहा है…",
+  map_zoom:                 "ज़ूम",
+  map_insert:               "डालें",
+  map_not_found:            "स्थान नहीं मिला",
+  map_searching:            "खोजा जा रहा है…",
 
   // DMComposer
   dm_new_message:        "नया संदेश",

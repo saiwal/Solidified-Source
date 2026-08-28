@@ -69,6 +69,7 @@ export type RawDictionary = {
     tools:         string;
     games:         string;
     excalidraw:    string;
+    openstreetmap: string;
     // action items
     profile:       string;
     edit_profile:  string;
@@ -434,6 +435,9 @@ export type RawDictionary = {
     article_series:     string;
     card_deck:          string;
     album_strip:        string;
+    photo_slideshow:    string;
+    cfg_interval:       string;
+    cfg_all_albums:     string;
     room_card:          string;
     event_card:         string;
     countdown_reached:  string;
@@ -983,6 +987,16 @@ export type RawDictionary = {
     excalidraw_save_title:    string;
     excalidraw_folder:        string;
     excalidraw_acl:           string;
+    map_toolbar_title:        string;
+    map_modal_title:          string;
+    map_place:                string;
+    map_place_placeholder:    string;
+    map_use_browser:          string;
+    map_locating:             string;
+    map_zoom:                 string;
+    map_insert:               string;
+    map_not_found:            string;
+    map_searching:            string;
     dm_new_message:        string;
     to_label:               string;
     to_search_placeholder:  string;

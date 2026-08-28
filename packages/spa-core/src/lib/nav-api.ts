@@ -72,6 +72,14 @@ export interface NavChannelTab {
   icon: string;
 }
 
+/** Site config of the openstreetmap addon (see Api/Handlers/Nav.php). */
+export interface OsmConfig {
+  /** Tile/map server base url — sysadmins may self-host. */
+  tmsserver: string;
+  zoom: number;
+  marker: number;
+}
+
 export interface NavApiResponse {
   viewer: NavViewer;
   actions: NavActions;
@@ -95,6 +103,8 @@ export interface NavApiResponse {
   has_public_stream: boolean;
   /** All installed app names for the local user — empty for visitors/anon */
   installed_apps: string[];
+  /** openstreetmap addon site config — null when the addon isn't enabled. */
+  osm: OsmConfig | null;
   /** Effective classic-Hubzilla language for this request (2-letter code, e.g. "de") */
   language: string;
 }
@@ -217,6 +227,7 @@ export async function fetchNavApi(channelNick?: string): Promise<NavApiResponse>
     channel_tabs:     raw.channel_tabs ?? [],
     has_public_stream: raw.has_public_stream ?? false,
     installed_apps:   raw.installed_apps ?? [],
+    osm:              raw.osm ?? null,
     language:         raw.language ?? "",
   };
 }

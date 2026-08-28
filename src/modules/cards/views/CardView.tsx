@@ -1,17 +1,16 @@
 // src/modules/cards/views/CardView.tsx
 import {
-  createSignal, createEffect, createMemo, onMount,
+  createSignal, createEffect, createMemo,
   Show, For
 } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useParams, A, useNavigate } from "@solidjs/router";
-import { Portal } from "solid-js/web";
 import { fetchCard, deleteCard } from "../api";
 import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
-import CardComposer from "@/shared/editor/composers/CardComposer";
+import CardComposerModal from "@/shared/editor/composers/CardComposerModal";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
@@ -36,87 +35,6 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-
-// ── edit modal ────────────────────────────────────────────────────────────────
-
-function EditModal(props: {
-  card: {
-    uuid: string;
-    iid?: number;
-    title: string;
-    summary?: string;
-    slug?: string;
-    category?: string;
-    body: string;
-    public_policy?: string;
-    allow_cid?: string[];
-    allow_gid?: string[];
-    deny_cid?: string[];
-    deny_gid?: string[];
-    deck?: { name: string; order: number | null } | null;
-  };
-  nick: string;
-  profileUid: number;
-  onSaved: () => void;
-  onClose: () => void;
-}) {
-  const { t } = useI18n();
-  let dialogRef: HTMLDialogElement | undefined;
-  onMount(() => dialogRef?.showModal());
-
-  const close = () => {
-    dialogRef?.close();
-    props.onClose();
-  };
-
-  return (
-    <Portal mount={document.body}>
-      <dialog
-        ref={dialogRef}
-        onClick={(e) => { if (e.target === dialogRef) close(); }}
-        class="m-auto w-full max-w-3xl h-[85dvh] max-h-[90vh] flex flex-col rounded-xl
-               bg-base border border-rim shadow-xl p-0 overflow-clip backdrop:bg-black/50"
-      >
-        <div class="flex items-center justify-between px-4 py-3 border-b border-rim bg-base shrink-0">
-          <h2 class="text-sm font-semibold text-txt">{t("cards.edit_card")}</h2>
-          <button
-            type="button"
-            onClick={close}
-            class="p-1 rounded text-muted hover:bg-elevated transition-colors text-lg leading-none"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="flex-1 overflow-y-auto min-h-0 flex flex-col">
-          <CardComposer
-            profileUid={props.profileUid}
-            nick={props.nick}
-            initial={{
-              uuid:          props.card.uuid,
-              iid:           props.card.iid,
-              title:         props.card.title,
-              summary:       props.card.summary ?? "",
-              slug:          props.card.slug    ?? "",
-              category:      props.card.category ?? "",
-              body:          props.card.body,
-              public_policy: props.card.public_policy,
-              allow_cid:     props.card.allow_cid,
-              allow_gid:     props.card.allow_gid,
-              deny_cid:      props.card.deny_cid,
-              deny_gid:      props.card.deny_gid,
-              deck:        props.card.deck,
-            }}
-            onSaved={() => {
-              close();
-              props.onSaved();
-            }}
-            onCancel={close}
-          />
-        </div>
-      </dialog>
-    </Portal>
-  );
-}
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -413,13 +331,15 @@ export default function CardView() {
 
               {/* Edit modal */}
               <Show when={editing()}>
-                <EditModal
-                  card={{
+                <CardComposerModal
+                  uid={auth()!.uid}
+                  heading={t("cards.edit_card")}
+                  initial={{
                     uuid:          d().card.uuid,
                     iid:           d().card.iid,
                     title:         d().card.title,
-                    summary:       d().card.summary,
-                    slug:          d().card.slug,
+                    summary:       d().card.summary ?? "",
+                    slug:          d().card.slug ?? "",
                     // Must be passed: the composer sends `category` on save and the
                     // server treats it as authoritative, so omitting it here meant
                     // every edit saved "" and cleared the card's categories.
@@ -433,7 +353,6 @@ export default function CardView() {
                     deck:        d().card.deck,
                   }}
                   nick={nick()}
-                  profileUid={auth()!.uid}
                   onSaved={() => { setEditing(false); refetch(); }}
                   onClose={() => setEditing(false)}
                 />

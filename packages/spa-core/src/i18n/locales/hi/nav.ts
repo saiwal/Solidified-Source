@@ -24,6 +24,7 @@ export const nav: RawDictionary["nav"] = {
   tools:         "टूल्स",
   games:         "गेम्स",
   excalidraw:    "Excalidraw",
+  openstreetmap: "OpenStreetMap",
   // action items
   profile:       "प्रोफ़ाइल",
   edit_profile:  "प्रोफ़ाइल संपादित करें",

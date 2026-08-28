@@ -1,17 +1,15 @@
 // src/modules/articles/views/ArticleView.tsx
 import {
-  createSignal, createEffect, createMemo, onMount,
+  createSignal, createEffect, createMemo,
   Show, For
 } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useParams, A, useNavigate } from "@solidjs/router";
-import { Portal } from "solid-js/web";
 import { fetchArticle, deleteArticle } from "../api";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
-import ArticleComposer from "@/shared/editor/composers/ArticleComposer";
 import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import { languageLabel } from "@utsukta/spa-core/lib/languages";
@@ -41,89 +39,6 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-
-// ── edit modal ────────────────────────────────────────────────────────────────
-
-function EditModal(props: {
-  article: {
-    uuid: string;
-    iid?: number;
-    title: string;
-    summary?: string;
-    slug?: string;
-    category?: string;
-    body: string;
-    public_policy?: string;
-    allow_cid?: string[];
-    allow_gid?: string[];
-    deny_cid?: string[];
-    deny_gid?: string[];
-    lang?: string;
-    series?: { name: string; order: number | null } | null;
-  };
-  nick: string;
-  profileUid: number;
-  onSaved: () => void;
-  onClose: () => void;
-}) {
-  const { t } = useI18n();
-  let dialogRef: HTMLDialogElement | undefined;
-  onMount(() => dialogRef?.showModal());
-
-  const close = () => {
-    dialogRef?.close();
-    props.onClose();
-  };
-
-  return (
-    <Portal mount={document.body}>
-      <dialog
-        ref={dialogRef}
-        onClick={(e) => { if (e.target === dialogRef) close(); }}
-        class="m-auto w-full max-w-3xl h-[85dvh] max-h-[90vh] flex flex-col rounded-xl
-               bg-base border border-rim shadow-xl p-0 overflow-clip backdrop:bg-black/50"
-      >
-        <div class="flex items-center justify-between px-4 py-3 border-b border-rim bg-base shrink-0">
-          <h2 class="text-sm font-semibold text-txt">{t("articles.edit_article")}</h2>
-          <button
-            type="button"
-            onClick={close}
-            class="p-1 rounded text-muted hover:bg-elevated transition-colors text-lg leading-none"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="flex-1 overflow-y-auto min-h-0 flex flex-col">
-          <ArticleComposer
-            profileUid={props.profileUid}
-            nick={props.nick}
-            initial={{
-              uuid:          props.article.uuid,
-              iid:           props.article.iid,
-              title:         props.article.title,
-              summary:       props.article.summary ?? "",
-              slug:          props.article.slug    ?? "",
-              category:      props.article.category ?? "",
-              body:          props.article.body,
-              public_policy: props.article.public_policy,
-              allow_cid:     props.article.allow_cid,
-              allow_gid:     props.article.allow_gid,
-              deny_cid:      props.article.deny_cid,
-              deny_gid:      props.article.deny_gid,
-              lang:          props.article.lang,
-              series:        props.article.series,
-            }}
-            onSaved={() => {
-              close();
-              props.onSaved();
-            }}
-            onCancel={close}
-          />
-        </div>
-      </dialog>
-    </Portal>
-  );
-}
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -423,13 +338,15 @@ export default function ArticleView() {
 
               {/* Edit modal */}
               <Show when={editing()}>
-                <EditModal
-                  article={{
+                <ArticleComposerModal
+                  uid={auth()!.uid}
+                  heading={t("articles.edit_article")}
+                  initial={{
                     uuid:          d().article.uuid,
                     iid:           d().article.iid,
                     title:         d().article.title,
-                    summary:       d().article.summary,
-                    slug:          d().article.slug,
+                    summary:       d().article.summary ?? "",
+                    slug:          d().article.slug ?? "",
                     // Must be passed: the composer sends `category` on save and the
                     // server treats it as authoritative, so omitting it here meant
                     // every edit saved "" and cleared the article's categories.
@@ -444,7 +361,6 @@ export default function ArticleView() {
                     series:        d().article.series,
                   }}
                   nick={nick()}
-                  profileUid={auth()!.uid}
                   onSaved={() => { setEditing(false); refetch(); }}
                   onClose={() => setEditing(false)}
                 />

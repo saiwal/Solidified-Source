@@ -246,6 +246,16 @@ export const editor = {
   excalidraw_save_title:    "Zeichnung in der Cloud speichern",
   excalidraw_folder:        "Zielordner",
   excalidraw_acl:           "Wer diese Datei sehen kann",
+  map_toolbar_title:        "Karte einfügen",
+  map_modal_title:          "Karte einfügen",
+  map_place:                "Ort",
+  map_place_placeholder:    "Sydney, Australien",
+  map_use_browser:          "Meinen Standort verwenden",
+  map_locating:             "Standort wird ermittelt…",
+  map_zoom:                 "Zoom",
+  map_insert:               "Einfügen",
+  map_not_found:            "Ort nicht gefunden",
+  map_searching:            "Wird gesucht…",
 
   // DMComposer
   dm_new_message:        "Neue Nachricht",

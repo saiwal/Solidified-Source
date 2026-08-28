@@ -8,7 +8,8 @@
  * Notable omissions / differences from PHP:
  *  - oembed fetching is async and opt-in via a custom embedResolver callback.
  *  - Map generation (bb_map_coords / bb_map_location) requires an external
- *    resolver callback; otherwise the [map] tag is stripped.
+ *    resolver callback; otherwise [map] becomes an <a class="map-embed"> that
+ *    useOsmMap() turns into an embedded map (see lib/useOsmMap.ts).
  *  - SVG sanitisation is not performed (rely on DOMPurify in the caller).
  *  - PHP server-side helpers (z_root, zid, local_channel, App::*, …) are
  *    replaced by an `BbcodeOptions` context object you supply at call-time.
@@ -17,6 +18,8 @@
  *  - [toc] tag emits a placeholder <ul class="toc"> without the jQuery plugin.
  *  - highlight.js integration for [code=lang] is opt-in via a callback.
  */
+
+import { osmLink, osmSearchLink, parseCoord } from "./osm";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -859,20 +862,29 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
     text = text.replace(/\[map\]|\[\/map\]/g, "");
     text = text.replace(/\[map=(.*?)\]/gi, "$1");
   } else {
+    // No resolver: emit a plain anchor rather than an empty div. useOsmMap()
+    // swaps these for embedded maps once the DOM exists (sanitizeHtml strips
+    // iframes and data-*, so the map cannot be built here), and where the
+    // feature is off the post still reads as a working link.
     text = text.replace(/\[map\](.*?)\[\/map\]/gi, (_m, loc) => {
       if (mapResolver) {
         const html = mapResolver(loc, "location");
         if (html) return `<div class="map">${html}</div>`;
       }
-      return `<div class="map" data-location="${escapeHtml(loc)}"></div>`;
+      return `<a class="map-embed" href="${escapeHtml(osmSearchLink(loc))}" ${target} ${relAttr}>${escapeHtml(loc)}</a>`;
     });
     text = text.replace(/\[map=(.*?)\]/gi, (_m, coords) => {
+      const raw = coords.replace(/\//g, " ");
       if (mapResolver) {
-        const html = mapResolver(coords.replace(/\//g, " "), "coords");
+        const html = mapResolver(raw, "coords");
         if (html) return `<div class="map">${html}</div>`;
       }
-      return `<div class="map" data-coords="${escapeHtml(coords)}"></div>`;
+      const c = parseCoord(raw);
+      if (!c) return escapeHtml(raw);
+      return `<a class="map-embed" href="${escapeHtml(osmLink(c))}" ${target} ${relAttr}>${c.lat} ${c.lon}</a>`;
     });
+    // Bare [map] = "a map of this item's own coordinates" — useOsmMap() fills
+    // it from the post's coord field, since bbcode has no access to it here.
     text = text.replace(/\[map\]/gi, '<div class="map"></div>');
   }
 

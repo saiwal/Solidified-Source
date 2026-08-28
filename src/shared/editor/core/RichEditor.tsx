@@ -44,6 +44,7 @@ interface Props {
 export default function RichEditor(props: Props) {
   const { t } = useI18n();
   let editorRef: HTMLDivElement | undefined;
+  let wrapperEl: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
   // (mimetype, body) signature the DOM currently reflects — set whenever *we*
   // write to the DOM, whether from typing (DOM→body echo) or an external body
@@ -154,6 +155,11 @@ export default function RichEditor(props: Props) {
     // every browser focuses a button on click, which would leave no
     // relatedTarget to test here.
     if (popupRef?.contains(e.relatedTarget as Node)) return;
+    // Same for focus moving into the toolbar (the emoji picker's autofocused
+    // search box is the only child that takes focus): re-rendering here
+    // replaces every node, so the range the toolbar saved to insert at is
+    // detached and the insert lands at the start of the surface instead.
+    if (wrapperEl?.contains(e.relatedTarget as Node)) return;
     if (mime() === "text/bbcode") {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
@@ -306,7 +312,7 @@ export default function RichEditor(props: Props) {
   // every composer being stuck at the same worst-case total.
   const wrapperMinH = () => `calc(${minH()} + 150px)`;
   return (
-    <div class="rich-editor flex flex-col flex-1" style={{ "min-height": wrapperMinH() }}>
+    <div ref={wrapperEl} class="rich-editor flex flex-col flex-1" style={{ "min-height": wrapperMinH() }}>
       {/* ── WYSIWYG surface ───────────────────────────────── */}
       <Show when={props.tab === "wysiwyg"}>
         <div

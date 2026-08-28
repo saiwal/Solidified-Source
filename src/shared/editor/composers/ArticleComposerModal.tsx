@@ -1,3 +1,4 @@
+import type { ComponentProps } from "solid-js";
 import ComposerModal from "../components/ComposerModal";
 import ArticleComposer from "./ArticleComposer";
 
@@ -7,16 +8,7 @@ export default function ArticleComposerModal(props: {
   uid: number;
   nick: string;
   heading: string;
-  initial?: {
-    uuid: string;
-    title: string;
-    summary: string;
-    slug: string;
-    category: string;
-    body: string;
-    lang?: string;
-    series?: { name: string; order: number | null } | null;
-  };
+  initial?: ComponentProps<typeof ArticleComposer>["initial"];
   translationOf?: { uuid: string; excludeLangs: string[] };
   onClose: () => void;
   onSaved: () => void;

@@ -725,14 +725,12 @@ const PostComposer: Component<ComposerProps> = (props) => {
             minHeight="150px"
             fill
           />
-          {/* Hidden while editing: files auto-append an [attachment] tag that
-              only createPost() extracts into item.attach — editItem() would
-              leave it as literal BBCode in the body. Existing attachments are
-              untouched by an edit either way, since it never writes the
-              attach column.
-              ponytail: no attachment editing on edit; add the same tag
-              extraction to editItem() if changing a post's files matters. */}
-          <Show when={!isEdit()}>
+          {/* Also shown while editing: editItem() extracts the appended
+              [attachment] tags and merges them onto the item's existing
+              attach column, same as createPost(). Detaching an existing file
+              still isn't possible — the edit seed only carries the body.
+              ponytail: add-only attachments on edit; seed the bar from
+              item.attach if removing files matters. */}
           <AttachmentBar
             store={attach}
             nick={currentNick()}
@@ -746,7 +744,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
             tab={store.tab()}
             onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
           />
-          </Show>
         </div>
 
         {/* ── Location panel ── */}

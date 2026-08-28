@@ -1,4 +1,4 @@
-import { createSignal, lazy, Show } from "solid-js";
+import { createSignal, lazy, onCleanup, Show } from "solid-js";
 import type { LatexInsertMode, ToolbarLevel } from "../types/editor.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
@@ -9,14 +9,14 @@ import {
   MdOutlineFormat_quote, MdOutlineCode, MdOutlineHorizontal_rule,
   MdOutlineFunctions, MdOutlineStyle,
   MdOutlineTable_chart, MdOutlineVisibility_off, MdOutlineFormat_clear,
-  MdOutlineBrush,
+  MdOutlineBrush, MdOutlineMap,
 } from "solid-icons/md";
 import EmojiPicker from "../emoji/EmojiPicker";
 import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { emojiEntryToImg } from "@utsukta/spa-core/lib/emojify";
 import ListToolDropdown from "../components/ListToolDropdown";
 import HeadingToolDropdown from "../components/HeadingToolDropdown";
-import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
+import { useInstalledApps, useNavData } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled, isModuleActive } from "@utsukta/spa-core/module-registry";
 import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
 import { fetchLinkMeta, linkMetaToBbcode, linkMetaToHtml } from "../lib/linkMeta";
@@ -25,6 +25,7 @@ import { readAlt } from "../attachments/insertHelpers";
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
 const CardPickerModal = lazy(() => import("../cards/CardPickerModal"));
 const ExcalidrawComposerModal = lazy(() => import("../excalidraw/ExcalidrawComposerModal"));
+const MapPickerModal = lazy(() => import("../map/MapPickerModal"));
 
 interface Props {
   level: ToolbarLevel;
@@ -44,9 +45,15 @@ export default function EditorToolbar(props: Props) {
   const [linkLoading, setLinkLoading] = createSignal(false);
   const [cardPickerOpen, setCardPickerOpen] = createSignal(false);
   const [excalidrawOpen, setExcalidrawOpen] = createSignal(false);
+  const [mapOpen, setMapOpen] = createSignal(false);
   const installedApps = useInstalledApps();
+  const navData = useNavData();
   const showCardPicker = () => props.cardPicker && isAppInstalled(installedApps(), "/cards/");
   const showExcalidraw = () => isModuleActive("excalidraw", installedApps(), disabledFrontendModules());
+  // navData().osm is null unless the core openstreetmap addon is enabled
+  // site-wide; without it the tile server isn't in the page's frame-src.
+  const showMap = () =>
+    !!navData()?.osm && isModuleActive("openstreetmap", installedApps(), disabledFrontendModules());
 
   const isSource  = () => props.tab === "source";
   const isComment = () => props.level === "comment";
@@ -54,17 +61,41 @@ export default function EditorToolbar(props: Props) {
 
   // ── WYSIWYG helpers ──────────────────────────────────────────────────────
 
-  const exec = (cmd: string, value?: string) => {
+  // Opening a toolbar dropdown/modal (the emoji picker's autofocused search
+  // box, a lazy modal) blurs the contenteditable and drops its selection, so
+  // a later el.focus() drops the caret at the start and everything inserts
+  // there. Remember the last in-editor range and put it back before exec'ing.
+  let lastRange: Range | null = null;
+  const inEditor = (r: Range) => props.editorRef()?.contains(r.commonAncestorContainer) ?? false;
+  const trackSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const r = sel.getRangeAt(0);
+    if (inEditor(r)) lastRange = r.cloneRange();
+  };
+  document.addEventListener("selectionchange", trackSelection);
+  onCleanup(() => document.removeEventListener("selectionchange", trackSelection));
+
+  const focusEditor = () => {
     const el = props.editorRef();
-    if (!el) return;
+    if (!el) return undefined;
     el.focus();
+    const sel = window.getSelection();
+    const cur = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+    if (lastRange && (!cur || !inEditor(cur))) {
+      sel?.removeAllRanges();
+      sel?.addRange(lastRange);
+    }
+    return el;
+  };
+
+  const exec = (cmd: string, value?: string) => {
+    if (!focusEditor()) return;
     document.execCommand(cmd, false, value);
   };
 
   const wrapHtml = (open: string, close: string) => {
-    const el = props.editorRef();
-    if (!el) return;
-    el.focus();
+    if (!focusEditor()) return;
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
       document.execCommand("insertHTML", false, `${open}${close}`);
@@ -367,6 +398,12 @@ export default function EditorToolbar(props: Props) {
     exec("insertHTML", `<img src="${src}" alt="${alt}" />`);
   };
 
+  // Literal [map=lat lon] bbcode — the WYSIWYG has no live map preview, same
+  // as latexMode "live" leaves plain $…$ text for the renderer to pick up.
+  const insertMap = (bbcode: string) => {
+    isSource() ? insertSource(bbcode) : exec("insertText", bbcode);
+  };
+
   const insertEmoji = (entry: EmojiEntry) => {
     isSource() ? insertSource(entry.shortname + " ") : exec("insertHTML", `${emojiEntryToImg(entry)} `);
   };
@@ -505,6 +542,11 @@ export default function EditorToolbar(props: Props) {
               <MdOutlineBrush class="w-4 h-4" />
             </Btn>
           </Show>
+          <Show when={showMap()}>
+            <Btn title={t("editor.map_toolbar_title")} onPress={() => setMapOpen(true)}>
+              <MdOutlineMap class="w-4 h-4" />
+            </Btn>
+          </Show>
           <EmojiPicker onSelect={insertEmoji} />
 
           {/* ── Group 6: Rich structure — full only ── */}
@@ -550,6 +592,10 @@ export default function EditorToolbar(props: Props) {
         onClose={() => setCardPickerOpen(false)}
         onInsert={insertCard}
       />
+    </Show>
+
+    <Show when={mapOpen()}>
+      <MapPickerModal onClose={() => setMapOpen(false)} onInsert={insertMap} />
     </Show>
 
     <Show when={excalidrawOpen()}>

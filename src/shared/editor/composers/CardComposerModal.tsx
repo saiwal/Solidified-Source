@@ -1,5 +1,6 @@
+import type { ComponentProps } from "solid-js";
 import ComposerModal from "../components/ComposerModal";
-import CardComposer, { type CardTemplate } from "./CardComposer";
+import CardComposer from "./CardComposer";
 
 // Modal wrapper around CardComposer (mirrors CardModal in CardsHeaderWidget).
 
@@ -7,16 +8,7 @@ export default function CardComposerModal(props: {
   uid: number;
   nick: string;
   heading: string;
-  initial?: {
-    uuid: string;
-    title: string;
-    summary: string;
-    slug: string;
-    category: string;
-    body: string;
-    deck?: { name: string; order: number | null } | null;
-    template?: CardTemplate;
-  };
+  initial?: ComponentProps<typeof CardComposer>["initial"];
   onClose: () => void;
   onSaved: () => void;
 }) {

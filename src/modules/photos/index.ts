@@ -62,6 +62,17 @@ registerModule({
       configComponent: () => import("./widgets/AlbumStripConfig"),
       helpTarget: "widgets.album_strip",
     },
+    {
+      // Opt-in random-photo slideshow; config: { album (""=all), interval secs }
+      id: "photos.slideshow",
+      label: () => useI18n().t("widgets.photo_slideshow"),
+      loader: () => import("./widgets/PhotoSlideshowWidget"),
+      slot: "right",
+      defaultModules: [],
+      contexts: ["channel", "profile", "photos"],
+      multiInstance: true,
+      configComponent: () => import("./widgets/PhotoSlideshowConfig"),
+    },
   ],
   permissions: [],
   appUrlSlug: "/photos/",
