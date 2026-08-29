@@ -10,6 +10,7 @@ import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { BiRegularX } from "solid-icons/bi";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiDeleteItem, apiEditItem, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
+import { isDirectMessage } from "@/shared/stream/components/DmMeta";
 import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -452,7 +453,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
           {/* Header */}
           <div class="flex items-center justify-between px-5 py-3 shrink-0 border-b border-rim bg-surface">
             <h2 id="post-modal-title" class="text-sm font-semibold text-muted">
-              {t("post.modal_title")}
+              {nodeData() && isDirectMessage(nodeData()!) ? t("post.dm_title") : t("post.modal_title")}
             </h2>
             <button
               onClick={props.onClose}
