@@ -1,4 +1,4 @@
-import { createSignal, lazy, onCleanup, Show } from "solid-js";
+import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js";
 import type { LatexInsertMode, ToolbarLevel } from "../types/editor.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
@@ -580,29 +580,45 @@ export default function EditorToolbar(props: Props) {
       </Show>
     </div>
     <Show when={latexOpen()}>
-      <LatexComposerModal
-        mode={props.latexMode}
-        onClose={() => setLatexOpen(false)}
-        onInsert={insertLatex}
-      />
+      <Suspense>
+        <LatexComposerModal
+          mode={props.latexMode}
+          onClose={() => setLatexOpen(false)}
+          onInsert={insertLatex}
+        />
+      </Suspense>
     </Show>
 
     <Show when={cardPickerOpen()}>
-      <CardPickerModal
-        onClose={() => setCardPickerOpen(false)}
-        onInsert={insertCard}
-      />
+      <Suspense>
+        <CardPickerModal
+          onClose={() => setCardPickerOpen(false)}
+          onInsert={insertCard}
+        />
+      </Suspense>
     </Show>
 
     <Show when={mapOpen()}>
-      <MapPickerModal onClose={() => setMapOpen(false)} onInsert={insertMap} />
+      <Suspense>
+        <MapPickerModal onClose={() => setMapOpen(false)} onInsert={insertMap} />
+      </Suspense>
     </Show>
 
     <Show when={excalidrawOpen()}>
-      <ExcalidrawComposerModal
-        onClose={() => setExcalidrawOpen(false)}
-        onInsert={insertExcalidraw}
-      />
+      {/* The Excalidraw chunk is heavy (React + the package); show the backdrop
+          with a spinner while it downloads instead of nothing. */}
+      <Suspense
+        fallback={
+          <div class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60">
+            <span class="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          </div>
+        }
+      >
+        <ExcalidrawComposerModal
+          onClose={() => setExcalidrawOpen(false)}
+          onInsert={insertExcalidraw}
+        />
+      </Suspense>
     </Show>
     </>
   );
