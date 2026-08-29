@@ -57,6 +57,15 @@ registerModule({
       contexts: "any",
       helpTarget: "widgets.quick_composer",
     },
+		{
+      id: "hq.messages",
+      label: () => useI18n().t("hq.messages"),
+      loader: () => import("./widgets/HqMessagesWidget"),
+      slot: "gridTop",
+      defaultModules: ["hq"],
+      contexts: ["hq"],
+      helpTarget: "widgets.recent_posts",
+    },
     {
       id: "hq.channel_activities",
       label: () => useI18n().t("hq.channel_activities"),
@@ -100,16 +109,7 @@ registerModule({
       visitorVisible: false,
       helpTarget: "widgets.upcoming_events",
     },
-    {
-      id: "hq.messages",
-      label: () => useI18n().t("hq.messages"),
-      loader: () => import("./widgets/HqMessagesWidget"),
-      slot: "gridTop",
-      defaultModules: ["hq"],
-      contexts: ["hq"],
-      helpTarget: "widgets.recent_posts",
-    },
-    // Account resource usage (storage, channels, connections, etc.) at a
+     // Account resource usage (storage, channels, connections, etc.) at a
     // glance — full detail lives on the Account settings page.
     {
       id: "hq.usage_quotas",
