@@ -105,6 +105,7 @@ export function shareTargetForArticle(nick: string, a: ArticleLike): ShareTarget
     title: a.title?.trim() || url,
     summary: quote,
     postBody: buildShareBody({ url, title: a.title, quote, iid: a.iid, itemPrivate: a.item_private }),
+    lockview: a.iid ? { type: "item", id: a.iid } : undefined,
   };
 }
 
@@ -119,6 +120,7 @@ export function shareTargetForCard(nick: string, c: ArticleLike): ShareTarget {
     // and the link + quote form is what CardView has always posted.
     postBody: buildShareBody({ url, title: c.title, quote }),
     embed: c.iid ? [{ labelKey: "share.embed_bbcode", code: `[card=${c.iid}][/card]` }] : undefined,
+    lockview: c.iid ? { type: "item", id: c.iid } : undefined,
   };
 }
 
@@ -169,7 +171,9 @@ export function shareTargetForFile(nick: string, f: FileMeta): ShareTarget {
     title: f.filename,
     postBody: `[zrl=${url}]${f.filename}[/zrl]`,
     embed,
-    lockview: f.id && !f.is_dir ? { type: "attach", id: f.id } : undefined,
+    // Folders too: an attach row carries its own ACL, and a shared folder
+    // link is as guest-worthy as a file one.
+    lockview: f.id ? { type: "attach", id: f.id } : undefined,
   };
 }
 
@@ -180,5 +184,6 @@ export function shareTargetForWebpage(nick: string, w: WebPage): ShareTarget {
     url,
     title,
     postBody: buildShareBody({ url, title }),
+    lockview: w.iid ? { type: "item", id: w.iid } : undefined,
   };
 }

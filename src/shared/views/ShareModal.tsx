@@ -13,7 +13,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { ShareTarget } from "@utsukta/spa-core/store/share";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { fetchLockview } from "@utsukta/spa-core/lib/lockview-api";
+import { fetchLockview, grantGuest } from "@utsukta/spa-core/lib/lockview-api";
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
 
@@ -50,12 +50,13 @@ const ShareModal: Component<Props> = (props) => {
     const lv = props.target.lockview;
     return lv && auth()?.isLocal ? `${lv.type}/${lv.id}` : null;
   });
-  const [lockview] = createQueryResource("lockview", lockviewKey, (key) => {
+  const [lockview, { mutate: setLockview }] = createQueryResource("lockview", lockviewKey, (key) => {
     const [type, id] = key.split("/");
     return fetchLockview(type as never, id);
   });
 
   const guests = () => lockview()?.guests ?? [];
+  const otherGuests = () => lockview()?.other_guests ?? [];
   const [guestId, setGuestId] = createSignal<number | null>(null);
   const activeGuest = () => guests().find((g) => g.id === guestId()) ?? null;
 
@@ -63,6 +64,29 @@ const ShareModal: Component<Props> = (props) => {
   // this, so picking a guest carries the credential consistently instead of
   // only into whichever affordance happened to be wired for it.
   const shareUrl = () => activeGuest()?.url ?? props.target.url;
+
+  // Picking a guest who isn't on the ACL yet widens the audience first — the
+  // link is useless otherwise, and the owner opened this dialog to share.
+  async function pickGuest(value: string) {
+    const id = value ? Number(value) : null;
+    if (id === null || guests().some((g) => g.id === id)) {
+      setGuestId(id);
+      return;
+    }
+    const lv = props.target.lockview!;
+    try {
+      const guest = await grantGuest(lv.type, lv.id, id);
+      setLockview({
+        ...lockview()!,
+        guests: [...guests(), guest],
+        other_guests: otherGuests().filter((g) => g.id !== id),
+      });
+      setGuestId(id);
+      toast.success(t("share.guest_added", { name: guest.name }) as string);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (t("share.email_failed") as string));
+    }
+  }
 
   const canPost = () => auth()?.isLocal === true && !!props.target.postBody;
   const canNativeShare = () => typeof navigator !== "undefined" && "share" in navigator;
@@ -83,8 +107,17 @@ const ShareModal: Component<Props> = (props) => {
       .catch(() => {});
   }
 
+  /** Guest-link caveats, so a recipient knows what the ?zat= link is and when it dies. */
+  function guestLines(): string[] {
+    const g = activeGuest();
+    if (!g) return [];
+    const lines = [t("share.guest_email_intro", { name: g.name }) as string];
+    if (g.expires) lines.push(t("share.guest_email_expires", { date: g.expires }) as string);
+    return lines;
+  }
+
   function mailtoHref() {
-    const body = [props.target.summary, shareUrl()].filter(Boolean).join("\n\n");
+    const body = [props.target.summary, shareUrl(), ...guestLines()].filter(Boolean).join("\n\n");
     return `mailto:?subject=${encodeURIComponent(props.target.title)}&body=${encodeURIComponent(body)}`;
   }
 
@@ -220,20 +253,27 @@ const ShareModal: Component<Props> = (props) => {
 
                 {/* Guest access — only guests already in this item's audience
                     appear here; a token is not a skeleton key. */}
-                <Show when={guests().length > 0}>
+                <Show when={guests().length > 0 || otherGuests().length > 0}>
                   <div class="space-y-1 rounded-lg border border-rim p-3">
                     <label class="block text-xs font-semibold text-txt">
                       {t("share.guest_access_title")}
                     </label>
                     <select
                       value={guestId() ?? ""}
-                      onChange={(e) => setGuestId(e.currentTarget.value ? Number(e.currentTarget.value) : null)}
+                      onChange={(e) => pickGuest(e.currentTarget.value)}
                       class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
                     >
                       <option value="">{t("share.use_plain_link")}</option>
                       <For each={guests()}>
                         {(g) => <option value={g.id}>{g.name}</option>}
                       </For>
+                      <Show when={otherGuests().length > 0}>
+                        <optgroup label={t("share.guest_add_group") as string}>
+                          <For each={otherGuests()}>
+                            {(g) => <option value={g.id}>{g.name}</option>}
+                          </For>
+                        </optgroup>
+                      </Show>
                     </select>
                     <Show when={activeGuest()}>
                       <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">

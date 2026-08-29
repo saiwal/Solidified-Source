@@ -2692,6 +2692,10 @@ export type RawDictionary = {
     guest_access_warning:  string;
     guest_access_none:     string;
     guest_link_active:     string;
+    guest_email_intro:     string;
+    guest_email_expires:   string;
+    guest_add_group:       string;
+    guest_added:           string;
     use_plain_link:        string;
     who_can_see:           string;
     audience_unknown:      string;
