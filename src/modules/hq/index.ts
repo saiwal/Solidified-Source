@@ -109,26 +109,6 @@ registerModule({
       contexts: ["hq"],
       helpTarget: "widgets.recent_posts",
     },
-    // Single-tab variants of hq.messages, opt-in via the widget picker so the
-    // dashboard doesn't default to 5 message feeds at once.
-    {
-      id: "hq.messages.direct",
-      label: () => useI18n().t("hq.msg_tab_direct"),
-      loader: () => import("./widgets/HqDirectMessagesWidget"),
-      slot: "gridTop",
-      defaultModules: ["hq"],
-      contexts: ["hq"],
-      helpTarget: "widgets.direct_message_panel	",
-    },
-    {
-      id: "hq.messages.notices",
-      label: () => useI18n().t("hq.msg_tab_notices"),
-      loader: () => import("./widgets/HqNoticesWidget"),
-      slot: "gridTop",
-      defaultModules: [],
-      contexts: ["hq"],
-      helpTarget: "widgets.notices_panel",
-    },
     // Account resource usage (storage, channels, connections, etc.) at a
     // glance — full detail lives on the Account settings page.
     {
