@@ -75,7 +75,7 @@ export default function CardsHeaderWidget() {
     <Show when={isList()}>
       {/* Matches the content widget's width so the title row lines up with
           whichever board is showing. */}
-      <div class="space-y-4" classList={{ "max-w-5xl mx-auto": !showKanban() }}>
+      <div class="space-y-4 max-w-5xl mx-auto">
         <div class="flex items-center justify-between gap-2">
           <h1 class="text-xl font-bold text-txt">{t("cards.title")}</h1>
 
