@@ -10,6 +10,11 @@ export interface TourStepDef {
   title: (t: Translate) => string;
   text: (t: Translate) => string;
   on?: "top" | "bottom" | "left" | "right";
+  /** Runs just before the step is shown — usually clicking something open
+   * (`document.querySelector('[data-tour="…"]')?.click()`). The step then
+   * waits for `selector` to appear, so it can target a modal that doesn't
+   * exist yet when the tour starts. */
+  before?: () => void;
 }
 
 export interface TourDef {
@@ -45,6 +50,19 @@ export interface TourButtonLabels {
   done: string;
 }
 
+/** Resolves once `selector` is in the DOM, or on timeout — never rejects,
+ * since a rejected `beforeShowPromise` aborts the whole Shepherd tour. */
+function waitFor(selector: string, ms = 3000): Promise<void> {
+  return new Promise((resolve) => {
+    const started = performance.now();
+    const tick = () => {
+      if (document.querySelector(selector) || performance.now() - started > ms) resolve();
+      else requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
 /** Builds and starts a Shepherd tour, skipping any steps whose target isn't in the DOM. */
 export function startTour(id: string, t: Translate, labels: TourButtonLabels) {
   const def = tours.get(id);
@@ -53,7 +71,8 @@ export function startTour(id: string, t: Translate, labels: TourButtonLabels) {
     return;
   }
 
-  const steps = def.steps.filter((s) => document.querySelector(s.selector));
+  // A step with `before` opens its own target, so it can't be checked yet.
+  const steps = def.steps.filter((s) => s.before || document.querySelector(s.selector));
   if (steps.length === 0) return;
 
   const tour = new Shepherd.Tour({
@@ -67,6 +86,10 @@ export function startTour(id: string, t: Translate, labels: TourButtonLabels) {
 
   steps.forEach((step, i) => {
     tour.addStep({
+      beforeShowPromise: () => {
+        step.before?.();
+        return waitFor(step.selector);
+      },
       attachTo: { element: step.selector, on: step.on ?? "bottom" },
       title: step.title(t),
       text: step.text(t),

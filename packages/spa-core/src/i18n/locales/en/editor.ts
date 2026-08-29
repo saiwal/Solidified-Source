@@ -259,6 +259,7 @@ export const editor = {
 
   // DMComposer
   dm_new_message:        "New message",
+  dm_subject_placeholder: "Subject (optional)",
   to_label:               "To:",
   to_search_placeholder:  "Search people…",
   send_btn:               "Send",

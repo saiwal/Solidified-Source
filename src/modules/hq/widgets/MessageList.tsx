@@ -282,9 +282,21 @@ const MessageItem: Component<{
             </time>
           </div>
 
-          <p class="text-xs text-muted line-clamp-1 leading-snug">
-            {decodeHtmlEntities(e.summary)}
-          </p>
+          <Show when={e.title}>
+            <p
+              class={`text-xs line-clamp-1 leading-snug ${
+                isAnyUnseen() ? "font-semibold text-txt" : "text-txt"
+              }`}
+            >
+              {decodeHtmlEntities(e.title!)}
+            </p>
+          </Show>
+
+          <Show when={e.summary}>
+            <p class="text-xs text-muted line-clamp-1 leading-snug">
+              {decodeHtmlEntities(e.summary)}
+            </p>
+          </Show>
 
           <Show when={e.info && props.feedType !== "direct"}>
             <div class="flex flex-wrap gap-1 mt-0.5">

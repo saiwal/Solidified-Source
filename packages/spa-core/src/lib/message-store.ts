@@ -41,6 +41,9 @@ export type FeedType = MessageType | "folder";
 export interface MessageEntry {
   b64mid: string;
   created: string;
+  /** Subject line (item title) — a DM's subject, usually. Absent on entries
+   *  cached before this field existed, hence optional. */
+  title?: string;
   summary: string;
   info: string;
   author_name: string;

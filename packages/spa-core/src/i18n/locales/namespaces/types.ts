@@ -998,6 +998,7 @@ export type RawDictionary = {
     map_not_found:            string;
     map_searching:            string;
     dm_new_message:        string;
+    dm_subject_placeholder: string;
     to_label:               string;
     to_search_placeholder:  string;
     send_btn:               string;

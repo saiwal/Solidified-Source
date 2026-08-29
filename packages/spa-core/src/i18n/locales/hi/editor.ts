@@ -250,6 +250,7 @@ export const editor: RawDictionary["editor"] = {
 
   // DMComposer
   dm_new_message:        "नया संदेश",
+  dm_subject_placeholder: "विषय (वैकल्पिक)",
   to_label:               "प्रति:",
   to_search_placeholder:  "लोगों को खोजें…",
   send_btn:               "भेजें",

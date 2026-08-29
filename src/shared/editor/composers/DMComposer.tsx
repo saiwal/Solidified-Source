@@ -128,6 +128,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     const csrf = await getCsrfToken();
     const payload = {
       body: augmentedBody,
+      title: store.title().trim(),
       mimetype: meta.mimetype ?? "text/bbcode",
       profile_uid: props.profileUid,
       scope: "custom",
@@ -263,6 +264,17 @@ const DMComposer: Component<DMComposerProps> = (props) => {
               </For>
             </ul>
           </Show>
+        </div>
+
+        {/* ── Subject ── */}
+        <div class="px-4 pt-3 pb-2 border-b border-rim shrink-0">
+          <input
+            type="text"
+            placeholder={t("editor.dm_subject_placeholder")}
+            value={store.title()}
+            onInput={(e) => store.setTitle(e.currentTarget.value)}
+            class="w-full px-0 py-1.5 text-base font-semibold text-txt placeholder:text-muted bg-transparent border-0 focus:outline-none"
+          />
         </div>
 
         {/* ── Editor area — fills the remaining modal height; the surface
