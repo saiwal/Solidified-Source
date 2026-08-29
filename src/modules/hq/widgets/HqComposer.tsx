@@ -304,6 +304,7 @@ function HqComposer() {
           fallback={
             <button
               type="button"
+              data-tour="hq.composer.placeholder"
               onClick={expandAndFocus}
               class="flex-1 text-left bg-transparent text-sm text-muted
                      focus:outline-none truncate"
@@ -360,6 +361,7 @@ function HqComposer() {
           <button
             type="button"
             title={t("editor.open_full_composer")}
+            data-tour="hq.composer.full"
             onClick={() => setFullOpen(true)}
             class="w-7 h-7 flex items-center justify-center rounded text-muted
                    hover:bg-elevated hover:text-txt transition-colors"
@@ -374,6 +376,7 @@ function HqComposer() {
         {/* ACL + submit row */}
         <div class="flex items-center gap-1 mt-1.5 flex-wrap">
           <AclPicker
+            dataTour="hq.composer.acl"
             mode={aclMode()}
             onModeChange={setAclMode}
             allowEntries={allowKeys()}

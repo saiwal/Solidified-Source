@@ -1,6 +1,7 @@
 // src/modules/help/index.tsx
 import { registerModule } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import "./tours";
 
 registerModule({
   id: "help",

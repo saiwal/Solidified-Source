@@ -109,6 +109,14 @@
 }
 
 /* ── Shepherd.js guided-tour theme integration ─────────────────── */
+/* Shepherd's overlay path sets `pointer-events: all` everywhere outside the
+   spotlight cutout, so it swallows clicks meant for anything a step portals to
+   <body> — the recipient dropdown, the ACL panel — which is exactly what the
+   DM tour asks the user to click. Keep the overlay decorative. */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible path {
+  pointer-events: none;
+}
+
 .shepherd-element.hz-shepherd {
   background: var(--color-elevated);
   color: var(--color-txt);

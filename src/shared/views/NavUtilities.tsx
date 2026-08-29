@@ -49,6 +49,7 @@ export default function NavUtilities(props: NavUtilitiesProps) {
         <Show when={isOwner()}>
           <button
             onClick={() => setEditingWidgets(!editingWidgets())}
+            data-tour="nav.edit_layout"
             aria-pressed={editingWidgets()}
             aria-label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
             title={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}

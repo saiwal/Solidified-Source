@@ -11,12 +11,9 @@ export default function HelpToursWidget() {
 
   function handleStart(id: string, path?: string) {
     const labels = { back: t("tour.back"), next: t("tour.next"), done: t("tour.done") };
-    if (path && location.pathname !== path) {
-      navigate(path);
-      requestAnimationFrame(() => startTour(id, t, labels));
-      return;
-    }
-    startTour(id, t, labels);
+    // startTour() waits for the route's (lazily loaded) widgets itself.
+    if (path && location.pathname !== path) navigate(path);
+    void startTour(id, t, labels);
   }
 
   return (

@@ -27,6 +27,7 @@ const Usermenu = (props: NavUtilitiesProps) => {
           <button
             onClick={props.onUserMenuToggle}
             title={props.viewer!.name}
+            data-tour="nav.user_menu"
             use:helpable="nav.account_menu"
             class={`
               w-full p-1.5 rounded-xl transition-all duration-150 ease-out

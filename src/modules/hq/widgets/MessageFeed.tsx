@@ -127,6 +127,7 @@ export const MessageFeed: Component<{ type: MessageType; bare?: boolean }> = (pr
       fallback={<div class="flex-1 flex flex-col overflow-hidden">{body}</div>}
     >
       <div
+        data-tour={`hq.messages.${props.type}`}
         class="bg-surface rounded-2xl border border-rim flex flex-col overflow-hidden shadow-sm"
         style={{ "max-height": "480px" }}
       >

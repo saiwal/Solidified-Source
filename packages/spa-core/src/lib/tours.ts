@@ -50,29 +50,53 @@ export interface TourButtonLabels {
   done: string;
 }
 
-/** Resolves once `selector` is in the DOM, or on timeout — never rejects,
- * since a rejected `beforeShowPromise` aborts the whole Shepherd tour. */
-function waitFor(selector: string, ms = 3000): Promise<void> {
+/** Resolves once `test()` passes, or on timeout — never rejects, since a
+ * rejected `beforeShowPromise` aborts the whole Shepherd tour. */
+function waitUntil(test: () => boolean, ms: number): Promise<void> {
   return new Promise((resolve) => {
     const started = performance.now();
     const tick = () => {
-      if (document.querySelector(selector) || performance.now() - started > ms) resolve();
+      if (test() || performance.now() - started > ms) resolve();
       else requestAnimationFrame(tick);
     };
     tick();
   });
 }
 
+/** First match that actually has a layout box. A responsive layout keeps both
+ * the desktop and the mobile chrome mounted (`hidden lg:flex` / `lg:hidden`),
+ * so a plain `querySelector` happily returns the `display: none` one — which
+ * Shepherd would then try to spotlight at zero size. */
+function findVisible(selector: string): HTMLElement | null {
+  for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+    if (el.getClientRects().length > 0) return el;
+  }
+  return null;
+}
+
+const waitFor = (selector: string, ms = 3000) =>
+  waitUntil(() => !!findVisible(selector), ms);
+
 /** Builds and starts a Shepherd tour, skipping any steps whose target isn't in the DOM. */
-export function startTour(id: string, t: Translate, labels: TourButtonLabels) {
+export async function startTour(id: string, t: Translate, labels: TourButtonLabels) {
   const def = tours.get(id);
   if (!def) {
     console.warn(`Tour "${id}" not found`);
     return;
   }
 
+  // The caller may have just navigated here, and a route's widgets are lazy
+  // chunks that mount several frames later — on a first visit, long after the
+  // next animation frame. Wait for the first step's target before deciding
+  // which steps exist, or a cold route filters every step out and nothing
+  // starts. Only the first: a later target that is deliberately absent (a
+  // widget removed from the layout, the mobile chrome on a desktop) must not
+  // cost the tour a timeout each.
+  const first = def.steps.find((s) => !s.before);
+  if (first) await waitFor(first.selector, 2000);
+
   // A step with `before` opens its own target, so it can't be checked yet.
-  const steps = def.steps.filter((s) => s.before || document.querySelector(s.selector));
+  const steps = def.steps.filter((s) => s.before || findVisible(s.selector));
   if (steps.length === 0) return;
 
   const tour = new Shepherd.Tour({
@@ -90,7 +114,9 @@ export function startTour(id: string, t: Translate, labels: TourButtonLabels) {
         step.before?.();
         return waitFor(step.selector);
       },
-      attachTo: { element: step.selector, on: step.on ?? "bottom" },
+      // Resolved at show time, not at build time: `before` may only just have
+      // opened the target, and which of a responsive pair is visible can change.
+      attachTo: { element: () => findVisible(step.selector), on: step.on ?? "bottom" },
       title: step.title(t),
       text: step.text(t),
       buttons: [

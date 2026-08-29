@@ -88,6 +88,7 @@ export default function QuickComposeWidget() {
             {(action) => (
               <button
                 type="button"
+                data-tour={`hq.quick_compose.${action.key}`}
                 onClick={action.onClick}
                 class="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-rim text-sm
                        text-txt hover:bg-elevated hover:border-accent/40 transition-colors"

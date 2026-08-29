@@ -57,6 +57,8 @@ export interface AclPickerProps {
   seedEntries?: AclEntry[];
   /** Show deny buttons per row (default: true). */
   showDeny?: boolean;
+  /** Guided-tour anchor for the trigger button (see spa-core/lib/tours.ts). */
+  dataTour?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -156,6 +158,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
       <button
         ref={setTriggerRef}
         type="button"
+        data-tour={props.dataTour}
         onClick={toggle}
         class="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border border-rim
                text-muted hover:border-rim-strong hover:text-txt transition-all"

@@ -55,7 +55,7 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
   }
 
   return (
-    <div class="relative">
+    <div class="relative" data-tour="composer.recipient">
       <div
         ref={rowRef}
         class="flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded border border-rim bg-surface

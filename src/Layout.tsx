@@ -217,7 +217,7 @@ const Layout: ParentComponent = (props) => {
                 that may already be scrolled out of view. */}
             <div class="flex-1 min-h-0 flex flex-col overflow-y-auto">
               {/* Primary nav — reorderable via drag handle while in edit-layout mode */}
-              <nav aria-label="Primary" tabindex="0" class="flex flex-col gap-0.5">
+              <nav aria-label="Primary" data-tour="nav.primary" tabindex="0" class="flex flex-col gap-0.5">
                 <For each={desktopNavDrag.displayItems()}>
                   {(item) => (
                     <div
@@ -640,6 +640,7 @@ const Layout: ParentComponent = (props) => {
           <Show when={!hidesNavChrome()}>
           <nav
             aria-label={t("layout.navigation")}
+            data-tour="nav.bottom"
             class="fixed bottom-0 left-0 right-0 z-50 h-16 lg:hidden
                    bg-surface border-t border-rim
                    flex items-center px-2 gap-1"

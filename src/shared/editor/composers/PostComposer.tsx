@@ -488,6 +488,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
                   }
                 >
                   <AclPicker
+                    dataTour="post.composer.acl"
                     mode={acl.mode()}
                     onModeChange={acl.setMode}
                     allowEntries={acl.allowEntries()}

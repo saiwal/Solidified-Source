@@ -80,7 +80,7 @@ export default function ComposerModal(props: ComposerModalProps) {
             <h2 class="text-sm font-semibold text-txt">{props.title}</h2>
             <div class="flex items-center gap-1">
               {props.headerExtra}
-              <IconButton title={t("editor.close_esc")} onClick={props.onClose}>
+              <IconButton title={t("editor.close_esc")} dataTour="composer.close" onClick={props.onClose}>
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>

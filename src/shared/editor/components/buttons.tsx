@@ -74,6 +74,8 @@ export interface IconButtonProps {
   onClick: () => void;
   title?: string;
   variant?: "default" | "danger";
+  /** Guided-tour anchor (see packages/spa-core/src/lib/tours.ts). */
+  dataTour?: string;
   children: JSX.Element;
 }
 
@@ -81,6 +83,7 @@ export const IconButton: Component<IconButtonProps> = (props) => (
   <button
     type="button"
     title={props.title}
+    data-tour={props.dataTour}
     onClick={props.onClick}
     class={
       "p-1.5 rounded-md text-muted transition-colors " +
