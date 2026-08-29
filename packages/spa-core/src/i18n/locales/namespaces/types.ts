@@ -1365,14 +1365,18 @@ export type RawDictionary = {
     integ_move_down:          string;
     integ_show_nav:           string;
     integ_hide_nav:           string;
+    integ_app_label:          string;
     integ_nav_label:          string;
+    integ_frontend_badge:     string;
     integ_install_label:      string;
     integ_configure:          string;
     integ_install:            string;
     integ_remove:             string;
     integ_busy:               string;
-    integ_frontend_title:     string;
-    integ_frontend_desc:      string;
+    cards_config:             string;
+    cards_config_desc:        string;
+    integ_kanban:             string;
+    integ_kanban_desc:        string;
     // Danger zone
     danger_remove_channel:   string;
     danger_remove_desc:      string;
@@ -1952,6 +1956,24 @@ export type RawDictionary = {
     deck_cards_count:     string;
     back_to_deck_index:   string;
     shuffle:              string;
+    // Kanban board
+    view_board:           string;
+    view_kanban:          string;
+    kanban_unfiled:       string;
+    kanban_add_column:    string;
+    kanban_add_card:      string;
+    kanban_board_name:    string;
+    kanban_add_board:     string;
+    kanban_rename_board:  string;
+    kanban_remove_board:  string;
+    kanban_remove_board_confirm: string;
+    kanban_column_name:   string;
+    kanban_rename_column: string;
+    kanban_remove_column: string;
+    kanban_empty_column:  string;
+    kanban_no_cards:      string;
+    kanban_move_failed:   string;
+    kanban_drag:          string;
   };
   addressbook: {
     contact_count:             string;

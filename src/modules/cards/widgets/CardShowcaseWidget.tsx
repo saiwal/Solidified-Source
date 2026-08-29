@@ -1,6 +1,6 @@
-// Card showcase (config: { uuid }): renders one card as the real flip
-// component rather than a text teaser — the point of a card is its two
-// faces, so a showcase that flattened it would lose what it is. multiInstance.
+// Card showcase (config: { uuid }): renders one card through the real CardFace
+// rather than a text teaser, so it keeps the template-specific layout it has on
+// the board. multiInstance.
 
 import { Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -35,7 +35,7 @@ export default function CardShowcaseWidget(props: WidgetProps) {
   return (
     <Show when={uuid()} fallback={<EditHint text={t("widgets.not_configured")} />}>
       <Show when={card.loading}>
-        <div class="h-64 w-full bg-surface border border-rim rounded-2xl animate-pulse" />
+        <div class="h-40 w-full bg-surface border border-rim rounded-2xl animate-pulse" />
       </Show>
 
       <Show when={!card.loading}>

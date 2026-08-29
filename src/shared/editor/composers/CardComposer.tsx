@@ -375,12 +375,9 @@ export default function CardComposer(props: Props) {
     setWordCount(countWords(text));
   };
 
-  const onTitleChange = (v: string) => {
-    store.setTitle(v);
-    if (!store.slug()) {
-      store.setSlug(slugify(v));
-    }
-  };
+  // The slug is never derived from the title as you type — it stays empty until
+  // the user asks for one via SlugField's ↻ button (or types it by hand).
+  const onTitleChange = (v: string) => store.setTitle(v);
 
   return (
     // No mx-auto here, deliberately: every mount point (CardsHeaderWidget's

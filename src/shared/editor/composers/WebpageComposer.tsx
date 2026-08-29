@@ -30,7 +30,6 @@ import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import SlugField from "../components/SlugField";
 import SummaryField from "../components/SummaryField";
 import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
-import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
 
@@ -254,12 +253,9 @@ export default function WebpageComposer(props: Props) {
   window.addEventListener("keydown", wiring.onKeyDown);
   onCleanup(() => window.removeEventListener("keydown", wiring.onKeyDown));
 
-  const onTitleChange = (v: string) => {
-    store.setTitle(v);
-    if (!isEditing() && !store.slug()) {
-      store.setSlug(slugify(v));
-    }
-  };
+  // The slug is never derived from the title as you type — it stays empty until
+  // the user asks for one via SlugField's ↻ button (or types it by hand).
+  const onTitleChange = (v: string) => store.setTitle(v);
 
   return (
     <div class="max-w-3xl mx-auto space-y-4 py-6 px-4">

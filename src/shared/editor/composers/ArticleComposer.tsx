@@ -32,7 +32,6 @@ import SummaryField from "../components/SummaryField";
 import LanguageField from "../components/LanguageField";
 import SeriesField from "../components/SeriesField";
 import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
-import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
 
@@ -293,12 +292,9 @@ export default function ArticleComposer(props: Props) {
     setWordCount(countWords(text));
   };
 
-  const onTitleChange = (v: string) => {
-    store.setTitle(v);
-    if (!store.slug()) {
-      store.setSlug(slugify(v));
-    }
-  };
+  // The slug is never derived from the title as you type — it stays empty until
+  // the user asks for one via SlugField's ↻ button (or types it by hand).
+  const onTitleChange = (v: string) => store.setTitle(v);
 
   return (
     <div class="flex flex-col flex-1 min-h-0 max-w-3xl mx-auto gap-4 py-6 px-4">

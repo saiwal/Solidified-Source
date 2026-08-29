@@ -1,5 +1,5 @@
-import { createEffect, createSignal, Show } from "solid-js";
-import { MdFillSearch, MdFillClose } from "solid-icons/md";
+import { createEffect, createSignal, For, Show } from "solid-js";
+import { MdFillSearch, MdFillClose, MdOutlineGrid_view, MdOutlineView_kanban } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -12,7 +12,10 @@ import {
   setCardSearch, clearCardFilter,
   resetPosts, loadCards,
 } from "../store";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useIsCardsList } from "../lib/isCardsList";
+import { boardView, setBoardView } from "../lib/kanban";
+import { fetchKanban } from "../api";
 
 function CardModal(props: { uid: number; nick: string; onClose: () => void }) {
   const { t } = useI18n();
@@ -40,6 +43,9 @@ export default function CardsHeaderWidget() {
   const nick = usePageNick();
   const isList = useIsCardsList();
   const [searchParams] = useSearchParams();
+  // Same query key as CardsContentWidget and the board — one request.
+  const [kanban] = createQueryResource("kanban-config", nick, fetchKanban);
+  const showKanban = () => boardView() === "kanban" && !!kanban()?.enabled;
   const [open, setOpen] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());
@@ -67,11 +73,36 @@ export default function CardsHeaderWidget() {
 
   return (
     <Show when={isList()}>
-      <div class="space-y-4 max-w-5xl mx-auto">
+      {/* Matches the content widget's width so the title row lines up with
+          whichever board is showing. */}
+      <div class="space-y-4" classList={{ "max-w-5xl mx-auto": !showKanban() }}>
         <div class="flex items-center justify-between gap-2">
           <h1 class="text-xl font-bold text-txt">{t("cards.title")}</h1>
 
           <div class="flex items-center gap-1.5">
+            <Show when={kanban()?.enabled}>
+              <div class="flex items-center rounded-lg border border-rim bg-surface overflow-hidden">
+                <For each={[["board", MdOutlineGrid_view, "cards.view_board"] as const,
+                            ["kanban", MdOutlineView_kanban, "cards.view_kanban"] as const]}>
+                  {([view, Icon, key]) => (
+                    <button
+                      type="button"
+                      title={t(key)}
+                      aria-pressed={boardView() === view}
+                      onClick={() => setBoardView(view)}
+                      class="p-1.5 transition-colors"
+                      classList={{
+                        "bg-accent text-accent-fg": boardView() === view,
+                        "text-muted hover:bg-elevated hover:text-txt": boardView() !== view,
+                      }}
+                    >
+                      <Icon size={15} />
+                    </button>
+                  )}
+                </For>
+              </div>
+            </Show>
+
             <Show
               when={searchOpen()}
               fallback={

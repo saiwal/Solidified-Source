@@ -87,6 +87,75 @@ export async function reorderDeck(
   }
 }
 
+// ── Kanban board ──────────────────────────────────────────────────────────────
+// Board config only; a board's cards come from fetchCards(cat: <board name>),
+// which is permission-filtered server-side like every other card list.
+
+/** A board is a category: its cards carry `name` as a category, its columns are decks. */
+export interface KanbanBoardDef {
+  name: string;
+  columns: string[];
+}
+
+export interface KanbanConfig {
+  enabled: boolean;
+  boards: KanbanBoardDef[];
+}
+
+export async function fetchKanban(nick: string): Promise<KanbanConfig> {
+  const res = await fetch(`/spa/cards/${nick}/kanban`);
+  if (!res.ok) throw new Error("Failed to fetch kanban config");
+  const json = await res.json();
+  return {
+    enabled: !!json.data?.enabled,
+    boards: json.data?.boards ?? [],
+  };
+}
+
+export async function saveKanbanBoards(
+  nick: string,
+  boards: KanbanBoardDef[],
+): Promise<KanbanBoardDef[]> {
+  const res = await apiFetch(`/spa/cards/${nick}/kanban-boards`, {
+    method: "POST",
+    body: JSON.stringify({ boards }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error?.message ?? "Saving boards failed");
+  }
+  return (await res.json()).data?.boards ?? boards;
+}
+
+/** Rename a board = retag its cards (a board is a category). */
+export async function renameBoard(nick: string, from: string, to: string): Promise<void> {
+  const res = await apiFetch(`/spa/cards/${nick}/board-rename`, {
+    method: "POST",
+    body: JSON.stringify({ from, to }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error?.message ?? "Rename failed");
+  }
+}
+
+/** Move a card into a deck (kanban column), or out of every deck when deck is "". */
+export async function moveCard(
+  nick: string,
+  uuid: string,
+  deck: string,
+  order: number,
+): Promise<void> {
+  const res = await apiFetch(`/spa/cards/${nick}/deck-move`, {
+    method: "POST",
+    body: JSON.stringify({ uuid, deck, order }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new Error(err?.error?.message ?? "Move failed");
+  }
+}
+
 export async function fetchCard(
   nick: string,
   uuid: string,

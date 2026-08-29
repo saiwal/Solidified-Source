@@ -116,12 +116,11 @@ registerModule({
       helpTarget: "widgets.card_showcase",
     },
     {
-      // Opt-in deck index — picker only, no default placement
       id: "cards.deck",
       label: () => useI18n().t("widgets.card_deck"),
       loader: () => import("./widgets/CardDeckWidget"),
       slot: "right",
-      defaultModules: [],
+      defaultModules: ["cards"],
       contexts: ["cards"],
       helpTarget: "widgets.card_deck",
     },

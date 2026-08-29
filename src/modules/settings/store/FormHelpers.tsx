@@ -98,7 +98,11 @@ export function Group(props: {
  * A real <input type="checkbox"> styled as a switch, so forms keep their
  * plain FormData submit semantics (present = "1", absent = unchecked).
  */
-export function SwitchRow(props: { name: string; label: string; hint?: string; checked: boolean }) {
+export function SwitchRow(props: {
+  name: string; label: string; hint?: string; checked: boolean;
+  /** Only for switches outside a submitted form — inside one, FormData reads it. */
+  onChange?: (checked: boolean) => void;
+}) {
   return (
     <label class="flex items-center justify-between gap-4 py-2.5 cursor-pointer select-none">
       <span class="min-w-0">
@@ -112,6 +116,7 @@ export function SwitchRow(props: { name: string; label: string; hint?: string; c
         name={props.name}
         value="1"
         checked={props.checked}
+        onChange={(e) => props.onChange?.(e.currentTarget.checked)}
         class="appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full
                bg-elevated border border-rim transition-colors
                checked:bg-accent checked:border-accent

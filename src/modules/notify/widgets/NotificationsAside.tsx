@@ -1266,7 +1266,13 @@ export default function NotificationsAside() {
                 </Show>
               </button>
             </Show>
-            <Show when={booted() && auth()?.isLoggedIn}>
+            <Show
+              when={
+                booted() &&
+                auth()?.isLoggedIn &&
+                (hasNewAnnouncements() || showAnnouncements() || isAdmin())
+              }
+            >
               <button
                 onClick={toggleAnnouncements}
                 title={t("widgets.site_announcements")}
