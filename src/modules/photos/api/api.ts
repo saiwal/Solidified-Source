@@ -13,6 +13,8 @@ export interface Photo {
   title:       string;
   description: string;
   is_nsfw:     boolean;
+  /** Effective visibility: own ACL restricted, or the album folder is. */
+  is_private:  boolean;
   album:       string;
   created:     string;
   src:         string;

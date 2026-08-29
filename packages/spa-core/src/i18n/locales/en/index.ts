@@ -31,6 +31,7 @@ import { admin }      from "./admin";
 import { cart }       from "./cart";
 import { guest_access } from "./guest_access";
 import { share }      from "./share";
+import { sources }    from "./sources";
 import { bookmarks }  from "./bookmarks";
 import { profiles }   from "./profiles";
 import { notepad }    from "./notepad";
@@ -73,6 +74,7 @@ export const dict: RawDictionary = {
   cart,
   guest_access,
   share,
+  sources,
   bookmarks,
   profiles,
   notepad,

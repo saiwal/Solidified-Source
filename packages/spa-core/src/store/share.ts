@@ -29,6 +29,13 @@ export interface ShareTarget {
    * default for things with no Lockview equivalent (articles, cards, webpages).
    */
   lockview?: { type: LockviewType; id: number | string };
+  /**
+   * The thing itself is not publicly reachable, so embedding it in a post gives
+   * the audience a broken image. Set for photos whose own ACL is restricted, or
+   * that sit in an album folder a visitor cannot open — a cover photo is the
+   * common case, public in the photo table but gated by its album.
+   */
+  restricted?: boolean;
 }
 
 // Global — lets any entity (post, article, card, photo, file, webpage) open

@@ -18,8 +18,16 @@ export const CONNECTIONS_ITEMS: SubPageItem[] = [
     path: "guest-access",
     label: () => useI18n().t("guest_access.title"),
     context: "owner",
-    dividerAfter: true,
     requiresApp: "/tokens",
+  },
+  // A source is a connection whose posts you republish, so it belongs with the
+  // other per-connection tools rather than in its own top-level nav entry.
+  {
+    path: "sources",
+    label: () => useI18n().t("sources.title"),
+    context: "owner",
+    dividerAfter: true,
+    requiresApp: "/sources",
   },
   {
     path: "people",

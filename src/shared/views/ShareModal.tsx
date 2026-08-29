@@ -201,6 +201,11 @@ const ShareModal: Component<Props> = (props) => {
                       <BiRegularRepost size={17} class="text-muted" />
                       <span>{t("share.share_as_post")}</span>
                     </button>
+                    <Show when={props.target.restricted}>
+                      <p class="px-2 pb-1 text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                        {t("share.restricted_warning")}
+                      </p>
+                    </Show>
                   </Show>
 
                   <a class={rowBtn} href={mailtoHref()}>

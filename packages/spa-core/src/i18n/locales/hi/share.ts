@@ -23,6 +23,7 @@ export const share: RawDictionary["share"] = {
   email_failed:         "ईमेल नहीं भेजा जा सका",
   guest_access_title:    "अतिथि पहुँच",
   guest_access_warning:  "इस लिंक वाला कोई भी इसे देख सकता है — इसमें अतिथि पासवर्ड है।",
+  restricted_warning:    "यह छवि सार्वजनिक नहीं है — जिन्हें आप यह पोस्ट भेजेंगे उन्हें टूटी छवि दिखेगी।",
   guest_access_none:     "इस आइटम के दर्शकों में कोई अतिथि नहीं है।",
   guest_link_active:     "लिंक में अब {{name}} की अतिथि पहुँच शामिल है।",
   guest_email_intro:     "यह लिंक आपको अतिथि “{{name}}” के रूप में साइन इन करता है — इसे पासवर्ड की तरह सुरक्षित रखें।",

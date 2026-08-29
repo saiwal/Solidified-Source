@@ -127,7 +127,10 @@ export function shareTargetForCard(nick: string, c: ArticleLike): ShareTarget {
 /** Swap the Hubzilla size suffix (-0/-1/-2/-3) in a photo URL. */
 const variantSrc = (src: string, size: number) => src.replace(/-\d+(\.[^.]+)$/, `-${size}$1`);
 
-type PhotoLike = Pick<Photo, "resource_id" | "title" | "description" | "src"> & { filename?: string };
+type PhotoLike = Pick<Photo, "resource_id" | "title" | "description" | "src"> & {
+  filename?: string;
+  is_private?: boolean;
+};
 
 export function shareTargetForPhoto(nick: string, p: PhotoLike): ShareTarget {
   const url = absUrl(`/photos/${nick}/image/${p.resource_id}`);
@@ -147,6 +150,7 @@ export function shareTargetForPhoto(nick: string, p: PhotoLike): ShareTarget {
     postBody,
     embed: [{ labelKey: "share.embed_bbcode", code: `[zmg]${medium}[/zmg]` }],
     lockview: { type: "photo", id: p.resource_id },
+    restricted: p.is_private === true,
   };
 }
 

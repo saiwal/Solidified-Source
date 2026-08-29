@@ -49,5 +49,14 @@ const photo = shareTargetForPhoto("bob", {
 assert.equal(photo.url, "https://hub.example/photos/bob/image/r1");
 assert(photo.postBody!.startsWith("[img]https://hub.example/photo/r1-2.jpg[/img]"));
 assert.equal(photo.embed?.[0].code, "[zmg]https://hub.example/photo/r1-2.jpg[/zmg]");
+assert.equal(photo.restricted, false);
+
+// A photo the audience can't fetch (own ACL, or a private album folder) is
+// flagged so the share sheet can warn before it posts a broken image.
+const locked = shareTargetForPhoto("bob", {
+  resource_id: "r2", title: "", description: "",
+  src: "https://hub.example/photo/r2-2.jpg", is_private: true,
+} as any);
+assert.equal(locked.restricted, true);
 
 console.log("shareLinks: ok");

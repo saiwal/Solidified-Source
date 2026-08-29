@@ -2741,6 +2741,7 @@ export type RawDictionary = {
     email_failed:         string;
     guest_access_title:    string;
     guest_access_warning:  string;
+    restricted_warning:    string;
     guest_access_none:     string;
     guest_link_active:     string;
     guest_email_intro:     string;
@@ -2761,6 +2762,33 @@ export type RawDictionary = {
     embed_bbcode:         string;
     attachment_bbcode:    string;
     link_bbcode:          string;
+  };
+  sources: {
+    title:                string;
+    description:          string;
+    import_desc:          string;
+    new_source:           string;
+    no_sources:           string;
+    all_connections:      string;
+    all_public_content:   string;
+    channel_name:         string;
+    change_channel:       string;
+    search_connections:   string;
+    no_connections:       string;
+    words_label:          string;
+    words_help:           string;
+    tags_label:           string;
+    tags_help:            string;
+    resend_label:         string;
+    resend_help:          string;
+    resend_badge:         string;
+    no_republish:         string;
+    review_connection:    string;
+    confirm_delete:       string;
+    edit:                 string;
+    delete:               string;
+    cancel:               string;
+    save:                 string;
   };
   bookmarks: {
     title:            string;
