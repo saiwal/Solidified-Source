@@ -6,7 +6,7 @@
 // page assigned to it picks up the change, instead of each page carrying its
 // own one-off widget list.
 //
-// Placing widgets happens in the real header/gridTop/right/footer regions,
+// Placing widgets happens in the real header/contentTop/right/footer regions,
 // not a separate editor here — same mechanism WebpageComposer.tsx uses:
 // selecting a template drives the app shell's currentPageTemplateId, so
 // Layout.tsx's real, editable <Slot>s show that template's widgets right on

@@ -2,6 +2,9 @@ import type { RawDictionary } from "../namespaces/types";
 
 export const hq: RawDictionary["hq"] = {
   activity:             "गतिविधि",
+  welcome:             "स्वागत है",
+  welcome_greeting:             "वापसी पर स्वागत है, {{name}}",
+  welcome_subtitle:             "आपके चैनल पर यह हो रहा है।",
   drafts:               "मसौदे",
   messages:             "संदेश",
   performance:          "प्रदर्शन",

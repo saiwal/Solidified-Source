@@ -46,4 +46,13 @@ export const files_mod: RawDictionary["files_mod"] = {
   move_here:        "Move here",
   copy_here:        "Copy here",
   categories_placeholder: "Add a category…",
+  selected_count:   "{{count}} selected",
+  select_all:       "Select all",
+  clear_selection:  "Clear",
+  select_item:      "Select {{name}}",
+  bulk_delete_confirm: "Delete {{count}} selected item(s)? This cannot be undone.",
+  bulk_move_title:  "Move or copy {{count}} items",
+  bulk_partial_fail: "{{count}} item(s) failed: {{names}}",
+  delete_selected:  "Delete",
+  already_here:     "Already in this folder — pick another destination",
 };

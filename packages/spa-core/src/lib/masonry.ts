@@ -52,3 +52,45 @@ export function useColumnCount(
   });
   return count;
 }
+
+/**
+ * Tight (masonry) packing for the widget grid slots, as a Solid directive.
+ *
+ * A plain CSS grid makes every row as tall as its tallest cell, so a short
+ * widget beside a tall one leaves a gap underneath it. The fix is the standard
+ * grid-masonry technique: give the container 1px auto-rows and no row gap,
+ * then have each item span as many rows as it is tall (plus the gap it owns as
+ * a bottom margin). With `grid-auto-flow: dense` the browser then slots later
+ * items up into those gaps, so columns pack independently the way the old
+ * gridTop flex columns did — except this still honours an item's column span,
+ * which flex columns could not.
+ *
+ * The row count is written as `--rows` on the element and consumed by the
+ * `.slot-grid > *` rule in index.css. Measurement is a ResizeObserver, so it
+ * re-packs on content changes, font-size changes and container resizes alike.
+ *
+ * ponytail: one observer per item. Slots hold well under a dozen widgets; if a
+ * slot ever gets big, share a single observer across the grid's children.
+ */
+export function rowSpan(el: HTMLElement, accessor: () => number | undefined) {
+  // Slots that aren't grids pass undefined — nothing to measure, and no
+  // observer to pay for.
+  const gap = accessor();
+  if (gap === undefined) return;
+  const measure = () => {
+    // ceil so a fractional height never clips the last pixel of content
+    const rows = Math.max(1, Math.ceil(el.getBoundingClientRect().height + gap));
+    el.style.setProperty("--rows", String(rows));
+  };
+  const obs = new ResizeObserver(measure);
+  obs.observe(el);
+  onCleanup(() => obs.disconnect());
+}
+
+declare module "solid-js" {
+  namespace JSX {
+    interface Directives {
+      rowSpan: number | undefined;
+    }
+  }
+}

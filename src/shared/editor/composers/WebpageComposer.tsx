@@ -101,7 +101,7 @@ export default function WebpageComposer(props: Props) {
   // ── Page layout template assignment — pick one, or create a new one inline.
   // While this composer is mounted, it drives the app shell's own
   // currentPageTemplateId (same signal PageView.tsx sets while viewing the
-  // live page) — so Layout.tsx's real header/gridTop/right/footer slots
+  // live page) — so Layout.tsx's real header/contentTop/right/footer slots
   // immediately reflect whichever template is selected, live, using the
   // exact same rendering AND edit-mode pencil as viewing the actual page.
   // No separate preview UI: the real regions, in their real positions, are

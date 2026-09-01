@@ -58,6 +58,7 @@ export const wiki: RawDictionary["wiki"] = {
   // list columns
   name_col:         "Name",
   format_col:       "Format",
+  type_lock_label:  "Lock content type for all pages",
   format_markdown:  "Markdown",
   format_bbcode:    "BBCode",
   format_plain:     "Plain text",

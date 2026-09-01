@@ -15,9 +15,19 @@ export function sanitizeHtml(html: string): string {
       'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
       'video', 'audio', 'source',
       'button', 'svg', 'path',
+      // Presentational only, no interaction and no script surface. Without
+      // them [table], [s] and [hr] were silently dropped from every post —
+      // bbcode.ts renders them as <table>/<del>/<hr> (bbcode.ts:1031, :899,
+      // :1046), and markdown items produce the same tags via marked.
+      // Deliberately NOT here: <input>, which [checklist] emits. Allowing it
+      // would let federated content draw form controls, so checklists render
+      // as a plain list until that is decided on its own merits.
+      'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption',
+      'del', 'hr',
     ],
     ALLOWED_ATTR: [
       'href', 'src', 'alt', 'title', 'rel',
+      'align', 'colspan', 'rowspan', 'scope',
       'class', 'style', 'target',
       'controls', 'preload', 'poster', 'type',
       'data-plyr-provider', 'data-plyr-embed-id',

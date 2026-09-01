@@ -549,3 +549,26 @@ img.emoji.single-emoji:hover {
 /* The canvas is drawn with viewBackgroundColor: "transparent" so the wrapper's
    themed bg-surface shows through — make sure nothing repaints over it. */
 .excalidraw, .excalidraw .excalidraw__canvas { background: transparent; }
+
+/* Slot widget widths (header/contentTop/footer, laid out as a 12-col grid in
+   Slot.tsx). The width is carried as a data-span attribute rather than a class,
+   since Tailwind can't generate class names from a runtime value, and rather
+   than an inline style, so the font-size clamp below can still override it.
+   Anything without a recognised span — global widgets, the add-widget footer,
+   an out-of-range stored value — falls through to full width. */
+.slot-grid > * { grid-column: 1 / -1; }
+
+@media (min-width: 768px) {
+  .slot-grid > [data-span="6"] { grid-column: span 6 / span 6; }
+  .slot-grid > [data-span="4"] { grid-column: span 4 / span 4; }
+  .slot-grid > [data-span="3"] { grid-column: span 3 / span 3; }
+
+  /* Large font settings cap how many columns fit, mirroring fontSizeColumnCap()
+     in lib/masonry.ts (which does the same for gridTop's automatic packing):
+     18px root → 3 columns max, 21px → 2. data-font-size is stamped on <html> by
+     applyTypographyCSS(), so this re-matches the instant the setting changes.
+     Only the rendering is clamped — the stored span is untouched. */
+  :root[data-font-size="large"] .slot-grid > [data-span="3"] { grid-column: span 4 / span 4; }
+  :root[data-font-size="xl"] .slot-grid > [data-span="3"],
+  :root[data-font-size="xl"] .slot-grid > [data-span="4"] { grid-column: span 6 / span 6; }
+}

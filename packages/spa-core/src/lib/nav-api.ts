@@ -8,6 +8,12 @@ export interface NavViewer {
   /** True when the local user owns the subject channel (or no channel context) */
   is_owner: boolean;
   nick: string;
+  /**
+   * The observer's own xchan hash. "Only me" is stored as allow_cid = [this],
+   * so ACL pickers need it to tell that apart from a one-contact custom ACL.
+   * Empty for an anonymous visitor.
+   */
+  hash: string;
   name: string;
   /** Federated address — @user@domain */
   addr: string;

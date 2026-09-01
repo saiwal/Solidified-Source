@@ -10,10 +10,9 @@ Every widget is registered with a **stable id** in a central widget registry (`m
 |----------|---------------|
 | `right` | Right sidebar (desktop) |
 | `leftBottom` | Bottom of left sidebar |
-| `header` | Top of main content area, above `gridTop` — always full-width, single column |
-| `gridTop` | Top of main content area — masonry-packed via CSS columns, so widgets of different heights pack without grid dead space |
-| `contentTop` | Directly above the routed page content — always full-width, single column, same as `header` |
-| `footer` | Bottom of main content area, below the routed page — always full-width, single column, same as `header` |
+| `header` | Top of main content area — a 12-column grid; widgets are full-width unless given a span |
+| `contentTop` | Directly above the routed page content — same 12-column grid as `header` |
+| `footer` | Bottom of main content area, below the routed page — same 12-column grid as `header` |
 | `rightVisitor` | Right sidebar shown to visitors |
 
 ## Declaring Widgets in a Module
@@ -43,6 +42,7 @@ registerModule({
 - `contexts` — module ids where a user may place the widget, or `"any"`. Defaults to `defaultModules`.
 - `global` — always mounted on every page, never torn down on navigation.
 - `visitorVisible` — `false` means only authenticated local users see the widget; set it on widgets showing viewer-private data (drafts, bookmarks) so visitors to public pages never mount them. Default `true`.
+- `locked`, `multiInstance`, `configComponent`, `helpTarget` — see "Edit Mode", "Widget Instances" and `module.types.ts`.
 
 ## Global vs Module-Local Widgets
 
@@ -165,7 +165,7 @@ const pageTemplateId = createMemo(() => getModule(activeModuleId())?.pageTemplat
 // ...
 <Slot name="right" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
 <Slot name="header" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
-// ...same for gridTop, contentTop, and footer
+// ...same for contentTop and footer
 ```
 
 Templates ride to visitors the same way a module's own layout does (see
@@ -180,14 +180,14 @@ as it loads/unloads.
 ### Multi-region templates
 
 A template isn't confined to the sidebar — it can place widgets in every
-slot `Layout.tsx` already treats as `editable`: `right`, `header`, `gridTop`,
+slot `Layout.tsx` already treats as `editable`: `right`, `header`,
 `contentTop`, `footer` (`leftBottom`/`rightVisitor` are left out — nav-sidebar
 and visitor-only content, not part of an item's own "layout"). `Layout.tsx`
 computes one `pageTemplateId` from `ModuleDef.pageTemplate` and passes it to
 all five `<Slot>`s — a template groups per-slot lists under one named entity
 (`WidgetTemplate.slots: Partial<Record<WidgetSlotName, LayoutEntry[]>>`), so
 the same assigned id applies to every region at once. Backward compatible:
-older templates only have `slots.right`, so their `header`/`gridTop`/`footer`
+older templates only have `slots.right`, so their `header`/`contentTop`/`footer`
 simply fall through to registry defaults until entries are added there — no
 migration needed, and no changes were needed to `WidgetTemplates.php` or to
 how `Slot.tsx` *resolves* a slot's entries, both already per-slot generic.
@@ -219,9 +219,9 @@ needed only two changes to support this:
   (`isCustomised()` returns `false` when `props.templateId` is set) — there's
   no "module default" to revert to once a slot belongs to an explicit
   template; removing widgets one at a time already covers "make it empty."
-- Because edits can affect other pages silently, `Slot.tsx` shows a small
-  notice above the widget list whenever the assigned template is used by
-  more than one page (`templateUsageCount(id) > 1`), naming the template and
+- Because edits can affect other pages silently, `Layout.tsx` shows a small
+  notice above the header slot (`showsTemplateNotice()`) whenever the assigned
+  template is used by more than one page (`templateUsageCount(id) > 1`), naming the template and
   how many pages share it (`widgets.template_shared_notice`). This needs
   `useTemplateUsage()` populated, which — unlike a template's own
   name/entries — isn't part of the boot payload (see below), so `Layout.tsx`
@@ -406,6 +406,70 @@ Singleton entries remain plain strings, so layouts saved before this feature
 parse unchanged; older clients simply drop instance entries they don't
 understand.
 
+## Widget Widths (`span`)
+
+`header`, `contentTop` and `footer` render as a 12-column CSS grid, so a user can
+place widgets side by side instead of one per row. A widget can also declare
+`defaultSpan` in its `WidgetDef` to pick its own out-of-the-box width (the HQ
+dashboard widgets do this); a width the user sets always wins. Each entry carries an optional
+width in twelfths:
+
+```json
+{ "id": "channel.archive", "key": "channel.archive", "span": 6 }
+```
+
+- **Absent means full width** (unless the widget declares a `defaultSpan`), so
+  every layout saved before this existed renders unchanged, and a plain-string singleton stays a plain string until it is given a
+  width.
+- The edit-mode card shows a width dropdown (Full / Half / Third / Quarter → 12 / 6 /
+  4 / 3) next to the move and remove buttons. `<Slot>` only passes `onSetSpan` for the
+  three grid slots, so the sidebar slots show no width control.
+- `Slot` writes the width onto the widget's wrapper as `data-span`, and all the layout
+  lives in three CSS rules in `src/index.css` — an attribute rather than a Tailwind
+  class, because Tailwind can't generate class names from a runtime value. A span with
+  no matching rule (anything but 6/4/3) falls through to full width.
+- **Below `md` (768px) every widget is full width**, regardless of its span.
+- **Large font settings reduce the column count**, mirroring `fontSizeColumnCap()` in
+  `lib/masonry.ts`, which does the same for the stream masonry views: at the
+  `large` setting (18px root) a quarter renders as a third, and at `xl` (21px) both
+  quarters and thirds render as halves. `applyTypographyCSS()` stamps `data-font-size`
+  on `<html>`, so this is another plain CSS selector — it re-matches the moment the
+  setting changes, and the *stored* span is never touched, so lowering the font size
+  restores the chosen width.
+- Both PHP validators (`WidgetLayout.php`, `WidgetTemplates.php`) accept an integer
+  1–12 and silently drop anything else — a bad width must never cost the user their
+  widget. The client parser is equally tolerant.
+
+Templates get spans for free: `widget-templates.ts`'s `parseSlots` delegates to
+`parseWidgetLayout`, and a template's `slots` shape is one `modules[moduleId]` entry.
+
 ## Legacy: `slots`
 
 The old `slots: { right: [loader] }` module field is deprecated and **ignored** by the registry (a console warning fires if non-empty). Migrate to `widgets`.
+
+## Retired slot: `gridTop`
+
+`gridTop` used to sit between `header` and `contentTop` and packed its widgets
+into 1–4 masonry columns automatically (round-robin via `splitIntoColumns`,
+column count measured by `useColumnCount`). Once widgets got their own widths
+it had nothing left that `contentTop` couldn't do, so it was removed along with
+its column-splitting render path in `Slot.tsx`.
+
+Saved layouts and templates outlive that: `parseWidgetLayout` folds any stored
+`gridTop` list into `contentTop` (`RETIRED_SLOTS` in `widget-layout.ts`),
+appending it *above* `contentTop`'s own entries to preserve the old reading
+order, deduplicating by instance key, and dropping the key on the next save.
+The PHP validators still accept `gridTop` so a client running an older bundle
+can't 400 on save.
+
+`masonry.ts` itself stays — `MasonryView`, `ScrapbookView` and the cards board
+still use it.
+
+## Module bodies live in views, not widgets
+
+Modules that had pushed their whole routed body into a `locked` `<module>.content`
+widget (with the routed view reduced to `return null`) have had that body moved
+back into the view component. A module's **header** widget — its title bar and
+actions — is still a widget in the `header` slot, and multi-widget compositions
+that were never a single body (the channel module's four alternative feed
+layouts, siteinfo's six sections, the HQ dashboard) are still widgets too.

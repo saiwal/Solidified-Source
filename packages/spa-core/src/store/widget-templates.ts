@@ -25,7 +25,7 @@ export interface WidgetTemplate {
   slots: Partial<Record<WidgetSlotName, LayoutEntry[]>>;
   /** App chrome mode for pages assigned to this template. Absent ⇒ "default".
    * "zen" hides all app chrome AND widget slots. "focus" hides only the
-   * nav rail/sidebars/mobile bars, keeping header/gridTop/contentTop/footer
+   * nav rail/sidebars/mobile bars, keeping header/contentTop/footer
    * widgets visible on the page itself. "wide" hides only the right widget
    * sidebar. "compact" hides the nav rail and mobile drawer/tab bar (a
    * floating FAB covers opening the right sidebar on mobile there). */
@@ -38,10 +38,10 @@ export interface WidgetTemplates {
 }
 
 // Regions a template can cover — the same slots Layout.tsx marks
-// `editable` and wires a shared `pageTemplateId` to (right/header/gridTop/
-// contentTop/footer; leftBottom/rightVisitor are nav-sidebar and
-// visitor-only, out of scope).
-export const TEMPLATE_SLOTS: WidgetSlotName[] = ["right", "header", "gridTop", "contentTop", "footer"];
+// `editable` and wires a shared `pageTemplateId` to (right/header/contentTop/
+// footer; leftBottom/rightVisitor are nav-sidebar and visitor-only, out of
+// scope).
+export const TEMPLATE_SLOTS: WidgetSlotName[] = ["right", "header", "contentTop", "footer"];
 
 // Reuses widget-layout's tolerant single-module-entry parser: a template's
 // `slots` field has the exact same shape as one `modules[moduleId]` entry.

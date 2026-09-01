@@ -1,5 +1,5 @@
 // Horizontal navigation bar (config: { menu, title? }) fed by one of the page
-// owner's Hubzilla menus, for the gridTop slot. Desktop: inline bar with
+// owner's Hubzilla menus, for the contentTop slot. Desktop: inline bar with
 // click-to-open dropdowns for submenu items (items linking "menu:<name>").
 // Below md it collapses into a hamburger toggle over the shared accordion.
 

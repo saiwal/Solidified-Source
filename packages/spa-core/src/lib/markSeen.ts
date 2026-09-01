@@ -1,3 +1,5 @@
+import { editingWidgets } from "../store/widget-layout";
+
 /**
  * Mark a Hubzilla notification (notify table) as seen.
  * Core's Zotlabs\Module\Notify::init() expects a notify_id request
@@ -37,6 +39,11 @@ function flush() {
  * Calls are coalesced: UUIDs accumulate for 1 s then sent as one request.
  */
 export function markItemSeen(uuid: string): void {
+  // Scrolling past a post while arranging widgets isn't reading it — the user
+  // is on their way to the footer slot, and marking the feed read on the way
+  // there isn't something they can undo. Guarded here rather than at each
+  // observer, since every caller funnels through this.
+  if (editingWidgets()) return;
   pending.add(uuid);
   if (flushTimer) clearTimeout(flushTimer);
   flushTimer = setTimeout(flush, 1000);

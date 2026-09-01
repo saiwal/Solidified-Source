@@ -40,6 +40,10 @@ export interface Post {
   body: string;
   rawBody?: string; // unconverted bbcode source, needed to seed the edit form
   bodyNsfw?: boolean; // body matched an nsfw keyword — body is wrapped in a reveal panel
+  // Format the body was authored in (item.mimetype). Already applied by
+  // mapActivityToPost when it rendered `body`; kept so views can tell the
+  // reader what they are looking at and handle the formats we can't render.
+  mimetype?: string;
   title: string;
   titleNsfw?: boolean; // title matched an nsfw keyword — title is wrapped in a reveal panel
   summary?: string;

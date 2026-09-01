@@ -46,4 +46,13 @@ export const files_mod: RawDictionary["files_mod"] = {
   move_here:        "Hierher verschieben",
   copy_here:        "Hierher kopieren",
   categories_placeholder: "Kategorie hinzufügen…",
+  selected_count:   "{{count}} ausgewählt",
+  select_all:       "Alle auswählen",
+  clear_selection:  "Aufheben",
+  select_item:      "{{name}} auswählen",
+  bulk_delete_confirm: "{{count}} ausgewählte Element(e) löschen? Dies kann nicht rückgängig gemacht werden.",
+  bulk_move_title:  "{{count}} Elemente verschieben oder kopieren",
+  bulk_partial_fail: "{{count}} Element(e) fehlgeschlagen: {{names}}",
+  delete_selected:  "Löschen",
+  already_here:     "Bereits in diesem Ordner — anderes Ziel wählen",
 };

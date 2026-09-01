@@ -336,7 +336,6 @@ const Layout: ParentComponent = (props) => {
                   </p>
                 </Show>
                 <Slot name="header" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
-                <Slot name="gridTop" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
                 <Slot name="contentTop" moduleId={activeModuleId()} templateId={pageTemplateId()} editable />
               </Show>
 

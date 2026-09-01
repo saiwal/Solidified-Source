@@ -25,6 +25,7 @@ import {
   entryId,
   entryKey,
   entryConfig,
+  entrySpan,
   makeInstanceKey,
   type LayoutEntry,
 } from "@utsukta/spa-core/store/widget-layout";
@@ -36,19 +37,13 @@ import {
 import { toast } from "@utsukta/spa-core/store/toast";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
-import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import WidgetArrangementEditor, {
-  WidgetCard,
-  WidgetPickerFooter,
   SlotRegionBox,
   widgetHelpTarget,
   type ResolvedEntry,
 } from "./WidgetArrangementEditor";
 import type { WidgetSlotName } from "@utsukta/spa-core/types/module.types";
-
-const MAX_COLUMNS = 4;
-const COLUMN_INDEXES = Array.from({ length: MAX_COLUMNS }, (_, i) => i);
 
 interface SlotProps {
   name: WidgetSlotName;
@@ -136,12 +131,17 @@ const Slot: Component<SlotProps> = (props) => {
           seen.has(entryKey(entry))
         ) continue;
         seen.add(entryKey(entry));
-        resolved.push({ widget: w, key: entryKey(entry), config: entryConfig(entry) });
+        resolved.push({
+          widget: w,
+          key: entryKey(entry),
+          config: entryConfig(entry),
+          span: entrySpan(entry),
+        });
       }
     } else {
       resolved = resolveModuleSlot(props.name, moduleId)
         .filter((w) => isModuleActive(w.moduleId, apps, disabledFrontendModules()) && visibleToViewer(w))
-        .map((w) => ({ widget: w, key: w.id }));
+        .map((w) => ({ widget: w, key: w.id, span: w.defaultSpan }));
     }
 
     // Locked widgets are essential default content — force them back in if a
@@ -156,14 +156,14 @@ const Slot: Component<SlotProps> = (props) => {
         isModuleActive(w.moduleId, apps, disabledFrontendModules()) &&
         visibleToViewer(w)
       ) {
-        resolved.push({ widget: w, key: w.id });
+        resolved.push({ widget: w, key: w.id, span: w.defaultSpan });
       }
     }
 
     // Reuse previous entry objects when nothing about them changed
     const next = new Map<string, ResolvedEntry>();
     const out = resolved.map((e) => {
-      const cacheKey = `${e.key}|${JSON.stringify(e.config ?? null)}`;
+      const cacheKey = `${e.key}|${JSON.stringify(e.config ?? null)}|${e.span ?? ""}`;
       const prev = entryCache.get(cacheKey);
       const stable = prev && prev.widget === e.widget ? prev : e;
       next.set(cacheKey, stable);
@@ -185,10 +185,9 @@ const Slot: Component<SlotProps> = (props) => {
   const slotLabel = () => {
     switch (props.name) {
       case "header": return t("widgets.slot_header");
-      case "gridTop": return t("widgets.slot_gridtop");
+      case "contentTop": return t("widgets.slot_content_top");
       case "right": return t("widgets.slot_right");
       case "footer": return t("widgets.slot_footer");
-      case "contentTop": return t("widgets.slot_content_top");
       default: return "";
     }
   };
@@ -204,9 +203,14 @@ const Slot: Component<SlotProps> = (props) => {
   // instance object otherwise
   const currentEntries = (): LayoutEntry[] =>
     localEntries().map((e) =>
-      e.key === e.widget.id && e.config === undefined
+      e.key === e.widget.id && e.config === undefined && e.span === undefined
         ? e.widget.id
-        : { id: e.widget.id, key: e.key, ...(e.config !== undefined ? { config: e.config } : {}) },
+        : {
+            id: e.widget.id,
+            key: e.key,
+            ...(e.config !== undefined ? { config: e.config } : {}),
+            ...(e.span !== undefined ? { span: e.span } : {}),
+          },
     );
 
   const move = (index: number, delta: number) => {
@@ -240,6 +244,23 @@ const Slot: Component<SlotProps> = (props) => {
     setConfigOpenKey(null);
   };
 
+  // Width in 12ths for the grid-laid-out slots. Full width is the default, so
+  // it is stored as the absence of a span rather than as span: 12 — which lets
+  // a plain-string singleton entry collapse back to a string.
+  const setSpan = (index: number, span: number) => {
+    const entries = [...currentEntries()];
+    const e = entries[index];
+    if (e === undefined) return;
+    const cfg = entryConfig(e);
+    entries[index] = {
+      id: entryId(e),
+      key: entryKey(e),
+      ...(cfg !== undefined ? { config: cfg } : {}),
+      ...(span !== 12 ? { span } : {}),
+    };
+    void persist(entries);
+  };
+
   // No "revert to default" concept once a slot belongs to a template — a
   // template is an explicit, non-default arrangement by design, and nothing
   // in WidgetTemplates.php ever un-sets a slot key back to "absent" once
@@ -269,64 +290,18 @@ const Slot: Component<SlotProps> = (props) => {
   // Instance key of the entry whose config panel is open (one at a time)
   const [configOpenKey, setConfigOpenKey] = createSignal<string | null>(null);
 
-  // gridTop is a banner strip, not a sidebar: lay its widgets out
-  // masonry-style instead of stacking them full-width. A CSS grid would pad
-  // every cell in a row up to its tallest neighbour — with widgets of very
-  // different heights (a heatmap vs. a one-line quote, or a tall messages
-  // panel vs. a short stats card) that reads as a grid full of dead space,
-  // not a packed layout.
-  //
-  // Widgets are round-robin split across N flex columns — the same
-  // left-to-right, top-to-bottom reading order the network module's
-  // MasonryView uses — rather than CSS multi-column layout, which fills one
-  // column fully before moving to the next (column-major, reads
-  // top-to-bottom-then-wrap rather than left-to-right). Global and local
-  // widgets are split independently, each keyed off its own stable array, so
-  // a global widget's column never shifts (and it never remounts) when local
-  // entries change on navigation.
-  //
-  // This split is used both browsing and editing, so the edit view previews
-  // the same layout the visitor sees. In edit mode, cards still move via a
-  // single flat order (move up/down shifts an entry's position in
-  // localEntries, which is what the round-robin split assigns columns from)
-  // — WidgetCard's index is derived with indexOf() rather than threaded
-  // positionally, since column-splitting means a column's <For> no longer
-  // sees each entry's place in the full list directly.
-  //
-  // header (above gridTop) and footer (below all page content) are always
-  // full-width, single-column — for banner-like widgets (e.g. a horizontal
-  // nav menu) that must span the whole row rather than pack into a column.
-  //
-  // All three need their own margin and a conditional wrapper (the
-  // surrounding <main> has no space-y, unlike the sidebar <aside>). Other
-  // slots return the bare content and rely on their parent's spacing.
-  const isGridTop = props.name === "gridTop";
+  // header, contentTop and footer are laid out as a 12-column grid: each
+  // widget is full-width unless its layout entry (or the widget's own
+  // defaultSpan) gives it a narrower span. All three need their own margin
+  // and a conditional wrapper — the surrounding <main> has no space-y, unlike
+  // the sidebar <aside>. Other slots return the bare content and rely on
+  // their parent's spacing.
   const isFullWidth =
-    props.name === "header" || props.name === "footer" || props.name === "contentTop";
+    props.name === "header" || props.name === "contentTop" || props.name === "footer";
   const hasContent = createMemo(
     () => globalWidgets().length > 0 || localEntries().length > 0 || editing(),
   );
 
-  const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
-  const columnCount = isGridTop ? useColumnCount(gridEl, 16, MAX_COLUMNS) : () => 1;
-  // Fixed set of column containers, hidden individually when they hold nothing.
-  // columnCount() only decides how the entries are *distributed*; it must not
-  // decide how many <div>s exist. It is derived from a ResizeObserver on the
-  // grid element, which cannot exist until the slot has content, so it is
-  // always 1 for the render that first mounts the grid and corrects to its
-  // real value immediately after — and growing the outer <For>'s array in that
-  // window left columns 1..n-1 out of the DOM until something else forced the
-  // slot to re-render (e.g. navigating away and back).
-  const columnIndexes = COLUMN_INDEXES;
-  const columnHasContent = (i: number) =>
-    (globalColumns()[i]?.length ?? 0) + (localColumns()[i]?.length ?? 0) > 0;
-  const globalColumns = createMemo(() => splitIntoColumns(globalWidgets(), columnCount()));
-  const localColumns = createMemo(() => splitIntoColumns(localEntries(), columnCount()));
-
-  // Only built for isFullWidth / non-gridTop slots — kept as a function
-  // rather than a value so gridTop slots (which never call it) don't pay for
-  // constructing an unused, never-mounted reactive tree alongside the
-  // column-split render below.
   const content = () => (
     <>
       {/* Always mounted — never torn down on module navigation */}
@@ -346,7 +321,11 @@ const Slot: Component<SlotProps> = (props) => {
             {(entry) => {
               const Widget = getLazy(entry.widget.loader);
               return (
-                <div class="empty:hidden" use:helpable={widgetHelpTarget(entry.widget)}>
+                <div
+                  class="empty:hidden"
+                  data-span={entry.span ?? 12}
+                  use:helpable={widgetHelpTarget(entry.widget)}
+                >
                   <Widget config={entry.config} />
                 </div>
               );
@@ -365,6 +344,7 @@ const Slot: Component<SlotProps> = (props) => {
           onRemove={removeAt}
           onAdd={addWidget}
           onSaveConfig={saveConfig}
+          onSetSpan={isFullWidth ? setSpan : undefined}
           onReset={isCustomised() ? () => void persist(null) : undefined}
         />
       </Show>
@@ -378,10 +358,10 @@ const Slot: Component<SlotProps> = (props) => {
         <div class={marginClass}>
           <Show
             when={editing()}
-            fallback={<div class="flex flex-col gap-4">{content()}</div>}
+            fallback={<div class="slot-grid grid grid-cols-12 gap-4 items-start">{content()}</div>}
           >
             <SlotRegionBox label={slotLabel()}>
-              <div class="flex flex-col gap-4">{content()}</div>
+              <div class="slot-grid grid grid-cols-12 gap-4 items-start">{content()}</div>
             </SlotRegionBox>
           </Show>
         </div>
@@ -389,90 +369,9 @@ const Slot: Component<SlotProps> = (props) => {
     );
   }
 
-  if (!isGridTop) {
-    return (
-      <Show when={editing()} fallback={content()}>
-        <SlotRegionBox label={slotLabel()}>{content()}</SlotRegionBox>
-      </Show>
-    );
-  }
-
-  const globalColumnItems = (colIndex: number) => (
-    <For each={globalColumns()[colIndex] ?? []}>
-      {(g) => (
-        <div class="mb-4" use:helpable={widgetHelpTarget(g.widget)}>
-          <g.Widget />
-        </div>
-      )}
-    </For>
-  );
-
   return (
-    <Show when={hasContent()}>
-      <Show
-        when={!editing()}
-        fallback={
-          <SlotRegionBox label={slotLabel()}>
-            <div class="flex gap-4 items-start mb-4" ref={setGridEl}>
-              <For each={columnIndexes}>
-                {(colIndex) => (
-                  <div
-                    class="flex flex-col min-w-0"
-                    classList={{ "flex-1": columnHasContent(colIndex), hidden: !columnHasContent(colIndex) }}
-                  >
-                    {globalColumnItems(colIndex)}
-                    <For each={localColumns()[colIndex] ?? []}>
-                      {(entry) => (
-                        <WidgetCard
-                          entry={entry}
-                          index={() => localEntries().indexOf(entry)}
-                          entriesLength={() => localEntries().length}
-                          configOpenKey={configOpenKey()}
-                          onToggleConfig={(key) => setConfigOpenKey(configOpenKey() === key ? null : key)}
-                          onMove={move}
-                          onRemove={removeAt}
-                          onSaveConfig={saveConfig}
-                          itemClass="mb-4"
-                        />
-                      )}
-                    </For>
-                  </div>
-                )}
-              </For>
-            </div>
-            <WidgetPickerFooter
-              availableWidgets={availableWidgets()}
-              pickerOpen={pickerOpen()}
-              onTogglePicker={() => setPickerOpen((o) => !o)}
-              onAdd={addWidget}
-              onReset={isCustomised() ? () => void persist(null) : undefined}
-            />
-          </SlotRegionBox>
-        }
-      >
-        <div class="flex gap-4 items-start mb-4" ref={setGridEl}>
-          <For each={columnIndexes}>
-            {(colIndex) => (
-              <div
-                class="flex flex-col min-w-0"
-                classList={{ "flex-1": columnHasContent(colIndex), hidden: !columnHasContent(colIndex) }}
-              >
-                {globalColumnItems(colIndex)}
-                <For each={localColumns()[colIndex] ?? []}>
-                  {(entry) => {
-                    const Widget = getLazy(entry.widget.loader);
-                    return (
-                      <div class="mb-4" use:helpable={widgetHelpTarget(entry.widget)}>
-                        <Widget config={entry.config} />
-                      </div>
-                    );
-                  }}
-                </For>
-              </div>
-            )}
-          </For>
-        </div>
-      </Show>
+    <Show when={editing()} fallback={content()}>
+      <SlotRegionBox label={slotLabel()}>{content()}</SlotRegionBox>
     </Show>
   );
 };

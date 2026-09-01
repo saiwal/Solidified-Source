@@ -155,7 +155,7 @@ registerModule({
       id: "channel.activity_heatmap",
       label: () => useI18n().t("widgets.activity_heatmap"),
       loader: () => import("./widgets/ActivityHeatmapWidget"),
-      slot: ["right", "gridTop"],
+      slot: ["right", "contentTop"],
       defaultModules: [],
       contexts: ["channel", "profile", "hq"],
       helpTarget: "widgets.activity_heatmap",

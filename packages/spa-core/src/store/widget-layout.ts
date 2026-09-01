@@ -22,6 +22,9 @@ export interface WidgetInstance {
   id: string;
   key: string;
   config?: Record<string, unknown>;
+  /** Width in 12ths of the slot's row, for the grid-laid-out slots
+   * (header/contentTop/footer). Absent means full width. */
+  span?: number;
 }
 
 export type LayoutEntry = string | WidgetInstance;
@@ -43,13 +46,29 @@ export function entryConfig(e: LayoutEntry): Record<string, unknown> | undefined
   return typeof e === "string" ? undefined : e.config;
 }
 
+export function entrySpan(e: LayoutEntry): number | undefined {
+  return typeof e === "string" ? undefined : e.span;
+}
+
 /** Fresh unique key for a new instance of a multiInstance widget. */
 export function makeInstanceKey(widgetId: string): string {
   return `${widgetId}#${Math.random().toString(36).slice(2, 8)}`;
 }
 
 const LS_KEY = "hz-widget-layout";
-const SLOT_NAMES = new Set<string>(["right", "leftBottom", "gridTop", "rightVisitor", "header", "footer", "contentTop"]);
+const SLOT_NAMES = new Set<string>(["right", "leftBottom", "rightVisitor", "header", "footer", "contentTop"]);
+
+/** Retired slots mapped to the slot that replaced them. `gridTop` sat between
+ * `header` and `contentTop` and auto-packed its widgets into masonry columns;
+ * once widgets got their own widths it had nothing left that `contentTop`
+ * couldn't do, so it folded into it. Layouts saved while it existed are
+ * migrated on parse (see parseWidgetLayout) rather than dropped; the next save
+ * retires the key. */
+const RETIRED_SLOTS: Record<string, WidgetSlotName> = {
+  gridTop: "contentTop",
+};
+/** Fold order, so a merged slot keeps its old top-to-bottom reading order. */
+const SLOT_ORDER = ["header", "gridTop", "contentTop"];
 
 function parseEntry(raw: unknown): LayoutEntry | null {
   if (typeof raw === "string") return raw;
@@ -59,6 +78,9 @@ function parseEntry(raw: unknown): LayoutEntry | null {
   const entry: WidgetInstance = { id: obj.id, key: obj.key };
   if (obj.config && typeof obj.config === "object" && !Array.isArray(obj.config)) {
     entry.config = obj.config as Record<string, unknown>;
+  }
+  if (typeof obj.span === "number" && Number.isInteger(obj.span) && obj.span >= 1 && obj.span <= 12) {
+    entry.span = obj.span;
   }
   return entry;
 }
@@ -87,17 +109,27 @@ export function parseWidgetLayout(raw: unknown): WidgetLayout | null {
   for (const [moduleId, slots] of Object.entries(modules)) {
     if (!slots || typeof slots !== "object" || Array.isArray(slots)) continue;
     const cleanSlots: Partial<Record<WidgetSlotName, LayoutEntry[]>> = {};
-    for (const [slot, entries] of Object.entries(slots as Record<string, unknown>)) {
-      if (!SLOT_NAMES.has(slot) || !Array.isArray(entries)) continue;
-      const seen = new Set<string>();
-      const cleanEntries: LayoutEntry[] = [];
+    const seenBySlot = new Map<string, Set<string>>();
+    // Retired slots fold into their replacement rather than being dropped, so
+    // a user keeps every widget they ever placed. Sorted by the regions' old
+    // on-screen order, so the merge is deterministic and reads the same way it
+    // used to, whatever order the keys happen to sit in the stored JSON.
+    const slotEntries = Object.entries(slots as Record<string, unknown>).sort(
+      ([a], [b]) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b),
+    );
+    for (const [slot, entries] of slotEntries) {
+      const target = RETIRED_SLOTS[slot] ?? slot;
+      if (!SLOT_NAMES.has(target) || !Array.isArray(entries)) continue;
+      let seen = seenBySlot.get(target);
+      if (!seen) seenBySlot.set(target, (seen = new Set<string>()));
+      const cleanEntries: LayoutEntry[] = cleanSlots[target as WidgetSlotName] ?? [];
       for (const rawEntry of entries) {
         const entry = parseEntry(rawEntry);
         if (entry === null || seen.has(entryKey(entry))) continue;
         seen.add(entryKey(entry));
         cleanEntries.push(entry);
       }
-      cleanSlots[slot as WidgetSlotName] = cleanEntries;
+      cleanSlots[target as WidgetSlotName] = cleanEntries;
     }
     if (Object.keys(cleanSlots).length) clean[moduleId] = cleanSlots;
   }

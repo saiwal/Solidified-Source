@@ -140,14 +140,14 @@ export function useLayoutChrome() {
   // A module may register a reactive pageTemplate() (e.g. a webpage's
   // assigned layout template) to have its editable regions resolve from that
   // named template instead of the module-level layout. Applies uniformly to
-  // every slot already `editable` below (header/gridTop/right/footer) — a
+  // every slot already `editable` below (header/contentTop/right/footer) — a
   // template is one named arrangement spanning all of an item's regions, not
   // just the sidebar. See ModuleDef.pageTemplate / Slot's templateId.
   const pageTemplateId = createMemo(() => getModule(activeModuleId())?.pageTemplate?.() ?? undefined);
 
   // "zen" hides all app chrome (nav, sidebars, widget slots, mobile bars).
   // "focus" hides only the nav rail/sidebars/mobile bars, keeping the
-  // header/gridTop/contentTop/footer widget slots visible on the page.
+  // header/contentTop/footer widget slots visible on the page.
   // "wide" hides only the right widget sidebar (and its FAB/panel toggle
   // controls), keeping the nav rail, mobile bars, and widget slots as-is.
   // "compact" hides the nav rail AND the mobile drawer/bottom tab bar (so
@@ -195,8 +195,8 @@ export function useLayoutChrome() {
     viewerRole() === "owner" || viewerRole() === "local";
 
   // Shown once per page (not once per templated slot — see Slot.tsx, which
-  // used to render this same notice separately in header/gridTop/contentTop/
-  // footer/right).
+  // used to render this same notice separately in header/contentTop/footer/
+  // right).
   const showsTemplateNotice = createMemo(
     () => !!pageTemplateId() && editingWidgets() && isOwner() && templateUsageCount(pageTemplateId()!) > 1,
   );

@@ -21,6 +21,9 @@ export type AuthState = {
 	updateInterval: number;
   features: Record<string, boolean>;
   localOnlyPostsEnabled: boolean; // Settings → Privacy opt-in for undelivered "wall only" posts
+  // pconfig system/page_mimetype — the channel's default format for new
+  // webpages and blocks (Webpages.php:134, Blocks.php:84). '' = bbcode.
+  pageMimetype: string;
 };
 
 const ANONYMOUS: AuthState = {
@@ -34,6 +37,7 @@ const ANONYMOUS: AuthState = {
 	updateInterval: 60,
   features: {},
   localOnlyPostsEnabled: false,
+  pageMimetype: "",
 };
 
 function channelNickFromUrl(): string {
@@ -116,6 +120,7 @@ async function fetchAuthState(): Promise<AuthState> {
     updateInterval: parseInt(data.system?.update_interval ?? "60000", 10),
     features: (data.features ?? {}) as Record<string, boolean>,
     localOnlyPostsEnabled: isLocal && data.spa?.local_only_posts === "1",
+    pageMimetype: String(data.system?.page_mimetype ?? ""),
   };
 }
 // Singleton resource — fetched once at boot, shared across the app
@@ -161,6 +166,10 @@ export function isFeatureEnabled(name: string): boolean {
 }
 export function isLocalOnlyPostsEnabled(): boolean {
   return authState()?.localOnlyPostsEnabled ?? false;
+}
+/** Channel default format for new webpages/blocks; '' means text/bbcode. */
+export function pageMimetype(): string {
+  return authState()?.pageMimetype ?? "";
 }
 /** Patch after a Privacy settings save so the composer reflects it immediately. */
 export function setLocalOnlyPostsEnabled(enabled: boolean) {

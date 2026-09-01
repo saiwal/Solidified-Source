@@ -3,6 +3,9 @@ import type { RawDictionary } from "../namespaces/types";
 export const hq: RawDictionary["hq"] = {
   // Widget titles
   activity:             "Activity",
+  welcome:              "Welcome",
+  welcome_greeting:     "Welcome back, {{name}}",
+  welcome_subtitle:     "Here's what's been happening on your channel.",
   drafts:               "Drafts",
   messages:             "Messages",
   performance:          "Performance",

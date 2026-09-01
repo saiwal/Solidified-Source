@@ -29,7 +29,7 @@ type SlotLoader = () => Promise<{ default: Component }>;
 
 export type ComponentLoader<P extends Record<string, any> = {}> = () => Promise<{ default: Component<P> }>;
 
-export type WidgetSlotName = "right" | "leftBottom" | "gridTop" | "rightVisitor" | "header" | "footer" | "contentTop";
+export type WidgetSlotName = "right" | "leftBottom" | "rightVisitor" | "header" | "footer" | "contentTop";
 
 /** Props every widget component is mounted with. */
 export interface WidgetProps {
@@ -54,6 +54,13 @@ export interface WidgetDef {
   slot: WidgetSlotName | WidgetSlotName[];
   /** Module ids where the widget appears out of the box. Defaults to the registering module. */
   defaultModules?: string[];
+  /**
+   * Width in twelfths this widget takes in the grid slots (header/contentTop/
+   * footer) when the user hasn't chosen one — e.g. 4 for a third. Only the
+   * widths with a rule in index.css (6/4/3) do anything; anything else, and
+   * the default, is full width. A user-set span always wins.
+   */
+  defaultSpan?: number;
   /** Module ids where the widget can be placed by the user, or "any". Defaults to defaultModules. */
   contexts?: string[] | "any";
   /** Always mounted regardless of active module; never torn down on navigation. */
@@ -98,7 +105,6 @@ export interface WidgetDef {
 export interface SlotsDef {
   right?: SlotLoader | SlotLoader[];
   leftBottom?: SlotLoader | SlotLoader[];
-  gridTop?: SlotLoader | SlotLoader[];
   rightVisitor?: SlotLoader | SlotLoader[];
  help?: () => Promise<{ default: Component }>;
 }
@@ -139,7 +145,7 @@ export interface ModuleDef {
    * chrome setting). "zen" hides all app chrome (nav, sidebars, widget
    * slots, mobile bars), leaving only the routed page's own content.
    * "focus" hides only the nav rail/sidebars/mobile bars, keeping
-   * header/gridTop/contentTop/footer widgets visible on the page. "wide"
+   * header/contentTop/footer widgets visible on the page. "wide"
    * hides only the right widget sidebar. "compact" hides the nav rail and
    * mobile drawer/tab bar. Omit/return undefined (or "default") for normal
    * chrome. */

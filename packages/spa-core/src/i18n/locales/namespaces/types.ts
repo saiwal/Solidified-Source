@@ -519,12 +519,18 @@ export type RawDictionary = {
     configure_widget: string;
     move_up:       string;
     move_down:     string;
+    widget_width:  string;
+    width_full:    string;
+    width_three_quarters: string;
+    width_two_thirds: string;
+    width_half:    string;
+    width_third:   string;
+    width_quarter: string;
     reset_layout:  string;
     empty_slot:    string;
     none_to_add:   string;
     save_failed:   string;
     slot_header:   string;
-    slot_gridtop:  string;
     slot_right:    string;
     slot_footer:   string;
     slot_content_top:    string;
@@ -830,6 +836,13 @@ export type RawDictionary = {
     slug_placeholder:       string;
     generate_slug:          string;
     category_field_placeholder: string;
+    format:                 string;
+    format_bbcode:          string;
+    format_html:            string;
+    format_markdown:        string;
+    format_plain:           string;
+    format_switch_confirm:  string;
+    format_php_unsupported: string;
     language_label:         string;
     language_placeholder:   string;
     series_label:           string;
@@ -1676,6 +1689,9 @@ export type RawDictionary = {
   };
   hq: {
     activity:             string;
+    welcome:              string;
+    welcome_greeting:     string;
+    welcome_subtitle:     string;
     drafts:               string;
     messages:             string;
     performance:          string;
@@ -2228,6 +2244,16 @@ export type RawDictionary = {
     move_here:        string;
     copy_here:        string;
     categories_placeholder: string;
+    // Bulk selection
+    selected_count:   string;
+    select_all:       string;
+    clear_selection:  string;
+    select_item:      string;
+    bulk_delete_confirm: string;
+    bulk_move_title:  string;
+    bulk_partial_fail: string;
+    delete_selected:  string;
+    already_here:     string;
   };
   wiki: {
     wikis:            string;
@@ -2286,6 +2312,7 @@ export type RawDictionary = {
     // list columns
     name_col:         string;
     format_col:       string;
+    type_lock_label:  string;
     format_markdown:  string;
     format_bbcode:    string;
     format_plain:     string;

@@ -1,6 +1,7 @@
 // mappers/activity.mapper.ts
 import { sanitizeHtml } from "./sanitize";
 import { bbcodeToHtml } from "./bbcode";
+import { renderBody } from "./renderBody";
 import { oembedResolver } from "./oembedResolver";
 import { matchNsfwWord, wrapNsfwHtml } from "./nsfw";
 import { nsfwWordsList } from "../store/nsfw-settings";
@@ -39,7 +40,10 @@ export function mapActivityToPost(activity: any): Post {
   let body = "";
   const nsfwMatch = matchNsfwWord(rawBody, nsfwWordsList());
   try {
-    const converted = bbcodeToHtml(rawBody, { oembedResolver });
+    // Identity sanitizer: the nsfw reveal panel has to wrap the converted
+    // markup *before* sanitizeHtml runs, since that is what whitelists the
+    // data-nsfw-* attributes the panel needs.
+    const converted = renderBody(rawBody, activity.mimetype, { oembedResolver }, (h) => h);
     let html = typeof converted === "string" ? converted : "";
     if (nsfwMatch) html = wrapNsfwHtml(html, nsfwMatch);
     body = sanitizeHtml(html);
@@ -86,6 +90,7 @@ export function mapActivityToPost(activity: any): Post {
     body,
     rawBody,
     bodyNsfw: !!nsfwMatch,
+    mimetype: activity.mimetype ?? "",
     summary,
     title,
     titleNsfw: !!nsfwTitleMatch,
