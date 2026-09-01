@@ -5,7 +5,7 @@ import { fetchPubstream, type PubstreamMeta } from "./api";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
+import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { storageGet, storageSet } from "@utsukta/spa-core/lib/storage";
 import type { ViewMode } from "@/shared/stream/types";
@@ -37,12 +37,12 @@ export {
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function processBody(raw: string): string {
-  return sanitizeHtml(bbcodeToHtml(raw));
+function processBody(raw: string, mimetype?: string): string {
+  return renderBody(raw, mimetype, undefined, sanitizeHtml);
 }
 
 function rebuildThreads(allPosts: Post[]): void {
-  const processed = allPosts.map((p) => ({ ...p, body: processBody(p.body) }));
+  const processed = allPosts.map((p) => ({ ...p, body: processBody(p.body, p.mimetype) }));
   setThreads(buildThreadTree(processed));
 }
 

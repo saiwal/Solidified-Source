@@ -33,6 +33,8 @@ interface Props {
    *  wysiwyg/source toggle button at the right of this bar's action row. */
   tab?: EditorTab;
   onToggleTab?: () => void;
+  /** Forwarded to SourceToggleButton so it hides for source-only formats. */
+  canWysiwyg?: boolean;
 }
 
 const AttachmentBar: Component<Props> = (props) => {
@@ -149,7 +151,7 @@ const AttachmentBar: Component<Props> = (props) => {
             <span class="text-xs text-muted animate-pulse">{t("editor.uploading")}</span>
           </Show>
           <Show when={props.tab && props.onToggleTab}>
-            <SourceToggleButton tab={props.tab!} onToggle={props.onToggleTab!} />
+            <SourceToggleButton tab={props.tab!} onToggle={props.onToggleTab!} canWysiwyg={props.canWysiwyg} />
           </Show>
         </div>
       </div>

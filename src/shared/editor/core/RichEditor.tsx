@@ -1,8 +1,10 @@
 import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
+import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import EditorToolbar from "./EditorToolbar";
 import { sourceToHtml, hydrateShareEmbeds, hydrateCardEmbeds, hydrateLatexEmbeds } from "./sourceToHtml";
+import { completesMarkdownBlock } from "./markdownProtect";
 import { htmlToSource } from "./htmlToSource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
@@ -56,6 +58,16 @@ export default function RichEditor(props: Props) {
   let domSig: string | null = null;
 
   const mime = (): MimeType => props.mimetype ?? "text/bbcode";
+  // Which formats may use the WYSIWYG surface. It round-trips the whole body
+  // through htmlToSource() on every keystroke, so a format is only safe here
+  // if that round trip is lossless: bbcode always, and markdown on the
+  // surfaces whose body is converted to bbcode on save (markdownWysiwyg —
+  // posts and comments). text/html and text/plain stay source-only; plain has
+  // no branch in htmlToSource at all and would come back as bbcode.
+  // Derived rather than pushed back through onTabChange so the caller's tab
+  // state is left untouched and the WYSIWYG tab returns as it was.
+  const wysiwygAllowed = () => canUseWysiwyg(mime(), props.capabilities.markdownWysiwyg);
+  const tab = (): EditorTab => (wysiwygAllowed() ? props.tab : "source");
   const sig = () => `${mime()} ${props.body}`;
   const minH = () =>
     props.minHeight ??
@@ -65,10 +77,17 @@ export default function RichEditor(props: Props) {
   // gives it a bounded height to grow against (e.g. plain page-flow composers).
   // In fill mode there's no ceiling here at all — the surface instead grows
   // via flex-1 to whatever bounded height its ancestor provides.
-  const maxH = () =>
-    props.fill
-      ? undefined
-      : props.maxHeight ?? (props.capabilities.toolbar === "comment" ? "260px" : "50vh");
+  // Clamped so the ceiling can never sit below the floor. Without the clamp a
+  // caller asking for a tall surface (the page-hosted composers) got
+  // max-height 50vh < its own min-height on any normal laptop, so the surface
+  // could not grow to the height its wrapper had already reserved — and the
+  // shortfall showed as dead space under the toolbar.
+  const maxH = () => {
+    if (props.fill) return undefined;
+    const ceiling =
+      props.maxHeight ?? (props.capabilities.toolbar === "comment" ? "260px" : "50vh");
+    return `max(${ceiling}, ${minH()})`;
+  };
   const surfaceGrowClass = () => (props.fill ? "flex-1 min-h-0" : "grow");
 
   // Seed the WYSIWYG surface whenever it (re)mounts. The <Show> around the
@@ -89,7 +108,7 @@ export default function RichEditor(props: Props) {
   // echoing the DOM back (attachment insert, draft load, tab switch, reset, …).
   createEffect(() => {
     const nextSig = sig();
-    if (props.tab === "wysiwyg" && editorRef && nextSig !== domSig) {
+    if (tab() === "wysiwyg" && editorRef && nextSig !== domSig) {
       editorRef.innerHTML = sourceToHtml(props.body, mime());
       domSig = nextSig;
       hydrateShareEmbeds(editorRef);
@@ -124,8 +143,66 @@ export default function RichEditor(props: Props) {
     }
   });
 
-  const onEditorInput = () => {
+  // Re-render the block the user just finished with Enter, so Markdown takes
+  // effect as you write rather than only when focus leaves.
+  //
+  // Only the *previous* block is touched — never the one holding the caret —
+  // so there is no caret to save and restore. That is the whole reason this
+  // works on every keystroke's worth of state without fighting the cursor,
+  // unlike the blur pass, which replaces the entire surface.
+  //
+  // Markdown only. Bbcode already has its own settled behaviour here, and
+  // re-rendering its tags mid-compose would be a change to a stable feature.
+  const renderCompletedBlock = () => {
+    if (!editorRef || mime() !== "text/markdown" || !wysiwygAllowed()) return;
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    // Walk up to the direct child of the surface that holds the caret.
+    let node: Node | null = sel.getRangeAt(0).startContainer;
+    while (node && node.parentNode !== editorRef) node = node.parentNode;
+    const caretBlock = node as Element | null;
+    if (!caretBlock || caretBlock.parentNode !== editorRef) return;
+
+    const done = caretBlock.previousElementSibling;
+    if (!done) return;
+
+    // Already rendered: an embed carries bbcode that must round-trip
+    // byte-for-byte, and re-rendering a block that holds one risks nothing but
+    // gains nothing either.
+    if (done.querySelector("[data-bb-raw],[data-share-id],[data-card-id],[data-latex-raw]")) return;
+
+    const line = htmlToSource(done.outerHTML, mime()).trim();
+
+    // Everything above it, so completesMarkdownBlock() can see an unclosed
+    // ``` fence — inside one, nothing is markup.
+    const before = Array.from(editorRef.children)
+      .slice(0, Array.prototype.indexOf.call(editorRef.children, done))
+      .map((el) => el.outerHTML)
+      .join("");
+
+    if (!completesMarkdownBlock(line, htmlToSource(before, mime()))) return;
+
+    const rendered = sourceToHtml(line, mime());
+    if (!rendered.trim()) return;
+
+    const holder = document.createElement("div");
+    holder.innerHTML = rendered;
+    if (!holder.firstChild) return;
+    done.replaceWith(...Array.from(holder.childNodes));
+
+    // The line may have carried bbcode, which sourceToHtml just turned into
+    // fresh embeds needing their previews filled in.
+    hydrateShareEmbeds(editorRef);
+    hydrateCardEmbeds(editorRef);
+    if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
+  };
+
+  const onEditorInput = (e?: InputEvent) => {
     if (!editorRef) return;
+    // Enter (not Shift+Enter, which is insertLineBreak) finished a block.
+    if (e?.inputType === "insertParagraph") renderCompletedBlock();
     // Convert WYSIWYG HTML back to the chosen source format before storing
     const next = htmlToSource(editorRef.innerHTML, mime());
     domSig = `${mime()} ${next}`;
@@ -160,7 +237,7 @@ export default function RichEditor(props: Props) {
     // replaces every node, so the range the toolbar saved to insert at is
     // detached and the insert lands at the start of the surface instead.
     if (wrapperEl?.contains(e.relatedTarget as Node)) return;
-    if (mime() === "text/bbcode") {
+    if (wysiwygAllowed()) {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
       domSig = `${mime()} ${next}`;
@@ -270,7 +347,7 @@ export default function RichEditor(props: Props) {
     // literal bbcode sitting in the DOM until something else forces a full
     // re-render (e.g. switching to the source tab and back).
     const text = dt.getData("text/plain");
-    if (props.tab === "wysiwyg" && editorRef && text && (/\[share[=\s][\s\S]*?\[\/share\]/i.test(text) || /\[card[=\s][\s\S]*?\[\/card\]/i.test(text))) {
+    if (tab() === "wysiwyg" && editorRef && text && (/\[share[=\s][\s\S]*?\[\/share\]/i.test(text) || /\[card[=\s][\s\S]*?\[\/card\]/i.test(text))) {
       e.preventDefault();
       document.execCommand("insertText", false, text);
       const next = htmlToSource(editorRef.innerHTML, mime());
@@ -290,36 +367,35 @@ export default function RichEditor(props: Props) {
 
   // Every composer gets the tab bar (write/source) except chat's plain input.
   //
-  // This wrapper needs an explicit floor — NOT min-h-0 (0), and not the
-  // default `auto` either. Two failure modes, both seen in practice:
-  //  - With min-height:0, flex-shrink can compress this box below what its
-  //    children (toolbar + the surface's own min-height) actually need. It
-  //    doesn't clip (no overflow-clip here — see below), so the toolbar
-  //    still renders at full size... but the NEXT SIBLING (AttachmentBar)
-  //    is positioned by this box's shrunk nominal size, not its overflowed
-  //    content — so the two visually overlap.
-  //  - With `auto` (content-based sizing, the flex default when overflow is
-  //    visible), a long typed post makes the *surface's* natural content
-  //    height count toward this wrapper's own minimum, ballooning it (and
-  //    everything above it) instead of leaving the surface bounded to
-  //    scroll internally.
-  // 150px is a generous, hand-picked allowance for "toolbar, even wrapped to
-  // multiple rows on a narrow modal" — a real, content-independent constant,
-  // not a computed one. If a future toolbar change makes it wrap further
-  // than this, bump the number. Added to minH() (not a flat total) so a
-  // caller that overrides minHeight downward — e.g. CommentComposer's
-  // single-line comment box — actually gets a smaller floor instead of
-  // every composer being stuck at the same worst-case total.
-  const wrapperMinH = () => `calc(${minH()} + 150px)`;
+  // This wrapper must not be flex-shrunk: it doesn't clip (no overflow-clip
+  // here), so a shrunk box still paints its toolbar at full size while the
+  // NEXT SIBLING (AttachmentBar) is positioned by the shrunk nominal size —
+  // and the two visually overlap. `shrink-0` prevents exactly that.
+  //
+  // It deliberately carries no min-height of its own. The surface below
+  // already has `min-height: minH()`, and because the surface is
+  // overflow-y-auto its automatic minimum size is 0 — so this box's `auto`
+  // minimum resolves to "surface floor + the toolbar's real height", which is
+  // precisely the wanted height. The previous code instead reserved
+  // `minH + 150px`, a hand-picked worst-case toolbar allowance; whenever the
+  // toolbar rendered shorter than 150px (i.e. nearly always) and the surface
+  // was capped before it could absorb the difference, the remainder showed as
+  // dead space under the toolbar.
+  //
+  // In fill mode the bounded ancestor supplies the height instead, so the
+  // wrapper grows rather than sizing to content.
   return (
-    <div ref={wrapperEl} class="rich-editor flex flex-col flex-1" style={{ "min-height": wrapperMinH() }}>
+    <div
+      ref={wrapperEl}
+      class={`rich-editor flex flex-col ${props.fill ? "flex-1 min-h-0" : "shrink-0"}`}
+    >
       {/* ── WYSIWYG surface ───────────────────────────────── */}
-      <Show when={props.tab === "wysiwyg"}>
+      <Show when={tab() === "wysiwyg"}>
         <div
           ref={seedEditor}
           contenteditable
           dir="ltr"
-          onInput={onEditorInput}
+          onInput={(e) => onEditorInput(e as InputEvent)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onClick={onEditorClick}
@@ -335,7 +411,7 @@ export default function RichEditor(props: Props) {
       </Show>
 
       {/* ── Source textarea ───────────────────────────────── */}
-      <Show when={props.tab === "source"}>
+      <Show when={tab() === "source"}>
         <textarea
           ref={textareaRef}
           value={props.body}
@@ -361,7 +437,7 @@ export default function RichEditor(props: Props) {
         level={props.capabilities.toolbar}
         latexMode={props.capabilities.latexMode}
         cardPicker={props.capabilities.cardPicker}
-        tab={props.tab}
+        tab={tab()}
         editorRef={() => editorRef}
         textareaRef={() => textareaRef}
         onSourceChange={(v) => { props.onInput(v); }}

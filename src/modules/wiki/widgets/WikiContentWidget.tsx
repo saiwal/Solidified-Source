@@ -5,7 +5,8 @@ import { wikis, wikisLoading, isOwner, wikisError, loadWikis, resetWikis, patchW
 import { deleteWiki, fetchWikiAcl, saveWikiAcl } from "../api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
+import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { MdFillLock, MdFillLock_open, MdFillDelete } from "solid-icons/md";
 import { useIsWikiList } from "../lib/isWikiList";
 
@@ -54,6 +55,8 @@ export default function WikiContentWidget() {
   const [aclLoading, setAclLoading]     = createSignal(false);
   const [aclSaving, setAclSaving]       = createSignal(false);
   const [aclMode, setAclMode]           = createSignal<AclMode>("public");
+  // Needed to recognise "Only me", which is stored as allow_cid = [own hash].
+  const selfHash = useNavViewer();
   const [allowKeys, setAllowKeys]       = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys]         = createSignal<Set<string>>(new Set<string>());
 
@@ -81,17 +84,11 @@ export default function WikiContentWidget() {
     setAclLoading(true);
     try {
       const data = await fetchWikiAcl(nick(), wikiUrlName);
-      const allowSet = new Set<string>([
-        ...data.allow_cid.map((h) => `c:${h}`),
-        ...data.allow_gid.map((id) => `g:${id}`),
-      ]);
-      const denySet = new Set<string>([
-        ...data.deny_cid.map((h) => `c:${h}`),
-        ...data.deny_gid.map((id) => `g:${id}`),
-      ]);
-      setAllowKeys(allowSet);
-      setDenyKeys(denySet);
-      setAclMode(allowSet.size > 0 || denySet.size > 0 ? "custom" : "public");
+      const mode = aclModeFrom(data, selfHash()?.hash);
+      const { allow, deny } = aclEntryKeys(data, mode);
+      setAllowKeys(allow);
+      setDenyKeys(deny);
+      setAclMode(mode);
     } catch (err: any) {
       toast.error(err.message ?? t("wiki.error_saving_privacy"));
       setAclWikiUrl(null);

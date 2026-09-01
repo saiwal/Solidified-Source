@@ -15,6 +15,8 @@ import { Portal } from "solid-js/web";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
+import ComposerShell from "../components/ComposerShell";
+import { underlineFieldClass } from "../lib/fieldStyles";
 import { CAPABILITIES } from "../types/editor.types";
 import { fetchConnections, type AclEntry } from "@/modules/network/api";
 import { entryKey } from "../components/AclPicker";
@@ -194,135 +196,135 @@ const DMComposer: Component<DMComposerProps> = (props) => {
         onClose={props.onClose}
         helpTarget="shared/dm-composer"
         manageEscape={false}
-        footer={
-          <>
-            {/* Options row: encrypt */}
-            <div class="flex flex-wrap items-center gap-2">
-                <Show when={isFeatureEnabled("content_encrypt")}>
-                  <EncryptToggle enc={enc} body={store.body} />
+      >
+        <ComposerShell
+          class="p-4"
+          meta={
+            <>
+              {/* ── To: field ── */}
+              <div>
+                <RecipientField
+                  entries={recipients}
+                  onAdd={addRecipient}
+                  onRemove={removeRecipient}
+                />
+                <Show when={unpermittedRecipients().length > 0}>
+                  <ul class="mt-1.5 space-y-0.5">
+                    <For each={unpermittedRecipients()}>
+                      {(r) => (
+                        <li class="text-xs text-red-500">
+                          {t("editor.dm_recipient_not_permitted", { name: r.name })}
+                        </li>
+                      )}
+                    </For>
+                  </ul>
                 </Show>
               </div>
 
-              {/* Action row: discard on the left, clear/send on the right */}
-              <div class="flex flex-wrap items-center gap-2">
-                <SecondaryButton onClick={props.onClose}>
-                  {t("editor.discard")}
-                </SecondaryButton>
-
-                <div class="flex items-center gap-2 ml-auto">
-                  <IconButton
-                    title={t("editor.clear_composer")}
-                    variant="danger"
-                    onClick={() => {
-                      store.reset();
-                      attach.clear();
-                      setRecipients([]);
-                      enc.reset();
-                    }}
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </IconButton>
-                  <PrimarySubmitButton
-                    disabled={
-                      store.submitting() ||
-                      attach.uploading() ||
-                      recipients().length === 0 ||
-                      unpermittedRecipients().length > 0 ||
-                      !store.body().trim()
-                    }
-                    onClick={() => void store.submit()}
-                  >
-                    {store.submitting() ? t("editor.sending_dm") : t("editor.send_btn")}
-                  </PrimarySubmitButton>
-                </div>
+              {/* ── Subject ── */}
+              <div>
+                <input
+                  type="text"
+                  placeholder={t("editor.dm_subject_placeholder")}
+                  value={store.title()}
+                  onInput={(e) => store.setTitle(e.currentTarget.value)}
+                  class={`w-full px-0 py-1.5 text-base font-semibold text-txt placeholder:text-muted ${underlineFieldClass}`}
+                />
               </div>
-          </>
-        }
-      >
-        {/* Single flex-col root for all body content — mirrors ArticleComposer's
-            structure exactly (one flex-1 min-h-0 wrapper containing the
-            shrink-0/flex-1/shrink-0 groups), rather than passing them as
-            separate top-level children of ComposerModal's body. */}
-        <div class="flex flex-col flex-1 min-h-0">
-        {/* ── To: field ── */}
-        <div class="px-4 pt-3 pb-2 border-b border-rim shrink-0">
-          <RecipientField
-            entries={recipients}
-            onAdd={addRecipient}
-            onRemove={removeRecipient}
-          />
-          <Show when={unpermittedRecipients().length > 0}>
-            <ul class="mt-1.5 space-y-0.5">
-              <For each={unpermittedRecipients()}>
-                {(r) => (
-                  <li class="text-xs text-red-500">
-                    {t("editor.dm_recipient_not_permitted", { name: r.name })}
-                  </li>
-                )}
-              </For>
-            </ul>
-          </Show>
-        </div>
 
-        {/* ── Subject ── */}
-        <div class="px-4 pt-3 pb-2 border-b border-rim shrink-0">
-          <input
-            type="text"
-            placeholder={t("editor.dm_subject_placeholder")}
-            value={store.title()}
-            onInput={(e) => store.setTitle(e.currentTarget.value)}
-            class="w-full px-0 py-1.5 text-base font-semibold text-txt placeholder:text-muted bg-transparent border-0 focus:outline-none"
-          />
-        </div>
+              {/* ── Editor area — fills the remaining modal height; the surface
+                   inside RichEditor scrolls internally past long text while the
+                   bottom-docked toolbar stays put. ── */}
+              {/* min-h-[360px] (not min-h-0): a real floor covering RichEditor's own
+                  300px floor plus AttachmentBar's row — see RichEditor.tsx's
+                  wrapper comment for why min-h-0/auto both fail here. */}
+            </>
+          }
+          editor={
+            <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
+              <RichEditor
+                onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
+                body={store.body()}
+                onInput={store.setBody}
+                capabilities={caps}
+                tab={store.tab()}
+                onTabChange={store.setTab}
+                mimetype={store.mimetype()}
+                onCtrlEnter={() => { if (!wiring.mention.open()) void store.submit(); }}
+                onPasteFiles={(files) => attach.addUploads(files)}
+                placeholder={t("editor.write_placeholder")}
+                minHeight="150px"
+                fill
+              />
+              <AttachmentBar
+                store={attach}
+                nick={currentNick()}
+                accept="both"
+                onInsert={(bbcode) => {
+                  store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+                }}
+                onAltChange={(att) => {
+                  store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
+                }}
+                tab={store.tab()}
+                onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+              />
+            </div>
 
-        {/* ── Editor area — fills the remaining modal height; the surface
-             inside RichEditor scrolls internally past long text while the
-             bottom-docked toolbar stays put. ── */}
-        {/* min-h-[360px] (not min-h-0): a real floor covering RichEditor's own
-            300px floor plus AttachmentBar's row — see RichEditor.tsx's
-            wrapper comment for why min-h-0/auto both fail here. */}
-        <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-[360px]">
-          <RichEditor
-            onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
-            body={store.body()}
-            onInput={store.setBody}
-            capabilities={caps}
-            tab={store.tab()}
-            onTabChange={store.setTab}
-            mimetype={store.mimetype()}
-            onCtrlEnter={() => { if (!wiring.mention.open()) void store.submit(); }}
-            onPasteFiles={(files) => attach.addUploads(files)}
-            placeholder={t("editor.write_placeholder")}
-            minHeight="150px"
-            fill
-          />
-          <AttachmentBar
-            store={attach}
-            nick={currentNick()}
-            accept="both"
-            onInsert={(bbcode) => {
-              store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
-            }}
-            onAltChange={(att) => {
-              store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
-            }}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
-        </div>
+          }
+          panels={
+            <>
+              {/* ── Encrypt panel ── */}
+              <Show when={enc.open()}>
+                <EncryptPanel enc={enc} />
+              </Show>
 
-        {/* ── Encrypt panel ── */}
-        <Show when={enc.open()}>
-          <EncryptPanel enc={enc} />
-        </Show>
+              {/* ── Decrypt-to-edit panel ── */}
+              <Show when={enc.decryptOpen()}>
+                <DecryptPanel enc={enc} body={store.body} />
+              </Show>
+            </>
+          }
+          options={
+            <Show when={isFeatureEnabled("content_encrypt")}>
+              <EncryptToggle enc={enc} body={store.body} />
+            </Show>
+          }
+          actions={
+            <>
+              <SecondaryButton onClick={props.onClose}>{t("editor.discard")}</SecondaryButton>
 
-        {/* ── Decrypt-to-edit panel ── */}
-        <Show when={enc.decryptOpen()}>
-          <DecryptPanel enc={enc} body={store.body} />
-        </Show>
-        </div>
+              <div class="flex items-center gap-2 ml-auto">
+                <IconButton
+                  title={t("editor.clear_composer")}
+                  variant="danger"
+                  onClick={() => {
+                    store.reset();
+                    attach.clear();
+                    setRecipients([]);
+                    enc.reset();
+                  }}
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </IconButton>
+                <PrimarySubmitButton
+                  disabled={
+                    store.submitting() ||
+                    attach.uploading() ||
+                    recipients().length === 0 ||
+                    unpermittedRecipients().length > 0 ||
+                    !store.body().trim()
+                  }
+                  onClick={() => void store.submit()}
+                >
+                  {store.submitting() ? t("editor.sending_dm") : t("editor.send_btn")}
+                </PrimarySubmitButton>
+              </div>
+            </>
+          }
+        />
       </ComposerModal>
 
       <Portal mount={document.body}>

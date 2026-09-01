@@ -68,6 +68,9 @@ function remapPost(r: Record<string, unknown>): Post {
     top_mid:       String(r.message_top ?? ""),
     parent:        String(r.parent_mid ?? ""),
     body:          String(r.body ?? ""),
+    // Raw body here — this remapper deliberately does not render. store.ts
+    // does that in processBody(), which needs the format to pick a renderer.
+    mimetype:      String(r.mimetype ?? ""),
     title:         String(r.title ?? ""),
     authorName:    String(author.name ?? ""),
     authorAvatar:  String(photo.src ?? ""),

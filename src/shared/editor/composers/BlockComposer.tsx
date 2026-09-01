@@ -16,13 +16,18 @@ const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
 const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
+import ComposerShell from "../components/ComposerShell";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
-import AclPicker, { type AclMode } from "../components/AclPicker";
+import AclPicker, { aclModeFrom, aclEntryKeys, type AclMode } from "../components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { useAclState, splitAclEntries } from "../components/useAclState";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import SlugField from "../components/SlugField";
+import FormatSelect from "../components/FormatSelect";
+import { isAuthorable, canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
@@ -65,34 +70,25 @@ export default function BlockComposer(props: Props) {
   const [draftsOpen, setDraftsOpen] = createSignal(false);
 
   // ── ACL state — initialize from existing block data when editing ─────────────
-  const initialAclMode = (): AclMode => {
-    const p = props.initial;
-    if (!p) return "public";
-    if (p.public_policy === "contacts") return "connections";
-    if ((p.allow_cid?.length ?? 0) > 0 || (p.allow_gid?.length ?? 0) > 0) return "custom";
-    return "public";
-  };
-  const initialAllowEntries = (): Set<string> => {
-    const p = props.initial;
-    if (!p) return new Set();
-    return new Set([
-      ...(p.allow_cid ?? []).map((h) => `c:${h}`),
-      ...(p.allow_gid ?? []).map((g) => `g:${g}`),
-    ]);
-  };
-  const initialDenyEntries = (): Set<string> => {
-    const p = props.initial;
-    if (!p) return new Set();
-    return new Set([
-      ...(p.deny_cid ?? []).map((h) => `c:${h}`),
-      ...(p.deny_gid ?? []).map((g) => `g:${g}`),
-    ]);
-  };
+  // "Only me" is stored as allow_cid = [the owner's own hash], so recovering it
+  // needs the viewer's hash; without it the mode falls back to "custom".
+  const selfHash = useNavViewer();
+  const initialAclMode = (): AclMode =>
+    props.initial ? aclModeFrom(props.initial, selfHash()?.hash) : "public";
+  // Entries are only meaningful for "custom" — seeding them for "me" would
+  // leave the owner's own hash sitting in the picker as an unresolvable chip.
+  const initialEntries = () =>
+    aclEntryKeys(props.initial ?? {}, initialAclMode());
 
   const acl = useAclState({
     mode: initialAclMode(),
-    allowEntries: initialAllowEntries(),
-    denyEntries: initialDenyEntries(),
+    allowEntries: initialEntries().allow,
+    denyEntries: initialEntries().deny,
+    // /spa/nav may not have answered yet; re-derive once the viewer's hash
+    // lands, unless the user has already touched the picker.
+    resync: () => selfHash()?.hash
+      ? { mode: initialAclMode(), allowEntries: initialEntries().allow, denyEntries: initialEntries().deny }
+      : undefined,
   });
 
   function aclJson(): Record<string, unknown> {
@@ -169,10 +165,15 @@ export default function BlockComposer(props: Props) {
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
+  const defaultPageMime = pageMimetype();
   if (props.initial) {
     store.setTitle(props.initial.title);
     store.setSlug(props.initial.name);
     if (props.initial.mimetype) store.setMimetype(props.initial.mimetype as any);
+  } else if (isAuthorable(defaultPageMime)) {
+    // New page: seed the channel's default format, the same pconfig core
+    // reads for its own composer (system/page_mimetype — Blocks.php:84).
+    store.setMimetype(defaultPageMime);
   }
 
   // ── Draft extra — ACL, which createComposerStore doesn't know about ──────
@@ -209,167 +210,182 @@ export default function BlockComposer(props: Props) {
   const onTitleChange = (v: string) => store.setTitle(v);
 
   return (
-    <div class="max-w-3xl mx-auto space-y-4 py-6 px-4">
-      {/* Title */}
-      <input
-        type="text"
-        placeholder={t("webpages.block_title_placeholder")}
-        value={store.title()}
-        onInput={(e) => onTitleChange(e.currentTarget.value)}
-        class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
-      />
-
-      {/* Name — the identifier the HTML Block widget's preset dropdown looks it up by */}
-      <Show when={caps.slug}>
-        <SlugField
-          value={store.slug}
-          onInput={store.setSlug}
-          title={store.title}
-          label={t("webpages.block_name_label") as string}
-          placeholder={t("webpages.block_name_placeholder") as string}
-        />
-      </Show>
-
-      <div class="flex items-center justify-end gap-2">
-        <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-        <span class="text-xs text-muted">·</span>
-        <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-      </div>
-
-      {/* Editor */}
-      <div ref={wiring.wrapperRef}>
-        <RichEditor
-          onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
-          body={store.body()}
-          onInput={store.setBody}
-          capabilities={caps}
-          tab={store.tab()}
-          onTabChange={store.setTab}
-          mimetype={store.mimetype()}
-          placeholder={t("editor.start_writing")}
-          minHeight="400px"
-        />
-        <AttachmentBar
-          store={attach}
-          nick={props.nick}
-          accept="files"
-          onInsert={(bbcode) => {
-            store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
-          }}
-          onAltChange={(att) => {
-            store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
-          }}
-          tab={store.tab()}
-          onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-        />
-      </div>
-
-      <MentionEmojiPopups wiring={wiring} />
-
-      {/* Encrypt panel */}
-      <Show when={enc.open()}>
-        <EncryptPanel enc={enc} />
-      </Show>
-
-      {/* Decrypt-to-edit panel */}
-      <Show when={enc.decryptOpen()}>
-        <DecryptPanel enc={enc} body={store.body} />
-      </Show>
-
-      {/* Drafts panel */}
-      <Show when={draftsOpen()}>
-        <DraftsList
-          drafts={store.savedDrafts()}
-          onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-          onDelete={(id) => void store.deleteSavedDraft(id)}
-          onClose={() => setDraftsOpen(false)}
-        />
-      </Show>
-
-      {/* Options row: ACL + encrypt */}
-      <div class="flex flex-wrap items-center gap-3 border-t border-rim pt-4">
-        <Show when={caps.aclPicker}>
-          <AclPicker
-            mode={acl.mode()}
-            onModeChange={acl.setMode}
-            allowEntries={acl.allowEntries()}
-            denyEntries={acl.denyEntries()}
-            onToggle={acl.toggleEntry}
-            onClear={acl.clearEntries}
+    <ComposerShell
+      meta={
+        <>
+          {/* Title */}
+          <input
+            type="text"
+            placeholder={t("webpages.block_title_placeholder")}
+            value={store.title()}
+            onInput={(e) => onTitleChange(e.currentTarget.value)}
+            class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
-        </Show>
 
-        <Show when={isFeatureEnabled("content_encrypt")}>
-          <EncryptToggle enc={enc} body={store.body} />
-        </Show>
-      </div>
-
-      {/* Action row: discard/save-draft/drafts on the left, clear/submit on the right */}
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="flex gap-2 items-center">
-          <SecondaryButton
-            onClick={() => {
-              store.reset();
-              attach.clear();
-              acl.reset();
-              enc.reset();
-              props.onCancel?.();
-            }}
-          >
-            {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
-          </SecondaryButton>
-          <Show when={store.body().trim()}>
-            <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
-              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
-              </svg>
-              {t("editor.save_draft")}
-            </SecondaryButton>
+          {/* Name — the identifier the HTML Block widget's preset dropdown looks it up by */}
+          <Show when={caps.slug}>
+            <SlugField
+              value={store.slug}
+              onInput={store.setSlug}
+              title={store.title}
+              label={t("webpages.block_name_label") as string}
+              placeholder={t("webpages.block_name_placeholder") as string}
+            />
           </Show>
-          <Show when={store.savedDrafts().length > 0}>
-            <button
-              type="button"
-              onClick={() => setDraftsOpen((o) => !o)}
-              class={
-                "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
-                (draftsOpen()
-                  ? "border-rim bg-elevated text-txt"
-                  : "border-rim text-muted hover:text-txt hover:bg-elevated")
-              }
+
+          {/* Content format — core's mimetype_select() */}
+          <Show when={caps.format}>
+            <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} />
+          </Show>
+
+          <div class="flex items-center justify-end gap-2">
+            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
+            <span class="text-xs text-muted">·</span>
+            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
+          </div>
+        </>
+      }
+      editor={
+        <>
+          <div ref={wiring.wrapperRef}>
+            <RichEditor
+              onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
+              body={store.body()}
+              onInput={store.setBody}
+              capabilities={caps}
+              tab={store.tab()}
+              onTabChange={store.setTab}
+              mimetype={store.mimetype()}
+              placeholder={t("editor.start_writing")}
+              minHeight="60vh"
+            />
+            <AttachmentBar
+              store={attach}
+              nick={props.nick}
+              accept="files"
+              onInsert={(bbcode) => {
+                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+              }}
+              onAltChange={(att) => {
+                store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
+              }}
+              tab={store.tab()}
+              onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+            />
+          </div>
+        </>
+      }
+      panels={
+        <>
+          <MentionEmojiPopups wiring={wiring} />
+
+          {/* Encrypt panel */}
+          <Show when={enc.open()}>
+            <EncryptPanel enc={enc} />
+          </Show>
+
+          {/* Decrypt-to-edit panel */}
+          <Show when={enc.decryptOpen()}>
+            <DecryptPanel enc={enc} body={store.body} />
+          </Show>
+
+          {/* Drafts panel */}
+          <Show when={draftsOpen()}>
+            <DraftsList
+              drafts={store.savedDrafts()}
+              onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
+              onDelete={(id) => void store.deleteSavedDraft(id)}
+              onClose={() => setDraftsOpen(false)}
+            />
+          </Show>
+        </>
+      }
+      options={
+        <>
+          <Show when={caps.aclPicker}>
+            <AclPicker
+              mode={acl.mode()}
+              onModeChange={acl.setMode}
+              allowEntries={acl.allowEntries()}
+              denyEntries={acl.denyEntries()}
+              onToggle={acl.toggleEntry}
+              onClear={acl.clearEntries}
+            />
+          </Show>
+
+          <Show when={isFeatureEnabled("content_encrypt")}>
+            <EncryptToggle enc={enc} body={store.body} />
+          </Show>
+        </>
+      }
+      actions={
+        <>
+          <div class="flex gap-2 items-center">
+            <SecondaryButton
+              onClick={() => {
+                store.reset();
+                attach.clear();
+                acl.reset();
+                enc.reset();
+                props.onCancel?.();
+              }}
             >
-              {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-            </button>
-          </Show>
-        </div>
+              {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
+            </SecondaryButton>
+            <Show when={store.body().trim()}>
+              <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
+                </svg>
+                {t("editor.save_draft")}
+              </SecondaryButton>
+            </Show>
+            <Show when={store.savedDrafts().length > 0}>
+              <button
+                type="button"
+                onClick={() => setDraftsOpen((o) => !o)}
+                class={
+                  "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
+                  (draftsOpen()
+                    ? "border-rim bg-elevated text-txt"
+                    : "border-rim text-muted hover:text-txt hover:bg-elevated")
+                }
+              >
+                {t("editor.drafts_btn", { count: store.savedDrafts().length })}
+              </button>
+            </Show>
+          </div>
 
-        <div class="flex items-center gap-2 ml-auto">
-          <IconButton
-            title={t("editor.clear_composer")}
-            variant="danger"
-            onClick={() => {
-              store.reset();
-              attach.clear();
-              acl.reset();
-              enc.reset();
-            }}
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </IconButton>
-          <PrimarySubmitButton
-            disabled={store.submitting() || attach.uploading() || !store.body().trim() || !store.title().trim()}
-            onClick={() => void store.submit()}
-          >
-            {store.submitting()
-              ? t("editor.saving")
-              : isEditing()
-                ? t("editor.save_changes")
-                : t("editor.publish_btn")}
-          </PrimarySubmitButton>
-        </div>
-      </div>
-    </div>
+          <div class="flex items-center gap-2 ml-auto">
+            <IconButton
+              title={t("editor.clear_composer")}
+              variant="danger"
+              onClick={() => {
+                store.reset();
+                attach.clear();
+                acl.reset();
+                enc.reset();
+              }}
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </IconButton>
+            <PrimarySubmitButton
+              disabled={store.submitting() || attach.uploading() || !store.body().trim() || !store.title().trim()}
+              onClick={() => void store.submit()}
+            >
+              {store.submitting()
+                ? t("editor.saving")
+                : isEditing()
+                  ? t("editor.save_changes")
+                  : t("editor.publish_btn")}
+            </PrimarySubmitButton>
+          </div>
+        </>
+      }
+    />
   );
 }

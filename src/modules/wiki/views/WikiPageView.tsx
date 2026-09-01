@@ -20,7 +20,7 @@ import {
   loadPage, loadWikiPages, loadHistory, toggleEditMode, toggleHistory, resetPage,
   loadRevisionPreview, closePreview, enterEditModeWithContent,
 } from "../store";
-import { savePage, deletePage, revertPage, renamePage } from "../api";
+import { savePage, deletePage, revertPage, renamePage, type WikiMimeType } from "../api";
 
 // ── Floating page list (small screens) ──────────────────────────────────────────
 
@@ -228,14 +228,17 @@ export default function WikiPageView() {
 
   onCleanup(() => resetPage());
 
-  async function handleSave(body: string, commitMsg: string) {
+  async function handleSave(body: string, commitMsg: string, mimeType: string) {
     setSaving(true);
     try {
       await savePage(
         params.nick,
         params.wikiName,
         params.pageName,
-        { content: body, commit_msg: commitMsg, mime_type: pageData()?.page.mime_type },
+        // The composer's format wins: on an existing page it is just the
+        // page's own mime_type echoed back, and on the create form it is what
+        // the author picked. A typelocked wiki overrides it server-side.
+        { content: body, commit_msg: commitMsg, mime_type: mimeType as WikiMimeType },
       );
       const draftId = loadedDraftId();
       if (draftId) {
@@ -466,9 +469,12 @@ export default function WikiPageView() {
           <Show when={canWrite() && editMode()}>
             <p class="text-muted text-xs mb-2">{t("wiki.page_new_hint")}</p>
             <WikiComposer
+              nick={params.nick}
+              scope={`wiki:${params.nick}:${params.wikiName}:${params.pageName}`}
               initialBody={draftContent()}
               initialCommitMsg={draftCommitMsg()}
               mimeType={currentWiki()?.mime_type ?? "text/bbcode"}
+              allowFormatChange={!currentWiki()?.type_lock}
               saving={saving()}
               onSave={handleSave}
               onSaveDraft={handleSaveDraft}
@@ -629,6 +635,8 @@ export default function WikiPageView() {
           {/* Edit mode */}
           <Show when={editMode()}>
             <WikiComposer
+              nick={params.nick}
+              scope={`wiki:${params.nick}:${params.wikiName}:${params.pageName}`}
               initialBody={draftContent()}
               initialCommitMsg={draftCommitMsg()}
               mimeType={pageData()?.page.mime_type ?? "text/bbcode"}

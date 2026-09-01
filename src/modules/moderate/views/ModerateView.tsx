@@ -1,9 +1,8 @@
 // src/modules/moderate/views/ModerateView.tsx
 import { For, Show, createSignal } from "solid-js";
-import DOMPurify from "dompurify";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
+import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import {
   fetchModerationQueue,
   approveModerationItem,
@@ -52,6 +51,8 @@ function PendingRow(props: { item: PendingItem; onResolved: (iid: number) => voi
   // reacting to/replying on instead. A top-level pending wall post shows
   // its own content since there is no separate target.
   const snippet = () => props.item.target?.body ?? props.item.body ?? "";
+  const snippetMime = () =>
+    props.item.target ? props.item.target.mimetype : props.item.mimetype;
   const snippetLink = () => props.item.target?.permalink;
 
   return (
@@ -74,7 +75,7 @@ function PendingRow(props: { item: PendingItem; onResolved: (iid: number) => voi
             target="_blank"
             rel="noopener noreferrer"
             class="block mt-1 text-xs text-muted line-clamp-2 hover:underline"
-            innerHTML={DOMPurify.sanitize(bbcodeToHtml(snippet()))}
+            innerHTML={renderBody(snippet(), snippetMime())}
           />
         </Show>
         <p class="text-xs text-muted mt-1">{relativeTime(props.item.created)}</p>

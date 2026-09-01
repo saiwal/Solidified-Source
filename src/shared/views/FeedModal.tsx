@@ -131,7 +131,6 @@ const FeedModal: Component<Props> = (props) => {
   const articlesInstalled = () => isAppInstalled(installedApps(), "/articles/");
   const webpagesInstalled = () => isAppInstalled(installedApps(), "/webpages/");
 
-  const coreFeed = (params: string) => `${origin}/feed/${encodeURIComponent(nick())}${params}`;
   const spaFeed = (params: string) => `${origin}/spa/feed/${encodeURIComponent(nick())}${params}`;
 
   const [postCats] = createQueryResource(
@@ -159,7 +158,7 @@ const FeedModal: Component<Props> = (props) => {
     postCats.loading || postTags.loading || articleCats.loading || articleTags.loading;
 
   const postCatRows = createMemo<FeedRow[]>(() =>
-    (postCats() ?? []).map((c: CategoryItem) => feedRow(c.name, coreFeed(`?cat=${encodeURIComponent(c.slug)}`))),
+    (postCats() ?? []).map((c: CategoryItem) => feedRow(c.name, spaFeed(`?cat=${encodeURIComponent(c.slug)}`))),
   );
   const postTagRows = createMemo<FeedRow[]>(() =>
     (postTags() ?? []).map((tg: TagItem) => feedRow(`#${tg.name}`, spaFeed(`?tag=${encodeURIComponent(tg.name)}`))),
@@ -175,7 +174,7 @@ const FeedModal: Component<Props> = (props) => {
     ),
   );
 
-  const webpageRows: FeedRow[] = [feedRow(t("widgets.subscribe_all_webpages") as string, coreFeed("?pages=1"))];
+  const webpageRows: FeedRow[] = [feedRow(t("widgets.subscribe_all_webpages") as string, spaFeed("?type=webpages"))];
 
   return (
     <Portal>
@@ -198,7 +197,7 @@ const FeedModal: Component<Props> = (props) => {
               >
                 <FeedTypeColumn
                   title={t("widgets.subscribe_posts") as string}
-                  allRow={feedRow(t("widgets.subscribe_all_posts") as string, coreFeed("?top=1"))}
+                  allRow={feedRow(t("widgets.subscribe_all_posts") as string, spaFeed(""))}
                   categories={postCatRows()}
                   tags={postTagRows()}
                 />

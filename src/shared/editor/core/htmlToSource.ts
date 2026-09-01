@@ -1,14 +1,14 @@
-import TurndownService from "turndown";
 import type { MimeType } from "../types/editor.types";
 import { bbAlt } from "../attachments/insertHelpers";
-
-const td = new TurndownService({ headingStyle: "atx", bulletListMarker: "-" });
+import { htmlToMarkdown } from "./markdownTurndown";
 
 /** Convert WYSIWYG HTML to the chosen source format. */
 export function htmlToSource(html: string, mimetype: MimeType): string {
   const clean = unwrapLatexEmbeds(html);
   if (mimetype === "text/html") return clean;
-  if (mimetype === "text/markdown") return td.turndown(clean);
+  // The configured service restores protected bbcode verbatim and serializes
+  // tables — a bare TurndownService destroys both. See markdownTurndown.ts.
+  if (mimetype === "text/markdown") return htmlToMarkdown(clean);
   return htmlToBBCode(clean);
 }
 

@@ -13,7 +13,8 @@ import {
   createMenuItem, editMenuItem, deleteMenuItem,
   type MenuSummary, type RawMenuItem, type MenuItemInput,
 } from "@utsukta/spa-core/lib/menus";
-import AclPicker, { entryKey, aclModeToScope, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
+import AclPicker, { entryKey, aclModeToScope, aclModeFrom, aclEntryKeys, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import {
   MdFillAdd, MdFillClose, MdFillDelete, MdFillLock, MdOutlineEdit_note, MdOutlineMenu,
 } from "solid-icons/md";
@@ -99,23 +100,14 @@ function ItemForm(props: {
   const [busy, setBusy] = createSignal(false);
   const [error, setError] = createSignal("");
 
-  const hasAcl = !!props.initial && (
-    props.initial.allow_cid.length > 0 || props.initial.allow_gid.length > 0 ||
-    props.initial.deny_cid.length > 0 || props.initial.deny_gid.length > 0
-  );
-  const [aclMode, setAclMode] = createSignal<AclMode>(hasAcl ? "custom" : "public");
-  const [allowEntries, setAllowEntries] = createSignal<Set<string>>(
-    new Set<string>([
-      ...(props.initial?.allow_cid ?? []).map((xid) => `c:${xid}`),
-      ...(props.initial?.allow_gid ?? []).map((xid) => `g:${xid}`),
-    ]),
-  );
-  const [denyEntries, setDenyEntries] = createSignal<Set<string>>(
-    new Set<string>([
-      ...(props.initial?.deny_cid ?? []).map((xid) => `c:${xid}`),
-      ...(props.initial?.deny_gid ?? []).map((xid) => `g:${xid}`),
-    ]),
-  );
+  // "Only me" is stored as allow_cid = [the owner's own hash], so telling it
+  // apart from a one-contact custom ACL needs the viewer's hash.
+  const selfHash = useNavViewer();
+  const initialMode = aclModeFrom(props.initial ?? {}, selfHash()?.hash);
+  const initialKeys = aclEntryKeys(props.initial ?? {}, initialMode);
+  const [aclMode, setAclMode] = createSignal<AclMode>(initialMode);
+  const [allowEntries, setAllowEntries] = createSignal<Set<string>>(initialKeys.allow);
+  const [denyEntries, setDenyEntries] = createSignal<Set<string>>(initialKeys.deny);
 
   function toggleAclEntry(entry: AclEntry, list: "allow" | "deny") {
     const key = entryKey(entry);

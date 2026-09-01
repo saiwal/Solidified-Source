@@ -21,13 +21,18 @@ const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
 const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
+import ComposerShell from "../components/ComposerShell";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
-import AclPicker, { type AclMode } from "../components/AclPicker";
+import AclPicker, { aclModeFrom, aclEntryKeys, type AclMode } from "../components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { useAclState, splitAclEntries } from "../components/useAclState";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import SlugField from "../components/SlugField";
+import FormatSelect from "../components/FormatSelect";
+import { isAuthorable, canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import SummaryField from "../components/SummaryField";
 import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
 import { underlineFieldClass } from "../lib/fieldStyles";
@@ -68,34 +73,25 @@ export default function WebpageComposer(props: Props) {
   const [draftsOpen, setDraftsOpen] = createSignal(false);
 
   // ── ACL state — initialize from existing page data when editing ──────────────
-  const initialAclMode = (): AclMode => {
-    const p = props.initial;
-    if (!p) return "public";
-    if (p.public_policy === "contacts") return "connections";
-    if ((p.allow_cid?.length ?? 0) > 0 || (p.allow_gid?.length ?? 0) > 0) return "custom";
-    return "public";
-  };
-  const initialAllowEntries = (): Set<string> => {
-    const p = props.initial;
-    if (!p) return new Set();
-    return new Set([
-      ...(p.allow_cid ?? []).map((h) => `c:${h}`),
-      ...(p.allow_gid ?? []).map((g) => `g:${g}`),
-    ]);
-  };
-  const initialDenyEntries = (): Set<string> => {
-    const p = props.initial;
-    if (!p) return new Set();
-    return new Set([
-      ...(p.deny_cid ?? []).map((h) => `c:${h}`),
-      ...(p.deny_gid ?? []).map((g) => `g:${g}`),
-    ]);
-  };
+  // "Only me" is stored as allow_cid = [the owner's own hash], so recovering it
+  // needs the viewer's hash; without it the mode falls back to "custom".
+  const selfHash = useNavViewer();
+  const initialAclMode = (): AclMode =>
+    props.initial ? aclModeFrom(props.initial, selfHash()?.hash) : "public";
+  // Entries are only meaningful for "custom" — seeding them for "me" would
+  // leave the owner's own hash sitting in the picker as an unresolvable chip.
+  const initialEntries = () =>
+    aclEntryKeys(props.initial ?? {}, initialAclMode());
 
   const acl = useAclState({
     mode: initialAclMode(),
-    allowEntries: initialAllowEntries(),
-    denyEntries: initialDenyEntries(),
+    allowEntries: initialEntries().allow,
+    denyEntries: initialEntries().deny,
+    // /spa/nav may not have answered yet; re-derive once the viewer's hash
+    // lands, unless the user has already touched the picker.
+    resync: () => selfHash()?.hash
+      ? { mode: initialAclMode(), allowEntries: initialEntries().allow, denyEntries: initialEntries().deny }
+      : undefined,
   });
 
   // ── Page layout template assignment — pick one, or create a new one inline.
@@ -236,11 +232,16 @@ export default function WebpageComposer(props: Props) {
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
+  const defaultPageMime = pageMimetype();
   if (props.initial) {
     store.setTitle(props.initial.title);
     store.setSummary(props.initial.summary);
     store.setSlug(props.initial.slug);
     if (props.initial.mimetype) store.setMimetype(props.initial.mimetype as any);
+  } else if (isAuthorable(defaultPageMime)) {
+    // New page: seed the channel's default format, the same pconfig core
+    // reads for its own composer (system/page_mimetype — Webpages.php:134).
+    store.setMimetype(defaultPageMime);
   }
 
   // ── Mention + emoji autocomplete ─────────────────────────────────────────────
@@ -258,244 +259,259 @@ export default function WebpageComposer(props: Props) {
   const onTitleChange = (v: string) => store.setTitle(v);
 
   return (
-    <div class="max-w-3xl mx-auto space-y-4 py-6 px-4">
-      {/* Title */}
-      <input
-        type="text"
-        placeholder={t("webpages.title_placeholder")}
-        value={store.title()}
-        onInput={(e) => onTitleChange(e.currentTarget.value)}
-        class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
-      />
+    <ComposerShell
+      meta={
+        <>
+          {/* Title */}
+          <input
+            type="text"
+            placeholder={t("webpages.title_placeholder")}
+            value={store.title()}
+            onInput={(e) => onTitleChange(e.currentTarget.value)}
+            class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
+          />
 
-      {/* Summary */}
-      <Show when={caps.summary}>
-        <SummaryField
-          value={store.summary}
-          onInput={store.setSummary}
-          placeholder={t("editor.article_summary_placeholder")}
-          class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
-        />
-      </Show>
+          {/* Summary */}
+          <Show when={caps.summary}>
+            <SummaryField
+              value={store.summary}
+              onInput={store.setSummary}
+              placeholder={t("editor.article_summary_placeholder")}
+              class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
+            />
+          </Show>
 
-      {/* Slug */}
-      <Show when={caps.slug}>
-        <SlugField value={store.slug} onInput={store.setSlug} title={store.title} hideLabel />
-      </Show>
+          {/* Slug */}
+          <Show when={caps.slug}>
+            <SlugField value={store.slug} onInput={store.setSlug} title={store.title} hideLabel />
+          </Show>
 
-      {/* Page layout template assignment — choose, or create a new one inline */}
-      <div class="space-y-2">
-        <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
-          {t("webpages.layout_template_label")}
-          <select
-            ref={selectRef}
-            onChange={(e) => {
-              setLayoutTemplate(e.currentTarget.value);
-              setJustCreatedTemplate(false);
-            }}
-            class="bg-elevated border border-rim rounded-lg px-2 py-1 text-xs text-txt"
-          >
-            <option value="">{t("webpages.layout_template_default")}</option>
-            <For each={templateList()}>
-              {([id, tpl]) => <option value={id}>{tpl.name}</option>}
-            </For>
-          </select>
+          {/* Content format — core's mimetype_select() on Editwebpage */}
+          <Show when={caps.format}>
+            <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} />
+          </Show>
 
-          <button
-            type="button"
-            onClick={() => setCreatingTemplate((o) => !o)}
-            class="flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-rim
-                   text-muted hover:text-txt hover:bg-elevated transition-colors"
-          >
-            <MdFillAdd size={12} />
-            {t("webpages.new_template")}
-          </button>
+          {/* Page layout template assignment — choose, or create a new one inline */}
+          <div class="space-y-2">
+            <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
+              {t("webpages.layout_template_label")}
+              <select
+                ref={selectRef}
+                onChange={(e) => {
+                  setLayoutTemplate(e.currentTarget.value);
+                  setJustCreatedTemplate(false);
+                }}
+                class="bg-elevated border border-rim rounded-lg px-2 py-1 text-xs text-txt"
+              >
+                <option value="">{t("webpages.layout_template_default")}</option>
+                <For each={templateList()}>
+                  {([id, tpl]) => <option value={id}>{tpl.name}</option>}
+                </For>
+              </select>
 
-          {/* Same pencil/checkmark toggle as Layout.tsx's sidebar header and
-              LayoutTemplatesView.tsx's per-row button — one-click access to
-              editing this page's real regions without hunting for the
-              sidebar pencil separately. */}
-          <button
-            type="button"
-            onClick={() => setEditingWidgets(!editingWidgets())}
-            aria-pressed={editingWidgets()}
-            class="p-1.5 rounded-md transition-colors"
-            classList={{
-              "bg-accent text-accent-fg": editingWidgets(),
-              "text-muted hover:text-txt hover:bg-elevated": !editingWidgets(),
-            }}
-            aria-label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
-            title={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
-          >
-            <Show when={editingWidgets()} fallback={<MdOutlineEdit size={14} />}>
-              <MdFillCheck size={14} />
+              <button
+                type="button"
+                onClick={() => setCreatingTemplate((o) => !o)}
+                class="flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-rim
+                       text-muted hover:text-txt hover:bg-elevated transition-colors"
+              >
+                <MdFillAdd size={12} />
+                {t("webpages.new_template")}
+              </button>
+
+              {/* Same pencil/checkmark toggle as Layout.tsx's sidebar header and
+                  LayoutTemplatesView.tsx's per-row button — one-click access to
+                  editing this page's real regions without hunting for the
+                  sidebar pencil separately. */}
+              <button
+                type="button"
+                onClick={() => setEditingWidgets(!editingWidgets())}
+                aria-pressed={editingWidgets()}
+                class="p-1.5 rounded-md transition-colors"
+                classList={{
+                  "bg-accent text-accent-fg": editingWidgets(),
+                  "text-muted hover:text-txt hover:bg-elevated": !editingWidgets(),
+                }}
+                aria-label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
+                title={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
+              >
+                <Show when={editingWidgets()} fallback={<MdOutlineEdit size={14} />}>
+                  <MdFillCheck size={14} />
+                </Show>
+              </button>
+            </div>
+
+            <Show when={layoutTemplate() && templateChrome(layoutTemplate()) === "zen"}>
+              <p class="text-xs text-amber-500">{t("webpages.zen_chrome_notice")}</p>
             </Show>
-          </button>
-        </div>
 
-        <Show when={layoutTemplate() && templateChrome(layoutTemplate()) === "zen"}>
-          <p class="text-xs text-amber-500">{t("webpages.zen_chrome_notice")}</p>
-        </Show>
+            <Show when={creatingTemplate()}>
+              <TemplateNameForm
+                onCancel={() => setCreatingTemplate(false)}
+                onSubmit={async (name) => {
+                  const id = await createTemplate(name);
+                  setCreatingTemplate(false);
+                  if (id) {
+                    setLayoutTemplate(id);
+                    setJustCreatedTemplate(true);
+                  }
+                }}
+              />
+            </Show>
 
-        <Show when={creatingTemplate()}>
-          <TemplateNameForm
-            onCancel={() => setCreatingTemplate(false)}
-            onSubmit={async (name) => {
-              const id = await createTemplate(name);
-              setCreatingTemplate(false);
-              if (id) {
-                setLayoutTemplate(id);
-                setJustCreatedTemplate(true);
-              }
-            }}
-          />
-        </Show>
+            <Show when={justCreatedTemplate()}>
+              <p class="text-xs text-muted">{t("webpages.template_created_hint")}</p>
+            </Show>
+          </div>
 
-        <Show when={justCreatedTemplate()}>
-          <p class="text-xs text-muted">{t("webpages.template_created_hint")}</p>
-        </Show>
-      </div>
+          <div class="flex items-center justify-end gap-2">
+            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
+            <span class="text-xs text-muted">·</span>
+            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
+          </div>
+        </>
+      }
+      editor={
+        <>
+          <div ref={wiring.wrapperRef}>
+            <RichEditor
+              onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
+              body={store.body()}
+              onInput={store.setBody}
+              capabilities={caps}
+              tab={store.tab()}
+              onTabChange={store.setTab}
+              mimetype={store.mimetype()}
+              placeholder={t("editor.start_writing")}
+              minHeight="60vh"
+            />
+            <AttachmentBar
+              store={attach}
+              nick={props.nick}
+              accept="files"
+              onInsert={(bbcode) => {
+                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+              }}
+              onAltChange={(att) => {
+                store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
+              }}
+              tab={store.tab()}
+              onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+            />
+          </div>
+        </>
+      }
+      panels={
+        <>
+          <MentionEmojiPopups wiring={wiring} />
 
-      <div class="flex items-center justify-end gap-2">
-        <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-        <span class="text-xs text-muted">·</span>
-        <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-      </div>
-
-      {/* Editor */}
-      <div ref={wiring.wrapperRef}>
-        <RichEditor
-          onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
-          body={store.body()}
-          onInput={store.setBody}
-          capabilities={caps}
-          tab={store.tab()}
-          onTabChange={store.setTab}
-          mimetype={store.mimetype()}
-          placeholder={t("editor.start_writing")}
-          minHeight="400px"
-        />
-        <AttachmentBar
-          store={attach}
-          nick={props.nick}
-          accept="files"
-          onInsert={(bbcode) => {
-            store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
-          }}
-          onAltChange={(att) => {
-            store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
-          }}
-          tab={store.tab()}
-          onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-        />
-      </div>
-
-      <MentionEmojiPopups wiring={wiring} />
-
-      {/* Encrypt panel */}
-      <Show when={enc.open()}>
-        <EncryptPanel enc={enc} />
-      </Show>
-
-      {/* Decrypt-to-edit panel */}
-      <Show when={enc.decryptOpen()}>
-        <DecryptPanel enc={enc} body={store.body} />
-      </Show>
-
-      {/* Drafts panel */}
-      <Show when={draftsOpen()}>
-        <DraftsList
-          drafts={store.savedDrafts()}
-          onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-          onDelete={(id) => void store.deleteSavedDraft(id)}
-          onClose={() => setDraftsOpen(false)}
-        />
-      </Show>
-
-      {/* Options row: ACL + encrypt */}
-      <div class="flex flex-wrap items-center gap-3 border-t border-rim pt-4">
-        <Show when={caps.aclPicker}>
-          <AclPicker
-            mode={acl.mode()}
-            onModeChange={acl.setMode}
-            allowEntries={acl.allowEntries()}
-            denyEntries={acl.denyEntries()}
-            onToggle={acl.toggleEntry}
-            onClear={acl.clearEntries}
-          />
-        </Show>
-
-        <Show when={isFeatureEnabled("content_encrypt")}>
-          <EncryptToggle enc={enc} body={store.body} />
-        </Show>
-      </div>
-
-      {/* Action row: discard/save-draft/drafts on the left, clear/submit on the right */}
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="flex gap-2 items-center">
-          <SecondaryButton
-            onClick={() => {
-              store.reset();
-              attach.clear();
-              acl.reset();
-              enc.reset();
-              props.onCancel?.();
-            }}
-          >
-            {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
-          </SecondaryButton>
-          <Show when={store.body().trim()}>
-            <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
-              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
-              </svg>
-              {t("editor.save_draft")}
-            </SecondaryButton>
+          {/* Encrypt panel */}
+          <Show when={enc.open()}>
+            <EncryptPanel enc={enc} />
           </Show>
-          <Show when={store.savedDrafts().length > 0}>
-            <button
-              type="button"
-              onClick={() => setDraftsOpen((o) => !o)}
-              class={
-                "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
-                (draftsOpen()
-                  ? "border-rim bg-elevated text-txt"
-                  : "border-rim text-muted hover:text-txt hover:bg-elevated")
-              }
+
+          {/* Decrypt-to-edit panel */}
+          <Show when={enc.decryptOpen()}>
+            <DecryptPanel enc={enc} body={store.body} />
+          </Show>
+
+          {/* Drafts panel */}
+          <Show when={draftsOpen()}>
+            <DraftsList
+              drafts={store.savedDrafts()}
+              onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
+              onDelete={(id) => void store.deleteSavedDraft(id)}
+              onClose={() => setDraftsOpen(false)}
+            />
+          </Show>
+        </>
+      }
+      options={
+        <>
+          <Show when={caps.aclPicker}>
+            <AclPicker
+              mode={acl.mode()}
+              onModeChange={acl.setMode}
+              allowEntries={acl.allowEntries()}
+              denyEntries={acl.denyEntries()}
+              onToggle={acl.toggleEntry}
+              onClear={acl.clearEntries}
+            />
+          </Show>
+
+          <Show when={isFeatureEnabled("content_encrypt")}>
+            <EncryptToggle enc={enc} body={store.body} />
+          </Show>
+        </>
+      }
+      actions={
+        <>
+          <div class="flex gap-2 items-center">
+            <SecondaryButton
+              onClick={() => {
+                store.reset();
+                attach.clear();
+                acl.reset();
+                enc.reset();
+                props.onCancel?.();
+              }}
             >
-              {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-            </button>
-          </Show>
-        </div>
+              {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
+            </SecondaryButton>
+            <Show when={store.body().trim()}>
+              <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
+                </svg>
+                {t("editor.save_draft")}
+              </SecondaryButton>
+            </Show>
+            <Show when={store.savedDrafts().length > 0}>
+              <button
+                type="button"
+                onClick={() => setDraftsOpen((o) => !o)}
+                class={
+                  "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
+                  (draftsOpen()
+                    ? "border-rim bg-elevated text-txt"
+                    : "border-rim text-muted hover:text-txt hover:bg-elevated")
+                }
+              >
+                {t("editor.drafts_btn", { count: store.savedDrafts().length })}
+              </button>
+            </Show>
+          </div>
 
-        <div class="flex items-center gap-2 ml-auto">
-          <IconButton
-            title={t("editor.clear_composer")}
-            variant="danger"
-            onClick={() => {
-              store.reset();
-              attach.clear();
-              acl.reset();
-              enc.reset();
-            }}
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </IconButton>
-          <PrimarySubmitButton
-            disabled={store.submitting() || attach.uploading() || !store.body().trim() || !store.title().trim()}
-            onClick={() => void store.submit()}
-          >
-            {store.submitting()
-              ? t("editor.saving")
-              : isEditing()
-                ? t("editor.save_changes")
-                : t("editor.publish_btn")}
-          </PrimarySubmitButton>
-        </div>
-      </div>
-    </div>
+          <div class="flex items-center gap-2 ml-auto">
+            <IconButton
+              title={t("editor.clear_composer")}
+              variant="danger"
+              onClick={() => {
+                store.reset();
+                attach.clear();
+                acl.reset();
+                enc.reset();
+              }}
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </IconButton>
+            <PrimarySubmitButton
+              disabled={store.submitting() || attach.uploading() || !store.body().trim() || !store.title().trim()}
+              onClick={() => void store.submit()}
+            >
+              {store.submitting()
+                ? t("editor.saving")
+                : isEditing()
+                  ? t("editor.save_changes")
+                  : t("editor.publish_btn")}
+            </PrimarySubmitButton>
+          </div>
+        </>
+      }
+    />
   );
 }

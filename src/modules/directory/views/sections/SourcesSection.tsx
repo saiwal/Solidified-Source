@@ -42,7 +42,11 @@ const ChannelPicker: Component<{
   onSelect: (xchan: string, name: string | null) => void;
 }> = (props) => {
   const { t } = useI18n();
-  const search = useConnectionSearch("c");
+  // "a" = abook only, matching core's mod_sources.js. "c" merges the entire
+  // xchan table in, which is both slow and lists non-connections.
+  const search = useConnectionSearch("a");
+  // Core's "a" has no abook_self filter; importing your own posts is nonsense.
+  const options = () => search.list().filter((c) => c.self !== "abook-self");
 
   return (
     <Show
@@ -82,7 +86,7 @@ const ChannelPicker: Component<{
             <MdFillPeople size={16} class="text-accent shrink-0" />
             <span class="text-sm text-txt">{t("sources.all_connections")}</span>
           </button>
-          <For each={search.list()}>
+          <For each={options()}>
             {(c) => (
               <button
                 onClick={() => props.onSelect(String(c.xid), c.name)}
@@ -98,7 +102,7 @@ const ChannelPicker: Component<{
               </button>
             )}
           </For>
-          <Show when={!search.loading() && search.list().length === 0}>
+          <Show when={!search.loading() && options().length === 0}>
             <p class="px-2 py-3 text-xs text-muted text-center">
               {t("sources.no_connections")}
             </p>

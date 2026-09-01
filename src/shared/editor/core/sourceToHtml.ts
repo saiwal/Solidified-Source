@@ -7,14 +7,46 @@ import { emojify } from "@utsukta/spa-core/lib/emojify";
 import { getEmojiMap } from "@utsukta/spa-core/store/emoji-store";
 import { useEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
 import type { MimeType } from "../types/editor.types";
+import { protectBbcode, restoreBbcode, isBlockBbcode, encodeRaw } from "./markdownProtect";
 
 /** Convert source-format body to HTML for the WYSIWYG editor. */
 export function sourceToHtml(body: string, mimetype: MimeType): string {
   const html =
     mimetype === "text/html" ? body :
-    mimetype === "text/markdown" ? (marked.parse(body) as string) :
+    mimetype === "text/markdown" ? markdownToEditorHtml(body) :
     bbcodeToEditorHtml(body);
   return useEmojiAsImages()() ? emojify(html, getEmojiMap()) : html;
+}
+
+/**
+ * Markdown for the WYSIWYG surface.
+ *
+ * A markdown body still carries bbcode — AttachmentBar inserts [img]/[zmg]/
+ * [zrl], the card picker inserts [card=<id>], the submit path appends
+ * [attachment] — and handing that to marked/Turndown destroys it. So bbcode is
+ * lifted out first (markdownProtect.ts) and re-emitted here as non-editable
+ * embeds carrying their own source, which htmlToSource reads back verbatim.
+ *
+ * Compact [share=<id>] / [card=<id>] tokens reuse the same embed shapes the
+ * bbcode path uses, so hydrateShareEmbeds()/hydrateCardEmbeds() fill in their
+ * previews here too without any extra wiring.
+ */
+function markdownToEditorHtml(body: string): string {
+  const { src, raws } = protectBbcode(body);
+  const html = marked.parse(src) as string;
+
+  return restoreBbcode(html, raws, (raw) => {
+    const share = /^\[share=(\d+)\]\s*\[\/share\]$/i.exec(raw);
+    if (share) return compactShareEmbed(share[1]);
+
+    const card = /^\[card=(\d+)\]\s*\[\/card\]$/i.exec(raw);
+    if (card) return compactCardEmbed(card[1]);
+
+    // Block-level bbcode must not render as a block inside marked's <p>.
+    const tag = isBlockBbcode(raw) ? "div" : "span";
+    const cls = isBlockBbcode(raw) ? "bb-raw-embed bb-raw-block" : "bb-raw-embed";
+    return `${ZWSP}<${tag} class="${cls}" data-bb-raw="${encodeRaw(raw)}" contenteditable="false">${renderShareHtml(raw)}</${tag}>${ZWSP}`;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +126,31 @@ const cardEmbed = (attrs: string, innerHtml: string) =>
 
 // Expanded blocks for compact [card=<id>] tokens, fetched once per id.
 const cardBlockCache = new Map<string, string>();
+
+/**
+ * Compact [share=<id>] / [card=<id>] tokens as non-editable embeds. Shared by
+ * the bbcode and markdown branches so hydrateShareEmbeds()/hydrateCardEmbeds()
+ * recognise them identically in both.
+ */
+const compactShareEmbed = (id: string) => {
+  const cached = shareBlockCache.get(id);
+  return cached
+    ? shareEmbed(`data-share-id="${id}"`, renderShareHtml(cached))
+    : shareEmbed(
+        `data-share-id="${id}" data-share-pending="1"`,
+        `<div class="bb-share bb-share-compact">\u{1F501} Shared post #${id}</div>`,
+      );
+};
+
+const compactCardEmbed = (id: string) => {
+  const cached = cardBlockCache.get(id);
+  return cached
+    ? cardEmbed(`data-card-id="${id}"`, renderShareHtml(cached))
+    : cardEmbed(
+        `data-card-id="${id}" data-card-pending="1"`,
+        `<div class="bb-card-compact">\u{1F5C2}\uFE0F Card embed #${id}</div>`,
+      );
+};
 
 /**
  * Fetch and render the embedded card into any not-yet-hydrated compact card
@@ -244,15 +301,7 @@ function bbcodeToEditorHtml(body: string): string {
 
   let html = bbcodeToHtml(src);
 
-  html = html.replace(/\x01SHARE:(\d+)\x01/g, (_m, id) => {
-    const cached = shareBlockCache.get(id);
-    return cached
-      ? shareEmbed(`data-share-id="${id}"`, renderShareHtml(cached))
-      : shareEmbed(
-          `data-share-id="${id}" data-share-pending="1"`,
-          `<div class="bb-share bb-share-compact">🔁 Shared post #${id}</div>`,
-        );
-  });
+  html = html.replace(/\x01SHARE:(\d+)\x01/g, (_m, id) => compactShareEmbed(id));
   html = html.replace(/\x01SHARERAW:(\d+)\x01/g, (_m, i) => {
     const block = raws[Number(i)] ?? "";
     return shareEmbed(
@@ -261,15 +310,7 @@ function bbcodeToEditorHtml(body: string): string {
     );
   });
 
-  html = html.replace(/\x01CARD:(\d+)\x01/g, (_m, id) => {
-    const cached = cardBlockCache.get(id);
-    return cached
-      ? cardEmbed(`data-card-id="${id}"`, renderShareHtml(cached))
-      : cardEmbed(
-          `data-card-id="${id}" data-card-pending="1"`,
-          `<div class="bb-card-compact">\u{1F5C2}\uFE0F Card embed #${id}</div>`,
-        );
-  });
+  html = html.replace(/\x01CARD:(\d+)\x01/g, (_m, id) => compactCardEmbed(id));
 
   return html;
 }

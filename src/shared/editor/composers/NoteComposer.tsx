@@ -4,8 +4,10 @@ import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
-import SourceToggleButton from "../components/SourceToggleButton";
 import AttachmentBar from "../attachments/AttachmentBar";
+import ComposerShell from "../components/ComposerShell";
+import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
+import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
@@ -92,8 +94,16 @@ export default function NoteComposer(props: Props) {
   const enc = useEncrypt(store.body, store.setBody);
 
   return (
-    <div class={props.fill ? "flex flex-col flex-1 min-h-0 gap-3 p-4" : "space-y-3"}>
-      <Show
+    <ComposerShell
+      class={props.fill ? "p-4" : undefined}
+      // Mirrors the pre-shell wrapper exactly: a real floor only in fill mode,
+      // and none for the inline widget or the `minimal` plain-textarea mode,
+      // whose own max-h-[50vh] textarea must stay small.
+      editorClass={
+        props.fill && !props.minimal ? "flex-1 min-h-[340px] flex flex-col" : "contents"
+      }
+      editor={
+        <Show
         when={!props.minimal}
         fallback={
           <textarea
@@ -111,11 +121,7 @@ export default function NoteComposer(props: Props) {
           />
         }
       >
-        {/* min-h-[340px] (not min-h-0): a real floor covering RichEditor's
-            own 300px floor plus the source-toggle row below it — see
-            RichEditor.tsx's wrapper comment for why min-h-0/auto both fail
-            here. */}
-        <div class={props.fill ? "flex-1 min-h-[340px] flex flex-col" : undefined}>
+        <>
           <RichEditor
             onImageAlt={(src, alt) => attach?.setAltByUrl(src, alt)}
             body={store.body()}
@@ -140,66 +146,56 @@ export default function NoteComposer(props: Props) {
             onAltChange={(att) => {
               store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
             }}
+            tab={store.tab()}
+            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
           />
+        </>
+      </Show>
+      }
+      panels={
+        <>
+          {/* ── Encrypt panel ── */}
+          <Show when={enc.open()}>
+            <EncryptPanel enc={enc} />
+          </Show>
 
-          <div class="flex justify-end mt-3">
-            <SourceToggleButton
-              tab={store.tab()}
-              onToggle={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            />
+          {/* ── Decrypt-to-edit panel ── */}
+          <Show when={enc.decryptOpen()}>
+            <DecryptPanel enc={enc} body={store.body} />
+          </Show>
+        </>
+      }
+      actions={
+        <>
+          <Show when={!props.minimal && isFeatureEnabled("content_encrypt")}>
+            <EncryptToggle enc={enc} body={store.body} />
+          </Show>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <Show when={props.onCancel}>
+              <SecondaryButton
+                onClick={() => { store.reset(); attach?.clear(); enc.reset(); props.onCancel?.(); }}
+              >
+                {t("notepad.cancel")}
+              </SecondaryButton>
+            </Show>
+
+            <Show when={store.body().trim()}>
+              <SecondaryButton onClick={() => void store.saveAsDraft()}>
+                {t("editor.save_draft")}
+              </SecondaryButton>
+            </Show>
+
+            <PrimarySubmitButton
+              onClick={() => void store.submit()}
+              disabled={store.submitting() || !!attach?.uploading() || !store.body().trim()}
+            >
+              {store.submitting() ? t("notepad.saving") : t("notepad.save_btn")}
+            </PrimarySubmitButton>
           </div>
-        </div>
-      </Show>
-
-      {/* ── Encrypt panel ── */}
-      <Show when={enc.open()}>
-        <EncryptPanel enc={enc} />
-      </Show>
-
-      {/* ── Decrypt-to-edit panel ── */}
-      <Show when={enc.decryptOpen()}>
-        <DecryptPanel enc={enc} body={store.body} />
-      </Show>
-
-      <div class="flex items-center gap-2 justify-end shrink-0">
-        <Show when={!props.minimal && isFeatureEnabled("content_encrypt")}>
-          <EncryptToggle enc={enc} body={store.body} />
-        </Show>
-
-        <div class="flex-1" />
-
-        <Show when={props.onCancel}>
-          <button
-            type="button"
-            onClick={() => { store.reset(); attach?.clear(); enc.reset(); props.onCancel?.(); }}
-            class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted
-                   hover:bg-elevated transition-colors"
-          >
-            {t("notepad.cancel")}
-          </button>
-        </Show>
-
-        <Show when={store.body().trim()}>
-          <button
-            type="button"
-            onClick={() => void store.saveAsDraft()}
-            class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted
-                   hover:bg-elevated transition-colors"
-          >
-            {t("editor.save_draft")}
-          </button>
-        </Show>
-
-        <button
-          type="button"
-          onClick={() => void store.submit()}
-          disabled={store.submitting() || !!attach?.uploading() || !store.body().trim()}
-          class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-        >
-          {store.submitting() ? t("notepad.saving") : t("notepad.save_btn")}
-        </button>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

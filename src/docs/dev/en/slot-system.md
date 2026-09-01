@@ -421,18 +421,21 @@ width in twelfths:
 - **Absent means full width** (unless the widget declares a `defaultSpan`), so
   every layout saved before this existed renders unchanged, and a plain-string singleton stays a plain string until it is given a
   width.
-- The edit-mode card shows a width dropdown (Full / Half / Third / Quarter → 12 / 6 /
-  4 / 3) next to the move and remove buttons. `<Slot>` only passes `onSetSpan` for the
+- The edit-mode card shows a width dropdown next to the move and remove buttons:
+  Full / 3/4 / 2/3 / 1/2 / 1/3 / 1/4 → spans 12 / 9 / 8 / 6 / 4 / 3. 12 divides
+  evenly by both 3 and 4, so thirds and fourths are both exact. The labels are
+  fractions rather than words to keep the control narrow in a card header. `<Slot>` only passes `onSetSpan` for the
   three grid slots, so the sidebar slots show no width control.
 - `Slot` writes the width onto the widget's wrapper as `data-span`, and all the layout
   lives in three CSS rules in `src/index.css` — an attribute rather than a Tailwind
   class, because Tailwind can't generate class names from a runtime value. A span with
-  no matching rule (anything but 6/4/3) falls through to full width.
+  no matching rule (anything but 9/8/6/4/3) falls through to full width.
 - **Below `md` (768px) every widget is full width**, regardless of its span.
 - **Large font settings reduce the column count**, mirroring `fontSizeColumnCap()` in
   `lib/masonry.ts`, which does the same for the stream masonry views: at the
-  `large` setting (18px root) a quarter renders as a third, and at `xl` (21px) both
-  quarters and thirds render as halves. `applyTypographyCSS()` stamps `data-font-size`
+  `large` setting (18px root) a quarter renders as a third, and at `xl` (21px)
+  quarters and thirds render as halves while two-thirds and three-quarters go full
+  width. `applyTypographyCSS()` stamps `data-font-size`
   on `<html>`, so this is another plain CSS selector — it re-matches the moment the
   setting changes, and the *stored* span is never touched, so lowering the font size
   restores the chosen width.
@@ -442,6 +445,25 @@ width in twelfths:
 
 Templates get spans for free: `widget-templates.ts`'s `parseSlots` delegates to
 `parseWidgetLayout`, and a template's `slots` shape is one `modules[moduleId]` entry.
+
+### Tight packing
+
+A plain CSS grid makes every row as tall as its tallest cell, so a short widget
+beside a tall one leaves a gap underneath. The grid slots avoid that with the
+standard grid-masonry technique: the container has 1px auto-rows and no row gap,
+each item spans as many rows as it is tall (`--rows`, written by the `rowSpan`
+directive in `lib/masonry.ts` from a `ResizeObserver`) and owns its gap as a
+bottom margin, and `grid-auto-flow: dense` lets later items slot up into the
+gaps.
+
+Two consequences worth knowing:
+
+- **Visual order can differ from list order** when widths are mixed — that is what
+  `dense` does, and it is the price of tight packing. Move up / move down still
+  operate on the list order.
+- Items must stay content-height for the measurement to settle, which is why the
+  container keeps `items-start`. A widget that sizes itself to its grid area
+  (`height: 100%`) would feed its own measurement back into the observer.
 
 ## Legacy: `slots`
 
@@ -465,11 +487,31 @@ can't 400 on save.
 `masonry.ts` itself stays — `MasonryView`, `ScrapbookView` and the cards board
 still use it.
 
-## Module bodies live in views, not widgets
+## Module bodies as locked content widgets
 
-Modules that had pushed their whole routed body into a `locked` `<module>.content`
-widget (with the routed view reduced to `return null`) have had that body moved
-back into the view component. A module's **header** widget — its title bar and
-actions — is still a widget in the `header` slot, and multi-widget compositions
-that were never a single body (the channel module's four alternative feed
-layouts, siteinfo's six sections, the HQ dashboard) are still widgets too.
+Many modules push their whole routed body into a `locked` `<module>.content`
+widget in `contentTop`, with the routed view reduced to `return null` (see
+`hq/views/HqView.tsx` and the `manage` pair for the reference shape). That puts
+the page body *inside* the layout rather than below it, so an owner can move it
+relative to the other widgets in the region and set its width, without being
+able to delete the thing that makes the page a page.
+
+`locked: true` is what constrains the edit affordances, and it needs no
+special-casing in `WidgetCard` — the controls simply fall out of the widget's
+own definition:
+
+| Control | Shown? | Why |
+|---|---|---|
+| Move up / down | yes | always available |
+| Width | yes | the widget is in a grid slot, so `<Slot>` passes `onSetSpan` |
+| Remove | no | `<Show when={!props.entry.widget.locked}>` |
+| Configure (gear) | no | these widgets declare no `configComponent` |
+
+`<Slot>` also force-adds a locked widget back if a saved layout doesn't include
+it, and the picker never offers it (it is always already present), so the body
+can't go missing from a layout saved before the widget existed.
+
+A module's **header** widget — its title bar and actions — is a separate,
+usually also locked widget in the `header` slot. Multi-widget compositions that
+were never a single body stay ordinary unlocked widgets: the channel module's
+four alternative feed layouts, siteinfo's six sections, and the HQ dashboard.

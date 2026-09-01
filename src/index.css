@@ -550,25 +550,66 @@ img.emoji.single-emoji:hover {
    themed bg-surface shows through — make sure nothing repaints over it. */
 .excalidraw, .excalidraw .excalidraw__canvas { background: transparent; }
 
-/* Slot widget widths (header/contentTop/footer, laid out as a 12-col grid in
-   Slot.tsx). The width is carried as a data-span attribute rather than a class,
-   since Tailwind can't generate class names from a runtime value, and rather
-   than an inline style, so the font-size clamp below can still override it.
+/* Slot widget widths + masonry packing (header/contentTop/footer, rendered as
+   a 12-column grid by Slot.tsx).
+
+   Width is carried as a data-span attribute rather than a class, since
+   Tailwind can't generate class names from a runtime value, and rather than an
+   inline style, so the container queries below can still override it. 12
+   divides evenly by both 3 and 4, so thirds and fourths are both exact.
    Anything without a recognised span — global widgets, the add-widget footer,
-   an out-of-range stored value — falls through to full width. */
-.slot-grid > * { grid-column: 1 / -1; }
+   an out-of-range stored value — falls through to full width.
 
-@media (min-width: 768px) {
+   Widths step down progressively as the grid narrows: 4 columns → 3 → 2 → 1.
+   The queries are @container, not @media, because the grid sits in <main>
+   between the left nav and the right sidebar — the viewport width badly
+   overestimates the space widgets actually have (the same trap
+   useColumnCount() in lib/masonry.ts avoids by measuring the container).
+   Thresholds are in rem, so the large/xl font-size settings raise them and
+   shed a column on their own — no separate data-font-size clamp needed. Only
+   the rendering steps down; the stored span is untouched, so widening the
+   container restores the chosen width.
+
+   Rows are 1px with no row gap: each item spans as many rows as it is tall
+   (--rows, written by the rowSpan directive in lib/masonry.ts) and owns its
+   gap as a bottom margin. Without this a grid row is as tall as its tallest
+   cell, so a short widget beside a tall one leaves a gap underneath. `dense`
+   lets later items slot up into those gaps — which is the point, and also
+   means visual order can differ from list order when widths are mixed.
+
+   Rows are left-aligned: a row that doesn't fill the full width leaves the
+   remainder empty on the right rather than centering. */
+.slot-grid {
+  grid-auto-rows: 1px;
+  row-gap: 0;
+  grid-auto-flow: row dense;
+  container-type: inline-size;
+}
+
+/* 1 column: the base rule, applied at any width and overridden below. */
+.slot-grid > * {
+  grid-column: 1 / -1;
+  grid-row: span var(--rows, 1);
+  margin-bottom: 1rem;
+}
+
+/* 2 columns */
+@container (min-width: 32rem) {
+  .slot-grid > [data-span="3"],
+  .slot-grid > [data-span="4"],
   .slot-grid > [data-span="6"] { grid-column: span 6 / span 6; }
-  .slot-grid > [data-span="4"] { grid-column: span 4 / span 4; }
-  .slot-grid > [data-span="3"] { grid-column: span 3 / span 3; }
+}
 
-  /* Large font settings cap how many columns fit, mirroring fontSizeColumnCap()
-     in lib/masonry.ts (which does the same for gridTop's automatic packing):
-     18px root → 3 columns max, 21px → 2. data-font-size is stamped on <html> by
-     applyTypographyCSS(), so this re-matches the instant the setting changes.
-     Only the rendering is clamped — the stored span is untouched. */
-  :root[data-font-size="large"] .slot-grid > [data-span="3"] { grid-column: span 4 / span 4; }
-  :root[data-font-size="xl"] .slot-grid > [data-span="3"],
-  :root[data-font-size="xl"] .slot-grid > [data-span="4"] { grid-column: span 6 / span 6; }
+/* 3 columns */
+@container (min-width: 48rem) {
+  .slot-grid > [data-span="3"],
+  .slot-grid > [data-span="4"] { grid-column: span 4 / span 4; }
+  .slot-grid > [data-span="8"],
+  .slot-grid > [data-span="9"] { grid-column: span 8 / span 8; }
+}
+
+/* 4 columns: stored spans honoured exactly. */
+@container (min-width: 64rem) {
+  .slot-grid > [data-span="3"] { grid-column: span 3 / span 3; }
+  .slot-grid > [data-span="9"] { grid-column: span 9 / span 9; }
 }

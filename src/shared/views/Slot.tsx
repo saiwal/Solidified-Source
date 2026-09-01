@@ -37,6 +37,8 @@ import {
 import { toast } from "@utsukta/spa-core/store/toast";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
+import { rowSpan } from "@utsukta/spa-core/lib/masonry";
+void rowSpan;
 import { useI18n } from "@utsukta/spa-core/i18n";
 import WidgetArrangementEditor, {
   SlotRegionBox,
@@ -307,7 +309,11 @@ const Slot: Component<SlotProps> = (props) => {
       {/* Always mounted — never torn down on module navigation */}
       <For each={globalWidgets()}>
         {(g) => (
-          <div class="empty:hidden" use:helpable={widgetHelpTarget(g.widget)}>
+          <div
+            class="empty:hidden"
+            use:rowSpan={isFullWidth ? 16 : undefined}
+            use:helpable={widgetHelpTarget(g.widget)}
+          >
             <g.Widget />
           </div>
         )}
@@ -324,6 +330,7 @@ const Slot: Component<SlotProps> = (props) => {
                 <div
                   class="empty:hidden"
                   data-span={entry.span ?? 12}
+                  use:rowSpan={isFullWidth ? 16 : undefined}
                   use:helpable={widgetHelpTarget(entry.widget)}
                 >
                   <Widget config={entry.config} />

@@ -8,8 +8,14 @@ export interface FileAcl {
   allow_cid: string[];
   deny_gid:  string[];
   deny_cid:  string[];
-  /** "private" = visible only to the owning channel; arrays above are ignored. */
-  scope?: "private";
+  /**
+   * Explicit audience. When set, the arrays above are ignored:
+   * "private" = the owning channel only, "contacts" = the channel's default
+   * ACL, "public" = no ACL at all. Sent for every non-custom picker mode —
+   * leaving it off would make "connections" indistinguishable from "public"
+   * (both send empty arrays), which silently unshares the file.
+   */
+  scope?: "private" | "contacts" | "public";
 }
 
 export interface FileMeta {
@@ -47,14 +53,21 @@ export async function listFolder(nick: string, folderHash: string): Promise<File
 export async function listFolderMeta(
   nick: string,
   folderHash: string,
-): Promise<{ items: FileMeta[]; canWrite: boolean }> {
+): Promise<{ items: FileMeta[]; canWrite: boolean; defaultAcl: FileAcl }> {
   const url = folderHash
     ? `/spa/files/${nick}/folder/${encodeURIComponent(folderHash)}`
     : `/spa/files/${nick}`;
   const res = await apiFetch(url);
   if (!res.ok) throw new Error(`listFolder ${res.status}`);
   const json = await res.json();
-  return { items: json.data ?? [], canWrite: !!json.meta?.can_write };
+  return {
+    items: json.data ?? [],
+    canWrite: !!json.meta?.can_write,
+    // What scope "contacts" writes for this channel — attach has no
+    // public_policy column, so it is the only way to read "Connections" back.
+    defaultAcl: json.meta?.default_acl
+      ?? { allow_cid: [], allow_gid: [], deny_cid: [], deny_gid: [] },
+  };
 }
 
 /**
@@ -81,7 +94,13 @@ export function aclFromPickerKeys(
     split(allowKeys, allow_cid, allow_gid);
     split(denyKeys, deny_cid, deny_gid);
   }
-  return { allow_cid, allow_gid, deny_cid, deny_gid, scope: mode === "me" ? "private" : undefined };
+  const scope = ({
+    me:          "private",
+    connections: "contacts",
+    public:      "public",
+    custom:      undefined,
+  } as const)[mode];
+  return { allow_cid, allow_gid, deny_cid, deny_gid, scope };
 }
 
 /** Update ACL for a file or folder. group_allow / contact_allow are arrays of hashes. */

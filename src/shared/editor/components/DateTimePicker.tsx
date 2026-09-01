@@ -196,14 +196,14 @@ export default function DateTimePicker(props: Props) {
         title={props.title}
         onClick={toggle}
         class={
-          "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border transition-colors " +
+          "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-2 sm:py-1 rounded-md text-xs border transition-colors " +
           (props.value || open()
             ? "bg-accent/10 text-accent border-accent/30"
             : "text-muted hover:text-txt hover:bg-elevated border-rim")
         }
       >
         <span class="shrink-0">{props.icon ?? <MdOutlineSchedule size={14} />}</span>
-        <Show when={selected()} fallback={<span>{props.placeholder ?? props.title}</span>}>
+        <Show when={selected()} fallback={<span class="hidden sm:inline">{props.placeholder ?? props.title}</span>}>
           <span class="tabular-nums">{fmtTrigger().format(selected()!)}</span>
         </Show>
       </button>

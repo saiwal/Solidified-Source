@@ -6,13 +6,23 @@
  * JSON, Article's dual FormData-create/JSON-edit, Webpage's JSON).
  */
 
-import { createSignal } from "solid-js";
+import { createSignal, createEffect } from "solid-js";
 import { entryKey, type AclMode, type AclEntry } from "./AclPicker";
 
 export interface AclStateOptions {
   mode?: AclMode;
   allowEntries?: Iterable<string>;
   denyEntries?: Iterable<string>;
+  /**
+   * Re-derive the initial state when a late-arriving dependency lands, as long
+   * as the user hasn't touched the picker yet.
+   *
+   * Composers can be the initial route, so they build their initial ACL before
+   * /spa/nav has answered — and recognising "Only me" needs the viewer's own
+   * hash from that response (see aclModeFrom). Without this the mode silently
+   * falls back to "custom" on a cold load only.
+   */
+  resync?: () => AclStateOptions | undefined;
 }
 
 export interface AclState {
@@ -39,7 +49,21 @@ export function useAclState(initial?: AclStateOptions): AclState {
     new Set<string>(initial?.denyEntries),
   );
 
+  // Any user interaction freezes the state against resync.
+  const [touched, setTouched] = createSignal(false);
+
+  if (initial?.resync) {
+    createEffect(() => {
+      const next = initial.resync!();
+      if (!next || touched()) return;
+      setMode(next.mode ?? initialMode);
+      setAllowEntries(new Set<string>(next.allowEntries));
+      setDenyEntries(new Set<string>(next.denyEntries));
+    });
+  }
+
   function toggleEntry(entry: AclEntry, list: "allow" | "deny") {
+    setTouched(true);
     const key = entryKey(entry);
     const setSet = list === "allow" ? setAllowEntries : setDenyEntries;
     const setOther = list === "allow" ? setDenyEntries : setAllowEntries;
@@ -56,6 +80,7 @@ export function useAclState(initial?: AclStateOptions): AclState {
   }
 
   function clearEntries() {
+    setTouched(true);
     setAllowEntries(new Set<string>());
     setDenyEntries(new Set<string>());
   }
@@ -66,9 +91,13 @@ export function useAclState(initial?: AclStateOptions): AclState {
   }
 
   return {
-    mode, setMode,
+    mode,
+    setMode: (m: AclMode) => { setTouched(true); setMode(m); },
     allowEntries, denyEntries,
-    setAllowEntries, setDenyEntries,
+    // Bulk restores (a saved draft) are a deliberate state, so they freeze
+    // resync too — otherwise a late nav response would overwrite the draft.
+    setAllowEntries: (e: Set<string>) => { setTouched(true); setAllowEntries(e); },
+    setDenyEntries:  (e: Set<string>) => { setTouched(true); setDenyEntries(e); },
     toggleEntry, clearEntries, reset,
   };
 }

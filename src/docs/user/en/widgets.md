@@ -108,6 +108,7 @@ Every change (add, remove, reorder, or configure) saves immediately - there's no
 | timeline feed         | channel                                        | contentTop                                 | -      | -        |
 | upcoming events       | hq*                                            | contentTop                                    | -      | -        |
 | usage quotas          | hq                                             | contentTop                                    | -      | -        |
+| welcome               | hq*                                            | header                                     | -      | -        |
 | weather               | any                                            | right, contentTop                             | -      | ✅       |
 | wiki list             | any (wiki*)                                    | right                                      | -      | -        |
 
@@ -395,6 +396,12 @@ Lists your events for the next 30 days, with quick access to view details or cre
 ### Usage & Quotas
 
 Shows your account's resource usage at a glance — storage, channels, connections, and other service-class limits — with a link to the full Account settings page for more detail.
+<!-- welcome -->
+
+### Welcome
+
+Greets you by your channel's display name. Shown only to you — visitors to your
+channel never see it.
 <!-- weather -->
 
 ### Weather

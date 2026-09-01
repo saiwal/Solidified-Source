@@ -7,7 +7,7 @@
  * don't (Wiki, the profile bio field, notes, inline post/comment edits).
  */
 
-import { type Component } from "solid-js";
+import { Show, type Component } from "solid-js";
 import { MdOutlineCode } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { EditorTab } from "../types/editor.types";
@@ -15,12 +15,18 @@ import type { EditorTab } from "../types/editor.types";
 export interface SourceToggleButtonProps {
   tab: EditorTab;
   onToggle: () => void;
+  /** Whether the WYSIWYG surface is available at all for the current format
+   *  and surface — compute with canUseWysiwyg(mimetype, caps.markdownWysiwyg).
+   *  RichEditor forces the source tab when it isn't, so the toggle hides
+   *  rather than sitting there doing nothing. Omitted = shown. */
+  canWysiwyg?: boolean;
 }
 
 const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
   const { t } = useI18n();
   const isSource = () => props.tab === "source";
   return (
+    <Show when={props.canWysiwyg ?? true}>
     <button
       type="button"
       onClick={props.onToggle}
@@ -35,6 +41,7 @@ const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
       <MdOutlineCode class="w-3.5 h-3.5" />
       {isSource() ? t("editor.write_tab") : t("editor.source_tab")}
     </button>
+    </Show>
   );
 };
 

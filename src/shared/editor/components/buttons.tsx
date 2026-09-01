@@ -50,6 +50,11 @@ export const SecondaryButton: Component<SecondaryButtonProps> = (props) => (
 export interface ToggleButtonProps {
   active: boolean;
   onClick: () => void;
+  /**
+   * Both the native tooltip and the visible label. The label is hidden below
+   * `sm`, leaving the icon alone, so the composer's options row still fits a
+   * phone instead of being hidden outright.
+   */
   title?: string;
   children: JSX.Element;
 }
@@ -60,13 +65,14 @@ export const ToggleButton: Component<ToggleButtonProps> = (props) => (
     onClick={props.onClick}
     title={props.title}
     class={
-      "hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border transition-colors " +
+      "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-2 sm:py-1 rounded-md text-xs border transition-colors " +
       (props.active
         ? "bg-accent/10 text-accent border-accent/30"
         : "text-muted hover:text-txt hover:bg-elevated border-rim")
     }
   >
     {props.children}
+    <span class="hidden sm:inline">{props.title}</span>
   </button>
 );
 

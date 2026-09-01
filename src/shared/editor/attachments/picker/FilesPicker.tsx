@@ -6,7 +6,7 @@ import {
   type Component,
 } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { listFolder } from "@/modules/files/api";
+import { listFolderMeta } from "@/modules/files/api";
 import type { FileMeta } from "@/modules/files/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
@@ -42,10 +42,14 @@ const FilesPicker: Component<Props> = (props) => {
     props.onFolderChange?.({ hash: currentHash(), displayPath: currentPath() }),
   );
 
+  // listFolderMeta, not listFolder: this shares the cache key "files-folder"
+  // with the files widget, and two fetchers on one key must return the same
+  // shape or whichever populates it first hands the other a payload it can't
+  // read (an object where an array is expected, which throws mid-render).
   const [items] = createQueryResource(
     "files-folder",
     () => ({ nick: props.nick, hash: currentHash() }),
-    ({ nick, hash }) => listFolder(nick, hash),
+    ({ nick, hash }) => listFolderMeta(nick, hash),
   );
 
   function enterFolder(folder: FileMeta) {
@@ -69,9 +73,9 @@ const FilesPicker: Component<Props> = (props) => {
     return true;
   }
 
-  const dirs = () => (items() ?? []).filter((f) => f.is_dir);
-  const files = () =>
-    (items() ?? []).filter((f) => !f.is_dir && isSelectable(f));
+  const entries = () => items()?.items ?? [];
+  const dirs = () => entries().filter((f) => f.is_dir);
+  const files = () => entries().filter((f) => !f.is_dir && isSelectable(f));
   const filtered = () => [...dirs(), ...files()];
 
   return (

@@ -1,7 +1,8 @@
 import { createSignal, onMount, Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { AclEntry } from "@/shared/editor/components/AclPicker";
-import AclPicker, { entryKey, type AclMode } from "@/shared/editor/components/AclPicker";
+import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, type AclMode } from "@/shared/editor/components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { fetchAcl, saveAcl } from "../api/api";
 
 export default function AclEditor(props: {
@@ -15,23 +16,19 @@ export default function AclEditor(props: {
   const [saving, setSaving]       = createSignal(false);
   const [error, setError]         = createSignal("");
   const [mode, setMode]           = createSignal<AclMode>("public");
+  // Needed to recognise "Only me", stored as allow_cid = [own hash].
+  const selfHash = useNavViewer();
   const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys]   = createSignal<Set<string>>(new Set<string>());
 
   onMount(async () => {
     try {
       const data = await fetchAcl(props.nick, props.type, props.datum);
-      const allowSet = new Set<string>([
-        ...data.allow_cid.map((h) => `c:${h}`),
-        ...data.allow_gid.map((id) => `g:${id}`),
-      ]);
-      const denySet = new Set<string>([
-        ...data.deny_cid.map((h) => `c:${h}`),
-        ...data.deny_gid.map((id) => `g:${id}`),
-      ]);
-      setAllowKeys(allowSet);
-      setDenyKeys(denySet);
-      setMode(allowSet.size > 0 || denySet.size > 0 ? "custom" : "public");
+      const m = aclModeFrom(data, selfHash()?.hash);
+      const { allow, deny } = aclEntryKeys(data, m);
+      setAllowKeys(allow);
+      setDenyKeys(deny);
+      setMode(m);
     } catch {
       setError(t("photos.acl_error"));
     } finally {

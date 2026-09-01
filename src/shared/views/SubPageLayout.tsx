@@ -1,5 +1,6 @@
 import { type JSX, Show, createMemo, createSignal, createEffect } from "solid-js";
 import { useLocation, useNavigate, A } from "@solidjs/router";
+import { createMediaQuery } from "@solid-primitives/media";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
@@ -50,6 +51,7 @@ export default function SubPageLayout(props: Props) {
   const navigate = useNavigate();
   const role = useViewerRole();
   const installedApps = useInstalledApps();
+  const isDesktop = createMediaQuery("(min-width: 768px)"); // the `md:` classes below
 
   const visibleItems = createMemo(() =>
     props.items.filter((item) => isVisible(item, role(), installedApps())),
@@ -61,14 +63,30 @@ export default function SubPageLayout(props: Props) {
 
   // Remember the last section visited so the overview list (mobile) keeps it
   // highlighted after "< Back" navigates to the bare base path, which has no
-  // section segment for props.activeKey to derive from.
+  // section segment for props.activeKey to derive from — and so returning to
+  // the module from elsewhere reopens that section on desktop.
+  // Only record while the URL really is under this base: ProfilesView renders
+  // with base="/settings" from /profiles and would otherwise poison the map.
   const [lastKey, setLastKey] = createSignal(lastKeyByBase.get(props.base) ?? props.activeKey);
   createEffect(() => {
-    if (!atBase()) {
+    if (location.pathname.startsWith(props.base + "/")) {
       setLastKey(props.activeKey);
       lastKeyByBase.set(props.base, props.activeKey);
     }
   });
+
+  // Desktop never renders the bare base path: with no section segment the
+  // rendered section falls back to a role default while the nav highlights the
+  // remembered one, and the section component gets re-created out from under
+  // whatever module-level paging state it shares. Redirect to the real URL.
+  // Mobile keeps the base path — there it *is* the section menu.
+  createEffect(() => {
+    if (!atBase() || !isDesktop()) return;
+    const key = lastKey();
+    if (visibleItems().some((item) => item.path === key))
+      navigate(`${props.base}/${key}`, { replace: true });
+  });
+
   const highlightKey = () => (atBase() ? lastKey() : props.activeKey);
 
   const activeItem = () =>

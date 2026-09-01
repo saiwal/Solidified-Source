@@ -11,6 +11,7 @@ export interface PendingAuthor {
 export interface PendingTarget {
   title?: string;
   body?: string;
+  mimetype?: string;
   permalink?: string;
 }
 
@@ -25,6 +26,7 @@ export interface PendingItem {
   is_reply: boolean;
   title?: string;
   body?: string;
+  mimetype?: string;
   author: PendingAuthor;
   target: PendingTarget | null;
 }

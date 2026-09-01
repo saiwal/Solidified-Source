@@ -501,7 +501,11 @@ export default function ArticleView() {
                     <MdOutlineShare size={17} />
                   </button>
 
-                  <Show when={auth()?.isLoggedIn}>
+                  {/* canComment comes from core's can_comment_on_post() — it
+                      honours the article's comment policy, comments_closed and
+                      item_nocomment, so a comments-disabled article offers no
+                      Comment button rather than one whose submit is rejected. */}
+                  <Show when={auth()?.isLoggedIn && data()?.article.canComment}>
                     <button
                       onClick={() => setReplyOpen(v => !v)}
                       class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium

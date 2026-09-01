@@ -8,7 +8,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
-import AclPicker from "../components/AclPicker";
+import AclPicker, { aclModeFrom, aclEntryKeys } from "../components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { useEncrypt } from "../useEncrypt";
 import EncryptToggle from "../components/EncryptToggle";
 // Lazy: these panels are only ever shown once a user opts into encrypting or
@@ -28,12 +29,17 @@ import type { AclMode } from "../components/AclPicker";
 import { useCategoryTags } from "../components/useCategoryTags";
 import CategoryTagsField from "../components/CategoryTagsField";
 import SlugField from "../components/SlugField";
+import FormatSelect from "../components/FormatSelect";
 import SummaryField from "../components/SummaryField";
 import LanguageField from "../components/LanguageField";
 import SeriesField from "../components/SeriesField";
-import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
+import { PrimarySubmitButton, SecondaryButton, IconButton, ToggleButton } from "../components/buttons";
+import { MdOutlineTimer, MdOutlineSchedule } from "solid-icons/md";
+import DateTimePicker from "../components/DateTimePicker";
+import ComposerShell from "../components/ComposerShell";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
+import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
 interface Props {
   profileUid: number;
@@ -82,33 +88,25 @@ export default function ArticleComposer(props: Props) {
   const attach = createAttachmentStore(props.nick, scope);
 
   // ── ACL state — initialize from the existing article's ACL when editing ─────
-  const initialAclMode = (): AclMode => {
-    const p = props.initial;
-    if (!p) return "connections";
-    if (p.public_policy === "contacts") return "connections";
-    if ((p.allow_cid?.length ?? 0) > 0 || (p.allow_gid?.length ?? 0) > 0) return "custom";
-    return "public";
-  };
-  const initialAllowEntries = (): Set<string> => {
-    const p = props.initial;
-    if (!p) return new Set();
-    return new Set([
-      ...(p.allow_cid ?? []).map((h) => `c:${h}`),
-      ...(p.allow_gid ?? []).map((g) => `g:${g}`),
-    ]);
-  };
-  const initialDenyEntries = (): Set<string> => {
-    const p = props.initial;
-    if (!p) return new Set();
-    return new Set([
-      ...(p.deny_cid ?? []).map((h) => `c:${h}`),
-      ...(p.deny_gid ?? []).map((g) => `g:${g}`),
-    ]);
-  };
+  // "Only me" is stored as allow_cid = [the owner's own hash], so recovering it
+  // needs the viewer's hash; without it the mode falls back to "custom".
+  const selfHash = useNavViewer();
+  const initialAclMode = (): AclMode =>
+    props.initial ? aclModeFrom(props.initial, selfHash()?.hash) : "connections";
+  // Entries are only meaningful for "custom" — seeding them for "me" would
+  // leave the owner's own hash sitting in the picker as an unresolvable chip.
+  const initialEntries = () =>
+    aclEntryKeys(props.initial ?? {}, initialAclMode());
+
   const acl = useAclState({
     mode: initialAclMode(),
-    allowEntries: initialAllowEntries(),
-    denyEntries: initialDenyEntries(),
+    allowEntries: initialEntries().allow,
+    denyEntries: initialEntries().deny,
+    // /spa/nav may not have answered yet; re-derive once the viewer's hash
+    // lands, unless the user has already touched the picker.
+    resync: () => selfHash()?.hash
+      ? { mode: initialAclMode(), allowEntries: initialEntries().allow, denyEntries: initialEntries().deny }
+      : undefined,
   });
 
   // ── Language + series — local to this composer (articles-only fields,
@@ -121,6 +119,12 @@ export default function ArticleComposer(props: Props) {
   // ── Series suggestions — existing series names for this channel ─────────────
   const [existingSeries] = createQueryResource("composer-series", () => props.nick, fetchSeriesList);
   const [seriesActiveSuggestion, setSeriesActiveSuggestion] = createSignal(-1);
+
+  // ── Publishing controls (create only, same as PostComposer) ────────────────
+  // Both DateTimePickers speak "" or local "YYYY-MM-DDTHH:mm".
+  const [expiry, setExpiry]       = createSignal("");
+  const [publishAt, setPublishAt] = createSignal("");
+  const [noComment, setNoComment] = createSignal(false);
   const seriesSuggestions = createMemo<string[]>(() => {
     const q = series().trim().toLowerCase();
     const names = (existingSeries() ?? []).map((s) => s.name);
@@ -215,6 +219,11 @@ export default function ArticleComposer(props: Props) {
         series:   series(),
         series_order: series() ? (seriesOrder() ?? 1) : undefined,
         translation_of: (!isEditing() && props.translationOf) ? props.translationOf.uuid : undefined,
+        // Create-only. `undefined` drops out of JSON.stringify, so an
+        // immediate publish sends no `created` key at all.
+        expire:    !isEditing() && expiry()    ? expiry()    : undefined,
+        created:   !isEditing() && publishAt() ? publishAt() : undefined,
+        nocomment: !isEditing() && noComment() ? 1           : undefined,
         ...aclPayload(),
       }),
     });
@@ -254,7 +263,10 @@ export default function ArticleComposer(props: Props) {
   // doesn't know about ──
   function buildDraftExtra(): Record<string, unknown> {
     const mode = acl.mode();
-    const extra: Record<string, unknown> = { aclMode: mode, lang: lang(), series: series(), seriesOrder: seriesOrder() };
+    const extra: Record<string, unknown> = {
+      aclMode: mode, lang: lang(), series: series(), seriesOrder: seriesOrder(),
+      expiry: expiry(), publishAt: publishAt(), noComment: noComment(),
+    };
     if (mode === "custom") {
       extra.allow = [...acl.allowEntries()];
       extra.deny = [...acl.denyEntries()];
@@ -271,6 +283,9 @@ export default function ArticleComposer(props: Props) {
     if (typeof extra.lang === "string") setLang(extra.lang);
     if (typeof extra.series === "string") setSeries(extra.series);
     if (typeof extra.seriesOrder === "number") setSeriesOrder(extra.seriesOrder);
+    if (typeof extra.expiry === "string") setExpiry(extra.expiry);
+    if (typeof extra.publishAt === "string") setPublishAt(extra.publishAt);
+    if (typeof extra.noComment === "boolean") setNoComment(extra.noComment);
   });
 
   // ── Mention + emoji autocomplete ─────────────────────────────────────────────
@@ -297,225 +312,279 @@ export default function ArticleComposer(props: Props) {
   const onTitleChange = (v: string) => store.setTitle(v);
 
   return (
-    <div class="flex flex-col flex-1 min-h-0 max-w-3xl mx-auto gap-4 py-6 px-4">
-      {/* Meta fields — fixed height, above the editor */}
-      <div class="shrink-0 space-y-4">
-        {/* Title */}
-        <input
-          type="text"
-          placeholder={t("editor.article_title_placeholder")}
-          value={store.title()}
-          onInput={(e) => onTitleChange(e.currentTarget.value)}
-          class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
-        />
-
-        {/* Summary */}
-        <Show when={caps.summary}>
-          <SummaryField
-            value={store.summary}
-            onInput={store.setSummary}
-            placeholder={t("editor.article_summary_placeholder")}
-            class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
+    <ComposerShell
+      class="p-4"
+      meta={
+        <>
+          {/* Title */}
+          <input
+            type="text"
+            placeholder={t("editor.article_title_placeholder")}
+            value={store.title()}
+            onInput={(e) => onTitleChange(e.currentTarget.value)}
+            class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
-        </Show>
 
-        {/* Slug — its own line */}
-        <Show when={caps.slug}>
-          <SlugField value={store.slug} onInput={store.setSlug} title={store.title} hideLabel />
-        </Show>
-
-        {/* Language — required */}
-        <LanguageField
-          value={lang}
-          onInput={setLang}
-          exclude={props.translationOf?.excludeLangs}
-          hideLabel
-        />
-
-        {/* Series — optional */}
-        <SeriesField
-          name={series}
-          onNameInput={onSeriesNameInput}
-          order={seriesOrder}
-          onOrderInput={setSeriesOrder}
-          onKeyDown={onSeriesKeyDown}
-          suggestions={seriesSuggestions}
-          activeSuggestion={seriesActiveSuggestion}
-          onSelectSuggestion={selectSeriesSuggestion}
-          hideLabel
-        />
-
-        {/* Category — its own line */}
-        <Show when={caps.category}>
-          <CategoryTagsField
-            tags={categoryTags.categoryTags}
-            pending={categoryTags.pendingCategory}
-            onPendingInput={categoryTags.setPendingCategory}
-            onKeyDown={categoryTags.onCategoryKeyDown}
-            onRemove={categoryTags.removeCategoryTag}
-            onBlur={() => {
-              if (categoryTags.pendingCategory().trim()) {
-                categoryTags.addCategoryTag(categoryTags.pendingCategory());
-              }
-            }}
-            suggestions={categoryTags.suggestions}
-            activeSuggestion={categoryTags.activeSuggestion}
-            onSelectSuggestion={categoryTags.addCategoryTag}
-            placeholder={t("editor.category_field_placeholder")}
-            showLabel
-            hideLabel
-          />
-        </Show>
-
-        <div class="flex items-center justify-end gap-2">
-          <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-          <span class="text-xs text-muted">·</span>
-          <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-        </div>
-      </div>
-
-      {/* Editor — fills the remaining space; the surface inside RichEditor
-           scrolls internally past long text while the bottom-docked toolbar
-           stays put. */}
-      {/* min-h-[360px] (not min-h-0): a real floor covering RichEditor's own
-          300px floor plus AttachmentBar's row — see RichEditor.tsx's
-          wrapper comment for why min-h-0/auto both fail here. */}
-      <div ref={wiring.wrapperRef} class="flex-1 min-h-[360px] flex flex-col">
-        <RichEditor
-          onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
-          body={store.body()}
-          onInput={onBodyChange}
-          capabilities={caps}
-          tab={store.tab()}
-          onTabChange={store.setTab}
-          mimetype={store.mimetype()}
-          placeholder={t("editor.start_writing")}
-          minHeight="150px"
-          fill
-        />
-        <AttachmentBar
-          store={attach}
-          nick={props.nick}
-          accept="both"
-          onInsert={(bbcode) => {
-            store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
-          }}
-          onAltChange={(att) => {
-            store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
-          }}
-          tab={store.tab()}
-          onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-        />
-      </div>
-
-      {/* Trailing panels + action rows — fixed height, below the editor */}
-      <div class="shrink-0 space-y-4">
-        {/* Encrypt panel */}
-        <Show when={enc.open()}>
-          <EncryptPanel enc={enc} />
-        </Show>
-
-        {/* Decrypt-to-edit panel */}
-        <Show when={enc.decryptOpen()}>
-          <DecryptPanel enc={enc} body={store.body} />
-        </Show>
-
-        <MentionEmojiPopups wiring={wiring} />
-
-        {/* Drafts panel */}
-        <Show when={draftsOpen()}>
-          <DraftsList
-            drafts={store.savedDrafts()}
-            onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-            onDelete={(id) => void store.deleteSavedDraft(id)}
-            onClose={() => setDraftsOpen(false)}
-          />
-        </Show>
-
-        {/* Options row: ACL + encrypt */}
-        <div class="flex flex-wrap items-center gap-3 border-t border-rim pt-4">
-          <Show when={caps.aclPicker}>
-            <AclPicker
-              mode={acl.mode()}
-              onModeChange={acl.setMode}
-              allowEntries={acl.allowEntries()}
-              denyEntries={acl.denyEntries()}
-              onToggle={acl.toggleEntry}
-              onClear={acl.clearEntries}
+          {/* Summary */}
+          <Show when={caps.summary}>
+            <SummaryField
+              value={store.summary}
+              onInput={store.setSummary}
+              placeholder={t("editor.article_summary_placeholder")}
+              class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
             />
           </Show>
 
-          <Show when={isFeatureEnabled("content_encrypt")}>
-            <EncryptToggle enc={enc} body={store.body} />
+          {/* Slug — its own line */}
+          <Show when={caps.slug}>
+            <SlugField value={store.slug} onInput={store.setSlug} title={store.title} hideLabel />
           </Show>
-        </div>
 
-        {/* Action row: discard/save-draft/drafts on the left, clear/submit on the right */}
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex gap-2 items-center">
-            <SecondaryButton onClick={() => props.onCancel?.()}>
-              {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
-            </SecondaryButton>
-            <Show when={store.body().trim()}>
-              <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
-                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
-                </svg>
-                {t("editor.save_draft")}
-              </SecondaryButton>
+          {/* Content format + language — one line from `sm` up. Both render as
+              `flex-1 min-w-0` so they split the row evenly; with caps.format
+              off, Language takes the full width on its own. They stack below
+              `sm`: two <select>s sharing a phone-width row squeeze past their
+              option text and overflow the composer. */}
+          <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+            {/* Content format — core's mimetype_select() */}
+            <Show when={caps.format}>
+              <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} hideLabel />
             </Show>
-            <Show when={store.savedDrafts().length > 0}>
-              <button
-                type="button"
-                onClick={() => setDraftsOpen((o) => !o)}
-                class={
-                  "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
-                  (draftsOpen()
-                    ? "border-rim bg-elevated text-txt"
-                    : "border-rim text-muted hover:text-txt hover:bg-elevated")
+
+            {/* Language — required */}
+            <LanguageField
+              value={lang}
+              onInput={setLang}
+              exclude={props.translationOf?.excludeLangs}
+              hideLabel
+            />
+          </div>
+
+          {/* Series — optional */}
+          <SeriesField
+            name={series}
+            onNameInput={onSeriesNameInput}
+            order={seriesOrder}
+            onOrderInput={setSeriesOrder}
+            onKeyDown={onSeriesKeyDown}
+            suggestions={seriesSuggestions}
+            activeSuggestion={seriesActiveSuggestion}
+            onSelectSuggestion={selectSeriesSuggestion}
+            hideLabel
+          />
+
+          {/* Category — its own line */}
+          <Show when={caps.category}>
+            <CategoryTagsField
+              tags={categoryTags.categoryTags}
+              pending={categoryTags.pendingCategory}
+              onPendingInput={categoryTags.setPendingCategory}
+              onKeyDown={categoryTags.onCategoryKeyDown}
+              onRemove={categoryTags.removeCategoryTag}
+              onBlur={() => {
+                if (categoryTags.pendingCategory().trim()) {
+                  categoryTags.addCategoryTag(categoryTags.pendingCategory());
                 }
+              }}
+              suggestions={categoryTags.suggestions}
+              activeSuggestion={categoryTags.activeSuggestion}
+              onSelectSuggestion={categoryTags.addCategoryTag}
+              placeholder={t("editor.category_field_placeholder")}
+              showLabel
+              hideLabel
+            />
+          </Show>
+
+          <div class="flex items-center justify-end gap-2">
+            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
+            <span class="text-xs text-muted">·</span>
+            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
+          </div>
+        </>
+      }
+      editor={
+        <div ref={wiring.wrapperRef} class="flex-1 min-h-0 flex flex-col">
+          <RichEditor
+            onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
+            body={store.body()}
+            onInput={onBodyChange}
+            capabilities={caps}
+            tab={store.tab()}
+            onTabChange={store.setTab}
+            mimetype={store.mimetype()}
+            placeholder={t("editor.start_writing")}
+            minHeight="150px"
+            fill
+          />
+          <AttachmentBar
+            store={attach}
+            nick={props.nick}
+            accept="both"
+            onInsert={(bbcode) => {
+              store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+            }}
+            onAltChange={(att) => {
+              store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
+            }}
+            tab={store.tab()}
+            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+          />
+        </div>
+      }
+      panels={
+        <>
+          {/* Encrypt panel */}
+          <Show when={enc.open()}>
+            <EncryptPanel enc={enc} />
+          </Show>
+
+          {/* Decrypt-to-edit panel */}
+          <Show when={enc.decryptOpen()}>
+            <DecryptPanel enc={enc} body={store.body} />
+          </Show>
+
+          <MentionEmojiPopups wiring={wiring} />
+
+          {/* Drafts panel */}
+          <Show when={draftsOpen()}>
+            <DraftsList
+              drafts={store.savedDrafts()}
+              onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
+              onDelete={(id) => void store.deleteSavedDraft(id)}
+              onClose={() => setDraftsOpen(false)}
+            />
+          </Show>
+        </>
+      }
+      options={
+        <>
+          {/* Options row: ACL + publishing controls + encrypt. The three
+              publishing controls are create-only, matching PostComposer — an
+              edit never touches the article's stored expires/delayed/nocomment. */}
+          <div class="flex flex-wrap items-center gap-3">
+            <Show when={caps.aclPicker}>
+              <AclPicker
+                mode={acl.mode()}
+                onModeChange={acl.setMode}
+                allowEntries={acl.allowEntries()}
+                denyEntries={acl.denyEntries()}
+                onToggle={acl.toggleEntry}
+                onClear={acl.clearEntries}
+              />
+            </Show>
+
+            {/* Expiry — gated behind Settings → Features → Content Expiration */}
+            <Show when={isFeatureEnabled("content_expire") && !isEditing()}>
+              <DateTimePicker
+                value={expiry()}
+                onChange={setExpiry}
+                min={() => new Date()}
+                icon={<MdOutlineTimer size={14} />}
+                title={t("editor.expire_at")}
+                placeholder={t("editor.expire_at")}
+              />
+            </Show>
+
+            {/* Delayed publish — gated behind Settings → Features → Delayed Posting */}
+            <Show when={isFeatureEnabled("delayed_posting") && !isEditing()}>
+              <DateTimePicker
+                value={publishAt()}
+                onChange={setPublishAt}
+                min={() => new Date()}
+                icon={<MdOutlineSchedule size={14} />}
+                title={t("editor.publish_at")}
+                placeholder={t("editor.publish_at")}
+              />
+            </Show>
+
+            {/* Disable comments — gated behind Settings → Features → Disable Comments */}
+            <Show when={isFeatureEnabled("disable_comments") && !isEditing()}>
+              <ToggleButton
+                active={noComment()}
+                onClick={() => setNoComment((v) => !v)}
+                title={t("editor.nocomment_toggle")}
               >
-                {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-              </button>
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 12h8m-4-9a9 9 0 100 18 9 9 0 000-18z" />
+                </svg>
+              </ToggleButton>
+            </Show>
+
+            <Show when={isFeatureEnabled("content_encrypt")}>
+              <EncryptToggle enc={enc} body={store.body} />
             </Show>
           </div>
+        </>
+      }
+      actions={
+        <>
+          {/* Action row: discard/save-draft/drafts on the left, clear/submit on the right */}
+            <div class="flex gap-2 items-center">
+              <SecondaryButton onClick={() => props.onCancel?.()}>
+                {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
+              </SecondaryButton>
+              <Show when={store.body().trim()}>
+                <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
+                  </svg>
+                  {t("editor.save_draft")}
+                </SecondaryButton>
+              </Show>
+              <Show when={store.savedDrafts().length > 0}>
+                <button
+                  type="button"
+                  onClick={() => setDraftsOpen((o) => !o)}
+                  class={
+                    "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
+                    (draftsOpen()
+                      ? "border-rim bg-elevated text-txt"
+                      : "border-rim text-muted hover:text-txt hover:bg-elevated")
+                  }
+                >
+                  {t("editor.drafts_btn", { count: store.savedDrafts().length })}
+                </button>
+              </Show>
+            </div>
 
-          <div class="flex items-center gap-2 ml-auto">
-            <IconButton
-              title={t("editor.clear_composer")}
-              variant="danger"
-              onClick={() => {
-                store.reset();
-                attach.clear();
-                acl.reset();
-                categoryTags.setPendingCategory("");
-                enc.reset();
-              }}
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </IconButton>
-            <PrimarySubmitButton
-              disabled={
-                store.submitting() ||
-                attach.uploading() ||
-                !store.body().trim() ||
-                !store.title().trim() ||
-                !lang()
-              }
-              onClick={() => void store.submit()}
-            >
-              {store.submitting()
-                ? t("editor.saving")
-                : isEditing()
-                  ? t("editor.save_changes")
-                  : t("editor.publish_btn")}
-            </PrimarySubmitButton>
-          </div>
-        </div>
-      </div>
-    </div>
+            <div class="flex items-center gap-2 ml-auto">
+              <IconButton
+                title={t("editor.clear_composer")}
+                variant="danger"
+                onClick={() => {
+                  store.reset();
+                  attach.clear();
+                  acl.reset();
+                  categoryTags.setPendingCategory("");
+                  enc.reset();
+                }}
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </IconButton>
+              <PrimarySubmitButton
+                disabled={
+                  store.submitting() ||
+                  attach.uploading() ||
+                  !store.body().trim() ||
+                  !store.title().trim() ||
+                  !lang()
+                }
+                onClick={() => void store.submit()}
+              >
+                {store.submitting()
+                  ? t("editor.saving")
+                  : isEditing()
+                    ? t("editor.save_changes")
+                    : t("editor.publish_btn")}
+              </PrimarySubmitButton>
+            </div>
+        </>
+      }
+    />
   );
 }

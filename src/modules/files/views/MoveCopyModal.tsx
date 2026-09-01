@@ -3,16 +3,18 @@ import { Portal } from "solid-js/web";
 import { MdFillFolder } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { listFolder, moveItem, copyItem } from "../api";
+import { listFolderMeta, moveItem, copyItem } from "../api";
 import type { FileMeta } from "../api";
 
 type Mode = "move" | "copy";
 interface BreadcrumbEntry { name: string; hash: string; }
 
 interface Props {
-  item: FileMeta;
+  /** One or many — the bulk selection bar reuses this modal with N items. */
+  items: FileMeta[];
   nick: string;
-  onDone: (updated: FileMeta) => void;
+  /** Called once every item has been attempted; `failed` is empty on success. */
+  onDone: (failed: FileMeta[]) => void;
   onClose: () => void;
 }
 
@@ -24,15 +26,21 @@ const MoveCopyModal: Component<Props> = (props) => {
   const [busy, setBusy] = createSignal(false);
   const [err, setErr] = createSignal("");
 
+  // listFolderMeta, not listFolder: this shares the cache key "files-folder"
+  // with the files widget, and two fetchers on one key must return the same
+  // shape or whichever populates it first hands the other a payload it can't
+  // read (an object where an array is expected, which throws mid-render).
   const [items] = createQueryResource(
     "files-folder",
     () => ({ nick: props.nick, hash: currentHash() }),
-    ({ nick, hash }) => listFolder(nick, hash),
+    ({ nick, hash }) => listFolderMeta(nick, hash),
   );
 
-  // Folders only — can't navigate into or target the very item being moved/copied.
+  // Folders only — and never a folder that is itself being moved, which would
+  // ask the server to nest it inside itself.
+  const moving = createMemo(() => new Set(props.items.map((i) => i.hash)));
   const folders = createMemo(() =>
-    (items() ?? []).filter((f) => f.is_dir && f.hash !== props.item.hash)
+    (items()?.items ?? []).filter((f) => f.is_dir && !moving().has(f.hash))
   );
 
   function enterFolder(folder: FileMeta) {
@@ -43,23 +51,36 @@ const MoveCopyModal: Component<Props> = (props) => {
     setCrumbs((prev) => (idx < 0 ? [] : prev.slice(0, idx + 1)));
   }
 
-  const destinationIsSameFolder = () => currentHash() === props.item.folder;
+  // Only a no-op when EVERY selected item already lives here.
+  const destinationIsSameFolder = () =>
+    props.items.every((i) => i.folder === currentHash());
   // Moving into the folder the item already lives in is a no-op classic core's UI never allows either.
   const disableSubmit = createMemo(() => busy() || (mode() === "move" && destinationIsSameFolder()));
 
   async function submit() {
     setBusy(true);
     setErr("");
-    try {
-      const updated = mode() === "move"
-        ? await moveItem(props.nick, props.item.hash, currentHash())
-        : await copyItem(props.nick, props.item.hash, currentHash());
-      props.onDone(updated);
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
+    // Sequential, not Promise.all: there is no batch endpoint, and firing N
+    // concurrent writes at the same folder is how you get partial, interleaved
+    // failures that are hard to report. One at a time, collect what failed.
+    const failed: FileMeta[] = [];
+    const op = mode() === "move" ? moveItem : copyItem;
+    for (const item of props.items) {
+      try {
+        await op(props.nick, item.hash, currentHash());
+      } catch {
+        failed.push(item);
+      }
     }
+    setBusy(false);
+    if (failed.length === props.items.length) {
+      setErr(t("files_mod.bulk_partial_fail", {
+        count: failed.length,
+        names: failed.map((f) => f.filename).join(", "),
+      }) as string);
+      return;
+    }
+    props.onDone(failed);
   }
 
   return (
@@ -71,7 +92,11 @@ const MoveCopyModal: Component<Props> = (props) => {
         <div class="flex flex-col w-full max-w-md h-[70vh] rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
           <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
             <span class="text-sm font-semibold text-txt truncate">
-              {t("files_mod.move_or_copy")} — <span class="font-normal text-muted">{props.item.filename}</span>
+              {t("files_mod.move_or_copy")} — <span class="font-normal text-muted">
+                {props.items.length === 1
+                  ? props.items[0].filename
+                  : t("files_mod.selected_count", { count: props.items.length })}
+              </span>
             </span>
             <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2">
               ×
@@ -136,7 +161,13 @@ const MoveCopyModal: Component<Props> = (props) => {
           </Show>
 
           <footer class="flex items-center justify-between px-4 py-3 border-t border-rim bg-elevated shrink-0">
-            <span class="text-xs text-muted truncate">{t("files_mod.choose_destination")}</span>
+            {/* Say WHY the button is dead, or a disabled "Move here" at the
+                folder you started in just reads as broken. */}
+            <span class="text-xs text-muted truncate">
+              {mode() === "move" && destinationIsSameFolder()
+                ? t("files_mod.already_here")
+                : t("files_mod.choose_destination")}
+            </span>
             <div class="flex gap-2 shrink-0">
               <button
                 type="button"

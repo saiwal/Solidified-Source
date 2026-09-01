@@ -3,12 +3,24 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+// Core's wiki addon offers a narrower format list than the generic item
+// picker — no HTML — and mirrors it server-side in ContentTypes::WIKI.
+// See Mod_Wiki.php:221.
+export const WIKI_MIME_TYPES = ["text/bbcode", "text/markdown", "text/plain"] as const;
+export type WikiMimeType = (typeof WIKI_MIME_TYPES)[number];
+
+export const WIKI_MIME_LABEL = {
+  "text/bbcode": "editor.format_bbcode",
+  "text/markdown": "editor.format_markdown",
+  "text/plain": "editor.format_plain",
+} as const satisfies Record<WikiMimeType, string>;
+
 export interface WikiMeta {
   resource_id: string;
   name: string;
   url_name: string;
   html_name: string;
-  mime_type: "text/markdown" | "text/bbcode" | "text/plain";
+  mime_type: WikiMimeType;
   type_lock: boolean;
   is_private?: boolean;
 }
@@ -91,7 +103,7 @@ export async function createWiki(
   nick: string,
   payload: {
     name: string;
-    mime_type?: string;
+    mime_type?: WikiMimeType;
     type_lock?: boolean;
     allow_cid?: string[];
     allow_gid?: string[];

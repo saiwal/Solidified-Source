@@ -39,6 +39,14 @@ export function bbcodeToInsert(bbcode: string, mime: MimeType): string {
       .replace(ATTACH_RE, (_, url: string) => `[attachment](${url})`);
   }
 
+  // text/plain has no markup at all — anything else would be inserted
+  // literally, so fall back to the bare URL.
+  if (mime === "text/plain") {
+    return bbcode
+      .replace(IMG_RE, (_m, _attrs: string | undefined, url: string) => url)
+      .replace(ATTACH_RE, (_m, url: string) => url);
+  }
+
   // text/html
   return bbcode
     .replace(IMG_RE, (_, attrs: string | undefined, url: string) => {

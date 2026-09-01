@@ -45,7 +45,6 @@ export default function CardsHeaderWidget() {
   const [searchParams] = useSearchParams();
   // Same query key as CardsContentWidget and the board — one request.
   const [kanban] = createQueryResource("kanban-config", nick, fetchKanban);
-  const showKanban = () => boardView() === "kanban" && !!kanban()?.enabled;
   const [open, setOpen] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());

@@ -23,9 +23,9 @@ export default function BlockEditorView() {
   const onCancel = () => navigate(`/webpages/${nick()}/blocks`);
 
   return (
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-3xl mx-auto flex flex-col gap-4">
       {/* Breadcrumb */}
-      <div class="flex items-center gap-2 text-sm text-muted px-4 pt-4">
+      <div class="flex items-center gap-2 text-sm text-muted">
         <A
           href={`/webpages/${nick()}/blocks`}
           class="hover:text-txt transition-colors"

@@ -5,25 +5,13 @@ import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import DOMPurify from "dompurify";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
+import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import NoteComposer from "@/shared/editor/composers/NoteComposer";
 import { notes, loading, hasMore, loadNotes, removeNote } from "../store";
 import type { Note } from "../api";
-
-function renderBody(body: string, mimetype: string): string {
-  switch (mimetype) {
-    case "text/bbcode":
-      return DOMPurify.sanitize(bbcodeToHtml(body));
-    case "text/html":
-      return DOMPurify.sanitize(body);
-    default:
-      return DOMPurify.sanitize(body);
-  }
-}
 
 function fmtDate(iso: string, locale: string): string {
   return new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(locale, {

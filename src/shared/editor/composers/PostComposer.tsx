@@ -25,6 +25,7 @@ import { MdOutlineTimer, MdOutlineSchedule } from "solid-icons/md";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
+import ComposerShell from "../components/ComposerShell";
 import { CAPABILITIES, type MimeType } from "../types/editor.types";
 import type { EditPayload } from "@utsukta/spa-core/lib/item-api";
 import AclPicker from "../components/AclPicker";
@@ -61,6 +62,7 @@ const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
 const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
+import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,6 +110,21 @@ const PostComposer: Component<ComposerProps> = (props) => {
   const { t } = useI18n();
   const caps = CAPABILITIES.post;
   const isEdit = () => !!props.onSubmitEdit;
+
+  // Format for a *new* post: markdown when the "Markdown" feature is on. That
+  // is the mdpost addon's own toggle (Settings -> Features -> Editor); the SPA
+  // deliberately does not add a second one. The flag only reaches the client
+  // when that addon is loaded, since /spa/pconfig builds its feature map from
+  // get_features() — so the addon gates the feature and its toggle gates the
+  // composer.
+  //
+  // Editing is driven by props.initialMimetype instead, which the compose
+  // endpoint sets from the Markdown source it remembered for the item
+  // (ContentTypes::recallMarkdown); this is only the fallback for when that
+  // seed is missing, where bbcode is the safe assumption since the stored body
+  // always is bbcode.
+  const postMimetype = (): MimeType =>
+    !isEdit() && isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode";
 
   // ── Scope (shared by both stores for matching IDB keys) ───────────────────
   const scope =
@@ -314,7 +331,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
       initialTitle: props.initialTitle,
       initialSummary: props.initialSummary,
       initialCategory: props.initialCategory,
-      initialMimetype: props.initialMimetype,
+      initialMimetype: props.initialMimetype ?? postMimetype(),
     },
   );
 
@@ -473,10 +490,183 @@ const PostComposer: Component<ComposerProps> = (props) => {
             </Show>
           </IconButton>
         }
-        footer={
-          <>
-            {/* ── Options row ── */}
-            <div class="flex flex-wrap items-center gap-2">
+      >
+        {/* Single flex-col root for all body content — mirrors ArticleComposer's
+            structure exactly (one flex-1 min-h-0 wrapper containing the
+            shrink-0/flex-1/shrink-0 groups), rather than passing them as
+            separate top-level children of ComposerModal's body. */}
+        <ComposerShell
+          class="p-4"
+          meta={
+            <>
+              <Show when={caps.title}>
+                <input
+                  type="text"
+                  placeholder={t("editor.title_placeholder")}
+                  value={store.title()}
+                  onInput={(e) => store.setTitle(e.currentTarget.value)}
+                  class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
+                />
+              </Show>
+
+              <Show when={caps.summary && !props.parentId}>
+                <SummaryField
+                  value={store.summary}
+                  onInput={store.setSummary}
+                  placeholder={t("editor.post_summary_placeholder")}
+                  class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
+                />
+              </Show>
+
+              <Show when={caps.category && !props.parentId}>
+                <CategoryTagsField
+                  tags={categoryTags.categoryTags}
+                  pending={categoryTags.pendingCategory}
+                  onPendingInput={categoryTags.setPendingCategory}
+                  onKeyDown={categoryTags.onCategoryKeyDown}
+                  onRemove={categoryTags.removeCategoryTag}
+                  onBlur={() => {
+                    if (categoryTags.pendingCategory().trim()) {
+                      categoryTags.addCategoryTag(categoryTags.pendingCategory());
+                    }
+                  }}
+                  suggestions={categoryTags.suggestions}
+                  activeSuggestion={categoryTags.activeSuggestion}
+                  onSelectSuggestion={categoryTags.addCategoryTag}
+                  placeholder={t("editor.category_placeholder")}
+                  showLabel
+                  hideLabel
+                />
+              </Show>
+
+              <div class="flex items-center justify-end gap-2">
+                <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
+                <span class="text-xs text-muted">·</span>
+                <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
+              </div>
+            </>
+          }
+          editor={
+          <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
+            <RichEditor
+              onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
+              body={store.body()}
+              onInput={store.setBody}
+              capabilities={caps}
+              tab={store.tab()}
+              onTabChange={store.setTab}
+              mimetype={store.mimetype()}
+              onCtrlEnter={() => { if (!wiring.mention.open()) void store.submit(); }}
+              onPasteFiles={(files) => attach.addUploads(files)}
+              placeholder={props.parentId ? t("editor.write_reply_placeholder") : t("editor.write_placeholder")}
+              minHeight="150px"
+              fill
+            />
+            {/* Also shown while editing: editItem() extracts the appended
+                [attachment] tags and merges them onto the item's existing
+                attach column, same as createPost(). Detaching an existing file
+                still isn't possible — the edit seed only carries the body.
+                ponytail: add-only attachments on edit; seed the bar from
+                item.attach if removing files matters. */}
+            <AttachmentBar
+              store={attach}
+              nick={currentNick()}
+              accept="both"
+              onInsert={(bbcode) => {
+                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+              }}
+              onAltChange={(att) => {
+                store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
+              }}
+              tab={store.tab()}
+              onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+            />
+          </div>
+
+          }
+          panels={
+            <>
+              {/* ── Drafts panel ── */}
+              <Show when={draftsOpen()}>
+                <DraftsList
+                  drafts={store.savedDrafts()}
+                  onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
+                  onDelete={(id) => void store.deleteSavedDraft(id)}
+                  onClose={() => setDraftsOpen(false)}
+                />
+              </Show>
+
+              {/* ── Editor area — fills the remaining modal height; the surface
+                   inside RichEditor scrolls internally past long text while the
+                   bottom-docked toolbar stays put. ── */}
+              {/* min-h-[360px] (not min-h-0): a real floor covering RichEditor's own
+                  300px floor plus AttachmentBar's row, so this can't be squeezed
+                  smaller than its children need — see RichEditor.tsx's wrapper
+                  comment for why min-h-0/auto both fail here. */}
+              {/* ── Location panel ── */}
+              <Show when={locationOpen()}>
+                <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-rim bg-elevated/40 shrink-0">
+                  <input
+                    type="text"
+                    value={location()}
+                    placeholder={t("editor.location_placeholder")}
+                    onInput={(e) => setLocation(e.currentTarget.value)}
+                    class="flex-1 min-w-40 bg-transparent border border-rim rounded px-2.5 py-1 text-sm
+                           text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
+                  />
+                  <Show
+                    when={!coord()}
+                    fallback={
+                      <button
+                        type="button"
+                        onClick={() => setCoord("")}
+                        title={t("editor.location_clear_coord")}
+                        class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border bg-accent/10 text-accent border-accent/30 hover:opacity-80 transition-opacity"
+                      >
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        {coord().split(" ").map((c) => Number(c).toFixed(3)).join(", ")}
+                      </button>
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={geotag}
+                      disabled={locating()}
+                      title={t("editor.location_use_browser")}
+                      class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-rim text-muted
+                             hover:text-txt hover:bg-elevated transition-colors disabled:opacity-40"
+                    >
+                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3" stroke-width="2" />
+                        <path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                      </svg>
+                      {locating() ? t("editor.location_locating") : t("editor.location_use_browser")}
+                    </button>
+                  </Show>
+                </div>
+              </Show>
+
+              {/* ── Poll panel ── */}
+              <Show when={caps.poll && poll.enabled()}>
+                <PollPanel poll={poll} />
+              </Show>
+
+              {/* ── Encrypt panel ── */}
+              <Show when={enc.open()}>
+                <EncryptPanel enc={enc} />
+              </Show>
+
+              {/* ── Decrypt-to-edit panel ── */}
+              <Show when={enc.decryptOpen()}>
+                <DecryptPanel enc={enc} body={store.body} />
+              </Show>
+            </>
+          }
+          options={
+            <>
               {/* ACL Picker — hidden for visitors posting to another channel's
                   wall (replaced by a note), and entirely absent when editing,
                   where privacy isn't among the editable fields. */}
@@ -502,16 +692,14 @@ const PostComposer: Component<ComposerProps> = (props) => {
 
               {/* Expiry — gated behind Settings → Features → Content Expiration */}
               <Show when={isFeatureEnabled("content_expire") && !props.parentId && !isEdit()}>
-                <div class="hidden sm:block">
-                  <DateTimePicker
-                    value={expiry()}
-                    onChange={setExpiry}
-                    min={() => new Date()}
-                    icon={<MdOutlineTimer size={14} />}
-                    title={t("editor.expire_at")}
-                    placeholder={t("editor.expire_at")}
-                  />
-                </div>
+                <DateTimePicker
+                  value={expiry()}
+                  onChange={setExpiry}
+                  min={() => new Date()}
+                  icon={<MdOutlineTimer size={14} />}
+                  title={t("editor.expire_at")}
+                  placeholder={t("editor.expire_at")}
+                />
               </Show>
 
               {/* Location toggle */}
@@ -525,21 +713,18 @@ const PostComposer: Component<ComposerProps> = (props) => {
                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <circle cx="12" cy="11" r="3" stroke-width="2" />
                 </svg>
-                {t("editor.location_toggle")}
               </ToggleButton>
 
               {/* Delayed publish — gated behind Settings → Features → Delayed Posting */}
               <Show when={isFeatureEnabled("delayed_posting") && !props.parentId && !isEdit()}>
-                <div class="hidden sm:block">
-                  <DateTimePicker
-                    value={publishAt()}
-                    onChange={setPublishAt}
-                    min={() => new Date()}
-                    icon={<MdOutlineSchedule size={14} />}
-                    title={t("editor.publish_at")}
-                    placeholder={t("editor.publish_at")}
-                  />
-                </div>
+                <DateTimePicker
+                  value={publishAt()}
+                  onChange={setPublishAt}
+                  min={() => new Date()}
+                  icon={<MdOutlineSchedule size={14} />}
+                  title={t("editor.publish_at")}
+                  placeholder={t("editor.publish_at")}
+                />
               </Show>
 
               {/* Disable comments — gated behind Settings → Features → Disable Comments */}
@@ -553,7 +738,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M8 12h8m-4-9a9 9 0 100 18 9 9 0 000-18z" />
                   </svg>
-                  {t("editor.nocomment_toggle")}
                 </ToggleButton>
               </Show>
 
@@ -571,7 +755,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
                   </svg>
-                  {t("editor.local_only_toggle")}
                 </ToggleButton>
               </Show>
 
@@ -587,10 +770,10 @@ const PostComposer: Component<ComposerProps> = (props) => {
               <Show when={isFeatureEnabled("content_encrypt") && !props.parentId}>
                 <EncryptToggle enc={enc} body={store.body} />
               </Show>
-            </div>
-
-            {/* ── Action row: discard/save-draft/drafts on the left, char-count/clear/submit on the right ── */}
-            <div class="flex flex-wrap items-center gap-2">
+            </>
+          }
+          actions={
+            <>
               <div class="flex items-center gap-2">
                 <SecondaryButton onClick={props.onClose}>
                   {t("editor.discard")}
@@ -636,177 +819,9 @@ const PostComposer: Component<ComposerProps> = (props) => {
                     : t(isEdit() ? "editor.save_changes" : "editor.post_btn")}
                 </PrimarySubmitButton>
               </div>
-            </div>
-          </>
-        }
-      >
-        {/* Single flex-col root for all body content — mirrors ArticleComposer's
-            structure exactly (one flex-1 min-h-0 wrapper containing the
-            shrink-0/flex-1/shrink-0 groups), rather than passing them as
-            separate top-level children of ComposerModal's body. */}
-        <div class="flex flex-col flex-1 min-h-0">
-        {/* ── Meta fields (title, summary, category) — styled to match ArticleComposer ── */}
-        <div class="px-4 pt-4 pb-3 space-y-4 shrink-0">
-          <Show when={caps.title}>
-            <input
-              type="text"
-              placeholder={t("editor.title_placeholder")}
-              value={store.title()}
-              onInput={(e) => store.setTitle(e.currentTarget.value)}
-              class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
-            />
-          </Show>
-
-          <Show when={caps.summary && !props.parentId}>
-            <SummaryField
-              value={store.summary}
-              onInput={store.setSummary}
-              placeholder={t("editor.post_summary_placeholder")}
-              class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
-            />
-          </Show>
-
-          <Show when={caps.category && !props.parentId}>
-            <CategoryTagsField
-              tags={categoryTags.categoryTags}
-              pending={categoryTags.pendingCategory}
-              onPendingInput={categoryTags.setPendingCategory}
-              onKeyDown={categoryTags.onCategoryKeyDown}
-              onRemove={categoryTags.removeCategoryTag}
-              onBlur={() => {
-                if (categoryTags.pendingCategory().trim()) {
-                  categoryTags.addCategoryTag(categoryTags.pendingCategory());
-                }
-              }}
-              suggestions={categoryTags.suggestions}
-              activeSuggestion={categoryTags.activeSuggestion}
-              onSelectSuggestion={categoryTags.addCategoryTag}
-              placeholder={t("editor.category_placeholder")}
-              showLabel
-              hideLabel
-            />
-          </Show>
-
-          <div class="flex items-center justify-end gap-2">
-            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-            <span class="text-xs text-muted">·</span>
-            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-          </div>
-        </div>
-
-        {/* ── Drafts panel ── */}
-        <Show when={draftsOpen()}>
-          <DraftsList
-            drafts={store.savedDrafts()}
-            onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-            onDelete={(id) => void store.deleteSavedDraft(id)}
-            onClose={() => setDraftsOpen(false)}
-          />
-        </Show>
-
-        {/* ── Editor area — fills the remaining modal height; the surface
-             inside RichEditor scrolls internally past long text while the
-             bottom-docked toolbar stays put. ── */}
-        {/* min-h-[360px] (not min-h-0): a real floor covering RichEditor's own
-            300px floor plus AttachmentBar's row, so this can't be squeezed
-            smaller than its children need — see RichEditor.tsx's wrapper
-            comment for why min-h-0/auto both fail here. */}
-        <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-[360px]">
-          <RichEditor
-            onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
-            body={store.body()}
-            onInput={store.setBody}
-            capabilities={caps}
-            tab={store.tab()}
-            onTabChange={store.setTab}
-            mimetype={store.mimetype()}
-            onCtrlEnter={() => { if (!wiring.mention.open()) void store.submit(); }}
-            onPasteFiles={(files) => attach.addUploads(files)}
-            placeholder={props.parentId ? t("editor.write_reply_placeholder") : t("editor.write_placeholder")}
-            minHeight="150px"
-            fill
-          />
-          {/* Also shown while editing: editItem() extracts the appended
-              [attachment] tags and merges them onto the item's existing
-              attach column, same as createPost(). Detaching an existing file
-              still isn't possible — the edit seed only carries the body.
-              ponytail: add-only attachments on edit; seed the bar from
-              item.attach if removing files matters. */}
-          <AttachmentBar
-            store={attach}
-            nick={currentNick()}
-            accept="both"
-            onInsert={(bbcode) => {
-              store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
-            }}
-            onAltChange={(att) => {
-              store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
-            }}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
-        </div>
-
-        {/* ── Location panel ── */}
-        <Show when={locationOpen()}>
-          <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-rim bg-elevated/40 shrink-0">
-            <input
-              type="text"
-              value={location()}
-              placeholder={t("editor.location_placeholder")}
-              onInput={(e) => setLocation(e.currentTarget.value)}
-              class="flex-1 min-w-40 bg-transparent border border-rim rounded px-2.5 py-1 text-sm
-                     text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
-            />
-            <Show
-              when={!coord()}
-              fallback={
-                <button
-                  type="button"
-                  onClick={() => setCoord("")}
-                  title={t("editor.location_clear_coord")}
-                  class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border bg-accent/10 text-accent border-accent/30 hover:opacity-80 transition-opacity"
-                >
-                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  {coord().split(" ").map((c) => Number(c).toFixed(3)).join(", ")}
-                </button>
-              }
-            >
-              <button
-                type="button"
-                onClick={geotag}
-                disabled={locating()}
-                title={t("editor.location_use_browser")}
-                class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-rim text-muted
-                       hover:text-txt hover:bg-elevated transition-colors disabled:opacity-40"
-              >
-                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="3" stroke-width="2" />
-                  <path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
-                </svg>
-                {locating() ? t("editor.location_locating") : t("editor.location_use_browser")}
-              </button>
-            </Show>
-          </div>
-        </Show>
-
-        {/* ── Poll panel ── */}
-        <Show when={caps.poll && poll.enabled()}>
-          <PollPanel poll={poll} />
-        </Show>
-
-        {/* ── Encrypt panel ── */}
-        <Show when={enc.open()}>
-          <EncryptPanel enc={enc} />
-        </Show>
-
-        {/* ── Decrypt-to-edit panel ── */}
-        <Show when={enc.decryptOpen()}>
-          <DecryptPanel enc={enc} body={store.body} />
-        </Show>
-        </div>
+            </>
+          }
+        />
       </ComposerModal>
 
       <Portal mount={document.body}>

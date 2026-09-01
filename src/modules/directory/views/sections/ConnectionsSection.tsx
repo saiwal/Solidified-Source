@@ -16,6 +16,7 @@ import { createRoom } from "@/modules/chat/api";
 import { MdOutlineEdit, MdOutlineEmail, MdOutlineChat_bubble } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer, useInstalledApps } from "@utsukta/spa-core/store/nav-store";
+import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -427,7 +428,15 @@ export default function ConnectionsSection() {
   const meta = () => connectionsData.latest?.meta;
 
   onMount(() => {
-    setPage(0);
+    // Paging state lives in the module-level store, so a fresh mount must be the
+    // one that resets it — a *departing* instance resetting on cleanup can land
+    // after the next instance is already live (route transitions keep the old
+    // view alive until the new one resolves) and desync list from offset.
+    setAllConnections([]);
+    setHasMore(true);
+    fetchingMore = false;
+    if (page() === 0) refetch();   // same key, so nudge the resource by hand
+    else setPage(0);
 
     // Deep-link from a notification (e.g. "new connection request") — see
     // resolveNotifyPath, which routes classic connections#<abook_id> intro
@@ -439,10 +448,6 @@ export default function ConnectionsSection() {
       });
       setSearchParams({ open: undefined });
     }
-  });
-
-  onCleanup(() => {
-    setPage(0);
   });
 
   // Only tracks connectionsData() — NOT page(). Tracking page() caused the effect to
@@ -467,6 +472,11 @@ export default function ConnectionsSection() {
   onMount(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
+        // Same reason the feeds suspend endless scroll while arranging widgets
+        // (see store/scroll-style.ts): an auto-growing list keeps pushing the
+        // footer slot out of reach. This list has no scroll-style setting, so
+        // the check is inline.
+        if (editingWidgets()) return;
         if (entry.isIntersecting && hasMore() && !fetchingMore && allConnections().length > 0) {
           fetchingMore = true;
           setPage((p) => p + 1);

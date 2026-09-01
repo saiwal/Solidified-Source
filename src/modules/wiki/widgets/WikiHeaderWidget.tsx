@@ -1,7 +1,7 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { canCreate, loadWikis, resetWikis } from "../store";
-import { createWiki } from "../api";
+import { createWiki, WIKI_MIME_TYPES, WIKI_MIME_LABEL, type WikiMimeType } from "../api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
@@ -15,6 +15,12 @@ export default function WikiHeaderWidget() {
   const [creating, setCreating] = createSignal(false);
   const [newName, setNewName]   = createSignal("");
   const [busy, setBusy]         = createSignal(false);
+  // Wiki content format + whether pages may deviate from it (iconfig
+  // wiki/mimeType + wiki/typelock). Core defaults new wikis to markdown
+  // (Mod_Wiki.php:221 lists it first); the SPA has always created bbcode,
+  // so keep that as the default and let the user change it.
+  const [newMime, setNewMime]   = createSignal<WikiMimeType>("text/bbcode");
+  const [typeLock, setTypeLock] = createSignal(false);
 
   const [createAclMode, setCreateAclMode]     = createSignal<AclMode>("public");
   const [createAllowKeys, setCreateAllowKeys] = createSignal<Set<string>>(new Set<string>());
@@ -34,6 +40,8 @@ export default function WikiHeaderWidget() {
   function resetCreateForm() {
     setCreating(false);
     setNewName("");
+    setNewMime("text/bbcode");
+    setTypeLock(false);
     setCreateAclMode("public");
     setCreateAllowKeys(new Set<string>());
     setCreateDenyKeys(new Set<string>());
@@ -65,6 +73,8 @@ export default function WikiHeaderWidget() {
 
       const res = await createWiki(nick(), {
         name: newName().trim(),
+        mime_type: newMime(),
+        type_lock: typeLock(),
         allow_cid, allow_gid, deny_cid, deny_gid,
         scope: mode === "me" ? "private" : undefined,
       });
@@ -114,6 +124,28 @@ export default function WikiHeaderWidget() {
                 required
               />
             </div>
+            <div class="space-y-1">
+              <label class="text-xs text-muted font-medium">{t("editor.format")}</label>
+              <select
+                class="w-full bg-surface border border-rim text-txt rounded-lg px-3 py-2 text-sm
+                       hover:border-rim-strong focus:outline-none"
+                value={newMime()}
+                onChange={(e) => setNewMime(e.currentTarget.value as WikiMimeType)}
+              >
+                <For each={WIKI_MIME_TYPES}>
+                  {(m) => <option value={m}>{t(WIKI_MIME_LABEL[m])}</option>}
+                </For>
+              </select>
+              <label class="flex items-center gap-2 text-xs text-muted pt-1">
+                <input
+                  type="checkbox"
+                  checked={typeLock()}
+                  onChange={(e) => setTypeLock(e.currentTarget.checked)}
+                />
+                {t("wiki.type_lock_label")}
+              </label>
+            </div>
+
             <div class="space-y-1">
               <label class="text-xs text-muted font-medium">{t("wiki.privacy")}</label>
               <AclPicker

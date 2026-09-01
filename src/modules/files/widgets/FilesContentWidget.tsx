@@ -24,7 +24,8 @@ import {
   MdOutlineEdit_note,
   MdOutlineAttach_file,
 } from "solid-icons/md";
-import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
+import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclIsRestricted, fetchAclNames, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import {
   listFolderMeta,
   updatePermissions,
@@ -83,10 +84,41 @@ function FileIcon(props: { item: FileMeta; class?: string }) {
   return <MdOutlineAttach_file class={cls()} />;
 }
 
-function isPrivate(acl: FileAcl): boolean {
-  return acl.allow_gid.length > 0 || acl.allow_cid.length > 0 ||
-         acl.deny_gid.length > 0  || acl.deny_cid.length > 0;
-}
+// The i18n key naming what an ACL actually grants, rather than a flat
+// "Restricted" that lumps "Only me" in with "everyone I follow".
+const ACL_LABEL_KEY = {
+  public:      "editor.acl_public",
+  connections: "editor.acl_connections",
+  me:          "editor.acl_me",
+  custom:      "editor.acl_custom",
+} as const satisfies Record<AclMode, string>;
+
+/** Just the words — for use inside an existing badge chrome. */
+const AclLabel: Component<{
+  acl: FileAcl;
+  defaultAcl: FileAcl;
+  selfHash: string | undefined;
+}> = (props) => {
+  const { t } = useI18n();
+  return <>{t(ACL_LABEL_KEY[aclModeFrom(props.acl, props.selfHash, props.defaultAcl)])}</>;
+};
+
+/** Icon + label for the file-list ACL column. */
+const AclBadge: Component<{
+  acl: FileAcl;
+  defaultAcl: FileAcl;
+  selfHash: string | undefined;
+}> = (props) => {
+  const restricted = () => aclIsRestricted(props.acl);
+  return (
+    <span class={`hidden sm:flex items-center gap-1 text-xs shrink-0 ${
+      restricted() ? "text-accent" : "text-muted"
+    }`}>
+      {restricted() ? <MdFillLock size={11} /> : <MdFillLock_open size={11} />}
+      <AclLabel acl={props.acl} defaultAcl={props.defaultAcl} selfHash={props.selfHash} />
+    </span>
+  );
+};
 
 // ── Nav stack ─────────────────────────────────────────────────────────────────
 
@@ -97,24 +129,29 @@ type FolderFrame = { hash: string; displayPath: string; label: string };
 const PermissionsPanel: Component<{
   item: FileMeta;
   nick: string;
+  defaultAcl: FileAcl;
   onSaved: (updated: FileMeta) => void;
   onClose: () => void;
 }> = (props) => {
   const { t } = useI18n();
 
-  const [mode, setMode] = createSignal<AclMode>(
-    props.item.acl.allow_cid.length > 0 || props.item.acl.allow_gid.length > 0 ||
-    props.item.acl.deny_cid.length > 0  || props.item.acl.deny_gid.length > 0
-      ? "custom" : "public"
+  // "Only me" is stored as allow_cid = [the owner's own hash], so the viewer's
+  // hash is what separates it from a one-contact custom ACL.
+  const selfHash = useNavViewer();
+  const initialMode = aclModeFrom(props.item.acl, selfHash()?.hash, props.defaultAcl);
+  const initialKeys = aclEntryKeys(props.item.acl, initialMode);
+  const [mode, setMode] = createSignal<AclMode>(initialMode);
+  const [allowKeys, setAllowKeys] = createSignal<Set<string>>(initialKeys.allow);
+  const [denyKeys, setDenyKeys] = createSignal<Set<string>>(initialKeys.deny);
+
+  // Resolve the stored contact hashes to names. Without this every chip falls
+  // back to a truncated hash (AclPicker's key fallback) — two of those look
+  // like the same entry twice.
+  const [seed] = createQueryResource(
+    "acl-names",
+    () => [...props.item.acl.allow_cid, ...props.item.acl.deny_cid].join(",") || null,
+    (csv: string) => fetchAclNames(csv.split(",")),
   );
-  const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set([
-    ...props.item.acl.allow_cid.map((h) => `c:${h}`),
-    ...props.item.acl.allow_gid.map((id) => `g:${id}`),
-  ]));
-  const [denyKeys, setDenyKeys] = createSignal<Set<string>>(new Set([
-    ...props.item.acl.deny_cid.map((h) => `c:${h}`),
-    ...props.item.acl.deny_gid.map((id) => `g:${id}`),
-  ]));
   const [recurse, setRecurse] = createSignal(false);
   const [busy,    setBusy]    = createSignal(false);
   const [err,     setErr]     = createSignal("");
@@ -165,6 +202,7 @@ const PermissionsPanel: Component<{
         onModeChange={setMode}
         allowEntries={allowKeys()}
         denyEntries={denyKeys()}
+        seedEntries={seed()}
         onToggle={toggleEntry}
         onClear={() => { setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>()); }}
       />
@@ -206,21 +244,60 @@ const PermissionsPanel: Component<{
   );
 };
 
+// ── Selection checkbox ────────────────────────────────────────────────────────
+
+/**
+ * Shared by the list row, the grid tile and the select-all header. Stops
+ * propagation because both the row and the tile are themselves click targets
+ * that would otherwise open the file.
+ */
+const SelectBox: Component<{
+  checked: boolean;
+  onToggle: () => void;
+  label: string;
+  class?: string;
+}> = (props) => (
+  <input
+    type="checkbox"
+    checked={props.checked}
+    aria-label={props.label}
+    title={props.label}
+    onClick={(e) => e.stopPropagation()}
+    onChange={props.onToggle}
+    class={`w-4 h-4 shrink-0 accent-accent cursor-pointer ${props.class ?? ""}`}
+  />
+);
+
 // ── File row ──────────────────────────────────────────────────────────────────
 
 const FileRow: Component<{
   item: FileMeta;
   nick: string;
+  defaultAcl: FileAcl;
+  selfHash: string | undefined;
   canWrite: boolean;
   isOwner: boolean;
   onOpen: (item: FileMeta) => void;
   onAction: (action: FileAction, item: FileMeta) => void;
   deleting: boolean;
   permOpen: boolean;
-}> = (props) => (
+  selectable: boolean;
+  selected: boolean;
+  onSelect: () => void;
+}> = (props) => {
+  const { t } = useI18n();
+  return (
   <div class={`flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors ${
-    props.permOpen ? "bg-elevated" : "hover:bg-elevated"
+    props.selected ? "bg-accent/10" : props.permOpen ? "bg-elevated" : "hover:bg-elevated"
   }`}>
+    <Show when={props.selectable} fallback={<span class="w-4 shrink-0" />}>
+      <SelectBox
+        checked={props.selected}
+        onToggle={props.onSelect}
+        label={t("files_mod.select_item", { name: props.item.filename }) as string}
+      />
+    </Show>
+
     <FileIcon item={props.item} class="w-5 h-5 shrink-0 select-none" />
 
     <div class="flex-1 min-w-0">
@@ -234,15 +311,8 @@ const FileRow: Component<{
       </button>
     </div>
 
-    {/* ACL badge */}
-    <span class={`hidden sm:flex items-center gap-1 text-xs shrink-0 ${
-      isPrivate(props.item.acl) ? "text-accent" : "text-muted"
-    }`}>
-      {isPrivate(props.item.acl)
-        ? <><MdFillLock size={11} /> Restricted</>
-        : <><MdFillLock_open size={11} /> Public</>
-      }
-    </span>
+    {/* ACL badge — names the actual audience, not just "restricted or not" */}
+    <AclBadge acl={props.item.acl} defaultAcl={props.defaultAcl} selfHash={props.selfHash} />
 
     <span class="hidden sm:block text-xs text-muted w-20 text-right shrink-0">
       {props.item.is_dir ? "—" : formatSize(props.item.filesize)}
@@ -263,7 +333,8 @@ const FileRow: Component<{
       />
     </div>
   </div>
-);
+  );
+};
 
 // ── Breadcrumb ────────────────────────────────────────────────────────────────
 
@@ -320,26 +391,52 @@ function Skeleton() {
 const ThumbnailGrid: Component<{
   files: FileMeta[];
   nick: string;
+  defaultAcl: FileAcl;
+  selfHash: string | undefined;
   canWrite: boolean;
   isOwner: boolean;
   deleting: string | null;
   permItem: FileMeta | null;
   onOpen: (item: FileMeta) => void;
   onAction: (action: FileAction, item: FileMeta) => void;
-}> = (props) => (
+  selectable: boolean;
+  selected: Set<string>;
+  onSelect: (hash: string) => void;
+}> = (props) => {
+  const { t } = useI18n();
+  return (
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
     <For each={props.files}>
       {(item) => {
         const isImage = () => item.filetype.startsWith("image/");
         const isActive = () => props.permItem?.hash === item.hash;
+        const isSelected = () => props.selected.has(item.hash);
         return (
           <div
             class={`relative group rounded-xl border overflow-hidden cursor-pointer
                     transition-colors bg-elevated ${
-              isActive() ? "border-accent" : "border-rim hover:border-accent/50"
+              isSelected()
+                ? "border-accent ring-2 ring-accent/40"
+                : isActive() ? "border-accent" : "border-rim hover:border-accent/50"
             }`}
             onClick={() => props.onOpen(item)}
           >
+            {/* Selection checkbox — always visible once anything is selected,
+                otherwise it appears on hover so it doesn't clutter the grid. */}
+            <Show when={props.selectable}>
+              <div class={`absolute top-1.5 left-1.5 z-10 transition-opacity ${
+                isSelected() || props.selected.size > 0
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+              }`}>
+                <SelectBox
+                  checked={isSelected()}
+                  onToggle={() => props.onSelect(item.hash)}
+                  label={t("files_mod.select_item", { name: item.filename }) as string}
+                  class="bg-surface/90 rounded"
+                />
+              </div>
+            </Show>
             {/* Thumbnail or icon */}
             <div class="aspect-square w-full flex items-center justify-center overflow-hidden bg-overlay">
               <Show
@@ -390,13 +487,13 @@ const ThumbnailGrid: Component<{
               />
             </div>
 
-            {/* Private badge */}
-            <Show when={isPrivate(item.acl)}>
+            {/* Private badge — only for restricted files; public needs no mark */}
+            <Show when={aclIsRestricted(item.acl)}>
               <div class="absolute bottom-8 left-1.5 flex items-center gap-0.5
                           bg-surface/80 backdrop-blur-sm text-accent text-[0.5625rem]
                           px-1.5 py-0.5 rounded-full">
                 <MdFillLock size={9} />
-                Restricted
+                <AclLabel acl={item.acl} defaultAcl={props.defaultAcl} selfHash={props.selfHash} />
               </div>
             </Show>
           </div>
@@ -404,7 +501,8 @@ const ThumbnailGrid: Component<{
       }}
     </For>
   </div>
-);
+  );
+};
 
 // ── View mode icons ───────────────────────────────────────────────────────────
 
@@ -471,6 +569,12 @@ export default function FilesContentWidget() {
   // remote) with the ACL grant, not just the owner.
   const canWrite = () => files()?.canWrite ?? false;
 
+  // What scope "contacts" writes for this channel, and the viewer's own hash —
+  // together they turn a stored ACL back into the mode the user picked.
+  const EMPTY_ACL: FileAcl = { allow_cid: [], allow_gid: [], deny_cid: [], deny_gid: [] };
+  const defaultAcl = () => files()?.defaultAcl ?? EMPTY_ACL;
+  const selfHash = useNavViewer();
+
   // Local override for optimistic updates (permissions save)
   const [overrides, setOverrides] = createSignal<Map<string, FileMeta>>(new Map());
 
@@ -510,11 +614,13 @@ export default function FilesContentWidget() {
       { hash: item.hash, displayPath: item.display_path, label: item.filename },
     ]);
     setPermItem(null);
+    clearSelection();
   }
 
   function navigateTo(idx: number) {
     setNavStack((prev) => prev.slice(0, idx + 1));
     setPermItem(null);
+    clearSelection();
   }
 
   // DAV base path for the current folder (upload / mkdir)
@@ -531,6 +637,28 @@ export default function FilesContentWidget() {
 
   // Delete
   const [deleting, setDeleting] = createSignal<string | null>(null);
+
+  // ── Bulk selection ──────────────────────────────────────────────────────────
+  // Keyed by hash, not index: sorting and refetches reorder the list freely.
+  const [selected, setSelected] = createSignal<Set<string>>(new Set());
+  const selectedItems = createMemo(() =>
+    sortedFiles().filter((f) => selected().has(f.hash))
+  );
+  function toggleSelected(hash: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(hash) ? next.delete(hash) : next.add(hash);
+      return next;
+    });
+  }
+  const allSelected = () =>
+    sortedFiles().length > 0 && sortedFiles().every((f) => selected().has(f.hash));
+  function toggleSelectAll() {
+    setSelected(allSelected() ? new Set<string>() : new Set(sortedFiles().map((f) => f.hash)));
+  }
+  // A selection is only meaningful within one folder — the hashes on screen are
+  // the only ones the bar can act on.
+  const clearSelection = () => setSelected(new Set<string>());
 
   // View mode
   const [viewMode, setViewMode] = createSignal<ViewMode>(
@@ -557,6 +685,47 @@ export default function FilesContentWidget() {
     } finally {
       setDeleting(null);
     }
+  }
+
+  // Bulk delete. Sequential for the same reason as move/copy: no batch
+  // endpoint, and one failure shouldn't abandon the rest of the selection.
+  const [bulkBusy, setBulkBusy] = createSignal(false);
+  async function handleBulkDelete() {
+    const items = selectedItems();
+    if (!items.length) return;
+    if (!confirm(t("files_mod.bulk_delete_confirm", { count: items.length }) as string)) return;
+
+    setBulkBusy(true);
+    const failed: FileMeta[] = [];
+    for (const item of items) {
+      try {
+        await deleteItem(nick(), item.display_path);
+      } catch {
+        failed.push(item);
+      }
+    }
+    setBulkBusy(false);
+    // Only the ones that failed stay selected, so a retry repeats exactly them.
+    setSelected(new Set(failed.map((f) => f.hash)));
+    if (failed.length) {
+      toast.error(t("files_mod.bulk_partial_fail", {
+        count: failed.length,
+        names: failed.map((f) => f.filename).join(", "),
+      }) as string);
+    }
+    refetch();
+  }
+
+  function handleBulkMoved(failed: FileMeta[]) {
+    setActiveModal(null);
+    setSelected(new Set(failed.map((f) => f.hash)));
+    if (failed.length) {
+      toast.error(t("files_mod.bulk_partial_fail", {
+        count: failed.length,
+        names: failed.map((f) => f.filename).join(", "),
+      }) as string);
+    }
+    refetch();
   }
 
   async function handleCreateFolder(e: Event) {
@@ -599,7 +768,10 @@ export default function FilesContentWidget() {
   }
 
   // Kebab menu actions
-  const [activeModal, setActiveModal] = createSignal<{ kind: ModalKind; item: FileMeta } | null>(null);
+  // `items` is only set by the bulk bar; the kebab menu opens a modal for the
+  // one row it belongs to. Rename/categories are single-item by nature.
+  const [activeModal, setActiveModal] =
+    createSignal<{ kind: ModalKind; item: FileMeta; items?: FileMeta[] } | null>(null);
   const [previewItem, setPreviewItem] = createSignal<FileMeta | null>(null);
 
   function openItem(item: FileMeta) {
@@ -629,7 +801,7 @@ export default function FilesContentWidget() {
     refetch();
   }
 
-  function handleMoved() {
+  function handleMoved(_failed: FileMeta[]) {
     setActiveModal(null);
     refetch();
   }
@@ -758,11 +930,63 @@ export default function FilesContentWidget() {
         </form>
       </Show>
 
+      {/* ── Bulk selection bar ── */}
+      {/* Driven by selectedItems(), not the raw hash set: a hash whose file has
+          left the folder (refetch, deleted elsewhere) must not be counted or
+          acted on — the bar's buttons index into exactly this list. */}
+      <Show when={selectedItems().length > 0}>
+        <div class="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg
+                    border border-accent/40 bg-accent/10">
+          <span class="text-sm font-medium text-txt">
+            {t("files_mod.selected_count", { count: selectedItems().length })}
+          </span>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              disabled={bulkBusy()}
+              onClick={() => setActiveModal({
+                kind: "moveCopy",
+                item: selectedItems()[0],
+                items: selectedItems(),
+              })}
+              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
+                     hover:bg-elevated disabled:opacity-40 transition-colors"
+            >
+              {t("files_mod.move_or_copy")}
+            </button>
+            <button
+              type="button"
+              disabled={bulkBusy()}
+              onClick={handleBulkDelete}
+              class="px-3 py-1.5 text-sm rounded-lg border border-red-500/40 text-red-500
+                     hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+            >
+              {bulkBusy() ? t("files_mod.saving") : t("files_mod.delete_selected")}
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              class="px-3 py-1.5 text-sm rounded-lg text-muted hover:text-txt transition-colors"
+            >
+              {t("files_mod.clear_selection")}
+            </button>
+          </div>
+        </div>
+      </Show>
+
       {/* ── Column labels (list mode only) ── */}
       <Show when={viewMode() === "list"}>
         <div class="border-t border-rim" />
         <div class="flex items-center gap-3 px-3 text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
-          <span class="w-6 shrink-0" />
+          <Show when={canWrite()} fallback={<span class="w-4 shrink-0" />}>
+            <SelectBox
+              checked={allSelected()}
+              onToggle={toggleSelectAll}
+              label={t("files_mod.select_all") as string}
+            />
+          </Show>
+          <span class="w-5 shrink-0" />
           {/* Sortable: Name */}
           <button
             onClick={() => toggleSort("name")}
@@ -829,12 +1053,17 @@ export default function FilesContentWidget() {
                   <ThumbnailGrid
                     files={sortedFiles()}
                     nick={nick()}
+                    defaultAcl={defaultAcl()}
+                    selfHash={selfHash()?.hash}
                     canWrite={canWrite()}
                     isOwner={isOwner()}
                     deleting={deleting()}
                     permItem={permItem()}
                     onOpen={openItem}
                     onAction={handleMenuAction}
+                    selectable={canWrite()}
+                    selected={selected()}
+                    onSelect={toggleSelected}
                   />
                   {/* Permissions panel for grid mode — centered modal */}
                   <Show when={permItem()}>
@@ -846,6 +1075,7 @@ export default function FilesContentWidget() {
                         <PermissionsPanel
                           item={permItem()!}
                           nick={nick()}
+                          defaultAcl={defaultAcl()}
                           onSaved={handlePermSaved}
                           onClose={() => setPermItem(null)}
                         />
@@ -862,17 +1092,23 @@ export default function FilesContentWidget() {
                       <FileRow
                         item={item}
                         nick={nick()}
+                        defaultAcl={defaultAcl()}
+                        selfHash={selfHash()?.hash}
                         canWrite={canWrite()}
                         isOwner={isOwner()}
                         onOpen={openItem}
                         onAction={handleMenuAction}
                         deleting={deleting() === item.hash}
                         permOpen={permItem()?.hash === item.hash}
+                        selectable={canWrite()}
+                        selected={selected().has(item.hash)}
+                        onSelect={() => toggleSelected(item.hash)}
                       />
                       <Show when={permItem()?.hash === item.hash}>
                         <PermissionsPanel
                           item={item}
                           nick={nick()}
+                          defaultAcl={defaultAcl()}
                           onSaved={handlePermSaved}
                           onClose={() => setPermItem(null)}
                         />
@@ -897,9 +1133,9 @@ export default function FilesContentWidget() {
       </Show>
       <Show when={activeModal()?.kind === "moveCopy"}>
         <MoveCopyModal
-          item={activeModal()!.item}
+          items={activeModal()!.items ?? [activeModal()!.item]}
           nick={nick()}
-          onDone={handleMoved}
+          onDone={activeModal()!.items ? handleBulkMoved : handleMoved}
           onClose={() => setActiveModal(null)}
         />
       </Show>

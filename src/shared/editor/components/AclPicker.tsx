@@ -13,6 +13,7 @@ import {
   type JSX,
 } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { Portal } from "solid-js/web";
 import { fetchConnections } from "@/modules/network/api";
 import type { AclEntry } from "@/modules/network/api";
@@ -23,21 +24,40 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlinePublic, MdFillLock, MdOutlineTune, MdFillCheck, MdOutlineGroup, MdOutlinePerson, MdFillPerson } from "solid-icons/md";
 void motion;
 
+import { entryKey, type AclMode } from "./acl-mode";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AclMode = "public" | "connections" | "me" | "custom";
+export { entryKey, aclModeToScope, aclModeFrom, aclEntryKeys, aclIsRestricted } from "./acl-mode";
+export type { StoredAcl } from "./acl-mode";
+export type { AclMode };
 export type { AclEntry };
 
-// Key format: "{type}:{xid}" — e.g. "c:abc123..." or "g:d7ac40c2-..."
-export function entryKey(e: AclEntry): string {
-  return `${e.type}:${e.xid}`;
-}
-
-// "me" is the picker's user-facing wording; every backend ACL resolver
-// speaks of it as scope/visibility "private" (allow_cid = the owner's own
-// channel hash, resolved server-side since the client doesn't know it).
-export function aclModeToScope(mode: AclMode): "public" | "connections" | "private" | "custom" {
-  return mode === "me" ? "private" : mode;
+/**
+ * Names/photos for contact hashes already sitting in a stored ACL, so the
+ * picker's chips read as people rather than truncated hashes.
+ *
+ * The connections endpoint can't cover this: /acl returns only the first page
+ * of contacts, and it filters abook_self, so the owner's own hash — which is
+ * exactly what "Only me" stores — is never in it. Pass the result to
+ * <AclPicker seedEntries>.
+ */
+export async function fetchAclNames(hashes: string[]): Promise<AclEntry[]> {
+  if (!hashes.length) return [];
+  const res = await apiFetch(
+    `/spa/xchan?hashes=${encodeURIComponent(hashes.join(","))}`,
+  );
+  if (!res.ok) return [];
+  const rows = (await res.json()).data ?? [];
+  return rows.map((r: { xid: string; name: string; link: string; photo?: string }) => ({
+    type: "c" as const,
+    name: r.name,
+    nick: r.link,
+    id: r.xid,
+    xid: r.xid,
+    link: r.link,
+    photo: r.photo,
+  }));
 }
 
 export interface AclPickerProps {
@@ -160,10 +180,17 @@ const AclPicker: Component<AclPickerProps> = (props) => {
         type="button"
         data-tour={props.dataTour}
         onClick={toggle}
-        class="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border border-rim
+        title={current().label()}
+        class="flex items-center gap-1 px-2.5 py-1.5 sm:py-1 rounded-md text-xs border border-rim
                text-muted hover:border-rim-strong hover:text-txt transition-all"
       >
-        {current().icon()} {current().label()}
+        {current().icon()}
+        <span class="hidden sm:inline">{current().label()}</span>
+        {/* The selection count is the one thing the "custom" icon can't
+            convey on its own, so it survives the mobile label collapse. */}
+        <Show when={props.mode === "custom" && totalSelected() > 0}>
+          <span class="tabular-nums sm:hidden">{totalSelected()}</span>
+        </Show>
         <svg
           class={`w-3 h-3 transition-transform ${open() ? "rotate-180" : "rotate-0"}`}
           fill="none" stroke="currentColor" viewBox="0 0 24 24"

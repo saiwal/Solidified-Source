@@ -3,7 +3,7 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
-import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { MdOutlinePerson } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -13,6 +13,7 @@ import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
 import SourceToggleButton from "../components/SourceToggleButton";
+import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
 interface Props {
   /** Parent item uuid — full-URL mids break the /spa/item/:id path (slashes). */
@@ -45,7 +46,7 @@ export default function CommentComposer(props: Props) {
         `/spa/item/${encodeURIComponent(props.parentUuid)}/comment`,
         {
           method: "POST",
-          body: JSON.stringify({ body: augmentedBody, mimetype: "text/bbcode" }),
+          body: JSON.stringify({ body: augmentedBody, mimetype: store.mimetype() }),
         },
       );
       if (!res.ok) throw new Error(`Comment failed: ${res.status}`);
@@ -60,7 +61,12 @@ export default function CommentComposer(props: Props) {
       props.onSubmitted?.(body);
     },
     scope,
-    { initialBody: props.initialBody },
+    {
+      initialBody: props.initialBody,
+      // Same "Markdown" feature as PostComposer (the mdpost addon's toggle);
+      // the server converts to bbcode on save (ContentTypes::toBbcode).
+      initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
+    },
   );
 
   // ── Mention + emoji autocomplete ─────────────────────────────────────────
@@ -101,6 +107,7 @@ export default function CommentComposer(props: Props) {
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             onInput={store.setBody}
+            mimetype={store.mimetype()}
             capabilities={caps}
             tab={store.tab()}
             onTabChange={store.setTab}
@@ -122,6 +129,7 @@ export default function CommentComposer(props: Props) {
                 <SourceToggleButton
                   tab={store.tab()}
                   onToggle={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+                  canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
                 />
               </div>
             }
@@ -131,13 +139,14 @@ export default function CommentComposer(props: Props) {
               nick={currentNick()}
               accept="both"
               onInsert={(bbcode) => {
-                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, "text/bbcode"));
+                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
               }}
               onAltChange={(att) => {
-                store.setBody(patchInsertedAlt(store.body(), att, "text/bbcode"));
+                store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
               }}
               tab={store.tab()}
               onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
             />
           </Show>
         </div>

@@ -2,7 +2,7 @@ import { createEffect, onCleanup, Show } from "solid-js";
 import { useParams, A } from "@solidjs/router";
 import { MdOutlineEdit_note } from "solid-icons/md";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { renderBody } from "@utsukta/spa-core/lib/renderBody";
+import { renderBody, needsServerRender } from "@utsukta/spa-core/lib/renderBody";
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
@@ -38,7 +38,7 @@ export default function PageView() {
   const rendered = () => {
     const d = detail();
     if (!d) return "";
-    return renderBody(d.body ?? "", d.mimetype ?? "text/bbcode");
+    return renderBody(d.body ?? "", d.mimetype);
   };
 
   // Track the page's assigned layout template (see ModuleDef.pageTemplate in
@@ -114,13 +114,31 @@ export default function PageView() {
                 </A>
               </Show>
             </div>
-            <div
-              ref={bodyRef}
-              class="prose dark:prose-invert max-w-none"
-              onClick={onBodyClick}
-              // eslint-disable-next-line solid/no-innerhtml
-              innerHTML={rendered()}
-            />
+            {/* application/x-php pages are eval'd server-side by core's
+                prepare_text(); there is nothing the SPA can render, so point
+                the reader at the classic view instead of an empty article. */}
+            <Show
+              when={!needsServerRender(detail()?.mimetype)}
+              fallback={
+                <p class="text-sm text-muted">
+                  {t("editor.format_php_unsupported")}{" "}
+                  <a
+                    class="text-accent hover:underline"
+                    href={`/page/${nick()}/${pagelink()}`}
+                  >
+                    {t("webpages.view")}
+                  </a>
+                </p>
+              }
+            >
+              <div
+                ref={bodyRef}
+                class="prose dark:prose-invert max-w-none"
+                onClick={onBodyClick}
+                // eslint-disable-next-line solid/no-innerhtml
+                innerHTML={rendered()}
+              />
+            </Show>
           </article>
         </div>
       </Show>

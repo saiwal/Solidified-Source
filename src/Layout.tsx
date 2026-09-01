@@ -13,7 +13,7 @@ import HelpOverlay from "./shared/views/HelpOverlay";
 import {
   MdFillChevron_right,
   MdFillMore_horiz,
-  MdFillApps,
+  MdFillSwitch_left,
 } from "solid-icons/md";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { templateUsageCount, templateName } from "@utsukta/spa-core/store/widget-templates";
@@ -762,7 +762,7 @@ const Layout: ParentComponent = (props) => {
                 </span>
               </Show>
             </span>
-            <MdFillApps size={18} />
+            <MdFillSwitch_left size={18} />
           </button>
           </Show>
         </div>

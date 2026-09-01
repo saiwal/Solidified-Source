@@ -10,6 +10,7 @@ import {
   For,
   type JSX,
 } from "solid-js";
+import { A } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForPost } from "@/shared/lib/shareLinks";
@@ -356,6 +357,12 @@ export default function PostCard(props: {
     return props.post.authorAddress === `${a.nick}@${window.location.hostname}`;
   };
   const isExpired = () => isOwn() && props.post.flags.includes("expired");
+  // Category chips link to the owner's channel filtered by that category —
+  // only when the owner lives here, since /channel/:nick is a local route.
+  const categoryNick = () => {
+    const [nick, host] = (props.post.via?.address || props.post.authorAddress || "").split("@");
+    return host === window.location.hostname ? nick : "";
+  };
   // Expiry set and still in the future — the post will self-destruct.
   const isExpiring = () =>
     isOwn() &&
@@ -1977,7 +1984,19 @@ export default function PostCard(props: {
         <div class="mt-3 flex flex-wrap items-center gap-1">
           <For each={props.post.categories}>
             {(cat) => (
-              <span class="px-1.5 py-0.5 rounded bg-elevated text-xs text-txt">{cat}</span>
+              <Show
+              when={categoryNick()}
+              fallback={
+                <span class="px-1.5 py-0.5 rounded bg-elevated text-xs text-txt">{cat}</span>
+              }
+            >
+              <A
+                href={`/channel/${categoryNick()}?cat=${encodeURIComponent(cat)}`}
+                class="px-1.5 py-0.5 rounded bg-elevated text-xs text-txt hover:bg-rim"
+              >
+                {cat}
+              </A>
+            </Show>
             )}
           </For>
         </div>

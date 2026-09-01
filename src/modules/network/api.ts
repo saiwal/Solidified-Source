@@ -117,6 +117,8 @@ export type AclConnection = {
   xid: string;
   link: string;
   photo?: string;
+  /** core emits 'abook-self' for your own channel. */
+  self?: string;
 };
 export type AclEntry = {
   type: 'c' | 'g';
@@ -126,11 +128,15 @@ export type AclEntry = {
   xid: string;
   link: string;
   photo?: string;
+  /** core emits 'abook-self' for your own channel. */
+  self?: string;
 };
 
 export type AclSearchParams = {
   search?: string;
-  type?: '' | 'c' | 'g' | 'm';
+  // 'a' = abook-only autocomplete. Unlike 'c' it never merges the whole xchan
+  // table in (Acl.php: `if(count($r) < 100 && $type == 'c')`, no LIMIT).
+  type?: '' | 'a' | 'c' | 'g' | 'm';
   count?: number;
 };
 

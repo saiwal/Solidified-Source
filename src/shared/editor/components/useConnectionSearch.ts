@@ -40,21 +40,32 @@ const MIN_CHARS_DEFAULT = 3;
 const DEBOUNCE_MS_DEFAULT = 250;
 
 export function useConnectionSearch(
-  type: "c" | "g" | "m",
+  type: "a" | "c" | "g" | "m",
   opts: ConnectionSearchOptions = {},
 ): ConnectionSearch {
   const enabled = opts.enabled ?? (() => true);
   const minChars = opts.minChars ?? MIN_CHARS_DEFAULT;
   const debounceMs = opts.debounceMs ?? DEBOUNCE_MS_DEFAULT;
-  const defaultPrefix = type === "c" ? "acl-contacts" : type === "m" ? "acl-mail-contacts" : "acl-groups";
+  const defaultPrefix =
+    type === "c" ? "acl-contacts"
+    : type === "a" ? "acl-abook"
+    : type === "m" ? "acl-mail-contacts"
+    : "acl-groups";
   const prefix = opts.cacheKeyPrefix ?? defaultPrefix;
 
   const [query, setQuery] = createSignal("");
 
+  // The unprompted on-mount page always uses "a" (abook only). Core's "c" with
+  // an empty search runs an unfiltered, LIMIT-less scan of the whole xchan
+  // table (Acl.php: `if(count($r) < 100 && $type == 'c')`) — slow, and it lists
+  // channels you aren't connected to. Typed searches keep the caller's type so
+  // "c" can still reach a non-connection.
+  const initialType = type === "c" ? "a" : type;
+
   const [initialRes] = createQueryResource(
-    `${prefix}-initial`,
+    `${prefix}-initial-${initialType}`,
     enabled,
-    () => fetchConnections({ type, count: opts.initialCount ?? 10 }),
+    () => fetchConnections({ type: initialType, count: opts.initialCount ?? 10 }),
   );
 
   const [debouncedQuery, setDebouncedQuery] = createSignal("");
@@ -78,7 +89,9 @@ export function useConnectionSearch(
   const searching = () => query().trim().length >= minChars;
   const loading = () => enabled() && (searching() ? searchRes.loading : initialRes.loading);
 
-  const initial = () => initialRes() ?? [];
+  // Core ignores `count` for contacts (it only LIMITs the privacy-group query),
+  // so the initial page is trimmed here.
+  const initial = () => (initialRes() ?? []).slice(0, opts.initialCount ?? 10);
   const results = () => searchRes() ?? [];
   const list = () => (searching() ? results() : initial());
 

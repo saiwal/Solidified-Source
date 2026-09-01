@@ -1,5 +1,7 @@
 import { type Component, type Accessor, type JSX, For, Show } from "solid-js";
 import { getLazy, type RegisteredWidget } from "@utsukta/spa-core/module-registry";
+import { rowSpan } from "@utsukta/spa-core/lib/masonry";
+void rowSpan;
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -25,8 +27,10 @@ export interface ResolvedEntry {
 
 /** The widths offered in the edit-mode width picker. Kept in sync with the
  * `.slot-grid > [data-span=…]` rules in index.css — a span with no rule there
- * renders full width. */
-export const SPAN_OPTIONS = [12, 6, 4, 3] as const;
+ * renders full width. Those rules are container queries, so a chosen width is
+ * the widest one used: narrow containers step it down (4 cols → 3 → 2 → 1)
+ * without changing what's stored. */
+export const SPAN_OPTIONS = [12, 9, 8, 6, 4, 3] as const;
 
 export function widgetLabel(w: RegisteredWidget): string {
   return typeof w.label === "function" ? w.label() : w.label;
@@ -36,12 +40,14 @@ export function widgetHelpTarget(w: RegisteredWidget): string {
   return w.helpTarget ?? `widgets.${w.id}`;
 }
 
-const SPAN_LABELS: Record<number, "widgets.width_full" | "widgets.width_half" | "widgets.width_third" | "widgets.width_quarter"> = {
+const SPAN_LABELS = {
   12: "widgets.width_full",
+  9: "widgets.width_three_quarters",
+  8: "widgets.width_two_thirds",
   6: "widgets.width_half",
   4: "widgets.width_third",
   3: "widgets.width_quarter",
-};
+} as const;
 
 const editButtonClass =
   "p-1 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors " +
@@ -98,6 +104,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
     <div
       class="rounded-xl border border-dashed border-accent/50 overflow-hidden"
       data-span={props.onSetSpan ? (props.entry.span ?? 12) : undefined}
+      use:rowSpan={props.onSetSpan ? 16 : undefined}
       use:helpable={widgetHelpTarget(props.entry.widget)}
     >
       <div class="flex items-center justify-between gap-1 px-2 py-1 bg-elevated">
@@ -200,7 +207,7 @@ const WidgetPickerFooter: Component<WidgetPickerFooterProps> = (props) => {
   const { t } = useI18n();
 
   return (
-    <div class="space-y-2">
+    <div class="space-y-2" use:rowSpan={16}>
       <button
         onClick={props.onTogglePicker}
         aria-expanded={props.pickerOpen}

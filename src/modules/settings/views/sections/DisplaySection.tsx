@@ -5,7 +5,7 @@ import { useSectionForm } from "../../store/useSectionForm";
 import { applyTypography, type FontSize, type FontFamily } from "@utsukta/spa-core/lib/typography";
 import { useThreadMode, setThreadMode } from "@utsukta/spa-core/store/thread-mode";
 import { useListBehavior, setListBehavior, type ListBehavior } from "@utsukta/spa-core/store/list-behavior";
-import { useScrollStyle, setScrollStyle, type ScrollStyle } from "@utsukta/spa-core/store/scroll-style";
+import { scrollStylePref, setScrollStyle, type ScrollStyle } from "@utsukta/spa-core/store/scroll-style";
 import { usePostHeight, setPostHeight } from "@utsukta/spa-core/store/post-height";
 import { useCommentOrder, setCommentOrder, type CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
@@ -35,7 +35,7 @@ export default function DisplaySection() {
   const { t } = useI18n();
   const threadMode = useThreadMode();
   const listBehavior = useListBehavior();
-  const scrollStyle = useScrollStyle();
+  const scrollStyle = scrollStylePref();
   const postHeight = usePostHeight();
   const commentOrder = useCommentOrder();
   const { customColors, updateCustomColors, switchTheme } = useTheme();
