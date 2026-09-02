@@ -36,7 +36,7 @@ import {
   davDirPath,
   davPath,
 } from "../api";
-import type { FileMeta, FileAcl } from "../api";
+import type { FileMeta, FileAcl, WopiConfig } from "../api";
 import FileActionsMenu, { type FileAction } from "../views/FileActionsMenu";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForFile } from "@/shared/lib/shareLinks";
@@ -44,6 +44,7 @@ import RenameModal from "../views/RenameModal";
 import MoveCopyModal from "../views/MoveCopyModal";
 import CategoriesModal from "../views/CategoriesModal";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
+import WopiEditorOverlay from "@/shared/views/WopiEditorOverlay";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 
 type ModalKind = "rename" | "moveCopy" | "categories";
@@ -277,6 +278,7 @@ const FileRow: Component<{
   selfHash: string | undefined;
   canWrite: boolean;
   isOwner: boolean;
+  wopi: WopiConfig | null;
   onOpen: (item: FileMeta) => void;
   onAction: (action: FileAction, item: FileMeta) => void;
   deleting: boolean;
@@ -328,6 +330,7 @@ const FileRow: Component<{
         nick={props.nick}
         canWrite={props.canWrite}
         isOwner={props.isOwner}
+        wopi={props.wopi}
         onAction={props.onAction}
         deleting={props.deleting}
       />
@@ -395,6 +398,7 @@ const ThumbnailGrid: Component<{
   selfHash: string | undefined;
   canWrite: boolean;
   isOwner: boolean;
+  wopi: WopiConfig | null;
   deleting: string | null;
   permItem: FileMeta | null;
   onOpen: (item: FileMeta) => void;
@@ -479,6 +483,7 @@ const ThumbnailGrid: Component<{
                 nick={props.nick}
                 canWrite={props.canWrite}
                 isOwner={props.isOwner}
+                wopi={props.wopi}
                 onAction={props.onAction}
                 deleting={props.deleting === item.hash}
                 triggerClass={`p-1 rounded-md backdrop-blur-sm text-xs transition-colors pointer-events-auto ${
@@ -568,6 +573,7 @@ export default function FilesContentWidget() {
   // write_storage on the channel being viewed — any observer (local or
   // remote) with the ACL grant, not just the owner.
   const canWrite = () => files()?.canWrite ?? false;
+  const wopi = () => files()?.wopi ?? null;
 
   // What scope "contacts" writes for this channel, and the viewer's own hash —
   // together they turn a stored ACL back into the mode the user picked.
@@ -773,6 +779,7 @@ export default function FilesContentWidget() {
   const [activeModal, setActiveModal] =
     createSignal<{ kind: ModalKind; item: FileMeta; items?: FileMeta[] } | null>(null);
   const [previewItem, setPreviewItem] = createSignal<FileMeta | null>(null);
+  const [wopiItem, setWopiItem] = createSignal<FileMeta | null>(null);
 
   function openItem(item: FileMeta) {
     if (item.is_dir) { navigateInto(item); return; }
@@ -791,6 +798,10 @@ export default function FilesContentWidget() {
     }
     if (action === "share") {
       openShare(shareTargetForFile(nick(), item));
+      return;
+    }
+    if (action === "wopiEdit") {
+      setWopiItem(item);
       return;
     }
     setActiveModal({ kind: action, item });
@@ -1057,6 +1068,7 @@ export default function FilesContentWidget() {
                     selfHash={selfHash()?.hash}
                     canWrite={canWrite()}
                     isOwner={isOwner()}
+                    wopi={wopi()}
                     deleting={deleting()}
                     permItem={permItem()}
                     onOpen={openItem}
@@ -1096,6 +1108,7 @@ export default function FilesContentWidget() {
                         selfHash={selfHash()?.hash}
                         canWrite={canWrite()}
                         isOwner={isOwner()}
+                        wopi={wopi()}
                         onOpen={openItem}
                         onAction={handleMenuAction}
                         deleting={deleting() === item.hash}
@@ -1161,6 +1174,16 @@ export default function FilesContentWidget() {
               await uploadFile(davBase(), edited);
               refetch();
             } : undefined}
+          />
+        )}
+      </Show>
+
+      <Show when={wopiItem()}>
+        {(item) => (
+          <WopiEditorOverlay
+            fileId={item().id}
+            clientUrl={wopi()!.url}
+            onClose={() => { setWopiItem(null); refetch(); }}
           />
         )}
       </Show>

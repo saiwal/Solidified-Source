@@ -230,6 +230,14 @@ export interface AdminAddon {
   author: string;
   installed: boolean;
   active: boolean;
+  /** Addon defines <slug>_plugin_admin() — it has a settings form. */
+  has_settings: boolean;
+}
+
+/** An addon's own admin form, as Smarty-rendered HTML. */
+export interface AddonSettingsForm {
+  slug: string;
+  html: string;
 }
 
 // ── Themes ────────────────────────────────────────────────────────────────────

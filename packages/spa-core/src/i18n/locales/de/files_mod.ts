@@ -35,6 +35,7 @@ export const files_mod: RawDictionary["files_mod"] = {
   // Kebab menu + new actions
   more_actions:     "Weitere Aktionen",
   menu_permissions: "Berechtigungen anpassen",
+  edit_in_office:   "In Office bearbeiten",
   rename:           "Umbenennen",
   move_or_copy:     "Verschieben oder kopieren",
   categories:       "Kategorien",

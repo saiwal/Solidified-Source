@@ -613,3 +613,36 @@ img.emoji.single-emoji:hover {
   .slot-grid > [data-span="3"] { grid-column: span 3 / span 3; }
   .slot-grid > [data-span="9"] { grid-column: span 9 / span 9; }
 }
+
+/* Addon admin forms (Admin › Addons › Settings).
+   The markup comes from PHP core's field_*.tpl partials, which are written for
+   Bootstrap — the SPA ships none, so give the raw controls a baseline that
+   matches the rest of the admin UI. Scoped to the rendered form only. */
+.addon-admin-form { font-size: 0.875rem; color: var(--color-txt); }
+.addon-admin-form > * + * { margin-top: 0.75rem; }
+.addon-admin-form label { display: block; font-size: 0.75rem; font-weight: 500; margin-bottom: 0.25rem; }
+.addon-admin-form small { display: block; font-size: 0.75rem; color: var(--color-muted); margin-top: 0.25rem; }
+.addon-admin-form input[type="text"],
+.addon-admin-form input[type="password"],
+.addon-admin-form input[type="number"],
+.addon-admin-form input[type="url"],
+.addon-admin-form input[type="email"],
+.addon-admin-form textarea,
+.addon-admin-form select {
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-rim);
+  background: var(--color-elevated);
+  color: inherit;
+}
+.addon-admin-form input[type="submit"] {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  cursor: pointer;
+}
+/* Bootstrap-only switch chrome around the real checkbox — nothing to show. */
+.addon-admin-form .onoffswitch-inner,
+.addon-admin-form .onoffswitch-switch { display: none; }

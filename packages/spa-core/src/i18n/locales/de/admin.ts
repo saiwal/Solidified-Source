@@ -40,6 +40,9 @@ export const admin: RawDictionary["admin"] = {
   active_badge:     "Aktiv",
   installed_badge:  "Installiert",
   not_installed_badge: "Nicht installiert",
+  addon_settings:   "Einstellungen",
+  addon_settings_saved: "Addon-Einstellungen gespeichert.",
+  addon_settings_loading: "Einstellungen werden geladen…",
   // ChannelsSection
   channels_title:   "Kanäle",
   channels_desc:    "Alle Kanäle auf dieser Seite.",

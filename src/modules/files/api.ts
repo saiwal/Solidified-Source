@@ -34,6 +34,19 @@ export interface FileMeta {
   acl:          FileAcl;
 }
 
+/** Site config for the `wopi` addon (Collabora office editing). */
+export interface WopiConfig {
+  url: string;
+  /** Mime types the WOPI client can open, or null when the hub hasn't cached
+   *  the discovery list yet — treat null as "unknown, let the user try". */
+  types: string[] | null;
+}
+
+/** Whether a file can be handed to the WOPI client. */
+export function wopiEditable(wopi: WopiConfig | null, f: FileMeta): boolean {
+  return !!wopi && !f.is_dir && (wopi.types === null || wopi.types.includes(f.filetype));
+}
+
 // ── Theme API ─────────────────────────────────────────────────────────────────
 
 /** List the contents of a folder by its hash ('' = root). */
@@ -53,7 +66,7 @@ export async function listFolder(nick: string, folderHash: string): Promise<File
 export async function listFolderMeta(
   nick: string,
   folderHash: string,
-): Promise<{ items: FileMeta[]; canWrite: boolean; defaultAcl: FileAcl }> {
+): Promise<{ items: FileMeta[]; canWrite: boolean; defaultAcl: FileAcl; wopi: WopiConfig | null }> {
   const url = folderHash
     ? `/spa/files/${nick}/folder/${encodeURIComponent(folderHash)}`
     : `/spa/files/${nick}`;
@@ -67,6 +80,7 @@ export async function listFolderMeta(
     // public_policy column, so it is the only way to read "Connections" back.
     defaultAcl: json.meta?.default_acl
       ?? { allow_cid: [], allow_gid: [], deny_cid: [], deny_gid: [] },
+    wopi: json.meta?.wopi ?? null,
   };
 }
 

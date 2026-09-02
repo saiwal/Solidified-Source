@@ -10,12 +10,14 @@ import {
   MdOutlineLabel,
   MdOutlineDownload,
   MdOutlineDelete,
+  MdOutlineEdit_note,
 } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { downloadUrl } from "../api";
-import type { FileMeta } from "../api";
+import { downloadUrl, wopiEditable } from "../api";
+import type { FileMeta, WopiConfig } from "../api";
 
-export type FileAction = "permissions" | "share" | "rename" | "moveCopy" | "categories" | "delete";
+export type FileAction =
+  | "permissions" | "share" | "rename" | "moveCopy" | "categories" | "delete" | "wopiEdit";
 
 interface Props {
   item: FileMeta;
@@ -25,6 +27,8 @@ interface Props {
   canWrite: boolean;
   /** True ownership — ACL/Permissions changes stay owner-only regardless of write_storage. */
   isOwner: boolean;
+  /** WOPI client config from the folder listing; null when the addon is off. */
+  wopi: WopiConfig | null;
   deleting?: boolean;
   triggerClass?: string;
 }
@@ -68,6 +72,9 @@ const FileActionsMenu: Component<Props> = (props) => {
               <MenuItem icon={<MdFillLock size={14} />} label={t("files_mod.menu_permissions") as string} onClick={() => act("permissions")} />
             </Show>
             <Show when={props.canWrite}>
+              <Show when={wopiEditable(props.wopi, props.item)}>
+                <MenuItem icon={<MdOutlineEdit_note size={14} />} label={t("files_mod.edit_in_office") as string} onClick={() => act("wopiEdit")} />
+              </Show>
               <MenuItem icon={<MdOutlineDrive_file_rename_outline size={14} />} label={t("files_mod.rename") as string} onClick={() => act("rename")} />
               <MenuItem icon={<MdOutlineDrive_file_move size={14} />} label={t("files_mod.move_or_copy") as string} onClick={() => act("moveCopy")} />
               <MenuItem icon={<MdOutlineLabel size={14} />} label={t("files_mod.categories") as string} onClick={() => act("categories")} />

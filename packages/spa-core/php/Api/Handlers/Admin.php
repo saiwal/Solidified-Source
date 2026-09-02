@@ -99,7 +99,13 @@ class Admin
             case 'channels':       $this->getChannels();      break;
             case 'security':       $this->getSecurity();      break;
             case 'features':       $this->getFeatures();      break;
-            case 'addons':         $this->getAddons();        break;
+            case 'addons':
+                if (($slug = $this->argv(3))) {
+                    $this->getAddonSettings($slug);
+                } else {
+                    $this->getAddons();
+                }
+                break;
             case 'themes':
                 if (($this->argv(3)) === 'options') {
                     $this->getThemeOptions();
@@ -803,6 +809,13 @@ class Admin
     {
         require_once('include/plugin.php');
 
+        // The addon table records which plugins define <name>_plugin_admin(),
+        // set by install_plugin() — same gate core's Admin\Addons uses.
+        $with_admin = [];
+        foreach (q("SELECT aname FROM addon WHERE plugin_admin = 1") ?: [] as $row) {
+            $with_admin[$row['aname']] = true;
+        }
+
         $addons = [];
         $files  = glob('addon/*/*.php');
 
@@ -824,6 +837,7 @@ class Admin
                         : ($info['author'] ?? ''),
                     'installed'   => plugin_is_installed($name),
                     'active'      => in_array($name, App::$plugins, true),
+                    'has_settings' => isset($with_admin[$name]),
                 ];
             }
         }
@@ -841,6 +855,11 @@ class Admin
     {
         $data   = Auth::$parsedBody;
         $action = $data['action'] ?? '';
+
+        if ($action === 'settings') {
+            $this->postAddonSettings($data);
+            return;
+        }
 
         if ($action !== 'toggle') {
             Response::error(400, 'Unknown action');
@@ -866,6 +885,89 @@ class Admin
         Config::Set('system', 'addon', implode(', ', App::$plugins));
 
         Response::send(['name' => $name, 'active' => $active]);
+    }
+
+    /**
+     * Render an addon's own admin form (<slug>_plugin_admin()).
+     *
+     * The hook hands back Smarty-rendered HTML built from core's field_*.tpl
+     * partials — the same markup the classic /admin/addons/:slug page wraps in
+     * a <form>. There is no JSON contract for these forms, so the SPA renders
+     * the HTML and posts the inputs back by name.
+     */
+    private function getAddonSettings(string $slug): void
+    {
+        Response::send($this->renderAddonSettings($slug));
+    }
+
+    private function renderAddonSettings(string $slug): array
+    {
+        $slug = basename($slug);
+
+        if (!is_file("addon/$slug/$slug.php")) {
+            Response::error(404, 'Unknown addon');
+        }
+        if (!in_array($slug, App::$plugins, true)) {
+            Response::error(400, 'Addon is not enabled');
+        }
+
+        @require_once("addon/$slug/$slug.php");
+
+        $func = $slug . '_plugin_admin';
+        if (!function_exists($func)) {
+            Response::error(404, 'Addon has no settings form');
+        }
+
+        $form = '';
+        $func($form);
+
+        return ['slug' => $slug, 'html' => $form];
+    }
+
+    /**
+     * Save an addon's settings by calling <slug>_plugin_admin_post(), which
+     * reads $_POST directly. Our request body is JSON, so the posted fields are
+     * copied into $_POST/$_REQUEST first, along with the admin_addons security
+     * token the stricter addons check for.
+     */
+    private function postAddonSettings(array $data): void
+    {
+        $slug = basename($data['name'] ?? '');
+
+        if (!$slug || !is_file("addon/$slug/$slug.php")) {
+            Response::error(400, 'Invalid addon');
+        }
+        if (!in_array($slug, App::$plugins, true)) {
+            Response::error(400, 'Addon is not enabled');
+        }
+
+        @require_once("addon/$slug/$slug.php");
+
+        $func = $slug . '_plugin_admin_post';
+        if (!function_exists($func)) {
+            Response::error(404, 'Addon has no settings form');
+        }
+
+        $fields = is_array($data['fields'] ?? null) ? $data['fields'] : [];
+
+        // Scalars and flat arrays only — an addon form is field_input.tpl and
+        // friends, and nested structures have no way to arrive here anyway.
+        foreach ($fields as $k => $v) {
+            if (is_array($v)) {
+                $v = array_values(array_filter($v, 'is_scalar'));
+            } elseif (!is_scalar($v) && $v !== null) {
+                continue;
+            }
+            $_POST[$k] = $v;
+        }
+
+        $_POST['form_security_token'] = get_form_security_token('admin_addons');
+        $_REQUEST = array_merge($_REQUEST, $_POST);
+
+        $func();
+
+        // Re-render so the client shows what was actually stored.
+        Response::send($this->renderAddonSettings($slug));
     }
 
     // ── Themes ────────────────────────────────────────────────────────────────

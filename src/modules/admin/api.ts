@@ -6,6 +6,7 @@ import type {
   AdminQueue, AdminQueueworker, QueueworkerSettings,
   AdminProfileFields, ProfdefField, DbUpdate, AdminLogs,
   ThemeOptions, AdminServiceClass, AdminServiceClasses, ServiceClassProperties,
+  AddonSettingsForm,
 } from "./types";
 
 const BASE = "/spa/admin";
@@ -185,6 +186,14 @@ export async function fetchAdminAddons(): Promise<AdminAddon[]> {
 export async function toggleAddon(slug: string): Promise<{ name: string; active: boolean }> {
   return post("addons", { action: "toggle", name: slug });
 }
+
+export const fetchAddonSettings = (slug: string) =>
+  get<AddonSettingsForm>(`addons/${encodeURIComponent(slug)}`);
+
+/** Field names/values scraped off the rendered form, posted back for the
+ *  addon's own <slug>_plugin_admin_post() to read out of $_POST. */
+export const saveAddonSettings = (slug: string, fields: Record<string, string | string[]>) =>
+  post<AddonSettingsForm>("addons", { action: "settings", name: slug, fields });
 
 // ── Themes ────────────────────────────────────────────────────────────────────
 

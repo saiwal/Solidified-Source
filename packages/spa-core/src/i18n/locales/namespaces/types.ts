@@ -2233,6 +2233,7 @@ export type RawDictionary = {
     // Kebab menu + new actions
     more_actions:     string;
     menu_permissions: string;
+    edit_in_office:   string;
     rename:           string;
     move_or_copy:     string;
     categories:       string;
@@ -2515,6 +2516,9 @@ export type RawDictionary = {
     active_badge:     string;
     installed_badge:  string;
     not_installed_badge: string;
+    addon_settings:   string;
+    addon_settings_saved: string;
+    addon_settings_loading: string;
     channels_title:   string;
     channels_desc:    string;
     col_name:         string;

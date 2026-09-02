@@ -32,6 +32,7 @@ export const files_mod: RawDictionary["files_mod"] = {
   permissions_title: "अनुमतियाँ",
   more_actions:     "अधिक विकल्प",
   menu_permissions: "अनुमतियाँ समायोजित करें",
+  edit_in_office:   "ऑफ़िस में संपादित करें",
   rename:           "नाम बदलें",
   move_or_copy:     "स्थानांतरित करें या कॉपी करें",
   categories:       "श्रेणियाँ",
