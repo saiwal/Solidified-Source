@@ -2774,6 +2774,13 @@ export type RawDictionary = {
     guest_email_intro:     string;
     guest_email_expires:   string;
     guest_add_group:       string;
+    guest_new:             string;
+    guest_new_name:        string;
+    guest_new_expires:     string;
+    guest_new_create:      string;
+    guest_new_creating:    string;
+    guest_new_hint:        string;
+    guest_new_failed:      string;
     guest_added:           string;
     use_plain_link:        string;
     who_can_see:           string;

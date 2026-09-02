@@ -32,6 +32,8 @@ export interface Lockview {
   guests: LockviewGuest[];
   /** Channel guests not yet on this resource's ACL — grantable via grantGuest(). */
   other_guests: { id: number; name: string }[];
+  /** Owner may create a new guest here (restricted resource + Guest Access app). */
+  can_create_guest?: boolean;
 }
 
 export async function fetchLockview(type: LockviewType, id: number | string): Promise<Lockview | null> {

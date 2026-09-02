@@ -14,6 +14,7 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { ShareTarget } from "@utsukta/spa-core/store/share";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchLockview, grantGuest } from "@utsukta/spa-core/lib/lockview-api";
+import { saveToken, newTokenValue } from "@/modules/directory/tokens/api";
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
 
@@ -85,6 +86,37 @@ const ShareModal: Component<Props> = (props) => {
       toast.success(t("share.guest_added", { name: guest.name }) as string);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (t("share.email_failed") as string));
+    }
+  }
+
+  // Creating a guest here saves the round trip to /directory/guest-access when
+  // the channel has no guest yet — which is the common case the moment someone
+  // wants to hand a private post to an outsider.
+  const [newGuestOpen, setNewGuestOpen] = createSignal(false);
+  const [newGuestName, setNewGuestName] = createSignal("");
+  const [newGuestExpires, setNewGuestExpires] = createSignal("");
+  const [creating, setCreating] = createSignal(false);
+
+  async function createGuest(e: Event) {
+    e.preventDefault();
+    if (creating()) return;
+    setCreating(true);
+    try {
+      const tok = await saveToken(null, {
+        name: newGuestName().trim(),
+        token: await newTokenValue(),
+        expires: newGuestExpires() || undefined,
+      });
+      setLockview({ ...lockview()!, other_guests: [...otherGuests(), { id: tok.id, name: tok.name }] });
+      // pickGuest does the grant, the optimistic list move and the toast.
+      await pickGuest(String(tok.id));
+      setNewGuestOpen(false);
+      setNewGuestName("");
+      setNewGuestExpires("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (t("share.guest_new_failed") as string));
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -258,32 +290,88 @@ const ShareModal: Component<Props> = (props) => {
 
                 {/* Guest access — only guests already in this item's audience
                     appear here; a token is not a skeleton key. */}
-                <Show when={guests().length > 0 || otherGuests().length > 0}>
+                <Show when={guests().length > 0 || otherGuests().length > 0 || lockview()?.can_create_guest}>
                   <div class="space-y-1 rounded-lg border border-rim p-3">
                     <label class="block text-xs font-semibold text-txt">
                       {t("share.guest_access_title")}
                     </label>
-                    <select
-                      value={guestId() ?? ""}
-                      onChange={(e) => pickGuest(e.currentTarget.value)}
-                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                    >
-                      <option value="">{t("share.use_plain_link")}</option>
-                      <For each={guests()}>
-                        {(g) => <option value={g.id}>{g.name}</option>}
-                      </For>
-                      <Show when={otherGuests().length > 0}>
-                        <optgroup label={t("share.guest_add_group") as string}>
-                          <For each={otherGuests()}>
-                            {(g) => <option value={g.id}>{g.name}</option>}
-                          </For>
-                        </optgroup>
-                      </Show>
-                    </select>
+                    <Show when={guests().length > 0 || otherGuests().length > 0}>
+                      <select
+                        value={guestId() ?? ""}
+                        onChange={(e) => pickGuest(e.currentTarget.value)}
+                        class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                      >
+                        <option value="">{t("share.use_plain_link")}</option>
+                        <For each={guests()}>
+                          {(g) => <option value={g.id}>{g.name}</option>}
+                        </For>
+                        <Show when={otherGuests().length > 0}>
+                          <optgroup label={t("share.guest_add_group") as string}>
+                            <For each={otherGuests()}>
+                              {(g) => <option value={g.id}>{g.name}</option>}
+                            </For>
+                          </optgroup>
+                        </Show>
+                      </select>
+                    </Show>
                     <Show when={activeGuest()}>
                       <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
                         {t("share.guest_access_warning")}
                       </p>
+                    </Show>
+
+                    <Show when={lockview()?.can_create_guest}>
+                      <Show
+                        when={newGuestOpen()}
+                        fallback={
+                          <button
+                            type="button"
+                            onClick={() => setNewGuestOpen(true)}
+                            class="text-xs text-accent hover:underline"
+                          >
+                            + {t("share.guest_new")}
+                          </button>
+                        }
+                      >
+                        <form class="space-y-2 pt-1" onSubmit={createGuest}>
+                          <div class="space-y-1">
+                            <label class="block text-xs text-muted">{t("share.guest_new_name")}</label>
+                            <input
+                              type="text"
+                              required
+                              value={newGuestName()}
+                              onInput={(e) => setNewGuestName(e.currentTarget.value)}
+                              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                            />
+                          </div>
+                          <div class="space-y-1">
+                            <label class="block text-xs text-muted">{t("share.guest_new_expires")}</label>
+                            <input
+                              type="date"
+                              value={newGuestExpires()}
+                              onInput={(e) => setNewGuestExpires(e.currentTarget.value)}
+                              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                            />
+                          </div>
+                          <p class="text-[0.6875rem] text-muted">{t("share.guest_new_hint")}</p>
+                          <div class="flex gap-2">
+                            <button
+                              type="submit"
+                              disabled={creating()}
+                              class="px-3 py-1.5 rounded-lg bg-accent text-white text-sm disabled:opacity-60"
+                            >
+                              {creating() ? t("share.guest_new_creating") : t("share.guest_new_create")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewGuestOpen(false)}
+                              class="px-3 py-1.5 rounded-lg border border-rim text-sm text-muted"
+                            >
+                              {t("share.close")}
+                            </button>
+                          </div>
+                        </form>
+                      </Show>
                     </Show>
                   </div>
                 </Show>
