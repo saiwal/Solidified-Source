@@ -5,8 +5,8 @@ import type {
   AdminChannel, AdminSecurity, AdminFeatures, AdminAddon, AdminTheme,
   AdminQueue, AdminQueueworker, QueueworkerSettings,
   AdminProfileFields, ProfdefField, DbUpdate, AdminLogs,
-  ThemeOptions, AdminServiceClass, AdminServiceClasses, ServiceClassProperties,
-  AddonSettingsForm,
+  AdminServiceClass, AdminServiceClasses, ServiceClassProperties,
+  SettingsForm,
 } from "./types";
 
 const BASE = "/spa/admin";
@@ -188,12 +188,12 @@ export async function toggleAddon(slug: string): Promise<{ name: string; active:
 }
 
 export const fetchAddonSettings = (slug: string) =>
-  get<AddonSettingsForm>(`addons/${encodeURIComponent(slug)}`);
+  get<SettingsForm>(`addons/${encodeURIComponent(slug)}`);
 
 /** Field names/values scraped off the rendered form, posted back for the
  *  addon's own <slug>_plugin_admin_post() to read out of $_POST. */
 export const saveAddonSettings = (slug: string, fields: Record<string, string | string[]>) =>
-  post<AddonSettingsForm>("addons", { action: "settings", name: slug, fields });
+  post<SettingsForm>("addons", { action: "settings", name: slug, fields });
 
 // ── Themes ────────────────────────────────────────────────────────────────────
 
@@ -201,13 +201,11 @@ export async function fetchAdminThemes(): Promise<{ themes: AdminTheme[]; curren
   return get("themes");
 }
 
-export async function fetchThemeOptions(theme: string): Promise<ThemeOptions> {
-  return get("themes/options", { theme });
-}
+export const fetchThemeSettings = (theme: string) =>
+  get<SettingsForm>(`themes/${encodeURIComponent(theme)}`);
 
-export async function saveThemeOptions(theme: string, formData: Record<string, string>): Promise<void> {
-  await post("themes", { action: "options", theme, form_data: formData });
-}
+export const saveThemeSettings = (theme: string, fields: Record<string, string | string[]>) =>
+  post<SettingsForm>("themes", { action: "settings", theme, fields });
 
 export async function toggleTheme(theme: string): Promise<void> {
   await post("themes", { action: "toggle", theme });

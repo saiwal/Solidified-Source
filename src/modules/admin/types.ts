@@ -234,8 +234,9 @@ export interface AdminAddon {
   has_settings: boolean;
 }
 
-/** An addon's own admin form, as Smarty-rendered HTML. */
-export interface AddonSettingsForm {
+/** An addon's or theme's own admin form, as Smarty-rendered HTML. */
+export interface SettingsForm {
+  /** Addon slug or theme name. */
   slug: string;
   html: string;
 }
@@ -251,22 +252,8 @@ export interface AdminTheme {
   experimental: boolean;
   current: boolean;
   allowed: boolean;
-  has_config: boolean;
-}
-
-export interface ThemeField {
-  key: string;
-  type: "color" | "text" | "bool" | "select";
-  label: string;
-  hint?: string;
-  group: string;
-  value: string;
-  options?: Record<string, string>;
-}
-
-export interface ThemeOptions {
-  theme: string;
-  fields: ThemeField[];
+  /** Theme declares theme_admin() in its php/config.php. */
+  has_settings: boolean;
 }
 
 // ── Queue ─────────────────────────────────────────────────────────────────────

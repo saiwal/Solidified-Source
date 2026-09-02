@@ -1,17 +1,23 @@
-import { Show, createResource, createSignal, type Component } from "solid-js";
+import { Show, Suspense, createResource, createSignal, type Component } from "solid-js";
 import DOMPurify from "dompurify";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { fetchAddonSettings, saveAddonSettings } from "../../api";
+import type { SettingsForm } from "../../types";
 
 /**
- * Addon admin forms are Smarty-rendered core field_*.tpl markup, so they are
- * form controls — the app-wide sanitizeHtml() deliberately strips <input> and
- * would empty them. This is admin-only, server-generated markup from PHP that
+ * Admin settings forms for addons (<slug>_plugin_admin) and themes
+ * (theme_admin) are Smarty-rendered core field_*.tpl markup, so they are form
+ * controls — the app-wide sanitizeHtml() deliberately strips <input> and would
+ * empty them. This is admin-only, server-generated markup from PHP that
  * already runs on the hub, so the narrower risk here is script/handler
  * injection, which is what this config blocks.
  */
 function purify(html: string): string {
+  // "form" is deliberately absent from ALLOWED_TAGS: theme_admin() returns a
+  // complete <form action="admin/themes/x">, and nesting that inside ours would
+  // be invalid. DOMPurify strips the tag but keeps its children (KEEP_CONTENT
+  // defaults true and "form" is not in DEFAULT_FORBID_CONTENTS), so the inputs
+  // land in the outer form and FormData picks them all up.
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [
       "div", "span", "p", "br", "small", "sup", "label", "fieldset", "legend",
@@ -44,9 +50,14 @@ function collect(form: HTMLFormElement): Record<string, string | string[]> {
   return out;
 }
 
-const AddonSettingsForm: Component<{ slug: string }> = (props) => {
+const HookSettingsForm: Component<{
+  /** Addon slug or theme name — also the resource key, so switching rows refetches. */
+  id: string;
+  load: (id: string) => Promise<SettingsForm>;
+  save: (id: string, fields: Record<string, string | string[]>) => Promise<SettingsForm>;
+}> = (props) => {
   const { t } = useI18n();
-  const [form, { mutate }] = createResource(() => props.slug, fetchAddonSettings);
+  const [form, { mutate }] = createResource(() => props.id, (id) => props.load(id));
   const [saving, setSaving] = createSignal(false);
 
   async function onSubmit(e: SubmitEvent) {
@@ -54,8 +65,8 @@ const AddonSettingsForm: Component<{ slug: string }> = (props) => {
     setSaving(true);
     try {
       // The response is the re-rendered form, so the fields show what stored.
-      mutate(await saveAddonSettings(props.slug, collect(e.currentTarget as HTMLFormElement)));
-      toast.success(t("admin.addon_settings_saved") as string);
+      mutate(await props.save(props.id, collect(e.currentTarget as HTMLFormElement)));
+      toast.success(t("admin.settings_saved") as string);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     } finally {
@@ -63,17 +74,28 @@ const AddonSettingsForm: Component<{ slug: string }> = (props) => {
     }
   }
 
+  const loading = () => <p class="text-xs text-muted">{t("admin.settings_loading")}</p>;
+
   return (
     <div class="mt-3 pt-3 border-t border-rim">
+      {/* Own boundary: reading a pending resource suspends the *nearest*
+          Suspense, and AdminView wraps the whole section in one — without this
+          the entire list is swapped for its skeleton and remounted, which
+          flashes the page and resets the scroll position. */}
+      <Suspense fallback={loading()}>
       <Show
         when={form()}
         fallback={
-          <p class="text-xs text-muted">
-            {form.error ? String(form.error.message ?? form.error) : t("admin.addon_settings_loading")}
-          </p>
+          <Show when={form.error} fallback={loading()}>
+            <p class="text-xs text-red-500">{String(form.error?.message ?? form.error)}</p>
+          </Show>
         }
       >
         {(f) => (
+          <Show
+            when={f().html.trim()}
+            fallback={<p class="text-xs text-muted">{t("admin.settings_none")}</p>}
+          >
           <form
             onSubmit={onSubmit}
             classList={{ "opacity-50 pointer-events-none": saving() }}
@@ -82,10 +104,12 @@ const AddonSettingsForm: Component<{ slug: string }> = (props) => {
             class="addon-admin-form"
             innerHTML={purify(f().html)}
           />
+          </Show>
         )}
       </Show>
+      </Suspense>
     </div>
   );
 };
 
-export default AddonSettingsForm;
+export default HookSettingsForm;

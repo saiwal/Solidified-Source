@@ -2,7 +2,8 @@ import { For, Show, createSignal } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminAddons, toggleAddon } from "../../api";
-import AddonSettingsForm from "./AddonSettingsForm";
+import HookSettingsForm from "./HookSettingsForm";
+import { fetchAddonSettings, saveAddonSettings } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 export default function AddonsSection() {
@@ -59,7 +60,7 @@ export default function AddonsSection() {
                           class="px-2 py-0.5 text-xs rounded border border-rim text-muted hover:text-txt hover:border-accent transition-colors"
                           aria-expanded={openSettings() === addon.slug}
                         >
-                          {t("admin.addon_settings")}
+                          {t("admin.settings_label")}
                         </button>
                       </Show>
                       <span class={`px-2 py-0.5 text-xs rounded border ${addon.installed ? "border-accent text-accent" : "border-rim text-muted"}`}>
@@ -83,7 +84,11 @@ export default function AddonsSection() {
                     </div>
                    </div>
                    <Show when={openSettings() === addon.slug}>
-                     <AddonSettingsForm slug={addon.slug} />
+                     <HookSettingsForm
+                       id={addon.slug}
+                       load={fetchAddonSettings}
+                       save={saveAddonSettings}
+                     />
                    </Show>
                   </div>
                 )}

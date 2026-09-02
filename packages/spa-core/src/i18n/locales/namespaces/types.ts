@@ -2516,9 +2516,10 @@ export type RawDictionary = {
     active_badge:     string;
     installed_badge:  string;
     not_installed_badge: string;
-    addon_settings:   string;
-    addon_settings_saved: string;
-    addon_settings_loading: string;
+    settings_label:   string;
+    settings_saved: string;
+    settings_loading: string;
+    settings_none:    string;
     channels_title:   string;
     channels_desc:    string;
     col_name:         string;
