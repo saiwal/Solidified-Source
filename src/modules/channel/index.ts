@@ -42,6 +42,35 @@ registerModule({
       helpTarget: "widgets.chronological_feed",
     },
     {
+      // Opt-in single-layout variants of channel.feed (no view switcher) —
+      // picker only, no default placement
+      id: "channel.feed_chronological",
+      label: () => useI18n().t("widgets.channel_feed_chronological"),
+      loader: () => import("./widgets/ChannelFixedFeedWidgets").then((m) => ({ default: m.FeedOnly })),
+      slot: "contentTop",
+      defaultModules: [],
+      contexts: ["channel"],
+      helpTarget: "widgets.chronological_feed",
+    },
+    {
+      id: "channel.feed_masonry",
+      label: () => useI18n().t("widgets.channel_feed_masonry"),
+      loader: () => import("./widgets/ChannelFixedFeedWidgets").then((m) => ({ default: m.MasonryOnly })),
+      slot: "contentTop",
+      defaultModules: [],
+      contexts: ["channel"],
+      helpTarget: "widgets.chronological_feed",
+    },
+    {
+      id: "channel.feed_list",
+      label: () => useI18n().t("widgets.channel_feed_list"),
+      loader: () => import("./widgets/ChannelFixedFeedWidgets").then((m) => ({ default: m.ListOnly })),
+      slot: "contentTop",
+      defaultModules: [],
+      contexts: ["channel"],
+      helpTarget: "widgets.chronological_feed",
+    },
+    {
       // Opt-in alternate layout for channel.feed — picker only, no default placement
       id: "channel.feed_newspaper",
       label: () => useI18n().t("widgets.channel_feed_newspaper"),

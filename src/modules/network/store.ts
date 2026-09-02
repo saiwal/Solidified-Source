@@ -5,9 +5,10 @@ import { createStreamStore } from "@/shared/stream/store/createStreamStore";
 import { fetchNetworkStream } from "./api";
 import type { NetworkParams } from "./api";
 import { createActionHandlers } from "@/shared/stream/store/actions-store";
+import type { ViewMode } from "@/shared/stream/types";
 
 // ── viewMode ──────────────────────────────────────────────────────────────────
-export type ViewMode = "feed" | "masonry" | "list";
+export type { ViewMode };
 const [viewMode, setViewMode] = createSignal<ViewMode>("feed");
 storageGet<ViewMode>("network:viewMode", "feed").then(setViewMode);
 export function changeView(v: ViewMode) {

@@ -7,6 +7,7 @@ export const network: RawDictionary["network"] = {
   feed:                 "फ़ीड",
   grid:                 "ग्रिड",
   list:                 "सूची",
+  timeline:             "टाइमलाइन",
   inbox:                "इनबॉक्स",
   refresh:              "ताज़ा करें",
   starred:              "स्टार किए गए",

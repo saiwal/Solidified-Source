@@ -576,6 +576,9 @@ export type RawDictionary = {
     channel_details: string;
     channel_feed:    string;
     // Opt-in alternate layouts for channel.feed
+    channel_feed_chronological: string;
+    channel_feed_masonry: string;
+    channel_feed_list: string;
     channel_feed_newspaper: string;
     channel_feed_timeline:  string;
     channel_feed_scrapbook: string;
@@ -1472,6 +1475,7 @@ export type RawDictionary = {
     feed:                 string;
     grid:                 string;
     list:                 string;
+    timeline:             string;
     inbox:                string;
     refresh:              string;
     starred:              string;

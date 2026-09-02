@@ -11,14 +11,16 @@ import {
   changeView,
   streamHandlers,
 } from "../store";
+import type { ViewMode } from "@/shared/stream/types";
 import StreamList from "@/shared/stream/feedviews/StreamList";
 import { ListPlaceholder } from "@/shared/stream/feedviews/ListView";
 import { MasonryPlaceholder } from "@/shared/stream/feedviews/MasonryView";
 import { FeedPlaceholder } from "@/shared/stream/feedviews/FeedView";
+import { TimelinePlaceholder, TimelineCardPlaceholder } from "@/shared/stream/feedviews/TimelineView";
 import { ViewSwitcher } from "@/shared/stream/filters";
 import ChannelFeedShell from "./ChannelFeedShell";
 
-function ChannelFeedBody() {
+export function ChannelFeedBody(props: { mode: ViewMode }) {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
 
@@ -36,11 +38,14 @@ function ChannelFeedBody() {
       when={!loading()}
       fallback={
         <Switch>
-          <Match when={viewMode() === "list"}>
+          <Match when={props.mode === "list"}>
             <ListPlaceholder count={8} />
           </Match>
-          <Match when={viewMode() === "masonry"}>
+          <Match when={props.mode === "masonry"}>
             <MasonryPlaceholder count={12} />
+          </Match>
+          <Match when={props.mode === "timeline"}>
+            <TimelinePlaceholder />
           </Match>
           <Match when={true}>
             <For each={Array(5).fill(0)}>{() => <FeedPlaceholder />}</For>
@@ -54,23 +59,28 @@ function ChannelFeedBody() {
 
       <Show when={showPinnedSection()}>
         <div class="mb-4">
-          <StreamList posts={pinnedPosts()} viewMode={viewMode()} handlers={streamHandlers} />
+          <StreamList posts={pinnedPosts()} viewMode={props.mode} handlers={streamHandlers} />
         </div>
       </Show>
 
       <StreamList
         posts={mainPosts()}
-        viewMode={viewMode()}
+        viewMode={props.mode}
         handlers={streamHandlers}
         appendingCount={
-          loadingMore() && viewMode() === "masonry" ? 6 : undefined
+          loadingMore() && props.mode === "masonry" ? 6 : undefined
         }
       />
 
-      <Show when={loadingMore() && viewMode() !== "masonry"}>
+      <Show when={loadingMore() && props.mode !== "masonry"}>
         <Switch>
-          <Match when={viewMode() === "list"}>
+          <Match when={props.mode === "list"}>
             <ListPlaceholder count={4} />
+          </Match>
+          <Match when={props.mode === "timeline"}>
+            <div class="max-w-3xl mx-auto space-y-8 mt-8">
+              <For each={Array(2).fill(0)}>{() => <TimelineCardPlaceholder />}</For>
+            </div>
           </Match>
           <Match when={true}>
             <For each={Array(3).fill(0)}>{() => <FeedPlaceholder />}</For>
@@ -88,10 +98,10 @@ export default function ChannelFeedWidget() {
         <ViewSwitcher
           viewMode={viewMode()}
           onChange={changeView}
-          available={["feed", "masonry", "list"]}
+          available={["feed", "masonry", "list", "timeline"]}
         />
       }
-      body={ChannelFeedBody}
+      body={() => <ChannelFeedBody mode={viewMode()} />}
     />
   );
 }

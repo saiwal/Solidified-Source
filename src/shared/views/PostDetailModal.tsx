@@ -11,10 +11,11 @@ import { BiRegularX } from "solid-icons/bi";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiDeleteItem, apiEditItem, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
 import { isDirectMessage } from "@/shared/stream/components/DmMeta";
-import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE } from "@/shared/stream/store/actions-store";
+import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE, tempCommentNode } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
 
@@ -145,6 +146,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   const { t } = useI18n();
   const commentOrder = useCommentOrder();
   const threadMode = useThreadMode();
+  const navViewer = useNavViewer();
   let dialogRef!: HTMLDivElement;
   let scrollRef!: HTMLDivElement;
   onMount(() => scrollRef?.focus());
@@ -226,6 +228,17 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
 
   function refetch() { void loadNode(props.uuid); }
 
+  // Appends the just-posted reply to the open tree. Deliberately not a
+  // refetch: the modal may have been opened on one comment (notification /
+  // permalink), whose ancestor+siblings fetch would not contain the new
+  // reply — it would blink out again.
+  function addLocalComment(parentMid: string, body: string) {
+    const comment = tempCommentNode(parentMid, body, navViewer());
+    setNodeData((prev) => prev && updateNodeInTree(prev, parentMid, (n) => ({
+      ...n, children: [...n.children, comment],
+    })));
+  }
+
   const highlightUuid = createMemo(() => {
     const n = nodeData();
     if (!n) return undefined;
@@ -287,9 +300,9 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
         });
       });
     },
-    // CommentComposer already POSTs the comment itself; only refresh here.
-    onComment() {
-      refetch();
+    // CommentComposer already POSTs the comment itself; just show it.
+    onComment(parentMid, body) {
+      addLocalComment(parentMid, body);
     },
     onLoadComments: () => Promise.resolve(),
     onLoadMoreComments: loadMoreComments,
@@ -370,7 +383,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
         },
         onComment: (parentMid, body, authorName, authorAvatar) => {
           props.handlers!.onComment(parentMid, body, authorName, authorAvatar);
-          refetch();
+          addLocalComment(parentMid, body);
         },
         onLoadComments: (mid, uuid) => props.handlers!.onLoadComments(mid, uuid),
         // Not delegated to props.handlers: that targets the parent feed's

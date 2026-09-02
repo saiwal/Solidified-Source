@@ -9,6 +9,7 @@ export const network: RawDictionary["network"] = {
   feed:                 "Feed",
   grid:                 "Grid",
   list:                 "List",
+  timeline:             "Timeline",
   inbox:                "Inbox",
   // Filter toggle buttons
   refresh:              "Refresh",

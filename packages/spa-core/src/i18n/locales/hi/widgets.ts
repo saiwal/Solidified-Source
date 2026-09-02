@@ -181,6 +181,9 @@ export const widgets: RawDictionary["widgets"] = {
   // Channel details card (channel.details) / post feed (channel.feed)
   channel_details: "चैनल विवरण",
   channel_feed:    "चैनल फ़ीड",
+  channel_feed_chronological: "फ़ीड (कालक्रमानुसार)",
+  channel_feed_masonry: "फ़ीड (ग्रिड)",
+  channel_feed_list: "फ़ीड (सूची)",
   channel_feed_newspaper: "फ़ीड (समाचार पत्र)",
   channel_feed_timeline:  "फ़ीड (टाइमलाइन)",
   channel_feed_scrapbook: "फ़ीड (स्क्रैपबुक)",

@@ -1,7 +1,7 @@
 import { For, type Component } from "solid-js";
 import {
   MdFillApps,
-  MdFillFormat_list_bulleted, MdFillShort_text,
+  MdFillFormat_list_bulleted, MdFillShort_text, MdFillTimeline,
 } from "solid-icons/md";
 import type { ViewMode } from "@/shared/stream/types";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -12,6 +12,7 @@ const ALL_VIEWS: { id: ViewMode; key: string; icon: IconType }[] = [
   { id: "feed",    key: "feed", icon: MdFillShort_text },
   { id: "masonry", key: "grid", icon: MdFillApps },
   { id: "list",    key: "list", icon: MdFillFormat_list_bulleted },
+  { id: "timeline", key: "timeline", icon: MdFillTimeline },
 ];
 
 export default function ViewSwitcher(props: {

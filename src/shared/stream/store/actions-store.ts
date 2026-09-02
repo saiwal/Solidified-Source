@@ -20,6 +20,7 @@ import { fetchComments, fetchItemDetail, apiDeleteItem, apiEditItem, apiToggleSt
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
+import type { NavViewer } from "@utsukta/spa-core/lib/nav-api";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
@@ -31,6 +32,30 @@ export const COMMENTS_PAGE_SIZE = 5;
 
 function filterReactions(comments: any[] | undefined): any[] {
   return (comments ?? []).filter((a: any) => !REACTION_VERBS.has(a.verb));
+}
+
+// The just-posted comment, rendered from what the composer already knows
+// instead of re-fetching the thread — a refetch re-runs whatever windowed
+// fetch opened the view (e.g. PostDetailModal's ancestor+siblings context
+// mode), which doesn't contain the new reply, so it would vanish instead of
+// appearing. Real mid/uuid arrive on the next real load.
+export function tempCommentNode(parentMid: string, body: string, viewer?: NavViewer): ThreadNode {
+  const tempMid = crypto.randomUUID();
+  return {
+    uuid: tempMid, id: tempMid, mid: tempMid,
+    parent_mid: parentMid, thr_parent: parentMid,
+    top_mid: parentMid, parent: parentMid,
+    body: sanitizeHtml(body), title: "",
+    authorName: viewer?.name || currentNick(),
+    authorAvatar: viewer?.avatar ?? "",
+    authorUrl: viewer?.url ?? "",
+    authorAddress: viewer?.addr ?? "",
+    created: new Date().toISOString().replace("T", " ").slice(0, 19),
+    verb: "Create", obj_type: "Note", flags: [], permalink: "",
+    likeCount: 0, dislikeCount: 0, repeatCount: 0,
+    viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
+    item_thread_top: 0, children: [],
+  };
 }
 
 function flatNodes(posts: Post[]): ThreadNode[] {
@@ -176,19 +201,7 @@ export function createActionHandlers(store: StreamStore) {
       _authorName: string,
       _authorAvatar: string,
     ): void {
-      const tempMid = crypto.randomUUID();
-
-      const tempComment: ThreadNode = {
-        uuid: tempMid, id: tempMid, mid: tempMid,
-        parent_mid: parentMid, thr_parent: parentMid,
-        top_mid: parentMid, parent: parentMid,
-        body: sanitizeHtml(body), title: "", authorName: currentNick(), authorAvatar: "", authorUrl: "",
-        created: new Date().toISOString().replace("T", " ").slice(0, 19),
-        verb: "Create", obj_type: "Note", flags: [], permalink: "",
-        likeCount: 0, dislikeCount: 0, repeatCount: 0,
-        viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
-        item_thread_top: 0, children: [],
-      };
+      const tempComment = tempCommentNode(parentMid, body);
 
       store.setPosts((prev) =>
         updateNode(prev, parentMid, (n) => ({

@@ -37,4 +37,4 @@ export interface StreamHandlers {
   onReject?: (iid: number) => Promise<void>;
 }
 
-export type ViewMode = "feed" | "masonry" | "list";
+export type ViewMode = "feed" | "masonry" | "list" | "timeline";

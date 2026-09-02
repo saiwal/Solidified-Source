@@ -16,10 +16,11 @@ import {
   fetchComments,
   fetchDisplayItem,
 } from "@utsukta/spa-core/lib/item-api";
-import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE } from "@/shared/stream/store/actions-store";
+import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE, tempCommentNode } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { unblockChannel } from "@utsukta/spa-core/lib/blocklist-api";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
 
@@ -98,8 +99,18 @@ export default function PostView() {
   const params = useParams<{ uuid: string }>();
   const navigate = useNavigate();
   const { t } = useI18n();
+  const navViewer = useNavViewer();
 
   const [node, { refetch, mutate }] = createQueryResource("post", () => params.uuid, fetchPost);
+
+  // The just-posted reply is appended in place rather than refetched — a
+  // refetch re-runs the paged comment fetch, which may not include it.
+  function addLocalComment(parentMid: string, body: string) {
+    const comment = tempCommentNode(parentMid, body, navViewer());
+    mutate((prev) => prev && updateNodeInTree(prev, parentMid, (n) => ({
+      ...n, children: [...n.children, comment],
+    })));
+  }
   const [localReactions, setLocalReactions] = createSignal<Record<string, ReactionOverride>>({});
 
   async function loadMoreComments(rootUuid: string, attachMid: string, isRoot: boolean, offset: number, order: CommentOrder): Promise<void> {
@@ -195,9 +206,9 @@ export default function PostView() {
         });
       });
     },
-    // CommentComposer already POSTs the comment itself; only refresh here.
-    onComment() {
-      refetch();
+    // CommentComposer already POSTs the comment itself; just show it.
+    onComment(parentMid, body) {
+      addLocalComment(parentMid, body);
     },
     onLoadComments: () => Promise.resolve(),
     onLoadMoreComments: loadMoreComments,
