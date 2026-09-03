@@ -9,7 +9,8 @@ import type { Post } from "@utsukta/spa-core/types/post.types";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { BiRegularX } from "solid-icons/bi";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { apiDeleteItem, apiEditItem, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
+import { apiDeleteItem, apiEditItem, apiFetchRemoteReplies, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
+import { toast } from "@utsukta/spa-core/store/toast";
 import { isDirectMessage } from "@/shared/stream/components/DmMeta";
 import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE, tempCommentNode } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -142,6 +143,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   // of its own to reach the rest of the thread.
   const [isNarrowContext, setIsNarrowContext] = createSignal(false);
   const [loadingFullThread, setLoadingFullThread] = createSignal(false);
+  const [fetchingReplies, setFetchingReplies] = createSignal(false);
 
   const { t } = useI18n();
   const commentOrder = useCommentOrder();
@@ -183,6 +185,36 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       setNodeError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setLoadingFullThread(false);
+    }
+  }
+
+  // A remote ActivityPub thread only ever arrives one level at a time: the
+  // import walks the root's `replies` collection, but each of those replies
+  // keeps its own collection on the origin server. This pulls the next level
+  // down on demand — see Item::fetchMoreReplies. Zot threads come whole, so
+  // the button that calls this is only shown for AP items.
+  // Only threads we pulled in ourselves: a delivered thread (a connection's
+  // post) already carries its comments and keeps receiving new ones, so the
+  // button would be pure noise there. Set by Search.php on import, surfaced by
+  // Display.php as `imported`.
+  const canFetchReplies = () => !!nodeData()?.imported && nodeData()?.authorNetwork === "activitypub";
+
+  async function fetchMoreReplies() {
+    const rootUuid = nodeData()?.uuid;
+    if (!rootUuid || fetchingReplies()) return;
+    setFetchingReplies(true);
+    try {
+      const fetched = await apiFetchRemoteReplies(rootUuid);
+      if (fetched > 0) {
+        toast.success(t("post.fetch_replies_done", { count: String(fetched) }));
+        refetch();
+      } else {
+        toast.info(t("post.fetch_replies_none"));
+      }
+    } catch {
+      toast.error(t("post.load_error"));
+    } finally {
+      setFetchingReplies(false);
     }
   }
 
@@ -523,6 +555,23 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
                   expandAll
                   handlers={wrappedHandlers ?? selfHandlers}
                   contextBanner={
+                    <>
+                    <Show when={canFetchReplies()}>
+                      <div class="flex items-center justify-between gap-3 px-4 py-2 mb-3 rounded-xl bg-surface border border-rim text-xs text-muted">
+                        <span>{t("post.fetch_more_replies_hint")}</span>
+                        <button
+                          type="button"
+                          onClick={() => void fetchMoreReplies()}
+                          disabled={fetchingReplies()}
+                          class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium
+                                 rounded-full border border-rim bg-base text-muted
+                                 hover:bg-overlay hover:text-txt transition-colors
+                                 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {fetchingReplies() ? t("post.fetch_replies_loading") : t("post.fetch_more_replies")}
+                        </button>
+                      </div>
+                    </Show>
                     <Show when={isNarrowContext()}>
                       <div class="flex items-center justify-between gap-3 px-4 py-2 mb-3 rounded-xl bg-surface border border-rim text-xs text-muted">
                         <span>{t("post.viewing_in_context")}</span>
@@ -539,6 +588,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
                         </button>
                       </div>
                     </Show>
+                    </>
                   }
                 />
               )}

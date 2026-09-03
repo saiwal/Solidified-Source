@@ -98,6 +98,9 @@ export interface Post {
   dislikeCount: number;
   repeatCount: number;
   blocked?: boolean; // author or owner is on the viewer's personal block list
+  // Thread was pulled in by URL (/spa/search) rather than delivered, so it is a
+  // snapshot that may be missing replies. Root items from /spa/display only.
+  imported?: boolean;
   slug?: string; // human-readable identifier alias (articles/webpages), stored via iconfig
   viewUrl?: string; // absolute app URL (slug-preferred), distinct from the immutable `permalink`
   publicPolicy?: string; // ACL public_policy column (e.g. "contacts"), needed to reconstruct the editor's ACL mode

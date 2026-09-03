@@ -50,6 +50,11 @@ export const post: RawDictionary["post"] = {
   load_more_comments:   "Load more comments",
   viewing_in_context:   "Viewing a comment in context",
   show_all_comments:    "Show all comments",
+  fetch_more_replies:   "Fetch more replies",
+  fetch_more_replies_hint:"Remote thread — replies arrive one level at a time",
+  fetch_replies_loading:"Fetching replies…",
+  fetch_replies_none:   "No further replies found",
+  fetch_replies_done:   "Imported {{count}} more replies",
   loading:              "Loading…",
   loading_source:       "Loading source…",
   // stats tabs

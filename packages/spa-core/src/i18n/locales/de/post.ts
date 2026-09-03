@@ -50,6 +50,11 @@ export const post: RawDictionary["post"] = {
   load_more_comments:   "Weitere Kommentare laden",
   viewing_in_context:   "Kommentar im Kontext ansehen",
   show_all_comments:    "Alle Kommentare anzeigen",
+  fetch_more_replies:   "Weitere Antworten holen",
+  fetch_more_replies_hint:"Entfernter Thread — Antworten kommen Ebene für Ebene",
+  fetch_replies_loading:"Antworten werden geholt…",
+  fetch_replies_none:   "Keine weiteren Antworten gefunden",
+  fetch_replies_done:   "{{count}} weitere Antworten importiert",
   loading:              "Lädt…",
   loading_source:       "Quelltext wird geladen…",
   // stats tabs

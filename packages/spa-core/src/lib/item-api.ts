@@ -238,6 +238,12 @@ export const apiFetchComposeSource = async (uuid: string): Promise<ComposeSource
 export const apiDeleteItem = (uuid: string) =>
   post<{ success: boolean }>(`${BASE}/${encodeId(uuid)}/delete`);
 
+// Pull one more level of a remote (ActivityPub) thread's replies into the DB.
+// Zot threads already arrive whole, so this only ever finds anything on AP items.
+export const apiFetchRemoteReplies = (uuid: string) =>
+  post<{ data: { fetched: number } }>(`${BASE}/${encodeId(uuid)}/fetchreplies`)
+    .then(d => d.data.fetched);
+
 export const apiFetchItemFolders = (uuid: string): Promise<string[]> =>
   apiFetch(`${BASE}/${encodeId(uuid)}/folders`)
     .then(r => r.json())

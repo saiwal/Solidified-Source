@@ -138,6 +138,7 @@ export function mapActivityToPost(activity: any): Post {
     repeatCount: activity.announce_count ?? 0,
     commentCount: activity.comment_count ?? 0,
     blocked: activity.blocked ?? false,
+    imported: activity.imported ?? false,
     slug: activity.slug ?? undefined,
     viewUrl: activity.view_url ?? undefined,
     publicPolicy: activity.public_policy ?? undefined,
