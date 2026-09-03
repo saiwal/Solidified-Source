@@ -304,6 +304,17 @@ const Slot: Component<SlotProps> = (props) => {
     () => globalWidgets().length > 0 || localEntries().length > 0 || editing(),
   );
 
+  // Masonry packing only buys something when an item is narrower than full
+  // width; a slot of full-width items packs identically without it, and the
+  // 1px-row span it relies on is unreliable for an item that grows without
+  // bound (an infinite feed) — see .slot-grid-packed in index.css. Edit mode
+  // always packs: the arrangement cards carry their own spans.
+  const packed = createMemo(
+    () => editing() || localEntries().some((e) => (e.span ?? 12) < 12),
+  );
+  const gridClass = () =>
+    `slot-grid ${packed() ? "slot-grid-packed " : ""}grid grid-cols-12 gap-4 items-start`;
+
   const content = () => (
     <>
       {/* Always mounted — never torn down on module navigation */}
@@ -365,10 +376,10 @@ const Slot: Component<SlotProps> = (props) => {
         <div class={marginClass}>
           <Show
             when={editing()}
-            fallback={<div class="slot-grid grid grid-cols-12 gap-4 items-start">{content()}</div>}
+            fallback={<div class={gridClass()}>{content()}</div>}
           >
             <SlotRegionBox label={slotLabel()}>
-              <div class="slot-grid grid grid-cols-12 gap-4 items-start">{content()}</div>
+              <div class={gridClass()}>{content()}</div>
             </SlotRegionBox>
           </Show>
         </div>

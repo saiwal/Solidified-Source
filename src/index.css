@@ -580,15 +580,27 @@ img.emoji.single-emoji:hover {
    Rows are left-aligned: a row that doesn't fill the full width leaves the
    remainder empty on the right rather than centering. */
 .slot-grid {
-  grid-auto-rows: 1px;
-  row-gap: 0;
-  grid-auto-flow: row dense;
   container-type: inline-size;
 }
 
 /* 1 column: the base rule, applied at any width and overridden below. */
 .slot-grid > * {
   grid-column: 1 / -1;
+}
+
+/* Masonry packing, opt-in per slot (see Slot.tsx's `packed`). Expressing an
+   item's height as a count of 1px rows only holds while that height is a
+   number someone measured; a widget that grows without bound (an infinite
+   feed) outruns it, the grid box ends up shorter than its content, and
+   whatever follows the grid in flow lands in the middle of it. Slots whose
+   items are all full width pack identically without any of this. */
+.slot-grid-packed {
+  grid-auto-rows: 1px;
+  row-gap: 0;
+  grid-auto-flow: row dense;
+}
+
+.slot-grid-packed > * {
   grid-row: span var(--rows, 1);
   margin-bottom: 1rem;
 }

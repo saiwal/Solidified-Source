@@ -382,34 +382,37 @@ const Layout: ParentComponent = (props) => {
                 </div>
               </Show>
 
-              <Show when={showScrollTop()}>
-                <button
-                  onClick={() =>
-                    mainRef()?.scrollTo({ top: 0, behavior: "smooth" })
-                  }
-                  class="sticky bottom-2 lg:bottom-14 xl:bottom-2 self-end shrink-0 z-10 -mt-10
-                         w-10 h-10 rounded-full flex items-center justify-center
-                         bg-elevated border border-rim
-                         shadow hover:shadow-md transition-all"
-                  aria-label="Scroll to top"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 15l7-7 7 7"
-                    />
-                  </svg>
-                </button>
-              </Show>
 
           </main>
+
+
+          <Show when={showScrollTop()}>
+            <button
+              onClick={() =>
+                mainRef()?.scrollTo({ top: 0, behavior: "smooth" })
+              }
+              class={`fixed z-50 right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
+                     ${hidesRightSidebar() ? "xl:right-6" : "xl:right-[19.5rem]"}
+                     w-10 h-10 rounded-full flex items-center justify-center
+                     bg-elevated border border-rim
+                     shadow hover:shadow-md transition-all`}
+              aria-label="Scroll to top"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 15l7-7 7 7"
+                />
+              </svg>
+            </button>
+          </Show>
 
           {/* ═══════════════════════════════════════════════════════
               RIGHT SIDEBAR
