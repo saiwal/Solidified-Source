@@ -83,6 +83,7 @@ export const cards: RawDictionary["cards"] = {
   kanban_remove_column: "Spalte entfernen",
   kanban_empty_column:  "Karten hierher ziehen",
   kanban_no_cards:      "Noch keine Karten in der Kategorie „{{board}}“.",
+  kanban_no_boards:     "Noch keine Tafeln. Lege eine an, um deine Karten in Spalten zu ordnen.",
   kanban_move_failed:   "Karte konnte nicht verschoben werden",
   kanban_drag:          "In eine andere Spalte ziehen",
 };

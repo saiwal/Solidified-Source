@@ -14,7 +14,7 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { ShareTarget } from "@utsukta/spa-core/store/share";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchLockview, grantGuest } from "@utsukta/spa-core/lib/lockview-api";
-import { saveToken, newTokenValue } from "@/modules/directory/tokens/api";
+import { saveToken, newTokenValue, fetchTokens } from "@/modules/directory/tokens/api";
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
 
@@ -95,7 +95,12 @@ const ShareModal: Component<Props> = (props) => {
   const [newGuestOpen, setNewGuestOpen] = createSignal(false);
   const [newGuestName, setNewGuestName] = createSignal("");
   const [newGuestExpires, setNewGuestExpires] = createSignal("");
+  const [newGuestRole, setNewGuestRole] = createSignal("");
   const [creating, setCreating] = createSignal(false);
+
+  // Only asked for once the form is open — the modal usually never needs it.
+  const [tokensData] = createQueryResource("guest-tokens", newGuestOpen, fetchTokens);
+  const roles = () => tokensData()?.meta.roles ?? [];
 
   async function createGuest(e: Event) {
     e.preventDefault();
@@ -106,6 +111,7 @@ const ShareModal: Component<Props> = (props) => {
         name: newGuestName().trim(),
         token: await newTokenValue(),
         expires: newGuestExpires() || undefined,
+        role: newGuestRole() || undefined,
       });
       setLockview({ ...lockview()!, other_guests: [...otherGuests(), { id: tok.id, name: tok.name }] });
       // pickGuest does the grant, the optimistic list move and the toast.
@@ -113,6 +119,7 @@ const ShareModal: Component<Props> = (props) => {
       setNewGuestOpen(false);
       setNewGuestName("");
       setNewGuestExpires("");
+      setNewGuestRole("");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (t("share.guest_new_failed") as string));
     } finally {
@@ -353,6 +360,21 @@ const ShareModal: Component<Props> = (props) => {
                               class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
                             />
                           </div>
+                          <Show when={roles().length > 0}>
+                            <div class="space-y-1">
+                              <label class="block text-xs text-muted">{t("guest_access.role")}</label>
+                              <select
+                                value={newGuestRole()}
+                                onChange={(e) => setNewGuestRole(e.currentTarget.value)}
+                                class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                              >
+                                <option value="" />
+                                <For each={roles()}>
+                                  {(r) => <option value={r.name}>{r.label}</option>}
+                                </For>
+                              </select>
+                            </div>
+                          </Show>
                           <p class="text-[0.6875rem] text-muted">{t("share.guest_new_hint")}</p>
                           <div class="flex gap-2">
                             <button

@@ -83,6 +83,7 @@ export const cards: RawDictionary["cards"] = {
   kanban_remove_column: "Remove column",
   kanban_empty_column:  "Drop cards here",
   kanban_no_cards:      "No cards in the “{{board}}” category yet.",
+  kanban_no_boards:     "No boards yet. Create one to start organising your cards into columns.",
   kanban_move_failed:   "Could not move that card",
   kanban_drag:          "Drag to another column",
 };

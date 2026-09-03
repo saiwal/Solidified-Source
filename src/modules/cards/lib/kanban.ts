@@ -3,9 +3,6 @@
 
 import { createSignal } from "solid-js";
 
-/** The board a channel has before it configures any — also the pre-multi-board one. */
-export const DEFAULT_BOARD = "kanban";
-
 /** Cards with no deck, or a deck that isn't one of the configured columns. */
 export const UNFILED = "";
 

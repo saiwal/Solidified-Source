@@ -10,7 +10,7 @@
 
 import { createMemo, createSignal, Show, For } from "solid-js";
 import { MdOutlineStyle, MdOutlineAdd, MdOutlineEdit, MdOutlineClose,
-         MdOutlineDrag_indicator } from "solid-icons/md";
+         MdOutlineDrag_indicator, MdOutlineView_kanban } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -23,7 +23,7 @@ import CardFace from "./CardFace";
 import { useSearchParams } from "@solidjs/router";
 import { fetchCards, fetchKanban, saveKanbanBoards, moveCard, renameDeck, renameBoard,
          type KanbanBoardDef } from "../api";
-import { DEFAULT_BOARD, UNFILED } from "../lib/kanban";
+import { UNFILED } from "../lib/kanban";
 import { createKanbanDrag, type Column } from "../lib/useKanbanDrag";
 
 export default function KanbanBoard(props: { nick: string }) {
@@ -45,16 +45,18 @@ export default function KanbanBoard(props: { nick: string }) {
   // and survives a reload, unlike the board/masonry choice.
   const [params, setParams] = useSearchParams<{ board?: string }>();
   const boards = (): KanbanBoardDef[] => config()?.boards ?? [];
+  // "" means the channel has no boards yet — nothing to fetch, nothing to show
+  // but the invitation to create one.
   const activeBoard = () => {
     const list = boards();
     const wanted = params.board;
     if (wanted && list.some((b) => b.name === wanted)) return wanted;
-    return list[0]?.name ?? DEFAULT_BOARD;
+    return list[0]?.name ?? "";
   };
 
   const [cards, { mutate: mutateCards, refetch: refetchCards }] = createQueryResource(
     "kanban-cards",
-    () => ({ nick: props.nick, board: activeBoard() }),
+    () => (activeBoard() ? { nick: props.nick, board: activeBoard() } : null),
     async ({ nick, board }) => (await fetchCards(nick, { cat: board })).cards,
   );
 
@@ -192,6 +194,7 @@ export default function KanbanBoard(props: { nick: string }) {
 
   return (
     <Show when={!config.loading && !cards.loading} fallback={<BoardSkeleton />}>
+     <Show when={boards().length > 0} fallback={<NoBoards onCreate={addBoard} owner={isOwner()} />}>
       {/* Board tabs. A board is a category, so switching boards refetches with
           a different `cat` — the URL carries it so the tab is linkable. */}
       <div class="flex items-center gap-1 border-b border-rim overflow-x-auto">
@@ -247,9 +250,10 @@ export default function KanbanBoard(props: { nick: string }) {
       <div class="flex gap-3 items-start overflow-x-auto pb-2 pt-3">
         <For each={drag.display()}>
           {(col) => (
-            // The Unfiled column is noise when it's empty and there are real
-            // columns to drop into — but it must stay visible while dragging.
-            <Show when={col.key !== UNFILED || col.items.length > 0 || columnNames().length === 0}>
+            // The Unfiled column is noise when it's empty — on an empty board
+            // it reads as a broken placeholder, so it appears only once it
+            // actually holds cards.
+            <Show when={col.key !== UNFILED || col.items.length > 0}>
               <div class="w-64 shrink-0 rounded-2xl bg-elevated/40 border border-rim p-2 flex flex-col gap-2">
                 <div class="flex items-center gap-1 px-1">
                   <h3
@@ -376,7 +380,29 @@ export default function KanbanBoard(props: { nick: string }) {
           />
         </ComposerModal>
       </Show>
+     </Show>
     </Show>
+  );
+}
+
+function NoBoards(props: { owner: boolean; onCreate: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div class="text-center py-16 text-muted text-sm space-y-3">
+      <MdOutlineView_kanban class="text-3xl text-muted mx-auto" />
+      <p>{t("cards.kanban_no_boards")}</p>
+      <Show when={props.owner}>
+        <button
+          type="button"
+          onClick={props.onCreate}
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rim
+                 text-txt hover:bg-elevated transition-colors"
+        >
+          <MdOutlineAdd size={16} />
+          {t("cards.kanban_add_board")}
+        </button>
+      </Show>
+    </div>
   );
 }
 

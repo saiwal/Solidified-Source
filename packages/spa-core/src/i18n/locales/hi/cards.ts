@@ -83,6 +83,7 @@ export const cards: RawDictionary["cards"] = {
   kanban_remove_column: "स्तंभ हटाएँ",
   kanban_empty_column:  "कार्ड यहाँ छोड़ें",
   kanban_no_cards:      "“{{board}}” श्रेणी में अभी तक कोई कार्ड नहीं है।",
+  kanban_no_boards:     "अभी कोई बोर्ड नहीं। अपने कार्ड स्तंभों में व्यवस्थित करने के लिए एक बनाएँ।",
   kanban_move_failed:   "कार्ड को स्थानांतरित नहीं किया जा सका",
   kanban_drag:          "दूसरे स्तंभ में खींचें",
 };

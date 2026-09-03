@@ -2031,6 +2031,7 @@ export type RawDictionary = {
     kanban_remove_column: string;
     kanban_empty_column:  string;
     kanban_no_cards:      string;
+    kanban_no_boards:     string;
     kanban_move_failed:   string;
     kanban_drag:          string;
   };
