@@ -15,12 +15,26 @@ import {
   MdFillDate_range,
   MdFillPeople,
   MdFillPoll,
+  MdFillSearch,
+  MdFillRefresh,
+  MdFillBookmark_add,
 } from "solid-icons/md";
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createSignal, createEffect, on, lazy, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts } from "../store";
-import { fetchFolders, fetchForums, parseNetworkParams } from "../api";
+import { fetchFolders, fetchForums, fetchConnections, parseNetworkParams, type AclConnection } from "../api";
+import { apiFetch } from "@utsukta/spa-core/lib/fetch";
+import { toast } from "@utsukta/spa-core/store/toast";
+import { addSavedSearch } from "../saved-searches";
+
+const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+
+// Minimum characters before the connection typeahead searches the server.
+const CONN_SEARCH_MIN_CHARS = 3;
+const CONN_SEARCH_DEBOUNCE_MS = 250;
+
+const isUrl = (val: string) => val.startsWith("https://");
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { fetchGroups, type PrivacyGroup } from "@/modules/directory/groups/api";
@@ -154,6 +168,34 @@ export default function StreamFiltersWidget() {
   createEffect(() => { if (dbegin() || dend())                         setDateOpen(true); });
   createEffect(() => { if (cmin() || cmax())                           setAffinityOpen(true); });
 
+  const search     = () => str(searchParams.search);
+  const cid        = () => str(searchParams.cid);
+  const gid        = () => str(searchParams.gid);
+  const xchanLabel = () => str(searchParams.xchan_label);
+
+  const [connOpen, setConnOpen] = createSignal(!!(str(searchParams.cid) || str(searchParams.gid)));
+  const [connInput, setConnInput] = createSignal("");
+  const [debouncedConnQuery, setDebouncedConnQuery] = createSignal("");
+  let connDebounceTimer: number | undefined;
+  createEffect(on(connInput, (q) => {
+    window.clearTimeout(connDebounceTimer);
+    const trimmed = q.trim();
+    if (trimmed.length < CONN_SEARCH_MIN_CHARS) { setDebouncedConnQuery(""); return; }
+    connDebounceTimer = window.setTimeout(() => setDebouncedConnQuery(trimmed), CONN_SEARCH_DEBOUNCE_MS);
+  }));
+  const [connResults] = createQueryResource(
+    "acl-stream-search",
+    () => debouncedConnQuery() || false,
+    (q) => fetchConnections({ search: q, count: 8 }),
+  );
+  const suggestions = () => {
+    if (connInput().trim().length < CONN_SEARCH_MIN_CHARS || connResults.loading) return [];
+    return connResults() ?? [];
+  };
+
+  const [importing, setImporting] = createSignal(false);
+  const [importedUuid, setImportedUuid] = createSignal<string | null>(null);
+
   function sp(overrides: Record<string, string | undefined>) {
     setSearchParams({ ...overrides }, { replace: true });
   }
@@ -170,6 +212,73 @@ export default function StreamFiltersWidget() {
     loadNetwork(parseNetworkParams(searchParams));
   }
 
+  let searchTimer: ReturnType<typeof setTimeout>;
+  function onSearchInput(val: string) {
+    sp({ search: val || undefined });
+    clearTimeout(searchTimer);
+    // Don't trigger stream search for URLs — wait for Enter
+    if (!isUrl(val)) searchTimer = setTimeout(applyNow, 400);
+  }
+
+  async function handleUrlImport(url: string) {
+    setImporting(true);
+    try {
+      const res = await apiFetch(`/spa/search/import?url=${encodeURIComponent(url)}`);
+      const body = await res.json();
+      if (!res.ok) {
+        toast.error(body?.error?.message ?? "Could not fetch post");
+        return;
+      }
+      setImportedUuid(body.data.uuid);
+    } catch {
+      toast.error("Network error — could not fetch post");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function selectConnection(c: AclConnection) {
+    sp({
+      cid:         c.type === "c" ? String(c.id) : undefined,
+      gid:         c.type === "g" ? String(c.id) : undefined,
+      xchan_label: c.name,
+    });
+    setConnInput("");
+    setTimeout(applyNow, 0);
+  }
+
+  function clearConnection() {
+    sp({ cid: undefined, gid: undefined, xchan_label: undefined });
+    setConnInput("");
+    setTimeout(applyNow, 0);
+  }
+
+  const hasSaveableSearch = () => !!(search() || tag() || xchanLabel());
+
+  function captureParams(): Record<string, string> {
+    const keys = ["order","search","tag","file","star","pf","conv","dm","event","poll","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
+    const p: Record<string, string> = {};
+    for (const k of keys) {
+      const v = str(searchParams[k]);
+      if (v) p[k] = v;
+    }
+    return p;
+  }
+
+  function autoLabel(): string {
+    if (search())     return search();
+    if (tag())        return `#${tag()}`;
+    if (xchanLabel()) return xchanLabel();
+    const parts: string[] = [];
+    for (const chip of CHIPS) if (searchParams[chip.key] === "1") parts.push(t(chip.labelKey as any));
+    return parts.join(", ") || t("network.save_search");
+  }
+
+  async function saveSearch() {
+    await addSavedSearch(autoLabel(), captureParams());
+    toast.success(t("network.search_saved"));
+  }
+
   function clearAll() {
     setSearchParams(
       {
@@ -181,6 +290,7 @@ export default function StreamFiltersWidget() {
       },
       { replace: true },
     );
+    setConnInput("");
     setTimeout(applyNow, 0);
   }
 
@@ -204,6 +314,51 @@ export default function StreamFiltersWidget() {
         </Show>
       </div>
       <div class="px-3 py-2 space-y-1">
+        {/* Search — plain text, or paste a post URL and press Enter to import */}
+        <div class="px-0.5 pb-1">
+          <Show
+            when={!importing()}
+            fallback={
+              <span class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg
+                           border border-accent bg-accent-muted text-accent">
+                <MdFillRefresh size={13} class="animate-spin shrink-0" />
+                {t("network.fetching_post")}
+              </span>
+            }
+          >
+            <div class="relative">
+              <span class="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                classList={{ "text-green-500": isUrl(search()), "text-muted": !isUrl(search()) }}>
+                <MdFillSearch size={13} />
+              </span>
+              <input
+                type="search"
+                placeholder={t("network.search_placeholder")}
+                value={search()}
+                onInput={(e) => onSearchInput(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && isUrl(search())) {
+                    e.preventDefault();
+                    handleUrlImport(search());
+                  }
+                }}
+                classList={{
+                  "border-green-500 focus:ring-green-500": isUrl(search()),
+                  "pr-7": hasSaveableSearch(),
+                }}
+                class={`${INPUT_CLS} pl-6`}
+              />
+              <Show when={hasSaveableSearch()}>
+                <button onClick={() => void saveSearch()} title={t("network.save_search")}
+                  class="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md
+                         text-muted hover:text-accent hover:bg-elevated transition-colors">
+                  <MdFillBookmark_add size={14} />
+                </button>
+              </Show>
+            </div>
+          </Show>
+        </div>
+
         <For each={CHIPS}>
           {(chip) => {
             const active = () => searchParams[chip.key] === "1";
@@ -223,6 +378,74 @@ export default function StreamFiltersWidget() {
             );
           }}
         </For>
+
+        {/* Connection */}
+        <div>
+          <button
+            onClick={() => setConnOpen((o) => !o)}
+            class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm
+                   transition-colors text-left text-muted hover:bg-elevated hover:text-txt"
+          >
+            <MdFillPerson size={15} class="shrink-0" />
+            <span class="flex-1">{t("network.filter_by_connection")}</span>
+            <Show when={!!(cid() || gid())}>
+              <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+            </Show>
+            <Show when={connOpen()} fallback={<MdFillKeyboard_arrow_right size={15} class="shrink-0" />}>
+              <MdFillKeyboard_arrow_down size={15} class="shrink-0" />
+            </Show>
+          </button>
+          <Show when={connOpen()}>
+            <div class="pl-6 pr-2 pt-1 pb-1">
+              <Show
+                when={!(cid() || gid())}
+                fallback={
+                  <span class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg
+                               border border-accent bg-accent-muted text-accent">
+                    <MdFillPerson size={13} class="shrink-0" />
+                    <span class="truncate">{xchanLabel() || cid() || gid()}</span>
+                    <button onClick={clearConnection} title={t("network.remove")}
+                      class="shrink-0 hover:opacity-70 transition-opacity">
+                      <MdFillClose size={12} />
+                    </button>
+                  </span>
+                }
+              >
+                <input
+                  type="text"
+                  placeholder={t("network.connection_placeholder")}
+                  value={connInput()}
+                  onInput={(e) => setConnInput(e.currentTarget.value)}
+                  class={INPUT_CLS}
+                />
+                <Show when={suggestions().length > 0}>
+                  <ul class="mt-1 max-h-56 overflow-y-auto rounded-lg border border-rim bg-surface py-1">
+                    <For each={suggestions()}>
+                      {(c) => (
+                        <li>
+                          <button
+                            onClick={() => selectConnection(c)}
+                            class="w-full flex items-center gap-2 px-2.5 py-1.5
+                                   text-sm text-left hover:bg-elevated transition-colors text-txt"
+                          >
+                            <Show when={c.photo}>
+                              <img src={c.photo} alt=""
+                                class="w-6 h-6 rounded-full shrink-0 object-cover bg-elevated" />
+                            </Show>
+                            <span class="flex flex-col min-w-0">
+                              <span class="truncate font-medium text-txt">{c.name}</span>
+                              <span class="truncate text-xs text-muted">{c.link || c.nick}</span>
+                            </span>
+                          </button>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                </Show>
+              </Show>
+            </div>
+          </Show>
+        </div>
 
         <Show when={!folders.loading && (folders() ?? []).length > 0}>
           <div>
@@ -490,6 +713,15 @@ export default function StreamFiltersWidget() {
           </div>
         </Show>
       </div>
+
+      <Show when={importedUuid()}>
+        {(uuid) => (
+          <PostDetailModal
+            uuid={uuid()}
+            onClose={() => { setImportedUuid(null); sp({ search: undefined }); }}
+          />
+        )}
+      </Show>
     </div>
   );
 }
