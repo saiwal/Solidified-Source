@@ -16,7 +16,7 @@ import StreamList from "@/shared/stream/feedviews/StreamList";
 import { ListPlaceholder } from "@/shared/stream/feedviews/ListView";
 import { MasonryPlaceholder } from "@/shared/stream/feedviews/MasonryView";
 import { FeedPlaceholder } from "@/shared/stream/feedviews/FeedView";
-import { TimelinePlaceholder, TimelineCardPlaceholder } from "@/shared/stream/feedviews/TimelineView";
+import { TimelinePlaceholder } from "@/shared/stream/feedviews/TimelineView";
 import { ViewSwitcher } from "@/shared/stream/filters";
 import ChannelFeedShell from "./ChannelFeedShell";
 
@@ -78,8 +78,8 @@ export function ChannelFeedBody(props: { mode: ViewMode }) {
             <ListPlaceholder count={4} />
           </Match>
           <Match when={props.mode === "timeline"}>
-            <div class="max-w-3xl mx-auto space-y-8 mt-8">
-              <For each={Array(2).fill(0)}>{() => <TimelineCardPlaceholder />}</For>
+            <div class="mt-8">
+              <TimelinePlaceholder count={2} />
             </div>
           </Match>
           <Match when={true}>

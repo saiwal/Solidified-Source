@@ -118,21 +118,23 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
   );
 }
 
-export function TimelineCardPlaceholder() {
+function TimelineCardPlaceholder() {
   return (
     <div class="bg-surface border border-rim rounded-2xl p-5 sm:p-6 shadow-sm animate-pulse">
-      <div class="h-48 sm:h-56 bg-accent-muted rounded-xl" />
-      <div class="h-4 bg-accent-muted rounded w-3/4 mt-3" />
+      <div class="h-4 bg-accent-muted rounded w-3/4" />
       <div class="space-y-2 mt-2">
         <div class="h-3 bg-accent-muted rounded w-full" />
         <div class="h-3 bg-accent-muted rounded w-5/6" />
       </div>
-      <div class="flex items-center gap-2.5 mt-4 pt-3 border-t border-rim">
-        <div class="w-8 h-8 rounded-full bg-accent-muted shrink-0" />
-        <div class="space-y-1">
-          <div class="h-3 bg-accent-muted rounded w-24" />
-          <div class="h-2.5 bg-accent-muted rounded w-16" />
+      <div class="flex items-end justify-between gap-3 mt-4 pt-3 border-t border-rim">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-accent-muted shrink-0" />
+          <div class="space-y-1">
+            <div class="h-3 bg-accent-muted rounded w-24" />
+            <div class="h-2.5 bg-accent-muted rounded w-16" />
+          </div>
         </div>
+        <div class="h-3 bg-accent-muted rounded w-16 shrink-0" />
       </div>
     </div>
   );
@@ -147,6 +149,9 @@ export function TimelinePlaceholder(props: { count?: number }) {
           aria-hidden="true"
         />
         <div class="space-y-8">
+          <div class="relative flex items-center gap-3 pl-0">
+            <span class="relative z-10 ml-1 sm:ml-3 h-6 w-44 rounded-full bg-accent-muted animate-pulse" />
+          </div>
           <For each={Array(props.count ?? 4).fill(0)}>
             {() => (
               <div class="relative">

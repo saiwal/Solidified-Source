@@ -8,6 +8,7 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import { ListPlaceholder } from "@/shared/stream/feedviews/ListView";
 import { MasonryPlaceholder } from "@/shared/stream/feedviews/MasonryView";
 import { FeedPlaceholder } from "@/shared/stream/feedviews/FeedView";
+import { TimelinePlaceholder } from "@/shared/stream/feedviews/TimelineView";
 import StreamFilters from "../views/StreamFilters";
 import { parseNetworkParams } from "../api";
 import {
@@ -84,6 +85,9 @@ export default function NetworkContentWidget() {
             <Match when={viewMode() === "masonry"}>
               <MasonryPlaceholder count={12} />
             </Match>
+            <Match when={viewMode() === "timeline"}>
+              <TimelinePlaceholder />
+            </Match>
             <Match when={true}>
               <For each={Array(5).fill(0)}>{() => <FeedPlaceholder />}</For>
             </Match>
@@ -103,6 +107,11 @@ export default function NetworkContentWidget() {
           <Switch>
             <Match when={viewMode() === "list"}>
               <ListPlaceholder count={4} />
+            </Match>
+            <Match when={viewMode() === "timeline"}>
+              <div class="mt-8">
+                <TimelinePlaceholder count={2} />
+              </div>
             </Match>
             <Match when={true}>
               <For each={Array(3).fill(0)}>{() => <FeedPlaceholder />}</For>

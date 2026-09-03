@@ -19,6 +19,7 @@ import { apiDeleteItem } from "@utsukta/spa-core/lib/item-api";
 import { MasonryPlaceholder } from "@/shared/stream/feedviews/MasonryView";
 import { ListPlaceholder } from "@/shared/stream/feedviews/ListView";
 import { FeedPlaceholder } from "@/shared/stream/feedviews/FeedView";
+import { TimelinePlaceholder } from "@/shared/stream/feedviews/TimelineView";
 import StreamList from "@/shared/stream/feedviews/StreamList";
 import { ViewSwitcher } from "@/shared/stream/filters";
 import type { StreamHandlers } from "@/shared/stream/types";
@@ -188,6 +189,9 @@ export default function PubstreamContentWidget() {
               <Match when={viewMode() === "masonry"}>
                 <MasonryPlaceholder count={12} />
               </Match>
+              <Match when={viewMode() === "timeline"}>
+                <TimelinePlaceholder />
+              </Match>
               <Match when={true}>
                 <For each={Array(5).fill(0)}>{() => <FeedPlaceholder />}</For>
               </Match>
@@ -215,6 +219,11 @@ export default function PubstreamContentWidget() {
           <Switch>
             <Match when={viewMode() === "list"}>
               <ListPlaceholder count={3} />
+            </Match>
+            <Match when={viewMode() === "timeline"}>
+              <div class="mt-8">
+                <TimelinePlaceholder count={2} />
+              </div>
             </Match>
             <Match when={true}>
               <For each={Array(2).fill(0)}>{() => <FeedPlaceholder />}</For>
