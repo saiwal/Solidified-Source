@@ -12,13 +12,16 @@ export interface UseFloatingOptions {
  * Solid composable that positions a floating element relative to a reference.
  *
  * Usage:
- *   const { x, y, placement, mount, unmount } = useFloating({ placement: "top" });
+ *   const { x, y, placement, positioned, mount, unmount } = useFloating({ placement: "top" });
  *
  *   // Call mount() once both elements are in the DOM:
  *   mount(referenceEl, floatingEl);
  *
- *   // Apply position:
- *   style={{ position: "fixed", top: `${y()}px`, left: `${x()}px` }}
+ *   // Apply position (visibility guards the pre-placement frame):
+ *   style={{
+ *     position: "fixed", top: `${y()}px`, left: `${x()}px`,
+ *     visibility: positioned() ? "visible" : "hidden",
+ *   }}
  */
 export function useFloating(options: UseFloatingOptions = {}) {
   const [x, setX] = createSignal(0);
@@ -26,11 +29,17 @@ export function useFloating(options: UseFloatingOptions = {}) {
   const [placement, setPlacement] = createSignal<Placement>(
     options.placement ?? "bottom",
   );
+  // computePosition is async, so x/y are still 0,0 for the frame after mount().
+  // Anything rendered in that frame flashes at the top-left of the viewport —
+  // hide the floating element (visibility, not display, so it stays
+  // measurable) until this turns true.
+  const [positioned, setPositioned] = createSignal(false);
 
   let stopUpdate: (() => void) | undefined;
 
   function mount(reference: Element, floating: HTMLElement) {
     stopUpdate?.();
+    setPositioned(false);
     stopUpdate = autoUpdate(reference, floating, async () => {
       const pos = await computePosition(reference, floating, {
         placement: options.placement ?? "bottom",
@@ -39,14 +48,16 @@ export function useFloating(options: UseFloatingOptions = {}) {
       setX(pos.x);
       setY(pos.y);
       setPlacement(pos.placement);
+      setPositioned(true);
     });
   }
 
   function unmount() {
     stopUpdate?.();
     stopUpdate = undefined;
+    setPositioned(false);
   }
 
   onCleanup(unmount);
-  return { x, y, placement, mount, unmount };
+  return { x, y, placement, positioned, mount, unmount };
 }

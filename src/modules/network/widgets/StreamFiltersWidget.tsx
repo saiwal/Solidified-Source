@@ -223,7 +223,7 @@ export default function StreamFiltersWidget() {
   async function handleUrlImport(url: string) {
     setImporting(true);
     try {
-      const res = await apiFetch(`/spa/search/import?url=${encodeURIComponent(url)}`);
+      const res = await apiFetch(`/spa/search?url=${encodeURIComponent(url)}`);
       const body = await res.json();
       if (!res.ok) {
         toast.error(body?.error?.message ?? "Could not fetch post");

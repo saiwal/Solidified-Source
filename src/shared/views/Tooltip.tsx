@@ -25,7 +25,7 @@ export interface TooltipProps {
  */
 const Tooltip: ParentComponent<TooltipProps> = (props) => {
   const [visible, setVisible] = createSignal(false);
-  const { x, y, mount, unmount } = useFloating({
+  const { x, y, positioned, mount, unmount } = useFloating({
     placement: props.placement ?? "top",
     offset: 6,
   });
@@ -66,7 +66,10 @@ const Tooltip: ParentComponent<TooltipProps> = (props) => {
               animate: { opacity: 1, y: 0 },
               transition: { duration: 0.15, easing: "ease-out" },
             }}
-            style={{ position: "fixed", top: `${y()}px`, left: `${x()}px` }}
+            style={{
+              position: "fixed", top: `${y()}px`, left: `${x()}px`,
+              visibility: positioned() ? "visible" : "hidden",
+            }}
             class={`z-[9999] pointer-events-none px-2.5 py-1.5 text-xs rounded-lg
                     bg-surface border border-rim text-muted shadow-lg
                     max-w-[200px] leading-relaxed whitespace-normal

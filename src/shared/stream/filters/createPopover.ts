@@ -17,7 +17,7 @@ import type { Placement } from "@floating-ui/dom";
 //   </Portal></Show>
 export function createPopover(options: { placement?: Placement } = {}) {
   const [open, setOpen] = createSignal(false);
-  const { x, y, mount, unmount } = useFloating({
+  const { x, y, positioned, mount, unmount } = useFloating({
     placement: options.placement ?? "bottom-start",
     offset: 4,
   });
@@ -52,6 +52,9 @@ export function createPopover(options: { placement?: Placement } = {}) {
     position: "fixed",
     top: `${y()}px`,
     left: `${x()}px`,
+    // Placement resolves a frame after the panel mounts; without this it
+    // paints once at the viewport origin on the way to its anchor.
+    visibility: positioned() ? "visible" : "hidden",
   });
 
   return {
