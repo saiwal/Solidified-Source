@@ -4,10 +4,11 @@ import { savePosts } from "@utsukta/spa-core/lib/message-store";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 // import type { Post } from "@utsukta/spa-core/types/post.types";
 import type { StreamResult } from "@/shared/stream/store/createStreamStore";
+import type { SortOrder } from "@/shared/stream/filters";
 
 export type ChannelParams = {
   start?:   number;
-  order?:   "created" | "commented";
+  order?:   SortOrder;
   search?:  string;
   tag?:     string;
   cat?:     string;

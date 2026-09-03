@@ -3,6 +3,8 @@ namespace Utsukta\SpaCore\Api\Handlers;
 
 use Utsukta\SpaCore\Api\Concerns\FormatsItems;
 use Utsukta\SpaCore\Api\Concerns\ReactionCounts;
+use Utsukta\SpaCore\Api\Concerns\StreamOrdering;
+use Utsukta\SpaCore\Api\Concerns\CachesRanking;
 use Utsukta\SpaCore\Api\Concerns\FiltersBlockedChannels;
 use Utsukta\SpaCore\Api\Response;
 
@@ -10,6 +12,7 @@ class Channel
 {
     use FormatsItems;
     use FiltersBlockedChannels;
+    use CachesRanking;
 
     public function get(): void
     {
@@ -34,13 +37,16 @@ class Channel
 
         // ── Ordering ──────────────────────────────────────────────────────────
         $get_order = $_GET['order'] ?? 'created';
-        $nouveau   = false;
-
-        switch ($get_order) {
-            case 'commented': $ordering = 'commented'; break;
-            case 'unthreaded': $nouveau = true; $ordering = 'created'; break;
-            default:           $ordering = 'created';
+        if (!StreamOrdering::isValid($get_order)) {
+            $get_order = 'created';
         }
+
+        // 'unthreaded' is the only order that also changes the shape of the
+        // result (flat, not threaded); the rest only change the ORDER BY.
+        $nouveau   = ($get_order === 'unthreaded');
+        $clause    = StreamOrdering::clause($get_order, $channel_uid);
+        $ordering  = $clause['order'];
+        $rank_join = $clause['join'];
 
         // ── Filter params ─────────────────────────────────────────────────────
         $search   = $_GET['search']  ?? '';
@@ -122,13 +128,15 @@ class Channel
         // ── Fetch ─────────────────────────────────────────────────────────────
         $items     = [];
         $rootCount = 0;
+        $cached    = false;
 
         if ($nouveau) {
             $items = dbq("SELECT item.*, item.id AS item_id, $reaction_subqueries
                 FROM item
+                $rank_join
                 WHERE true $uids $item_normal
                 $sql_extra $sql_date
-                ORDER BY item.created DESC $pager_sql");
+                ORDER BY $ordering DESC $pager_sql");
 
             $rootCount = count($items ?: []);
 
@@ -138,11 +146,33 @@ class Channel
             }
         } else {
             // Two-step threaded fetch
-            $r = dbq("SELECT item.id AS item_id FROM item
+            $parents_sql = "SELECT item.id AS item_id FROM item
+                $rank_join
                 WHERE true $uids $item_thread_top $item_normal
                 AND item.mid = item.parent_mid
                 $sql_extra3 $sql_extra
-                ORDER BY $ordering DESC $pager_sql");
+                ORDER BY $ordering DESC ";
+
+            // See Network.php — ranked orders sort the whole candidate set
+            // before they can return a page, so the ordered ids are cached and
+            // later pages of the same scroll are free slices. The observer is
+            // part of the key: item_permissions_sql() fences visitors, so two
+            // viewers of the same wall can legitimately rank differently.
+            if (StreamOrdering::isRanked($get_order) && $this->rankCacheCovers($offset, $itemspage)) {
+                $depth = $this->rankCacheDepth();
+                $ranked = $this->rankedIds(
+                    $this->rankCacheKey(
+                        'channel:' . $channel_uid . ':' . $observer_xchan,
+                        $uid, $get_order, $_GET
+                    ),
+                    fn() => array_column(dbq($parents_sql . " LIMIT $depth") ?: [], 'item_id')
+                );
+                $cached = $ranked['cached'];
+                $page = array_slice($ranked['ids'], $offset, $itemspage);
+                $r = array_map(fn($id) => ['item_id' => $id], $page);
+            } else {
+                $r = dbq($parents_sql . $pager_sql);
+            }
 
             $rootCount = count($r ?: []);
 
@@ -158,8 +188,12 @@ class Channel
                     xchan_query($items, true);
                     $items = fetch_post_tags($items, true);
 
-                    $key = $ordering === 'commented' ? 'commented' : 'created';
-                    usort($items, fn($a, $b) => strtotime($b[$key]) - strtotime($a[$key]));
+                    // Re-apply the order the parent query produced — the
+                    // ranked orders have no column to re-sort by here.
+                    $ordered_parents = array_map('intval', array_column($r, 'item_id'));
+                    usort($items, fn($a, $b) =>
+                        array_search(intval($a['id']), $ordered_parents)
+                        - array_search(intval($b['id']), $ordered_parents));
                 }
             }
         }
@@ -219,7 +253,8 @@ class Channel
             'root_count'    => $rootCount,
             'has_more'      => $rootCount >= $itemspage,
             'nouveau'       => $nouveau,
-            'ordering'      => $ordering,
+            'ordering'      => $get_order,
+            'cached'        => $cached,
             'can_post_wall' => $can_post_wall,
         ];
         if ($showPinnedMeta) {

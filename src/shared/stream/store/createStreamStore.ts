@@ -5,6 +5,7 @@ import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { updateInterval } from "@utsukta/spa-core/store/auth-store";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { RANKED_ORDERS } from "@/shared/stream/filters/ranked";
 
 export interface StreamResult {
   items: Post[];
@@ -80,6 +81,10 @@ export function createStreamStore<P extends StreamParams>(
   }
 
   async function checkForNew() {
+    // Ranked sorts (top/hot/discussed/controversial) don't put the newest post
+    // first, so the created-based cursor below would be meaningless — no live
+    // "new posts" pill while one of them is active.
+    if (RANKED_ORDERS.includes(String(params().order))) return;
     const topPost = newPosts()[0] ?? posts()[0];
     if (!topPost) return;
     const topDate = new Date(topPost.created.replace(" ", "T") + "Z");

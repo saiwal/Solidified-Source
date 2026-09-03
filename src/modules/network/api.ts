@@ -1,6 +1,7 @@
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
+import { resolveRange, rangeToDbegin, type SortOrder, type SortRange } from "@/shared/stream/filters";
 import { savePosts } from "@utsukta/spa-core/lib/message-store";
 const HIDDEN_VERBS = new Set(['Like', 'Dislike', 'Announce', 'Accept', 'Reject', 'TentativeAccept']);
 
@@ -63,7 +64,7 @@ export interface ReactionCounts {
 }
 export type NetworkParams = {
   start?: number;
-  order?: 'created' | 'commented' | 'unthreaded';
+  order?: SortOrder;
   search?: string;
   tag?: string;
   cat?: string;
@@ -90,7 +91,8 @@ export type NetworkParams = {
 };
 export function parseNetworkParams(params: Record<string, string | string[] | undefined>): NetworkParams {
   const p: NetworkParams = {};
-  if (params.order && params.order !== "created") p.order = params.order as NetworkParams["order"];
+  const order = params.order ? (String(params.order) as SortOrder) : "created";
+  if (order !== "created") p.order = order;
   if (params.search) p.search = String(params.search);
   if (params.tag)    p.tag    = String(params.tag);
   if (params.file)   p.file   = String(params.file);
@@ -101,6 +103,9 @@ export function parseNetworkParams(params: Record<string, string | string[] | un
   if (params.event === "1") p.event = 1;
   if (params.poll  === "1") p.poll  = 1;
   if (params.dbegin) p.dbegin = String(params.dbegin);
+  // `range` is a UI-only param: map it to the window the API understands, but
+  // never override an explicit date range set in the sidebar filter widget.
+  else p.dbegin = rangeToDbegin(resolveRange(order, params.range as SortRange));
   if (params.dend)   p.dend   = String(params.dend);
   if (params.cmin)   p.cmin   = Number(params.cmin);
   if (params.cmax)   p.cmax   = Number(params.cmax);

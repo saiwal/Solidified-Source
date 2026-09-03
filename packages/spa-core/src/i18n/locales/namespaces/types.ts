@@ -1472,6 +1472,16 @@ export type RawDictionary = {
     latest:               string;
     active:               string;
     unthreaded:           string;
+    sort_by:              string;
+    sort_top:             string;
+    sort_hot:             string;
+    sort_discussed:       string;
+    sort_controversial:   string;
+    range_day:            string;
+    range_week:           string;
+    range_month:          string;
+    range_year:           string;
+    range_all:            string;
     feed:                 string;
     grid:                 string;
     list:                 string;

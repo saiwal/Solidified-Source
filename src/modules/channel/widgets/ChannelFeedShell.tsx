@@ -18,6 +18,14 @@ import {
   resetPosts,
 } from "../store";
 import type { ChannelParams } from "../api";
+import {
+  SortSelect,
+  DEFAULT_RANGE,
+  resolveRange,
+  rangeToDbegin,
+  type SortOrder,
+  type SortRange,
+} from "@/shared/stream/filters";
 import { MdFillSearch, MdFillClose, MdFillCreate, MdFillMail } from "solid-icons/md";
 import { lazy } from "solid-js";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -36,10 +44,12 @@ export default function ChannelFeedShell(props: {
   const { t } = useI18n();
   const scrollStyle = useScrollStyle();
 
-  const currentSearch = () => {
-    const v = searchParams.search;
-    return v ? (Array.isArray(v) ? v[0] : v) : "";
+  const str = (key: string): string | undefined => {
+    const v = searchParams[key];
+    return v ? String(Array.isArray(v) ? v[0] : v) : undefined;
   };
+
+  const currentSearch = () => str("search") ?? "";
 
   const [searchOpen, setSearchOpen] = createSignal(!!searchParams.search);
   const [searchInput, setSearchInput] = createSignal(currentSearch());
@@ -74,24 +84,39 @@ export default function ChannelFeedShell(props: {
   const dmActive = () => searchParams.dm === "1";
   const toggleDm = () => setSearchParams({ dm: dmActive() ? undefined : "1" });
 
+  // A wall is one person's posts, so the network's discovery-oriented orders
+  // don't all carry over: `hot` degenerates to `created` without a firehose to
+  // rank against, and `controversial` needs a dislike volume a personal wall
+  // rarely sees.
+  const CHANNEL_ORDERS: SortOrder[] = ["created", "commented", "top", "discussed", "unthreaded"];
+
+  const order = () => (str("order") as SortOrder) ?? "created";
+  const range = () => str("range") as SortRange | undefined;
+  const setOrder = (o: SortOrder, r?: SortRange) =>
+    setSearchParams({
+      order: o === "created" ? undefined : o,
+      // Absent means DEFAULT_RANGE, so only that one is omitted — "all" has
+      // to be written out or it can't be selected.
+      range: !r || r === DEFAULT_RANGE ? undefined : r,
+    });
+
   createEffect(() => {
     const uuid = mid();
     if (uuid) { navigate(`/display/${uuid}`, { replace: true }); return; }
   });
 
   createEffect(() => {
-    const str = (key: string): string | undefined => {
-      const v = searchParams[key];
-      return v ? String(Array.isArray(v) ? v[0] : v) : undefined;
-    };
+    // `range` is a UI-only param — map it to the window the API understands,
+    // but never override a dbegin that's already in the URL.
+    const dbegin = str("dbegin") ?? rangeToDbegin(resolveRange(order(), range()));
     const p: ChannelParams = {
-      ...(str("order") && { order: str("order") as ChannelParams["order"] }),
+      ...(str("order") && { order: order() }),
       ...(str("search") && { search: str("search") }),
       ...(str("tag") && { tag: str("tag") }),
       ...(str("cat") && { cat: str("cat") }),
       ...(str("mid") && { mid: str("mid") }),
       ...(str("dend") && { dend: str("dend") }),
-      ...(str("dbegin") && { dbegin: str("dbegin") }),
+      ...(dbegin && { dbegin }),
       ...(dmActive() && { dm: 1 as const }),
     };
     loadChannel(nick(), p);
@@ -115,12 +140,19 @@ export default function ChannelFeedShell(props: {
 
   return (
     <>
-      <div class="flex items-center mb-4">
-        <div class="flex-1" />
+      <div class="flex items-center gap-1.5 mb-4">
+        <div class="flex-1 min-w-0">
+          <SortSelect
+            order={order()}
+            range={range()}
+            onChange={setOrder}
+            available={CHANNEL_ORDERS}
+            help="channel.sort_order"
+          />
+        </div>
 
-        {props.viewSwitcher}
-
-        <div class="flex-1 flex justify-end items-center gap-1.5">
+        <div class="flex items-center justify-end gap-1.5 shrink-0">
+          {props.viewSwitcher}
           <Show when={canPostWall()}>
             <button
               title={t("channel.compose")}

@@ -201,7 +201,7 @@ export default function StreamFiltersWidget() {
   }
 
   const hasAnyFilter = () =>
-    (str(searchParams.order) || "created") !== "created" || !!searchParams.search ||
+    (str(searchParams.order) || "created") !== "created" || !!searchParams.range || !!searchParams.search ||
     searchParams.star === "1" || searchParams.pf === "1" ||
     searchParams.conv === "1" || searchParams.dm === "1" || searchParams.event === "1" || searchParams.poll === "1" ||
     !!(tag() || file() || dbegin() || dend() || cmin() || cmax()) ||
@@ -256,7 +256,7 @@ export default function StreamFiltersWidget() {
   const hasSaveableSearch = () => !!(search() || tag() || xchanLabel());
 
   function captureParams(): Record<string, string> {
-    const keys = ["order","search","tag","file","star","pf","conv","dm","event","poll","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
+    const keys = ["order","range","search","tag","file","star","pf","conv","dm","event","poll","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
     const p: Record<string, string> = {};
     for (const k of keys) {
       const v = str(searchParams[k]);
@@ -282,7 +282,7 @@ export default function StreamFiltersWidget() {
   function clearAll() {
     setSearchParams(
       {
-        order: undefined, search: undefined, tag: undefined, file: undefined,
+        order: undefined, range: undefined, search: undefined, tag: undefined, file: undefined,
         star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined, poll: undefined,
         dbegin: undefined, dend: undefined,
         cmin: undefined, cmax: undefined,

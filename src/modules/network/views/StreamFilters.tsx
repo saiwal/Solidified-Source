@@ -6,28 +6,12 @@
 import { Show } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { loadNetwork, loading, refreshing, resetPosts, softRefresh, viewMode, changeView } from "../store";
-import { ViewSwitcher } from "@/shared/stream/filters";
-import {
-  MdFillRefresh,
-  MdFillClose,
-  MdFillFormat_list_bulleted,
-  MdFillSchedule,
-  MdFillForum,
-} from "solid-icons/md";
+import { ViewSwitcher, SortSelect, DEFAULT_RANGE, type SortOrder, type SortRange } from "@/shared/stream/filters";
+import { MdFillRefresh, MdFillClose } from "solid-icons/md";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { parseNetworkParams, type NetworkParams } from "../api";
+import { parseNetworkParams } from "../api";
 void helpable;
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-type Order = NonNullable<NetworkParams["order"]>;
-
-const ORDER_OPTS: { value: Order; key: string; Icon: any }[] = [
-  { value: "created",    key: "latest", Icon: MdFillSchedule },
-  { value: "commented",  key: "active", Icon: MdFillForum    },
-  { value: "unthreaded", key: "unthreaded", Icon: MdFillFormat_list_bulleted },
-];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -42,7 +26,8 @@ export default function StreamFilters() {
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const order      = (): Order => (str(searchParams.order) as Order) || "created";
+  const order      = (): SortOrder => (str(searchParams.order) as SortOrder) || "created";
+  const range      = (): SortRange | undefined => (str(searchParams.range) as SortRange) || undefined;
   const search     = ()        => str(searchParams.search);
   const tag        = ()        => str(searchParams.tag);
   const file       = ()        => str(searchParams.file);
@@ -74,15 +59,20 @@ export default function StreamFilters() {
     loadNetwork(parseNetworkParams(searchParams));
   }
 
-  function setOrderAndApply(o: Order) {
-    sp({ order: o === "created" ? undefined : o });
+  function setOrderAndApply(o: SortOrder, r?: SortRange) {
+    sp({
+      order: o === "created" ? undefined : o,
+      // Absent means DEFAULT_RANGE, so only that one is omitted — "all" has
+      // to be written out or it can't be selected.
+      range: !r || r === DEFAULT_RANGE ? undefined : r,
+    });
     setTimeout(apply, 0);
   }
 
   function clearAll() {
     setSearchParams(
       {
-        order: undefined, search: undefined, tag: undefined, file: undefined,
+        order: undefined, range: undefined, search: undefined, tag: undefined, file: undefined,
         star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined,
         dbegin: undefined, dend: undefined,
         cmin: undefined, cmax: undefined,
@@ -114,23 +104,7 @@ export default function StreamFilters() {
             <MdFillRefresh size={17} class={(loading() || refreshing()) ? "animate-spin" : ""} />
           </button>
 
-          <div class="flex rounded-lg border border-rim overflow-hidden shrink-0">
-            {ORDER_OPTS.map((opt) => (
-              <button
-                title={t(`network.${opt.key}` as any)}
-                onClick={() => setOrderAndApply(opt.value)}
-                class={`flex items-center gap-1 py-1.5 transition-colors
-                  px-1.5 sm:px-2.5
-                  ${order() === opt.value
-                    ? "bg-accent text-accent-fg"
-                    : "bg-surface text-muted hover:bg-elevated"
-                  }`}
-              >
-                <opt.Icon size={14} />
-                <span class="hidden sm:inline text-xs font-medium">{t(`network.${opt.key}` as any)}</span>
-              </button>
-            ))}
-          </div>
+          <SortSelect order={order()} range={range()} onChange={setOrderAndApply} />
         </div>
 
         {/* ── Right: view switcher + clear ── */}
