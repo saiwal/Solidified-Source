@@ -17,6 +17,16 @@ assert(POLL_URL.test('https://h/spa/network?order=created&dbegin=2026-08-16%2010
 assert(POLL_URL.test('https://h/spa/channel/bob?dbegin=x'));
 assert(!POLL_URL.test('https://h/spa/network?star=1'));
 
+// The "remote-avatars" rule below must never match the hub's own images: a
+// same-origin /cloud/ hit lands in SabreDAV, and /photo/ has its own rule.
+// Workbox serialises that rule's arrow into sw.js with toString(), so it can't
+// reference anything out here — this is the same predicate, kept testable.
+const remoteImage = (origin, href) =>
+  new URL(href).origin !== origin && /\.(jpg|jpeg|png|webp|gif)$/i.test(new URL(href).pathname);
+assert(remoteImage('https://hub.example', 'https://cdn.example/avatar.png'));
+assert(!remoteImage('https://hub.example', 'https://hub.example/cloud/bob/Bilder/x.png'));
+assert(!remoteImage('https://hub.example', 'https://hub.example/photo/abc-2.png'));
+
 const OUT_DIR = path.resolve(__dirname, SW_OUT_DIR_REL);
 
 const { count, size } = await generateSW({
@@ -103,7 +113,12 @@ const { count, size } = await generateSW({
       handler: 'NetworkFirst',
       options: {
         cacheName: 'theme-api',
-        networkTimeoutSeconds: 8,
+        // Only fires when the hub is reachable but slow — offline, fetch()
+        // rejects at once and the cached copy is served without waiting. Kept
+        // high because the fallback here can be a month-old response, and
+        // silently serving one (a folder listing missing its newest files) is
+        // worse than making the user wait.
+        networkTimeoutSeconds: 25,
         expiration: { maxEntries: 300, maxAgeSeconds: 30 * 86400 },
         cacheableResponse: { statuses: [0, 200] },
         // Every /spa/ response carries `Vary: Accept-Encoding`. The browser
@@ -143,12 +158,30 @@ const { count, size } = await generateSW({
       },
     },
     {
+      // Core already caches these properly: Zotlabs/Module/Photo.php sets
+      // max-age (1 day by default, and deliberately so — it caps how long a
+      // photo stays viewable after its permissions are tightened), ETag/304,
+      // and no-store for one the viewer shouldn't keep. StaleWhileRevalidate
+      // overrode all of that: a network request per image per render even on a
+      // cache hit, stored for 30 days. On a public post with several embedded
+      // images that is a php-fpm request per image per viewer, indefinitely.
       urlPattern: /\/photo\//,
-      handler: 'StaleWhileRevalidate',
+      handler: 'CacheFirst',
       options: {
         cacheName: 'hz-photos',
-        expiration: { maxEntries: 500, maxAgeSeconds: 30 * 86400 },
-        cacheableResponse: { statuses: [0, 200] },
+        expiration: { maxEntries: 500, maxAgeSeconds: 86400 },
+        cacheableResponse: { statuses: [200] },
+        // /photo/ responses carry Vary too — see the theme-api rule above.
+        matchOptions: { ignoreVary: true },
+        plugins: [
+          {
+            // Don't persist what core told us not to keep.
+            cacheWillUpdate: async ({ response }) =>
+              /no-store|private/i.test(response.headers.get('Cache-Control') || '')
+                ? null
+                : response,
+          },
+        ],
       },
     },
     {
@@ -179,7 +212,14 @@ const { count, size } = await generateSW({
       },
     },
     {
-      urlPattern: /^https?:\/\/(?!hz-ddev\.ddev\.site).+\.(jpg|jpeg|png|webp|gif)/,
+      // Cross-origin only. This used to exclude the hub by name — and the name
+      // hardcoded was the *dev* host, so on a real hub it swallowed the hub's
+      // own /cloud/ and /attach/ images into this 200-entry cache shared with
+      // every remote avatar. Same-origin images are left to the browser's HTTP
+      // cache and the server's own validators. Mirrored by remoteImage() above.
+      urlPattern: ({ url }) =>
+        url.origin !== self.location.origin
+        && /\.(jpg|jpeg|png|webp|gif)$/i.test(url.pathname),
       handler: 'CacheFirst',
       options: {
         cacheName: 'remote-avatars',

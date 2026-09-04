@@ -66,4 +66,20 @@ assert.equal(
 );
 assert.equal(patchInsertedAlt("![old](https://x/1.jpg)", att("new"), "text/markdown"), "![new](https://x/1.jpg)");
 
+// ── [zmg=] needs an absolute URL ─────────────────────────────────────────────
+// Both this renderer (bbcode.ts) and core's include/bbcode.php match
+// [zmg=http…] specifically. A relative URL falls through to the generic
+// [img options] handler, which reads the *label* as the src — a broken image
+// that looks perfectly fine in the post source. Anything building a [zmg=]
+// must therefore emit an absolute URL (addCloudFiles learned this the hard
+// way; the upload and Photos paths get theirs z_root()-prefixed by core).
+assert.match(
+  bbcodeToHtml("[zrl=https://x/p][zmg=https://x/photo/abc-1]cat.jpg[/zmg][/zrl]"),
+  /src="https:\/\/x\/photo\/abc-1"/,
+);
+assert.doesNotMatch(
+  bbcodeToHtml("[zrl=https://x/p][zmg=/photo/abc-1]cat.jpg[/zmg][/zrl]"),
+  /src="\/photo\/abc-1"/,
+);
+
 console.log("insertHelpers: ok");

@@ -231,10 +231,31 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
       isVideo: isVideoFilename(f.filename),
       isAudio: isAudioFilename(f.filename),
       hash: f.hash,
-      insertUrl: `/cloud/${nick}/${f.display_path
-        .split("/")
-        .map(encodeURIComponent)
-        .join("/")}`,
+      // Images go in as /photo/<hash>-1, which is what core itself embeds
+      // (include/photos.php builds [zmg=…/photo/<resource_id>-<scale>] and
+      // Embedphotos does the same; the extension is optional, core sets the
+      // Content-type). A cloud image's photo rows are keyed by the attach hash
+      // even when it was uploaded over WebDAV — Zotlabs/Storage/Directory.php
+      // passes resource_id => hash to photo_upload() — and scales 0-3 always
+      // exist. The /cloud/ path is a SabreDAV request with a folder ACL walk
+      // and no max-age: fine as a download link, ruinous as an <img src> on a
+      // public post, where it costs a php-fpm worker per image per viewer.
+      // Absolute, like the upload and Photos paths (whose src comes back
+      // z_root()-prefixed): both bbcode.ts:1122 and core's include/bbcode.php
+      // match [zmg=http…] specifically, so a relative URL here falls through
+      // to the generic [img options] handler and renders the label as the src.
+      insertUrl: f.is_photo
+        ? `${window.location.origin}/photo/${f.hash}-1`
+        : `/cloud/${nick}/${f.display_path
+            .split("/")
+            .map(encodeURIComponent)
+            .join("/")}`,
+      // With this set, insertBBCode emits the same [zrl=…][zmg=…][/zrl] form
+      // as the upload and Photos-tab paths — which is core's own form. Without
+      // it a cloud image came out as a bare [img], the odd one out of three.
+      photoPageUrl: f.is_photo
+        ? `${window.location.origin}/photos/${nick}/image/${f.hash}`
+        : undefined,
     }));
     setState("items", (prev) => [...prev, ...dedup(prev, newItems)]);
     for (const item of newItems) {

@@ -17,15 +17,13 @@ function formatBytes(raw: string): string {
 
 // item.attach href is "/attach/hash" (served as download, not inline).
 // Photos are also in the photo table as resource_id = hash, served inline at
-// /photo/{hash}-2.{ext}. Try that URL for display; fall back to a file chip.
-function photoDisplayUrl(href: string, type: string): string {
+// /photo/{hash}-2. Try that URL for display; fall back to a file chip.
+// No extension: core serves whatever variant it stored and sets the
+// Content-type itself, so guessing one off the mimetype only ever produced
+// 404s for anything it re-encoded on upload (avif/heic).
+function photoDisplayUrl(href: string): string {
   const hash = href.split("/attach/").pop() ?? href.split("/").pop() ?? "";
-  const ext = type === "image/png" ? "png"
-    : type === "image/gif" ? "gif"
-    : type === "image/webp" ? "webp"
-    : type === "image/avif" ? "avif"
-    : "jpg";
-  return `/photo/${hash}-2.${ext}`;
+  return `/photo/${hash}-2`;
 }
 
 export default function AttachmentList(props: { attachments: StreamAttachment[]; compact?: boolean }) {
@@ -188,7 +186,7 @@ function LinkChip(props: { link: StreamAttachment }) {
 function ImageChip(props: { img: StreamAttachment; compact?: boolean }) {
   const [failed, setFailed] = createSignal(false);
   const [open, setOpen] = createSignal(false);
-  const displayUrl = photoDisplayUrl(props.img.href, props.img.type);
+  const displayUrl = photoDisplayUrl(props.img.href);
   const filename = () => safeDecode(props.img.title) || "Image";
 
   return (

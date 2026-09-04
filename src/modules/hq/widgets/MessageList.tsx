@@ -489,7 +489,13 @@ export const MessageList: Component<{
     }
   }
 
-  const pollTimer = setInterval(() => loadPage(true), POLL_INTERVAL);
+  // Same guard as createStreamStore's poll: a background tab polling on
+  // forever costs a full request set every tick, and loadPage(true) replaces
+  // the entry objects wholesale, so every row — and every <img> in it — is
+  // recreated and refetched each time.
+  const pollTimer = setInterval(() => {
+    if (document.visibilityState === "visible") loadPage(true);
+  }, POLL_INTERVAL);
   onCleanup(() => {
     clearInterval(pollTimer);
     resetController?.abort();

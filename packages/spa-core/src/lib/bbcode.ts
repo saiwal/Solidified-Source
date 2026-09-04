@@ -19,7 +19,7 @@
  *  - highlight.js integration for [code=lang] is opt-in via a callback.
  */
 
-import { osmLink, osmSearchLink, parseCoord } from "./osm";
+import { osmLink, osmSearchLink, parseCoord } from "./osm.ts";
 
 // ---------------------------------------------------------------------------
 // Public types
