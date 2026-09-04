@@ -2212,7 +2212,7 @@ export default function PostCard(props: {
                 openShare(shareTargetForPost(props.post));
                 setMoreDropdownOpen(false);
               }}
-              class="w-full flex items-center gap-2 px-3 py-2 text-xs text-txt hover:bg-overlay transition-colors text-left"
+              class="w-full flex items-center gap-2 px-3 py-2 text-sm text-txt hover:bg-overlay transition-colors text-left"
             >
               <MdOutlineShare size={13} />
               <span>{t("share.action")}</span>

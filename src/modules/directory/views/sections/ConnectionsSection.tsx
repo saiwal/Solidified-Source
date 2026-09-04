@@ -1,7 +1,8 @@
-import { For, Show, Switch, Match, createSignal, createEffect, onMount, onCleanup, batch } from "solid-js";
+import { For, Show, Switch, Match, createSignal, onMount, onCleanup } from "solid-js";
 import {
-  connectionsData, refetch, setFilter, setOrder, setSearch, setPage,
-  filter, order, search, page, LIMIT,
+  connections, loading, loadingMore, total,
+  loadConnections, loadMoreConnections,
+  setFilter, setOrder, setSearch, filter, order, search,
 } from "../../connections/store";
 import type { ConnectionFilter, ConnectionOrder, Connection } from "../../connections/api";
 import { deleteConnection, approveConnection, fetchConnectionByAddress, fetchConnectionById } from "../../connections/api";
@@ -412,31 +413,14 @@ export default function ConnectionsSection() {
   const [addError, setAddError] = createSignal<string | null>(null);
   const [newConn, setNewConn] = createSignal<Connection | null>(null);
   const [importOpen, setImportOpen] = createSignal(false);
-  const [allConnections, setAllConnections] = createSignal<Connection[]>([]);
-  const [hasMore, setHasMore] = createSignal(true);
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // Plain boolean ref — set synchronously before fetch, cleared when data arrives.
-  // Prevents the IntersectionObserver from double-firing between setPage() and when
-  // the resource actually transitions to loading=true (which is async in Solid).
-  let fetchingMore = false;
 
   let sentinelRef!: HTMLDivElement;
 
-  // .latest instead of () — a plain read while the resource is re-fetching triggers
-  // the section's <Suspense> boundary, blanking the whole view on every page load.
-  const meta = () => connectionsData.latest?.meta;
-
   onMount(() => {
-    // Paging state lives in the module-level store, so a fresh mount must be the
-    // one that resets it — a *departing* instance resetting on cleanup can land
-    // after the next instance is already live (route transitions keep the old
-    // view alive until the new one resolves) and desync list from offset.
-    setAllConnections([]);
-    setHasMore(true);
-    fetchingMore = false;
-    if (page() === 0) refetch();   // same key, so nudge the resource by hand
-    else setPage(0);
+    // The list and its offset both live in the store, so a remount renders what
+    // is already loaded instead of resetting to page 1.
+    if (connections().length === 0) loadConnections();
 
     // Deep-link from a notification (e.g. "new connection request") — see
     // resolveNotifyPath, which routes classic connections#<abook_id> intro
@@ -450,25 +434,6 @@ export default function ConnectionsSection() {
     }
   });
 
-  // Only tracks connectionsData() — NOT page(). Tracking page() caused the effect to
-  // fire with stale data the moment setPage() was called, before the resource switched
-  // to loading, resulting in duplicate appends followed by an unexpected full replace.
-  createEffect(() => {
-    const data = connectionsData.latest;
-    if (connectionsData.loading || !data) return;
-
-    fetchingMore = false;
-
-    // meta.offset === 0 means a fresh fetch (new search/filter/sort or first page).
-    if (data.meta.offset === 0) {
-      setAllConnections(data.connections);
-    } else {
-      setAllConnections((prev) => [...prev, ...data.connections]);
-    }
-
-    setHasMore(data.connections.length >= LIMIT);
-  });
-
   onMount(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -477,10 +442,7 @@ export default function ConnectionsSection() {
         // footer slot out of reach. This list has no scroll-style setting, so
         // the check is inline.
         if (editingWidgets()) return;
-        if (entry.isIntersecting && hasMore() && !fetchingMore && allConnections().length > 0) {
-          fetchingMore = true;
-          setPage((p) => p + 1);
-        }
+        if (entry.isIntersecting) loadMoreConnections();
       },
       { rootMargin: "200px" },
     );
@@ -489,42 +451,23 @@ export default function ConnectionsSection() {
   });
 
   function onDeleted() {
-    setAllConnections([]);
-    setHasMore(true);
-    fetchingMore = false;
-    if (page() > 0) setPage(0);
-    else refetch();
+    loadConnections();
   }
 
   function applySearch() {
     setAddError(null);
-    batch(() => {
-      setAllConnections([]);
-      setHasMore(true);
-      fetchingMore = false;
-      setSearch(input());
-      setPage(0);
-    });
+    setSearch(input());
+    loadConnections();
   }
 
   function handleFilterChange(f: ConnectionFilter) {
-    batch(() => {
-      setAllConnections([]);
-      setHasMore(true);
-      fetchingMore = false;
-      setFilter(f);
-      setPage(0);
-    });
+    setFilter(f);
+    loadConnections();
   }
 
   function handleOrderChange(o: ConnectionOrder) {
-    batch(() => {
-      setAllConnections([]);
-      setHasMore(true);
-      fetchingMore = false;
-      setOrder(o);
-      setPage(0);
-    });
+    setOrder(o);
+    loadConnections();
   }
 
   async function handleAdd() {
@@ -634,24 +577,24 @@ export default function ConnectionsSection() {
 
       {/* ── Results ── */}
       <Switch>
-        <Match when={allConnections().length === 0 && connectionsData.loading}>
+        <Match when={connections().length === 0 && loading()}>
           <ConnectionsSkeleton />
         </Match>
-        <Match when={allConnections().length === 0}>
+        <Match when={connections().length === 0}>
           <p class="py-8 text-center text-sm text-muted">{t("directory.no_connections")}</p>
         </Match>
         <Match when={true}>
           <p class="text-sm text-muted">
-            {meta()?.total}{" "}
-            {meta()?.total !== 1 ? t("directory.connections_plural") : t("directory.connection_singular")}
+            {total()}{" "}
+            {total() !== 1 ? t("directory.connections_plural") : t("directory.connection_singular")}
             {search() ? ` ${t("directory.matching")} "${search()}"` : ""}
           </p>
           <div class="space-y-2">
-            <For each={allConnections()}>
+            <For each={connections()}>
               {(conn) => <ConnectionCard conn={conn} onDeleted={onDeleted} />}
             </For>
           </div>
-          <Show when={connectionsData.loading}>
+          <Show when={loadingMore()}>
             <div class="py-4 flex justify-center">
               <span class="w-5 h-5 border-2 border-muted/30 border-t-accent rounded-full animate-spin" />
             </div>
