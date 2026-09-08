@@ -22,6 +22,7 @@ import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import CommentThread from "@/shared/views/CommentThread";
 import formatPostDate from "@utsukta/spa-core/lib/date";
+import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { scrollHighlightIntoView } from "@utsukta/spa-core/lib/scrollHighlightIntoView";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -1214,13 +1215,7 @@ export default function PostCard(props: {
           <Show when={!eventData()}>
             <div
               ref={setBodyRef}
-              class="mt-1.5 prose prose-sm dark:prose-invert max-w-none text-muted
-                     prose-a:text-accent prose-a:no-underline prose-a:hover:underline
-                     prose-blockquote:not-italic prose-blockquote:border-accent
-                     prose-code:bg-overlay prose-code:px-1 prose-code:rounded prose-code:text-xs prose-code:text-txt
-                     prose-code:before:content-none prose-code:after:content-none
-                     prose-img:rounded-lg prose-img:my-1 break-words
-                     prose-p:my-1 prose-p:leading-snug"
+              class={`mt-1.5 ${POST_PROSE} text-muted prose-p:my-1 prose-p:leading-snug`}
               innerHTML={props.post.body}
               onClick={handleBodyClick}
               onMouseUp={handleBodyMouseUp}
@@ -1902,12 +1897,7 @@ export default function PostCard(props: {
             >
               <div
                 ref={setBodyRef}
-                class="prose-code:break-all prose prose-sm dark:prose-invert max-w-none
-                       prose-a:text-accent prose-a:no-underline prose-a:hover:underline
-                       prose-blockquote:not-italic prose-blockquote:border-accent
-                       prose-code:bg-overlay prose-code:px-1 prose-code:rounded prose-code:text-sm prose-code:text-txt
-                       prose-code:before:content-none prose-code:after:content-none
-                       prose-img:rounded-lg prose-img:my-2 break-words text-muted"
+                class={`prose-code:break-all ${POST_PROSE} text-muted`}
                 innerHTML={props.post.body}
                 onClick={handleBodyClick}
                 onMouseUp={handleBodyMouseUp}

@@ -1,3 +1,4 @@
+import { POST_PROSE } from "@/shared/lib/prose";
 import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
@@ -412,6 +413,7 @@ export default function RichEditor(props: Props) {
           data-placeholder={props.placeholder ?? t("editor.write_placeholder")}
           style={{ "min-height": minH(), "max-height": maxH() }}
           class={`${surfaceGrowClass()} overflow-y-auto rounded-t-lg p-3 outline-none text-sm text-txt bg-elevated
+                 ${POST_PROSE} prose-p:my-1
                  [&_img]:max-w-full [&_img]:h-auto
                  empty:before:content-[attr(data-placeholder)]
                  empty:before:text-muted empty:before:pointer-events-none
@@ -447,6 +449,7 @@ export default function RichEditor(props: Props) {
         latexMode={props.capabilities.latexMode}
         cardPicker={props.capabilities.cardPicker}
         tab={tab()}
+        mimetype={mime()}
         editorRef={() => editorRef}
         textareaRef={() => textareaRef}
         onSourceChange={(v) => { props.onInput(v); }}

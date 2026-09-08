@@ -10,6 +10,11 @@
  * exec (EditorToolbar's lastRange/focusEditor), so opening a panel is fine.
  * Option buttons still fire on mousedown with preventDefault, matching Btn —
  * that keeps the contenteditable selection visible while the panel is open.
+ * The *trigger* buttons need it too: without it, opening a panel blurs the
+ * surface, and in browsers that don't focus a button on click the blur carries
+ * no relatedTarget, so RichEditor's toolbar guard misses and it re-renders the
+ * surface — detaching the very range lastRange saved, so the exec applied
+ * nothing (colour / highlight / font / size all silently did nothing).
  */
 
 import { For, Show, type JSX } from "solid-js";
@@ -61,6 +66,7 @@ export function ColorPicker(props: {
   return (
     <>
       <button ref={setTriggerRef} type="button" title={props.title}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={toggle} class={triggerClass(open())}>
         {props.icon}
       </button>
@@ -232,6 +238,7 @@ export function OptionMenu(props: {
   return (
     <>
       <button ref={setTriggerRef} type="button" title={props.title}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={toggle} class={triggerClass(open())}>
         {props.icon}
       </button>

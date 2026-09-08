@@ -1,5 +1,5 @@
 import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js";
-import type { LatexInsertMode, ToolbarLevel } from "../types/editor.types";
+import type { LatexInsertMode, MimeType, ToolbarLevel } from "../types/editor.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdOutlineLink, MdOutlineImage,
@@ -34,6 +34,8 @@ interface Props {
   /** Show the "Insert card" button — see EditorCapabilities.cardPicker. */
   cardPicker?: boolean;
   tab: "wysiwyg" | "source";
+  /** Source format, so the source tab spells a format the way that format does. */
+  mimetype?: MimeType;
   editorRef: () => HTMLDivElement | undefined;
   textareaRef: () => HTMLTextAreaElement | undefined;
   onSourceChange: (v: string) => void;
@@ -57,6 +59,13 @@ export default function EditorToolbar(props: Props) {
     !!navData()?.osm && isModuleActive("openstreetmap", installedApps(), disabledFrontendModules());
 
   const isSource  = () => props.tab === "source";
+  // Markdown is an optional input layer — the server converts the body to
+  // bbcode on save — so the source tab writes markdown for the constructs
+  // markdown actually spells, and bbcode for the rest (underline, colour,
+  // font, size, spoiler, centre, media, lettered lists). That is the same rule
+  // the WYSIWYG tab follows through markdownTurndown, so a button no longer
+  // produces different markup depending on which tab is open.
+  const isMd = () => props.mimetype === "text/markdown";
   const isComment = () => props.level === "comment";
   const isFull    = () => props.level === "full";
 
@@ -165,6 +174,25 @@ export default function EditorToolbar(props: Props) {
     });
   };
 
+  /**
+   * Prefix every line the selection touches — markdown's block formats
+   * (headings, quotes) are line prefixes, not wrappers.
+   */
+  const prefixSource = (prefix: string) => {
+    const ta = props.textareaRef();
+    if (!ta) return;
+    const { value } = ta;
+    const from = value.lastIndexOf("\n", ta.selectionStart - 1) + 1;
+    const nl = value.indexOf("\n", ta.selectionEnd);
+    const to = nl === -1 ? value.length : nl;
+    const block = value.slice(from, to).split("\n").map((l) => prefix + l).join("\n");
+    props.onSourceChange(value.slice(0, from) + block + value.slice(to));
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(from, from + block.length);
+    });
+  };
+
   const insertSource = (text: string) => {
     const ta = props.textareaRef();
     if (!ta) return;
@@ -178,12 +206,22 @@ export default function EditorToolbar(props: Props) {
 
   // ── Button actions (branch on tab for mode-aware behavior) ───────────────
 
-  const bold      = () => isSource() ? wrapSource("[b]", "[/b]")   : exec("bold");
-  const italic    = () => isSource() ? wrapSource("[i]", "[/i]")   : exec("italic");
+  /** Wrap the selection in the source tab, in markdown where markdown has it. */
+  const wrapFmt = (bb: string, md: string) =>
+    isMd() ? wrapSource(md, md) : wrapSource(`[${bb}]`, `[/${bb}]`);
+
+  const bold      = () => isSource() ? wrapFmt("b", "**")  : exec("bold");
+  const italic    = () => isSource() ? wrapFmt("i", "*")   : exec("italic");
+  // No markdown spelling for underline — bbcode in both tabs.
   const underline = () => isSource() ? wrapSource("[u]", "[/u]")   : exec("underline");
   const highlight = (c: string) => {
     if (isSource()) { wrapSource(`[mark=${c}]`, "[/mark]"); return; }
+    // Firefox only honours hiliteColor with CSS styling on; the resulting
+    // <span style="background-color:…"> round-trips through htmlToSource the
+    // same as <font>, so it's safe to leave the flag set for this one command.
+    document.execCommand("styleWithCSS", false, "true");
     exec("hiliteColor", c);
+    document.execCommand("styleWithCSS", false, "false");
   };
 
   // hiliteColor doesn't toggle off like bold/italic/underline do natively
@@ -209,7 +247,7 @@ export default function EditorToolbar(props: Props) {
   };
 
   const strike = () => {
-    if (isSource()) { wrapSource("[s]", "[/s]"); return; }
+    if (isSource()) { wrapFmt("s", "~~"); return; }
     // execCommand("strikeThrough") doesn't reliably toggle off when inside <s>; unwrap manually
     const el = focusEditor();
     if (!el) return;
@@ -253,7 +291,10 @@ export default function EditorToolbar(props: Props) {
   // An author gives [quote=Author]; an empty field gives a plain quote.
   const quote = (author: string) => {
     if (isSource()) {
-      wrapSource(author ? `[quote=${author}]` : "[quote]", "[/quote]");
+      // Markdown's ">" carries no attribution, so a named quote is bbcode in
+      // either format — the same split markdownTurndown's bbQuote rule makes.
+      if (isMd() && !author) prefixSource("> ");
+      else wrapSource(author ? `[quote=${author}]` : "[quote]", "[/quote]");
       return;
     }
     // formatBlock converts the current line so the user can type straight into
@@ -265,7 +306,13 @@ export default function EditorToolbar(props: Props) {
   };
 
   const code = () => {
-    if (isSource()) { wrapSource("[code]", "[/code]"); return; }
+    if (isSource()) {
+      if (!isMd()) { wrapSource("[code]", "[/code]"); return; }
+      const ta = props.textareaRef();
+      const multi = !!ta && ta.value.slice(ta.selectionStart, ta.selectionEnd).includes("\n");
+      multi ? wrapSource("```\n", "\n```") : wrapFmt("code", "`");
+      return;
+    }
     // formatBlock always converts the whole current block, not just the
     // selection — fine for starting a fresh code block, but wraps the
     // entire line when the user only meant to mark a few selected words.
@@ -341,7 +388,7 @@ export default function EditorToolbar(props: Props) {
     if (isSource()) {
       const ta = props.textareaRef();
       if (ta && ta.selectionEnd > ta.selectionStart) {
-        wrapSource(`[url=${url}]`, "[/url]");
+        isMd() ? wrapSource("[", `](${url})`) : wrapSource(`[url=${url}]`, "[/url]");
         return;
       }
       setLinkLoading(true);
@@ -378,7 +425,9 @@ export default function EditorToolbar(props: Props) {
         : insertBlock(`<audio src="${u}" controls preload="none"></audio>`);
       return;
     }
-    isSource() ? insertSource(`[img]${u}[/img]`) : exec("insertImage", u);
+    isSource()
+      ? insertSource(isMd() ? `![](${u})` : `[img]${u}[/img]`)
+      : exec("insertImage", u);
   };
 
   // The text/bbcode is built by LatexComposerModal (it knows inline vs.
@@ -456,6 +505,18 @@ export default function EditorToolbar(props: Props) {
   const table = (colsRaw: string, rowsRaw: string) => {
     const cols = Math.min(20, Math.max(1, parseInt(colsRaw, 10) || 2));
     const rows = Math.min(50, Math.max(0, parseInt(rowsRaw, 10) || 2));
+    if (isSource() && isMd()) {
+      // GFM, which is what the WYSIWYG tab's table rule emits.
+      const row = (cells: string[]) => `| ${cells.join(" | ")} |`;
+      const md = [
+        row(Array.from({ length: cols }, (_, i) => `Header ${i + 1}`)),
+        row(Array.from({ length: cols }, () => "---")),
+        ...Array.from({ length: rows }, (_, r) =>
+          row(Array.from({ length: cols }, (_, c) => `Cell ${r + 1}-${c + 1}`))),
+      ].join("\n");
+      insertSource(`${md}\n`);
+      return;
+    }
     if (isSource()) {
       const header   = "[tr]" + Array.from({ length: cols }, (_, i) => `[th]Header ${i + 1}[/th]`).join("") + "[/tr]";
       const dataRows = Array.from({ length: rows }, (_, r) =>
@@ -537,7 +598,9 @@ export default function EditorToolbar(props: Props) {
             <HeadingToolDropdown
               onSelect={(val) => {
                 if (isSource()) {
-                  if (val !== "p") wrapSource(`[${val}]`, `[/${val}]`);
+                  if (val === "p") return;
+                  if (isMd()) prefixSource("#".repeat(Number(val[1])) + " ");
+                  else wrapSource(`[${val}]`, `[/${val}]`);
                   return;
                 }
                 if (!focusEditor()) return;

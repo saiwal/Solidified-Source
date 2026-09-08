@@ -13,7 +13,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { ShareTarget } from "@utsukta/spa-core/store/share";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { fetchLockview, grantGuest } from "@utsukta/spa-core/lib/lockview-api";
+import { fetchLockview, grantGuest, revokeGuest } from "@utsukta/spa-core/lib/lockview-api";
 import { saveToken, newTokenValue, fetchTokens } from "@/modules/directory/tokens/api";
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
@@ -66,14 +66,27 @@ const ShareModal: Component<Props> = (props) => {
   // only into whichever affordance happened to be wired for it.
   const shareUrl = () => activeGuest()?.url ?? props.target.url;
 
-  // Picking a guest who isn't on the ACL yet widens the audience first — the
-  // link is useless otherwise, and the owner opened this dialog to share.
+  // Selecting an existing guest just swaps the link; one who isn't on the ACL
+  // yet widens the audience, so that waits for an explicit Apply.
+  const [selectedId, setSelectedId] = createSignal<number | null>(null);
+  const needsApply = () =>
+    selectedId() !== null && !guests().some((g) => g.id === selectedId());
+  const [granting, setGranting] = createSignal(false);
+
+  function selectGuest(value: string) {
+    const id = value ? Number(value) : null;
+    setSelectedId(id);
+    if (id === null || guests().some((g) => g.id === id)) setGuestId(id);
+  }
+
   async function pickGuest(value: string) {
     const id = value ? Number(value) : null;
     if (id === null || guests().some((g) => g.id === id)) {
+      setSelectedId(id);
       setGuestId(id);
       return;
     }
+    setGranting(true);
     const lv = props.target.lockview!;
     try {
       const guest = await grantGuest(lv.type, lv.id, id);
@@ -82,10 +95,36 @@ const ShareModal: Component<Props> = (props) => {
         guests: [...guests(), guest],
         other_guests: otherGuests().filter((g) => g.id !== id),
       });
+      setSelectedId(id);
       setGuestId(id);
       toast.success(t("share.guest_added", { name: guest.name }) as string);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : (t("share.email_failed") as string));
+    } finally {
+      setGranting(false);
+    }
+  }
+
+  // The inverse: drop this guest from the audience and fall back to the plain
+  // link, so nothing downstream keeps offering a ?zat= that no longer resolves.
+  async function revoke(id: number) {
+    if (granting()) return;
+    setGranting(true);
+    const lv = props.target.lockview!;
+    try {
+      const gone = await revokeGuest(lv.type, lv.id, id);
+      setLockview({
+        ...lockview()!,
+        guests: guests().filter((g) => g.id !== id),
+        other_guests: [...otherGuests(), { id, name: gone.name }],
+      });
+      setSelectedId(null);
+      setGuestId(null);
+      toast.success(t("share.guest_removed", { name: gone.name }) as string);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (t("share.email_failed") as string));
+    } finally {
+      setGranting(false);
     }
   }
 
@@ -288,7 +327,7 @@ const ShareModal: Component<Props> = (props) => {
                     <button
                       type="submit"
                       disabled={sending()}
-                      class="px-3 py-1.5 rounded-lg bg-accent text-white text-sm disabled:opacity-60"
+                      class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
                     >
                       {sending() ? t("share.email_sending") : t("share.email_send")}
                     </button>
@@ -304,8 +343,8 @@ const ShareModal: Component<Props> = (props) => {
                     </label>
                     <Show when={guests().length > 0 || otherGuests().length > 0}>
                       <select
-                        value={guestId() ?? ""}
-                        onChange={(e) => pickGuest(e.currentTarget.value)}
+                        value={selectedId() ?? ""}
+                        onChange={(e) => selectGuest(e.currentTarget.value)}
                         class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
                       >
                         <option value="">{t("share.use_plain_link")}</option>
@@ -321,10 +360,36 @@ const ShareModal: Component<Props> = (props) => {
                         </Show>
                       </select>
                     </Show>
+                    <Show when={needsApply()}>
+                      <div class="flex justify-end">
+                        <button
+                          type="button"
+                          disabled={granting()}
+                          onClick={() => pickGuest(String(selectedId()))}
+                          class="px-2.5 py-1 rounded-md bg-accent text-accent-fg text-xs disabled:opacity-60"
+                        >
+                          {t("share.guest_add_apply")}
+                        </button>
+                      </div>
+                    </Show>
                     <Show when={activeGuest()}>
-                      <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
-                        {t("share.guest_access_warning")}
-                      </p>
+                      {(g) => (
+                        <>
+                          <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                            {t("share.guest_access_warning")}
+                          </p>
+                          <div class="flex justify-end">
+                            <button
+                              type="button"
+                              disabled={granting()}
+                              onClick={() => revoke(g().id)}
+                              class="px-2.5 py-1 rounded-md text-xs text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
+                            >
+                              {t("share.guest_remove")}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </Show>
 
                     <Show when={lockview()?.can_create_guest}>
@@ -380,7 +445,7 @@ const ShareModal: Component<Props> = (props) => {
                             <button
                               type="submit"
                               disabled={creating()}
-                              class="px-3 py-1.5 rounded-lg bg-accent text-white text-sm disabled:opacity-60"
+                              class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
                             >
                               {creating() ? t("share.guest_new_creating") : t("share.guest_new_create")}
                             </button>

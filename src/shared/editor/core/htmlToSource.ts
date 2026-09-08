@@ -1,5 +1,8 @@
 import type { MimeType } from "../types/editor.types";
-import { bbAlt } from "../attachments/insertHelpers";
+import {
+  getStyle, styleBBCode, imgBBCode, mediaBBCode, listMarker, spoilerOpen,
+  quoteAuthor, isQuoteLabel,
+} from "./elementBBCode";
 import { htmlToMarkdown } from "./markdownTurndown";
 
 /** Convert WYSIWYG HTML to the chosen source format. */
@@ -42,12 +45,6 @@ function htmlToBBCode(html: string): string {
   return nodeTobbcode(doc.body).trim();
 }
 
-function getStyle(el: Element, prop: string): string {
-  const style = el.getAttribute("style") ?? "";
-  const m = style.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, "i"));
-  return m ? m[1].trim() : "";
-}
-
 // Block-level tags, for the line-joining rule in joinChildren(). Everything
 // else is inline and simply concatenates.
 //
@@ -56,11 +53,11 @@ function getStyle(el: Element, prop: string): string {
 const BLOCK_TAGS =
   /^(?:div|p|h[1-6]|blockquote|pre|ul|ol|table|hr|details|center)$/;
 
-const isBlockNode = (n: Node | undefined) =>
-  n?.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.test((n as Element).tagName.toLowerCase());
-
 const isBrNode = (n: Node) =>
   n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName.toLowerCase() === "br";
+
+const isBlockNode = (n: Node | undefined) =>
+  n?.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.test((n as Element).tagName.toLowerCase());
 
 /**
  * Serialize an element's children, giving every block child its own line.
@@ -85,11 +82,18 @@ function joinChildren(el: Element): string {
   const lines: string[] = [];
   let inline = "";
   for (const [i, child] of nodes.entries()) {
-    // A <br> touching a block is that block's own line break, not content.
-    // bbcodeToHtml turns "a\n[hr]\nb" into "a<br><hr><br>b", so counting
-    // those <br>s as newlines too gave back "a\n\n[hr]\n\nb" — which
-    // renders as two <br>s next time, and grew by a line on every blur.
-    if (isBrNode(child) && (isBlockNode(nodes[i - 1]) || isBlockNode(nodes[i + 1]))) continue;
+    // A <br> against a block is the line's terminator, not a blank line — the
+    // block boundary is already the break, and Chrome writes exactly this
+    // shape when you turn a line into a heading below an unwrapped first line.
+    // An authored blank line there is <br class="bb-blank"> (bbcodeToHtml's
+    // newline pass marks it), which is the only way to tell the two apart:
+    // the HTML is otherwise identical, and counting the plain one grew a blank
+    // line above the block on every Enter.
+    if (
+      isBrNode(child) &&
+      !(child as Element).classList?.contains("bb-blank") &&
+      (isBlockNode(nodes[i - 1]) || isBlockNode(nodes[i + 1]))
+    ) continue;
     if (isBlockNode(child)) {
       if (inline !== "") { lines.push(inline); inline = ""; }
       lines.push(nodeTobbcode(child));
@@ -150,10 +154,14 @@ function nodeTobbcode(node: Node): string {
     case "s":
     case "strike":
     case "del":         return `[s]${children()}[/s]`;
-    case "mark":        return `[mark]${children()}[/mark]`;
     case "code":        return `[code]${children()}[/code]`;
     case "pre":         return `[code]${el.textContent ?? ""}[/code]`;
-    case "blockquote":  return `[quote]${children()}[/quote]`;
+    case "blockquote": {
+      // A named quote is "<span class="bb-quote">X wrote:</span><blockquote>" —
+      // the attribution can't live on the element itself.
+      const author = quoteAuthor(el);
+      return author ? `[quote=${author}]${children()}[/quote]` : `[quote]${children()}[/quote]`;
+    }
     case "h1":          return `[h1]${children()}[/h1]`;
     case "h2":          return `[h2]${children()}[/h2]`;
     case "h3":          return `[h3]${children()}[/h3]`;
@@ -182,47 +190,10 @@ function nodeTobbcode(node: Node): string {
       return `[${tag}=${href}]${children()}[/${tag}]`;
     }
 
-    case "img": {
-      // Emoji images (see sourceToHtml.ts's emojify() pass) round-trip back
-      // to their plain :shortname: text, not an [img] bbcode tag.
-      if (el.classList.contains("emoji")) return el.getAttribute("alt") ?? "";
+    case "img": return imgBBCode(el);
 
-      const src = el.getAttribute("src") ?? "";
-      // class="zrl" marks an image that came from [zmg] (a hub-hosted photo).
-      // It has to go back out as [zmg], not [img]: the zrl class is what
-      // carries magic-auth to the remote hub, so a private photo would stop
-      // loading for remote viewers after one WYSIWYG round-trip.
-      const tag = el.classList.contains("zrl") ? "zmg" : "img";
-      // "Image/photo" is the default alt bbcodeToHtml stamps on images that
-      // had none — writing it back would grow every round-trip.
-      const alt0 = el.getAttribute("alt") ?? "";
-      const alt = alt0 === "Image/photo" ? "" : alt0;
-      // Core bbcode.php (bb_imgoptions) format: [img width='400']url[/img],
-      // px units, single-quoted. Width alone keeps the aspect ratio; height
-      // is only carried through when it was already in the source.
-      const width = parseInt(getStyle(el, "width") || el.getAttribute("width") || "", 10);
-      const height = parseInt(getStyle(el, "height") || el.getAttribute("height") || "", 10);
-      const attrs: string[] = [];
-      if (width > 0) attrs.push(`width='${width}'`);
-      if (height > 0) attrs.push(`height='${height}'`);
-      // Marks a LaTeX-equation image (see LatexComposerModal.tsx) so it keeps
-      // rendering inline (not Tailwind preflight's block default) after a
-      // round-trip through this editor — must be preserved, not just
-      // stamped once on insert.
-      if (el.classList.contains("bb-latex-img")) attrs.push(`class='bb-latex-img'`);
-      if (alt) attrs.push(bbAlt(alt));
-      return attrs.length ? `[${tag} ${attrs.join(" ")}]${src}[/${tag}]` : `[${tag}]${src}[/${tag}]`;
-    }
-
-    case "video": {
-      const src = el.getAttribute("src") ?? "";
-      return `[video]${src}[/video]`;
-    }
-
-    case "audio": {
-      const src = el.getAttribute("src") ?? "";
-      return `[audio]${src}[/audio]`;
-    }
+    case "video":
+    case "audio": return mediaBBCode(el);
 
     case "ul": {
       const items = listItems(el);
@@ -230,18 +201,7 @@ function nodeTobbcode(node: Node): string {
     }
     case "ol": {
       const items = listItems(el);
-      // bbcode.ts's sourceToHtml stamps [list=a]/[list=A]/[list=i]/[list=I]
-      // as list-style-type on the <ol> (see its listloweralpha/upperalpha/
-      // lowerroman/upperroman classes) — read it back the same way so a
-      // lettered/roman list round-trips instead of collapsing to [list=1].
-      const styleType = getStyle(el, "list-style-type");
-      const marker =
-        styleType === "lower-alpha" ? "a" :
-        styleType === "upper-alpha" ? "A" :
-        styleType === "lower-roman" ? "i" :
-        styleType === "upper-roman" ? "I" :
-        "1";
-      return `[list=${marker}]\n${items}\n[/list]`;
+      return `[list=${listMarker(el)}]\n${items}\n[/list]`;
     }
     case "li":  return children();
 
@@ -262,12 +222,6 @@ function nodeTobbcode(node: Node): string {
     case "td":  return children();
 
     case "details": {
-      // bbcode.ts renders [open] and [spoiler] both as <details>, told apart
-      // by class; the default summary is generated, not authored, so it must
-      // not come back as an explicit =title.
-      const tag = el.classList.contains("bb-open") ? "open" : "spoiler";
-      const text = el.querySelector("summary")?.textContent?.trim() ?? "";
-      const summary = text === "Spoiler" || text === "Click to open/close" ? "" : text;
       // <summary> serializes to "" (case below), so children() drops it for us
       // while still giving the body's block children their own lines.
       //
@@ -279,42 +233,21 @@ function nodeTobbcode(node: Node): string {
         (c) => c.tagName.toLowerCase() === "blockquote",
       );
       const bodyParts = wrapper && el.children.length === 2 ? joinChildren(wrapper) : children();
-      return summary
-        ? `[${tag}=${summary}]${bodyParts}[/${tag}]`
-        : `[${tag}]${bodyParts}[/${tag}]`;
+      const open = spoilerOpen(el);
+      return `${open}${bodyParts}[/${open.slice(1).replace(/[=\]].*$/, "")}]`;
     }
     case "summary": return "";
 
-    // <font> produced by older execCommand paths (non-Chrome)
-    case "font": {
-      let result = children();
-      const size = el.getAttribute("size");
-      const face = el.getAttribute("face");
-      const color = el.getAttribute("color");
-      if (size) {
-        const sizeMap: Record<string, string> = {
-          "1": "xx-small", "2": "small", "3": "medium",
-          "4": "large",    "5": "x-large","6": "xx-large", "7": "xx-large",
-        };
-        result = `[size=${sizeMap[size] ?? "medium"}]${result}[/size]`;
-      }
-      if (face) result = `[font=${face}]${result}[/font]`;
-      if (color) result = `[color=${color}]${result}[/color]`;
-      return result;
-    }
+    // <font> is what execCommand emits with styleWithCSS off (and <mark> what
+    // the highlight button leaves behind) — both are the same four pickers.
+    case "font":
+    case "mark": return styleBBCode(el, children()) ?? children();
 
-    // <span style="color:…; font-family:…; font-size:…; background-color:…">
     case "span": {
-      let result = children();
-      const bgColor = getStyle(el, "background-color");
-      const fontSize = getStyle(el, "font-size");
-      const fontFamily = getStyle(el, "font-family");
-      const color = getStyle(el, "color");
-      if (bgColor && bgColor !== "transparent") result = `[mark=${bgColor}]${result}[/mark]`;
-      if (fontSize) result = `[size=${fontSize}]${result}[/size]`;
-      if (fontFamily) result = `[font=${fontFamily}]${result}[/font]`;
-      if (color) result = `[color=${color}]${result}[/color]`;
-      return result;
+      // The label in front of a named blockquote is consumed by that
+      // blockquote's own case — emitting it too would duplicate the author.
+      if (isQuoteLabel(el)) return "";
+      return styleBBCode(el, children()) ?? children();
     }
 
     case "body": return children();

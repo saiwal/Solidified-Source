@@ -69,7 +69,39 @@ check('soft line break kept', $bb("line one\nline two"), $has("line one\nline tw
 check('bb bold passthrough',   $bb('some [b]bold[/b] text'),          $has('[b]bold[/b]'));
 check('bb url passthrough',    $bb('a [url=https://x.com]l[/url]'),   $has('[url=https://x.com]l[/url]'));
 check('bb img passthrough',    $bb('[img]https://x.com/a.png[/img]'), $has('[img]https://x.com/a.png[/img]'));
+// One Enter is one line: the WYSIWYG surface emits a single newline between
+// typed lines (markdownTurndown's typedLine rule), and preserve_lf is what
+// keeps it a line break instead of collapsing it to a space.
+check('single newline is a break', $bb("one\ntwo"),      $has("one\ntwo"));
+check('blank line survives',       $bb("one\n\ntwo"),   $has("one\n\ntwo"));
 check('bb code passthrough',   $bb('[code]x = 1[/code]'),             $has('[code]x = 1[/code]'));
+// The tags the WYSIWYG surface emits for what markdown cannot spell (see
+// elementBBCode.ts). They reach markdown_to_bb() as literal text and must come
+// out untouched, or the toolbar's appearance pickers would be destroyed on
+// save in exactly the format markdown mode falls back to.
+foreach ([
+    '[u]under[/u]',
+    '[color=#ff0000]red[/color]',
+    '[mark=yellow]hl[/mark]',
+    '[size=large]big[/size]',
+    '[font=serif]g[/font]',
+    '[center]middle[/center]',
+    '[spoiler=Why]hidden[/spoiler]',
+    '[video]https://x.com/a.mp4[/video]',
+    '[audio]https://x.com/a.mp3[/audio]',
+    '[quote=Jane]hi[/quote]',
+    "[img width='400' alt=&quot;cat&quot;]https://x.com/a.png[/img]",
+] as $tag) {
+    check("bb passthrough $tag", $bb("text $tag text"), $has($tag));
+}
+// A lettered list is the one multi-line case: the brackets start their own
+// lines, which MarkdownExtra could otherwise read as link-reference definitions.
+// "[*]" at the start of a line is eaten by MarkdownExtra as emphasis, so the
+// WYSIWYG surface emits the [li] form (which core renders identically) in
+// markdown mode. Both spellings are checked so the reason stays visible.
+check('bb list=a [li] survives', $bb("[list=a][li]one[/li][li]two[/li][/list]"), $has('[li]one[/li]'));
+check('bb list=a [*] is eaten',  $bb("[list=a]\n[*]one\n[*]two\n[/list]"),
+    fn($got) => !str_contains($got, '[*]one'));
 check('attachment tag kept',   $bb('[attachment]abc123,0[/attachment]'), $has('[attachment]abc123,0[/attachment]'));
 check('zrl/zmg kept',          $bb('[zrl=https://x.com/a][zmg=https://x.com/b.png]l[/zmg][/zrl]'),
                                $has('[zmg=https://x.com/b.png]l[/zmg]'));

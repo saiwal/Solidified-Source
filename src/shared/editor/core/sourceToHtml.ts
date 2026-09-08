@@ -33,7 +33,11 @@ export function sourceToHtml(body: string, mimetype: MimeType): string {
  */
 function markdownToEditorHtml(body: string): string {
   const { src, raws } = protectBbcode(body);
-  const html = marked.parse(src) as string;
+  // breaks: a single newline is a line break, not a soft wrap. Markdown's own
+  // rule (a blank line to end a paragraph) is wrong for this composer: the body
+  // is converted to bbcode on save with preserve_lf, where "\n" *is* a break,
+  // so one Enter has to mean one line — the same as in bbcode mode.
+  const html = marked.parse(src, { breaks: true }) as string;
 
   return restoreBbcode(html, raws, (raw) => {
     const share = /^\[share=(\d+)\]\s*\[\/share\]$/i.exec(raw);

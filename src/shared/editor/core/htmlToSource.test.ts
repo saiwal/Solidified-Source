@@ -67,6 +67,18 @@ const BLOCKS: Record<string, [string, string]> = {
   "pre":        ["<div>a</div><pre>x</pre><div>b</div>", "a\n[code]x[/code]\nb"],
   "list":       ["<div>a</div><ul><li>x</li><li>y</li></ul><div>b</div>",
                  "a\n[list]\n[*]x\n[*]y\n[/list]\nb"],
+  // Legacy <font>, which is what execCommand emits with styleWithCSS off.
+  "font tag":   ['<font color="#ef4444" face="serif" size="5">x</font>',
+                 "[color=#ef4444][font=serif][size=x-large]x[/size][/font][/color]"],
+  "quote label": ['<span class="bb-quote">Jane wrote:</span><blockquote>hi</blockquote>',
+                 "[quote=Jane]hi[/quote]"],
+  // Chrome's shape when a line below an unwrapped first line is turned into a
+  // heading. The <br> terminates the line — the block boundary is the break —
+  // so counting it too grew a blank line above the heading on every Enter.
+  "br before block": ["a<br><h3>t</h3>b", "a\n[h3]t[/h3]\nb"],
+  // An authored blank line there is marked (bbcodeToHtml's newline pass) and
+  // does count: the HTML is otherwise identical to the shape above.
+  "blank before block": ['a<br class="bb-blank" /><h3>t</h3>b', "a\n\n[h3]t[/h3]\nb"],
   "table":      ["<div>a</div><table><tr><td>x</td></tr></table><div>b</div>",
                  "a\n[table]\n[tr][td]x[/td][/tr]\n[/table]\nb"],
 };
@@ -94,6 +106,29 @@ const CORPUS = [
   "[table]\n[tr][th]H[/th][/tr]\n[tr][td]c[/td][/tr]\n[/table]",
   "[spoiler=Why]hidden[/spoiler]",
   "[center]middle[/center]",
+  // The appearance pickers. [mark=…] used to come back as a bare [mark]:
+  // htmlToSource's <mark> case never read the colour back off the style,
+  // so every WYSIWYG blur reset a highlight to the default.
+  "[mark=yellow]hl[/mark]",
+  "[mark]hl[/mark]",
+  "[color=#ff0000]red[/color]",
+  "[size=large]big[/size]",
+  "[font=serif]g[/font]",
+  "[u]under[/u]",
+  // The attribution sits in a sibling span, so it used to serialize as loose
+  // text and the author was lost on the first round trip.
+  "[quote=Jane]hi[/quote]",
+  "[video]https://x/a.mp4[/video]",
+  "[audio]https://x/a.mp3[/audio]",
+  "[img width='400' alt=&quot;cat&quot;]https://x/a.png[/img]",
+  // A blank line either side of a block, for every block shape. These used to
+  // collapse (after a block) or double (before one) on each round trip.
+  "a\n\n[h3]t[/h3]\n\nb",
+  "a\n\n[hr]\n\nb",
+  "a\n\n[quote]q[/quote]\n\nb",
+  "a\n\n[code]x\ny[/code]\n\nb",
+  "a\n\n[list]\n[*]x\n[/list]\n\nb",
+  "a\n\n[table]\n[tr][td]c[/td][/tr]\n[/table]\n\nb",
 ];
 
 for (const src of CORPUS) {

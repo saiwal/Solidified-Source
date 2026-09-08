@@ -249,7 +249,27 @@ function bbShareAttributes(
     ? `<img src="${escapeHtml(avatar)}" class="share-avatar" alt="${escapeHtml(author)}" />`
     : `<div class="share-avatar share-avatar-init">${escapeHtml(author[0]?.toUpperCase() ?? "?")}</div>`;
 
-  const linkIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M7 7h10v10"/></svg>`;
+  // One-line header: "Bob wrote a card on Jan 2, 2026", the kind word being the
+  // link to the original (an icon here was too easy to miss). One whole
+  // sentence per kind rather than concatenated fragments, so the article
+  // ("a"/"an") and the word order stay inside the template -- that is also all
+  // a translation of this line needs to replace.
+  const phrases: Record<string, string> = {
+    post: "{author} wrote a {link} on {date}",
+    card: "{author} wrote a {link} on {date}",
+    article: "{author} wrote an {link} on {date}",
+  };
+
+  const headerLine = (reldate ? phrases[type] : phrases[type].replace(" on {date}", ""))
+    // Function replacements: a "$&" in an author name or URL would otherwise be
+    // read as a replacement pattern.
+    .replace("{author}", () => `<a class="bb-share-name" href="${escapeHtml(profile)}">${escapeHtml(author)}</a>`)
+    .replace(
+      "{link}",
+      () => `<a class="bb-share-link" href="${escapeHtml(link)}" title="View original ${escapeHtml(type)}"` +
+        ` target="_blank" rel="noopener noreferrer">${type}</a>`,
+    )
+    .replace("{date}", () => `<time class="bb-share-date" datetime="${escapeHtml(posted)}">${escapeHtml(reldate)}</time>`);
 
   // No newlines in the emitted markup: the last step of bbcode() turns every
   // newline into <br />, so an indented template would render its own
@@ -259,10 +279,7 @@ function bbShareAttributes(
     `<div class="bb-share bb-share-${type}">` +
       `<div class="bb-share-header">` +
         avatarHtml +
-        `<a class="bb-share-name" href="${escapeHtml(profile)}">${escapeHtml(author)}</a>` +
-        `<span class="bb-share-sep">·</span>` +
-        `<time class="bb-share-date" datetime="${escapeHtml(posted)}">${escapeHtml(reldate)}</time>` +
-        `<a class="bb-share-link" href="${escapeHtml(link)}" title="View original ${escapeHtml(type)}" target="_blank" rel="noopener noreferrer">${linkIcon}</a>` +
+        `<span class="bb-share-line">${headerLine}</span>` +
       `</div>` +
       `<div class="bb-share-body">${content}</div>` +
     `</div>`
@@ -352,12 +369,18 @@ function bbSanitizeStyle(cssString: string, content: string): string {
 // [code] helpers
 // ---------------------------------------------------------------------------
 
+// A code block's own padding — the newline right after [code] and the trailing
+// blank line before [/code] — is the tag's layout, not content. A plain trim()
+// would also eat the first line's indentation, which *is* content.
+function trimCodeBlock(content: string): string {
+  return content.replace(/^\r?\n/, "").replace(/\s+$/, "");
+}
+
 function bbCode(content: string): string {
-  const trimmed = content.trim();
   if (content.includes("\n")) {
-    return `<pre><code>${codeProtect(trimmed)}</code></pre>`;
+    return `<pre><code>${codeProtect(trimCodeBlock(content))}</code></pre>`;
   }
-  return `<code class="inline-code">${codeProtect(trimmed)}</code>`;
+  return `<code class="inline-code">${codeProtect(content.trim())}</code>`;
 }
 
 function bbCodeOptions(options: string, content: string): string {
@@ -366,7 +389,7 @@ function bbCodeOptions(options: string, content: string): string {
   const multiline = content.includes("\n");
   const cls = multiline ? "" : "inline-code";
 
-  const inner = codeProtect(content.trim());
+  const inner = codeProtect(multiline ? trimCodeBlock(content) : content.trim());
   if (multiline) {
     return `<pre><code class="${cls}" style="${style}">${inner}</code></pre>`;
   }
@@ -616,6 +639,10 @@ function xssFilterLinks(html: string): string {
 // Main bbcode() function
 // ---------------------------------------------------------------------------
 
+// A <br /> that stands for a blank line the author typed next to a block
+// boundary. See the newline pass at the end of bbcode() for why it is marked.
+const BB_BLANK = '<br class="bb-blank" />';
+
 export function bbcode(text: string, options: BbcodeOptions = {}): string {
   if (!text) return "";
 
@@ -701,7 +728,7 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
       const highlighted = highlightResolver(lang.trim(), content);
       if (highlighted) return codeProtect(highlighted);
     }
-    return `<pre><code class="language-${escapeHtml(lang.trim())}">${codeProtect(content.trim())}</code></pre>`;
+    return `<pre><code class="language-${escapeHtml(lang.trim())}">${codeProtect(trimCodeBlock(content))}</code></pre>`;
   });
 
   // [code] plain
@@ -711,11 +738,6 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   text = text.replace(/\[code ([^\]]+?)\]([\s\S]*?)\[\/code\]/gi, (_m, opts, content) =>
     bbCodeOptions(opts, content)
   );
-
-  // ------------------------------------------------------------------
-  // [pre] strip closing newline artifact
-  // ------------------------------------------------------------------
-  text = text.replace(/<\/pre>\r?\n/g, "</pre>");
 
   // ------------------------------------------------------------------
   // Observer variable placeholders (after escaping)
@@ -946,7 +968,6 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
       new RegExp(`\\[h${h}\\]([\\s\\S]*?)\\[\\/h${h}\\]`, "gi"),
       `<h${h}>$1</h${h}>`
     );
-    text = text.replace(new RegExp(`<\\/h${h}>\\r?\\n`, "g"), `</h${h}>`);
   }
 
   // [toc]
@@ -993,8 +1014,9 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
       text.includes("[/li]")) &&
     listLoop < 20
   ) {
-    text = text.replace(/\[\/list\]\r?\n/g, "[/list]");
-
+    // No [/list]\n strip here: the newline pass at the end of bbcode() counts
+    // the newlines around a block boundary, and eating one early turns an
+    // authored blank line after a list into no line at all.
     text = text.replace(/\[list\]([\s\S]*?)\[\/list\]/gi, (_m, c) => `<ul class="listbullet">${bbFixLf(c)}</ul>`);
     text = text.replace(/\[list=\]([\s\S]*?)\[\/list\]/gi, (_m, c) => `<ul class="listnone" style="list-style-type: none;">${bbFixLf(c)}</ul>`);
     text = text.replace(/\[list=1\]([\s\S]*?)\[\/list\]/gi, (_m, c) => `<ol class="listdecimal" style="list-style-type: decimal;">${bbFixLf(c)}</ol>`);
@@ -1025,7 +1047,8 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   // ------------------------------------------------------------------
   // Tables
   // ------------------------------------------------------------------
-  text = text.replace(/\[\/table\]\r?\n/g, "[/table]");
+  // No [/table]\n strip: same reason as [/list] above — the newline pass at the
+  // end of bbcode() counts the newlines around a block boundary itself.
   text = text.replace(
     /\[table\]([\s\S]*?)\[\/table\]/gi,
     (_m, c) => `<table>${bbFixLf(c)}</table>`
@@ -1282,6 +1305,32 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   // Convert newlines to <br />
   // ------------------------------------------------------------------
   text = text.replace(/\r\n/g, "\n");
+
+  // The FIRST newline touching a block-level boundary is source formatting,
+  // not a blank line: HTML already breaks there. Turning it into a <br /> is
+  // what put an empty line above every code block and one inside the top and
+  // bottom of every quote. Every *further* newline in the run is a blank line
+  // the author typed and still has to show.
+  //
+  // Those survivors are emitted as <br class="bb-blank" /> rather than a plain
+  // <br />, and the class is what makes the WYSIWYG round trip possible at all:
+  // a browser writes the identical "text<br><h3>" for a line that merely ends
+  // in front of a block, so without the marker htmlToSource cannot tell an
+  // authored blank line from the browser's own line terminator, and every
+  // Enter pressed above a heading grew into a blank line on the next
+  // re-serialize. Nothing styles .bb-blank — it renders exactly like <br />.
+  const BLOCK_TAG =
+    "pre|blockquote|div|ul|ol|li|dl|dt|dd|table|thead|tbody|tfoot|tr|td|th|hr|h[1-6]|details|summary";
+  const blanks = (run: string) => BB_BLANK.repeat((run.match(/\n/g)?.length ?? 1) - 1);
+  text = text.replace(
+    new RegExp(`(?:[ \\t]*\\n)+[ \\t]*(</?(?:${BLOCK_TAG})\\b[^>]*>)`, "gi"),
+    (m, tag: string) => blanks(m) + tag,
+  );
+  text = text.replace(
+    new RegExp(`(</?(?:${BLOCK_TAG})\\b[^>]*>)(?:[ \\t]*\\n)+[ \\t]*`, "gi"),
+    (m, tag: string) => tag + blanks(m),
+  );
+
   text = text.replace(/[\r\n]/g, "<br />");
 
   // ------------------------------------------------------------------

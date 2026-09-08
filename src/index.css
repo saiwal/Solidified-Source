@@ -249,19 +249,8 @@
     font-weight: 600;
     color: var(--color-txt);
     text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-shrink: 1;
-    min-width: 0;
   }
   .bb-share-name:hover { text-decoration: underline; }
-
-  .bb-share-sep {
-    color: var(--color-subtle);
-    font-size: 0.75rem;
-    flex-shrink: 0;
-  }
 
   .bb-share-date {
     font-size: 0.6875rem;
@@ -270,15 +259,23 @@
     flex-shrink: 0;
   }
 
-  .bb-share-link {
-    margin-left: auto;
-    flex-shrink: 0;
+  /* One-line header: "<author> wrote a post/card on <date>", the kind word
+     being the link to the original (an icon here was too easy to miss). */
+  .bb-share-line {
+    font-size: 0.8125rem;
     color: var(--color-subtle);
-    display: flex;
-    align-items: center;
+    min-width: 0;
+    /* Wraps rather than truncates: in a masonry column the header is narrow
+       enough that a one-line clamp cropped the date and the link off. */
+    overflow-wrap: anywhere;
+  }
+
+  .bb-share-link {
+    color: var(--color-muted);
+    text-decoration: none;
     transition: color 0.15s;
   }
-  .bb-share-link:hover { color: var(--color-accent); }
+  .bb-share-link:hover { color: var(--color-accent); text-decoration: underline; }
 
   .bb-share-body {
     padding: 0.625rem 0.75rem;
@@ -447,27 +444,16 @@
 }
 
 /* ── Rich editor WYSIWYG content ─────────────────────────────────── */
-/* Tailwind v4 preflight resets list-style, heading sizes, and padding — restore them
-   inside the contenteditable surface so what you see matches what you get. */
-.rich-editor [contenteditable] ul { list-style: disc; padding-left: 1.25rem; }
-.rich-editor [contenteditable] ol { list-style: decimal; padding-left: 1.25rem; }
-.rich-editor [contenteditable] li { margin: 0.125rem 0; }
-.rich-editor [contenteditable] h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; margin: 0.25rem 0; }
-.rich-editor [contenteditable] h2 { font-size: 1.25rem; font-weight: 700; line-height: 1.3; margin: 0.25rem 0; }
-.rich-editor [contenteditable] h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.3; margin: 0.125rem 0; }
-.rich-editor [contenteditable] h4 { font-size: 1rem; font-weight: 600; }
-.rich-editor [contenteditable] blockquote { border-left: 2px solid var(--color-rim); padding-left: 0.75rem; margin: 0.25rem 0; color: var(--color-muted); }
-.rich-editor [contenteditable] pre { background: var(--color-overlay); border-radius: 0.375rem; padding: 0.5rem; font-family: ui-monospace, monospace; font-size: 0.875rem; margin: 0.25rem 0; overflow-x: auto; }
-.rich-editor [contenteditable] pre code { background: transparent; padding: 0; border-radius: 0; }
-.rich-editor [contenteditable] code { background: var(--color-overlay); border-radius: 0.25rem; padding: 0.0625rem 0.25rem; font-family: ui-monospace, monospace; font-size: 0.75rem; }
+/* The surface carries POST_PROSE (src/shared/lib/prose.ts) — the same class
+   list a published post body uses — so headings, lists, quotes and code blocks
+   are styled once, by the typography plugin, and the composer can't drift from
+   the post. Only what prose doesn't cover is left here. */
 .rich-editor [contenteditable] s,
 .rich-editor [contenteditable] strike { text-decoration: line-through; }
-.rich-editor [contenteditable] a { color: var(--color-accent); text-decoration: underline; }
 .rich-editor [contenteditable] mark { background-color: yellow; color: #000; }
-.rich-editor [contenteditable] table { border-collapse: collapse; }
 .rich-editor [contenteditable] th,
 .rich-editor [contenteditable] td { border: 1px solid var(--color-rim); padding: 0.25rem 0.5rem; }
-.rich-editor [contenteditable] th { font-weight: 600; background: var(--color-elevated); }
+.rich-editor [contenteditable] th { background: var(--color-elevated); }
 
 @theme {
   /* backgrounds */
@@ -496,9 +482,14 @@
 
 /* Unlayered — wins over @layer components (typography plugin).
    Code blocks use theme variables so they're readable on all themes. */
+/* --overlay, not --surface: a post card is itself --surface, so a
+   surface-coloured code block vanished into it — the block only looked right
+   in the composer, whose surface is --elevated. --overlay is what inline code
+   already uses (prose-code:bg-overlay), and it contrasts against both. */
 .prose pre {
-  background-color: var(--color-surface) !important;
+  background-color: var(--color-overlay) !important;
   color: var(--color-txt) !important;
+  border: 1px solid var(--color-rim);
 }
 .prose pre code {
   background-color: transparent !important;

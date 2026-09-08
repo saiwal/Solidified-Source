@@ -25,6 +25,30 @@ export const markdownTurndown = new TurndownService({
   codeBlockStyle: "fenced",
   // Without this turndown emits "* * *" and a plain "---" rule never settles.
   hr: "---",
+  // A <br> is a plain newline, not markdown's two-trailing-spaces hard break:
+  // sourceToHtml parses with breaks:true, so "\n" already means a break, and
+  // the invisible spaces only accumulated in the source.
+  br: "",
+});
+
+/**
+ * One Enter is one line, not a blank line.
+ *
+ * Contenteditable puts each typed line in its own <div>, and turndown's block
+ * separator would put a blank line between them — correct for markdown in the
+ * abstract (a paragraph ends at a blank line) but wrong here: the body is
+ * converted to bbcode on save with preserve_lf, so a single "\n" is a real
+ * line break, and sourceToHtml parses it back with breaks:true. Pressing Enter
+ * once has to give one line, the same as it does in bbcode mode.
+ *
+ * <p> is left alone deliberately: marked emits a paragraph only where the
+ * author *did* leave a blank line, so keeping its "\n\n" is what makes a typed
+ * blank line survive the round trip. The two element names are the only thing
+ * separating the two cases.
+ */
+markdownTurndown.addRule("typedLine", {
+  filter: "div",
+  replacement: (content) => `\n${content}\n`,
 });
 
 /**
@@ -99,6 +123,118 @@ markdownTurndown.addRule("strikethrough", {
 });
 
 /**
+ * Everything markdown cannot spell, as bbcode.
+ *
+ * Underline, colour, highlight, font, size, spoiler, centre, media, lettered
+ * lists and sized images have no markdown syntax, and turndown dropped every
+ * one of them silently — a toolbar button appeared to do nothing the moment the
+ * surface re-serialized. They come back as *bbcode*, not raw HTML: a markdown
+ * body already carries bbcode (the attachment bar, the card picker and the
+ * source tab all emit it), markdownProtect round-trips every tag in BB_TAGS
+ * byte-for-byte, and the server converts the whole body to bbcode on save
+ * anyway. Raw HTML would additionally have to survive marked, DOMPurify and
+ * the federation path.
+ *
+ * The conversions themselves live in elementBBCode.ts, shared with
+ * htmlToSource's bbcode path — they were two hand-written mirrors and drifted.
+ */
+import {
+  getStyle, styleBBCode, imgBBCode, mediaBBCode, listMarker, spoilerOpen,
+  quoteAuthor, isQuoteLabel,
+} from "./elementBBCode";
+
+markdownTurndown.addRule("bbStyle", {
+  filter: (node) => styleBBCode(node as unknown as Element, "") !== null,
+  replacement: (content, node) => styleBBCode(node as unknown as Element, content) ?? content,
+});
+
+markdownTurndown.addRule("bbUnderline", {
+  filter: "u",
+  replacement: (content) => (content.trim() ? `[u]${content}[/u]` : ""),
+});
+
+/**
+ * Images that carry more than "![alt](src)" can: an emoji chip (which is its
+ * own shortname), a [zmg] photo, a resized image, a LaTeX equation. A plain
+ * image stays plain markdown.
+ */
+markdownTurndown.addRule("bbImage", {
+  filter: (node) => {
+    if (node.nodeName !== "IMG") return false;
+    const el = node as unknown as Element;
+    return (
+      el.classList.contains("emoji") ||
+      el.classList.contains("zrl") ||
+      el.classList.contains("bb-latex-img") ||
+      !!getStyle(el, "width") ||
+      !!el.getAttribute("width")
+    );
+  },
+  replacement: (_content, node) => imgBBCode(node as unknown as Element),
+});
+
+markdownTurndown.addRule("bbMedia", {
+  filter: ["video", "audio"],
+  replacement: (_content, node) =>
+    (node as HTMLElement).getAttribute("src") ? `\n\n${mediaBBCode(node as unknown as Element)}\n\n` : "",
+});
+
+markdownTurndown.addRule("bbSpoiler", {
+  filter: "details",
+  replacement: (_content, node) => {
+    const el = node as HTMLElement;
+    const open = spoilerOpen(el as unknown as Element);
+    const summary = el.querySelector("summary");
+    summary?.parentNode?.removeChild(summary);
+    const body = markdownTurndown.turndown(el.innerHTML).trim();
+    return `\n\n${open}${body}[/${open.slice(1).replace(/[=\]].*$/, "")}]\n\n`;
+  },
+});
+
+/** Centred block — what the LaTeX image insert and [center] both produce. */
+markdownTurndown.addRule("bbCenter", {
+  filter: (node) =>
+    node.nodeName === "DIV" && /^center$/i.test(getStyle(node as unknown as Element, "text-align")),
+  replacement: (content) => `\n\n[center]${content.trim()}[/center]\n\n`,
+});
+
+/**
+ * Lettered and roman lists: markdown has decimal ordered lists and nothing else.
+ *
+ * [li]…[/li] items, not [*] — core renders both (include/bbcode.php:1534), but
+ * the body still has to survive MarkdownExtra on save, and "[*]" at the start
+ * of a line is eaten as emphasis: "[*]one\n[*]two" comes back as
+ * "[[i]]one\n[[/i]]two". Verified in scripts/markdown-to-bbcode.test.php.
+ */
+markdownTurndown.addRule("bbList", {
+  filter: (node) => node.nodeName === "OL" && listMarker(node as unknown as Element) !== "1",
+  replacement: (_content, node) => {
+    const el = node as HTMLElement;
+    const items = Array.from(el.children)
+      .filter((c) => c.nodeName === "LI")
+      .map((li) => `[li]${markdownTurndown.turndown((li as HTMLElement).innerHTML).replace(/\n+/g, " ").trim()}[/li]`)
+      .join("");
+    return `\n\n[list=${listMarker(el as unknown as Element)}]${items}[/list]\n\n`;
+  },
+});
+
+/**
+ * A named quote. Markdown's ">" carries no attribution, so an authored quote
+ * goes back as [quote=Author] — and the label span in front of it must not be
+ * emitted a second time as loose text.
+ */
+markdownTurndown.addRule("bbQuote", {
+  filter: (node) => node.nodeName === "BLOCKQUOTE" && !!quoteAuthor(node as unknown as Element),
+  replacement: (content, node) =>
+    `\n\n[quote=${quoteAuthor(node as unknown as Element)}]${content.trim()}[/quote]\n\n`,
+});
+
+markdownTurndown.addRule("bbQuoteLabel", {
+  filter: (node) => node.nodeName === "SPAN" && isQuoteLabel(node as unknown as Element),
+  replacement: () => "",
+});
+
+/**
  * GFM tables. Turndown has no table support of its own — without this a table
  * is flattened to loose paragraphs, which is silent data loss. Hand-rolled
  * rather than pulling in turndown-plugin-gfm: the bbcode path already
@@ -135,6 +271,40 @@ markdownTurndown.addRule("table", {
 });
 
 /**
+ * Fenced code blocks, with single newlines around the fence instead of
+ * turndown's stock blank lines. Its default is meaning-preserving but it
+ * *adds* a blank line the author never typed — "text\n```" came back as
+ * "text\n\n```" on the first source ↔ WYSIWYG switch. A fence may interrupt a
+ * paragraph in CommonMark, so the tighter form parses the same on the way back
+ * (marked re-renders it to the identical <pre>), and a blank line the author
+ * did type survives as the paragraph break that carries it.
+ *
+ * Copied from turndown's own fencedCodeBlock rule otherwise — including the
+ * fence-lengthening for code that itself contains a fence.
+ */
+markdownTurndown.addRule("fencedCodeBlock", {
+  filter: (node, options) =>
+    options.codeBlockStyle === "fenced" &&
+    node.nodeName === "PRE" &&
+    node.firstChild != null &&
+    node.firstChild.nodeName === "CODE",
+  replacement: (_content, node, options) => {
+    const code = (node as HTMLElement).firstChild as HTMLElement;
+    const className = code.getAttribute("class") ?? "";
+    const language = (className.match(/language-(\S+)/) ?? [null, ""])[1];
+    const body = code.textContent ?? "";
+
+    const stock = options.fence ?? "```";
+    const fenceChar = stock.charAt(0);
+    const longest = (body.match(new RegExp(`^${fenceChar}{3,}`, "gm")) ?? [])
+      .reduce((max, m) => Math.max(max, m.length), 0);
+    const fence = fenceChar.repeat(Math.max(longest + 1, stock.length));
+
+    return `\n${fence}${language}\n${body.replace(/\n$/, "")}\n${fence}\n`;
+  },
+});
+
+/**
  * HTML → Markdown for the WYSIWYG surface.
  *
  * Strips the zero-width caret anchors sourceToHtml places on either side of
@@ -143,5 +313,43 @@ markdownTurndown.addRule("table", {
  * path drops them the same way (nodeTobbcode in htmlToSource.ts).
  */
 export function htmlToMarkdown(html: string): string {
-  return markdownTurndown.turndown(html).replace(/\u200B/g, "");
+  return tightenFences(markdownTurndown.turndown(html).replace(/\u200B/g, ""));
+}
+
+/**
+ * Drop the blank lines around a top-level fenced code block.
+ *
+ * marked parses "text\n```" and "text\n\n```" into the identical
+ * <p> + <pre>, so by the time turndown runs, whether the author left a blank
+ * line there is unknowable — and turndown's block separator puts one in
+ * regardless. That made every source ↔ WYSIWYG switch grow the body by two
+ * lines around each fence. Since both spellings render the same, the tight one
+ * wins and the round trip becomes a fixed point.
+ *
+ * Line-scanned rather than regex-replaced so the blank lines *inside* a code
+ * block are never touched. Only fences indented less than four spaces are
+ * considered — deeper ones belong to a list item, where the indentation is
+ * load-bearing and turndown's own spacing is what keeps the item together.
+ */
+function tightenFences(md: string): string {
+  const DELIM = /^ {0,3}(`{3,}|~{3,})/;
+  const out: string[] = [];
+  let fence = "";
+
+  for (const line of md.split("\n")) {
+    const m = DELIM.exec(line);
+    if (m && !fence) {
+      while (out.length && out[out.length - 1] === "") out.pop();
+      fence = m[1][0];
+    } else if (m && m[1][0] === fence) {
+      fence = "";
+      out.push(line);
+      continue;
+    } else if (!fence && line === "" && out.length && DELIM.test(out[out.length - 1])) {
+      continue; // blank line straight after a closing fence
+    }
+    out.push(line);
+  }
+
+  return out.join("\n");
 }

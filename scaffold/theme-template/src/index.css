@@ -101,19 +101,8 @@
     font-weight: 600;
     color: var(--color-txt);
     text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-shrink: 1;
-    min-width: 0;
   }
   .bb-share-name:hover { text-decoration: underline; }
-
-  .bb-share-sep {
-    color: var(--color-subtle);
-    font-size: 0.75rem;
-    flex-shrink: 0;
-  }
 
   .bb-share-date {
     font-size: 0.6875rem;
@@ -122,15 +111,23 @@
     flex-shrink: 0;
   }
 
-  .bb-share-link {
-    margin-left: auto;
-    flex-shrink: 0;
+  /* One-line header: "<author> wrote a post/card on <date>", the kind word
+     being the link to the original (an icon here was too easy to miss). */
+  .bb-share-line {
+    font-size: 0.8125rem;
     color: var(--color-subtle);
-    display: flex;
-    align-items: center;
+    min-width: 0;
+    /* Wraps rather than truncates: in a masonry column the header is narrow
+       enough that a one-line clamp cropped the date and the link off. */
+    overflow-wrap: anywhere;
+  }
+
+  .bb-share-link {
+    color: var(--color-muted);
+    text-decoration: none;
     transition: color 0.15s;
   }
-  .bb-share-link:hover { color: var(--color-accent); }
+  .bb-share-link:hover { color: var(--color-accent); text-decoration: underline; }
 
   .bb-share-body {
     padding: 0.625rem 0.75rem;
@@ -324,9 +321,14 @@
 
 /* Unlayered — wins over @layer components (typography plugin).
    Code blocks use theme variables so they're readable on all themes. */
+/* --overlay, not --surface: a post card is itself --surface, so a
+   surface-coloured code block vanished into it — the block only looked right
+   in the composer, whose surface is --elevated. --overlay is what inline code
+   already uses (prose-code:bg-overlay), and it contrasts against both. */
 .prose pre {
-  background-color: var(--color-surface) !important;
+  background-color: var(--color-overlay) !important;
   color: var(--color-txt) !important;
+  border: 1px solid var(--color-rim);
 }
 .prose pre code {
   background-color: transparent !important;

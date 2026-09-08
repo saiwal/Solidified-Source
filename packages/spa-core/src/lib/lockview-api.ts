@@ -58,3 +58,19 @@ export async function grantGuest(
   if (!res.ok) throw new Error(json?.error?.message || "Could not add the guest");
   return json.data as LockviewGuest;
 }
+
+/** Drops one of your guests from this resource's audience. */
+export async function revokeGuest(
+  type: LockviewType,
+  id: number | string,
+  atokenId: number,
+): Promise<{ id: number; name: string }> {
+  const res = await apiFetch(`/spa/lockview/${type}/${id}/revoke`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ atoken_id: atokenId }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || "Could not remove the guest");
+  return json.data as { id: number; name: string };
+}

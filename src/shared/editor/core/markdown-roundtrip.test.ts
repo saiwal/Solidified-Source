@@ -15,13 +15,30 @@ import { marked } from "marked";
 import {
   protectBbcode, restoreBbcode, isBlockBbcode, encodeRaw, completesMarkdownBlock,
 } from "./markdownProtect.ts";
-import { htmlToMarkdown } from "./markdownTurndown.ts";
+import { registerHooks } from "node:module";
+
+// markdownTurndown now shares its element→bbcode conversions with the bbcode
+// path (elementBBCode.ts), imported the extensionless way Vite resolves;
+// node's type stripping wants the real filename.
+registerHooks({
+  resolve(spec, ctx, next) {
+    // Scoped to this directory: turndown's bundled domino requires its own
+    // extensionless CJS files, which must not be rewritten to ".ts".
+    return spec.startsWith(".") &&
+      !/\.[a-z]+$/i.test(spec) &&
+      ctx.parentURL?.includes("/src/shared/editor/")
+      ? next(`${spec}.ts`, ctx)
+      : next(spec, ctx);
+  },
+});
+
+const { htmlToMarkdown } = await import("./markdownTurndown.ts");
 
 const ZWSP = "\u200B";
 
 function toHtml(md: string): string {
   const { src, raws } = protectBbcode(md);
-  return restoreBbcode(marked.parse(src, { async: false }) as string, raws, (raw) => {
+  return restoreBbcode(marked.parse(src, { async: false, breaks: true }) as string, raws, (raw) => {
     const tag = isBlockBbcode(raw) ? "div" : "span";
     return `${ZWSP}<${tag} data-bb-raw="${encodeRaw(raw)}" contenteditable="false">bb</${tag}>${ZWSP}`;
   });
@@ -42,6 +59,11 @@ const STABLE: Record<string, string> = {
   "emphasis":      "*em* and **strong**",
   "inline code":   "use `npm run build` now",
   "fenced code":   "```js\nconst x = 1;\n```",
+  // No blank lines around the fence: turndown's stock separator added a pair
+  // on every switch between the source and WYSIWYG tabs, and marked parses
+  // both spellings into the same <p> + <pre> (see tightenFences).
+  "fence in text":  "before\n```\nx\n```\nafter",
+  "fence blanks":   "```\na\n\nb\n```",
   "blockquote":    "> quoted line",
   "md link":       "See [the docs](https://example.com).",
   "md image":      "![alt text](https://x.com/a.png)",
@@ -49,6 +71,11 @@ const STABLE: Record<string, string> = {
   "table align":   "| a | b |\n| :-- | --: |\n| 1 | 2 |",
   "hr":            "---",
   "paragraphs":    "one\n\ntwo\n\nthree",
+  // One Enter is one line. Turndown's stock block separator made every typed
+  // line a paragraph, so a single Enter came back as a blank line — and the
+  // post, whose body is bbcode by the time it is stored, showed two <br>s.
+  "single breaks":  "one\ntwo\nthree",
+  "break + para":   "line one\nline two\n\npara two",
   "bb bold":       "some [b]bold[/b] text",
   "bb img":        "[img]https://x.com/a.png[/img]",
   "bb attachment": "[attachment]abc123,0[/attachment]",
@@ -176,7 +203,7 @@ if (domino) {
   assert.equal(completesMarkdownBlock(line, ""), true);
 
   const holder = doc.createElement("div");
-  holder.innerHTML = marked.parse(line, { async: false }) as string;
+  holder.innerHTML = marked.parse(line, { async: false, breaks: true }) as string;
   done.replaceWith(...Array.from(holder.childNodes));
 
   assert.match(editor.innerHTML, /<strong>bold<\/strong>/);
@@ -186,4 +213,56 @@ if (domino) {
   assert.equal(htmlToMarkdown(editor.innerHTML).trim(), "intro line\n\nsome **bold** here");
 }
 
-console.log(`markdown-roundtrip: ok (${Object.keys(STABLE).length} byte-identical, all idempotent)`);
+
+// ── Formats markdown can't spell come back as bbcode ──────────────────────
+// The toolbar's underline / colour / highlight / font / size / spoiler /
+// centre / media buttons all produce HTML that turndown has no markdown for.
+// Both directions matter: the shape execCommand leaves in the surface must
+// serialize, and the bbcode it produces must then be a fixed point (which
+// markdownProtect already guarantees for every tag in BB_TAGS).
+const STYLED: Record<string, [string, string]> = {
+  "underline":      ["<u>x</u>", "[u]x[/u]"],
+  "span colour":    ['<span style="color: #ef4444;">red</span>', "[color=#ef4444]red[/color]"],
+  "highlight":      ['<mark style="background-color: yellow;">hl</mark>', "[mark=yellow]hl[/mark]"],
+  "font legacy":    ['<font color="#ef4444" face="serif" size="5">x</font>',
+                     "[color=#ef4444][font=serif][size=x-large]x[/size][/font][/color]"],
+  "styled in text": ['a <span style="font-size: large;">big</span> b', "a [size=large]big[/size] b"],
+  "unstyled span":  ['<span class="x">plain</span>', "plain"],
+  "spoiler":        ["<details><summary>Spoiler</summary><div>body</div></details>", "[spoiler]body[/spoiler]"],
+  "spoiler label":  ["<details><summary>Why</summary><div>body</div></details>", "[spoiler=Why]body[/spoiler]"],
+  "centre":         ['<div style="text-align:center">mid</div>', "[center]mid[/center]"],
+  "video":          ['<video src="https://x.com/a.mp4" controls></video>', "[video]https://x.com/a.mp4[/video]"],
+  "emoji":          ['<img class="emoji" src="https://x/s.png" alt=":smile:">', ":smile:"],
+  "resized image":  ['<img src="https://x.com/a.png" style="width:400px" alt="cat">',
+                     "[img width='400' alt=&quot;cat&quot;]https://x.com/a.png[/img]"],
+  "zmg photo":      ['<img class="zrl" src="https://x.com/p.png">', "[zmg]https://x.com/p.png[/zmg]"],
+  "lettered list":  ['<ol style="list-style-type: lower-alpha;"><li>one</li><li>two</li></ol>',
+                     "[list=a][li]one[/li][li]two[/li][/list]"],
+  "named quote":    ['<span class="bb-quote">Jane wrote:</span><blockquote>hi</blockquote>',
+                     "[quote=Jane]hi[/quote]"],
+  "audio":          ['<audio src="https://x.com/a.mp3" controls></audio>', "[audio]https://x.com/a.mp3[/audio]"],
+};
+
+// The contenteditable line shapes, which never reach the corpus above: a
+// browser writes each typed line as its own <div>, and only a blank line the
+// author typed becomes an empty one.
+const SHAPES: Record<string, [string, string]> = {
+  "typed two lines":   ["<div>a</div><div>b</div>", "a\nb"],
+  "first line bare":   ["a<div>b</div>", "a\nb"],
+  "typed blank line":  ["<div>a</div><div><br></div><div>b</div>", "a\n\nb"],
+  "firefox br":        ["a<br>b", "a\nb"],
+  // What sourceToHtml renders those two back into (marked, breaks: true).
+  "rendered break":    ["<p>a<br>b</p>", "a\nb"],
+  "rendered para":     ["<p>a</p><p>b</p>", "a\n\nb"],
+};
+
+for (const [name, [html, want]] of Object.entries(SHAPES)) {
+  assert.equal(htmlToMarkdown(html).trim(), want, `${name} must serialize to ${JSON.stringify(want)}`);
+}
+
+for (const [name, [html, md]] of Object.entries(STYLED)) {
+  assert.equal(htmlToMarkdown(html).trim(), md, `${name} must serialize to bbcode`);
+  assert.equal(trip(md), md, `${name} must be a fixed point`);
+}
+
+console.log(`markdown-roundtrip: ok (${Object.keys(STABLE).length} byte-identical, all idempotent, ${Object.keys(SHAPES).length} line shapes, ${Object.keys(STYLED).length} bbcode-only)`);

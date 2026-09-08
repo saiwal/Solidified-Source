@@ -2809,6 +2809,9 @@ export type RawDictionary = {
     guest_email_intro:     string;
     guest_email_expires:   string;
     guest_add_group:       string;
+    guest_add_apply:       string;
+    guest_remove:          string;
+    guest_removed:         string;
     guest_new:             string;
     guest_new_name:        string;
     guest_new_expires:     string;
