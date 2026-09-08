@@ -48,6 +48,69 @@ function getStyle(el: Element, prop: string): string {
   return m ? m[1].trim() : "";
 }
 
+// Block-level tags, for the line-joining rule in joinChildren(). Everything
+// else is inline and simply concatenates.
+//
+// li/tr/th/td are absent on purpose: their parent's case walks them directly
+// and supplies its own separators.
+const BLOCK_TAGS =
+  /^(?:div|p|h[1-6]|blockquote|pre|ul|ol|table|hr|details|center)$/;
+
+const isBlockNode = (n: Node | undefined) =>
+  n?.nodeType === Node.ELEMENT_NODE && BLOCK_TAGS.test((n as Element).tagName.toLowerCase());
+
+const isBrNode = (n: Node) =>
+  n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName.toLowerCase() === "br";
+
+/**
+ * Serialize an element's children, giving every block child its own line.
+ *
+ * Contenteditable produces wildly different shapes for the same document —
+ * Chrome wraps lines in <div>s (and often leaves the *first* line unwrapped),
+ * Firefox separates them with <br>. Appending "\n" after each block, as this
+ * used to, got both wrong: "a<div>b</div>" lost the break entirely (the two
+ * lines merged), while an empty line — "<div><br></div>", the shape Chrome
+ * emits for a blank line — produced two newlines, one from the <br> and one
+ * from the block, so every blank line the user typed came back doubled.
+ *
+ * Instead: consecutive inline children form one line, each block child is one
+ * line, and the lines are joined with a single "\n". A block's own trailing
+ * <br> is filler the browser adds to keep an empty block visible, so it is
+ * dropped rather than counted as a second break.
+ */
+function joinChildren(el: Element): string {
+  const nodes = Array.from(el.childNodes);
+  if ((nodes[nodes.length - 1] as Element | undefined)?.tagName?.toLowerCase() === "br") nodes.pop();
+
+  const lines: string[] = [];
+  let inline = "";
+  for (const [i, child] of nodes.entries()) {
+    // A <br> touching a block is that block's own line break, not content.
+    // bbcodeToHtml turns "a\n[hr]\nb" into "a<br><hr><br>b", so counting
+    // those <br>s as newlines too gave back "a\n\n[hr]\n\nb" — which
+    // renders as two <br>s next time, and grew by a line on every blur.
+    if (isBrNode(child) && (isBlockNode(nodes[i - 1]) || isBlockNode(nodes[i + 1]))) continue;
+    if (isBlockNode(child)) {
+      if (inline !== "") { lines.push(inline); inline = ""; }
+      lines.push(nodeTobbcode(child));
+    } else {
+      inline += nodeTobbcode(child);
+    }
+  }
+  if (inline !== "") lines.push(inline);
+  return lines.join("\n");
+}
+
+// Direct <li> children only — a nested list's items belong to that list, and
+// its own case picks them up. Filtering el.children rather than a
+// ":scope > li" query keeps this working outside a browser (the test's DOM
+// shim has no :scope support) and is the same walk either way.
+const listItems = (el: Element) =>
+  Array.from(el.children)
+    .filter((c) => c.tagName.toLowerCase() === "li")
+    .map((li) => `[*]${nodeTobbcode(li)}`)
+    .join("\n");
+
 function nodeTobbcode(node: Node): string {
   // Zero-width spaces are caret anchors around share chips (sourceToHtml) —
   // keep them out of the stored bbcode.
@@ -75,7 +138,7 @@ function nodeTobbcode(node: Node): string {
     if (cryptPayload !== null) return `[crypt]${cryptPayload}[/crypt]`;
   }
 
-  const children = () => Array.from(el.childNodes).map(nodeTobbcode).join("");
+  const children = () => joinChildren(el);
   const tag = el.tagName?.toLowerCase();
 
   switch (tag) {
@@ -91,21 +154,24 @@ function nodeTobbcode(node: Node): string {
     case "code":        return `[code]${children()}[/code]`;
     case "pre":         return `[code]${el.textContent ?? ""}[/code]`;
     case "blockquote":  return `[quote]${children()}[/quote]`;
-    case "h1":          return `[h1]${children()}[/h1]\n`;
-    case "h2":          return `[h2]${children()}[/h2]\n`;
-    case "h3":          return `[h3]${children()}[/h3]\n`;
-    case "h4":          return `[h4]${children()}[/h4]\n`;
-    case "h5":          return `[h5]${children()}[/h5]\n`;
-    case "h6":          return `[h6]${children()}[/h6]\n`;
+    case "h1":          return `[h1]${children()}[/h1]`;
+    case "h2":          return `[h2]${children()}[/h2]`;
+    case "h3":          return `[h3]${children()}[/h3]`;
+    case "h4":          return `[h4]${children()}[/h4]`;
+    case "h5":          return `[h5]${children()}[/h5]`;
+    case "h6":          return `[h6]${children()}[/h6]`;
 
-    case "p": {
+    // <p> and <div> are the same thing here: one line of the document, which
+    // joinChildren() has already separated from its siblings.
+    case "p":
+    case "div": {
       const align = getStyle(el, "text-align");
       const inner = children();
-      return align === "center" ? `[center]${inner}[/center]\n` : `${inner}\n`;
+      return align === "center" ? `[center]${inner}[/center]` : inner;
     }
 
     case "br":  return "\n";
-    case "hr":  return "\n[hr]\n";
+    case "hr":  return "[hr]";
 
     case "center": return `[center]${children()}[/center]`;
 
@@ -159,15 +225,11 @@ function nodeTobbcode(node: Node): string {
     }
 
     case "ul": {
-      const items = Array.from(el.querySelectorAll(":scope > li"))
-        .map(li => `[*]${nodeTobbcode(li)}`)
-        .join("\n");
-      return `[list]\n${items}\n[/list]\n`;
+      const items = listItems(el);
+      return `[list]\n${items}\n[/list]`;
     }
     case "ol": {
-      const items = Array.from(el.querySelectorAll(":scope > li"))
-        .map(li => `[*]${nodeTobbcode(li)}`)
-        .join("\n");
+      const items = listItems(el);
       // bbcode.ts's sourceToHtml stamps [list=a]/[list=A]/[list=i]/[list=I]
       // as list-style-type on the <ol> (see its listloweralpha/upperalpha/
       // lowerroman/upperroman classes) — read it back the same way so a
@@ -179,7 +241,7 @@ function nodeTobbcode(node: Node): string {
         styleType === "lower-roman" ? "i" :
         styleType === "upper-roman" ? "I" :
         "1";
-      return `[list=${marker}]\n${items}\n[/list]\n`;
+      return `[list=${marker}]\n${items}\n[/list]`;
     }
     case "li":  return children();
 
@@ -192,7 +254,7 @@ function nodeTobbcode(node: Node): string {
         }).join("");
         return `[tr]${cells}[/tr]`;
       }).join("\n");
-      return `[table]\n${rowsStr}\n[/table]\n`;
+      return `[table]\n${rowsStr}\n[/table]`;
     }
     // tr/th/td handled inside "table" above; fall through to children() for orphans
     case "tr":
@@ -206,10 +268,17 @@ function nodeTobbcode(node: Node): string {
       const tag = el.classList.contains("bb-open") ? "open" : "spoiler";
       const text = el.querySelector("summary")?.textContent?.trim() ?? "";
       const summary = text === "Spoiler" || text === "Click to open/close" ? "" : text;
-      const bodyParts = Array.from(el.childNodes)
-        .filter(n => (n as Element).tagName?.toLowerCase() !== "summary")
-        .map(nodeTobbcode)
-        .join("");
+      // <summary> serializes to "" (case below), so children() drops it for us
+      // while still giving the body's block children their own lines.
+      //
+      // bbSpoilerTag() (bbcode.ts) wraps a spoiler's body in a <blockquote>
+      // purely as presentation. Serializing that as an authored [quote] made
+      // the tag pile up on every WYSIWYG round trip — the same failure the
+      // summary label hit, see the comment above bbSpoilerTag().
+      const wrapper = Array.from(el.children).find(
+        (c) => c.tagName.toLowerCase() === "blockquote",
+      );
+      const bodyParts = wrapper && el.children.length === 2 ? joinChildren(wrapper) : children();
       return summary
         ? `[${tag}=${summary}]${bodyParts}[/${tag}]`
         : `[${tag}]${bodyParts}[/${tag}]`;
@@ -246,12 +315,6 @@ function nodeTobbcode(node: Node): string {
       if (fontFamily) result = `[font=${fontFamily}]${result}[/font]`;
       if (color) result = `[color=${color}]${result}[/color]`;
       return result;
-    }
-
-    case "div": {
-      const align = getStyle(el, "text-align");
-      const result = children();
-      return align === "center" ? `[center]${result}[/center]\n` : `${result}\n`;
     }
 
     case "body": return children();

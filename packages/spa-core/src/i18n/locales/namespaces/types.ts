@@ -866,6 +866,10 @@ export type RawDictionary = {
     underline:        string;
     strikethrough:    string;
     highlight:        string;
+    text_color:        string;
+    font_family:       string;
+    font_size:         string;
+    highlight_none:    string;
     link:             string;
     bullet_list:      string;
     numbered_list:    string;
@@ -876,6 +880,17 @@ export type RawDictionary = {
     blockquote:       string;
     code_block:       string;
     clear_formatting: string;
+    horizontal_rule:  string;
+    media:            string;
+    media_url:        string;
+    table:            string;
+    table_columns:    string;
+    table_rows:       string;
+    spoiler:          string;
+    spoiler_label:    string;
+    quote_author:     string;
+    url_label:        string;
+    insert:           string;
     emoji_picker_title:       string;
     emoji_search_placeholder: string;
     emoji_no_results:         string;

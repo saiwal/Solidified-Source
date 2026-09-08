@@ -273,6 +273,15 @@ export default function RichEditor(props: Props) {
 
   const onEditorClick = (e: MouseEvent) => {
     const t = e.target as HTMLElement;
+    // Never follow a link from the edit surface. Every photo form wraps its
+    // image in [zrl=…] → <a target="_blank"> (bbcode.ts), and link activation
+    // is the click's default action even inside a contenteditable. Guarding
+    // the <img> alone isn't enough: the anchor is inline, so its hit area is
+    // the image's width by the whole line box, and a click in the leading
+    // below the image lands on the anchor with the image never targeted.
+    // Following any link mid-edit would lose the draft, so this covers [url]
+    // and [zrl] text links too — the preview tab is where links are live.
+    if (t.closest("a")) e.preventDefault();
     if (t instanceof HTMLImageElement && !t.closest(".bb-share-embed, .bb-card-embed-wrap")) {
       setWidthVal(String(parseInt(t.style.width, 10) || Math.round(t.getBoundingClientRect().width)));
       setAltVal(t.alt === "Image/photo" ? "" : t.alt);

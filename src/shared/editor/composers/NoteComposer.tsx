@@ -9,7 +9,7 @@ import ComposerShell from "../components/ComposerShell";
 import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useEncrypt } from "../useEncrypt";
 import EncryptToggle from "../components/EncryptToggle";
@@ -141,7 +141,7 @@ export default function NoteComposer(props: Props) {
             nick={currentNick()}
             accept="both"
             onInsert={(bbcode) => {
-              store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+              store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
             }}
             onAltChange={(att) => {
               store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));

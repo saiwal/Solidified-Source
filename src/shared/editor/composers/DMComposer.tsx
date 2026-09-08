@@ -27,7 +27,7 @@ import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
-import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiError } from "@utsukta/spa-core/lib/fetch";
@@ -261,7 +261,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                 nick={currentNick()}
                 accept="both"
                 onInsert={(bbcode) => {
-                  store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+                  store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
                 }}
                 onAltChange={(att) => {
                   store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));

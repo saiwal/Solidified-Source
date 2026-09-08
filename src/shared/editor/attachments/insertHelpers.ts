@@ -56,6 +56,18 @@ export function bbcodeToInsert(bbcode: string, mime: MimeType): string {
     .replace(ATTACH_RE, (_, url: string) => `<a href="${url}">${url}</a>`);
 }
 
+/**
+ * Append inserted bbcode on its own line.
+ *
+ * The separator is skipped when the body is empty or already ends in a
+ * newline: every composer used to append "\n" unconditionally, so inserting
+ * into an empty composer produced "\n[zmg…]" — a leading <br>, i.e. a blank
+ * line above the image — and inserting after a paragraph break produced two.
+ */
+export function appendInsert(body: string, bbcode: string): string {
+  return body === "" || body.endsWith("\n") ? body + bbcode : body + "\n" + bbcode;
+}
+
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**

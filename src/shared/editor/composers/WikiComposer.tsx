@@ -10,7 +10,7 @@ import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 
 // Core's wiki addon offers no HTML option (Mod_Wiki.php:221).
 const WIKI_FORMATS = ["text/bbcode", "text/markdown", "text/plain"] as const;
@@ -79,7 +79,7 @@ export default function WikiComposer(props: Props) {
             store={attach}
             nick={props.nick}
             accept="both"
-            onInsert={(bbcode) => setBody(body() + "\n" + bbcodeToInsert(bbcode, mime()))}
+            onInsert={(bbcode) => setBody(appendInsert(body(), bbcodeToInsert(bbcode, mime())))}
             onAltChange={(att) => setBody(patchInsertedAlt(body(), att, mime()))}
             tab={tab()}
             onToggleTab={() => setTab(tab() === "wysiwyg" ? "source" : "wysiwyg")}

@@ -7,7 +7,7 @@
 // round-trip here.
 import assert from "node:assert";
 
-const { bbAlt, readAlt, bbcodeToInsert, patchInsertedAlt } = await import("./insertHelpers.ts");
+const { bbAlt, readAlt, bbcodeToInsert, patchInsertedAlt, appendInsert } = await import("./insertHelpers.ts");
 const { bbcodeToHtml } = await import("@utsukta/spa-core/lib/bbcode");
 
 const att = (altText: string) =>
@@ -65,6 +65,26 @@ assert.equal(
   "[zrl=https://x/p][zmg width='400' alt=&quot;new&quot;]https://x/1.jpg[/zmg][/zrl]",
 );
 assert.equal(patchInsertedAlt("![old](https://x/1.jpg)", att("new"), "text/markdown"), "![new](https://x/1.jpg)");
+
+// ── the code button's block markup matches the renderer ─────────────────────
+// EditorToolbar's code() inserts <pre><code>…</code></pre> for a multi-line
+// selection. That has to stay the exact shape bbcodeToHtml produces for a
+// [code] carrying newlines, or the editor markup and a reloaded post diverge
+// and the WYSIWYG round trip stops being a fixed point.
+assert.equal(bbcodeToHtml("[code]a\nb[/code]"), "<pre><code>a\nb</code></pre>");
+// single-line [code] is inline instead — which is why code() branches on \n
+assert.match(bbcodeToHtml("x [code]y[/code]"), /<code class="inline-code">y<\/code>/);
+
+// ── inserting never leaves a leading blank line ──────────────────────────────
+// A bare "\n" separator rendered as a <br> before the image, so inserting into
+// an empty composer showed a blank line above it.
+assert.equal(appendInsert("", "[zmg=u]c[/zmg]"), "[zmg=u]c[/zmg]");
+assert.equal(appendInsert("hi", "[zmg=u]c[/zmg]"), "hi\n[zmg=u]c[/zmg]");
+assert.equal(appendInsert("hi\n", "[zmg=u]c[/zmg]"), "hi\n[zmg=u]c[/zmg]");
+// a deliberate paragraph break is the user's, and is left alone
+assert.equal(appendInsert("hi\n\n", "[zmg=u]c[/zmg]"), "hi\n\n[zmg=u]c[/zmg]");
+// no <br> ends up before the image for an empty body
+assert.doesNotMatch(bbcodeToHtml(appendInsert("", "[zmg=https://x/1]c[/zmg]")), /^<br/);
 
 // ── [zmg=] needs an absolute URL ─────────────────────────────────────────────
 // Both this renderer (bbcode.ts) and core's include/bbcode.php match

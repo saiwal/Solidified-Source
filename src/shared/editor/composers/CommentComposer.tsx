@@ -11,7 +11,7 @@ import { useMentionEmojiWiring } from "@/shared/editor/mention/useMentionEmojiWi
 import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import SourceToggleButton from "../components/SourceToggleButton";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
@@ -139,7 +139,7 @@ export default function CommentComposer(props: Props) {
               nick={currentNick()}
               accept="both"
               onInsert={(bbcode) => {
-                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+                store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
               }}
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));

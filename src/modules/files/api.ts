@@ -366,3 +366,47 @@ export async function createFolder(dirPath: string, name: string): Promise<void>
   });
   if (!res.ok && res.status !== 201) throw new Error(`MKCOL ${res.status}`);
 }
+
+// ── URL ⇄ folder path ─────────────────────────────────────────────────────────
+//
+// The folder path in the URL (/cloud/:nick/tmp/folder%202) is the source of
+// truth for which folder the file list shows — that is what a shared link, a
+// post attachment and the address bar all carry.
+
+/** One breadcrumb frame: a folder, by hash, on the way down from the root. */
+export interface FolderFrame {
+  hash: string;
+  displayPath: string;
+  label: string;
+}
+
+/** Decoded folder segments of a cloud URL: "/cloud/sk/tmp/folder%202" → ["tmp", "folder 2"] */
+export function cloudPathSegments(pathname: string, nick: string): string[] {
+  const parts = pathname.split("/").filter(Boolean).map(decodeURIComponent);
+  if (parts[0] !== "cloud" || parts[1] !== nick) return [];
+  return parts.slice(2);
+}
+
+/** Inverse of the above — "" (root) gives "/cloud/:nick". */
+export function cloudPath(nick: string, displayPath: string): string {
+  return displayPath ? davPath(nick, displayPath) : `/cloud/${nick}`;
+}
+
+/**
+ * Walk root → leaf turning display-path segments into folder frames (the file
+ * list keys off folder *hashes*, which only a listing can supply).
+ *
+ * Stops at the first segment that isn't a folder, so a URL naming a file opens
+ * its containing folder rather than dead-ending.
+ */
+export async function resolveFolderPath(nick: string, segs: string[]): Promise<FolderFrame[]> {
+  const frames: FolderFrame[] = [];
+  let hash = "";
+  for (const seg of segs) {
+    const dir = (await listFolder(nick, hash)).find((f) => f.is_dir && f.filename === seg);
+    if (!dir) break;
+    hash = dir.hash;
+    frames.push({ hash, displayPath: dir.display_path, label: dir.filename });
+  }
+  return frames;
+}

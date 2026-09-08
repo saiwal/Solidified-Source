@@ -47,7 +47,7 @@ import { PrimarySubmitButton, SecondaryButton, ToggleButton, IconButton } from "
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { currentNick, isFeatureEnabled, isLocalOnlyPostsEnabled } from "@utsukta/spa-core/store/auth-store";
-import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import type { FileAcl } from "@/modules/files/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -573,7 +573,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               nick={currentNick()}
               accept="both"
               onInsert={(bbcode) => {
-                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+                store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
               }}
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));

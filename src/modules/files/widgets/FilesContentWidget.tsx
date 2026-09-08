@@ -6,7 +6,7 @@ import {
   Show,
   type Component,
 } from "solid-js";
-import { useLocation } from "@solidjs/router";
+import { useLocation, useNavigate } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -35,8 +35,11 @@ import {
   createFolder,
   davDirPath,
   davPath,
+  cloudPath,
+  cloudPathSegments,
+  resolveFolderPath,
 } from "../api";
-import type { FileMeta, FileAcl, WopiConfig } from "../api";
+import type { FileMeta, FileAcl, WopiConfig, FolderFrame } from "../api";
 import FileActionsMenu, { type FileAction } from "../views/FileActionsMenu";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForFile } from "@/shared/lib/shareLinks";
@@ -122,8 +125,6 @@ const AclBadge: Component<{
 };
 
 // ── Nav stack ─────────────────────────────────────────────────────────────────
-
-type FolderFrame = { hash: string; displayPath: string; label: string };
 
 // ── Permissions panel ─────────────────────────────────────────────────────────
 
@@ -537,31 +538,27 @@ export default function FilesContentWidget() {
   const viewerRole = useViewerRole();
   const isOwner = () => viewerRole() === "owner";
 
-  // Navigation stack — starts at root, unless the URL names a folder.
-  // ?folder=<hash>&path=<display_path> is how anything outside this module
-  // deep-links into a subfolder (the widget has no path→hash resolver, so the
-  // linker passes the hash it already knows). Kept as a one-level jump: the
-  // breadcrumb shows root › folder rather than every ancestor.
+  // Navigation stack — the folder path in the URL (/cloud/:nick/tmp/folder 2)
+  // is the source of truth, so a shared link, an attachment link or the back
+  // button all land on the right folder. In-app navigation keeps the stack
+  // (hashes already known) and pushes the matching URL; the effect below only
+  // resolves when the URL names a folder we are not already showing.
   const location = useLocation();
+  const navigate = useNavigate();
 
-  function seedStack(): FolderFrame[] {
-    const root = { hash: "", displayPath: "", label: nick() };
-    const params = new URLSearchParams(location.search);
-    const hash = params.get("folder");
-    if (!hash) return [root];
-    const path = params.get("path") ?? "";
-    const label = path.replace(/\/+$/, "").split("/").pop() || hash;
-    return [root, { hash, displayPath: path, label }];
-  }
+  const rootFrame = (): FolderFrame => ({ hash: "", displayPath: "", label: nick() });
+  const [navStack, setNavStack] = createSignal<FolderFrame[]>([rootFrame()]);
 
-  const [navStack, setNavStack] = createSignal<FolderFrame[]>(seedStack());
-
-  // Same route, different ?folder — the view is not remounted, so re-seed.
-  createEffect(() => {
-    location.search;
-    setNavStack(seedStack());
-  });
   const current = createMemo(() => navStack()[navStack().length - 1]);
+
+  createEffect(() => {
+    const segs = cloudPathSegments(location.pathname, nick());
+    if (segs.join("/") === current().displayPath) return; // our own navigate()
+    if (!segs.length) { setNavStack([rootFrame()]); return; }
+    resolveFolderPath(nick(), segs).then((frames) =>
+      setNavStack([rootFrame(), ...frames])
+    );
+  });
 
   // File listing — refetches whenever current folder hash changes
   const [files, { refetch }] = createQueryResource(
@@ -619,12 +616,14 @@ export default function FilesContentWidget() {
       ...prev,
       { hash: item.hash, displayPath: item.display_path, label: item.filename },
     ]);
+    navigate(cloudPath(nick(), item.display_path));
     setPermItem(null);
     clearSelection();
   }
 
   function navigateTo(idx: number) {
     setNavStack((prev) => prev.slice(0, idx + 1));
+    navigate(cloudPath(nick(), current().displayPath));
     setPermItem(null);
     clearSelection();
   }

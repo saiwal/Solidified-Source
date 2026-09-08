@@ -855,3 +855,6 @@ adding a new unrelated dependency:
   persistent Alerts bucket, not ephemeral UI toasts). **`solid-toast`** is the common choice if one is
   ever needed.
 
+### Magicui-solid (https://axuj.github.io/magicui-solid/)
+
+ - magicui-solid is a port of Magic UI components for SolidJS. It provides beautifully designed, animated UI components that you can copy, paste, and customize into your SolidJS projects.

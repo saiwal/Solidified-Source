@@ -23,7 +23,7 @@ import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
 import { createAttachmentStore } from "../attachments/useAttachments";
-import { bbcodeToInsert, patchInsertedAlt } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import AclPicker, { aclModeFrom, aclEntryKeys, type AclMode } from "../components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { useAclState, splitAclEntries } from "../components/useAclState";
@@ -390,7 +390,7 @@ export default function WebpageComposer(props: Props) {
               nick={props.nick}
               accept="files"
               onInsert={(bbcode) => {
-                store.setBody(store.body() + "\n" + bbcodeToInsert(bbcode, store.mimetype()));
+                store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
               }}
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));

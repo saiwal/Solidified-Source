@@ -12,6 +12,7 @@ import {
   MdOutlineBrush, MdOutlineMap,
 } from "solid-icons/md";
 import EmojiPicker from "../emoji/EmojiPicker";
+import { ColorPicker, OptionMenu, PromptPanel, SIZE_OPTIONS, FONT_OPTIONS } from "./ToolbarPickers";
 import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { emojiEntryToImg } from "@utsukta/spa-core/lib/emojify";
 import ListToolDropdown from "../components/ListToolDropdown";
@@ -67,11 +68,22 @@ export default function EditorToolbar(props: Props) {
   // there. Remember the last in-editor range and put it back before exec'ing.
   let lastRange: Range | null = null;
   const inEditor = (r: Range) => props.editorRef()?.contains(r.commonAncestorContainer) ?? false;
+  // Which inline marks the caret currently sits in, so the toolbar can show
+  // what you are typing in — the two dropdowns already do this (see
+  // ListToolDropdown/HeadingToolDropdown); the inline buttons showed nothing.
+  const [marks, setMarks] = createSignal<Record<string, boolean>>({});
   const trackSelection = () => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const r = sel.getRangeAt(0);
-    if (inEditor(r)) lastRange = r.cloneRange();
+    if (!inEditor(r)) return;
+    lastRange = r.cloneRange();
+    setMarks({
+      bold:          document.queryCommandState("bold"),
+      italic:        document.queryCommandState("italic"),
+      underline:     document.queryCommandState("underline"),
+      strikeThrough: document.queryCommandState("strikeThrough"),
+    });
   };
   document.addEventListener("selectionchange", trackSelection);
   onCleanup(() => document.removeEventListener("selectionchange", trackSelection));
@@ -89,9 +101,41 @@ export default function EditorToolbar(props: Props) {
     return el;
   };
 
+  /**
+   * Whether the *editor's* selection covers any text.
+   *
+   * window.getSelection() reports the focused element, so while a PromptPanel
+   * input has focus it describes that input, not the surface. lastRange is the
+   * last range that was actually in the editor, so it answers for the caret
+   * the user left behind — which is the one every insert acts on.
+   */
+  const editorHasSelection = () => {
+    const sel = window.getSelection();
+    const cur = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+    return cur && inEditor(cur) ? !cur.collapsed : !!lastRange && !lastRange.collapsed;
+  };
+
   const exec = (cmd: string, value?: string) => {
     if (!focusEditor()) return;
     document.execCommand(cmd, false, value);
+  };
+
+  const ZWSP = "\u200B";
+
+  /**
+   * Insert a block-level element with a trailing caret anchor.
+   *
+   * insertHTML leaves the caret at the end of what it inserted, and with
+   * nothing after the block that position is still *inside* it — so every
+   * following keystroke stayed in the table/quote/code block with no way out.
+   * The zero-width space is a text node outside the element for the caret to
+   * land in. htmlToSource strips ZWSP from text nodes (htmlToSource.ts), so it
+   * never reaches the saved body — the same trick sourceToHtml uses to make
+   * its non-editable embeds escapable.
+   */
+  const insertBlock = (html: string) => {
+    if (!focusEditor()) return;
+    document.execCommand("insertHTML", false, html + ZWSP);
   };
 
   const wrapHtml = (open: string, close: string) => {
@@ -137,15 +181,19 @@ export default function EditorToolbar(props: Props) {
   const bold      = () => isSource() ? wrapSource("[b]", "[/b]")   : exec("bold");
   const italic    = () => isSource() ? wrapSource("[i]", "[/i]")   : exec("italic");
   const underline = () => isSource() ? wrapSource("[u]", "[/u]")   : exec("underline");
-  const highlight = () => {
+  const highlight = (c: string) => {
+    if (isSource()) { wrapSource(`[mark=${c}]`, "[/mark]"); return; }
+    exec("hiliteColor", c);
+  };
+
+  // hiliteColor doesn't toggle off like bold/italic/underline do natively
+  // (it just re-applies the background color); unwrap manually when the
+  // selection is already inside a highlighted span — same gap strike()
+  // works around below. Reached from the colour panel's "None" row.
+  const clearHighlight = () => {
     if (isSource()) { wrapSource("[mark]", "[/mark]"); return; }
-    // hiliteColor doesn't toggle off like bold/italic/underline do natively
-    // (it just re-applies the background color); unwrap manually when the
-    // selection is already inside a highlighted span — same gap strike()
-    // works around below.
-    const el = props.editorRef();
+    const el = focusEditor();
     if (!el) return;
-    el.focus();
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const node    = sel.getRangeAt(0).commonAncestorContainer;
@@ -157,17 +205,14 @@ export default function EditorToolbar(props: Props) {
       sel.removeAllRanges();
       sel.addRange(r);
       document.execCommand("insertHTML", false, (hlEl as HTMLElement).innerHTML);
-    } else {
-      exec("hiliteColor", "yellow");
     }
   };
 
   const strike = () => {
     if (isSource()) { wrapSource("[s]", "[/s]"); return; }
     // execCommand("strikeThrough") doesn't reliably toggle off when inside <s>; unwrap manually
-    const el = props.editorRef();
+    const el = focusEditor();
     if (!el) return;
-    el.focus();
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const node    = sel.getRangeAt(0).commonAncestorContainer;
@@ -184,46 +229,39 @@ export default function EditorToolbar(props: Props) {
     }
   };
 
-  const color = () => {
-    const c = prompt("Color (name or #hex):", "red");
-    if (!c) return;
+  const color = (c: string) =>
     isSource() ? wrapSource(`[color=${c}]`, "[/color]") : exec("foreColor", c);
-  };
 
-  const font = () => {
-    const f = prompt("Font name:", "courier");
-    if (!f) return;
+  const font = (f: string) =>
     isSource() ? wrapSource(`[font=${f}]`, "[/font]") : exec("fontName", f);
-  };
 
-  const size = () => {
-    const s = prompt("Size (small, medium, large, xx-large):", "large");
-    if (!s) return;
+  const size = (v: string) => {
     if (isSource()) {
-      wrapSource(`[size=${s}]`, "[/size]");
-    } else {
-      const map: Record<string, string> = {
-        "xx-small": "1", "x-small": "1", "small": "2",
-        "medium": "3", "large": "4", "x-large": "5", "xx-large": "6",
-      };
-      exec("fontSize", map[s] ?? "4");
-    }
-  };
-
-  // One button, one prompt: an author gives [quote=Author], empty (just OK)
-  // gives a plain quote. Cancel aborts.
-  const quote = () => {
-    const a = prompt("Author name (leave empty for a plain quote):");
-    if (a === null) return;
-    if (!a.trim()) {
-      isSource() ? wrapSource("[quote]", "[/quote]") : exec("formatBlock", "blockquote");
+      wrapSource(`[size=${v}]`, "[/size]");
       return;
     }
+    // execCommand only speaks the legacy 1-7 scale; htmlToSource maps the
+    // resulting <font size> back through the same keyword table (its sizeMap),
+    // so the round trip lands on the keyword the user picked.
+    const map: Record<string, string> = {
+      "xx-small": "1", "x-small": "2", "small": "2",
+      "medium": "3", "large": "4", "x-large": "5", "xx-large": "6",
+    };
+    exec("fontSize", map[v] ?? "4");
+  };
+
+  // An author gives [quote=Author]; an empty field gives a plain quote.
+  const quote = (author: string) => {
     if (isSource()) {
-      wrapSource(`[quote=${a.trim()}]`, "[/quote]");
-    } else {
-      wrapHtml(`<span class="bb-quote">${a.trim()} wrote:</span><blockquote>`, "</blockquote>");
+      wrapSource(author ? `[quote=${author}]` : "[quote]", "[/quote]");
+      return;
     }
+    // formatBlock converts the current line so the user can type straight into
+    // an empty quote — but it can't carry an author, so a named quote always
+    // wraps instead, leaving an anchor past the block either way.
+    if (!author && !editorHasSelection()) { exec("formatBlock", "blockquote"); return; }
+    const open = author ? `<span class="bb-quote">${author} wrote:</span><blockquote>` : "<blockquote>";
+    wrapHtml(open, `</blockquote>${ZWSP}`);
   };
 
   const code = () => {
@@ -233,14 +271,38 @@ export default function EditorToolbar(props: Props) {
     // entire line when the user only meant to mark a few selected words.
     // Wrap just the selection inline in that case instead.
     const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-      wrapHtml("<code>", "</code>");
+    const selText = sel && sel.rangeCount > 0 && !sel.isCollapsed ? sel.toString() : "";
+
+    // A selection crossing a line boundary is a code *block*. It can't go
+    // through formatBlock: that converts each selected block separately, so
+    // three selected lines become three <pre> elements and save as
+    // [code]a[/code][code]b[/code][code]c[/code]. Build the one block from the
+    // selected text instead. <pre><code> is exactly what bbcodeToHtml emits
+    // for a [code] containing newlines, so a round trip lands on identical
+    // markup, and htmlToSource reads it back off textContent (:92) — the
+    // inner <code> is never visited, so there is no double wrap.
+    if (selText.includes("\n")) {
+      // textContent in, outerHTML out: the DOM escapes &, < and > for us.
+      const pre = document.createElement("pre");
+      const inner = document.createElement("code");
+      inner.textContent = selText;
+      pre.appendChild(inner);
+      insertBlock(pre.outerHTML);
+      return;
+    }
+
+    if (selText) {
+      // Same trailing anchor as insertBlock, for an inline <code>.
+      wrapHtml("<code>", `</code>${ZWSP}`);
     } else {
       exec("formatBlock", "pre");
     }
   };
 
-  const hr = () => isSource() ? insertSource("[hr]\n") : exec("insertHorizontalRule");
+  // insertBlock rather than execCommand("insertHorizontalRule"): that command
+  // leaves no node after the rule, so a rule at the end of the surface was a
+  // dead end.
+  const hr = () => isSource() ? insertSource("[hr]\n") : insertBlock("<hr>");
 
   // Lettered list (a. b. c.) — insertOrderedList gives a plain decimal <ol>,
   // so re-tag it with the same class/style bbcode.ts's sourceToHtml stamps
@@ -274,65 +336,46 @@ export default function EditorToolbar(props: Props) {
   // selection the user is dropping in a bare URL, so we scrape it (see
   // ../lib/linkMeta) and insert a title/thumbnail/quote preview instead.
   // A failed scrape degrades to the plain link the button always produced.
-  const link = async () => {
+  const link = async (url: string) => {
+    if (!url) return;
     if (isSource()) {
       const ta = props.textareaRef();
-      const hasSel = !!ta && ta.selectionEnd > ta.selectionStart;
-      const u = prompt("URL:");
-      if (!u) return;
-      if (hasSel) {
-        wrapSource(`[url=${u}]`, "[/url]");
+      if (ta && ta.selectionEnd > ta.selectionStart) {
+        wrapSource(`[url=${url}]`, "[/url]");
         return;
       }
       setLinkLoading(true);
-      const meta = await fetchLinkMeta(u);
+      const meta = await fetchLinkMeta(url);
       setLinkLoading(false);
-      insertSource(linkMetaToBbcode(u, meta));
+      insertSource(linkMetaToBbcode(url, meta));
       return;
     }
-    // Save selection before prompt() steals focus and clears contenteditable selection
-    const el  = props.editorRef();
-    if (!el) return;
-    const sel = window.getSelection();
-    let savedRange: Range | null = null;
-    if (sel && sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
-    const hasText = savedRange && !savedRange.collapsed;
-    const url = prompt("URL:");
-    if (!url) return;
-    if (hasText) {
-      el.focus();
-      sel!.removeAllRanges();
-      sel!.addRange(savedRange!);
-      document.execCommand("createLink", false, url);
-      return;
-    }
+    if (editorHasSelection()) { exec("createLink", url); return; }
     setLinkLoading(true);
     const meta = await fetchLinkMeta(url);
     setLinkLoading(false);
-    // Restore the caret *after* the await too — focus moved during the fetch.
-    el.focus();
-    if (savedRange) { sel!.removeAllRanges(); sel!.addRange(savedRange); }
-    document.execCommand("insertHTML", false, linkMetaToHtml(url, meta));
+    // exec() puts lastRange back, so the caret returns to where the user left
+    // it even though focus moved to the panel and then away during the fetch.
+    exec("insertHTML", linkMetaToHtml(url, meta));
   };
 
   // One button for image/video/audio: the URL's extension already says which
   // it is, so asking the user to pick first is a click they can't get wrong
   // but still have to make. Unknown extension falls back to an image (what
   // the plain [img] button always did).
-  const media = () => {
-    const u = prompt("Media URL:");
+  const media = (u: string) => {
     if (!u) return;
     const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(u)?.[1]?.toLowerCase() ?? "";
     if (/^(mp4|webm|ogv|mov|m4v)$/.test(ext)) {
       isSource()
         ? insertSource(`[video]${u}[/video]`)
-        : exec("insertHTML", `<video src="${u}" controls preload="none" style="max-width:100%"></video>`);
+        : insertBlock(`<video src="${u}" controls preload="none" style="max-width:100%"></video>`);
       return;
     }
     if (/^(mp3|ogg|oga|wav|m4a|flac|opus|aac)$/.test(ext)) {
       isSource()
         ? insertSource(`[audio]${u}[/audio]`)
-        : exec("insertHTML", `<audio src="${u}" controls preload="none"></audio>`);
+        : insertBlock(`<audio src="${u}" controls preload="none"></audio>`);
       return;
     }
     isSource() ? insertSource(`[img]${u}[/img]`) : exec("insertImage", u);
@@ -377,7 +420,7 @@ export default function EditorToolbar(props: Props) {
     // class="bb-latex-img" (see index.css) overrides Tailwind preflight's
     // `img { display: block }` so it flows inline like the saved post will.
     const html = `<img src="${src}" alt="${alt}" class="bb-latex-img" style="width:${width}px" />`;
-    exec("insertHTML", isBlock ? `<div style="text-align:center">${html}</div>` : html);
+    isBlock ? insertBlock(`<div style="text-align:center">${html}</div>`) : exec("insertHTML", html);
   };
 
   // Either a flat [img] tag (drawing inserted as an image) or an
@@ -408,13 +451,11 @@ export default function EditorToolbar(props: Props) {
     isSource() ? insertSource(entry.shortname + " ") : exec("insertHTML", `${emojiEntryToImg(entry)} `);
   };
 
-  const table = () => {
-    const colsRaw = prompt("Number of columns:", "2");
-    if (!colsRaw) return;
-    const rowsRaw = prompt("Number of rows (excluding header):", "2");
-    if (!rowsRaw) return;
-    const cols = Math.max(1, parseInt(colsRaw, 10) || 2);
-    const rows = Math.max(0, parseInt(rowsRaw, 10) || 2);
+  // Clamped: the fields are free number inputs, and one stray extra digit
+  // would otherwise build a few thousand cells.
+  const table = (colsRaw: string, rowsRaw: string) => {
+    const cols = Math.min(20, Math.max(1, parseInt(colsRaw, 10) || 2));
+    const rows = Math.min(50, Math.max(0, parseInt(rowsRaw, 10) || 2));
     if (isSource()) {
       const header   = "[tr]" + Array.from({ length: cols }, (_, i) => `[th]Header ${i + 1}[/th]`).join("") + "[/tr]";
       const dataRows = Array.from({ length: rows }, (_, r) =>
@@ -426,17 +467,16 @@ export default function EditorToolbar(props: Props) {
       const dataRows = Array.from({ length: rows }, (_, r) =>
         "<tr>" + Array.from({ length: cols }, (_, c) => `<td>Cell ${r + 1}-${c + 1}</td>`).join("") + "</tr>"
       ).join("");
-      exec("insertHTML", `<table border="1">${header}${dataRows}</table>`);
+      insertBlock(`<table border="1">${header}${dataRows}</table>`);
     }
   };
 
-  const spoiler = () => {
-    const label = prompt("Spoiler label (optional):", "") ?? "";
+  const spoiler = (label: string) => {
     const open  = label ? `[spoiler=${label}]` : "[spoiler]";
     if (isSource()) {
       wrapSource(open, "[/spoiler]");
     } else {
-      wrapHtml(`<details><summary>${label || "Spoiler"}</summary><div>`, "</div></details>");
+      wrapHtml(`<details><summary>${label || "Spoiler"}</summary><div>`, `</div></details>${ZWSP}`);
     }
   };
 
@@ -445,49 +485,62 @@ export default function EditorToolbar(props: Props) {
     <div class="flex flex-wrap items-center gap-0.5 px-2 py-2 shrink-0 border-t border-rim rounded-b-lg bg-surface">
 
       {/* ── Group 1: Inline formatting — all levels ── */}
-      <Btn title={t("editor.bold")} onPress={bold}>
+      {/* marks() only tracks the WYSIWYG caret, so the source tab shows none. */}
+      <Btn title={t("editor.bold")} onPress={bold} active={!isSource() && marks().bold}>
         <MdOutlineFormat_bold class="w-4 h-4" />
       </Btn>
-      <Btn title={t("editor.italic")} onPress={italic}>
+      <Btn title={t("editor.italic")} onPress={italic} active={!isSource() && marks().italic}>
         <MdOutlineFormat_italic class="w-4 h-4" />
       </Btn>
-      <Btn title={t("editor.underline")} onPress={underline}>
+      <Btn title={t("editor.underline")} onPress={underline} active={!isSource() && marks().underline}>
         <MdOutlineFormat_underlined class="w-4 h-4" />
       </Btn>
-      <Btn title={t("editor.strikethrough")} onPress={strike}>
+      <Btn title={t("editor.strikethrough")} onPress={strike} active={!isSource() && marks().strikeThrough}>
         <MdOutlineFormat_strikethrough class="w-4 h-4" />
       </Btn>
-      <Btn title={t("editor.highlight")} onPress={highlight}>
-        <MdOutlineHighlight class="w-4 h-4" />
-      </Btn>
+      <ColorPicker
+        title={t("editor.highlight")}
+        icon={<MdOutlineHighlight class="w-4 h-4" />}
+        onPick={highlight}
+        clearLabel={t("editor.highlight_none")}
+        onClear={clearHighlight}
+      />
 
       {/* ── Groups 2–7: hidden for comment level ── */}
       <Show when={!isComment()}>
         <>
           {/* ── Group 2: Text appearance ── */}
           <Sep />
-          <Btn title="Text color [color=X]" onPress={color}>
-            <MdOutlineFormat_color_text class="w-4 h-4" />
-          </Btn>
-          <Btn title="Font family [font=X]" onPress={font}>
-            <MdOutlineFont_download class="w-4 h-4" />
-          </Btn>
-          <Btn title="Font size [size=X]" onPress={size}>
-            <MdOutlineFormat_size class="w-4 h-4" />
-          </Btn>
+          <ColorPicker
+            title={t("editor.text_color")}
+            icon={<MdOutlineFormat_color_text class="w-4 h-4" />}
+            onPick={color}
+          />
+          <OptionMenu
+            title={t("editor.font_family")}
+            icon={<MdOutlineFont_download class="w-4 h-4" />}
+            options={FONT_OPTIONS}
+            onPick={font}
+          />
+          <OptionMenu
+            title={t("editor.font_size")}
+            icon={<MdOutlineFormat_size class="w-4 h-4" />}
+            options={SIZE_OPTIONS}
+            onPick={size}
+          />
 
           {/* ── Group 3: Block elements ── */}
           <Sep />
-          {/* Heading selector — full only; disabled (not hidden) in source
-              mode since bbcode has no heading tag, so the toolbar's button
-              set stays constant across the write/source toggle. */}
+          {/* Heading selector — full only. Works in source mode too: [h1]–[h6]
+              are real bbcode (htmlToSource emits them, core renders them). */}
           <Show when={isFull()}>
             <HeadingToolDropdown
-              disabled={isSource()}
               onSelect={(val) => {
-                const el = props.editorRef();
-                if (!el) return;
-                el.focus();
+                if (isSource()) {
+                  if (val !== "p") wrapSource(`[${val}]`, `[/${val}]`);
+                  return;
+                }
+                if (!focusEditor()) return;
                 // Picking the level the caret is already in removes it —
                 // queryCommandValue reports the current block tag ("h2", "p").
                 const cur = (document.queryCommandValue("formatBlock") || "").toLowerCase();
@@ -495,9 +548,13 @@ export default function EditorToolbar(props: Props) {
               }}
             />
           </Show>
-          <Btn title={t("editor.blockquote")} onPress={quote}>
-            <MdOutlineFormat_quote class="w-4 h-4" />
-          </Btn>
+          <PromptPanel
+            title={t("editor.blockquote")}
+            icon={<MdOutlineFormat_quote class="w-4 h-4" />}
+            fields={[{ key: "author", label: t("editor.quote_author") }]}
+            submitLabel={t("editor.insert")}
+            onSubmit={(v) => quote(v.author)}
+          />
           <Show when={isFull()}>
             <>
               <Btn title={t("editor.code_block")} onPress={code}>
@@ -505,7 +562,7 @@ export default function EditorToolbar(props: Props) {
               </Btn>
             </>
           </Show>
-          <Btn title="Horizontal rule [hr]" onPress={hr}>
+          <Btn title={t("editor.horizontal_rule")} onPress={hr}>
             <MdOutlineHorizontal_rule class="w-4 h-4" />
           </Btn>
 
@@ -523,12 +580,21 @@ export default function EditorToolbar(props: Props) {
 
           {/* ── Group 5: Insert ── */}
           <Sep />
-          <Btn title={t("editor.link")} onPress={link} disabled={linkLoading()}>
-            <MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />
-          </Btn>
-          <Btn title="Media [img] [video] [audio]" onPress={media}>
-            <MdOutlineImage class="w-4 h-4" />
-          </Btn>
+          <PromptPanel
+            title={t("editor.link")}
+            icon={<MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />}
+            fields={[{ key: "url", label: t("editor.url_label") }]}
+            submitLabel={t("editor.insert")}
+            disabled={linkLoading()}
+            onSubmit={(v) => { void link(v.url); }}
+          />
+          <PromptPanel
+            title={t("editor.media")}
+            icon={<MdOutlineImage class="w-4 h-4" />}
+            fields={[{ key: "url", label: t("editor.media_url") }]}
+            submitLabel={t("editor.insert")}
+            onSubmit={(v) => media(v.url)}
+          />
           <Btn title={t("editor.latex_toolbar_title")} onPress={() => setLatexOpen(true)}>
             <MdOutlineFunctions class="w-4 h-4" />
           </Btn>
@@ -553,12 +619,23 @@ export default function EditorToolbar(props: Props) {
           <Show when={isFull()}>
             <>
               <Sep />
-              <Btn title="Insert table [table]" onPress={table}>
-                <MdOutlineTable_chart class="w-4 h-4" />
-              </Btn>
-              <Btn title="Spoiler [spoiler]" onPress={spoiler}>
-                <MdOutlineVisibility_off class="w-4 h-4" />
-              </Btn>
+              <PromptPanel
+                title={t("editor.table")}
+                icon={<MdOutlineTable_chart class="w-4 h-4" />}
+                fields={[
+                  { key: "cols", label: t("editor.table_columns"), value: "2", type: "number" },
+                  { key: "rows", label: t("editor.table_rows"),    value: "2", type: "number" },
+                ]}
+                submitLabel={t("editor.insert")}
+                onSubmit={(v) => table(v.cols, v.rows)}
+              />
+              <PromptPanel
+                title={t("editor.spoiler")}
+                icon={<MdOutlineVisibility_off class="w-4 h-4" />}
+                fields={[{ key: "label", label: t("editor.spoiler_label") }]}
+                submitLabel={t("editor.insert")}
+                onSubmit={(v) => spoiler(v.label)}
+              />
             </>
           </Show>
 
@@ -628,7 +705,14 @@ function Sep() {
   return <span class="w-px h-4 bg-rim mx-0.5 self-center" />;
 }
 
-function Btn(props: { title: string; onPress: (e: MouseEvent) => void; children: any; disabled?: boolean }) {
+function Btn(props: {
+  title: string;
+  onPress: (e: MouseEvent) => void;
+  children: any;
+  disabled?: boolean;
+  /** Caret is inside this mark — same lit style the dropdowns use when open. */
+  active?: boolean;
+}) {
   return (
     <button
       type="button"
@@ -642,7 +726,7 @@ function Btn(props: { title: string; onPress: (e: MouseEvent) => void; children:
         "px-1.5 py-0.5 rounded transition-colors " +
         (props.disabled
           ? "text-muted/40 cursor-not-allowed"
-          : "text-txt hover:bg-elevated")
+          : `hover:bg-elevated ${props.active ? "bg-elevated text-accent" : "text-txt"}`)
       }
     >
       {props.children}
