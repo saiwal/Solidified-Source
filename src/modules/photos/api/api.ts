@@ -210,6 +210,27 @@ export async function batchDeletePhotos(nick: string, resourceIds: string[]): Pr
   }
 }
 
+/** URL that streams a photo, or zips-and-streams an album. Use as an <a href download>.
+ *  Photos and albums are `attach` rows, so the files download endpoint serves both. */
+export function photoDownloadUrl(nick: string, hash: string): string {
+  return `/spa/files/${nick}/download/${encodeURIComponent(hash)}`;
+}
+
+export async function batchMovePhotos(nick: string, resourceIds: string[], folder: string): Promise<void> {
+  const { getCsrfToken } = await import('@utsukta/spa-core/lib/csrf');
+  const token = await getCsrfToken().catch(() => '');
+  const res = await fetch(`/spa/photos/${nick}/images/move`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+    body: JSON.stringify({ resource_ids: resourceIds, folder }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as Record<string, unknown>;
+    throw new Error(String((err?.error as Record<string, unknown>)?.message ?? 'Move failed'));
+  }
+}
+
 export async function deleteAlbum(nick: string, folderHash: string): Promise<void> {
   const { getCsrfToken } = await import('@utsukta/spa-core/lib/csrf');
   const token = await getCsrfToken().catch(() => '');

@@ -11,7 +11,7 @@ import {
   photos, albums, albumName, detail, loading, albumsLoading, albumsError, canWrite,
   loadSummary, loadAlbum, loadImage, loadAlbums,
   handleLike, handleDislike, addComment, handleCommentReaction,
-  createNewAlbum, deletePhotoAction, batchDeleteAction, deleteAlbumAction, renamePhotoAction,
+  createNewAlbum, deletePhotoAction, batchDeleteAction, batchMoveAction, deleteAlbumAction, renamePhotoAction,
   updateTitleAction, updateDescriptionAction, toggleNsfwAction,
 } from "../store/store";
 import {
@@ -21,7 +21,7 @@ import {
   MdFillKeyboard_arrow_down, MdFillKeyboard_arrow_up,
   MdFillAccount_tree, MdFillFormat_list_bulleted,
   MdOutlineEdit, MdOutlineDelete, MdOutlineReply, MdFillMore_vert,
-  MdOutlineLock, MdOutlineShare,
+  MdOutlineLock, MdOutlineShare, MdOutlineDownload,
   MdFillApps, MdFillCollections,
   MdFillAdd, MdFillClose,
   MdFillCloud_upload, MdFillDelete_forever,
@@ -42,8 +42,8 @@ import AclEditor from "../components/AclEditor";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
-import type { PhotoComment } from "../api/api";
-import { uploadPhotoEdit, uploadNewPhoto } from "../api/api";
+import type { PhotoComment, Album } from "../api/api";
+import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, fetchAlbums } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
@@ -377,6 +377,10 @@ function AlbumGrid() {
   const [confirmBatch, setConfirmBatch]   = createSignal(false);
   const [batchDeleting, setBatchDeleting] = createSignal(false);
 
+  // Batch move — album list is fetched lazily, only when select mode opens
+  const [moveTargets, setMoveTargets] = createSignal<Album[]>([]);
+  const [moving, setMoving]           = createSignal(false);
+
   // Album deletion
   const [confirmAlbum, setConfirmAlbum]   = createSignal(false);
   const [deletingAlbum, setDeletingAlbum] = createSignal(false);
@@ -418,6 +422,24 @@ function AlbumGrid() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+
+  function enterSelectMode() {
+    setSelectMode(true);
+    if (moveTargets().length === 0)
+      fetchAlbums(nick() ?? '').then(setMoveTargets).catch(() => {});
+  }
+
+  async function handleBatchMove(folder: string) {
+    setMoving(true);
+    try {
+      await batchMoveAction(nick() ?? '', Array.from(selected()), folder);
+      exitSelectMode();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("photos.move_error"));
+    } finally {
+      setMoving(false);
+    }
   }
 
   function exitSelectMode() {
@@ -577,10 +599,24 @@ function AlbumGrid() {
               {t("photos.cancel")}
             </button>
           }>
-            <button onClick={() => setSelectMode(true)}
+            <button onClick={enterSelectMode}
               class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
               {t("photos.select")}
             </button>
+          </Show>
+
+          {/* Download album as a zip — albums are attach folders, so the files
+              download endpoint zips them for us. */}
+          <Show when={!selectMode() && !!datum()}>
+            <a
+              href={photoDownloadUrl(nick() ?? '', datum() ?? '')}
+              download={`${albumName() || 'album'}.zip`}
+              class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+                     text-muted hover:text-txt hover:bg-surface/50 transition-colors"
+            >
+              <MdOutlineDownload size={15} />
+              {t("photos.download_album")}
+            </a>
           </Show>
 
           {/* Delete album — bulk-destructive, stays owner-only regardless of write_storage */}
@@ -642,6 +678,25 @@ function AlbumGrid() {
             {selected().size} {t("photos.selected")}
           </span>
           <div class="flex items-center gap-2 ml-auto">
+            <Show when={canWrite()}>
+              <select
+                disabled={moving()}
+                value=""
+                onChange={(e) => {
+                  const v = e.currentTarget.value;
+                  e.currentTarget.value = "";
+                  if (v) handleBatchMove(v === "__root__" ? "" : v);
+                }}
+                class="px-2 py-1.5 rounded-lg text-xs font-medium bg-overlay text-txt
+                       border border-rim outline-none disabled:opacity-50"
+              >
+                <option value="">{moving() ? t("photos.batch_moving") : t("photos.move_selected")}</option>
+                <option value="__root__">{t("photos.move_root")}</option>
+                <For each={moveTargets().filter(a => a.folder !== datum())}>
+                  {(a) => <option value={a.folder}>{a.album}</option>}
+                </For>
+              </select>
+            </Show>
             <Show when={confirmBatch()} fallback={
               <button onClick={handleBatchDelete}
                 class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-500
@@ -741,6 +796,20 @@ function AlbumGrid() {
                   >
                     <MdOutlineShare size={16} />
                   </button>
+                </Show>
+
+                {/* Per-photo download */}
+                <Show when={!selectMode()}>
+                  <a
+                    href={photoDownloadUrl(nick() ?? '', photo.resource_id)}
+                    download={photo.filename}
+                    title={t("photos.download")}
+                    onClick={(e) => e.stopPropagation()}
+                    class="absolute bottom-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
+                           opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  >
+                    <MdOutlineDownload size={16} />
+                  </a>
                 </Show>
 
                 {/* Per-photo delete (write access, non-select mode) */}
@@ -1405,10 +1474,20 @@ function ImageView() {
               </button>
             </Show>
 
+            <a
+              href={photoDownloadUrl(nick(), d()?.resource_id ?? "")}
+              download={d()?.filename}
+              title={t("photos.download")}
+              class="ml-auto flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
+                     transition-colors hover:bg-overlay text-muted hover:text-txt"
+            >
+              <MdOutlineDownload size={17} />
+            </a>
+
             <button
               onClick={() => { const p = d(); if (p) openShare(shareTargetForPhoto(nick(), p)); }}
               title={t("share.action")}
-              class="ml-auto flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
+              class="flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
                      transition-colors hover:bg-overlay text-muted hover:text-txt"
             >
               <MdOutlineShare size={17} />

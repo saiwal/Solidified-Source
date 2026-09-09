@@ -7,6 +7,7 @@ import {
   createAlbum as apiCreateAlbum,
   deletePhoto as apiDeletePhoto,
   batchDeletePhotos as apiBatchDeletePhotos,
+  batchMovePhotos as apiBatchMovePhotos,
   deleteAlbum as apiDeleteAlbum,
   renamePhoto as apiRenamePhoto,
   updatePhotoTitle as apiUpdateTitle,
@@ -195,6 +196,11 @@ export async function deletePhotoAction(nick: string, resourceId: string): Promi
 
 export async function batchDeleteAction(nick: string, resourceIds: string[]): Promise<void> {
   await apiBatchDeletePhotos(nick, resourceIds);
+  setPhotos(prev => prev.filter(p => !resourceIds.includes(p.resource_id)));
+}
+
+export async function batchMoveAction(nick: string, resourceIds: string[], folder: string): Promise<void> {
+  await apiBatchMovePhotos(nick, resourceIds, folder);
   setPhotos(prev => prev.filter(p => !resourceIds.includes(p.resource_id)));
 }
 
