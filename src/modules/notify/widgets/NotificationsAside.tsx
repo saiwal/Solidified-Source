@@ -882,7 +882,7 @@ export default function NotificationsAside() {
   const [announcements, { refetch: refetchAnnouncements, mutate: mutateAnnouncements }] =
     createQueryResource(
       "site-announcements",
-      () => (booted() && auth()?.isLoggedIn ? true : null),
+      () => (booted() && auth()?.isLocal ? true : null),
       fetchAnnouncements,
     );
 
@@ -1269,7 +1269,7 @@ export default function NotificationsAside() {
             <Show
               when={
                 booted() &&
-                auth()?.isLoggedIn &&
+                auth()?.isLocal &&
                 (hasNewAnnouncements() || showAnnouncements() || isAdmin())
               }
             >
