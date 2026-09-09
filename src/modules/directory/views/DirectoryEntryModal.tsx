@@ -1,7 +1,7 @@
 // modules/directory/views/DirectoryEntryModal.tsx
 import { Show, For, type Component, createEffect, createSignal, on } from "solid-js";
 import { Portal } from "solid-js/web";
-import type { DirectoryEntry } from "../people/api";
+import { chanviewHref, type DirectoryEntry } from "../people/api";
 import { connectToChannel } from "../connections/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -10,19 +10,6 @@ import { MdFillCheck } from "solid-icons/md";
 interface Props {
   entry: DirectoryEntry | null;
   onClose: () => void;
-}
-
-function chanviewHref(entry: DirectoryEntry): string {
-  const params = new URLSearchParams({ f: "", hash: entry.hash, addr: entry.address, name: entry.name });
-  if (entry.photo) params.set("photo", entry.photo);
-  if (entry.profile_url) params.set("url", entry.profile_url);
-  if (entry.description) params.set("desc", entry.description);
-  if (entry.location) params.set("location", entry.location);
-  if (entry.homepage) params.set("homepage", entry.homepage);
-  if (entry.cover) params.set("cover", entry.cover);
-  if (entry.keywords.length) params.set("kw", entry.keywords.join(","));
-  if (entry.public_forum) params.set("forum", "1");
-  return `/chanview?${params.toString()}`;
 }
 
 const DirectoryEntryModal: Component<Props> = (props) => {

@@ -1,6 +1,6 @@
 // modules/directory/views/DirectoryCard.tsx
 import { Show, For, createSignal, type Component } from "solid-js";
-import { addConnection, censorEntry, type DirectoryEntry } from "../people/api";
+import { addConnection, censorEntry, chanviewHref, type DirectoryEntry } from "../people/api";
 import { isDirectoryAdmin, setEntryCensored } from "../people/store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -23,7 +23,8 @@ const DirectoryCard: Component<Props> = (props) => {
     try {
       await addConnection(props.entry.address);
       setConnectState("done");
-    } catch {
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Follow failed");
       setConnectState("idle");
     }
   }
@@ -136,13 +137,25 @@ const DirectoryCard: Component<Props> = (props) => {
             </span>
           }
         >
-          <button
-            onClick={handleAdd}
-            disabled={connectState() === "pending"}
-            class="flex-1 text-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg hover:opacity-80 transition-opacity disabled:opacity-60"
+          <Show
+            when={e().connect_url}
+            fallback={
+              <a
+                href={chanviewHref(e())}
+                class="flex-1 text-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg hover:opacity-80 transition-opacity"
+              >
+                {t("directory.view_profile")}
+              </a>
+            }
           >
-            {e().connect_url ? t("directory.connect") : t("directory.view_profile")}
-          </button>
+            <button
+              onClick={handleAdd}
+              disabled={connectState() === "pending"}
+              class="w-full flex-1 text-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg hover:opacity-80 transition-opacity disabled:opacity-60"
+            >
+              {t("directory.connect")}
+            </button>
+          </Show>
         </Show>
         <Show when={e().ignore_url && !e().is_connected}>
          <a

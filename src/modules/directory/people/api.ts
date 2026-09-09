@@ -102,3 +102,19 @@ export async function censorEntry(hash: string, severity: 0 | 1 | 2): Promise<vo
     throw new Error("Censor failed");
   }
 }
+
+// A visitor (no local channel here) gets no connect_url — core's /follow needs a
+// local session — so the only action we can offer is the local /chanview page,
+// which carries the entry's data in query params.
+export function chanviewHref(entry: DirectoryEntry): string {
+  const params = new URLSearchParams({ f: "", hash: entry.hash, addr: entry.address, name: entry.name });
+  if (entry.photo) params.set("photo", entry.photo);
+  if (entry.profile_url) params.set("url", entry.profile_url);
+  if (entry.description) params.set("desc", entry.description);
+  if (entry.location) params.set("location", entry.location);
+  if (entry.homepage) params.set("homepage", entry.homepage);
+  if (entry.cover) params.set("cover", entry.cover);
+  if (entry.keywords.length) params.set("kw", entry.keywords.join(","));
+  if (entry.public_forum) params.set("forum", "1");
+  return `/chanview?${params.toString()}`;
+}
