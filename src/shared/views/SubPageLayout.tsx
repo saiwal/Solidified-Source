@@ -143,9 +143,17 @@ export default function SubPageLayout(props: Props) {
           </div>
         </Show>
 
-        <div class={props.contentClass ?? "flex-1 min-w-0"}>
-          {props.children}
-        </div>
+        {/* At the base path the redirect effect above is about to navigate to
+            base/<key>, which remounts this whole layout. Mounting children here
+            too would leave two overlapping instances of the same lazy() section
+            component, and solid's lazy nulls its shared resource in the first
+            instance's onCleanup — the survivor then renders blank forever.
+            Mobile hides <main> at the base path anyway. */}
+        <Show when={!atBase()}>
+          <div class={props.contentClass ?? "flex-1 min-w-0"}>
+            {props.children}
+          </div>
+        </Show>
       </main>
     </div>
   );
