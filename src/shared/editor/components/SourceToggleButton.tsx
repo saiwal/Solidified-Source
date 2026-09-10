@@ -32,14 +32,14 @@ const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
       onClick={props.onToggle}
       title={isSource() ? t("editor.write_tab") : t("editor.source_tab")}
       class={
-        "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border transition-colors shrink-0 " +
+        "flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs border transition-colors shrink-0 " +
         (isSource()
           ? "bg-accent/10 text-accent border-accent/30"
           : "text-muted hover:text-txt hover:bg-elevated border-rim")
       }
     >
       <MdOutlineCode class="w-3.5 h-3.5" />
-      {isSource() ? t("editor.write_tab") : t("editor.source_tab")}
+      <span class="hidden sm:inline">{isSource() ? t("editor.write_tab") : t("editor.source_tab")}</span>
     </button>
     </Show>
   );

@@ -116,7 +116,7 @@ export default function CommentComposer(props: Props) {
             }}
             onPasteFiles={auth()?.isLocal ? (files) => attach.addUploads(files) : undefined}
             placeholder={t("editor.write_reply_ctrl")}
-            minHeight="44px"
+            minHeight="88px"
             resizable
           />
           {/* Attachment uploads go through wall_attach/:nick — remote/OWA
