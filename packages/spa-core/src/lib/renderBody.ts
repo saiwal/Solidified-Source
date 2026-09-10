@@ -28,6 +28,23 @@ import { normalizeMime } from "./mimetypes";
 // an existing entity's '&' a second time would show the reader a literal
 // "&lt;b&gt;" instead of "<b>". bbcode.ts has its own escapeHtml() which does
 // double-encode; that is correct for its callers and wrong for this one.
+// Hubzilla marks a bookmarkable link by prefixing it with a literal "#^", and
+// bbcode.ts renders that marker as its own span (as core's include/bbcode.php
+// does). Shown to a reader it is just markup leaking into prose — core ships the
+// `bookmarker` addon precisely to replace it with something clickable, and the SPA
+// injects its own per-link button (src/modules/bookmarks/candidates.ts). So strip
+// it here, at the display boundary.
+//
+// Deliberately NOT removed from bbcodeToHtml(): the rich editor round-trips
+// through bbcodeToHtml() -> htmlToSource() on every blur, and htmlToSource's
+// `case "a"` emits a bare [url=…], so this span's text content is the only thing
+// carrying "#^" back into the source. Drop it there and editing a post would
+// silently destroy its TERM_BOOKMARK term. The editor calls bbcodeToHtml()
+// directly and never comes through here, which is what makes this the right seam.
+function stripBookmarkMarkers(html: string): string {
+  return html.replace(/<span class="bookmark-identifier">#\^<\/span>\s*/g, "");
+}
+
 function escapeTags(s: string): string {
   return s
     .replace(/&(?![a-zA-Z][a-zA-Z0-9]*;|#[0-9]+;|#[xX][0-9a-fA-F]+;)/g, "&amp;")
@@ -65,7 +82,7 @@ export function renderBody(
     // 'text/bbcode' and the empty string, which the item.mimetype column
     // defaults to and core's prepare_text() treats as bbcode.
     default:
-      return sanitize(bbcodeToHtml(body, opts));
+      return sanitize(stripBookmarkMarkers(bbcodeToHtml(body, opts)));
   }
 }
 

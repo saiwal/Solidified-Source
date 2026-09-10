@@ -171,6 +171,7 @@ export function mapActivityToPost(activity: any): Post {
         }))
       : [],
     categories: activity.categories ?? [],
+    bookmarkLinks: activity.bookmark_links ?? [],
     tags: activity.tags ?? [],
     children: [],
   };

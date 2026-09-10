@@ -76,6 +76,22 @@ assert(renderBody("a & b &#39; c", "text/plain").includes("a &amp; b &#39; c"));
 // A bbcode body must never be handed to the markdown branch.
 assert.equal(renderBody("# not a heading", "text/bbcode"), "<BB># not a heading</BB>");
 
+// The #^ bookmark marker is markup, not prose, and must not reach a reader — it
+// is stripped on the way out of the bbcode branch. (The stub passes its input
+// through, so a pre-rendered marker stands in for what bbcodeToHtml emits.)
+assert.equal(
+  renderBody('<span class="bookmark-identifier">#^</span><a class="bookmark" href="https://x/">X</a>', "text/bbcode"),
+  '<BB><a class="bookmark" href="https://x/">X</a></BB>');
+// Trailing whitespace after the marker goes with it, so no gap is left behind.
+assert.equal(
+  renderBody('a <span class="bookmark-identifier">#^</span> <a href="https://x/">X</a>', ""),
+  '<BB>a <a href="https://x/">X</a></BB>');
+// Only the bbcode branch: an html body was purified at save time and is passed
+// through verbatim, marker and all.
+assert.equal(
+  renderBody('<span class="bookmark-identifier">#^</span>hi', "text/html"),
+  '<span class="bookmark-identifier">#^</span>hi');
+
 // text/html is purified rather than trusted, even though core's prepare_text()
 // passes it straight through on the strength of save-time HTMLPurifier.
 assert.equal(renderBody("<p>ok</p><script>bad()</script>", "text/html"), "<p>ok</p>");

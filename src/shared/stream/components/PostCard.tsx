@@ -1,6 +1,7 @@
 // src/shared/stream/components/PostCard.tsx
 import {
   createSignal,
+  createMemo,
   createEffect,
   untrack,
   onMount,
@@ -97,6 +98,8 @@ import {
   apiAddToCalendar,
 } from "@utsukta/spa-core/lib/item-api";
 import { fetchFolders } from "@/modules/network/api";
+import { saveBookmarksFromItem } from "@/modules/bookmarks/api";
+import { linkCandidates, injectBookmarkButtons, type LinkCandidate } from "@/modules/bookmarks/candidates";
 import EventCard from "./EventCard";
 import PollCard from "./PollCard";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
@@ -104,7 +107,8 @@ import type { EventData } from "@utsukta/spa-core/types/post.types";
 import AttachmentList from "./AttachmentList";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
-import { useNavData } from "@utsukta/spa-core/store/nav-store";
+import { useNavData, useInstalledApps } from "@utsukta/spa-core/store/nav-store";
+import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useOsmMap } from "@utsukta/spa-core/lib/useOsmMap";
 import { DEFAULT_TMS, osmLink, osmSearchLink, parseCoord } from "@utsukta/spa-core/lib/osm";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
@@ -446,6 +450,73 @@ export default function PostCard(props: {
     }
   }
 
+  // Bookmarking links out of this post. Core puts one "Save Bookmarks" entry in
+  // the item menu that saves every #^-marked link at once; this instead offers a
+  // button at each link, so a post's links are individually bookmarkable and the
+  // unmarked ones — which core can never offer — are too. Gated the way core
+  // gates its entry (ThreadItem.php): a local viewer, on their own copy of the
+  // post, with the Bookmarks app installed.
+  const bookmarkCandidates = createMemo<LinkCandidate[]>(() =>
+    linkCandidates(props.post.body ?? "", props.post.bookmarkLinks ?? []));
+
+  const installedApps = useInstalledApps();
+  const canSaveBookmarks = () =>
+    auth()?.isLocal === true &&
+    ownsStreamCopy() &&
+    !!props.post.uuid &&
+    isAppInstalled(installedApps(), "/bookmarks") &&
+    bookmarkCandidates().length > 0;
+
+  // Saving is per link, straight into the folder bookmark_add() derives (the
+  // same one core's own per-post action uses). Reordering or moving afterwards
+  // is what /bookmarks is for.
+  async function saveOneBookmark(btn: HTMLElement, url: string) {
+    if (btn.dataset.bmBusy || btn.dataset.bmSaved) return;
+    const cand = bookmarkCandidates().find((c) => c.url === url);
+    if (!cand || !props.post.uuid) return;
+
+    btn.dataset.bmBusy = "1";
+    try {
+      await saveBookmarksFromItem({
+        item: props.post.uuid,
+        urls: [{ url: cand.url, title: cand.title }],
+      });
+      // Mutated in place rather than re-rendering: innerHTML is the whole post
+      // body, and re-running it would restart any media playing inside it.
+      btn.dataset.bmSaved = "1";
+      btn.setAttribute("title", t("post.bookmark_saved") as string);
+      btn.setAttribute("aria-label", t("post.bookmark_saved") as string);
+      toast.success(t("post.bookmark_saved"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : (t("post.save_bookmarks_failed") as string));
+    } finally {
+      delete btn.dataset.bmBusy;
+    }
+  }
+
+  /** Same contract as handleNsfwToggleClick: true when this click was ours. */
+  function handleBookmarkClick(e: MouseEvent): boolean {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-bm-url]");
+    if (!btn) return false;
+    e.preventDefault();
+    e.stopPropagation();
+    void saveOneBookmark(btn, btn.dataset.bmUrl!);
+    return true;
+  }
+
+  // The body as rendered: identical to post.body unless this viewer may bookmark,
+  // in which case each bookmarkable link gains a button.
+  //
+  // A plain function, not createMemo: a memo's computation runs eagerly at
+  // creation, and canSaveBookmarks() reads ownsStreamCopy(), which is declared
+  // further down — evaluating it here would hit that const's temporal dead zone.
+  // Nothing is lost, since only one of the two body divs ever renders per card.
+  const renderedBody = () =>
+    canSaveBookmarks()
+      ? injectBookmarkButtons(props.post.body ?? "", bookmarkCandidates(),
+          t("post.save_bookmark") as string)
+      : props.post.body;
+
   // Pin: channel wall owner only, top-level non-private posts (backend
   // re-validates this — these are UI-visibility gates, not the source of truth).
   const canPin = () =>
@@ -764,6 +835,7 @@ export default function PostCard(props: {
   }
 
   function handleBodyClick(e: MouseEvent) {
+    if (handleBookmarkClick(e)) return;
     if (handleNsfwToggleClick(e)) return;
     if (handleDecryptClick(e)) return;
   }
@@ -1216,7 +1288,7 @@ export default function PostCard(props: {
             <div
               ref={setBodyRef}
               class={`mt-1.5 ${POST_PROSE} text-muted prose-p:my-1 prose-p:leading-snug`}
-              innerHTML={props.post.body}
+              innerHTML={renderedBody()}
               onClick={handleBodyClick}
               onMouseUp={handleBodyMouseUp}
             />
@@ -1898,7 +1970,7 @@ export default function PostCard(props: {
               <div
                 ref={setBodyRef}
                 class={`prose-code:break-all ${POST_PROSE} text-muted`}
-                innerHTML={props.post.body}
+                innerHTML={renderedBody()}
                 onClick={handleBodyClick}
                 onMouseUp={handleBodyMouseUp}
               />

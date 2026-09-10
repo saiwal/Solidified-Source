@@ -90,6 +90,10 @@ export const post: RawDictionary["post"] = {
   add_to_calendar:       "Zum Kalender hinzufügen",
   added_to_calendar:     "Zu deinem Kalender hinzugefügt",
   add_to_calendar_failed: "Ereignis konnte nicht zum Kalender hinzugefügt werden.",
+  // Lesezeichen-Button direkt am Link im Beitragstext
+  save_bookmark:         "Diesen Link als Lesezeichen speichern",
+  bookmark_saved:        "Als Lesezeichen gespeichert",
+  save_bookmarks_failed: "Dieses Lesezeichen konnte nicht gespeichert werden.",
   // expiry
   expires:               "Läuft ab",
   expired_badge:         "Abgelaufen",

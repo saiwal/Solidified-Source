@@ -794,6 +794,9 @@ export type RawDictionary = {
     add_to_calendar: string;
     added_to_calendar: string;
     add_to_calendar_failed: string;
+    save_bookmark: string;
+    bookmark_saved: string;
+    save_bookmarks_failed: string;
     expires: string; expired_badge: string; expired_title: string;
     scheduled_badge: string; scheduled_title: string;
     dm_badge: string; dm_title: string; dm_to: string;
@@ -2898,7 +2901,35 @@ export type RawDictionary = {
     remove:           string;
     visit:            string;
     chat_badge:       string;
+    private_badge:    string;
     untitled_folder:  string;
+    // own vs connections' folders — core's two /bookmarks sections
+    section_own:      string;
+    section_connections: string;
+    add:              string;
+    add_title:        string;
+    field_url:        string;
+    field_title:      string;
+    field_folder:     string;
+    field_private:    string;
+    private_hint:     string;
+    save:             string;
+    saving:           string;
+    cancel:           string;
+    added:            string;
+    edit:             string;
+    edit_title:       string;
+    move_to:          string;
+    new_folder:       string;
+    new_folder_hint:  string;
+    rename_folder:    string;
+    delete_folder:    string;
+    delete_folder_confirm: string;
+    folder_saved:     string;
+    move_up:          string;
+    move_down:        string;
+    default_folder:   string;
+    url_required:     string;
   };
   blocklist: {
     block:               string;

@@ -90,6 +90,10 @@ export const post: RawDictionary["post"] = {
   add_to_calendar:       "Add to calendar",
   added_to_calendar:     "Added to your calendar",
   add_to_calendar_failed: "Couldn't add event to your calendar.",
+  // per-link bookmark button injected into the post body
+  save_bookmark:         "Bookmark this link",
+  bookmark_saved:        "Bookmarked",
+  save_bookmarks_failed: "Couldn't save that bookmark.",
   // expiry
   expires:               "Expires",
   expired_badge:         "Expired",

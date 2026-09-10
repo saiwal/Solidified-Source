@@ -78,6 +78,10 @@ export interface Post {
   commentsTotal?: number;
   likeCount: number;
   categories?: string[];
+  /** Links the author marked bookmarkable with #^[url]…[/url] — TERM_BOOKMARK
+   *  terms, which federate and are present on every RSS item. Drives the
+   *  "Save bookmarks" post action; see FormatsItems.php. */
+  bookmarkLinks?: { url: string; title: string }[];
   tags?: string[];
   viewerLiked: boolean;
   viewerDisliked: boolean;

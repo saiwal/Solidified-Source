@@ -82,6 +82,10 @@ export const post: RawDictionary["post"] = {
   add_to_calendar:       "कैलेंडर में जोड़ें",
   added_to_calendar:     "आपके कैलेंडर में जोड़ा गया",
   add_to_calendar_failed: "इवेंट को कैलेंडर में नहीं जोड़ा जा सका।",
+  // पोस्ट के भीतर प्रत्येक लिंक पर बुकमार्क बटन
+  save_bookmark:         "इस लिंक को बुकमार्क करें",
+  bookmark_saved:        "बुकमार्क किया गया",
+  save_bookmarks_failed: "यह बुकमार्क सहेजा नहीं जा सका।",
   // expiry
   expires:               "समाप्ति",
   expired_badge:         "समाप्त",
