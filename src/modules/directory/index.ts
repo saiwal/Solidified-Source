@@ -62,13 +62,6 @@ registerModule({
       path: "/directory/*",
       component: () => import("./views/ConnectionsShellView"),
     },
-    // The Invite app's URL is /invite. useNav's isSpaApp() only keeps an app
-    // inside the SPA when its first path segment is a registered route root,
-    // so without this the app tile would full-page-load the classic module.
-    {
-      path: "/invite",
-      component: () => import("./views/InviteRedirect"),
-    },
     ...subRoutes,
   ],
   navItem: {

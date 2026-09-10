@@ -8,6 +8,7 @@ import { MdOutlineSettings } from "solid-icons/md";
 import { refetchNavData } from "@utsukta/spa-core/store/nav-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { appLabel } from "@utsukta/spa-core/lib/app-labels";
+import { appNavigable } from "@utsukta/spa-core/lib/useNav";
 import NsfwConfigModal from "./NsfwConfigModal";
 import CardsConfigModal from "./CardsConfigModal";
 import { getFrontendToggleableModules, frontendFeatureEnabled } from "@utsukta/spa-core/module-registry";
@@ -17,6 +18,7 @@ interface AppEntry {
   name: string;
   description: string;
   photo: string;
+  url: string;
   installed: boolean;
   pinned: boolean;
   featured: boolean;
@@ -274,7 +276,8 @@ export default function IntegrationsSection() {
                   </div>
 
                   <div class="w-11 flex justify-center shrink-0">
-                    <Show when={row.app?.installed}>
+                    {/* No toggle for an app the nav can never show (NSFW, Invite) */}
+                    <Show when={row.app?.installed && appNavigable(row.app.url)}>
                       <input
                         type="checkbox"
                         class="w-4 h-4 accent-accent cursor-pointer
