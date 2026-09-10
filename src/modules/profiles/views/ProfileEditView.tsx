@@ -195,6 +195,7 @@ export default function ProfileEditView() {
             aspect={1}
             circular={true}
             onConfirm={handleAvatarConfirm}
+            onSkip={() => handleAvatarConfirm(file())}
             onCancel={() => setAvatarFile(null)}
           />
         )}
@@ -207,6 +208,7 @@ export default function ProfileEditView() {
             aspect={1200 / 435}
             circular={false}
             onConfirm={handleCoverConfirm}
+            onSkip={() => handleCoverConfirm(file())}
             onCancel={() => setCoverFile(null)}
           />
         )}

@@ -1,4 +1,5 @@
-import { onCleanup, onMount } from "solid-js";
+import { onCleanup, onMount, Show } from "solid-js";
+import { useI18n } from "@utsukta/spa-core/i18n";
 import FilerobotImageEditor from "filerobot-image-editor";
 import { TABS, TOOLS } from "react-filerobot-image-editor";
 
@@ -123,6 +124,8 @@ export interface ImageEditorProps {
   circular?: boolean;
   onConfirm: (blob: Blob) => void;
   onCancel: () => void;
+  /** when given, shows a "Use original" button that skips cropping entirely */
+  onSkip?: () => void;
 }
 
 // Filerobot bakes edits onto a canvas sized to fit the on-screen editor
@@ -165,7 +168,10 @@ async function cropFromSource(
 }
 
 export default function ImageEditor(props: ImageEditorProps) {
+  const { t } = useI18n();
   let container!: HTMLDivElement;
+  let skipButton: HTMLButtonElement | undefined;
+  let skipHome: HTMLElement | null = null;
   let editor: InstanceType<typeof FilerobotImageEditor> | null = null;
   let objectUrl = "";
   let inputOverrideStyle: HTMLStyleElement | null = null;
@@ -256,9 +262,29 @@ export default function ImageEditor(props: ImageEditorProps) {
     });
 
     editor.render();
+
+    // Filerobot owns its topbar, so the skip button is rendered by us and then
+    // moved into the flex row that holds Save — anywhere else it covers the
+    // tool controls. Target the row, not .FIE_topbar-save itself: that class
+    // sits on a fit-content wrapper that would squash the button to nothing.
+    // The row only exists once React has painted, hence the frame-by-frame
+    // retry (bounded, so a class rename just drops the button rather than
+    // looping forever).
+    let tries = 60;
+    const place = () => {
+      const row = container.querySelector(".FIE_topbar-buttons-wrapper");
+      if (row && skipButton) {
+        // Solid removes the button from wherever it *thinks* it lives on
+        // dispose, so remember that spot and put it back before teardown.
+        skipHome = skipButton.parentElement;
+        row.appendChild(skipButton);
+      } else if (tries-- > 0) requestAnimationFrame(place);
+    };
+    requestAnimationFrame(place);
   });
 
   onCleanup(() => {
+    if (skipButton && skipHome) skipHome.appendChild(skipButton);
     editor?.terminate();
     editor = null;
     if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -267,5 +293,20 @@ export default function ImageEditor(props: ImageEditorProps) {
   });
 
   // Filerobot renders its own full-screen UI inside this fixed container.
-  return <div ref={container} style="position: fixed; inset: 0; z-index: 9999;" />;
+  // Unmounting is enough to tear the editor down (onCleanup).
+  return (
+    <>
+      <div ref={container} style="position: fixed; inset: 0; z-index: 9999;" />
+      <Show when={props.onSkip}>
+        <button
+          ref={skipButton}
+          type="button"
+          onClick={() => props.onSkip!()}
+          class="ml-3 shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md border border-rim text-txt text-sm hover:bg-elevated transition-colors"
+        >
+          {t("ui.use_original")}
+        </button>
+      </Show>
+    </>
+  );
 }

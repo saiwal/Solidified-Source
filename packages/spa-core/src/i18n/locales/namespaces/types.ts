@@ -187,6 +187,7 @@ export type RawDictionary = {
     recent_posts:            string;
     remote_hosted_on:        string;
     copy_address:            string;
+    use_original:            string;
   };
   tour: {
     guided_tours:       string;
