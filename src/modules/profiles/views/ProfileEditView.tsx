@@ -243,12 +243,13 @@ export default function ProfileEditView() {
         {(p) => (
           <form onSubmit={handleSubmit} class="space-y-8">
 
-            {/* Cover + avatar header */}
-            <div class="rounded-xl overflow-hidden border border-rim">
+            {/* Cover + avatar header — same card geometry as the
+                channel.details widget (channel/views/ProfileView.tsx) */}
+            <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
               {/* Cover photo */}
               <div
-                class="relative w-full bg-elevated group"
-                style="aspect-ratio: 1200/435"
+                class="relative w-full bg-elevated group/cover"
+                style="aspect-ratio: 3 / 1"
               >
                 <Show when={coverUrl()}>
                   {(url) => (
@@ -260,11 +261,11 @@ export default function ProfileEditView() {
                   )}
                 </Show>
                 <Show when={!coverUrl() && !p().cover_url}>
-                  <div class="w-full h-full bg-gradient-to-br from-elevated to-rim" />
+                  <div class="w-full h-full bg-gradient-to-br from-accent to-accent-txt" />
                 </Show>
 
                 {/* Cover photo buttons */}
-                <div class="absolute inset-0 flex items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-black/30">
+                <div class="absolute inset-0 flex items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover/cover:opacity-100 transition-opacity bg-black/30">
                   <Show when={coverUploading()} fallback={
                     <>
                       <button
@@ -291,12 +292,10 @@ export default function ProfileEditView() {
                     </div>
                   </Show>
                 </div>
-              </div>
 
-              {/* Avatar + info row */}
-              <div class="flex items-start gap-3 px-4 -mt-10 pb-3 relative">
-                <div class="relative shrink-0 group">
-                  <div class="w-20 h-20 rounded-full border-4 border-bg overflow-hidden bg-elevated">
+                {/* Avatar, overlapping the cover's bottom edge */}
+                <div class="absolute -bottom-10 left-5 z-10 group/avatar">
+                  <div class="w-20 h-20 rounded-full ring-4 ring-surface overflow-hidden bg-overlay">
                     <Show when={avatarUrl() || p().avatar_l}>
                       {(url) => (
                         <img
@@ -309,7 +308,7 @@ export default function ProfileEditView() {
                   </div>
                   {/* Avatar overlay */}
                   <div class="absolute inset-0 rounded-full flex items-center justify-center gap-1.5
-                              opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-black/50">
+                              opacity-100 md:opacity-0 md:group-hover/avatar:opacity-100 transition-opacity bg-black/50">
                     <Show when={avatarUploading()} fallback={
                       <>
                         <button
@@ -334,12 +333,14 @@ export default function ProfileEditView() {
                     </Show>
                   </div>
                 </div>
+              </div>
 
-                {/* mt-10 cancels the row's -mt-10: text starts exactly at the cover bottom */}
-                <div class="mt-10 pb-1">
-                  <p class="text-sm font-semibold text-txt leading-tight">{p().fullname || p().profile_name}</p>
-                  <p class="text-xs text-muted">{p().pdesc}</p>
-                </div>
+              {/* Name row — pt-12 clears the overlapping avatar */}
+              <div class="pt-12 px-5 pb-5">
+                <h1 class="text-lg font-bold leading-tight text-txt">{p().fullname || p().profile_name}</h1>
+                <Show when={p().pdesc}>
+                  <p class="text-xs text-muted mt-0.5 italic">{p().pdesc}</p>
+                </Show>
               </div>
             </div>
 
@@ -635,14 +636,13 @@ function Field(props: { label: string; hint?: string; children: any }) {
 function FormSkeleton() {
   return (
     <div class="space-y-8 animate-pulse">
-      <div class="rounded-xl overflow-hidden border border-rim">
-        <div class="w-full bg-elevated" style="aspect-ratio: 1200/435" />
-        <div class="flex gap-3 px-4 -mt-10 pb-3">
-          <div class="w-20 h-20 rounded-full border-4 border-bg bg-elevated shrink-0" />
-          <div class="space-y-2 pb-1 self-end">
-            <div class="h-3.5 w-32 rounded bg-elevated" />
-            <div class="h-3 w-20 rounded bg-elevated" />
-          </div>
+      <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
+        <div class="relative w-full bg-elevated" style="aspect-ratio: 3 / 1">
+          <div class="absolute -bottom-10 left-5 w-20 h-20 rounded-full ring-4 ring-surface bg-elevated" />
+        </div>
+        <div class="pt-12 px-5 pb-5 space-y-2">
+          <div class="h-5 w-36 rounded bg-elevated" />
+          <div class="h-3 w-24 rounded bg-elevated" />
         </div>
       </div>
       {[...Array(3)].map(() => (
