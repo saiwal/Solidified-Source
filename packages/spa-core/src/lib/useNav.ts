@@ -101,6 +101,25 @@ function isSpaApp(app: NavApp, spaRoots: Set<string>): boolean {
   return spaRoots.has(root);
 }
 
+/**
+ * Would a pinned/featured app with this URL actually render a nav item?
+ *
+ * Two conditions, matching how the nav above is built: the URL's first segment
+ * must be a registered SPA route root (`isSpaApp`'s rule — apps like NSFW at
+ * /nsfw or an external Report Bug link have no SPA page at all), and the owning
+ * module must declare a navItem (the Invite module deliberately declares none,
+ * since its UI is a section of the directory and Nav.php drops it from every
+ * app list). Used by settings/integrations to hide a nav toggle that can only
+ * ever be a no-op.
+ */
+export function appNavigable(url: string): boolean {
+  const href = toSpaHref(url);
+  if (!href.startsWith("/")) return false;
+  const path = urlToPath(href);
+  if (!buildSpaRoots().has(path.split("/").filter(Boolean)[0] ?? "")) return false;
+  return !!getModule(moduleIdForPath(path))?.navItem;
+}
+
 // Owner sees "owner" and "local" context items (they are a local user too).
 // "admin" items are also included when the viewer is a site admin.
 function visibleForOwner(context: NavItemDef["context"]): boolean {
