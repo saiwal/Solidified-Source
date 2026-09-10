@@ -14,6 +14,7 @@ const SECTIONS: Record<string, ReturnType<typeof lazy>> = {
   "contact-roles":  lazy(() => import("./sections/ContactRolesSection")),
   "guest-access":   lazy(() => import("./sections/GuestAccessSection")),
   "sources":        lazy(() => import("./sections/SourcesSection")),
+  "invite":         lazy(() => import("./sections/InviteSection")),
 };
 
 const PrivacyGroupDetail = lazy(() => import("./sections/PrivacyGroupDetailView"));

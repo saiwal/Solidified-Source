@@ -2842,6 +2842,28 @@ export type RawDictionary = {
     attachment_bbcode:    string;
     link_bbcode:          string;
   };
+  invite: {
+    title:            string;
+    description:      string;
+    quota_mine:       string;
+    quota_site:       string;
+    recipients_label: string;
+    max_recipients:   string;
+    check:            string;
+    expire_label:     string;
+    unit_i:           string;
+    unit_h:           string;
+    unit_d:           string;
+    valid_until:      string;
+    template_label:   string;
+    subject_label:    string;
+    preview_label:    string;
+    message_label:    string;
+    message_ph:       string;
+    log_note:         string;
+    submit:           string;
+    sent_summary:     string;
+  };
   sources: {
     title:                string;
     description:          string;

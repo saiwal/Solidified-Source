@@ -35,6 +35,14 @@ export const CONNECTIONS_ITEMS: SubPageItem[] = [
     context: "all",
   },
   { path: "suggest", label: () => useI18n().t("directory.suggestions"), context: ["local", "owner"], requiresApp: "/suggest" },
+  // Inviting is a people-facing action rather than a per-connection tool, so it
+  // sits with the directory/suggestions group.
+  {
+    path: "invite",
+    label: () => useI18n().t("invite.title"),
+    context: ["local", "owner"],
+    requiresApp: "/invite",
+  },
   { path: "hubs", label: () => useI18n().t("directory.hubs"), context: "all" },
 ];
 
@@ -53,6 +61,13 @@ registerModule({
     {
       path: "/directory/*",
       component: () => import("./views/ConnectionsShellView"),
+    },
+    // The Invite app's URL is /invite. useNav's isSpaApp() only keeps an app
+    // inside the SPA when its first path segment is a registered route root,
+    // so without this the app tile would full-page-load the classic module.
+    {
+      path: "/invite",
+      component: () => import("./views/InviteRedirect"),
     },
     ...subRoutes,
   ],
