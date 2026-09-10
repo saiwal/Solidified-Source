@@ -21,9 +21,43 @@ const QueryDevtools = import.meta.env.DEV
 
 import.meta.glob("./modules/*/index.ts", { eager: true });
 
-function Redirect(props: { to: string }) {
+
+// Logo / "/" must not dump a visitor on the login page. Mirrors core's
+// Home.php: members go to their startpage (channel, then admin/site
+// "Preferred page for members"), visitors to admin/site "Site homepage"
+// (system.frontpage) — falling back to /hq and the public stream.
+// "include:<file>" is a server-rendered frontpage the SPA can't route to;
+// treated as unset.
+function resolveLanding(value: string): string | null {
+  const v = value.trim();
+  if (!v || v.startsWith("include:")) return null;
+  if (/^https?:\/\//.test(v)) {
+    const url = new URL(v);
+    // Off-site frontpage: leave the SPA entirely.
+    return url.origin === window.location.origin ? url.pathname + url.search : v;
+  }
+  return v.startsWith("/") ? v : "/" + v;
+}
+
+function RootRedirect() {
+  const auth = useAuth();
+  const navData = useNavData();
   const navigate = useNavigate();
-  navigate(props.to, { replace: true });
+
+  createEffect(() => {
+    const a = auth();
+    const nav = navData();
+    if (!a || !nav) return; // still resolving — don't guess
+
+    const dest = a.isLocal
+      ? resolveLanding(nav.viewer?.startpage || nav.startpage) ?? "/hq"
+      : resolveLanding(nav.frontpage) ??
+        (nav.has_public_stream ? "/pubstream" : "/login");
+
+    if (/^https?:\/\//.test(dest)) window.location.href = dest;
+    else navigate(dest, { replace: true });
+  });
+
   return null;
 }
 
@@ -85,7 +119,7 @@ export default function App() {
     <LocaleSync />
     <Router>
       <Route path="/" component={Layout}>
-        <Route path="/" component={() => <Redirect to="/hq" />} />
+        <Route path="/" component={RootRedirect} />
         <For each={getRoutes()()}>
           {(route) => {
             const Comp = lazy(route.component);

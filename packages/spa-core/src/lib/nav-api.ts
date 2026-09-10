@@ -107,6 +107,10 @@ export interface NavApiResponse {
   system_apps: NavApp[];
   channel_tabs: NavChannelTab[];
   has_public_stream: boolean;
+  /** admin/site "Site homepage to show visitors" (system.frontpage) — "" = unset */
+  frontpage: string;
+  /** admin/site "Preferred page for members" (system.startpage) — "" = unset */
+  startpage: string;
   /** All installed app names for the local user — empty for visitors/anon */
   installed_apps: string[];
   /** openstreetmap addon site config — null when the addon isn't enabled. */
@@ -232,6 +236,8 @@ export async function fetchNavApi(channelNick?: string): Promise<NavApiResponse>
     system_apps,
     channel_tabs:     raw.channel_tabs ?? [],
     has_public_stream: raw.has_public_stream ?? false,
+    frontpage:        raw.frontpage ?? "",
+    startpage:        raw.startpage ?? "",
     installed_apps:   raw.installed_apps ?? [],
     osm:              raw.osm ?? null,
     language:         raw.language ?? "",

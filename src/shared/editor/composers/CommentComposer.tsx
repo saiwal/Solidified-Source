@@ -88,7 +88,7 @@ export default function CommentComposer(props: Props) {
           <Show
             when={viewer()?.avatar}
             fallback={
-              <div class="w-7 h-7 rounded-full bg-accent-muted text-accent flex items-center justify-center shrink-0 mt-0.5">
+              <div class="w-7 h-7 rounded-full bg-accent-muted text-accent hidden sm:flex items-center justify-center shrink-0 mt-0.5">
                 <MdOutlinePerson class="w-4 h-4" />
               </div>
             }
@@ -96,7 +96,7 @@ export default function CommentComposer(props: Props) {
             <img
               src={viewer()!.avatar}
               alt={viewer()!.name}
-              class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 select-none"
+              class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 select-none hidden sm:block"
               loading="lazy"
             />
           </Show>
