@@ -38,6 +38,7 @@ import {
   cloudPath,
   cloudPathSegments,
   resolveFolderPath,
+  downloadUrl,
 } from "../api";
 import type { FileMeta, FileAcl, WopiConfig, FolderFrame } from "../api";
 import FileActionsMenu, { type FileAction } from "../views/FileActionsMenu";
@@ -692,6 +693,24 @@ export default function FilesContentWidget() {
     }
   }
 
+  // Bulk download. One request per item rather than a server-side archive of
+  // the whole selection: the zip route buffers the entire archive to disk
+  // before streaming, so a big selection burns disk and can hit the PHP
+  // timeout. A selected folder still arrives as its own zip, tree intact.
+  // Staggered because browsers drop programmatic downloads fired in one tick.
+  function handleBulkDownload() {
+    selectedItems().forEach((item, i) => {
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = downloadUrl(nick(), item.hash);
+        a.download = item.is_dir ? `${item.filename}.zip` : item.filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, i * 300);
+    });
+  }
+
   // Bulk delete. Sequential for the same reason as move/copy: no batch
   // endpoint, and one failure shouldn't abandon the rest of the selection.
   const [bulkBusy, setBulkBusy] = createSignal(false);
@@ -952,6 +971,15 @@ export default function FilesContentWidget() {
           </span>
 
           <div class="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              disabled={bulkBusy()}
+              onClick={handleBulkDownload}
+              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
+                     hover:bg-elevated disabled:opacity-40 transition-colors"
+            >
+              {t("files_mod.download")}
+            </button>
             <button
               type="button"
               disabled={bulkBusy()}
