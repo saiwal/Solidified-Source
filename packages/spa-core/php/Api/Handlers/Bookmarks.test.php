@@ -41,6 +41,7 @@ const F2   = 'bookmarks-probe-two';
 const NAV  = 'bookmarks-probe-navmenu';
 const URL1 = 'https://probe.example/one';
 const URL2 = 'https://probe.example/two';
+const URL3 = 'https://probe.example/v?id=abc&t=96s';   // the ampersand case
 
 // ---------------------------------------------------------------------------
 // Step mode: authenticate as $nick and run one handler call.
@@ -138,8 +139,10 @@ function cleanup(int $uid): void
     }
     // bookmark_add() may also have filed a probe URL into the channel's own
     // derived folder if a menu target was ever missed.
-    q("DELETE FROM menu_item WHERE mitem_channel_id = %d AND mitem_link IN ('%s', '%s')",
-        intval($uid), dbesc(URL1), dbesc(URL2));
+    q("DELETE FROM menu_item WHERE mitem_channel_id = %d
+       AND mitem_link IN ('%s', '%s', '%s', '%s')",
+        intval($uid), dbesc(URL1), dbesc(URL2),
+        dbesc(URL3), dbesc(escape_tags(URL3)));
 }
 
 // ── bodyContainsUrl: the entity-escaping mismatch ───────────────────────────
@@ -173,6 +176,22 @@ check('a url absent from the body is refused',
 check('an empty body matches nothing', $has('', 'https://attacker.example/evil'), false);
 check('a near-miss host is refused',
     $has('https://example.com/a', 'https://example.com.evil/a'), false);
+
+// ── unescapeStored: escaped for HTML, not for JSON ──────────────────────────
+// menu_add_item() escape_tags() the link *and* the description.
+$lo = new ReflectionMethod(Utsukta\SpaCore\Api\Handlers\Bookmarks::class, 'unescapeStored');
+$lo->setAccessible(true);
+check('a stored link comes back usable',
+    $lo->invoke(null, 'https://y/watch?v=X&amp;t=96s'), 'https://y/watch?v=X&t=96s');
+check('an unescaped link is left alone',
+    $lo->invoke(null, 'https://y/watch?v=X'), 'https://y/watch?v=X');
+check('a title comes back as written',
+    $lo->invoke(null, 'Kittens &amp; puppies'), 'Kittens & puppies');
+// Markup in a title is decoded too — safe because every render site interpolates
+// it as a text node, so the framework re-escapes it into the DOM.
+check('markup in a title is decoded, not left half-escaped',
+    $lo->invoke(null, '&lt;b&gt;bold&lt;/b&gt;'), '<b>bold</b>');
+check('null is a string', $lo->invoke(null, null), '');
 
 cleanup($uid);   // leftovers from an interrupted run
 
@@ -270,6 +289,45 @@ if ($probe) {
         check('item reports private', $one['private'], true);
         check('item carries a visit url', !empty($one['visit_url']));
     }
+}
+
+// ── A URL with an ampersand survives the round trip ─────────────────────────
+// menu_add_item() escape_tags() the link, so it is stored '&amp;'-escaped. Core
+// renders that into an href where the browser decodes it; JSON has no such step,
+// so the API has to decode it or the reader gets a link that goes nowhere.
+
+// The title is the anchor text, which for a bare link *is* the URL — so it
+// carries the same ampersand and hit the same bug.
+$r   = step($nick, 'post', '', ['url' => URL3, 'title' => URL3, 'menu_id' => $f1]);
+$id3 = intval($r['data']['mitem_id'] ?? 0);
+check('ampersand bookmark created', $id3 > 0);
+
+if ($id3) {
+    check('stored escaped, as core stores it',
+        row($uid, $id3)['mitem_link'], escape_tags(URL3));
+
+    $r = step($nick, 'get', '');
+    $found = null;
+    foreach (($r['data']['menus'] ?? []) as $m) {
+        foreach ($m['items'] as $i) if (intval($i['id']) === $id3) $found = $i;
+    }
+    check('served decoded, so the link actually works', $found['url'] ?? null, URL3);
+    check('visit_url is usable too', $found['visit_url'] ?? null, URL3);
+    check('the title reads as written, not as &amp;', $found['title'] ?? null, URL3);
+
+    // Editing only the title must not mangle the link on the way back in, and the
+    // untouched field must not pick up a second round of escaping either.
+    step($nick, 'post', (string)$id3, ['title' => 'Ampersand probe renamed']);
+    check('an edit leaves the link escaped exactly once',
+        row($uid, $id3)['mitem_link'], escape_tags(URL3));
+
+    // ...and editing only the URL leaves an ampersand title intact.
+    step($nick, 'post', (string)$id3, ['title' => URL3]);
+    step($nick, 'post', (string)$id3, ['url' => URL3]);
+    check('the title survives a url-only edit',
+        row($uid, $id3)['mitem_desc'], escape_tags(URL3));
+
+    step($nick, 'delete', (string)$id3);
 }
 
 // ── Nav menus are out of reach ──────────────────────────────────────────────
