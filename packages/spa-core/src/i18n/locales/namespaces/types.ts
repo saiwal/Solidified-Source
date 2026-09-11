@@ -2911,8 +2911,6 @@ export type RawDictionary = {
     field_url:        string;
     field_title:      string;
     field_folder:     string;
-    field_private:    string;
-    private_hint:     string;
     save:             string;
     saving:           string;
     cancel:           string;

@@ -20,7 +20,6 @@ export default function BookmarksHeaderWidget() {
   const [title, setTitle] = createSignal("");
   const [folder, setFolder] = createSignal(0);
   const [newFolder, setNewFolder] = createSignal("");
-  const [priv, setPriv] = createSignal(false);
   const [saving, setSaving] = createSignal(false);
 
   async function save() {
@@ -36,7 +35,6 @@ export default function BookmarksHeaderWidget() {
         url: u,
         // Core requires a title; fall back to the URL rather than refusing.
         title: title().trim() || u,
-        private: priv(),
         ...(name ? { menu_name: name } : folder() ? { menu_id: folder() } : {}),
       });
       toast.success(t("bookmarks.added") as string);
@@ -44,7 +42,7 @@ export default function BookmarksHeaderWidget() {
       await queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
       resetChatBookmarks();
       setOpen(false);
-      setUrl(""); setTitle(""); setNewFolder(""); setPriv(false);
+      setUrl(""); setTitle(""); setNewFolder("");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Error");
     } finally {
@@ -105,10 +103,6 @@ export default function BookmarksHeaderWidget() {
               onInput={(e) => setNewFolder(e.currentTarget.value)}
             />
           </div>
-          <label class="flex items-center gap-2 text-xs text-muted">
-            <input type="checkbox" checked={priv()} onChange={(e) => setPriv(e.currentTarget.checked)} />
-            <span>{t("bookmarks.field_private")}</span>
-          </label>
           <div class="flex items-center gap-2 pt-1">
             <button
               onClick={() => void save()}

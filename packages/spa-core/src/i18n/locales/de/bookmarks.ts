@@ -16,8 +16,6 @@ export const bookmarks: RawDictionary["bookmarks"] = {
   field_url:        "Link",
   field_title:      "Titel",
   field_folder:     "Ordner",
-  field_private:    "Nur für mich sichtbar",
-  private_hint:     "Hält dieses Lesezeichen aus allem heraus, was deine Menüs öffentlich auflistet.",
   save:             "Speichern",
   saving:           "Wird gespeichert\u2026",
   cancel:           "Abbrechen",

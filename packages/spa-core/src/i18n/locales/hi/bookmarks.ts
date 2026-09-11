@@ -16,8 +16,6 @@ export const bookmarks: RawDictionary["bookmarks"] = {
   field_url:        "लिंक",
   field_title:      "शीर्षक",
   field_folder:     "फ़ोल्डर",
-  field_private:    "केवल मुझे दिखे",
-  private_hint:     "यह बुकमार्क उन सूचियों से बाहर रहता है जो आपके मेन्यू सार्वजनिक रूप से दिखाती हैं।",
   save:             "सहेजें",
   saving:           "सहेजा जा रहा है\u2026",
   cancel:           "रद्द करें",
