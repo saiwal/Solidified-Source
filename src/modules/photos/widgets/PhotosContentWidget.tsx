@@ -673,11 +673,11 @@ function AlbumGrid() {
 
       {/* Batch action bar */}
       <Show when={selectMode() && selected().size > 0}>
-        <div class="flex items-center gap-3 px-3 py-2 bg-surface rounded-xl border border-rim">
+        <div class="flex items-center gap-x-3 gap-y-2 flex-wrap px-3 py-2 bg-surface rounded-xl border border-rim">
           <span class="text-sm text-txt font-medium">
             {selected().size} {t("photos.selected")}
           </span>
-          <div class="flex items-center gap-2 ml-auto">
+          <div class="flex items-center gap-2 flex-wrap ml-auto">
             <Show when={canWrite()}>
               <select
                 disabled={moving()}
@@ -687,7 +687,7 @@ function AlbumGrid() {
                   e.currentTarget.value = "";
                   if (v) handleBatchMove(v === "__root__" ? "" : v);
                 }}
-                class="px-2 py-1.5 rounded-lg text-xs font-medium bg-overlay text-txt
+                class="max-w-[9rem] px-2 py-1.5 rounded-lg text-xs font-medium bg-overlay text-txt
                        border border-rim outline-none disabled:opacity-50"
               >
                 <option value="">{moving() ? t("photos.batch_moving") : t("photos.move_selected")}</option>

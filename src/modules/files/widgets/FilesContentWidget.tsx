@@ -964,13 +964,13 @@ export default function FilesContentWidget() {
           left the folder (refetch, deleted elsewhere) must not be counted or
           acted on — the bar's buttons index into exactly this list. */}
       <Show when={selectedItems().length > 0}>
-        <div class="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg
+        <div class="flex items-center gap-x-2 gap-y-2 flex-wrap px-3 py-2 rounded-lg
                     border border-accent/40 bg-accent/10">
           <span class="text-sm font-medium text-txt">
             {t("files_mod.selected_count", { count: selectedItems().length })}
           </span>
 
-          <div class="flex items-center gap-2 ml-auto">
+          <div class="flex items-center gap-2 flex-wrap ml-auto">
             <button
               type="button"
               disabled={bulkBusy()}
