@@ -151,6 +151,15 @@ export function mapActivityToPost(activity: any): Post {
     deck: activity.deck ?? null,
     template: activity.template ?? undefined,
     translationGroup: activity.translation_group ?? null,
+    mentionedIn: Array.isArray(activity.mentioned_in)
+      ? activity.mentioned_in.map((m: any) => ({
+          uuid: m.uuid,
+          title: m.title,
+          created: m.created,
+          itemType: Number(m.item_type ?? 0),
+          viewUrl: m.view_url,
+        }))
+      : undefined,
     translations: Array.isArray(activity.translations)
       ? activity.translations.map((tr: any) => ({
           uuid: tr.uuid,

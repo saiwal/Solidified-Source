@@ -140,6 +140,7 @@ class Articles
         [$allow_cid, $allow_gid, $deny_cid, $deny_gid, $item_private, $public_policy] = $acl;
 
         $attachments = $this->extractAttachments($uid, $channel, $mimetype, $body, $acl);
+        $body        = $this->expandEmbedTokens($mimetype, $body);
         $post_tags   = $category ? $this->categoryTerms($uid, $channel, $category) : [];
 
         // ── Edit existing article ─────────────────────────────────────────────
@@ -260,6 +261,7 @@ class Articles
         if ($translationGroup) {
             \Zotlabs\Lib\IConfig::Set($datarray, 'article', 'translation_group', $translationGroup);
         }
+        $this->setEmbedIconfig($datarray, $body);
 
         $result = item_store($datarray);
 

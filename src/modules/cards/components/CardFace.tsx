@@ -17,6 +17,7 @@ import type { Post } from "@utsukta/spa-core/types/post.types";
 import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { parseTemplate, sniffTemplate, type CardTemplate } from "@/shared/editor/lib/cardTemplates";
+import { bbcodeExcerpt as excerpt } from "@utsukta/spa-core/lib/bbcode";
 
 const TEMPLATE_ICON: Record<string, (s: number) => ReturnType<typeof MdOutlineNotes>> = {
   quote:      (s) => <MdOutlineFormat_quote size={s} />,
@@ -28,12 +29,6 @@ const TEMPLATE_ICON: Record<string, (s: number) => ReturnType<typeof MdOutlineNo
 /** First [img]/[zmg] URL in a bbcode body, if any. */
 function coverOf(body: string): string {
   return body.match(/\[z?img[^\]]*\](.*?)\[\/z?img\]/i)?.[1]?.trim() ?? "";
-}
-
-/** Plain-text excerpt with bbcode tags stripped. */
-function excerpt(src: string, max = 220): string {
-  const text = src.replace(/\[[^\]]{0,60}\]/g, "").replace(/\s+/g, " ").trim();
-  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 /** host + a shortened path, e.g. example.com/a/long/pa… — URL() so a malformed

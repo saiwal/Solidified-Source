@@ -56,6 +56,8 @@ export const cards: RawDictionary["cards"] = {
   link_fetching:       "Wird abgerufen…",
   link_fetch_failed:   "Seite konnte nicht gelesen werden",
   link_include_image:  "Bild einbinden",
+  // Backlinks
+  mentioned_in:       "Erwähnt in",
   // Decks
   part_of_deck:      "Karte {{order}} des Stapels „{{name}}“",
   view_full_deck:    "Ganzen Stapel ansehen",

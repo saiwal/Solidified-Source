@@ -118,6 +118,16 @@ export interface Post {
   template?: string; // card authoring template (freeform|quote|definition|link), iconfig cat 'card'
   translationGroup?: string | null; // article translation-group id (iconfig), shared across language siblings
   translations?: ArticleTranslation[]; // sibling language versions — populated on single-article fetch only
+  mentionedIn?: ItemMention[]; // items embedding this one — populated on single-card fetch only
+}
+
+/** An item that embeds another (backlink). */
+export interface ItemMention {
+  uuid: string;
+  title: string;
+  created: string;
+  itemType: number;
+  viewUrl: string;
 }
 
 export interface ArticleTranslation {

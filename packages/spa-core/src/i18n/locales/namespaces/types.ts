@@ -2030,6 +2030,7 @@ export type RawDictionary = {
     link_fetch_failed:    string;
     link_include_image:   string;
     // Decks
+    mentioned_in:         string;
     part_of_deck:         string;
     view_full_deck:       string;
     deck_index_title:     string;

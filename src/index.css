@@ -498,6 +498,14 @@
   border-radius: 0 !important;
 }
 
+/* Tailwind Typography puts a 2em block margin on every <img>, so inside a
+   .prose body (article and card detail) the 20px share avatar carried 32px
+   above and below it and the header grew to several times its height. The
+   header is chrome, not prose. Unlayered for the same reason .prose pre above
+   is: the plugin's rules sit in @layer components, which beats anything in
+   @layer base however specific. */
+.prose .bb-share-header img { margin-block: 0; }
+
 /* [footer]...[/footer] BBCode (bbcode.ts) renders as this div, embedded
    inline inside the post body HTML — style it as a separated footer note. */
 .prose .wall-item-footer {

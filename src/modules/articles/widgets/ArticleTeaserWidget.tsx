@@ -10,11 +10,8 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchArticle } from "../api";
 import { articlePath } from "@/shared/lib/shareLinks";
+import { bbcodeExcerpt } from "@utsukta/spa-core/lib/bbcode";
 
-function excerpt(bbcodeText: string, max = 200): string {
-  const text = bbcodeText.replace(/\[[^\]]{0,60}\]/g, "").replace(/\s+/g, " ").trim();
-  return text.length > max ? `${text.slice(0, max)}…` : text;
-}
 
 function EditHint(props: { text: string }) {
   return (
@@ -56,7 +53,7 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
                 <p class="text-[0.625rem] text-muted mt-0.5">
                   {new Date(a().created).toLocaleDateString(locale())}
                 </p>
-                <p class="text-sm text-txt mt-2">{excerpt(a().summary || a().body)}</p>
+                <p class="text-sm text-txt mt-2">{bbcodeExcerpt(a().summary || a().body, 200)}</p>
               </div>
               <A
                 href={articlePath(nick(), a())}

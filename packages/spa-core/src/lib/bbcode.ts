@@ -629,9 +629,16 @@ function bbChecklist(content: string): string {
 // ---------------------------------------------------------------------------
 
 function xssFilterLinks(html: string): string {
+  // Only a *scheme* can be dangerous. Anything without one is a relative URL
+  // the browser resolves against the page — including a schemeless host like
+  // "example.org/a", which the old "must start with https?:|#|/" form blanked
+  // outright, leaving `href=""` on every hand-typed [url=example.org/a].
   return html.replace(
-    /(<[^>]*?\b(?:src|href)\s*=\s*(['"])\s*)(?!https?:|geo:|mailto:|tel:|#|\/)[^'"]*?\2/giu,
-    "$1$2$2"
+    /(<[^>]*?\b(?:src|href)\s*=\s*(['"])\s*)([^'"]*?)\2/giu,
+    (_m, pre: string, quote: string, value: string) =>
+      /^[a-z][a-z0-9+.-]*:/i.test(value) && !/^(?:https?|geo|mailto|tel):/i.test(value)
+        ? `${pre}${quote}`
+        : `${pre}${value}${quote}`
   );
 }
 
@@ -1348,3 +1355,21 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
 // ---------------------------------------------------------------------------
 export { bbcode as bbcodeToHtml };
 export default bbcode;
+
+// ---------------------------------------------------------------------------
+// Plain-text excerpt
+// ---------------------------------------------------------------------------
+
+/**
+ * Strip bbcode down to a plain-text teaser. Media tags lose their *contents*
+ * too — an [img] body is a URL, not prose — while everything that isn't a
+ * well-formed tag (prose brackets, "[see note]") is left alone.
+ */
+export function bbcodeExcerpt(src: string, max = 220): string {
+  const text = src
+    .replace(/\[(img|zmg|audio|video|attachment)[^\]]*\][\s\S]*?\[\/\1\]/gi, " ")
+    .replace(/\[\/?[a-z0-9]+(?:=[^\]]*)?\]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}

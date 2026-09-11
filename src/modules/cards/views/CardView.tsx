@@ -78,6 +78,14 @@ function DeleteConfirm(props: { uuid: string; onDeleted: () => void; onCancel: (
   );
 }
 
+// Backlink targets come back as absolute z_root() URLs; the ones on this hub
+// are SPA routes, so navigate them client-side instead of reloading the app.
+function localPath(url: string): string | null {
+  return url.startsWith(window.location.origin)
+    ? url.slice(window.location.origin.length)
+    : null;
+}
+
 // ── main view ─────────────────────────────────────────────────────────────────
 
 export default function CardView() {
@@ -502,6 +510,38 @@ export default function CardView() {
                       setReplyOpen(false);
                     }}
                   />
+                </Show>
+
+                {/* Mentioned in — items on this channel that embed this card */}
+                <Show when={(d().card.mentionedIn?.length ?? 0) > 0}>
+                  <section class="rounded-xl border border-rim bg-surface p-4 space-y-2">
+                    <h2 class="text-sm font-semibold text-txt">{t("cards.mentioned_in")}</h2>
+                    <ul class="space-y-1">
+                      <For each={d().card.mentionedIn}>
+                        {(m) => (
+                          <li class="text-sm flex flex-wrap items-baseline gap-x-2">
+                            <Show
+                              when={localPath(m.viewUrl)}
+                              fallback={
+                                <a href={m.viewUrl} class="text-accent hover:underline">
+                                  {m.title || t("cards.untitled")}
+                                </a>
+                              }
+                            >
+                              {(path) => (
+                                <A href={path()} class="text-accent hover:underline">
+                                  {m.title || t("cards.untitled")}
+                                </A>
+                              )}
+                            </Show>
+                            <span class="text-xs text-muted">
+                              {new Date(m.created.replace(" ", "T") + "Z").toLocaleDateString(locale())}
+                            </span>
+                          </li>
+                        )}
+                      </For>
+                    </ul>
+                  </section>
                 </Show>
 
                 {/* Comments */}

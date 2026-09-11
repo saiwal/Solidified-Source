@@ -56,6 +56,8 @@ export const cards: RawDictionary["cards"] = {
   link_fetching:       "प्राप्त किया जा रहा है…",
   link_fetch_failed:   "वह पृष्ठ पढ़ा नहीं जा सका",
   link_include_image:  "छवि शामिल करें",
+  // Backlinks
+  mentioned_in:       "इनमें उल्लिखित",
   // Decks
   part_of_deck:      "डेक “{{name}}” का कार्ड {{order}}",
   view_full_deck:    "पूरा डेक देखें",

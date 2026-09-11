@@ -149,7 +149,16 @@ export default function CardComposer(props: Props) {
   // repeatedly doesn't refetch the same page.
   const [fetchedUrl, setFetchedUrl] = createSignal("");
 
+  // A hand-typed "example.org/a" is a relative URL everywhere downstream — the
+  // stored [url=] renders with an empty href and link-meta never fires. Assume
+  // https for anything that names no scheme.
+  function normalizeLinkUrl() {
+    const url = fields().linkUrl.trim();
+    if (url && !/^[a-z][a-z0-9+.-]*:/i.test(url)) setField("linkUrl")(`https://${url}`);
+  }
+
   async function loadLinkMeta(force = false) {
+    normalizeLinkUrl();
     const url = fields().linkUrl.trim();
     if (!/^https?:\/\//i.test(url)) return;
     if (!force && url === fetchedUrl()) return;
