@@ -61,8 +61,13 @@ export interface AdminSite {
   theme: string;
   default_permissions_role: string;
 
-  // Email
+  // Directory
   directory_server: string;
+  directory_mode: number;
+  directory_realm: string;
+  directory_server_choices: string[];
+
+  // Email
   from_email: string;
   from_email_name: string;
   reply_address: string;

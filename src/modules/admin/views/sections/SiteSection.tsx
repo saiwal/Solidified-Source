@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { A } from "@solidjs/router";
 import { useQueryClient } from "@tanstack/solid-query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -21,6 +21,17 @@ const ACCESS_POLICIES = [
   { value: 2, label: "Free access only" },
   { value: 3, label: "Free + optional paid upgrades" },
 ];
+
+const DIRECTORY_MODES: Record<number, string> = {
+  1: "primary", 2: "secondary", 256: "standalone",
+};
+
+// Keep a configured URL selectable even if it has dropped out of the site table,
+// so opening this form and saving can't silently repoint the hub.
+const dirChoices = (d: AdminSite) =>
+  d.directory_server && !d.directory_server_choices?.includes(d.directory_server)
+    ? [d.directory_server, ...(d.directory_server_choices ?? [])]
+    : (d.directory_server_choices ?? []);
 
 const PERMISSION_ROLES = [
   { value: "personal", label: "Personal" },
@@ -221,11 +232,32 @@ export default function SiteSection() {
 
             <hr class="border-rim" />
 
+            {/* ── Directory ── */}
+            <SectionHeading>Directory</SectionHeading>
+            <Show
+              when={d().directory_mode === 0}
+              fallback={
+                <p class="text-sm text-muted">
+                  This hub runs its own directory ({DIRECTORY_MODES[d().directory_mode] ?? d().directory_mode},
+                  realm {d().directory_realm}), so no upstream directory server is used.
+                </p>
+              }
+            >
+              <Field label="Directory server" hint={`Realm: ${d().directory_realm}`}>
+                <select name="directory_server" class={inputCls}>
+                  <For each={dirChoices(d())}>
+                    {(url) => (
+                      <option value={url} selected={d().directory_server === url}>{url}</option>
+                    )}
+                  </For>
+                </select>
+              </Field>
+            </Show>
+
+            <hr class="border-rim" />
+
             {/* ── Email ── */}
             <SectionHeading>Email</SectionHeading>
-            <Field label="Directory server URL">
-              <input name="directory_server" value={d().directory_server ?? ''} class={inputCls} />
-            </Field>
             <Field label="Sender (From) email address for system generated email.">
               <input type="email" name="from_email" value={d().from_email ?? ''} class={inputCls} />
             </Field>
