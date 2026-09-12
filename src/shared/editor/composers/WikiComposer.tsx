@@ -6,6 +6,9 @@ import type { MimeType, EditorTab } from "../types/editor.types";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import FormatSelect from "../components/FormatSelect";
 import ComposerShell from "../components/ComposerShell";
+import EditorStats from "../components/EditorStats";
+import { countWords } from "../lib/textStats";
+import { zenMode } from "@utsukta/spa-core/store/zen";
 import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import AttachmentBar from "../attachments/AttachmentBar";
@@ -53,14 +56,22 @@ export default function WikiComposer(props: Props) {
   return (
     <ComposerShell
       meta={
-        <Show when={props.allowFormatChange}>
-          <FormatSelect
-            value={mime}
-            onChange={setMimeOverride}
-            body={body}
-            choices={WIKI_FORMATS}
+        <>
+          <Show when={props.allowFormatChange}>
+            <FormatSelect
+              value={mime}
+              onChange={setMimeOverride}
+              body={body}
+              choices={WIKI_FORMATS}
+            />
+          </Show>
+
+          <EditorStats
+            words={() => countWords(body())}
+            chars={() => body().length}
+            zenToggle
           />
-        </Show>
+        </>
       }
       editor={
         <>
@@ -73,7 +84,8 @@ export default function WikiComposer(props: Props) {
             onTabChange={setTab}
             mimetype={mime()}
             placeholder={t("editor.start_writing")}
-            minHeight="60vh"
+            minHeight={zenMode() ? "0px" : "60vh"}
+            fill={zenMode()}
           />
           <AttachmentBar
             store={attach}

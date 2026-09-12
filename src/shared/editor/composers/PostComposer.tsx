@@ -26,6 +26,7 @@ import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
 import ComposerShell from "../components/ComposerShell";
+import EditorStats from "../components/EditorStats";
 import { CAPABILITIES, type MimeType } from "../types/editor.types";
 import type { EditPayload } from "@utsukta/spa-core/lib/item-api";
 import AclPicker from "../components/AclPicker";
@@ -140,7 +141,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
     allowEntries: props.initialAllowEntries,
   });
   const [expiry, setExpiry] = createSignal("");
-  const [fullscreen, setFullscreen] = createSignal(false);
   const [draftsOpen, setDraftsOpen] = createSignal(false);
 
   // ── Location / delayed publish / comment lock ─────────────────────────────
@@ -456,40 +456,8 @@ const PostComposer: Component<ComposerProps> = (props) => {
         }
         ariaLabel={t("editor.composer_label")}
         onClose={props.onClose}
-        fullscreen={fullscreen()}
         helpTarget="shared/post-composer"
         manageEscape={false}
-        headerExtra={
-          <IconButton
-            title={fullscreen() ? t("editor.fullscreen_exit") : t("editor.fullscreen_enter")}
-            onClick={() => setFullscreen((f) => !f)}
-          >
-            <Show
-              when={fullscreen()}
-              fallback={
-                <svg
-                  class="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                </svg>
-              }
-            >
-              <svg
-                class="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-              </svg>
-            </Show>
-          </IconButton>
-        }
       >
         {/* Single flex-col root for all body content — mirrors ArticleComposer's
             structure exactly (one flex-1 min-h-0 wrapper containing the
@@ -539,11 +507,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 />
               </Show>
 
-              <div class="flex items-center justify-end gap-2">
-                <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-                <span class="text-xs text-muted">·</span>
-                <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-              </div>
+              <EditorStats words={wordCount} chars={charCount} zenToggle />
             </>
           }
           editor={

@@ -23,6 +23,8 @@ import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
+import EditorStats from "../components/EditorStats";
+import { setZenMode } from "@utsukta/spa-core/store/zen";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { useAclState } from "../components/useAclState";
@@ -384,6 +386,12 @@ export default function CardComposer(props: Props) {
   // the user asks for one via SlugField's ↻ button (or types it by hand).
   const onTitleChange = (v: string) => store.setTitle(v);
 
+  // Zen shows only the editor, which the assembled templates hide — leaving a
+  // blank screen. Drop out of zen rather than render nothing.
+  createEffect(() => {
+    if (template() !== "freeform") setZenMode(false);
+  });
+
   return (
     // No mx-auto here, deliberately: every mount point (CardsHeaderWidget's
     // CardModal, CardComposerModal, CardView's edit dialog) puts this in a
@@ -481,11 +489,7 @@ export default function CardComposer(props: Props) {
             />
           </Show>
 
-          <div class="flex items-center justify-end gap-2">
-            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-            <span class="text-xs text-muted">·</span>
-            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-          </div>
+          <EditorStats words={wordCount} chars={charCount} zenToggle />
 
           {/* Template sub-forms — the three assembled templates collect their
               parts here instead of using the rich editor. */}

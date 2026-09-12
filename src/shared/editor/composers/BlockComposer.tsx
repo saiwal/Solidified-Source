@@ -17,6 +17,8 @@ const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
+import { zenMode } from "@utsukta/spa-core/store/zen";
+import EditorStats from "../components/EditorStats";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import AclPicker, { aclModeFrom, aclEntryKeys, type AclMode } from "../components/AclPicker";
@@ -238,16 +240,12 @@ export default function BlockComposer(props: Props) {
             <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} />
           </Show>
 
-          <div class="flex items-center justify-end gap-2">
-            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-            <span class="text-xs text-muted">·</span>
-            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-          </div>
+          <EditorStats words={wordCount} chars={charCount} zenToggle />
         </>
       }
       editor={
         <>
-          <div ref={wiring.wrapperRef}>
+          <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
             <RichEditor
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               body={store.body()}
@@ -257,7 +255,8 @@ export default function BlockComposer(props: Props) {
               onTabChange={store.setTab}
               mimetype={store.mimetype()}
               placeholder={t("editor.start_writing")}
-              minHeight="60vh"
+              minHeight={zenMode() ? "0px" : "60vh"}
+              fill={zenMode()}
             />
             <AttachmentBar
               store={attach}

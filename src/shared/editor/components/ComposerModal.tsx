@@ -17,11 +17,7 @@ export interface ComposerModalProps {
   ariaLabel?: string;
   /** Default "max-w-2xl" (post/DM); pass "max-w-3xl" for article/note. */
   widthClass?: string;
-  /** Post's expand-to-fullscreen toggle — swaps the fixed-height dialog for
-   *  a borderless full-viewport overlay. */
-  fullscreen?: boolean;
-  /** Extra header controls rendered before the close button (e.g. Post's
-   *  fullscreen toggle). */
+  /** Extra header controls rendered before the close button. */
   headerExtra?: JSX.Element;
   /** use:helpable target for the backdrop (help-mode tutorial picker). */
   helpTarget?: string;
@@ -62,9 +58,7 @@ export default function ComposerModal(props: ComposerModalProps) {
         <div
           class={
             "flex flex-col bg-surface border border-rim shadow-2xl text-txt " +
-            (props.fullscreen
-              ? "fixed inset-0 w-full rounded-none"
-              : `w-full ${props.widthClass ?? "max-w-2xl"} h-[85dvh] rounded-xl`)
+            `w-full ${props.widthClass ?? "max-w-2xl"} h-[85dvh] rounded-xl`
           }
           role="dialog"
           aria-modal="true"
@@ -72,10 +66,7 @@ export default function ComposerModal(props: ComposerModalProps) {
         >
           {/* ── Header ── */}
           <header
-            class={
-              "flex items-center justify-between px-4 py-3 border-b border-rim shrink-0 " +
-              (props.fullscreen ? "" : "rounded-t-xl")
-            }
+            class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0 rounded-t-xl"
           >
             <h2 class="text-sm font-semibold text-txt">{props.title}</h2>
             <div class="flex items-center gap-1">
@@ -96,10 +87,7 @@ export default function ComposerModal(props: ComposerModalProps) {
           {/* ── Optional pinned footer ── */}
           <Show when={props.footer}>
             <footer
-              class={
-                "flex flex-col gap-2 px-3.5 py-2.5 border-t border-rim bg-surface shrink-0 " +
-                (props.fullscreen ? "" : "rounded-b-xl")
-              }
+              class="flex flex-col gap-2 px-3.5 py-2.5 border-t border-rim bg-surface shrink-0 rounded-b-xl"
             >
               {props.footer}
             </footer>

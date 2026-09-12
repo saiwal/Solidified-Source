@@ -6,6 +6,9 @@ import { CAPABILITIES } from "../types/editor.types";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
+import EditorStats from "../components/EditorStats";
+import { zenMode } from "@utsukta/spa-core/store/zen";
+import { countWords } from "../lib/textStats";
 import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { createAttachmentStore } from "../attachments/useAttachments";
@@ -102,6 +105,18 @@ export default function NoteComposer(props: Props) {
       editorClass={
         props.fill && !props.minimal ? "flex-1 min-h-[340px] flex flex-col" : "contents"
       }
+      // `minimal` is a bare textarea with no toolbar, so there is nothing for
+      // zen to strip down to — and no counter row there either, keeping the
+      // sidebar quick-note widget exactly as it was.
+      meta={
+        <Show when={!props.minimal}>
+          <EditorStats
+            words={() => countWords(store.body())}
+            chars={() => store.body().length}
+            zenToggle
+          />
+        </Show>
+      }
       editor={
         <Show
         when={!props.minimal}
@@ -133,7 +148,7 @@ export default function NoteComposer(props: Props) {
             onCtrlEnter={() => void store.submit()}
             placeholder={t("notepad.placeholder")}
             minHeight={props.fill ? "150px" : "120px"}
-            fill={props.fill}
+            fill={props.fill || zenMode()}
           />
 
           <AttachmentBar

@@ -37,6 +37,7 @@ import { PrimarySubmitButton, SecondaryButton, IconButton, ToggleButton } from "
 import { MdOutlineTimer, MdOutlineSchedule } from "solid-icons/md";
 import DateTimePicker from "../components/DateTimePicker";
 import ComposerShell from "../components/ComposerShell";
+import EditorStats from "../components/EditorStats";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
@@ -395,11 +396,7 @@ export default function ArticleComposer(props: Props) {
             />
           </Show>
 
-          <div class="flex items-center justify-end gap-2">
-            <span class="text-xs text-muted">{t("editor.words_count", { count: wordCount() })}</span>
-            <span class="text-xs text-muted">·</span>
-            <span class="text-xs text-muted">{t("editor.chars_count", { count: charCount() })}</span>
-          </div>
+          <EditorStats words={wordCount} chars={charCount} zenToggle />
         </>
       }
       editor={

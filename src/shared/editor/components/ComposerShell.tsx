@@ -16,7 +16,9 @@
  * its own render root.
  */
 
-import { Show, type Component, type JSX } from "solid-js";
+import { Show, onCleanup, type Component, type JSX } from "solid-js";
+import { zenMode, setZenMode } from "@utsukta/spa-core/store/zen";
+import { ZenToggleButton } from "./EditorStats";
 
 /**
  * Collapses a region whose content is currently all hidden.
@@ -61,28 +63,68 @@ export interface ComposerShellProps {
   class?: string;
 }
 
-const ComposerShell: Component<ComposerShellProps> = (props) => (
-  <div class={`flex flex-col flex-1 min-h-0 gap-4 ${props.class ?? ""}`}>
-    <Show when={props.meta}>
-      <div class={`shrink-0 space-y-4 ${collapseWhenEmpty}`}>{props.meta}</div>
-    </Show>
+const ComposerShell: Component<ComposerShellProps> = (props) => {
+  // Zen outlives its composer otherwise (closed, navigated away from), and the
+  // next composer would open straight into it.
+  // ponytail: any shell's unmount clears it, not just the one in zen — while
+  // zen is on the other shells are behind an opaque overlay, so nothing can
+  // reach them to unmount them.
+  onCleanup(() => setZenMode(false));
 
-    <div class={props.editorClass ?? "flex-1 min-h-[360px] flex flex-col"}>{props.editor}</div>
+  // Zen hides the four non-editor regions with a class rather than a <Show>:
+  // unmounting them would take RichEditor's contenteditable along with it on
+  // the way back (Solid re-creates the whole subtree), losing caret and
+  // undo history.
+  const zenHidden = () => (zenMode() ? "hidden" : "");
 
-    <Show when={props.panels}>
-      <div class={`shrink-0 space-y-4 ${collapseWhenEmpty}`}>{props.panels}</div>
-    </Show>
+  return (
+    <div
+      // z-[160] clears every app layer: modal backdrop and mobile tab bar
+      // (z-50), right sidebar (z-40), offline banner (z-100), routing bar
+      // (z-150) — see Layout.tsx.
+      class={
+        zenMode()
+          ? "fixed inset-0 z-[160] flex flex-col gap-2 bg-surface p-2 sm:p-4"
+          : `flex flex-col flex-1 min-h-0 gap-4 ${props.class ?? ""}`
+      }
+    >
+      <Show when={zenMode()}>
+        <div class="absolute top-1 right-1 sm:top-2 sm:right-2 z-10">
+          <ZenToggleButton />
+        </div>
+      </Show>
 
-    <Show when={props.options}>
+      <Show when={props.meta}>
+        <div class={`shrink-0 space-y-4 ${collapseWhenEmpty} ${zenHidden()}`}>{props.meta}</div>
+      </Show>
+
       <div
-        class={`shrink-0 flex flex-wrap items-center gap-3 ${collapseWhenEmpty}`}
+        class={
+          zenMode()
+            ? "flex-1 min-h-0 flex flex-col"
+            : (props.editorClass ?? "flex-1 min-h-[360px] flex flex-col")
+        }
       >
-        {props.options}
+        {props.editor}
       </div>
-    </Show>
 
-    <div class="shrink-0 flex flex-wrap items-center gap-3 pb-3">{props.actions}</div>
-  </div>
-);
+      <Show when={props.panels}>
+        <div class={`shrink-0 space-y-4 ${collapseWhenEmpty} ${zenHidden()}`}>{props.panels}</div>
+      </Show>
+
+      <Show when={props.options}>
+        <div
+          class={`shrink-0 flex flex-wrap items-center gap-3 ${collapseWhenEmpty} ${zenHidden()}`}
+        >
+          {props.options}
+        </div>
+      </Show>
+
+      <div class={`shrink-0 flex flex-wrap items-center gap-3 pb-3 ${zenHidden()}`}>
+        {props.actions}
+      </div>
+    </div>
+  );
+};
 
 export default ComposerShell;
