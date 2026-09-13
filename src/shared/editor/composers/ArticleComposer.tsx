@@ -396,7 +396,7 @@ export default function ArticleComposer(props: Props) {
             />
           </Show>
 
-          <EditorStats words={wordCount} chars={charCount} zenToggle />
+          <EditorStats words={wordCount} chars={charCount} />
         </>
       }
       editor={

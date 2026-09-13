@@ -808,8 +808,7 @@ export type RawDictionary = {
     reply_header:           string;
     new_post:               string;
     edit_post:              string;
-    fullscreen_enter:       string;
-    fullscreen_exit:        string;
+    zen_mode:               string;
     close_esc:              string;
     title_placeholder:      string;
     category_placeholder:   string;
@@ -1719,6 +1718,10 @@ export type RawDictionary = {
     spam:                 string;
     mark_unsafe:          string;
     mark_spam:            string;
+    // classic /follow landing
+    follow_connecting:    string;
+    follow_no_url:        string;
+    follow_needs_local:   string;
   };
   hq: {
     activity:             string;

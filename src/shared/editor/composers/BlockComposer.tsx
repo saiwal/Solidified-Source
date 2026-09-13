@@ -240,7 +240,7 @@ export default function BlockComposer(props: Props) {
             <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} />
           </Show>
 
-          <EditorStats words={wordCount} chars={charCount} zenToggle />
+          <EditorStats words={wordCount} chars={charCount} />
         </>
       }
       editor={

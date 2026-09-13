@@ -1,5 +1,7 @@
 import { POST_PROSE } from "@/shared/lib/prose";
-import { createEffect, createSignal, onCleanup, For, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, useContext, For, Show } from "solid-js";
+import { ZenToggleButton } from "../components/EditorStats";
+import { ZenHostContext } from "../components/ComposerShell";
 import { Portal } from "solid-js/web";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
@@ -90,6 +92,7 @@ export default function RichEditor(props: Props) {
     return `max(${ceiling}, ${minH()})`;
   };
   const surfaceGrowClass = () => (props.fill ? "flex-1 min-h-0" : "grow");
+  const inShell = useContext(ZenHostContext);
 
   // Seed the WYSIWYG surface whenever it (re)mounts. The <Show> around the
   // surface destroys the div on every tab switch, so this must run per mount
@@ -399,6 +402,9 @@ export default function RichEditor(props: Props) {
       ref={wrapperEl}
       class={`rich-editor flex flex-col ${props.fill ? "flex-1 min-h-0" : "shrink-0"}`}
     >
+      {/* The typing surface, with the zen toggle floating over its bottom-right
+          corner (shell-hosted composers only — zen means nothing elsewhere). */}
+      <div class={`relative flex flex-col ${surfaceGrowClass()}`}>
       {/* ── WYSIWYG surface ───────────────────────────────── */}
       <Show when={tab() === "wysiwyg"}>
         <div
@@ -440,6 +446,12 @@ export default function RichEditor(props: Props) {
           }
         />
       </Show>
+        <Show when={inShell}>
+          <div class="absolute bottom-2 right-4 z-10 rounded-full bg-surface/80 backdrop-blur-sm ring-1 ring-rim shadow-sm">
+            <ZenToggleButton />
+          </div>
+        </Show>
+      </div>
 
       {/* ── Unified toolbar (wysiwyg + source tabs) — docked at the bottom
            of the surface so it stays visible while the surface above it

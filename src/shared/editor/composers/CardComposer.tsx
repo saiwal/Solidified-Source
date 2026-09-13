@@ -489,7 +489,7 @@ export default function CardComposer(props: Props) {
             />
           </Show>
 
-          <EditorStats words={wordCount} chars={charCount} zenToggle />
+          <EditorStats words={wordCount} chars={charCount} />
 
           {/* Template sub-forms — the three assembled templates collect their
               parts here instead of using the rich editor. */}

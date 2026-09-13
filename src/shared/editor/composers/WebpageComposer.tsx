@@ -366,7 +366,7 @@ export default function WebpageComposer(props: Props) {
             </Show>
           </div>
 
-          <EditorStats words={wordCount} chars={charCount} zenToggle />
+          <EditorStats words={wordCount} chars={charCount} />
         </>
       }
       editor={

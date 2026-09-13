@@ -16,9 +16,8 @@
  * its own render root.
  */
 
-import { Show, onCleanup, type Component, type JSX } from "solid-js";
+import { Show, onCleanup, createContext, type Component, type JSX } from "solid-js";
 import { zenMode, setZenMode } from "@utsukta/spa-core/store/zen";
-import { ZenToggleButton } from "./EditorStats";
 
 /**
  * Collapses a region whose content is currently all hidden.
@@ -63,6 +62,12 @@ export interface ComposerShellProps {
   class?: string;
 }
 
+/**
+ * True inside a ComposerShell — RichEditor uses it to decide whether to float
+ * its zen toggle, since zen only means anything for a shell-hosted editor.
+ */
+export const ZenHostContext = createContext(false);
+
 const ComposerShell: Component<ComposerShellProps> = (props) => {
   // Zen outlives its composer otherwise (closed, navigated away from), and the
   // next composer would open straight into it.
@@ -78,32 +83,32 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
   const zenHidden = () => (zenMode() ? "hidden" : "");
 
   return (
+    <ZenHostContext.Provider value={true}>
+    {/* Opaque backing for the centred zen column — the column itself is
+        width-capped for readability, so it no longer covers the screen. */}
+    <Show when={zenMode()}>
+      <div class="fixed inset-0 z-[159] bg-surface" />
+    </Show>
     <div
       // z-[160] clears every app layer: modal backdrop and mobile tab bar
       // (z-50), right sidebar (z-40), offline banner (z-100), routing bar
       // (z-150) — see Layout.tsx.
       class={
         zenMode()
-          ? "fixed inset-0 z-[160] flex flex-col gap-2 bg-surface p-2 sm:p-4"
+          ? "fixed inset-0 z-[160] mx-auto max-w-4xl flex flex-col gap-2 bg-surface p-2 sm:p-4"
           : `flex flex-col flex-1 min-h-0 gap-4 ${props.class ?? ""}`
       }
     >
-      <Show when={zenMode()}>
-        <div class="absolute top-1 right-1 sm:top-2 sm:right-2 z-10">
-          <ZenToggleButton />
-        </div>
-      </Show>
-
       <Show when={props.meta}>
         <div class={`shrink-0 space-y-4 ${collapseWhenEmpty} ${zenHidden()}`}>{props.meta}</div>
       </Show>
 
       <div
-        class={
+        class={`${
           zenMode()
             ? "flex-1 min-h-0 flex flex-col"
             : (props.editorClass ?? "flex-1 min-h-[360px] flex flex-col")
-        }
+        }`}
       >
         {props.editor}
       </div>
@@ -124,6 +129,7 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
         {props.actions}
       </div>
     </div>
+    </ZenHostContext.Provider>
   );
 };
 

@@ -180,4 +180,8 @@ export const directory: RawDictionary["directory"] = {
   spam:                 "Spam",
   mark_unsafe:          "Mark this entry as unsafe in the directory",
   mark_spam:            "Mark this entry as spam and hide it from the directory",
+  // classic /follow landing
+  follow_connecting:    "Adding connection…",
+  follow_no_url:        "No channel address given.",
+  follow_needs_local:   "Log in with a channel on this hub to add connections.",
 };

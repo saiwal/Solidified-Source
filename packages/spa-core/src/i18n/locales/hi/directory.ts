@@ -170,4 +170,8 @@ export const directory: RawDictionary["directory"] = {
   spam:                 "स्पैम",
   mark_unsafe:          "इस प्रविष्टि को डायरेक्टरी में असुरक्षित के रूप में चिह्नित करें",
   mark_spam:            "इस प्रविष्टि को स्पैम के रूप में चिह्नित करें और इसे डायरेक्टरी से छिपाएँ",
+  // classic /follow landing
+  follow_connecting:    "कनेक्शन जोड़ा जा रहा है…",
+  follow_no_url:        "कोई चैनल पता नहीं दिया गया।",
+  follow_needs_local:   "कनेक्शन जोड़ने के लिए इस हब के किसी चैनल से लॉग इन करें।",
 };

@@ -507,7 +507,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 />
               </Show>
 
-              <EditorStats words={wordCount} chars={charCount} zenToggle />
+              <EditorStats words={wordCount} chars={charCount} />
             </>
           }
           editor={

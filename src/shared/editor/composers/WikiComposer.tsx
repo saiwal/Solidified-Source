@@ -69,7 +69,6 @@ export default function WikiComposer(props: Props) {
           <EditorStats
             words={() => countWords(body())}
             chars={() => body().length}
-            zenToggle
           />
         </>
       }

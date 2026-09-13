@@ -63,6 +63,9 @@ registerModule({
       component: () => import("./views/ConnectionsShellView"),
     },
     ...subRoutes,
+    // Classic-Hubzilla entry points people paste into webpages / menus.
+    { path: "/follow", component: () => import("./views/FollowView") },
+    { path: "/connections", component: () => import("./views/ConnectionsRedirectView") },
   ],
   navItem: {
     label: () => useI18n().t("nav.directory"),

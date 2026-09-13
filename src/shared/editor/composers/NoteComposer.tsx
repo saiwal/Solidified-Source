@@ -113,7 +113,6 @@ export default function NoteComposer(props: Props) {
           <EditorStats
             words={() => countWords(store.body())}
             chars={() => store.body().length}
-            zenToggle
           />
         </Show>
       }
