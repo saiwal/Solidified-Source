@@ -32,10 +32,11 @@ import {
   MdOutlineAnnouncement,
 } from "solid-icons/md";
 import DOMPurify from "dompurify";
-import { setNotifCount } from "@utsukta/spa-core/lib/notificationCount";
+import { setMailUnread, setNotifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { markNotifySeen, markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { showDesktopNotification } from "@utsukta/spa-core/lib/desktopNotify";
 import { apiFetch, apiError } from "@utsukta/spa-core/lib/fetch";
+
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { resolveNotifyPath, connectionRequestId } from "@utsukta/spa-core/lib/notifyLink";
 import { openConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
@@ -1217,6 +1218,9 @@ export default function NotificationsAside() {
       0,
     );
     setNotifCount(total);
+    // The inbox nav badge rides along on this widget's live connection rather
+    // than opening a second one for a number already on the wire.
+    setMailUnread(buckets()["dm"]?.count ?? 0);
   });
 
   return (

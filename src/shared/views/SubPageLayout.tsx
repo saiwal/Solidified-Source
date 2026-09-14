@@ -18,6 +18,15 @@ export interface SubPageItem {
   /** Stable url path fragment (e.g. "/group") of the Hubzilla app that must
    * be installed for this item to appear — see ModuleDef.appUrlSlug. */
   requiresApp?: string;
+  /** Rendered right of the label — an unread count, a badge. */
+  trailing?: JSX.Element;
+  /** Outline the row as an available drop target (a drag is in flight). */
+  dropTarget?: boolean;
+  /** Fill the row as the drop target the pointer is currently over. */
+  highlight?: boolean;
+  /** The rendered row element. The inbox uses it to register the row as a
+   *  drag-and-drop target for filing a message into that folder. */
+  ref?: (el: HTMLElement) => void;
 }
 
 interface Props {
@@ -174,6 +183,7 @@ function SubPageNav(props: {
         return (
           <>
             <A
+              ref={item.ref}
               href={`${props.base}/${item.path}`}
               class={[
                 "flex items-center gap-3 mx-2 px-3 py-2 rounded-xl text-sm",
@@ -181,6 +191,8 @@ function SubPageNav(props: {
                 active()
                   ? "bg-elevated text-txt font-medium"
                   : "text-muted hover:bg-elevated/60 hover:text-txt",
+                item.dropTarget ? "ring-1 ring-dashed ring-accent/40" : "",
+                item.highlight ? "!ring-2 !ring-accent !bg-accent/15 !text-txt" : "",
               ].join(" ")}
             >
               {item.icon && (
@@ -189,6 +201,7 @@ function SubPageNav(props: {
                 </span>
               )}
               <span class="flex-1 min-w-0 truncate">{typeof item.label === "function" ? item.label() : item.label}</span>
+              {item.trailing}
               <svg xmlns="http://www.w3.org/2000/svg"
                 class="w-3.5 h-3.5 text-muted opacity-40 md:hidden shrink-0"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor"

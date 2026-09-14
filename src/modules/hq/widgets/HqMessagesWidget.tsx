@@ -1,10 +1,11 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createSignal, Show, lazy } from "solid-js";
+import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 import { MdOutlineEdit, MdOutlineMail, MdOutlineRefresh } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import DMComposer from "@/shared/editor/composers/DMComposer";
-import { MessageList, FolderViewToggle, loadFolderViewMode, saveFolderViewMode, type ViewMode } from "./MessageList";
+import { MessageList, FolderViewToggle, folderViewMode, setFolderViewMode } from "./MessageList";
 
 const HqFoldersWidget = lazy(() => import("./HqFoldersWidget"));
 
@@ -29,23 +30,21 @@ const TABS: { id: Tab; key: string }[] = [
 export default function HqMessagesWidget() {
   const { t } = useI18n();
   const auth = useAuth();
-  const [tab, setTab] = createSignal<Tab>("");
+  const [tab, setTab] = persistedSignal<Tab>(
+    "hz-hq-msg-tab",
+    "",
+    oneOf<Tab>(...TABS.map((tb) => tb.id)),
+  );
 
   const [authorFilter, setAuthorFilter] = createSignal("");
   const [composing, setComposing] = createSignal<"post" | "dm" | null>(null);
   const [reloadKey, setReloadKey] = createSignal(0);
   const [refreshing, setRefreshing] = createSignal(false);
-  const [viewMode, setViewMode] = createSignal<ViewMode>(loadFolderViewMode());
 
   let filterTimer: ReturnType<typeof setTimeout>;
   function onFilterInput(val: string) {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => setAuthorFilter(val), 300);
-  }
-
-  function changeViewMode(mode: ViewMode) {
-    setViewMode(mode);
-    saveFolderViewMode(mode);
   }
 
   const isFeed = () => tab() !== "folder";
@@ -84,7 +83,7 @@ export default function HqMessagesWidget() {
         </div>
 
         <div class="flex items-center gap-1 min-w-0">
-          <Show when={isFeed()} fallback={<FolderViewToggle mode={viewMode()} onChange={changeViewMode} />}>
+          <Show when={isFeed()} fallback={<FolderViewToggle mode={folderViewMode()} onChange={setFolderViewMode} />}>
             <div class="relative min-w-0">
               <svg
                 class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none"
@@ -154,7 +153,7 @@ export default function HqMessagesWidget() {
         <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
           <Show
             when={isFeed()}
-            fallback={<HqFoldersWidget viewMode={viewMode()} />}
+            fallback={<HqFoldersWidget viewMode={folderViewMode()} />}
           >
             <MessageList
               type={tab() as Exclude<Tab, "folder">}

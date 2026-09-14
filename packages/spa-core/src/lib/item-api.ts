@@ -173,6 +173,20 @@ export const apiToggleRepeat  = (uuid: string) =>
 export const apiTogglePin = (uuid: string) =>
   post<{ success: boolean; pinned: boolean }>(`${BASE}/${encodeId(uuid)}/pin`);
 
+/** Star via the SPA API, which resolves a uuid (an inbox entry's b64mid).
+ *  Pass `starred` to set an explicit state — a bulk action must be idempotent
+ *  rather than a per-row toggle. */
+export const apiSetStar = (uuid: string, starred?: boolean) =>
+  post<{ success: boolean; starred: boolean }>(
+    `${BASE}/${encodeId(uuid)}/star`,
+    starred === undefined ? {} : { starred },
+  ).then(r => r.starred);
+
+/** Mark a thread read/unread. markSeen.ts's /sse_bs endpoint is one-way. */
+export const apiSetSeen = (uuid: string, seen: boolean) =>
+  post<{ success: boolean; seen: boolean }>(`${BASE}/${encodeId(uuid)}/seen`, { seen })
+    .then(r => r.seen);
+
 export const apiToggleStar = (iid: number): Promise<void> =>
   fetch(`/starred/${iid}`, {
     credentials: 'include',

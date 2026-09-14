@@ -13,7 +13,7 @@ import StreamFilters from "../views/StreamFilters";
 import { parseNetworkParams } from "../api";
 import {
   viewMode, posts, loadNetwork, resetPosts,
-  loading, loadMore, loadingMore, hasMore, newPosts, flushNewPosts,
+  loading, loadMore, loadingMore, hasMore, newPosts, flushNewPosts, sortPref,
   handleLike, handleDislike, handleRepeat,
   handleStar, handleDelete, handleEdit,
   handleComment, loadComments, loadMoreComments, handleRefresh,
@@ -35,7 +35,7 @@ export default function NetworkContentWidget() {
   const auth = useAuth();
   const { t } = useI18n();
   const scrollStyle = useScrollStyle();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   let initialized = false;
   let sentinel!: HTMLDivElement;
 
@@ -43,8 +43,13 @@ export default function NetworkContentWidget() {
     if (auth.loading) return;
     if (initialized) return;
     initialized = true;
+    // A bare /network starts from the remembered sort. Merge it into the params
+    // directly too — setSearchParams hasn't landed by the time we read them.
+    const pref = sortPref();
+    const params = searchParams.order ? searchParams : { ...searchParams, ...pref };
+    if (!searchParams.order && pref.order) setSearchParams(pref, { replace: true });
     resetPosts();
-    loadNetwork(parseNetworkParams(searchParams));
+    loadNetwork(parseNetworkParams(params));
   });
 
   onCleanup(() => resetPosts());

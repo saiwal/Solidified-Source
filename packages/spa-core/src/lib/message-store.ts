@@ -57,6 +57,11 @@ export interface MessageEntry {
   unseen_count: number | string;
   unseen_class: string;
   author_img: string;
+  /** Below: added with the inbox's mail actions. Optional — entries cached
+   *  before they existed don't carry them. */
+  starred?: boolean;
+  unseen?: boolean;
+  folders?: string[];
 }
 
 export interface MessagesPage {
@@ -68,9 +73,16 @@ export interface FetchMessagesParams {
   offset: number;
   type: MessageType | "filed";
   file: string;
+  /** Author name/address filter — the list header's own box. Distinct from the
+   *  shared `search` stream filter (body/title), which arrives in `filters`. */
   search: string;
   /** Restrict to threads involving this xchan hash (ChanView's DM history). */
   xchan?: string;
+  /** Inbox filter chip: the thread has an unseen message anywhere in it. */
+  unread?: boolean;
+  /** The shared stream filters, straight from the URL — the same params the
+   *  network sidebar widget writes. See php Concerns/StreamFilters.php. */
+  filters?: Record<string, string>;
   signal?: AbortSignal;
 }
 
@@ -90,6 +102,14 @@ async function readList(key: string): Promise<MessageEntry[]> {
   if (!ids.length) return [];
   const rows = await getMany<MessageEntry | undefined>(ids, entryDb);
   return rows.filter((e): e is MessageEntry => !!e);
+}
+
+// Optimistic local edits. The inbox flips star/read/folder state in its own
+// signal for instant feedback; mirroring it into the store is what keeps an
+// offline reload from showing the pre-action state again.
+export async function patchEntry(b64mid: string, partial: Partial<MessageEntry>): Promise<void> {
+  const cur = await get<MessageEntry>(b64mid, entryDb);
+  if (cur) await set(b64mid, { ...cur, ...partial }, entryDb);
 }
 
 // Drops entries no list points at any more — the only way stored messages are
@@ -169,11 +189,15 @@ export async function fetchMessages(params: FetchMessagesParams): Promise<Messag
     offset: String(params.offset),
     type: params.type,
     file: params.file,
-    search: params.search,
+    author: params.search,
     ...(params.xchan ? { xchan: params.xchan } : {}),
+    ...(params.unread ? { unread: "1" } : {}),
+    ...(params.filters ?? {}),
   });
   // A filtered slice must never be written under the unfiltered list key.
-  const cacheable = params.offset === 0 && !params.search.trim() && !params.xchan;
+  const cacheable =
+    params.offset === 0 && !params.search.trim() && !params.xchan
+    && !params.unread && !Object.keys(params.filters ?? {}).length;
   const key = listKey(params.type, params.file);
 
   try {

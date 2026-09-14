@@ -129,6 +129,9 @@ interface PostDetailModalProps {
   uuid: string;
   onClose: () => void;
   handlers?: StreamHandlers;
+  /** Render as a plain in-page panel (the inbox's reading pane) instead of a
+   *  portalled modal: no overlay, no dialog role, fills its container. */
+  inline?: boolean;
 }
 
 const PostDetailModal: Component<PostDetailModalProps> = (props) => {
@@ -471,32 +474,24 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       }
     : undefined;
 
-  return (
-    <Portal>
-      <Show when={nestedUuid()}>
-        <PostDetailModal
-          uuid={nestedUuid()!}
-          onClose={() => setNestedUuid(null)}
-          handlers={props.handlers}
-        />
-      </Show>
-      <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay/80"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) props.onClose();
-        }}
-      >
+  const panel = (
         <div
           ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
+          role={props.inline ? undefined : "dialog"}
+          aria-modal={props.inline ? undefined : "true"}
           aria-labelledby="post-modal-title"
           tabindex="-1"
-          class="relative w-full max-w-full lg:max-w-[50%] max-h-[90svh] flex flex-col
-                 bg-base rounded-2xl shadow-2xl overflow-clip focus:outline-none"
+          class={props.inline
+            ? "relative w-full h-full flex flex-col bg-base overflow-clip focus:outline-none"
+            : `relative w-full max-w-full lg:max-w-[50%] max-h-[90svh] flex flex-col
+               bg-base rounded-2xl shadow-2xl overflow-clip focus:outline-none`}
         >
-          {/* Header */}
-          <div class="flex items-center justify-between px-5 py-3 shrink-0 border-b border-rim bg-surface">
+          {/* Header. Suppressed inline: the host (the inbox reader) supplies its
+              own toolbar, with a Back button that does what the X does here. */}
+          <div
+            class="flex items-center justify-between px-5 py-3 shrink-0 border-b border-rim bg-surface"
+            classList={{ hidden: props.inline }}
+          >
             <h2 id="post-modal-title" class="text-sm font-semibold text-muted">
               {nodeData() && isDirectMessage(nodeData()!) ? t("post.dm_title") : t("post.modal_title")}
             </h2>
@@ -595,6 +590,32 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
             </Show>
           </div>
         </div>
+  );
+
+  // A permalink opened from inside the reading pane still opens as a modal on
+  // top of it — only this outermost view is ever inline.
+  const nested = (
+    <Show when={nestedUuid()}>
+      <PostDetailModal
+        uuid={nestedUuid()!}
+        onClose={() => setNestedUuid(null)}
+        handlers={props.handlers}
+      />
+    </Show>
+  );
+
+  if (props.inline) return <>{nested}{panel}</>;
+
+  return (
+    <Portal>
+      {nested}
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay/80"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) props.onClose();
+        }}
+      >
+        {panel}
       </div>
     </Portal>
   );

@@ -1,12 +1,12 @@
-import { createSignal } from "solid-js";
+import { persistedSignal } from "../lib/persisted";
 
-const [threaded, setThreadedGlobal] = createSignal(
-  localStorage.getItem("hz-thread-mode") !== "flat"
+const [threaded, setThreaded] = persistedSignal(
+  "hz-thread-mode",
+  true,
+  (raw) => raw !== "flat",
+  (value) => (value ? "threaded" : "flat"),
 );
 
 export function useThreadMode() { return threaded; }
 
-export function setThreadMode(value: boolean) {
-  setThreadedGlobal(value);
-  localStorage.setItem("hz-thread-mode", value ? "threaded" : "flat");
-}
+export const setThreadMode = setThreaded;

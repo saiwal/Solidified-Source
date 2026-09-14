@@ -1,11 +1,12 @@
-import { createSignal } from "solid-js";
+import { persistedSignal, boolFlag } from "./persisted";
 
 // User opt-in for desktop (Notification API) alerts, independent of the
 // browser's own permission prompt. Persisted so we don't re-prompt every boot.
-const STORAGE_KEY = "hz-desktop-notify";
-
-const [enabled, setEnabledSignal] = createSignal(
-  typeof localStorage !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1",
+const [enabled, setEnabledSignal] = persistedSignal(
+  "hz-desktop-notify",
+  false,
+  boolFlag.parse,
+  boolFlag.format,
 );
 
 export function desktopNotifyEnabled() {
@@ -26,13 +27,11 @@ export async function enableDesktopNotify(): Promise<boolean> {
   if (perm === "default") perm = await Notification.requestPermission();
   const ok = perm === "granted";
   setEnabledSignal(ok);
-  localStorage.setItem(STORAGE_KEY, ok ? "1" : "0");
   return ok;
 }
 
 export function disableDesktopNotify() {
   setEnabledSignal(false);
-  localStorage.setItem(STORAGE_KEY, "0");
 }
 
 // Only fires when the user opted in, permission is granted, and the tab isn't

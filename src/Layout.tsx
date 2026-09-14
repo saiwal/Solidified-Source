@@ -65,6 +65,7 @@ function MobileTab(props: {
   href: string | (() => string);
   label: string | (() => string);
   icon?: string;
+  badge?: () => number | undefined;
 }) {
   const href = () =>
     typeof props.href === "function" ? props.href() : props.href;
@@ -80,8 +81,12 @@ function MobileTab(props: {
              transition-colors min-w-0"
       activeClass="!text-txt"
     >
-      <span aria-hidden="true" class="flex items-center">
+      <span aria-hidden="true" class="relative flex items-center">
         {getNavIcon(props.icon, 22)}
+        {/* A dot, not a count: at tab-bar size a number is unreadable. */}
+        <Show when={props.badge?.()}>
+          <span class="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-accent" />
+        </Show>
       </span>
       <span class="text-[0.625rem] font-medium leading-tight truncate max-w-[52px]">
         {label()}
@@ -232,6 +237,7 @@ const Layout: ParentComponent = (props) => {
                         href={item.href}
                         label={item.label}
                         icon={item.icon}
+                        badge={item.badge}
                         draggable={editingWidgets()}
                         dragging={desktopNavDrag.draggingKey() === item.path}
                         onDragHandlePointerDown={(e) => {
@@ -668,6 +674,7 @@ const Layout: ParentComponent = (props) => {
                     href={item.href}
                     label={item.label}
                     icon={item.icon}
+                    badge={item.badge}
                   />
                 </div>
               )}

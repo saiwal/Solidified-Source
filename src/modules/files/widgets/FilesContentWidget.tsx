@@ -50,6 +50,7 @@ import CategoriesModal from "../views/CategoriesModal";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
 import WopiEditorOverlay from "@/shared/views/WopiEditorOverlay";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
+import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 
 type ModalKind = "rename" | "moveCopy" | "categories";
 
@@ -667,13 +668,13 @@ export default function FilesContentWidget() {
   const clearSelection = () => setSelected(new Set<string>());
 
   // View mode
-  const [viewMode, setViewMode] = createSignal<ViewMode>(
-    (localStorage.getItem("hz-files-view") as ViewMode) ?? "list"
+  const [viewMode, setViewMode] = persistedSignal<ViewMode>(
+    "hz-files-view",
+    "list",
+    oneOf<ViewMode>("list", "grid"),
   );
   function toggleViewMode() {
-    const next: ViewMode = viewMode() === "list" ? "grid" : "list";
-    setViewMode(next);
-    localStorage.setItem("hz-files-view", next);
+    setViewMode(viewMode() === "list" ? "grid" : "list");
   }
 
   // Permissions

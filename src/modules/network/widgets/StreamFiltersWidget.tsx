@@ -22,7 +22,7 @@ import {
 import { createSignal, createEffect, on, lazy, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { loadNetwork, resetPosts } from "../store";
+import { loadNetwork, resetPosts, saveSortPref } from "../store";
 import { fetchFolders, fetchForums, fetchConnections, parseNetworkParams, type AclConnection } from "../api";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -280,6 +280,7 @@ export default function StreamFiltersWidget() {
   }
 
   function clearAll() {
+    saveSortPref();
     setSearchParams(
       {
         order: undefined, range: undefined, search: undefined, tag: undefined, file: undefined,

@@ -5,7 +5,7 @@
 
 import { Show } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
-import { loadNetwork, loading, refreshing, resetPosts, softRefresh, viewMode, changeView } from "../store";
+import { loadNetwork, loading, refreshing, resetPosts, softRefresh, viewMode, changeView, saveSortPref } from "../store";
 import { ViewSwitcher, SortSelect, DEFAULT_RANGE, type SortOrder, type SortRange } from "@/shared/stream/filters";
 import { MdFillRefresh, MdFillClose } from "solid-icons/md";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
@@ -60,6 +60,7 @@ export default function StreamFilters() {
   }
 
   function setOrderAndApply(o: SortOrder, r?: SortRange) {
+    saveSortPref(o, r);
     sp({
       order: o === "created" ? undefined : o,
       // Absent means DEFAULT_RANGE, so only that one is omitted — "all" has
@@ -70,6 +71,7 @@ export default function StreamFilters() {
   }
 
   function clearAll() {
+    saveSortPref();
     setSearchParams(
       {
         order: undefined, range: undefined, search: undefined, tag: undefined, file: undefined,

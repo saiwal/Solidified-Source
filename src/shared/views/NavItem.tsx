@@ -97,6 +97,8 @@ interface Props {
   href: string | (() => string);
   label: string | (() => string);
   icon?: string;
+  /** Live count badge (an unread total). Falsy = nothing rendered. */
+  badge?: () => number | undefined;
   /** Renders a drag handle beside the link so the item can be reordered. */
   draggable?: boolean;
   dragging?: boolean;
@@ -136,6 +138,14 @@ const NavItem: Component<Props> = (props) => {
         {getNavIcon(props.icon, 20)}
       </span>
       <span class="truncate leading-tight label">{label()}</span>
+      <Show when={props.badge?.()}>
+        {(n) => (
+          <span class="ml-auto shrink-0 min-w-[1.25rem] px-1 h-5 rounded-full bg-accent text-surface
+                       text-[0.625rem] font-bold flex items-center justify-center tabular-nums label">
+            {n()}
+          </span>
+        )}
+      </Show>
     </>
   );
 

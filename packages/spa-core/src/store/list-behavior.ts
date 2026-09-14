@@ -1,14 +1,13 @@
-import { createSignal } from "solid-js";
+import { persistedSignal, oneOf } from "../lib/persisted";
 
 export type ListBehavior = "list" | "inbox";
 
-const [listBehavior, setListBehaviorGlobal] = createSignal<ListBehavior>(
-  (localStorage.getItem("hz-list-behavior") as ListBehavior) ?? "list"
+const [listBehavior, setBehavior] = persistedSignal<ListBehavior>(
+  "hz-list-behavior",
+  "list",
+  oneOf<ListBehavior>("list", "inbox"),
 );
 
 export function useListBehavior() { return listBehavior; }
 
-export function setListBehavior(value: ListBehavior) {
-  setListBehaviorGlobal(value);
-  localStorage.setItem("hz-list-behavior", value);
-}
+export const setListBehavior = setBehavior;

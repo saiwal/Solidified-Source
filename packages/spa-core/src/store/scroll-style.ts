@@ -1,10 +1,13 @@
-import { createMemo, createSignal } from "solid-js";
+import { createMemo } from "solid-js";
+import { persistedSignal, oneOf } from "../lib/persisted";
 import { editingWidgets } from "./widget-layout";
 
 export type ScrollStyle = "endless" | "load_more";
 
-const [style, setStyleGlobal] = createSignal<ScrollStyle>(
-  (localStorage.getItem("hz-scroll-style") as ScrollStyle | null) ?? "endless"
+const [style, setStyle] = persistedSignal<ScrollStyle>(
+  "hz-scroll-style",
+  "endless",
+  oneOf<ScrollStyle>("endless", "load_more"),
 );
 
 // Endless scroll is suspended while the user is arranging widgets: every feed
@@ -23,7 +26,4 @@ export function useScrollStyle() { return effective; }
  * not show "load more" merely because edit mode happens to be on. */
 export function scrollStylePref() { return style; }
 
-export function setScrollStyle(value: ScrollStyle) {
-  setStyleGlobal(value);
-  localStorage.setItem("hz-scroll-style", value);
-}
+export const setScrollStyle = setStyle;

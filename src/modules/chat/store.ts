@@ -1,5 +1,6 @@
 // src/modules/chat/store.ts
 import { createSignal, batch } from "solid-js";
+import { persistedSignal } from "@utsukta/spa-core/lib/persisted";
 import type { ChatRoom, ChatMessage, PresenceMember, ChatRoomAcl } from "./api";
 import {
   fetchRooms,
@@ -215,38 +216,29 @@ export interface PinnedRoom {
   acl: ChatRoomAcl | null;
 }
 
-function loadPinned(): PinnedRoom[] {
-  try { return JSON.parse(localStorage.getItem("hz-pinned-chats") ?? "[]") as PinnedRoom[]; }
-  catch { return []; }
-}
-
-function savePinned(rooms: PinnedRoom[]): void {
-  try { localStorage.setItem("hz-pinned-chats", JSON.stringify(rooms)); } catch {}
-}
-
-const [pinnedRooms, setPinnedRooms] = createSignal<PinnedRoom[]>(loadPinned());
+const [pinnedRooms, setPinnedRooms] = persistedSignal<PinnedRoom[]>(
+  "hz-pinned-chats",
+  [],
+  (raw) => {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as PinnedRoom[]) : undefined;
+  },
+  JSON.stringify,
+);
 export { pinnedRooms };
 
 export function pinRoom(room: PinnedRoom): void {
-  setPinnedRooms((prev) => {
-    const existing = prev.findIndex((r) => r.roomId === room.roomId && r.nick === room.nick);
-    if (existing !== -1) {
-      const updated = prev.map((r, i) => i === existing ? { ...r, ...room } : r);
-      savePinned(updated);
-      return updated;
-    }
-    const next = [...prev, room];
-    savePinned(next);
-    return next;
-  });
+  const prev = pinnedRooms();
+  const existing = prev.findIndex((r) => r.roomId === room.roomId && r.nick === room.nick);
+  setPinnedRooms(
+    existing !== -1
+      ? prev.map((r, i) => (i === existing ? { ...r, ...room } : r))
+      : [...prev, room],
+  );
 }
 
 export function unpinRoom(nick: string, roomId: number): void {
-  setPinnedRooms((prev) => {
-    const next = prev.filter((r) => !(r.nick === nick && r.roomId === roomId));
-    savePinned(next);
-    return next;
-  });
+  setPinnedRooms(pinnedRooms().filter((r) => !(r.nick === nick && r.roomId === roomId)));
 }
 
 export function isRoomPinned(nick: string, roomId: number): boolean {

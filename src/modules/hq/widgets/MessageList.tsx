@@ -18,6 +18,14 @@ const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 // Entry shape, the fetcher and the offline store all live in message-store.ts
 // so the inbox module and these HQ widgets share one mailbox.
 import { fetchMessages, type MessageEntry, type MessageType, type FeedType } from "@utsukta/spa-core/lib/message-store";
+import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
+// Mail behaviour (star/trash/file, selection, drag, keys) lives in the inbox
+// module and is entirely opt-in — HQ's message cards pass none of these props
+// and render exactly as before.
+import { createInboxActions, TRASH, type PatchFn } from "@/modules/inbox/actions";
+import { createRowDrag } from "@/modules/inbox/useDragToFolder";
+import { createInboxKeys } from "@/modules/inbox/keys";
+import FolderMenu from "@/modules/inbox/FolderMenu";
 export type { MessageType, FeedType };
 
 // Background auto-refresh so new messages show up without a manual click.
@@ -40,6 +48,11 @@ function getTimeGroup(dateStr: string): TimeGroup {
 // Unseen top-level post, or unseen replies to a seen one — ignores the
 // per-item "locallyRead" click state, which only matters for rendering.
 function isEntryUnseen(e: MessageEntry): boolean {
+  // `unseen` is authoritative once the backend sends it (and is what the
+  // mark-read action flips); the string fields are the pre-existing signal and
+  // the only one a cached entry may carry.
+  if (e.unseen === false) return false;
+  if (e.unseen === true) return true;
   if (e.unseen_class === "primary") return true;
   const n = Number(e.unseen_count);
   return Number.isFinite(n) && n > 0;
@@ -59,6 +72,13 @@ export const TYPE_ICON_PATH: Record<MessageType, string> = {
 export const FOLDER_ICON_PATH =
   "M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z";
 
+const TRASH_ICON_PATH =
+  "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16";
+const ENVELOPE_ICON_PATH =
+  "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z";
+const RESTORE_ICON_PATH =
+  "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15";
+
 // One card per feed type — id/label used by HqMessagesWidget's tab rail and
 // the inbox view.
 export const FEED_META: Record<FeedType, { titleKey: string }> = {
@@ -77,15 +97,12 @@ export const FEED_META: Record<FeedType, { titleKey: string }> = {
 // body's chunk into the main bundle.
 
 export type ViewMode = "list" | "grid";
-const FOLDER_VIEW_MODE_KEY = "hz-hq-folder-view";
 
-export function loadFolderViewMode(): ViewMode {
-  return localStorage.getItem(FOLDER_VIEW_MODE_KEY) === "grid" ? "grid" : "list";
-}
-
-export function saveFolderViewMode(mode: ViewMode): void {
-  localStorage.setItem(FOLDER_VIEW_MODE_KEY, mode);
-}
+export const [folderViewMode, setFolderViewMode] = persistedSignal<ViewMode>(
+  "hz-hq-folder-view",
+  "list",
+  oneOf<ViewMode>("list", "grid"),
+);
 
 const ListIcon: Component<{ class?: string }> = (props) => (
   <svg class={props.class} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,6 +189,12 @@ function parseFolderNames(html: string): string[] {
   return text ? [text] : [];
 }
 
+// `folders` is the real list; `info` is the pre-existing bootstrap-badge HTML
+// and the only thing an entry cached before this feature carries.
+function entryFolders(e: MessageEntry): string[] {
+  return e.folders ?? (e.info ? parseFolderNames(e.info) : []);
+}
+
 function initials(name: string): string {
   return name
     .split(" ")
@@ -213,7 +236,100 @@ const Avatar: Component<{ src?: string; name: string; size?: string }> = (props)
   );
 };
 
+// ── Row action button ─────────────────────────────────────────────────────
+
+const RowButton: Component<{
+  path: string;
+  title: string;
+  active?: boolean;
+  onClick: () => void;
+}> = (props) => (
+  <button
+    type="button"
+    title={props.title}
+    aria-label={props.title}
+    onClick={(e) => { e.stopPropagation(); props.onClick(); }}
+    class="p-1 rounded-md hover:bg-elevated transition-colors"
+    classList={{ "text-accent": props.active, "text-muted hover:text-txt": !props.active }}
+  >
+    <svg
+      class="w-4 h-4"
+      fill={props.active ? "currentColor" : "none"}
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d={props.path} />
+    </svg>
+  </button>
+);
+
+
+// One row of actions, positioned by the caller: in a list row it is laid over
+// the message text (it only appears on hover, so covering the summary costs
+// nothing and takes no width from a 360px row); in the reader's toolbar it sits
+// in normal flow.
+const ActionRail: Component<{
+  entry: MessageEntry;
+  acts: RowActions;
+  t: (k: any, p?: any) => string;
+  class?: string;
+}> = (props) => {
+  const e = () => props.entry;
+  const unseen = () => isEntryUnseen(e());
+  const inTrash = () => entryFolders(e()).includes(TRASH);
+  return (
+    <div
+      class={`shrink-0 flex items-center gap-0.5 ${props.class ?? ""}`}
+      onPointerDown={(ev) => ev.stopPropagation()}
+    >
+      <RowButton
+        path={TYPE_ICON_PATH.starred}
+        title={e().starred ? props.t("hq.unstar_action") : props.t("hq.star_action")}
+        active={!!e().starred}
+        onClick={() => props.acts.star(e())}
+      />
+      <FolderMenu
+        folders={props.acts.folders}
+        current={entryFolders(e())}
+        title={props.t("hq.move_to_folder")}
+        onPick={(name) => props.acts.move(e(), name)}
+        class="p-1 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
+      />
+      <RowButton
+        path={ENVELOPE_ICON_PATH}
+        title={unseen() ? props.t("hq.mark_read") : props.t("hq.mark_unread")}
+        onClick={() => props.acts.toggleRead(e())}
+      />
+      <Show
+        when={inTrash()}
+        fallback={
+          <RowButton
+            path={TRASH_ICON_PATH}
+            title={props.t("hq.trash_action")}
+            onClick={() => props.acts.trash(e())}
+          />
+        }
+      >
+        <RowButton
+          path={RESTORE_ICON_PATH}
+          title={props.t("hq.restore_action")}
+          onClick={() => props.acts.restore(e())}
+        />
+      </Show>
+    </div>
+  );
+};
+
 // ── Message item ──────────────────────────────────────────────────────────
+
+interface RowActions {
+  star: (e: MessageEntry) => void;
+  trash: (e: MessageEntry) => void;
+  restore: (e: MessageEntry) => void;
+  toggleRead: (e: MessageEntry) => void;
+  move: (e: MessageEntry, folder: string) => void;
+  folders: string[];
+}
 
 const MessageItem: Component<{
   entry: MessageEntry;
@@ -222,40 +338,77 @@ const MessageItem: Component<{
   // objects wholesale, which disposes/recreates every MessageItem, so any
   // local "modal open" signal here would reset and close an open modal.
   onOpen: () => void;
+  actions?: RowActions;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (shift: boolean) => void;
+  cursored?: boolean;
+  active?: boolean;
+  dragging?: boolean;
+  swipeDx?: number;
+  onPointerDown?: (e: PointerEvent) => void;
+  registerRef?: (el: HTMLElement) => void;
 }> = (props) => {
-  const e = props.entry;
+  const { t } = useI18n();
+  const e = () => props.entry;
   const [locallyRead, setLocallyRead] = createSignal(false);
 
   // unseen_count is a real number when there are unseen replies, but a
   // non-numeric placeholder otherwise — normalize before comparing.
   const unseenReplyCount = () => {
-    const n = Number(e.unseen_count);
+    const n = Number(e().unseen_count);
     return Number.isFinite(n) ? n : 0;
   };
   const hasUnseenReplies = () => !locallyRead() && unseenReplyCount() > 0;
-  const isAnyUnseen = () => !locallyRead() && isEntryUnseen(e);
+  const isAnyUnseen = () => !locallyRead() && isEntryUnseen(e());
 
-
-  function handleClick() {
+  function handleClick(ev: MouseEvent) {
+    // A checkbox click, a row action, or the tail of a drag — never an open.
+    if ((ev.target as HTMLElement).closest("button,a,input")) return;
+    if (props.selectable && (ev.shiftKey || ev.ctrlKey || ev.metaKey)) {
+      props.onToggleSelect?.(ev.shiftKey);
+      return;
+    }
     props.onOpen();
     if (!locallyRead() && isAnyUnseen()) {
       setLocallyRead(true);
-      markItemSeen(e.b64mid);
+      markItemSeen(e().b64mid);
     }
   }
 
   return (
     <>
-      <button
-        type="button"
+      {/* A div, not a button: the action rail, the checkbox and the folder
+          menu are themselves buttons and cannot nest inside one. */}
+      <div
+        ref={props.registerRef}
+        role="button"
+        tabindex="-1"
         onClick={handleClick}
+        onKeyDown={(ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            handleClick(ev as unknown as MouseEvent);
+          }
+        }}
+        onPointerDown={props.onPointerDown}
+        style={props.swipeDx ? { transform: `translateX(${props.swipeDx}px)` } : undefined}
         class={`
-          w-full text-left px-3.5 py-2 flex items-start gap-2
-          transition-all duration-150 relative
+          group w-full text-left px-3.5 py-2 flex items-start gap-2
+          transition-colors duration-150 relative cursor-pointer touch-pan-y
           hover:bg-overlay
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent
           ${isAnyUnseen() ? "bg-accent-muted" : ""}
         `}
+        classList={{
+          // bg-inherit on the action rail needs the row to actually paint a
+          // background; HQ's rows stay transparent on their card.
+          "bg-base": !!props.actions && !isAnyUnseen(),
+          "focus-within:bg-overlay": !!props.actions,
+          "ring-2 ring-inset ring-accent": props.cursored,
+          "bg-elevated": props.active || props.selected,
+          "opacity-50": props.dragging,
+        }}
       >
         {/* Type color rail — always shown, full opacity when unseen */}
         <span
@@ -265,7 +418,34 @@ const MessageItem: Component<{
           }}
         />
 
-        <Avatar src={e.author_img} name={e.author_name} size="w-7 h-7" />
+        {/* The checkbox replaces the avatar rather than crowding beside it —
+            at 360px there is no room for both plus the action rail. */}
+        <Show
+          when={props.selectable && (props.selected || undefined)}
+          fallback={
+            <div class="relative shrink-0">
+              <Avatar src={e().author_img} name={e().author_name} size="w-7 h-7" />
+              <Show when={props.selectable}>
+                <input
+                  type="checkbox"
+                  checked={false}
+                  aria-label={t("hq.select_message")}
+                  onClick={(ev) => { ev.stopPropagation(); props.onToggleSelect?.(ev.shiftKey); }}
+                  class="absolute inset-0 w-7 h-7 opacity-0 group-hover:opacity-100 focus:opacity-100
+                         rounded-full cursor-pointer accent-accent"
+                />
+              </Show>
+            </div>
+          }
+        >
+          <input
+            type="checkbox"
+            checked
+            aria-label={t("hq.select_message")}
+            onClick={(ev) => { ev.stopPropagation(); props.onToggleSelect?.(ev.shiftKey); }}
+            class="w-7 h-7 shrink-0 rounded-full cursor-pointer accent-accent"
+          />
+        </Show>
 
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline justify-between gap-2">
@@ -275,33 +455,33 @@ const MessageItem: Component<{
                   isAnyUnseen() ? "font-semibold text-txt" : "font-medium text-txt"
                 }`}
               >
-                {e.author_name}
+                {e().author_name}
               </span>
             </div>
             <time class="text-[0.625rem] text-muted shrink-0 tabular-nums">
-              {timeAgo(e.created)}
+              {timeAgo(e().created)}
             </time>
           </div>
 
-          <Show when={e.title}>
+          <Show when={e().title}>
             <p
               class={`text-xs line-clamp-1 leading-snug ${
                 isAnyUnseen() ? "font-semibold text-txt" : "text-txt"
               }`}
             >
-              {decodeHtmlEntities(e.title!)}
+              {decodeHtmlEntities(e().title!)}
             </p>
           </Show>
 
-          <Show when={e.summary}>
+          <Show when={e().summary}>
             <p class="text-xs text-muted line-clamp-1 leading-snug">
-              {decodeHtmlEntities(e.summary)}
+              {decodeHtmlEntities(e().summary)}
             </p>
           </Show>
 
-          <Show when={e.info && props.feedType !== "direct"}>
+          <Show when={props.feedType !== "direct" && entryFolders(e()).length > 0}>
             <div class="flex flex-wrap gap-1 mt-0.5">
-              <For each={parseFolderNames(e.info)}>
+              <For each={entryFolders(e())}>
                 {(name) => (
                   <span class="inline-flex items-center gap-1 py-0.5 rounded-md italic text-[0.625rem] text-muted font-medium">
                     <span class="truncate max-w-[200px]">{name}</span>
@@ -311,6 +491,27 @@ const MessageItem: Component<{
             </div>
           </Show>
         </div>
+
+        {/* Action rail, laid over the right of the message text and revealed on
+            hover — so it costs no row width at all. `bg-inherit` picks up
+            whatever the row's current background is (hover, unseen, selected),
+            which is what makes it opaque enough to cover the summary.
+            Pointer-driven only: there is no hover on touch, where the swipe
+            gesture (left trash / right star) and the reader's own toolbar do
+            this job instead of a rail permanently sitting on the text. */}
+        <Show when={props.actions}>
+          {(acts) => (
+            <ActionRail
+              entry={e()}
+              acts={acts()}
+              t={t}
+              class="hidden md:flex absolute right-0 top-0 bottom-0 px-2 bg-inherit
+                     opacity-0 pointer-events-none transition-opacity
+                     group-hover:opacity-100 group-hover:pointer-events-auto
+                     group-focus-within:opacity-100 group-focus-within:pointer-events-auto"
+            />
+          )}
+        </Show>
 
         {/* Reply count when there are unseen replies; otherwise a bare "1"
             for a top-level item that's itself unseen (e.g. a fresh DM with
@@ -324,7 +525,7 @@ const MessageItem: Component<{
             {hasUnseenReplies() ? unseenReplyCount() : 1}
           </span>
         </Show>
-      </button>
+      </div>
 
       <div class="mx-3.5 h-px bg-rim" />
     </>
@@ -361,6 +562,10 @@ const GroupHeader: Component<{ label: string; count: number }> = (props) => (
 // band, paginated via infinite scroll. Reused by HqMessagesWidget.tsx (the
 // message/direct/starred/notices cards) and by FolderMessagesModal.tsx (the
 // per-folder message list opened from HqFoldersWidget.tsx).
+//
+// Everything mail-like (`actions`, `selectable`, `preview`) is opt-in and only
+// the inbox turns it on; with the flags off this renders exactly as it did
+// before those features existed.
 export const MessageList: Component<{
   type: FeedType;
   file?: string;
@@ -371,6 +576,21 @@ export const MessageList: Component<{
   // changing type/file (which already trigger a reset on their own).
   reloadKey?: number;
   onRefreshingChange?: (refreshing: boolean) => void;
+  /** Inbox: per-row star/trash/file/read buttons, swipe, drag-to-folder. */
+  actions?: boolean;
+  /** Inbox: checkboxes, bulk bar and keyboard navigation. */
+  selectable?: boolean;
+  /** Folder names offered by the move menu (from /spa/folders). */
+  folders?: string[];
+  /** Inbox chip: threads with anything unseen in them. */
+  unread?: boolean;
+  /** The shared stream filters from the URL (the sidebar filter widget). */
+  filters?: Record<string, string>;
+  /** Full-width reader instead of the modal: opening a message covers the
+   *  list with the thread plus back / previous / next controls. */
+  reader?: boolean;
+  /** Lets the inbox's "/" key focus its search box. */
+  onFocusSearch?: () => void;
 }> = (props) => {
   const { t } = useI18n();
   const [entries, setEntries] = createSignal<MessageEntry[]>([]);
@@ -382,10 +602,81 @@ export const MessageList: Component<{
   const [loading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
   const [empty, setEmpty] = createSignal(false);
+  const [selected, setSelected] = createSignal<Set<string>>(new Set());
+  const [cursor, setCursor] = createSignal(-1);
+  // The cursor ring is a keyboard affordance. Opening a message with the mouse
+  // still moves the cursor (so previous/next continue from there) but must not
+  // paint a ring around the row the pointer just clicked.
+  const [cursorVisible, setCursorVisible] = createSignal(false);
+
+  const filtered = () =>
+    !!(props.authorFilter ?? "").trim() || props.unread
+    || Object.keys(props.filters ?? {}).length > 0;
 
   let scrollRef: HTMLDivElement | undefined;
   let resetController: AbortController | null = null;
   let loadMoreActive = false;
+  let lastClicked: string | null = null;
+  const rowEls = new Map<string, HTMLElement>();
+
+  // ── mail actions ────────────────────────────────────────────────────────
+
+  const patch: PatchFn = (b64mid, partial) =>
+    setEntries((prev) => prev.map((e) => (e.b64mid === b64mid ? { ...e, ...partial } : e)));
+
+  const acts = createInboxActions(t, patch);
+  const currentFolder = () => (props.type === "folder" ? props.file ?? "" : undefined);
+  // Notices come from the notify table, not from item — there is no mid to
+  // star, file or mark unread, so the mail chrome stays off for that feed.
+  const mailable = () => !!props.actions && props.type !== "notification";
+
+  const rowActions = (): RowActions => ({
+    star: (e) => void acts.star(e),
+    trash: (e) => void acts.trash(e),
+    restore: (e) => void acts.untrash(e),
+    toggleRead: (e) => void acts.setRead(e, isEntryUnseen(e)),
+    move: (e, folder) => void acts.moveToFolder(e, folder, currentFolder()),
+    folders: props.folders ?? [],
+  });
+
+  const drag = createRowDrag({
+    onDropFolder: (name, id) => {
+      const targets = selected().has(id) ? selectedEntries() : visible().filter((e) => e.b64mid === id);
+      void acts.bulk(targets, (e) =>
+        name === TRASH ? acts.trash(e) : acts.moveToFolder(e, name, currentFolder()));
+      clearSelection();
+    },
+    onSwipeLeft: (id) => {
+      const e = visible().find((x) => x.b64mid === id);
+      if (e) void acts.trash(e);
+    },
+    onSwipeRight: (id) => {
+      const e = visible().find((x) => x.b64mid === id);
+      if (e) void acts.star(e);
+    },
+    swipeEnabled: () => mailable() && window.innerWidth < 768,
+    describe: (id) => {
+      const count = selected().has(id) ? selected().size : 1;
+      const e = visible().find((x) => x.b64mid === id);
+      return { label: e?.title || e?.author_name || "", count };
+    },
+  });
+
+  // ── filtering / grouping ────────────────────────────────────────────────
+
+  // An action's effect shows immediately: a trashed row leaves every feed but
+  // Trash, a moved row leaves the folder it was filed under. The server applies
+  // the same rules on the next fetch.
+  const visible = createMemo(() => {
+    if (!mailable()) return entries();
+    const folder = currentFolder();
+    return entries().filter((e) => {
+      const f = e.folders;
+      if (!f) return true;
+      if (folder) return f.includes(folder);
+      return !f.includes(TRASH);
+    });
+  });
 
   function bucketByTime(list: MessageEntry[]): { label: string; items: MessageEntry[] }[] {
     const buckets: Partial<Record<TimeGroup, MessageEntry[]>> = {};
@@ -402,7 +693,7 @@ export const MessageList: Component<{
   // threads, where unread ones are pulled into their own group on top so a
   // new DM doesn't get buried under older-but-still-"Today" threads.
   const groupedEntries = createMemo(() => {
-    const all = entries();
+    const all = visible();
     if (props.type !== "direct") return bucketByTime(all);
 
     const unread = all.filter(isEntryUnseen);
@@ -412,6 +703,82 @@ export const MessageList: Component<{
     groups.push(...bucketByTime(rest));
     return groups;
   });
+
+  /** Rows in the order they are rendered — what the cursor and shift-select
+   *  ranges walk, which is not the order `entries()` is in. */
+  const flatRows = createMemo(() => groupedEntries().flatMap((g) => g.items));
+
+  // ── selection ───────────────────────────────────────────────────────────
+
+  const selectedEntries = () => flatRows().filter((e) => selected().has(e.b64mid));
+  const clearSelection = () => { setSelected(new Set<string>()); lastClicked = null; };
+
+  function toggleSelect(entry: MessageEntry, shift = false) {
+    const rows = flatRows();
+    const next = new Set(selected());
+    if (shift && lastClicked) {
+      const a = rows.findIndex((r) => r.b64mid === lastClicked);
+      const b = rows.findIndex((r) => r.b64mid === entry.b64mid);
+      if (a >= 0 && b >= 0) {
+        for (const r of rows.slice(Math.min(a, b), Math.max(a, b) + 1)) next.add(r.b64mid);
+        setSelected(next);
+        return;
+      }
+    }
+    if (next.has(entry.b64mid)) next.delete(entry.b64mid);
+    else next.add(entry.b64mid);
+    lastClicked = entry.b64mid;
+    setSelected(next);
+  }
+
+  function openEntry(entry: MessageEntry) {
+    // The click a browser fires after a drag's pointerup must not also open
+    // the message that was just filed.
+    if (drag.takeDragFlag()) return;
+    setOpenMid(entry.b64mid);
+    setCursor(flatRows().findIndex((r) => r.b64mid === entry.b64mid));
+    setCursorVisible(false);
+  }
+
+  // ── reader ──────────────────────────────────────────────────────────────
+
+  const openEntryData = createMemo(() => flatRows().find((e) => e.b64mid === openMid()));
+  const openIndex = createMemo(() => flatRows().findIndex((e) => e.b64mid === openMid()));
+
+  function step(delta: number) {
+    const rows = flatRows();
+    const next = rows[openIndex() + delta];
+    if (!next) {
+      // Walking off the end pulls the next page rather than dead-ending — the
+      // list is paginated, so "last message" usually just means "last loaded".
+      if (delta > 0) loadPage();
+      return;
+    }
+    setOpenMid(next.b64mid);
+    setCursor(openIndex() + delta);
+    if (isEntryUnseen(next)) markItemSeen(next.b64mid);
+  }
+
+  // ── keyboard ────────────────────────────────────────────────────────────
+
+  const onKeyDown = createInboxKeys({
+    rows: flatRows,
+    cursor,
+    setCursor: (i) => {
+      setCursor(i);
+      setCursorVisible(true);
+      rowEls.get(flatRows()[i]?.b64mid ?? "")?.scrollIntoView({ block: "nearest" });
+    },
+    open: openEntry,
+    star: (e) => void acts.star(e),
+    trash: (e) => void acts.trash(e),
+    toggleRead: (e) => void acts.setRead(e, isEntryUnseen(e)),
+    toggleSelect: (e) => toggleSelect(e),
+    clearSelection,
+    focusSearch: props.onFocusSearch,
+  });
+
+  // ── fetching ────────────────────────────────────────────────────────────
 
   async function loadPage(reset = false) {
     if (!reset && loadMoreActive) return;
@@ -443,6 +810,8 @@ export const MessageList: Component<{
         file: feedType === "folder" ? (props.file ?? "") : "",
         search: (props.authorFilter ?? "").trim(),
         xchan: props.xchan,
+        unread: props.unread,
+        filters: props.filters,
         signal,
       });
 
@@ -477,7 +846,12 @@ export const MessageList: Component<{
     props.reloadKey;
     props.authorFilter;
     props.xchan;
+    props.unread;
+    props.filters;
     setOffset(0);
+    clearSelection();
+    setCursor(-1);
+    setCursorVisible(false);
     loadPage(true);
   });
 
@@ -501,8 +875,59 @@ export const MessageList: Component<{
     resetController?.abort();
   });
 
+  const bulkAll = (fn: (e: MessageEntry) => Promise<unknown>) => {
+    const targets = selectedEntries();
+    clearSelection();
+    void acts.bulk(targets, fn);
+  };
+
   return (
-    <div ref={scrollRef} class="flex-1 overflow-y-auto" onScroll={onScroll}>
+    <div class="flex-1 min-h-0 relative flex flex-col">
+    <div
+      ref={scrollRef}
+      class="flex-1 overflow-y-auto focus:outline-none"
+      onScroll={onScroll}
+      tabindex={mailable() && props.selectable ? 0 : undefined}
+      onKeyDown={mailable() && props.selectable ? onKeyDown : undefined}
+    >
+      {/* Bulk bar — takes over the top of the list while rows are selected. */}
+      <Show when={mailable() && props.selectable && selected().size > 0}>
+        <div class="sticky top-0 z-20 flex items-center gap-1 px-3.5 py-1.5 bg-elevated border-b border-rim">
+          <span class="text-xs font-medium text-txt mr-1">
+            {t("hq.n_selected", { count: String(selected().size) })}
+          </span>
+          <RowButton
+            path={TYPE_ICON_PATH.starred}
+            title={t("hq.star_action")}
+            onClick={() => bulkAll((e) => acts.star(e, true))}
+          />
+          <FolderMenu
+            folders={props.folders ?? []}
+            title={t("hq.move_to_folder")}
+            onPick={(name) => bulkAll((e) => acts.moveToFolder(e, name, currentFolder()))}
+            class="p-1 rounded-md text-muted hover:text-txt hover:bg-surface transition-colors"
+          />
+          <RowButton
+            path={ENVELOPE_ICON_PATH}
+            title={t("hq.mark_read")}
+            onClick={() => bulkAll((e) => acts.setRead(e, true))}
+          />
+          <RowButton
+            path={TRASH_ICON_PATH}
+            title={t("hq.trash_action")}
+            onClick={() => bulkAll((e) => acts.trash(e))}
+          />
+          <div class="flex-1" />
+          <button
+            type="button"
+            onClick={clearSelection}
+            class="text-xs text-muted hover:text-txt px-2 py-1 rounded-md hover:bg-surface"
+          >
+            {t("hq.clear_selection")}
+          </button>
+        </div>
+      </Show>
+
       <Show when={error()}>
         <div class="flex flex-col items-center justify-center py-10 gap-2 text-sm">
           <MdOutlineWarning class="text-2xl text-muted" />
@@ -516,7 +941,7 @@ export const MessageList: Component<{
         </div>
       </Show>
 
-      <Show when={empty() && !loading() && !(props.authorFilter ?? "").trim()}>
+      <Show when={empty() && !loading() && !filtered()}>
         <div class="flex flex-col items-center justify-center h-full gap-2 text-sm text-muted py-16">
           <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -530,7 +955,7 @@ export const MessageList: Component<{
         </div>
       </Show>
 
-      <Show when={empty() && !loading() && (props.authorFilter ?? "").trim()}>
+      <Show when={empty() && !loading() && filtered()}>
         <div class="flex flex-col items-center justify-center h-full gap-2 text-sm text-muted py-16">
           <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -558,7 +983,20 @@ export const MessageList: Component<{
                 <MessageItem
                   entry={entry}
                   feedType={props.type}
-                  onOpen={() => setOpenMid(entry.b64mid)}
+                  onOpen={() => openEntry(entry)}
+                  actions={mailable() ? rowActions() : undefined}
+                  selectable={props.selectable}
+                  selected={selected().has(entry.b64mid)}
+                  onToggleSelect={(shift) => toggleSelect(entry, shift)}
+                  cursored={cursorVisible() && flatRows()[cursor()]?.b64mid === entry.b64mid}
+                  active={openMid() === entry.b64mid}
+                  dragging={drag.draggingId() === entry.b64mid}
+                  swipeDx={drag.swipeOffset(entry.b64mid)}
+                  onPointerDown={mailable() ? drag.onRowPointerDown(entry.b64mid) : undefined}
+                  registerRef={(el) => {
+                    rowEls.set(entry.b64mid, el);
+                    onCleanup(() => rowEls.delete(entry.b64mid));
+                  }}
                 />
               )}
             </For>
@@ -576,9 +1014,80 @@ export const MessageList: Component<{
         </div>
       </Show>
 
-      <Show when={openMid()}>
+      {/* The modal is still how HQ's cards and the folder modal open a
+          message; only the inbox swaps it for the reader below. */}
+      <Show when={openMid() && !props.reader}>
         <PostDetailModal uuid={openMid()!} onClose={() => setOpenMid(null)} />
       </Show>
+    </div>
+
+    {/* Reader. Laid over the list rather than replacing it, so going back
+        lands on the same scroll position — a display:none scroll container
+        loses scrollTop. */}
+    <Show when={props.reader && openMid()}>
+      <div
+        class="absolute inset-0 z-30 flex flex-col bg-base focus:outline-none"
+        tabindex="-1"
+        ref={(el) => queueMicrotask(() => el.focus())}
+        onKeyDown={(ev) => {
+          if (ev.key === "Escape") { setOpenMid(null); ev.preventDefault(); }
+          else if (ev.key === "j" || ev.key === "ArrowDown") { step(1); ev.preventDefault(); }
+          else if (ev.key === "k" || ev.key === "ArrowUp") { step(-1); ev.preventDefault(); }
+        }}
+      >
+        <div class="shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-rim bg-surface">
+          <button
+            type="button"
+            onClick={() => setOpenMid(null)}
+            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
+                   hover:bg-overlay hover:text-txt transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7" />
+            </svg>
+            {t("hq.back_to_list")}
+          </button>
+
+          <Show when={mailable() && openEntryData()}>
+            {(entry) => <ActionRail entry={entry()} acts={rowActions()} t={t} class="ml-1" />}
+          </Show>
+
+          <div class="flex-1" />
+
+          <span class="text-[0.625rem] text-muted tabular-nums shrink-0">
+            {t("hq.n_of_m", { n: String(openIndex() + 1), m: String(flatRows().length) })}
+          </span>
+          <button
+            type="button"
+            onClick={() => step(-1)}
+            disabled={openIndex() <= 0}
+            title={t("hq.previous_message")}
+            aria-label={t("hq.previous_message")}
+            class="p-1 rounded-md text-muted hover:bg-overlay hover:text-txt disabled:opacity-30 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => step(1)}
+            disabled={openIndex() >= flatRows().length - 1 && offset() === -1}
+            title={t("hq.next_message")}
+            aria-label={t("hq.next_message")}
+            class="p-1 rounded-md text-muted hover:bg-overlay hover:text-txt disabled:opacity-30 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex-1 min-h-0">
+          <PostDetailModal uuid={openMid()!} inline onClose={() => setOpenMid(null)} />
+        </div>
+      </div>
+    </Show>
     </div>
   );
 };

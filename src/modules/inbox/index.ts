@@ -1,6 +1,7 @@
 // src/modules/inbox/index.ts
 import { registerModule } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { mailUnread } from "@utsukta/spa-core/lib/notificationCount";
 
 const inboxView = () => import("./views/InboxView");
 
@@ -23,6 +24,8 @@ registerModule({
     // useNav's owner branch only picks up SPA-exclusive nav items that opt in
     // with an explicit `false` — omitting it hides the item entirely.
     hidden: false,
+    // Fed by the global NotificationsAside's live connection — no extra poll.
+    badge: () => mailUnread() || undefined,
   },
   // SPA-exclusive feature with no Hubzilla app behind it, so it's toggled from
   // Settings → Integrations like Tools and Games.

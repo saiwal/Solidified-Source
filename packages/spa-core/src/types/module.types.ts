@@ -15,6 +15,8 @@ export interface NavItemDef {
   href: string | (() => string);
   context?: NavContext | NavContext[]; // single or array of allowed roles
   hidden?: boolean;
+  /** Live count shown as a badge on the item (0/undefined = no badge). */
+  badge?: () => number | undefined;
   /**
    * Help-mode target for this nav item, in "nav.<topic>" form. Resolved the
    * same way as the `use:helpable` directive: fetches src/docs/user/en/nav.md

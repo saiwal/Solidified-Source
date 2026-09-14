@@ -1,12 +1,12 @@
-import { createSignal } from "solid-js";
+import { persistedSignal, boolFlag } from "../lib/persisted";
 
-const [enabled, setEnabledGlobal] = createSignal<boolean>(
-  localStorage.getItem("hz-emoji-as-images") === "1"
+const [enabled, setEnabled] = persistedSignal(
+  "hz-emoji-as-images",
+  false,
+  boolFlag.parse,
+  boolFlag.format,
 );
 
 export function useEmojiAsImages() { return enabled; }
 
-export function setEmojiAsImages(value: boolean) {
-  setEnabledGlobal(value);
-  localStorage.setItem("hz-emoji-as-images", value ? "1" : "0");
-}
+export const setEmojiAsImages = setEnabled;
