@@ -19,6 +19,9 @@ const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 // so the inbox module and these HQ widgets share one mailbox.
 import { fetchMessages, type MessageEntry, type MessageType, type FeedType } from "@utsukta/spa-core/lib/message-store";
 import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
+// Unseen top-level post, or unseen replies to a seen one — ignores the
+// per-item "locallyRead" click state, which only matters for rendering.
+import { isEntryUnseen } from "@utsukta/spa-core/lib/unseen";
 // Mail behaviour (star/trash/file, selection, drag, keys) lives in the inbox
 // module and is entirely opt-in — HQ's message cards pass none of these props
 // and render exactly as before.
@@ -43,19 +46,6 @@ function getTimeGroup(dateStr: string): TimeGroup {
   if (diff < 172800) return "Yesterday";
   if (diff < 604800) return "This week";
   return "Older";
-}
-
-// Unseen top-level post, or unseen replies to a seen one — ignores the
-// per-item "locallyRead" click state, which only matters for rendering.
-function isEntryUnseen(e: MessageEntry): boolean {
-  // `unseen` is authoritative once the backend sends it (and is what the
-  // mark-read action flips); the string fields are the pre-existing signal and
-  // the only one a cached entry may carry.
-  if (e.unseen === false) return false;
-  if (e.unseen === true) return true;
-  if (e.unseen_class === "primary") return true;
-  const n = Number(e.unseen_count);
-  return Number.isFinite(n) && n > 0;
 }
 
 export const TYPE_ICON_PATH: Record<MessageType, string> = {
