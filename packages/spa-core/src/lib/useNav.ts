@@ -74,12 +74,22 @@ function tabToNavItem(tab: NavChannelTab): NavItemDef {
 // module's SPA route/navItem use "/cal"). Route matching via
 // `moduleIdForPath` resolves either URL back to the owning module, so we
 // prefer that module's own i18n-aware label over the server's raw one.
+// (The server's label is translated in the *account's* Hubzilla language, which
+// need not be the SPA locale, so this is what keeps the nav in one language.)
+//
+// Only for the module's own entry point, though — its navItem path, or the app
+// its appUrlSlug names. A module may also own alias routes for *other* apps —
+// the directory module answers /connections so pasted classic links work — and
+// relabelling those made the Connections app render as a second "Directory".
 function appToNavItem(app: NavApp): NavItemDef {
   const href = toSpaHref(app.url);
   const path = urlToPath(href);
-  const registeredLabel = getModule(moduleIdForPath(path))?.navItem?.label;
+  const mod = getModule(moduleIdForPath(path));
+  const isEntryPoint =
+    mod?.navItem?.path === path ||
+    (!!mod?.appUrlSlug && app.url_raw?.includes(mod.appUrlSlug));
   return {
-    label: registeredLabel ?? app.label,
+    label: (isEntryPoint ? mod?.navItem?.label : undefined) ?? app.label,
     icon: biToNavIcon(app.bi_icon),
     href,
     path,

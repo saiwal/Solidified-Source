@@ -3,8 +3,18 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import type { SubPageItem } from "@/shared/views/SubPageLayout";
 
 export const CONNECTIONS_ITEMS: SubPageItem[] = [
-  { path: "connections", label: () => useI18n().t("directory.connections"), context: "owner", requiresApp: "/connections" },
-  { path: "contact-roles", label: () => useI18n().t("directory.contact_roles"), context: "owner", requiresApp: "/permcats" },
+  {
+    path: "connections",
+    label: () => useI18n().t("directory.connections"),
+    context: "owner",
+    requiresApp: "/connections",
+  },
+  {
+    path: "contact-roles",
+    label: () => useI18n().t("directory.contact_roles"),
+    context: "owner",
+    requiresApp: "/permcats",
+  },
   {
     path: "privacy-groups",
     label: () => useI18n().t("directory.privacy_groups"),
@@ -34,7 +44,12 @@ export const CONNECTIONS_ITEMS: SubPageItem[] = [
     label: () => useI18n().t("directory.people_groups"),
     context: "all",
   },
-  { path: "suggest", label: () => useI18n().t("directory.suggestions"), context: ["local", "owner"], requiresApp: "/suggest" },
+  {
+    path: "suggest",
+    label: () => useI18n().t("directory.suggestions"),
+    context: ["local", "owner"],
+    requiresApp: "/suggest",
+  },
   // Inviting is a people-facing action rather than a per-connection tool, so it
   // sits with the directory/suggestions group.
   {
@@ -65,7 +80,10 @@ registerModule({
     ...subRoutes,
     // Classic-Hubzilla entry points people paste into webpages / menus.
     { path: "/follow", component: () => import("./views/FollowView") },
-    { path: "/connections", component: () => import("./views/ConnectionsRedirectView") },
+    {
+      path: "/connections",
+      component: () => import("./views/ConnectionsRedirectView"),
+    },
   ],
   navItem: {
     label: () => useI18n().t("nav.directory"),

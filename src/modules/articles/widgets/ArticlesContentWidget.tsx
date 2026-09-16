@@ -1,6 +1,6 @@
 import { createEffect, onCleanup, Show, For, Index } from "solid-js";
 import { MdOutlineArticle, MdOutlineShare } from "solid-icons/md";
-import { useNavigate } from "@solidjs/router";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -138,14 +138,23 @@ export default function ArticlesContentWidget() {
   const nick = usePageNick();
   const isList = useIsArticlesList();
   const navigate = useNavigate();
-  let initialized = false;
+  const [searchParams] = useSearchParams();
+  const str = (k: string) => {
+    const v = searchParams[k];
+    return (Array.isArray(v) ? v[0] : v) || undefined;
+  };
 
+  // Classic Hubzilla filter params (?cat=, ?tag=, ?dbegin=/?dend=, ?search=)
+  // are the source of truth, so those URLs keep working when pasted or linked.
   createEffect(() => {
     if (auth.loading) return;
-    if (initialized) return;
-    initialized = true;
-    resetPosts();
-    loadArticles(nick());
+    loadArticles(nick(), {
+      ...(str("cat") && { cat: str("cat") }),
+      ...(str("tag") && { tag: str("tag") }),
+      ...(str("dbegin") && { dbegin: str("dbegin") }),
+      ...(str("dend") && { dend: str("dend") }),
+      ...(str("search") && { search: str("search") }),
+    });
   });
 
   onCleanup(() => resetPosts());

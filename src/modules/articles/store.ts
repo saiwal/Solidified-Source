@@ -30,63 +30,6 @@ async function articlesFetcher(params: ArticleParams): Promise<StreamResult> {
   };
 }
 
-// ── active filters ────────────────────────────────────────────────────────────
-const [activeCategory, setActiveCategory] = createSignal<string>("");
-const [activeTag, setActiveTag] = createSignal<string>("");
-const [activeDbegin, setActiveDbegin] = createSignal<string>("");
-const [activeDend, setActiveDend] = createSignal<string>("");
-const [activeSearch, setActiveSearch] = createSignal<string>("");
-export { activeCategory, activeTag, activeDbegin, activeDend, activeSearch };
-
-export function setArticleFilter(type: "cat" | "tag", value: string) {
-  if (type === "cat") {
-    const next = activeCategory() === value ? "" : value;
-    setActiveCategory(next);
-    setActiveTag("");
-  } else {
-    const next = activeTag() === value ? "" : value;
-    setActiveTag(next);
-    setActiveCategory("");
-  }
-  setActiveDbegin("");
-  setActiveDend("");
-  setActiveSearch("");
-  store.reset();
-  store.load({ cat: activeCategory(), tag: activeTag() });
-}
-
-export function setArticleDateFilter(dbegin: string, dend: string) {
-  const isActive = activeDbegin() === dbegin && activeDend() === dend;
-  setActiveDbegin(isActive ? "" : dbegin);
-  setActiveDend(isActive ? "" : dend);
-  setActiveCategory("");
-  setActiveTag("");
-  setActiveSearch("");
-  store.reset();
-  store.load({ dbegin: activeDbegin(), dend: activeDend() });
-}
-
-export function setArticleSearch(value: string) {
-  const next = value.trim();
-  setActiveSearch(next);
-  setActiveCategory("");
-  setActiveTag("");
-  setActiveDbegin("");
-  setActiveDend("");
-  store.reset();
-  store.load({ search: next || undefined });
-}
-
-export function clearArticleFilter() {
-  setActiveCategory("");
-  setActiveTag("");
-  setActiveDbegin("");
-  setActiveDend("");
-  setActiveSearch("");
-  store.reset();
-  store.load({});
-}
-
 // ── viewMode ──────────────────────────────────────────────────────────────────
 const [viewMode, setViewMode] = createSignal<ViewMode>("list");
 storageGet<ViewMode>("articles:viewMode", "list").then(setViewMode);

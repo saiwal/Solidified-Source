@@ -7,11 +7,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import ArticleComposer from "@/shared/editor/composers/ArticleComposer";
 import ComposerModal from "@/shared/editor/components/ComposerModal";
-import {
-  activeCategory, activeTag, activeDbegin, activeSearch,
-  setArticleSearch, clearArticleFilter,
-  resetPosts, loadArticles,
-} from "../store";
+import { resetPosts, loadArticles } from "../store";
 import { useIsArticlesList } from "../lib/isArticlesList";
 
 function ArticleModal(props: { uid: number; nick: string; onClose: () => void }) {
@@ -39,7 +35,12 @@ export default function ArticlesHeaderWidget() {
   const role = useViewerRole();
   const nick = usePageNick();
   const isList = useIsArticlesList();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const p = (k: string) => String(searchParams[k] ?? "");
+  const activeCategory = () => p("cat");
+  const activeTag = () => p("tag");
+  const activeDbegin = () => p("dbegin");
+  const activeSearch = () => p("search");
   const [open, setOpen] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());
@@ -47,14 +48,14 @@ export default function ArticlesHeaderWidget() {
   const submitSearch = (e?: Event) => {
     e?.preventDefault();
     const q = searchInput().trim();
-    setArticleSearch(q);
+    setSearchParams({ search: q || undefined, cat: undefined, tag: undefined, dbegin: undefined, dend: undefined });
     if (!q) setSearchOpen(false);
   };
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearchOpen(false);
-    clearArticleFilter();
+    setSearchParams({ search: undefined, cat: undefined, tag: undefined, dbegin: undefined, dend: undefined });
   };
 
   let initialized = false;

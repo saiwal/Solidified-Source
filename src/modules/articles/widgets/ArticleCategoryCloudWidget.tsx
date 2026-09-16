@@ -1,14 +1,19 @@
 import CategoryCloudWidget from "@/shared/stream/components/CategoryCloudWidget";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { activeCategory, setArticleFilter } from "../store";
+import { useSearchParams } from "@solidjs/router";
 
 export default function ArticleCategoryCloudWidget() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSlug = () => String(searchParams.cat ?? "");
+
   return (
     <CategoryCloudWidget
       channelNick={usePageNick()()}
       type="articles"
-      activeSlug={activeCategory()}
-      onCategoryClick={(slug) => setArticleFilter("cat", slug)}
+      activeSlug={activeSlug()}
+      onCategoryClick={(slug) =>
+        setSearchParams({ cat: activeSlug() === slug ? undefined : slug, tag: undefined })
+      }
     />
   );
 }
