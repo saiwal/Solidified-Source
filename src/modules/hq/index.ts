@@ -65,6 +65,7 @@ registerModule({
       defaultSpan: 3,
       defaultModules: ["hq"],
       contexts: ["hq"],
+      configComponent: () => import("./widgets/HqMessagesConfig"),
       helpTarget: "widgets.recent_posts",
     },
     {

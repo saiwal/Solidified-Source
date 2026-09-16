@@ -109,6 +109,7 @@ export const widgets: RawDictionary["widgets"] = {
   cfg_no_menus:       "Noch keine Menüs — erstelle eines unter Webseiten → Menüs.",
   credits_theme:      "Theme",
   cfg_album:          "Album",
+  cfg_default_tab:    "Standard-Tab",
   cfg_room:           "Chatroom",
   cfg_event:          "Termin",
   photo_albums:       "Fotoalben",

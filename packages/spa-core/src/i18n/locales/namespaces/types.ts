@@ -504,6 +504,7 @@ export type RawDictionary = {
     cfg_no_menus:       string;
     credits_theme:      string;
     cfg_album:          string;
+    cfg_default_tab:    string;
     cfg_room:           string;
     cfg_event:          string;
     photo_albums:       string;

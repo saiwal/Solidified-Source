@@ -1,11 +1,11 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createSignal, Show, lazy } from "solid-js";
-import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 import { MdOutlineEdit, MdOutlineMail, MdOutlineRefresh } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import DMComposer from "@/shared/editor/composers/DMComposer";
 import { MessageList, FolderViewToggle, folderViewMode, setFolderViewMode } from "./MessageList";
+import { TABS, type Tab } from "./MessageTabs";
 
 const HqFoldersWidget = lazy(() => import("./HqFoldersWidget"));
 
@@ -15,26 +15,16 @@ const HqFoldersWidget = lazy(() => import("./HqFoldersWidget"));
 // "Folders", which combines file-tag folders with a pinned "Starred" entry
 // (see HqFoldersWidget.tsx).
 //
-// Tab ids are MessageList's own feed types, so the active tab passes straight
-// through as `type`. Each tab's controls (compose/refresh/filter for the feeds,
-// list/grid toggle for folders) share one header row beside the rail.
-type Tab = "" | "direct" | "notification" | "folder";
+// Tab ids live in MessageTabs.ts, shared with the widget's config form; the
+// opening tab comes from that config and is not remembered across reloads.
+//
+// Each tab's controls (compose/refresh/filter for the feeds, list/grid toggle
+// for folders) share one header row beside the rail.
 
-const TABS: { id: Tab; key: string }[] = [
-  { id: "", key: "hq.msg_tab_all" },
-  { id: "direct", key: "hq.msg_tab_direct" },
-  { id: "notification", key: "hq.msg_tab_notices" },
-  { id: "folder", key: "hq.msg_tab_folders" },
-];
-
-export default function HqMessagesWidget() {
+export default function HqMessagesWidget(props: { config?: Record<string, unknown> }) {
   const { t } = useI18n();
   const auth = useAuth();
-  const [tab, setTab] = persistedSignal<Tab>(
-    "hz-hq-msg-tab",
-    "",
-    oneOf<Tab>(...TABS.map((tb) => tb.id)),
-  );
+  const [tab, setTab] = createSignal<Tab>((props.config?.tab as Tab) ?? "");
 
   const [authorFilter, setAuthorFilter] = createSignal("");
   const [composing, setComposing] = createSignal<"post" | "dm" | null>(null);
