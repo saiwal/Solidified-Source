@@ -94,7 +94,7 @@ export default function WikiComposer(props: Props) {
             onAltChange={(att) => setBody(patchInsertedAlt(body(), att, mime()))}
             tab={tab()}
             onToggleTab={() => setTab(tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(mime(), caps.markdownWysiwyg)}
+            canWysiwyg={canUseWysiwyg(mime(), caps.nonBbcodeWysiwyg)}
           />
         </>
       }

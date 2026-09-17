@@ -22,9 +22,11 @@ interface Props {
   /** Return true to consume Enter and suppress the default newline insertion. */
   onEnter?: () => boolean;
   /**
-   * Receives files pasted from the clipboard (screenshots, copied images).
-   * When set, file pastes are consumed here instead of the browser default,
-   * which would dump the image into the WYSIWYG as an inline base64 blob.
+   * Receives files pasted from the clipboard (screenshots, copied images) or
+   * dropped onto the typing surface. When set, those are consumed here
+   * instead of the browser default, which would dump the image into the
+   * WYSIWYG as an inline base64 data: URI — a body classic Hubzilla and
+   * federated receivers won't render, and which bloats every stored copy.
    */
   onPasteFiles?: (files: File[]) => void;
   /**
@@ -32,6 +34,12 @@ interface Props {
    * composer sync it back onto the matching attachment chip's ALT badge.
    */
   onImageAlt?: (src: string, alt: string) => void;
+  /**
+   * Overrides the capability gate on the Write tab — pass the accessor from
+   * createWysiwygAvailable() wherever the body is stored in the format it was
+   * typed in, so the tab is offered only for a body the round trip preserves.
+   */
+  wysiwygAvailable?: boolean;
   placeholder?: string;
   minHeight?: string;
   /** Caps the editing surface's growth — it scrolls internally past this. */
@@ -64,12 +72,15 @@ export default function RichEditor(props: Props) {
   // Which formats may use the WYSIWYG surface. It round-trips the whole body
   // through htmlToSource() on every keystroke, so a format is only safe here
   // if that round trip is lossless: bbcode always, and markdown on the
-  // surfaces whose body is converted to bbcode on save (markdownWysiwyg —
+  // surfaces whose body is converted to bbcode on save (nonBbcodeWysiwyg —
   // posts and comments). text/html and text/plain stay source-only; plain has
   // no branch in htmlToSource at all and would come back as bbcode.
   // Derived rather than pushed back through onTabChange so the caller's tab
   // state is left untouched and the WYSIWYG tab returns as it was.
-  const wysiwygAllowed = () => canUseWysiwyg(mime(), props.capabilities.markdownWysiwyg);
+  // The composer decides this for formats stored as typed (see
+  // wysiwygSafe.ts); everything else keeps the plain capability answer.
+  const wysiwygAllowed = () =>
+    props.wysiwygAvailable ?? canUseWysiwyg(mime(), props.capabilities.nonBbcodeWysiwyg);
   const tab = (): EditorTab => (wysiwygAllowed() ? props.tab : "source");
   const sig = () => `${mime()} ${props.body}`;
   const minH = () =>
@@ -336,23 +347,41 @@ export default function RichEditor(props: Props) {
       : { left: `${Math.max(8, r.left)}px`, top: `${r.bottom + 8}px` };
   };
 
+  // dt.files misses some sources (e.g. certain Linux clipboard managers),
+  // so fall back to scanning items for file entries.
+  const filesOf = (dt: DataTransfer) =>
+    dt.files.length
+      ? Array.from(dt.files)
+      : Array.from(dt.items)
+          .filter((i) => i.kind === "file")
+          .map((i) => i.getAsFile())
+          .filter((f): f is File => f !== null);
+
+  // Dropping a file onto a contenteditable inlines it as base64 by default;
+  // route it through the same upload path as a paste instead. Non-file drops
+  // (text, a link, HTML from another page) keep the browser default.
+  const handleDrop = (e: DragEvent) => {
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const files = filesOf(dt);
+    if (files.length === 0) return;
+    // Swallowed even with no handler (remote commenters can't upload — they
+    // have no local nick to wall_attach against): the default would inline
+    // the file as base64 instead, which is worse than nothing.
+    e.preventDefault();
+    props.onPasteFiles?.(files);
+  };
+
   const handlePaste = (e: ClipboardEvent) => {
     const dt = e.clipboardData;
     if (!dt) return;
-    if (props.onPasteFiles) {
-      // dt.files misses some sources (e.g. certain Linux clipboard managers),
-      // so fall back to scanning items for file entries.
-      const files = dt.files.length
-        ? Array.from(dt.files)
-        : Array.from(dt.items)
-            .filter((i) => i.kind === "file")
-            .map((i) => i.getAsFile())
-            .filter((f): f is File => f !== null);
-      if (files.length > 0) {
-        e.preventDefault();
-        props.onPasteFiles(files);
-        return;
-      }
+    const pastedFiles = filesOf(dt);
+    if (pastedFiles.length > 0) {
+      // Same as handleDrop: consumed even when nobody handles files, or the
+      // browser inlines a base64 data: URI instead.
+      e.preventDefault();
+      props.onPasteFiles?.(pastedFiles);
+      return;
     }
 
     // A pasted [share=<id>][/share] token needs the same expand-to-embed
@@ -414,6 +443,7 @@ export default function RichEditor(props: Props) {
           onInput={(e) => onEditorInput(e as InputEvent)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
+          onDrop={handleDrop}
           onClick={onEditorClick}
           onBlur={onEditorBlur}
           data-placeholder={props.placeholder ?? t("editor.write_placeholder")}
@@ -435,6 +465,7 @@ export default function RichEditor(props: Props) {
           onInput={onTextareaInput}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
+          onDrop={handleDrop}
           style={{ "min-height": minH(), "max-height": maxH() }}
           class={`${surfaceGrowClass()} overflow-y-auto rounded-t-lg w-full p-3 text-sm font-mono text-txt bg-elevated outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
           placeholder={

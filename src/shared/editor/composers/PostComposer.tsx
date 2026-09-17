@@ -544,7 +544,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               }}
               tab={store.tab()}
               onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
             />
           </div>
 

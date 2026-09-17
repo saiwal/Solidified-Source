@@ -28,7 +28,8 @@ import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import SlugField from "../components/SlugField";
 import FormatSelect from "../components/FormatSelect";
-import { isAuthorable, canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
+import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
 import { underlineFieldClass } from "../lib/fieldStyles";
@@ -211,6 +212,10 @@ export default function BlockComposer(props: Props) {
   // the user asks for one via SlugField's ↻ button (or types it by hand).
   const onTitleChange = (v: string) => store.setTitle(v);
 
+  // This body is stored in the format it was typed in, so the Write tab is
+  // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
+  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+
   return (
     <ComposerShell
       meta={
@@ -249,6 +254,7 @@ export default function BlockComposer(props: Props) {
             <RichEditor
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               body={store.body()}
+              wysiwygAvailable={wysiwygAvailable()}
               onInput={store.setBody}
               capabilities={caps}
               tab={store.tab()}
@@ -270,7 +276,7 @@ export default function BlockComposer(props: Props) {
               }}
               tab={store.tab()}
               onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+              canWysiwyg={wysiwygAvailable()}
             />
           </div>
         </>

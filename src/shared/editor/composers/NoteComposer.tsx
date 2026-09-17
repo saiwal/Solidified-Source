@@ -10,7 +10,7 @@ import EditorStats from "../components/EditorStats";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import { countWords } from "../lib/textStats";
 import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
-import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
@@ -96,6 +96,10 @@ export default function NoteComposer(props: Props) {
 
   const enc = useEncrypt(store.body, store.setBody);
 
+  // This body is stored in the format it was typed in, so the Write tab is
+  // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
+  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+
   return (
     <ComposerShell
       class={props.fill ? "p-4" : undefined}
@@ -139,6 +143,7 @@ export default function NoteComposer(props: Props) {
           <RichEditor
             onImageAlt={(src, alt) => attach?.setAltByUrl(src, alt)}
             body={store.body()}
+            wysiwygAvailable={wysiwygAvailable()}
             onInput={store.setBody}
             capabilities={caps}
             tab={store.tab()}
@@ -162,7 +167,7 @@ export default function NoteComposer(props: Props) {
             }}
             tab={store.tab()}
             onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+            canWysiwyg={wysiwygAvailable()}
           />
         </>
       </Show>

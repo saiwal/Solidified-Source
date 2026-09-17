@@ -516,6 +516,24 @@
   color: var(--color-muted);
 }
 
+/* Footnotes in the composer preview (markedExtended.ts). The reference is a
+   plain superscript label; the definition stays where it was typed, set apart
+   as the aside it is. Both are contenteditable=false raw carriers, so the
+   cursor styling says "this block is one thing, not text you edit in place". */
+.prose .md-fnref {
+  color: var(--color-accent);
+  cursor: default;
+}
+.prose .md-fndef {
+  margin: 0.5em 0;
+  padding-left: 0.75em;
+  border-left: 2px solid var(--color-rim);
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  cursor: default;
+}
+.prose .md-fndef > sup { color: var(--color-accent); }
+
 /* A link the author marked bookmarkable with #^. The literal marker is stripped
    at the display boundary (renderBody's stripBookmarkMarkers), so this dotted
    underline is all that distinguishes one in running text — quiet on purpose,

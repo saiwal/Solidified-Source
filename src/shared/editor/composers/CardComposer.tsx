@@ -40,7 +40,7 @@ import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
 import { fetchLinkMeta } from "../lib/linkMeta";
-import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import {
   CARD_TEMPLATES, composeTemplate, parseTemplate, sniffTemplate, emptyTemplateFields,
   type CardTemplate, type TemplateFields,
@@ -392,6 +392,10 @@ export default function CardComposer(props: Props) {
     if (template() !== "freeform") setZenMode(false);
   });
 
+  // This body is stored in the format it was typed in, so the Write tab is
+  // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
+  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+
   return (
     // No mx-auto here, deliberately: every mount point (CardsHeaderWidget's
     // CardModal, CardComposerModal, CardView's edit dialog) puts this in a
@@ -606,6 +610,7 @@ export default function CardComposer(props: Props) {
           <RichEditor
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
+            wysiwygAvailable={wysiwygAvailable()}
             onInput={onBodyChange}
             capabilities={caps}
             tab={store.tab()}
@@ -627,7 +632,7 @@ export default function CardComposer(props: Props) {
             }}
             tab={store.tab()}
             onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+            canWysiwyg={wysiwygAvailable()}
           />
         </div>
       }

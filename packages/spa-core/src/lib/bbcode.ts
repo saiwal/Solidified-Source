@@ -91,6 +91,16 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/** Inverse of escapeHtml, for attribute values that arrive entity-encoded. */
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&(?:#39|apos);/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
 /** Random alphanumeric string of `len` characters */
 function randomString(len = 10): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -283,6 +293,52 @@ function bbShareAttributes(
       `</div>` +
       `<div class="bb-share-body">${content}</div>` +
     `</div>`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// [attachment type='link' url='…' title='…' image='…']description[/attachment]
+//
+// Friendica/Diaspora's link-preview tag. Core degrades it to plain bbcode
+// before rendering (include/bbcode.php bb_format_attachdata) rather than
+// building a card, so this does the same and the [url]/[img] passes below take
+// it from there. Without it the whole block reaches the DOM as literal text.
+//
+// The bare `[attachment]hash,0[/attachment]` form is Hubzilla's own file
+// attachment — a different tag that the API strips at save time — so anything
+// without one of core's four known types is left exactly as it was.
+// ---------------------------------------------------------------------------
+
+function bbFormatAttachData(text: string): string {
+  return text.replace(
+    /\[attachment([^\]]*)\]([\s\S]*?)\[\/attachment\]/gi,
+    (match, attributes: string, content: string) => {
+      const attr = (name: string) => {
+        const m =
+          attributes.match(new RegExp(`${name}='(.*?)'`, "i")) ??
+          attributes.match(new RegExp(`${name}=&quot;(.*?)&quot;`, "i"));
+        return m ? decodeEntities(m[1]) : "";
+      };
+
+      const type = attr("type").toLowerCase();
+      if (!["link", "audio", "photo", "video"].includes(type)) return match;
+
+      const url = attr("url");
+      // A fetched title is remote input: bracket it and it could inject bbcode.
+      const title = attr("title").replace(/\[/g, "&#91;").replace(/\]/g, "&#93;");
+
+      const parts: string[] = [];
+      if (url && title) parts.push(`[url=${url}]${title}[/url]`);
+      else if (url) parts.push(url);
+      else if (title) parts.push(title);
+
+      for (const img of [attr("preview"), attr("image")]) {
+        if (img) parts.push(`[img]${img}[/img]`);
+      }
+      if (content.trim()) parts.push(content.trim());
+
+      return "\n\n" + parts.join("\n\n");
+    },
   );
 }
 
@@ -697,6 +753,12 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   text = applySpacefy("nobb", text);
   text = applySpacefy("pre", text);
   text = applySpacefy("summary", text);
+
+  // ------------------------------------------------------------------
+  // [attachment] link previews -> plain bbcode (after the noparse guards,
+  // before every tag pass that has to render what it emits)
+  // ------------------------------------------------------------------
+  text = bbFormatAttachData(text);
 
   // ------------------------------------------------------------------
   // [observer] / [channel] processing

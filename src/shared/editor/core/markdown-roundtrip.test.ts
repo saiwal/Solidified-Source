@@ -266,3 +266,19 @@ for (const [name, [html, md]] of Object.entries(STYLED)) {
 }
 
 console.log(`markdown-roundtrip: ok (${Object.keys(STABLE).length} byte-identical, all idempotent, ${Object.keys(SHAPES).length} line shapes, ${Object.keys(STYLED).length} bbcode-only)`);
+
+// ── The premise behind the WYSIWYG guard (wysiwygSafe.ts) ───────────────────
+// Composers whose body is stored in the format it was typed in offer the Write
+// tab only while the body survives this trip byte-for-byte. That is only worth
+// anything if the trip really does rewrite the constructs turndown can't spell
+// — if these ever start round-tripping, the guard is free to allow them, but
+// silently returning something *different* is what it exists to catch.
+const REWRITTEN = {
+  "setext heading": "Title\n=====",
+  "reference link": "see [docs][1]\n\n[1]: https://example.com",
+};
+for (const [name, src] of Object.entries(REWRITTEN)) {
+  assert.notEqual(trip(src), src, `${name} unexpectedly round-trips`);
+}
+
+console.log(`markdown-roundtrip: ${Object.keys(REWRITTEN).length} known-rewritten shapes`);

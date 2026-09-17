@@ -1,4 +1,6 @@
 import { marked } from "marked";
+// Side-effect import: registers ==highlight== / ~sub~ / ^sup^ on the singleton.
+import "./markedExtended";
 import DOMPurify from "dompurify";
 import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";

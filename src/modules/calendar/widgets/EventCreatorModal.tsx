@@ -1,4 +1,5 @@
 import { createSignal, Show, For, onMount, onCleanup } from "solid-js";
+import { Portal } from "solid-js/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createEvent, editEvent } from "../api";
@@ -251,8 +252,9 @@ export default function EventCreatorModal(props: Props) {
     "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 w-full";
 
   return (
+    <Portal mount={document.body}>
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 z-[60] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
     >
@@ -519,5 +521,6 @@ export default function EventCreatorModal(props: Props) {
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

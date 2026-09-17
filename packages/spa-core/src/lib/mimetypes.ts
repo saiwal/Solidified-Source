@@ -42,13 +42,18 @@ export function supportsWysiwyg(mimetype?: string | null): boolean {
 
 // Whether this surface may use the WYSIWYG tab for this format.
 //
-// Markdown is allowed only where `allowMarkdown` says so — in practice posts
-// and comments, whose body the server converts to bbcode on save, so the
-// round trip's normalisation never reaches stored content. Webpages, blocks,
-// articles, cards and wiki pages store real markdown and stay source-only.
-export function canUseWysiwyg(mimetype: string | null | undefined, allowMarkdown?: boolean): boolean {
+// Bbcode always. Markdown and HTML only where `allowNonBbcode` says so: posts
+// and comments, whose body the server converts to bbcode on save so the round
+// trip's normalisation never reaches stored content, and the composers that
+// pair the flag with a per-body round-trip check (wysiwygSafe.ts). Wiki pages
+// stay source-only regardless — core git-versions them.
+//
+// text/plain is never included: htmlToSource has no branch for it, so a plain
+// body would come back as bbcode.
+export function canUseWysiwyg(mimetype: string | null | undefined, allowNonBbcode?: boolean): boolean {
+  const m = normalizeMime(mimetype);
   return (
-    supportsWysiwyg(mimetype) ||
-    (!!allowMarkdown && normalizeMime(mimetype) === "text/markdown")
+    supportsWysiwyg(m) ||
+    (!!allowNonBbcode && (m === "text/markdown" || m === "text/html"))
   );
 }

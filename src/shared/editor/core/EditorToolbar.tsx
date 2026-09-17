@@ -67,7 +67,10 @@ export default function EditorToolbar(props: Props) {
   // produces different markup depending on which tab is open.
   const isMd = () => props.mimetype === "text/markdown";
   const isComment = () => props.level === "comment";
+  const isQuick   = () => props.level === "quick";
   const isFull    = () => props.level === "full";
+  /** Levels that render one row: inline marks, and for "quick" link + emoji. */
+  const isCompact = () => isComment() || isQuick();
 
   // ── WYSIWYG helpers ──────────────────────────────────────────────────────
 
@@ -81,18 +84,88 @@ export default function EditorToolbar(props: Props) {
   // what you are typing in — the two dropdowns already do this (see
   // ListToolDropdown/HeadingToolDropdown); the inline buttons showed nothing.
   const [marks, setMarks] = createSignal<Record<string, boolean>>({});
+  // Which element (or inline style) actually carries each mark. Deliberately
+  // not document.queryCommandState(): that answers with the *computed* style
+  // at the caret, so anything the prose stylesheet renders bold or underlined
+  // lit the buttons up — a link (Tailwind Typography gives `a` font-weight 500
+  // and an underline) or a heading, with no <b>/<u> anywhere in the markup.
+  const MARK_TAGS: Record<string, string> = {
+    bold:          "b,strong",
+    italic:        "i,em",
+    underline:     "u,ins",
+    strikeThrough: "s,strike,del",
+    // Not a toolbar toggle (the colour panel is), but it is a mark that lives
+    // on an element, so clearing it is the same operation — see unwrapMark.
+    highlight:     "mark",
+  };
+  const MARK_CSS: Record<string, (s: CSSStyleDeclaration) => boolean> = {
+    // execCommand emits a styled <span> instead of a tag when styleWithCSS is
+    // on, which some browsers default to — read those off the element's own
+    // style attribute, never the cascade.
+    bold:          (st) => st.fontWeight === "bold" || Number(st.fontWeight) >= 600,
+    italic:        (st) => st.fontStyle === "italic",
+    underline:     (st) => st.textDecorationLine.includes("underline"),
+    strikeThrough: (st) => st.textDecorationLine.includes("line-through"),
+    highlight:     (st) => !!st.backgroundColor && st.backgroundColor !== "transparent",
+  };
+
+  /** The nearest element carrying `mark`, or null — the thing a click clears. */
+  const markElement = (from: Node, mark: string, stop: HTMLElement) => {
+    let el: HTMLElement | null =
+      from.nodeType === Node.ELEMENT_NODE
+        ? (from as HTMLElement)
+        : from.parentElement;
+    while (el && stop.contains(el)) {
+      if (el.matches(MARK_TAGS[mark]) || MARK_CSS[mark](el.style)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  };
+
+  /**
+   * Strip `mark` from the whole element it sits on.
+   *
+   * With a collapsed caret, execCommand only changes what you type *next* — so
+   * clicking a lit-up B with the caret in a bold word appeared to do nothing,
+   * which is the opposite of what the lit button suggests. Selecting the
+   * carrying element and replacing it with its own children clears the run the
+   * button is lit for. hiliteColor and strikeThrough additionally never toggled
+   * off natively, so they route through here whatever the selection is.
+   *
+   * Returns false when the caret isn't on that mark, so callers fall back to
+   * the normal apply-to-selection command.
+   */
+  const unwrapMark = (mark: string) => {
+    const surface = focusEditor();
+    if (!surface) return false;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    const holder = markElement(sel.getRangeAt(0).startContainer, mark, surface);
+    if (!holder) return false;
+    const r = document.createRange();
+    r.selectNode(holder);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    document.execCommand("insertHTML", false, holder.innerHTML);
+    return true;
+  };
+
+  /** No selection — the caret is just sitting somewhere. */
+  const caretOnly = () => !editorHasSelection();
+
   const trackSelection = () => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const r = sel.getRangeAt(0);
     if (!inEditor(r)) return;
     lastRange = r.cloneRange();
-    setMarks({
-      bold:          document.queryCommandState("bold"),
-      italic:        document.queryCommandState("italic"),
-      underline:     document.queryCommandState("underline"),
-      strikeThrough: document.queryCommandState("strikeThrough"),
-    });
+    const surface = props.editorRef();
+    if (!surface) return;
+    setMarks(
+      Object.fromEntries(
+        Object.keys(MARK_TAGS).map((m) => [m, !!markElement(r.startContainer, m, surface)]),
+      ),
+    );
   };
   document.addEventListener("selectionchange", trackSelection);
   onCleanup(() => document.removeEventListener("selectionchange", trackSelection));
@@ -103,7 +176,15 @@ export default function EditorToolbar(props: Props) {
     el.focus();
     const sel = window.getSelection();
     const cur = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-    if (lastRange && (!cur || !inEditor(cur))) {
+    // Refocusing a contenteditable whose selection was taken over by a panel
+    // input gives it back *collapsed* in Chrome — so `cur` is in the editor
+    // and the old check kept it, and every command that needs a selection
+    // (createLink above all) ran against an empty range and did nothing
+    // visible. lastRange only holds a non-collapsed range while the user's
+    // last in-editor selection really was one, so preferring it here can't
+    // resurrect a selection they already dismissed.
+    const stale = !cur || !inEditor(cur) || (cur.collapsed && !lastRange?.collapsed);
+    if (lastRange && stale && lastRange.startContainer.isConnected) {
       sel?.removeAllRanges();
       sel?.addRange(lastRange);
     }
@@ -210,10 +291,17 @@ export default function EditorToolbar(props: Props) {
   const wrapFmt = (bb: string, md: string) =>
     isMd() ? wrapSource(md, md) : wrapSource(`[${bb}]`, `[/${bb}]`);
 
-  const bold      = () => isSource() ? wrapFmt("b", "**")  : exec("bold");
-  const italic    = () => isSource() ? wrapFmt("i", "*")   : exec("italic");
+  // Each: clear the whole marked run when the caret is inside one (see
+  // unwrapMark), otherwise the ordinary apply-to-the-selection command.
+  const toggleMark = (mark: string, cmd: string) => {
+    if (caretOnly() && unwrapMark(mark)) return;
+    exec(cmd);
+  };
+
+  const bold      = () => isSource() ? wrapFmt("b", "**")  : toggleMark("bold", "bold");
+  const italic    = () => isSource() ? wrapFmt("i", "*")   : toggleMark("italic", "italic");
   // No markdown spelling for underline — bbcode in both tabs.
-  const underline = () => isSource() ? wrapSource("[u]", "[/u]")   : exec("underline");
+  const underline = () => isSource() ? wrapSource("[u]", "[/u]")   : toggleMark("underline", "underline");
   const highlight = (c: string) => {
     if (isSource()) { wrapSource(`[mark=${c}]`, "[/mark]"); return; }
     // Firefox only honours hiliteColor with CSS styling on; the resulting
@@ -224,47 +312,20 @@ export default function EditorToolbar(props: Props) {
     document.execCommand("styleWithCSS", false, "false");
   };
 
-  // hiliteColor doesn't toggle off like bold/italic/underline do natively
-  // (it just re-applies the background color); unwrap manually when the
-  // selection is already inside a highlighted span — same gap strike()
-  // works around below. Reached from the colour panel's "None" row.
+  // hiliteColor just re-applies the background colour instead of toggling it
+  // off, so clearing always means unwrapping the element — whatever the
+  // selection is. Reached from the colour panel's "None" row.
   const clearHighlight = () => {
     if (isSource()) { wrapSource("[mark]", "[/mark]"); return; }
-    const el = focusEditor();
-    if (!el) return;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const node    = sel.getRangeAt(0).commonAncestorContainer;
-    const parentEl = node.nodeType === Node.TEXT_NODE ? node.parentElement : node as Element;
-    const hlEl    = parentEl?.closest?.("mark, span[style*='background-color']");
-    if (hlEl && el.contains(hlEl)) {
-      const r = document.createRange();
-      r.selectNode(hlEl);
-      sel.removeAllRanges();
-      sel.addRange(r);
-      document.execCommand("insertHTML", false, (hlEl as HTMLElement).innerHTML);
-    }
+    unwrapMark("highlight");
   };
 
+  // Same gap: execCommand("strikeThrough") doesn't reliably toggle off inside
+  // <s>, so try the unwrap first and only then apply.
   const strike = () => {
     if (isSource()) { wrapFmt("s", "~~"); return; }
-    // execCommand("strikeThrough") doesn't reliably toggle off when inside <s>; unwrap manually
-    const el = focusEditor();
-    if (!el) return;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const node    = sel.getRangeAt(0).commonAncestorContainer;
-    const parentEl = node.nodeType === Node.TEXT_NODE ? node.parentElement : node as Element;
-    const sEl     = parentEl?.closest?.("s, strike");
-    if (sEl && el.contains(sEl)) {
-      const r = document.createRange();
-      r.selectNode(sEl);
-      sel.removeAllRanges();
-      sel.addRange(r);
-      document.execCommand("insertHTML", false, (sEl as HTMLElement).innerHTML);
-    } else {
-      exec("strikeThrough");
-    }
+    if (unwrapMark("strikeThrough")) return;
+    exec("strikeThrough");
   };
 
   const color = (c: string) =>
@@ -383,8 +444,12 @@ export default function EditorToolbar(props: Props) {
   // selection the user is dropping in a bare URL, so we scrape it (see
   // ../lib/linkMeta) and insert a title/thumbnail/quote preview instead.
   // A failed scrape degrades to the plain link the button always produced.
-  const link = async (url: string) => {
-    if (!url) return;
+  const link = async (raw: string) => {
+    if (!raw) return;
+    // A bare "example.com" becomes a *relative* href — the link renders but
+    // goes nowhere, which reads as "insert did nothing". Anything already
+    // carrying a scheme, or an explicit site-root/anchor, is left alone.
+    const url = /^([a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(raw) ? raw : `https://${raw}`;
     if (isSource()) {
       const ta = props.textareaRef();
       if (ta && ta.selectionEnd > ta.selectionStart) {
@@ -541,6 +606,17 @@ export default function EditorToolbar(props: Props) {
     }
   };
 
+  const LinkPanel = () => (
+    <PromptPanel
+      title={t("editor.link")}
+      icon={<MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />}
+      fields={[{ key: "url", label: t("editor.url_label") }]}
+      submitLabel={t("editor.insert")}
+      disabled={linkLoading()}
+      onSubmit={(v) => { void link(v.url); }}
+    />
+  );
+
   return (
     <>
     <div class="flex flex-wrap items-center gap-0.5 px-2 py-2 shrink-0 border-t border-rim rounded-b-lg bg-surface">
@@ -567,8 +643,18 @@ export default function EditorToolbar(props: Props) {
         onClear={clearHighlight}
       />
 
-      {/* ── Groups 2–7: hidden for comment level ── */}
-      <Show when={!isComment()}>
+      {/* ── Quick level stops here, plus the two inserts a short post still
+           wants. Everything below is one row too many for a compact bar. ── */}
+      <Show when={isQuick()}>
+        <>
+          <Sep />
+          <LinkPanel />
+          <EmojiPicker onSelect={insertEmoji} />
+        </>
+      </Show>
+
+      {/* ── Groups 2–7: hidden for the compact levels ── */}
+      <Show when={!isCompact()}>
         <>
           {/* ── Group 2: Text appearance ── */}
           <Sep />
@@ -643,14 +729,7 @@ export default function EditorToolbar(props: Props) {
 
           {/* ── Group 5: Insert ── */}
           <Sep />
-          <PromptPanel
-            title={t("editor.link")}
-            icon={<MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />}
-            fields={[{ key: "url", label: t("editor.url_label") }]}
-            submitLabel={t("editor.insert")}
-            disabled={linkLoading()}
-            onSubmit={(v) => { void link(v.url); }}
-          />
+          <LinkPanel />
           <PromptPanel
             title={t("editor.media")}
             icon={<MdOutlineImage class="w-4 h-4" />}

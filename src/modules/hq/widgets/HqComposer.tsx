@@ -1,19 +1,14 @@
-import { createSignal, createEffect, onCleanup, Show, For, type JSX } from "solid-js";
-import {
-  MdOutlineLink,
-  MdOutlinePerson,
-  MdOutlineClose,
-  MdOutlineFormat_bold,
-  MdOutlineFormat_italic,
-  MdOutlineFormat_underlined,
-} from "solid-icons/md";
+import { createSignal, createEffect, onCleanup, Show } from "solid-js";
+import { MdOutlinePerson, MdOutlineClose } from "solid-icons/md";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { motion } from "solid-motionone";
 import PostComposer from "@/shared/editor/composers/PostComposer";
-import { sourceToHtml } from "@/shared/editor/core/sourceToHtml";
-import { htmlToSource } from "@/shared/editor/core/htmlToSource";
+import RichEditor from "@/shared/editor/core/RichEditor";
+import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
+import { bbcodeToInsert, appendInsert } from "@/shared/editor/attachments/insertHelpers";
+import { CAPABILITIES, type EditorTab } from "@/shared/editor/types/editor.types";
 import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { apiError } from "@utsukta/spa-core/lib/fetch";
@@ -25,6 +20,11 @@ void motion;
 
 const DRAFT_KEY = "hz_hq_draft";
 const MIME = "text/bbcode";
+// Same surface and attachment pipeline as every other composer — this bar used
+// to hand-roll its own contenteditable, which is where its base64 image paste
+// and its dead link button came from. The "quick" toolbar level keeps that to
+// one row.
+const CAPS = CAPABILITIES.quick;
 
 export default function HqComposerSlot() {
   const auth = useAuth();
@@ -46,6 +46,22 @@ function HqComposer() {
   const [submitting, setSubmitting] = createSignal(false);
   const [fullOpen, setFullOpen] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
+  const [tab, setTab] = createSignal<EditorTab>("wysiwyg");
+
+  const attach = createAttachmentStore(currentNick(), "hq:quick");
+
+  // No AttachmentBar here — the bar is where an upload is normally inserted by
+  // hand, so without it a pasted image would upload and then sit invisible.
+  // Insert each image as soon as it's ready instead; files that aren't images
+  // have no inline form and ride along as [attachment] tags at submit time.
+  const inserted = new Set<string>();
+  createEffect(() => {
+    for (const a of attach.attachments()) {
+      if (a.status !== "ready" || !a.isImage || inserted.has(a.id)) continue;
+      inserted.add(a.id);
+      setBody(appendInsert(body(), bbcodeToInsert(attach.insertBBCode(a.id), MIME)));
+    }
+  });
 
   // Load draft on mount
   storageGet<{ body?: string; aclMode?: string }>(DRAFT_KEY, {}).then((d) => {
@@ -65,83 +81,6 @@ function HqComposer() {
   });
   onCleanup(() => clearTimeout(draftTimer));
 
-  // ── WYSIWYG surface ─────────────────────────────────────────────────────
-  // A bare contenteditable (no toolbar/tab chrome of its own — this is a
-  // compact quick-post bar, not the full composer). `domSig` is the source
-  // string the DOM currently reflects; only re-seed the div when body()
-  // changed for a reason other than us echoing the DOM back (draft load,
-  // reset, mention/emoji insert), same pattern as RichEditor.
-  let editorEl: HTMLDivElement | undefined;
-  let domSig: string | null = null;
-
-  const seedEditor = (el: HTMLDivElement) => {
-    editorEl = el;
-    el.innerHTML = sourceToHtml(body(), MIME);
-    domSig = body();
-  };
-
-  createEffect(() => {
-    const b = body();
-    if (editorEl && b !== domSig) {
-      editorEl.innerHTML = sourceToHtml(b, MIME);
-      domSig = b;
-      const active = document.activeElement;
-      if (editorEl.contains(active) || active === document.body || active === null) {
-        const range = document.createRange();
-        const sel = window.getSelection();
-        range.selectNodeContents(editorEl);
-        range.collapse(false);
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
-    }
-  });
-
-  function onEditorInput() {
-    if (!editorEl) return;
-    const next = htmlToSource(editorEl.innerHTML, MIME);
-    domSig = next;
-    setBody(next);
-  }
-
-  // Round-trips typed bbcode (links, [b]/[i]/…) into rendered markup once
-  // focus leaves the editor — mirrors RichEditor's onEditorBlur.
-  function onEditorBlur() {
-    if (!editorEl) return;
-    const next = htmlToSource(editorEl.innerHTML, MIME);
-    editorEl.innerHTML = sourceToHtml(next, MIME);
-    domSig = next;
-  }
-
-  function exec(cmd: string) {
-    if (!editorEl) return;
-    editorEl.focus();
-    document.execCommand(cmd, false);
-  }
-
-  function insertLink() {
-    if (!editorEl) return;
-    const sel = window.getSelection();
-    let savedRange: Range | null = null;
-    if (sel && sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
-    const hasText = savedRange && !savedRange.collapsed;
-    const url = window.prompt("URL:", "https://");
-    if (!url) return;
-    editorEl.focus();
-    if (savedRange) { sel!.removeAllRanges(); sel!.addRange(savedRange); }
-    if (hasText) {
-      document.execCommand("createLink", false, url);
-    } else {
-      const a = document.createElement("a");
-      a.href = url;
-      a.textContent = url;
-      const tmp = document.createElement("div");
-      tmp.appendChild(a);
-      document.execCommand("insertHTML", false, tmp.innerHTML);
-    }
-    onEditorInput();
-  }
-
   // ── Mention + emoji autocomplete ──────────────────────────────────────────
   const wiring = useMentionEmojiWiring({
     body,
@@ -157,9 +96,15 @@ function HqComposer() {
   window.addEventListener("keydown", onKeyDown);
   onCleanup(() => window.removeEventListener("keydown", onKeyDown));
 
+  let bodyEl: HTMLDivElement | undefined;
+
   function expandAndFocus() {
     setExpanded(true);
-    requestAnimationFrame(() => editorEl?.focus());
+    // RichEditor owns its surface and exposes no ref; the contenteditable is
+    // the only focusable thing it renders inside this wrapper.
+    requestAnimationFrame(() =>
+      bodyEl?.querySelector<HTMLElement>("[contenteditable]")?.focus(),
+    );
   }
 
   function toggleEntry(entry: AclEntry, list: "allow" | "deny") {
@@ -185,10 +130,18 @@ function HqComposer() {
     if (!body().trim()) return;
     setSubmitting(true);
 
+    // Images are already inline in the body ([zmg]/[img] from the bar's
+    // onInsert); everything else rides as an [attachment] tag, which Item.php
+    // strips back out into item.attach.
+    const fileTags = attach.attachments()
+      .filter((a) => a.status === "ready" && !a.isImage && (a.hash || a.resourceId))
+      .map((a) => `[attachment]${a.hash ?? a.resourceId},0[/attachment]`)
+      .join("\n");
+
     const mode = aclMode();
     const payload: Record<string, unknown> = {
-      body: body(),
-      mimetype: "text/bbcode",
+      body: fileTags ? `${body()}\n${fileTags}` : body(),
+      mimetype: MIME,
       profile_uid: auth()!.uid,
     };
 
@@ -249,19 +202,14 @@ function HqComposer() {
 
   function resetComposer() {
     setBody("");
+    attach.clear();
+    inserted.clear();
     setAllowKeys(new Set<string>());
     setDenyKeys(new Set<string>());
     setAclMode("connections");
     storageDel(DRAFT_KEY);
     setExpanded(false);
   }
-
-  const toolbar = [
-    { title: () => t("editor.bold"),      label: <MdOutlineFormat_bold class="w-4 h-4" /> as JSX.Element, cls: "", action: () => exec("bold") },
-    { title: () => t("editor.italic"),    label: <MdOutlineFormat_italic class="w-4 h-4" /> as JSX.Element, cls: "", action: () => exec("italic") },
-    { title: () => t("editor.underline"), label: <MdOutlineFormat_underlined class="w-4 h-4" /> as JSX.Element, cls: "", action: () => exec("underline") },
-    { title: () => t("editor.link"),      label: <MdOutlineLink class="w-4 h-4" /> as JSX.Element, cls: "", action: insertLink },
-  ];
 
   return (
     <div data-tour="hq.composer" class="bg-surface border border-rim rounded-2xl p-3.5 shadow-sm flex flex-col max-w-5xl mx-auto">
@@ -313,39 +261,28 @@ function HqComposer() {
             </button>
           }
         >
-          <div
-            ref={seedEditor}
-            contenteditable
-            dir="ltr"
-            onInput={onEditorInput}
-            onBlur={onEditorBlur}
-            data-placeholder={t("editor.write_placeholder")}
-            style={{ "min-height": "60px", "max-height": "480px" }}
-            class="flex-1 min-w-0 overflow-y-auto bg-transparent text-sm text-txt
-                   focus:outline-none leading-relaxed
-                   empty:before:content-[attr(data-placeholder)]
-                   empty:before:text-muted empty:before:pointer-events-none"
-          />
+          <div ref={bodyEl} class="flex-1 min-w-0">
+            <RichEditor
+              body={body()}
+              onInput={setBody}
+              mimetype={MIME}
+              capabilities={CAPS}
+              tab={tab()}
+              onTabChange={setTab}
+              onCtrlEnter={() => { if (!wiring.mention.open()) void handleSubmit(); }}
+              onPasteFiles={(files) => attach.addUploads(files)}
+              onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
+              placeholder={t("editor.write_placeholder")}
+              minHeight="60px"
+              maxHeight="480px"
+            />
+          </div>
         </Show>
       </div>
 
       {/* Toolbar row */}
       <Show when={expanded()}>
         <div class="flex items-center gap-0.5 mt-1.5 pt-1.5 border-t border-rim">
-          <For each={toolbar}>
-            {(btn) => (
-              <button
-                type="button"
-                title={btn.title()}
-                onMouseDown={(e) => { e.preventDefault(); btn.action(); }}
-                class={`w-7 h-7 flex items-center justify-center rounded text-xs text-muted
-                        hover:bg-elevated hover:text-txt transition-colors ${btn.cls}`}
-              >
-                {btn.label}
-              </button>
-            )}
-          </For>
-
           {/* Reset */}
           <button
             type="button"
@@ -388,7 +325,7 @@ function HqComposer() {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submitting() || !body().trim()}
+            disabled={submitting() || attach.uploading() || !body().trim()}
             class="ml-auto px-4 py-1 rounded-lg text-xs font-semibold bg-accent text-accent-fg
                    hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >

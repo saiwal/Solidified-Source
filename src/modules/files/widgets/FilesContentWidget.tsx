@@ -981,28 +981,32 @@ export default function FilesContentWidget() {
             >
               {t("files_mod.download")}
             </button>
-            <button
-              type="button"
-              disabled={bulkBusy()}
-              onClick={() => setActiveModal({
-                kind: "moveCopy",
-                item: selectedItems()[0],
-                items: selectedItems(),
-              })}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
-                     hover:bg-elevated disabled:opacity-40 transition-colors"
-            >
-              {t("files_mod.move_or_copy")}
-            </button>
-            <button
-              type="button"
-              disabled={bulkBusy()}
-              onClick={handleBulkDelete}
-              class="px-3 py-1.5 text-sm rounded-lg border border-red-500/40 text-red-500
-                     hover:bg-red-500/10 disabled:opacity-40 transition-colors"
-            >
-              {bulkBusy() ? t("files_mod.saving") : t("files_mod.delete_selected")}
-            </button>
+            {/* Visitors may select and download; mutating actions stay behind
+                the same write grant as the per-row menu. */}
+            <Show when={canWrite()}>
+              <button
+                type="button"
+                disabled={bulkBusy()}
+                onClick={() => setActiveModal({
+                  kind: "moveCopy",
+                  item: selectedItems()[0],
+                  items: selectedItems(),
+                })}
+                class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
+                       hover:bg-elevated disabled:opacity-40 transition-colors"
+              >
+                {t("files_mod.move_or_copy")}
+              </button>
+              <button
+                type="button"
+                disabled={bulkBusy()}
+                onClick={handleBulkDelete}
+                class="px-3 py-1.5 text-sm rounded-lg border border-red-500/40 text-red-500
+                       hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+              >
+                {bulkBusy() ? t("files_mod.saving") : t("files_mod.delete_selected")}
+              </button>
+            </Show>
             <button
               type="button"
               onClick={clearSelection}
@@ -1018,13 +1022,11 @@ export default function FilesContentWidget() {
       <Show when={viewMode() === "list"}>
         <div class="border-t border-rim" />
         <div class="flex items-center gap-3 px-3 text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
-          <Show when={canWrite()} fallback={<span class="w-4 shrink-0" />}>
-            <SelectBox
-              checked={allSelected()}
-              onToggle={toggleSelectAll}
-              label={t("files_mod.select_all") as string}
-            />
-          </Show>
+          <SelectBox
+            checked={allSelected()}
+            onToggle={toggleSelectAll}
+            label={t("files_mod.select_all") as string}
+          />
           <span class="w-5 shrink-0" />
           {/* Sortable: Name */}
           <button
@@ -1101,7 +1103,7 @@ export default function FilesContentWidget() {
                     permItem={permItem()}
                     onOpen={openItem}
                     onAction={handleMenuAction}
-                    selectable={canWrite()}
+                    selectable={true}
                     selected={selected()}
                     onSelect={toggleSelected}
                   />
@@ -1141,7 +1143,7 @@ export default function FilesContentWidget() {
                         onAction={handleMenuAction}
                         deleting={deleting() === item.hash}
                         permOpen={permItem()?.hash === item.hash}
-                        selectable={canWrite()}
+                        selectable={true}
                         selected={selected().has(item.hash)}
                         onSelect={() => toggleSelected(item.hash)}
                       />

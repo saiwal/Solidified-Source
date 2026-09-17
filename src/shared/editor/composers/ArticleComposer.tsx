@@ -40,7 +40,7 @@ import ComposerShell from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
-import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { createWysiwygAvailable } from "../core/wysiwygSafe";
 
 interface Props {
   profileUid: number;
@@ -312,6 +312,10 @@ export default function ArticleComposer(props: Props) {
   // the user asks for one via SlugField's ↻ button (or types it by hand).
   const onTitleChange = (v: string) => store.setTitle(v);
 
+  // This body is stored in the format it was typed in, so the Write tab is
+  // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
+  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+
   return (
     <ComposerShell
       class="p-4"
@@ -404,6 +408,7 @@ export default function ArticleComposer(props: Props) {
           <RichEditor
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
+            wysiwygAvailable={wysiwygAvailable()}
             onInput={onBodyChange}
             capabilities={caps}
             tab={store.tab()}
@@ -425,7 +430,7 @@ export default function ArticleComposer(props: Props) {
             }}
             tab={store.tab()}
             onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+            canWysiwyg={wysiwygAvailable()}
           />
         </div>
       }

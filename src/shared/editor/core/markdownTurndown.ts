@@ -123,6 +123,25 @@ markdownTurndown.addRule("strikethrough", {
 });
 
 /**
+ * The extended-syntax marks from markedExtended.ts, back to the spelling they
+ * were typed in. Without a rule turndown drops the element and the mark is
+ * gone on the first re-serialize, the same way ~~ used to be.
+ *
+ * <mark> deliberately isn't here: the highlight button emits one carrying a
+ * colour, which has no markdown spelling, so it goes through bbStyle below and
+ * comes back as [mark=…] — and a plain one follows it for consistency.
+ */
+markdownTurndown.addRule("subscript", {
+  filter: "sub",
+  replacement: (content) => (content.trim() ? `~${content}~` : ""),
+});
+
+markdownTurndown.addRule("superscript", {
+  filter: "sup",
+  replacement: (content) => (content.trim() ? `^${content}^` : ""),
+});
+
+/**
  * Everything markdown cannot spell, as bbcode.
  *
  * Underline, colour, highlight, font, size, spoiler, centre, media, lettered

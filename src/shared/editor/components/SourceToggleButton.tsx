@@ -16,7 +16,7 @@ export interface SourceToggleButtonProps {
   tab: EditorTab;
   onToggle: () => void;
   /** Whether the WYSIWYG surface is available at all for the current format
-   *  and surface — compute with canUseWysiwyg(mimetype, caps.markdownWysiwyg).
+   *  and surface — compute with canUseWysiwyg(mimetype, caps.nonBbcodeWysiwyg).
    *  RichEditor forces the source tab when it isn't, so the toggle hides
    *  rather than sitting there doing nothing. Omitted = shown. */
   canWysiwyg?: boolean;

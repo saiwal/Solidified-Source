@@ -6,7 +6,11 @@ export type EditorTab = "wysiwyg" | "source";
 // working.
 export type { MimeType };
 
-export type ToolbarLevel = "full" | "minimal" | "comment";
+// "full": everything. "quick": inline marks + link + emoji, one row — for
+// compact bars that sit in a page rather than a modal. "comment": inline
+// marks only. ("minimal" used to sit between full and comment and was never
+// used by any composer; "quick" replaced it.)
+export type ToolbarLevel = "full" | "quick" | "comment";
 export type AttachmentsMode = "none" | "files" | "photos" | "both";
 // How the LaTeX toolbar button inserts an equation:
 // - "image": render to PNG, upload as a photo, insert a hosted [img] URL —
@@ -39,11 +43,18 @@ export type EditorCapabilities = {
   // addon's, which the SPA reuses rather than adding its own) and
   // the server converts markdown to bbcode on save.
   format: boolean;
-  // Whether the WYSIWYG surface may be used for a text/markdown body. On only
-  // where the body is converted to bbcode on save (posts, comments, DMs), so
-  // the round trip's normalisation is never written to stored content —
-  // see markdownProtect.ts and canUseWysiwyg().
-  markdownWysiwyg: boolean;
+  // Whether the WYSIWYG surface may be used for a text/markdown body.
+  //
+  // Free for posts, comments and DMs, whose body is converted to bbcode on
+  // save, so the round trip's normalisation never reaches stored content.
+  // Everywhere else the body *is* the stored content, so the composer pairs
+  // this with createWysiwygAvailable() (wysiwygSafe.ts), which offers the tab
+  // only for a body that survives the trip byte-for-byte.
+  //
+  // Off for wiki pages whatever the body says: core git-versions them, and a
+  // normalising edit would read as a whole-file rewrite in the page history.
+  // See markdownProtect.ts and canUseWysiwyg().
+  nonBbcodeWysiwyg: boolean;
 };
 
 export type ComposerMeta = {
@@ -69,7 +80,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: true,
     cardPicker: true,
     format: false,
-    markdownWysiwyg: true,
+    nonBbcodeWysiwyg: true,
   },
   // Inline comment box under a PostCard — same full toolbar as the post
   // composer, only the meta fields (title/summary/ACL/…) are stripped.
@@ -86,7 +97,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: true,
     format: false,
-    markdownWysiwyg: true,
+    nonBbcodeWysiwyg: true,
   },
   // Direct message — same full toolbar as post, but recipients are picked
   // via a "To:" field (RecipientField) instead of the ACL picker, so
@@ -104,7 +115,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: false,
-    markdownWysiwyg: true,
+    nonBbcodeWysiwyg: true,
   },
   // Article / long-form post — read in-app like webpages/wiki, not federated
   // as a standalone object in the same way a stream post is, so LaTeX
@@ -122,7 +133,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: true,
     format: true,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: true,
   },
   // Card — short-form, item-backed content read in-app like articles, so
   // LaTeX renders live (KaTeX). A card body may itself embed another card:
@@ -140,7 +151,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: true,
     format: true,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: true,
   },
   // Hubzilla webpage (static page with slug) — read in-app, not federated as
   // a standalone object, so LaTeX renders live (KaTeX) rather than as an image.
@@ -157,7 +168,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: true,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: true,
   },
   // Hubzilla block (item-backed content preset, referenced by name rather
   // than URL slug — see core's Comanche [block]name[/block]) — read in-app
@@ -175,7 +186,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: true,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: true,
   },
   // Wiki page — full toolbar (uniform with the other composers), no ACL;
   // live LaTeX, same reasoning as webpage above. Attachments upload to the
@@ -195,7 +206,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: true,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: false,
   },
   // Personal note — always private, full toolbar (uniform with the other
   // composers); read in-app only, so LaTeX renders live (KaTeX) rather than
@@ -213,7 +224,24 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: false,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: true,
+  },
+  // HQ quick-post bar — a wall post, so same pipeline as `post`, but the
+  // toolbar has to stay one row tall in a page-level card.
+  quick: {
+    toolbar: "quick",
+    title: false,
+    summary: false,
+    slug: false,
+    category: false,
+    attachments: "both",
+    aclPicker: true,
+    submitOnCtrlEnter: true,
+    latexMode: "image",
+    poll: false,
+    cardPicker: true,
+    format: false,
+    nonBbcodeWysiwyg: true,
   },
   // Chat room message input — comment toolbar, untabbed, Ctrl+Enter sends
   chat: {
@@ -229,6 +257,6 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: false,
-    markdownWysiwyg: false,
+    nonBbcodeWysiwyg: false,
   },
 };

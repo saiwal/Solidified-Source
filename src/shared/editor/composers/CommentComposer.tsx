@@ -129,7 +129,7 @@ export default function CommentComposer(props: Props) {
                 <SourceToggleButton
                   tab={store.tab()}
                   onToggle={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-                  canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+                  canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
                 />
               </div>
             }
@@ -146,7 +146,7 @@ export default function CommentComposer(props: Props) {
               }}
               tab={store.tab()}
               onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.markdownWysiwyg)}
+              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
             />
           </Show>
         </div>

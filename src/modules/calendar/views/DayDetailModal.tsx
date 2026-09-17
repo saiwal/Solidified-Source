@@ -1,4 +1,5 @@
 import { createSignal, Show, For, onCleanup } from "solid-js";
+import { Portal } from "solid-js/web";
 import {
   MdFillClose,
   MdFillAdd,
@@ -64,8 +65,9 @@ export default function DayDetailModal(props: Props) {
 
   return (
     <>
+      <Portal mount={document.body}>
       <div
-        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+        class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4"
         style={{ background: "rgba(0,0,0,0.55)" }}
         onClick={(e) => {
           if (e.target === e.currentTarget) props.onClose();
@@ -169,6 +171,7 @@ export default function DayDetailModal(props: Props) {
           </div>
         </div>
       </div>
+      </Portal>
 
       <Show when={showCreator()}>
         <EventCreatorModal
