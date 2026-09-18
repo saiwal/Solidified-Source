@@ -53,6 +53,8 @@ type ChannelProfile = {
   feed_url?: string;
   is_remote?: boolean;
   actor_fields?: { name: string; value: string }[];
+  // Admin-defined profile fields (profdef/profext) on local channels
+  custom_fields?: { name: string; label: string; value: string }[];
 };
 
 async function fetchProfile(nick: string): Promise<ChannelProfile | null> {
@@ -275,13 +277,21 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
           </div>
         </Show>
 
-        {/* AP actor fields (remote) */}
-        <Show when={p.is_remote && (p.actor_fields?.length ?? 0) > 0}>
+        {/* AP actor fields (remote) / admin-defined fields (local) */}
+        <Show when={(p.is_remote && (p.actor_fields?.length ?? 0) > 0) || p.custom_fields?.some((f) => f.value)}>
           <div class="mt-3 space-y-1">
-            <For each={p.actor_fields}>
+            <For each={p.is_remote ? p.actor_fields : []}>
               {(f) => (
                 <div class="flex gap-2 text-xs">
                   <span class="text-muted w-20 shrink-0">{f.name}</span>
+                  <span class="text-txt">{f.value}</span>
+                </div>
+              )}
+            </For>
+            <For each={p.custom_fields?.filter((f) => f.value)}>
+              {(f) => (
+                <div class="flex gap-2 text-xs">
+                  <span class="text-muted w-20 shrink-0">{f.label}</span>
                   <span class="text-txt">{f.value}</span>
                 </div>
               )}
@@ -443,12 +453,16 @@ function FullCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: boole
           </div>
         </Show>
 
-        {/* AP actor fields (remote channels) */}
-        <Show when={p.is_remote && (p.actor_fields?.length ?? 0) > 0}>
+        {/* AP actor fields (remote channels) / admin-defined fields (local) */}
+        <Show when={(p.is_remote && (p.actor_fields?.length ?? 0) > 0) || p.custom_fields?.some((f) => f.value)}>
           <div class="border-t border-rim pt-5">
             <FieldSection label={t("channel.group_profile_fields")}>
-              <For each={p.actor_fields}>
+              <For each={p.is_remote ? p.actor_fields : []}>
                 {(f) => <Field label={f.name} value={f.value} />}
+              </For>
+              {/* core renders extra fields through prepare_text(), i.e. BBCode */}
+              <For each={p.custom_fields?.filter((f) => f.value)}>
+                {(f) => <Field label={f.label} value={f.value} bbcode />}
               </For>
             </FieldSection>
           </div>

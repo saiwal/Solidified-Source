@@ -1,9 +1,9 @@
-import { createResource, createSignal, lazy, Show } from "solid-js";
+import { createResource, createSignal, For, lazy, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useParams, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { fetchProfile, saveProfile, uploadPhoto } from "../api/api";
+import { fetchProfile, saveProfile, uploadPhoto, type CustomProfileField } from "../api/api";
 import { fetchPhotoImage, type Photo } from "@/modules/photos/api/api";
 import { Section, Toggle, inputClass } from "@/modules/settings/store/FormHelpers";
 import PhotosPicker from "@/shared/editor/attachments/picker/PhotosPicker";
@@ -491,6 +491,17 @@ export default function ProfileEditView() {
               </Field>
             </Section>
 
+            {/* Admin-defined custom fields (/admin → Profile Fields) */}
+            <Show when={(p().custom_fields?.length ?? 0) > 0}>
+              <Section title={t("profiles.group_custom")}>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <For each={p().custom_fields}>
+                    {(f) => <CustomField field={f} />}
+                  </For>
+                </div>
+              </Section>
+            </Show>
+
             <div class="flex items-center gap-3 pt-2 border-t border-rim">
               <button
                 type="submit"
@@ -632,6 +643,39 @@ function Field(props: { label: string; hint?: string; children: any }) {
         <p class="text-xs text-muted">{props.hint}</p>
       </Show>
     </div>
+  );
+}
+
+// field_type comes from profdef; anything unrecognised falls back to a text
+// input. The checkbox gets a paired hidden input so unchecking clears the
+// stored value instead of leaving the key out of FormData entirely.
+function CustomField(props: { field: CustomProfileField }) {
+  const f = props.field;
+  return (
+    <Field label={f.label} hint={f.help}>
+      <Show
+        when={f.type === "textarea"}
+        fallback={
+          <Show
+            when={f.type === "checkbox"}
+            fallback={<input type="text" name={f.name} value={f.value} class={inputClass} />}
+          >
+            <>
+              <input type="hidden" name={f.name} value="0" />
+              <input
+                type="checkbox"
+                name={f.name}
+                value="1"
+                checked={f.value === "1"}
+                class="h-4 w-4 rounded border-rim accent-accent cursor-pointer"
+              />
+            </>
+          </Show>
+        }
+      >
+        <textarea name={f.name} rows={3} value={f.value} class={inputClass} />
+      </Show>
+    </Field>
   );
 }
 

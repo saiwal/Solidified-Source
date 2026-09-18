@@ -1109,6 +1109,7 @@ export type RawDictionary = {
     group_culture:     string;
     group_work:        string;
     group_contact:     string;
+    group_custom:      string;
     // fields (reuse existing labels where possible)
     fullname:          string;
     pdesc:             string;

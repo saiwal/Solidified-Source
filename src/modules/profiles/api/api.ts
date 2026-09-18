@@ -37,6 +37,16 @@ export interface ProfileData extends ProfileListItem {
   channels: string;
   avatar_l: string | null;
   cover_url: string | null;
+  // Admin-defined fields (profdef), values from profext
+  custom_fields?: CustomProfileField[];
+}
+
+export interface CustomProfileField {
+  name: string;
+  label: string;
+  help: string;
+  type: string;
+  value: string;
 }
 
 export interface ProfilesListResult {

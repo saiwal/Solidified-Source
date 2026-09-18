@@ -107,7 +107,14 @@ export default function ProfileFieldsSection() {
 
             {/* Custom fields */}
             <div class="space-y-2">
-              <p class="text-sm font-semibold text-txt">Custom Fields</p>
+              <div class="space-y-0.5">
+                <p class="text-sm font-semibold text-txt">Custom Fields</p>
+                <p class="text-xs text-muted">
+                  A new field only appears on profiles once its name is also added to the
+                  Basic or Advanced list above. Advanced fields reach only channels that have
+                  the "Advanced profiles" feature enabled — use Basic to reach everyone.
+                </p>
+              </div>
               <Show
                 when={d().custom_fields.length > 0}
                 fallback={<p class="text-sm text-muted py-2">No custom fields defined.</p>}

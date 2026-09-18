@@ -35,6 +35,7 @@ export const profiles: RawDictionary["profiles"] = {
   group_culture:      "Culture",
   group_work:         "Work & Education",
   group_contact:      "Contact",
+  group_custom:       "Additional information",
   // fields
   fullname:           "Display name",
   pdesc:              "Short description",
