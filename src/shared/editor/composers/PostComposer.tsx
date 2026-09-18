@@ -473,7 +473,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
                   placeholder={t("editor.title_placeholder")}
                   value={store.title()}
                   onInput={(e) => store.setTitle(e.currentTarget.value)}
-                  class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
+                  class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
                 />
               </Show>
 

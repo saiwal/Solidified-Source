@@ -1,6 +1,6 @@
 /**
  * RecipientField.tsx
- * Always-visible "To:" field for the DM composer — a bordered row of
+ * Always-visible "To:" field for the DM composer — an underlined row of
  * removable recipient chips + an inline search input, with a results
  * dropdown appearing below as the user types. Contacts only (no groups,
  * no allow/deny) — unlike AclPicker, since a privacy group in the payload
@@ -21,6 +21,8 @@ export interface RecipientFieldProps {
   onAdd: (entry: AclEntry) => void;
   onRemove: (entry: AclEntry) => void;
   placeholder?: string;
+  /** Row label. Defaults to "To:". */
+  label?: string;
 }
 
 const RecipientField: Component<RecipientFieldProps> = (props) => {
@@ -58,13 +60,13 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
     <div class="relative" data-tour="composer.recipient">
       <div
         ref={rowRef}
-        class="flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded border border-rim bg-surface
-               hover:border-rim-strong focus-within:border-rim-strong transition-colors"
+        class="flex flex-wrap items-center gap-1.5 px-0 py-1.5 bg-transparent
+               border-0 border-b border-rim focus-within:border-accent transition-colors"
       >
-        <span class="text-xs text-muted shrink-0">{t("editor.to_label")}</span>
+        <span class="text-sm text-muted shrink-0">{props.label ?? t("editor.to_label")}</span>
         <For each={props.entries()}>
           {(entry) => (
-            <span class="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs bg-elevated text-txt">
+            <span class="flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-elevated text-txt">
               <Show
                 when={entry.photo}
                 fallback={

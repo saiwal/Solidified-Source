@@ -226,7 +226,7 @@ export default function BlockComposer(props: Props) {
             placeholder={t("webpages.block_title_placeholder")}
             value={store.title()}
             onInput={(e) => onTitleChange(e.currentTarget.value)}
-            class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
+            class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
 
           {/* Name — the identifier the HTML Block widget's preset dropdown looks it up by */}

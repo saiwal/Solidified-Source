@@ -15,6 +15,10 @@ import { createAttachmentStore } from "../attachments/useAttachments";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useEncrypt } from "../useEncrypt";
+import { useCategoryTags } from "../components/useCategoryTags";
+import CategoryTagsField from "../components/CategoryTagsField";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import EncryptToggle from "../components/EncryptToggle";
 // Lazy: only fetched once the user opts into encrypting or decrypting — see
 // PostComposer/DMComposer for the same split.
@@ -28,6 +32,8 @@ interface Props {
     mid: string;
     body: string;
     mimetype: string;
+    /** Existing notebooks; undefined means "unknown", so the edit won't clear them. */
+    categories?: string[];
   };
   onSaved?: () => void;
   onCancel?: () => void;
@@ -66,6 +72,9 @@ export default function NoteComposer(props: Props) {
           title:    "",
           summary:  "",
           mimetype: meta.mimetype ?? "text/bbcode",
+          // Authoritative when sent (Item.php editItem): only safe because the
+          // notepad list hands us the note's existing categories.
+          ...(props.initial!.categories !== undefined ? { category: meta.category ?? "" } : {}),
         }),
       });
       if (!res.ok) {
@@ -78,6 +87,7 @@ export default function NoteComposer(props: Props) {
         body: JSON.stringify({
           body: augmentedBody,
           mimetype: meta.mimetype ?? "text/bbcode",
+          category: meta.category ?? "",
         }),
       });
       if (!res.ok) {
@@ -88,13 +98,55 @@ export default function NoteComposer(props: Props) {
 
     attach?.clear();
     props.onSaved?.();
-  }, scope, { initialBody: props.initial?.body });
+  }, scope, {
+    initialBody: props.initial?.body,
+    initialCategory: props.initial?.categories?.join(","),
+  });
 
   if (props.initial?.mimetype) {
     store.setMimetype(props.initial.mimetype as any);
   }
 
   const enc = useEncrypt(store.body, store.setBody);
+
+  // Notebooks are plain categories, shared with the note category widget.
+  const [existingCategories] = createQueryResource(
+    "composer-categories",
+    () => ({ channelNick: currentNick(), type: "notes" as const }),
+    fetchCategories,
+  );
+  const categoryTags = useCategoryTags(
+    store.category,
+    store.setCategory,
+    () => (existingCategories() ?? []).map((c) => c.name),
+  );
+
+  // Rendered in both the full editor and the sidebar quick-note's bare
+  // textarea, so a note can be filed into a notebook either way.
+  // shrink-0 wrapper: showLabel's own box is `flex-1`, which in the editor
+  // region's flex *column* (zen mode) would make it eat half the height.
+  const notebookField = () => (
+    <div class="shrink-0 flex">
+    <CategoryTagsField
+      tags={categoryTags.categoryTags}
+      pending={categoryTags.pendingCategory}
+      onPendingInput={categoryTags.setPendingCategory}
+      onKeyDown={categoryTags.onCategoryKeyDown}
+      onRemove={categoryTags.removeCategoryTag}
+      onBlur={() => {
+        if (categoryTags.pendingCategory().trim()) {
+          categoryTags.addCategoryTag(categoryTags.pendingCategory());
+        }
+      }}
+      suggestions={categoryTags.suggestions}
+      activeSuggestion={categoryTags.activeSuggestion}
+      onSelectSuggestion={categoryTags.addCategoryTag}
+      placeholder={t("notepad.notebook_placeholder")}
+      showLabel
+      hideLabel
+    />
+    </div>
+  );
 
   // This body is stored in the format it was typed in, so the Write tab is
   // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
@@ -114,6 +166,7 @@ export default function NoteComposer(props: Props) {
       // sidebar quick-note widget exactly as it was.
       meta={
         <Show when={!props.minimal}>
+          {notebookField()}
           <EditorStats
             words={() => countWords(store.body())}
             chars={() => store.body().length}
@@ -124,19 +177,22 @@ export default function NoteComposer(props: Props) {
         <Show
         when={!props.minimal}
         fallback={
-          <textarea
-            value={store.body()}
-            onInput={(e) => store.setBody(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                void store.submit();
-              }
-            }}
-            placeholder={t("notepad.placeholder")}
-            class="w-full min-h-[120px] max-h-[50vh] p-3 text-sm rounded-lg border border-rim bg-elevated text-txt
-                   outline-none focus:border-accent/50 resize-y overflow-y-auto"
-          />
+          <>
+            {notebookField()}
+            <textarea
+              value={store.body()}
+              onInput={(e) => store.setBody(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  void store.submit();
+                }
+              }}
+              placeholder={t("notepad.placeholder")}
+              class="w-full min-h-[120px] max-h-[50vh] p-3 text-sm rounded-lg border border-rim bg-elevated text-txt
+                     outline-none focus:border-accent/50 resize-y overflow-y-auto"
+            />
+          </>
         }
       >
         <>

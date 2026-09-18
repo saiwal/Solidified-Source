@@ -9,6 +9,7 @@ export const notepad: RawDictionary["notepad"] = {
   delete_confirm: "Diese Notiz löschen?",
   cancel:         "Abbrechen",
   placeholder:    "Notiz schreiben… (Strg+Enter zum Speichern)",
+  notebook_placeholder: "Notizbuch (optional, durch Komma getrennt)",
   save_btn:       "Speichern",
   saving:         "Speichern…",
   load_failed:    "Notizen konnten nicht geladen werden",

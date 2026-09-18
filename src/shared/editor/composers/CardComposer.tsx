@@ -415,7 +415,7 @@ export default function CardComposer(props: Props) {
             placeholder={t("editor.card_title_placeholder")}
             value={store.title()}
             onInput={(e) => onTitleChange(e.currentTarget.value)}
-            class={`w-full px-0 py-2 text-lg font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
+            class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
 
           {/* Summary */}

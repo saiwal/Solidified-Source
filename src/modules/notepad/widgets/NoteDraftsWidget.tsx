@@ -63,7 +63,9 @@ export default function NoteDraftsWidget() {
           heading={noteInitial() ? t("notepad.edit_note") : t("notepad.new_note")}
           initial={noteInitial()}
           onClose={() => {
-            void storageDel(`pending-draft:${activeEntry()!.scope}`);
+            // onSaved may have cleared it already — the composer fires both
+            const entry = activeEntry();
+            if (entry) void storageDel(`pending-draft:${entry.scope}`);
             setActiveEntry(null);
           }}
           onSaved={() => {

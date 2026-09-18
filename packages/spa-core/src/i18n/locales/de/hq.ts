@@ -106,6 +106,7 @@ export const hq: RawDictionary["hq"] = {
   draft_wiki:           "Wiki-Seite",
   draft_event:          "Termin",
   draft_note:           "Notiz",
+  draft_dm:             "Nachricht",
   draft_label:          "Entwurf",
   just_now:             "gerade eben",
   empty_draft:          "Leerer Entwurf",

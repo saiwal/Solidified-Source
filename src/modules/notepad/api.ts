@@ -9,6 +9,7 @@ export type Note = {
   created: string;
   edited: string;
   mimetype: string;
+  categories: string[];
   attach: StreamAttachment[];
 };
 

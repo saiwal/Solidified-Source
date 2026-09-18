@@ -27,6 +27,7 @@ function NoteCard(props: {
   onCancelDelete: () => void;
 }) {
   const { t, locale } = useI18n();
+  const [, setSearchParams] = useSearchParams();
 
   let bodyRef: HTMLDivElement | undefined;
   const [expanded, setExpanded] = createSignal(false);
@@ -67,6 +68,22 @@ function NoteCard(props: {
         innerHTML={renderBody(props.note.body, props.note.mimetype)}
         onClick={handleDecryptClick}
       />
+
+      <Show when={props.note.categories?.length}>
+        <div class="flex flex-wrap gap-1.5">
+          <For each={props.note.categories}>
+            {(cat) => (
+              <button
+                onClick={() => setSearchParams({ cat, tag: undefined })}
+                class="px-2 py-0.5 rounded-full bg-elevated border border-rim text-xs text-muted
+                       hover:text-txt hover:border-rim-strong transition-colors"
+              >
+                {cat}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
 
       <Show when={props.note.attach.length > 0}>
         <AttachmentList attachments={props.note.attach} compact />
@@ -137,6 +154,7 @@ export default function NotepadContentWidget() {
   const [searchParams] = useSearchParams();
 
   const [editingNote, setEditingNote] = createSignal<Note | null>(null);
+  let editorRef: HTMLDivElement | undefined;
   const [confirmMid, setConfirmMid] = createSignal<string | null>(null);
 
   const nick = () => auth()?.nick || "";
@@ -166,13 +184,14 @@ export default function NotepadContentWidget() {
         <Show
           when={editingNote() === null}
           fallback={
-            <div class="bg-surface border border-accent/30 rounded-xl p-4">
+            <div ref={editorRef} class="bg-surface border border-accent/30 rounded-xl p-4 scroll-mt-20">
               <NoteComposer
                 nick={nick()}
                 initial={{
                   mid:      editingNote()!.mid,
                   body:     editingNote()!.body,
                   mimetype: editingNote()!.mimetype,
+                  categories: editingNote()!.categories ?? [],
                 }}
                 onSaved={() => { setEditingNote(null); loadNotes(true); }}
                 onCancel={() => setEditingNote(null)}
@@ -219,7 +238,12 @@ export default function NotepadContentWidget() {
             {(note) => (
               <NoteCard
                 note={note}
-                onEdit={() => { setConfirmMid(null); setEditingNote(note); }}
+                onEdit={() => {
+                  setConfirmMid(null);
+                  setEditingNote(note);
+                  // ref is assigned by the synchronous re-render above
+                  editorRef?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 onDelete={() => {
                   if (confirmMid() === note.mid) {
                     setConfirmMid(null);

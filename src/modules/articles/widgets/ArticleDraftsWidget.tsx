@@ -68,7 +68,9 @@ export default function ArticleDraftsWidget() {
           heading={articleInitial() ? t("articles.edit_article") : t("articles.new_article")}
           initial={articleInitial()}
           onClose={() => {
-            void storageDel(`pending-draft:${activeEntry()!.scope}`);
+            // onSaved may have cleared it already — the composer fires both
+            const entry = activeEntry();
+            if (entry) void storageDel(`pending-draft:${entry.scope}`);
             setActiveEntry(null);
           }}
           onSaved={() => {

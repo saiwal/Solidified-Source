@@ -216,7 +216,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     title: false,
     summary: false,
     slug: false,
-    category: false,
+    category: true,
     attachments: "both",
     aclPicker: false,
     submitOnCtrlEnter: true,

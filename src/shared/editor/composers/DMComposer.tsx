@@ -8,6 +8,10 @@
  * by Item.php — this already supports multiple recipients, so no backend
  * changes were needed. Groups are intentionally not selectable here, since
  * adding group_allow would break that auto-classification.
+ *
+ * Bcc is purely a client-side fan-out: each Bcc recipient gets its own POST
+ * with contact_allow = [that one], so nobody can see the others. There is no
+ * shared thread between the copies — that is what makes them blind.
  */
 
 import { createSignal, createEffect, on, onCleanup, Show, For, lazy, type Component } from "solid-js";
@@ -21,6 +25,7 @@ import { CAPABILITIES } from "../types/editor.types";
 import { fetchConnections, type AclEntry } from "@/modules/network/api";
 import { entryKey } from "../components/AclPicker";
 import RecipientField from "../components/RecipientField";
+import { DraftsList } from "../components/DraftsList";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
@@ -61,6 +66,9 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   const attach = createAttachmentStore(currentNick(), scope);
 
   const [recipients, setRecipients] = createSignal<AclEntry[]>(props.initialRecipients ?? []);
+  const [bcc, setBcc] = createSignal<AclEntry[]>([]);
+  const [showBcc, setShowBcc] = createSignal(false);
+  const allRecipients = () => [...recipients(), ...bcc()];
 
   // Contacts who've granted the local channel the `post_mail` permission —
   // messages to anyone outside this set are silently dropped by the
@@ -78,7 +86,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   // Re-check on every add/remove — a recipient seeded via `initialRecipients`
   // (Send DM from a profile/connection) can otherwise be judged against a
   // permission snapshot taken before that fetch has resolved.
-  createEffect(on(recipients, () => refreshPermitted(), { defer: true }));
+  createEffect(on(allRecipients, () => refreshPermitted(), { defer: true }));
 
   // One identity can own several xchan rows (a channel seen over both zot6 and
   // ActivityPub), and /acl?type=m returns only the one the abook uses. A seeded
@@ -96,22 +104,23 @@ const DMComposer: Component<DMComposerProps> = (props) => {
 
   const unpermittedRecipients = () => {
     if (!permitted()) return [];
-    return recipients().filter((r) => !permittedFor(r));
+    return allRecipients().filter((r) => !permittedFor(r));
   };
 
-  function addRecipient(entry: AclEntry) {
+  // Same add/remove for both rows; a person already in one row can't be added
+  // to the other, since two copies of one message is never what Bcc means.
+  const addTo = (set: (fn: (p: AclEntry[]) => AclEntry[]) => void) => (entry: AclEntry) => {
     const key = entryKey(entry);
-    if (recipients().some((r) => entryKey(r) === key)) return;
-    setRecipients((prev) => [...prev, entry]);
-  }
-
-  function removeRecipient(entry: AclEntry) {
+    if (allRecipients().some((r) => entryKey(r) === key)) return;
+    set((prev) => [...prev, entry]);
+  };
+  const removeFrom = (set: (fn: (p: AclEntry[]) => AclEntry[]) => void) => (entry: AclEntry) => {
     const key = entryKey(entry);
-    setRecipients((prev) => prev.filter((r) => entryKey(r) !== key));
-  }
+    set((prev) => prev.filter((r) => entryKey(r) !== key));
+  };
 
   const store = createComposerStore(async (body, meta) => {
-    if (recipients().length === 0) {
+    if (allRecipients().length === 0) {
       throw new Error(t("editor.dm_recipient_required"));
     }
     const blocked = unpermittedRecipients();
@@ -128,40 +137,82 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     const augmentedBody = fileTags ? `${body}\n${fileTags}` : body;
 
     const csrf = await getCsrfToken();
-    const payload = {
-      body: augmentedBody,
-      title: store.title().trim(),
-      mimetype: meta.mimetype ?? "text/bbcode",
-      profile_uid: props.profileUid,
-      scope: "custom",
-      contact_allow: recipients().map((r) => permittedFor(r)?.xid ?? r.xid),
-      group_allow: [] as string[],
-      contact_deny: [] as string[],
-      group_deny: [] as string[],
+    const send = async (contactAllow: string[]): Promise<number> => {
+      const res = await fetch("/spa/item", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify({
+          body: augmentedBody,
+          title: store.title().trim(),
+          mimetype: meta.mimetype ?? "text/bbcode",
+          profile_uid: props.profileUid,
+          scope: "custom",
+          contact_allow: contactAllow,
+          group_allow: [] as string[],
+          contact_deny: [] as string[],
+          group_deny: [] as string[],
+        }),
+      });
+
+      if (!res.ok) throw await apiError(res);
+      const json = (await res.json().catch(() => ({}))) as {
+        data?: { post?: { iid?: number } };
+      };
+      if (!json.data?.post) {
+        throw new Error("Server reported failure. Check Hubzilla logs.");
+      }
+      return json.data.post.iid ?? 0;
     };
 
-    const res = await fetch("/spa/item", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": csrf,
-      },
-      body: JSON.stringify(payload),
-    });
+    const xidOf = (r: AclEntry) => permittedFor(r)?.xid ?? r.xid;
 
-    if (!res.ok) throw await apiError(res);
-    const json = (await res.json().catch(() => ({}))) as {
-      data?: { post?: { iid?: number } };
-    };
-    if (!json.data?.post) {
-      throw new Error("Server reported failure. Check Hubzilla logs.");
+    let iid = 0;
+    if (recipients().length) {
+      iid = await send(recipients().map(xidOf));
+      // Sent — drop them so a failed Bcc below can be retried without
+      // sending the visible copy twice.
+      setRecipients([]);
     }
 
-    props.onSent?.(json.data.post.iid ?? 0);
+    const failed: AclEntry[] = [];
+    for (const r of bcc()) {
+      try {
+        const id = await send([xidOf(r)]);
+        if (!iid) iid = id;
+      } catch {
+        failed.push(r);
+      }
+    }
+    setBcc(failed);
+    if (failed.length) {
+      throw new Error(t("editor.dm_bcc_failed", { names: failed.map((r) => r.name).join(", ") }));
+    }
+
+    props.onSent?.(iid);
     attach.clear();
     props.onClose();
   }, scope);
+
+  // Recipients are the one part of a DM draft the composer store knows
+  // nothing about, so they ride in the draft's `extra` bag — whole entries,
+  // not just xids, so the restored chips still have a name and avatar.
+  const buildDraftExtra = () => ({ to: recipients(), bcc: bcc() });
+
+  createEffect(() => {
+    const extra = store.restoredExtra();
+    if (!extra) return;
+    if (Array.isArray(extra.to)) setRecipients(extra.to as AclEntry[]);
+    if (Array.isArray(extra.bcc)) {
+      setBcc(extra.bcc as AclEntry[]);
+      if ((extra.bcc as AclEntry[]).length) setShowBcc(true);
+    }
+  });
+
+  const [draftsOpen, setDraftsOpen] = createSignal(false);
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
@@ -205,9 +256,30 @@ const DMComposer: Component<DMComposerProps> = (props) => {
               <div>
                 <RecipientField
                   entries={recipients}
-                  onAdd={addRecipient}
-                  onRemove={removeRecipient}
+                  onAdd={addTo(setRecipients)}
+                  onRemove={removeFrom(setRecipients)}
                 />
+                <Show
+                  when={showBcc() || bcc().length}
+                  fallback={
+                    <button
+                      type="button"
+                      onClick={() => setShowBcc(true)}
+                      class="mt-1.5 text-xs text-muted hover:text-txt transition-colors"
+                    >
+                      {t("editor.bcc_add")}
+                    </button>
+                  }
+                >
+                  <div class="mt-1.5">
+                    <RecipientField
+                      label={t("editor.bcc_label")}
+                      entries={bcc}
+                      onAdd={addTo(setBcc)}
+                      onRemove={removeFrom(setBcc)}
+                    />
+                  </div>
+                </Show>
                 <Show when={unpermittedRecipients().length > 0}>
                   <ul class="mt-1.5 space-y-0.5">
                     <For each={unpermittedRecipients()}>
@@ -228,7 +300,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                   placeholder={t("editor.dm_subject_placeholder")}
                   value={store.title()}
                   onInput={(e) => store.setTitle(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-base font-semibold text-txt placeholder:text-muted ${underlineFieldClass}`}
+                  class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
                 />
               </div>
 
@@ -283,6 +355,15 @@ const DMComposer: Component<DMComposerProps> = (props) => {
               <Show when={enc.decryptOpen()}>
                 <DecryptPanel enc={enc} body={store.body} />
               </Show>
+
+              <Show when={draftsOpen()}>
+                <DraftsList
+                  drafts={store.savedDrafts()}
+                  onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
+                  onDelete={(id) => void store.deleteSavedDraft(id)}
+                  onClose={() => setDraftsOpen(false)}
+                />
+              </Show>
             </>
           }
           options={
@@ -294,6 +375,27 @@ const DMComposer: Component<DMComposerProps> = (props) => {
             <>
               <SecondaryButton onClick={props.onClose}>{t("editor.discard")}</SecondaryButton>
 
+              <Show when={store.body().trim() || allRecipients().length > 0}>
+                <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
+                  {t("editor.save_draft")}
+                </SecondaryButton>
+              </Show>
+
+              <Show when={store.savedDrafts().length > 0}>
+                <button
+                  type="button"
+                  onClick={() => setDraftsOpen((o) => !o)}
+                  class={
+                    "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
+                    (draftsOpen()
+                      ? "border-rim bg-elevated text-txt"
+                      : "border-rim text-muted hover:text-txt hover:bg-elevated")
+                  }
+                >
+                  {t("editor.drafts_btn", { count: store.savedDrafts().length })}
+                </button>
+              </Show>
+
               <div class="flex items-center gap-2 ml-auto">
                 <IconButton
                   title={t("editor.clear_composer")}
@@ -302,6 +404,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                     store.reset();
                     attach.clear();
                     setRecipients([]);
+                    setBcc([]);
                     enc.reset();
                   }}
                 >
@@ -313,7 +416,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                   disabled={
                     store.submitting() ||
                     attach.uploading() ||
-                    recipients().length === 0 ||
+                    allRecipients().length === 0 ||
                     unpermittedRecipients().length > 0 ||
                     !store.body().trim()
                   }

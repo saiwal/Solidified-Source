@@ -1069,6 +1069,9 @@ export type RawDictionary = {
     dm_subject_placeholder: string;
     to_label:               string;
     to_search_placeholder:  string;
+    bcc_label:              string;
+    bcc_add:                string;
+    dm_bcc_failed:          string;
     send_btn:               string;
     sending_dm:              string;
     dm_recipient_required:  string;
@@ -1834,6 +1837,7 @@ export type RawDictionary = {
     draft_wiki:           string;
     draft_event:          string;
     draft_note:           string;
+    draft_dm:             string;
     draft_label:          string;
     just_now:             string;
     empty_draft:          string;
@@ -2531,6 +2535,7 @@ export type RawDictionary = {
     col_name:                 string;
   };
   notepad: {
+    notebook_placeholder: string;
     title:            string;
     no_notes:         string;
     create_first:     string;

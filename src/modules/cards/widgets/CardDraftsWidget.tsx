@@ -68,7 +68,9 @@ export default function CardDraftsWidget() {
           heading={cardInitial() ? t("cards.edit_card") : t("cards.new_card")}
           initial={cardInitial()}
           onClose={() => {
-            void storageDel(`pending-draft:${activeEntry()!.scope}`);
+            // onSaved may have cleared it already — the composer fires both
+            const entry = activeEntry();
+            if (entry) void storageDel(`pending-draft:${entry.scope}`);
             setActiveEntry(null);
           }}
           onSaved={() => {

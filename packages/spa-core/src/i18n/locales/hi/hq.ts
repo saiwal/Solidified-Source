@@ -99,6 +99,7 @@ export const hq: RawDictionary["hq"] = {
   draft_wiki:           "विकी पेज",
   draft_event:          "कार्यक्रम",
   draft_note:           "नोट",
+  draft_dm:             "संदेश",
   draft_label:          "मसौदा",
   just_now:             "अभी",
   empty_draft:          "खाली मसौदा",

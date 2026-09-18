@@ -9,6 +9,7 @@ export const notepad: RawDictionary["notepad"] = {
   delete_confirm: "यह नोट हटाएँ?",
   cancel:         "रद्द करें",
   placeholder:    "नोट लिखें… (Ctrl+Enter से सहेजें)",
+  notebook_placeholder: "नोटबुक (वैकल्पिक, अल्पविराम से अलग करें)",
   save_btn:       "सहेजें",
   saving:         "सहेजा जा रहा है…",
   load_failed:    "नोट्स लोड करने में विफल",

@@ -6,12 +6,13 @@ import { listServerDrafts, deleteServerDraft } from "@/shared/editor/api/drafts"
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
 import NoteComposerModal from "@/shared/editor/composers/NoteComposerModal";
+import DMComposer from "@/shared/editor/composers/DMComposer";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete } from "solid-icons/md";
 
-const DRAFT_TYPES = "post,article,webpage,wiki,note";
-const SHOWN_TYPES = ["post", "article", "webpage", "wiki", "note"];
+const DRAFT_TYPES = "post,article,webpage,wiki,note,dm";
+const SHOWN_TYPES = ["post", "article", "webpage", "wiki", "note", "dm"];
 
 // ── Scope helpers ─────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ function isLoadable(scope: string): boolean {
   if (type === "post" && action === "new") return true;
   if (type === "article" && (action === "new" || action === "edit")) return true;
   if (type === "note" && (action === "new" || action === "edit")) return true;
+  if (type === "dm" && action === "new") return true;
   // webpage:edit needs the page's numeric iid (not in scope) to load the
   // original page data, so only fresh, still-empty pages can be resumed here
   if (type === "webpage" && action === "new") return true;
@@ -43,6 +45,7 @@ const TYPE_BADGE: Record<string, string> = {
   wiki:    "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/25",
   event:   "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25",
   note:    "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/25",
+  dm:      "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/25",
 };
 const DEFAULT_BADGE = "bg-elevated text-muted border-rim";
 
@@ -85,6 +88,7 @@ export default function DraftsWidget() {
   const [activeEntry, setActiveEntry] = createSignal<DraftEntry | null>(null);
   const [articleEntry, setArticleEntry] = createSignal<DraftEntry | null>(null);
   const [noteEntry, setNoteEntry] = createSignal<DraftEntry | null>(null);
+  const [dmEntry, setDmEntry] = createSignal<DraftEntry | null>(null);
   const [deleting, setDeleting] = createSignal<string | null>(null);
 
   // Reactive label — called in JSX so Solid tracks t() reads
@@ -98,6 +102,7 @@ export default function DraftsWidget() {
     if (type === "wiki")    return t("hq.draft_wiki");
     if (type === "event")   return t("hq.draft_event");
     if (type === "note")    return t("hq.draft_note");
+    if (type === "dm")      return t("hq.draft_dm");
     return t("hq.draft_label");
   }
 
@@ -134,6 +139,15 @@ export default function DraftsWidget() {
     }
   }
 
+  // A composer can fire onSent/onSaved *and then* onClose (DMComposer does),
+  // so the close handler must not assume its entry signal is still set.
+  const closeEntry =
+    (get: () => DraftEntry | null, set: (v: DraftEntry | null) => void) => () => {
+      const entry = get();
+      if (entry) void storageDel(`pending-draft:${entry.scope}`);
+      set(null);
+    };
+
   // ── Load ──────────────────────────────────────────────────────────────────
 
   async function handleLoad(entry: DraftEntry) {
@@ -155,6 +169,13 @@ export default function DraftsWidget() {
 
     if (type === "note") {
       setNoteEntry(entry);
+      return;
+    }
+
+    // DM recipients ride in the draft's `extra`, restored by DMComposer from
+    // the pending-draft written above — nothing extra to pass in here.
+    if (type === "dm" && action === "new") {
+      setDmEntry(entry);
       return;
     }
 
@@ -337,10 +358,7 @@ export default function DraftsWidget() {
             setArticleEntry(null);
             void loadAll();
           }}
-          onClose={() => {
-            void storageDel(`pending-draft:${articleEntry()!.scope}`);
-            setArticleEntry(null);
-          }}
+          onClose={closeEntry(articleEntry, setArticleEntry)}
         />
       </Show>
 
@@ -354,10 +372,17 @@ export default function DraftsWidget() {
             setNoteEntry(null);
             void loadAll();
           }}
-          onClose={() => {
-            void storageDel(`pending-draft:${noteEntry()!.scope}`);
-            setNoteEntry(null);
-          }}
+          onClose={closeEntry(noteEntry, setNoteEntry)}
+        />
+      </Show>
+
+      {/* DM composer — opened when loading a dm:new draft */}
+      <Show when={dmEntry() !== null && !auth.loading && auth()?.uid}>
+        <DMComposer
+          profileUid={auth()!.uid}
+          open={true}
+          onSent={() => void loadAll()}
+          onClose={closeEntry(dmEntry, setDmEntry)}
         />
       </Show>
 
@@ -370,10 +395,7 @@ export default function DraftsWidget() {
             void deleteDraft(activeEntry()!.scope, activeEntry()!.draft.id);
             setActiveEntry(null);
           }}
-          onClose={() => {
-            void storageDel(`pending-draft:${activeEntry()!.scope}`);
-            setActiveEntry(null);
-          }}
+          onClose={closeEntry(activeEntry, setActiveEntry)}
         />
       </Show>
     </>
