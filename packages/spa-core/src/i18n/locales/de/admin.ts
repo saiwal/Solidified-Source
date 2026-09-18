@@ -85,6 +85,12 @@ export const admin: RawDictionary["admin"] = {
   col_destination:  "Ziel",
   col_updated:      "Aktualisiert",
   col_priority:     "Priorität",
+  expert_mode:      "Expertenmodus",
+  col_actions:      "Aktionen",
+  queue_drophub:    "Hub dauerhaft als offline markieren",
+  queue_emptyhub:   "Warteschlange dieses Hubs leeren",
+  queue_deliverhub: "Zustellung an diesen Hub erneut versuchen",
+  queue_drophub_confirm: "Diesen Hub dauerhaft als offline markieren und seine Nachrichten verwerfen?",
   // QueueworkerSection
   queueworker_title: "Warteschlangen-Worker",
   queueworker_desc:  "Job-Warteschlange des Hintergrund-Workers.",

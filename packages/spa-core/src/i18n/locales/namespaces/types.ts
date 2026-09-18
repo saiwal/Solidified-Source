@@ -2666,6 +2666,12 @@ export type RawDictionary = {
     col_destination:  string;
     col_updated:      string;
     col_priority:     string;
+    expert_mode: string;
+    col_actions: string;
+    queue_drophub: string;
+    queue_emptyhub: string;
+    queue_deliverhub: string;
+    queue_drophub_confirm: string;
     queueworker_title: string;
     queueworker_desc:  string;
     jobs:             string;

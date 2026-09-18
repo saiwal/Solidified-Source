@@ -215,6 +215,9 @@ export async function toggleTheme(theme: string): Promise<void> {
 
 export const fetchAdminQueue = () => get<AdminQueue>("inspect-queue");
 
+export const adminQueueAction = (action: "drop" | "empty" | "deliver", posturl: string) =>
+  post("inspect-queue", { action, posturl });
+
 // ── Queueworker ───────────────────────────────────────────────────────────────
 
 export const fetchAdminQueueworker = () => get<AdminQueueworker>("queueworker");

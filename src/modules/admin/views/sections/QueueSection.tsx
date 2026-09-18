@@ -1,12 +1,19 @@
-import { For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
-import { fetchAdminQueue } from "../../api";
+import { fetchAdminQueue, adminQueueAction } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 export default function QueueSection() {
   const { t } = useI18n();
   const [data, { refetch }] = createQueryResource("admin-queue", fetchAdminQueue);
+  const [expert, setExpert] = createSignal(false);
+
+  async function act(action: "drop" | "empty" | "deliver", posturl: string) {
+    if (action === "drop" && !confirm(t("admin.queue_drophub_confirm"))) return;
+    await adminQueueAction(action, posturl);
+    refetch();
+  }
 
   return (
     <SubPageContent title={t("admin.queue_title")} description={t("admin.queue_desc")}>
@@ -18,12 +25,23 @@ export default function QueueSection() {
                 {d().total} {d().total !== 1 ? t("admin.undelivered_pl") : t("admin.undelivered")}
                 {d().items.length < d().total ? ` (${t("admin.showing")} ${d().items.length})` : ""}
               </p>
+              <div class="flex items-center gap-3">
+              <label class="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={expert()}
+                  onChange={(e) => setExpert(e.currentTarget.checked)}
+                  class="accent-accent"
+                />
+                {t("admin.expert_mode")}
+              </label>
               <button
                 onClick={refetch}
                 class="px-3 py-1.5 text-xs rounded-lg border border-rim text-txt hover:bg-elevated transition-colors"
               >
                 {t("admin.refresh")}
               </button>
+              </div>
             </div>
 
             <Show when={d().total === 0}>
@@ -38,6 +56,9 @@ export default function QueueSection() {
                       <th class="px-3 py-2 text-left font-medium text-muted">{t("admin.col_destination")}</th>
                       <th class="px-3 py-2 text-left font-medium text-muted hidden sm:table-cell">{t("admin.col_updated")}</th>
                       <th class="px-3 py-2 text-left font-medium text-muted hidden md:table-cell">{t("admin.col_priority")}</th>
+                      <Show when={expert()}>
+                        <th class="px-3 py-2 text-left font-medium text-muted">{t("admin.col_actions")}</th>
+                      </Show>
                     </tr>
                   </thead>
                   <tbody>
@@ -49,6 +70,28 @@ export default function QueueSection() {
                           </td>
                           <td class="px-3 py-2 text-muted hidden sm:table-cell">{fmtDate(item.outq_updated)}</td>
                           <td class="px-3 py-2 text-muted hidden md:table-cell">{item.outq_priority}</td>
+                          <Show when={expert()}>
+                            <td class="px-3 py-2">
+                              <div class="flex flex-wrap gap-1">
+                                <For each={[
+                                  ["deliver", t("admin.queue_deliverhub"), "↻"],
+                                  ["empty", t("admin.queue_emptyhub"), "🗑"],
+                                  ["drop", t("admin.queue_drophub"), "✕"],
+                                ] as const}>
+                                  {([action, label, glyph]) => (
+                                    <button
+                                      title={label}
+                                      aria-label={label}
+                                      onClick={() => act(action, item.outq_posturl)}
+                                      class="px-2 py-1 rounded border border-rim text-txt hover:bg-elevated transition-colors"
+                                    >
+                                      {glyph}
+                                    </button>
+                                  )}
+                                </For>
+                              </div>
+                            </td>
+                          </Show>
                         </tr>
                       )}
                     </For>
