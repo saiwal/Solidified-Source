@@ -1,5 +1,6 @@
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
+import { queryClient } from "@utsukta/spa-core/lib/query-client";
 
 export interface ProfileListItem {
   id: number;
@@ -85,6 +86,11 @@ export async function saveProfile(
     const j = await res.json().catch(() => ({}));
     throw new Error(j?.error?.message ?? "Save failed");
   }
+  // The profile page / contact card read /spa/profile/:nick under their own
+  // query keys; without this they serve the pre-edit about text for staleTime.
+  queryClient.invalidateQueries({
+    predicate: (q) => ["channel-profile", "contact-card"].includes(q.queryKey[0] as string),
+  });
 }
 
 export async function deleteProfile(id: string | number): Promise<void> {

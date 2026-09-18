@@ -1335,6 +1335,10 @@ export type RawDictionary = {
     privacy_moderate_comments_hint: string;
     privacy_index_opt_out:        string;
     privacy_index_opt_out_hint:   string;
+    privacy_suggestme:            string;
+    privacy_suggestme_hint:       string;
+    privacy_online_status:        string;
+    privacy_online_status_hint:   string;
     privacy_group_actor:          string;
     privacy_ocap:                 string;
     privacy_ocap_hint:            string;

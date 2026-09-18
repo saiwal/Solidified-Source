@@ -1,6 +1,7 @@
 import { Show } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
+import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { useSectionForm } from "../../store/useSectionForm";
 import { SaveBar } from "../../store/FormHelpers";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -33,6 +34,11 @@ async function saveProfile(payload: Partial<ProfileData>): Promise<void> {
     const j = await res.json().catch(() => ({}));
     throw new Error(j?.error?.message ?? "Save failed");
   }
+  // Same stale-read as the multi-profile editor: /spa/profile/:nick is cached
+  // under keys this form never touches.
+  queryClient.invalidateQueries({
+    predicate: (q) => ["channel-profile", "contact-card"].includes(q.queryKey[0] as string),
+  });
 }
 
 export default function ProfileSection() {

@@ -10,6 +10,8 @@ import { MdOutlineTune, MdOutlineVisibility_off } from "solid-icons/md";
 interface PrivacyData {
   autoperms: number;
   index_opt_out: number;
+  suggestme: number;
+  show_online_status: number;
   permit_all_mentions: number;
   moderate_unsolicited_comments: number;
   ocap_enabled: number;
@@ -36,7 +38,7 @@ async function savePrivacy(payload: Partial<PrivacyData>): Promise<void> {
 // Permission limits and the group-actor flag live in the channel section
 // (custom role only, edited via the permission-limits modal there).
 const TOGGLE_FIELDS = [
-  "autoperms", "index_opt_out",
+  "autoperms", "index_opt_out", "suggestme", "show_online_status",
   "permit_all_mentions", "moderate_unsolicited_comments", "ocap_enabled",
   "local_only_posts",
 ] as const;
@@ -69,6 +71,8 @@ export default function PrivacySection() {
             <SwitchRow name="permit_all_mentions"           label={t("settings.privacy_permit_mentions")}   hint={t("settings.privacy_permit_mentions_hint")}   checked={!!data()!.permit_all_mentions} />
             <SwitchRow name="moderate_unsolicited_comments" label={t("settings.privacy_moderate_comments")} hint={t("settings.privacy_moderate_comments_hint")} checked={!!data()!.moderate_unsolicited_comments} />
             <SwitchRow name="index_opt_out"                 label={t("settings.privacy_index_opt_out")}     hint={t("settings.privacy_index_opt_out_hint")}     checked={!!data()!.index_opt_out} />
+            <SwitchRow name="suggestme"                     label={t("settings.privacy_suggestme")}         hint={t("settings.privacy_suggestme_hint")}         checked={!!data()!.suggestme} />
+            <SwitchRow name="show_online_status"            label={t("settings.privacy_online_status")}     hint={t("settings.privacy_online_status_hint")}     checked={!!data()!.show_online_status} />
             <SwitchRow name="ocap_enabled"                  label={t("settings.privacy_ocap")}              hint={t("settings.privacy_ocap_hint")}              checked={!!data()!.ocap_enabled} />
           </Group>
 
