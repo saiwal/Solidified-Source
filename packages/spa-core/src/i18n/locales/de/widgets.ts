@@ -23,6 +23,7 @@ export const widgets: RawDictionary["widgets"] = {
   rainbow_mode:   "Regenbogenfarben",
   connections:    "Verbindungen",
   view_all:       "Alle anzeigen",
+  manage:         "Verwalten",
   // Widget labels (picker / edit mode)
   notifications:      "Benachrichtigungen",
   pinned_chat:        "Angehefteter Chat",

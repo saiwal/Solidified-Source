@@ -418,6 +418,7 @@ export type RawDictionary = {
     rainbow_mode:   string;
     connections:    string;
     view_all:       string;
+    manage:         string;
     // Widget labels (picker / edit mode)
     notifications:      string;
     pinned_chat:        string;

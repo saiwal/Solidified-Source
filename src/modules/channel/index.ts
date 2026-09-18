@@ -124,6 +124,7 @@ registerModule({
       label: () => useI18n().t("widgets.popular_posts"),
       loader: () => import("./widgets/ChannelPopularWidget"),
       ...channelWidgetPlacement,
+      defaultModules: [],
       helpTarget: "widgets.popular_posts",
     },
     {
@@ -159,7 +160,6 @@ registerModule({
       configComponent: () => import("@/shared/stream/components/ArchiveStyleConfig"),
       helpTarget: "widgets.archive",
     },
-
     {
       // Opt-in GitHub-style posting activity graph — picker only, no default
       // placement. Also placeable on /hq (see channel.contact_card above).
