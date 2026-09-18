@@ -46,6 +46,8 @@ export interface CustomProfileField {
   label: string;
   help: string;
   type: string;
+  // select choices; empty for every other type
+  options: string[];
   value: string;
 }
 

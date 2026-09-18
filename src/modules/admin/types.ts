@@ -311,6 +311,8 @@ export interface ProfdefField {
   field_type: string;
   field_desc: string;
   field_help: string;
+  // select choices, one per line
+  field_inputs: string;
 }
 
 export interface AdminProfileFields {

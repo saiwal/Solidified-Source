@@ -36,6 +36,7 @@ export const profiles: RawDictionary["profiles"] = {
   group_work:         "कार्य और शिक्षा",
   group_contact:      "संपर्क",
   group_custom:       "अतिरिक्त जानकारी",
+  tags_hint:          "मानों को कॉमा से अलग करें",
   // fields (reuse existing labels where possible)
   fullname:           "प्रदर्शन नाम",
   pdesc:              "संक्षिप्त विवरण",

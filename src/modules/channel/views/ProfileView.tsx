@@ -54,7 +54,7 @@ type ChannelProfile = {
   is_remote?: boolean;
   actor_fields?: { name: string; value: string }[];
   // Admin-defined profile fields (profdef/profext) on local channels
-  custom_fields?: { name: string; label: string; value: string }[];
+  custom_fields?: { name: string; label: string; type: string; value: string }[];
 };
 
 async function fetchProfile(nick: string): Promise<ChannelProfile | null> {
@@ -278,7 +278,7 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
         </Show>
 
         {/* AP actor fields (remote) / admin-defined fields (local) */}
-        <Show when={(p.is_remote && (p.actor_fields?.length ?? 0) > 0) || p.custom_fields?.some((f) => f.value)}>
+        <Show when={(p.is_remote && (p.actor_fields?.length ?? 0) > 0) || p.custom_fields?.some(customFieldShown)}>
           <div class="mt-3 space-y-1">
             <For each={p.is_remote ? p.actor_fields : []}>
               {(f) => (
@@ -288,11 +288,22 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
                 </div>
               )}
             </For>
-            <For each={p.custom_fields?.filter((f) => f.value)}>
+            <For each={p.custom_fields?.filter(customFieldShown)}>
               {(f) => (
                 <div class="flex gap-2 text-xs">
                   <span class="text-muted w-20 shrink-0">{f.label}</span>
-                  <span class="text-txt">{f.value}</span>
+                  <Show
+                    when={f.type === "tags"}
+                    fallback={<span class="text-txt">{f.type === "checkbox" ? "\u2713" : f.value}</span>}
+                  >
+                    <div class="flex flex-wrap gap-1.5">
+                      <For each={splitTags(f.value)}>
+                        {(tag) => (
+                          <span class="px-2 py-0.5 rounded-full bg-overlay text-muted">{tag}</span>
+                        )}
+                      </For>
+                    </div>
+                  </Show>
                 </div>
               )}
             </For>
@@ -454,15 +465,22 @@ function FullCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: boole
         </Show>
 
         {/* AP actor fields (remote channels) / admin-defined fields (local) */}
-        <Show when={(p.is_remote && (p.actor_fields?.length ?? 0) > 0) || p.custom_fields?.some((f) => f.value)}>
+        <Show when={(p.is_remote && (p.actor_fields?.length ?? 0) > 0) || p.custom_fields?.some(customFieldShown)}>
           <div class="border-t border-rim pt-5">
             <FieldSection label={t("channel.group_profile_fields")}>
               <For each={p.is_remote ? p.actor_fields : []}>
                 {(f) => <Field label={f.name} value={f.value} />}
               </For>
               {/* core renders extra fields through prepare_text(), i.e. BBCode */}
-              <For each={p.custom_fields?.filter((f) => f.value)}>
-                {(f) => <Field label={f.label} value={f.value} bbcode />}
+              <For each={p.custom_fields?.filter(customFieldShown)}>
+                {(f) => (
+                  <Field
+                    label={f.label}
+                    value={f.type === "checkbox" ? "\u2713" : f.value}
+                    bbcode={f.type !== "tags" && f.type !== "checkbox"}
+                    tags={f.type === "tags"}
+                  />
+                )}
               </For>
             </FieldSection>
           </div>
@@ -504,20 +522,45 @@ function FieldSection(props: { label: string; children: any }) {
   );
 }
 
-function Field(props: { label: string; value: string; bbcode?: boolean }) {
+// An unchecked checkbox stores "0" — a truthy JS string, so it needs its own
+// emptiness rule or every unchecked box renders a literal 0.
+function customFieldShown(f: { type: string; value: string }): boolean {
+  return f.type === "checkbox" ? f.value === "1" : Boolean(f.value);
+}
+
+// A "tags" custom field stores a plain comma-separated string (profext has no
+// list type); it renders as chips, like the profile's own keywords.
+function splitTags(value: string): string[] {
+  return value.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function Field(props: { label: string; value: string; bbcode?: boolean; tags?: boolean }) {
   return (
     <Show when={props.value}>
       <div class="flex gap-3">
         <span class="text-xs font-medium text-muted w-28 shrink-0 pt-px">{props.label}</span>
         <Show
-          when={props.bbcode}
-          fallback={<span class="text-xs text-txt leading-relaxed">{props.value}</span>}
+          when={props.tags}
+          fallback={
+            <Show
+              when={props.bbcode}
+              fallback={<span class="text-xs text-txt leading-relaxed">{props.value}</span>}
+            >
+              <div
+                class="text-xs text-txt leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:my-0
+                       prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
+                innerHTML={renderBbcode(props.value)}
+              />
+            </Show>
+          }
         >
-          <div
-            class="text-xs text-txt leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:my-0
-                   prose-a:text-accent prose-a:no-underline prose-a:hover:underline"
-            innerHTML={renderBbcode(props.value)}
-          />
+          <div class="flex flex-wrap gap-1.5">
+            <For each={splitTags(props.value)}>
+              {(tag) => (
+                <span class="px-2 py-0.5 text-xs rounded-full bg-overlay text-muted">{tag}</span>
+              )}
+            </For>
+          </div>
         </Show>
       </div>
     </Show>

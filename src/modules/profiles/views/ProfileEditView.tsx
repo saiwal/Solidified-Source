@@ -650,15 +650,30 @@ function Field(props: { label: string; hint?: string; children: any }) {
 // input. The checkbox gets a paired hidden input so unchecking clears the
 // stored value instead of leaving the key out of FormData entirely.
 function CustomField(props: { field: CustomProfileField }) {
+  const { t } = useI18n();
   const f = props.field;
   return (
-    <Field label={f.label} hint={f.help}>
+    <Field label={f.label} hint={f.help || (f.type === "tags" ? t("profiles.tags_hint") : undefined)}>
       <Show
         when={f.type === "textarea"}
         fallback={
           <Show
             when={f.type === "checkbox"}
-            fallback={<input type="text" name={f.name} value={f.value} class={inputClass} />}
+            fallback={
+              // a select with no choices defined is just a text box with extra
+              // steps — fall back rather than render an empty dropdown
+              <Show
+                when={f.type === "select" && f.options.length > 0}
+                fallback={<input type="text" name={f.name} value={f.value} class={inputClass} />}
+              >
+                <select name={f.name} value={f.value} class={inputClass}>
+                  <option value="">—</option>
+                  <For each={f.options.includes(f.value) || !f.value ? f.options : [f.value, ...f.options]}>
+                    {(o) => <option value={o} selected={o === f.value}>{o}</option>}
+                  </For>
+                </select>
+              </Show>
+            }
           >
             <>
               <input type="hidden" name={f.name} value="0" />

@@ -10,13 +10,16 @@ import {
 } from "../../api";
 import type { ProfdefField } from "../../types";
 
-const FIELD_TYPES = ["text", "textarea", "checkbox", "select"] as const;
+// "tags" is ours, not core's: stored as a plain comma-separated string like
+// every other profext value, rendered as chips on the profile.
+const FIELD_TYPES = ["text", "textarea", "checkbox", "select", "tags"] as const;
 
 const EMPTY: Omit<ProfdefField, "id"> = {
   field_name: "",
   field_type: "text",
   field_desc: "",
   field_help: "",
+  field_inputs: "",
 };
 
 export default function ProfileFieldsSection() {
@@ -288,6 +291,18 @@ function FieldModal(props: {
               class={inputCls}
             />
           </FormField>
+
+          <Show when={form().field_type === "select"}>
+            <FormField label="Choices" hint="One per line — what the dropdown offers">
+              <textarea
+                rows={4}
+                value={form().field_inputs}
+                onInput={(e) => set("field_inputs")(e.currentTarget.value)}
+                class={inputCls}
+                placeholder={"Apprentice\nJourneyman\nMaster"}
+              />
+            </FormField>
+          </Show>
 
           <FormField label="Help text" hint="Additional info (optional)">
             <input

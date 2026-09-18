@@ -36,6 +36,7 @@ export const profiles: RawDictionary["profiles"] = {
   group_work:         "Beruf & Ausbildung",
   group_contact:      "Kontakt",
   group_custom:       "Weitere Angaben",
+  tags_hint:          "Werte durch Kommas trennen",
   // fields
   fullname:           "Anzeigename",
   pdesc:              "Kurzbeschreibung",

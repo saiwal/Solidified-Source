@@ -36,6 +36,7 @@ export const profiles: RawDictionary["profiles"] = {
   group_work:         "Work & Education",
   group_contact:      "Contact",
   group_custom:       "Additional information",
+  tags_hint:          "Separate values with commas",
   // fields
   fullname:           "Display name",
   pdesc:              "Short description",
