@@ -96,7 +96,10 @@ export function resolveGlobalSlots(slot: WidgetSlotName): RegisteredWidget[] {
 // Module-local widgets — swapped on navigation, globals excluded
 export function resolveModuleSlot(slot: WidgetSlotName, moduleId: string): RegisteredWidget[] {
   return [...widgets.values()].filter(
-    (w) => !w.global && widgetSlots(w).includes(slot) && w.defaultModules.includes(moduleId),
+    (w) =>
+      !w.global &&
+      (w.defaultSlot ? w.defaultSlot === slot : widgetSlots(w).includes(slot)) &&
+      w.defaultModules.includes(moduleId),
   );
 }
 

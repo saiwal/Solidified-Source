@@ -143,14 +143,16 @@ export default function NotepadContentWidget() {
   const isOwner = () => role() === "owner";
 
   const activeTag    = () => String(searchParams.tag ?? "");
+  const activeCat    = () => String(searchParams.cat ?? "");
   const activeDbegin = () => String(searchParams.dbegin ?? "");
   const activeSearch = () => String(searchParams.search ?? "");
-  const hasFilters   = () => !!(activeTag() || activeDbegin() || activeSearch());
+  const hasFilters   = () => !!(activeTag() || activeCat() || activeDbegin() || activeSearch());
 
   createEffect(() => {
     if (!auth.loading && nick()) {
       loadNotes(true, {
         tag:    activeTag()    || undefined,
+        cat:    activeCat()    || undefined,
         dbegin: activeDbegin() || undefined,
         dend:   String(searchParams.dend ?? "") || undefined,
         search: activeSearch() || undefined,

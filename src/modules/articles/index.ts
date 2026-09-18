@@ -70,48 +70,36 @@ registerModule({
       helpTarget: "widgets.popular_articles",
     },
     {
+      // Style (list | cloud) and rainbow mode come from the widget config.
       id: "articles.categories",
       label: () => useI18n().t("widgets.article_categories"),
       loader: () => import("./widgets/ArticleCategoryWidget"),
-      slot: "right",
-      helpTarget: "widgets.categories_list",
-    },
-    {
-      // Opt-in alternate layout for articles.categories — picker only, no default placement
-      id: "articles.categories_cloud",
-      label: () => useI18n().t("widgets.category_cloud"),
-      loader: () => import("./widgets/ArticleCategoryCloudWidget"),
       slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["articles"],
-      helpTarget: "widgets.categories_cloud",
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/CategoryStyleConfig"),
+      helpTarget: "widgets.categories",
     },
     {
-      // Opt-in archive calendar — picker only, no default placement
-      id: "articles.archive_grid",
-      label: () => useI18n().t("widgets.archive_grid"),
-      loader: () => import("./widgets/ArticleArchiveGridWidget"),
-      slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["articles"],
-      helpTarget: "widgets.archive_calendar",
-    },
-    {
+      // Style (cloud | list) and rainbow mode come from the widget config.
       id: "articles.tags",
       label: () => useI18n().t("widgets.article_tags"),
       loader: () => import("./widgets/ArticleTagWidget"),
-      slot: "right",
-      helpTarget: "widgets.tags_cloud",
+      slot: ["right", "footer"],
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/TagStyleConfig"),
+      helpTarget: "widgets.tags",
     },
     {
-      // Opt-in alternate layout for articles.tags — picker only, no default placement
-      id: "articles.tags_list",
-      label: () => useI18n().t("widgets.tag_list"),
-      loader: () => import("./widgets/ArticleTagListWidget"),
+      // Opt-in archive — picker only, no default placement.
+      // Style (list | calendar) comes from the widget config.
+      id: "articles.archive",
+      label: () => useI18n().t("widgets.archive"),
+      loader: () => import("./widgets/ArticleArchiveWidget"),
       slot: ["right", "footer"],
       defaultModules: [],
       contexts: ["articles"],
-      helpTarget: "widgets.tags_list",
+      configComponent: () => import("@/shared/stream/components/ArchiveStyleConfig"),
+      helpTarget: "widgets.archive",
     },
     {
       // Opt-in article showcase; place several, each configured with an article

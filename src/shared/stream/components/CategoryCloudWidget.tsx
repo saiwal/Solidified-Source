@@ -7,6 +7,7 @@ import { type Component, createEffect, For, on, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { rainbowStyle } from "./rainbow";
 import {
   fetchCategories,
   type CategoryItem,
@@ -44,7 +45,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
   return (
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
       <div class="px-4 py-3 border-b border-rim">
-        <h3 class="text-sm font-semibold text-txt">{t("widgets.categories")}</h3>
+        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.categories")}</h3>
       </div>
 
       <Show when={!props.data && remote.loading}>
@@ -68,12 +69,13 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
                 return (
                   <button
                     onClick={() => props.onCategoryClick?.(cat.slug)}
-                    style={{ "font-size": `${size}px` }}
+                    style={{ "font-size": `${size}px`, ...rainbowStyle(cat.name, props.rainbow) }}
                     class="inline-flex items-center px-2 py-0.5 rounded-full
                            transition-colors leading-tight"
                     classList={{
                       "bg-accent text-accent-fg": isActive(),
-                      "bg-accent-muted text-accent hover:bg-accent hover:text-base": !isActive(),
+                      "rainbow-pill": !isActive() && !!props.rainbow,
+                      "bg-accent-muted text-accent hover:bg-accent hover:text-base": !isActive() && !props.rainbow,
                     }}
                     title={`${cat.count} post${cat.count !== 1 ? "s" : ""}`}
                   >

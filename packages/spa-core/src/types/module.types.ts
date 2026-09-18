@@ -54,6 +54,13 @@ export interface WidgetDef {
   loader: ComponentLoader<WidgetProps>;
   /** Single slot, or a list to mount the same widget in several slots at once. */
   slot: WidgetSlotName | WidgetSlotName[];
+  /**
+   * Which of `slot`'s entries gets the out-of-the-box placement. Only needed on
+   * a multi-slot widget that is also default-placed — without it the widget
+   * appears in *every* slot it lists, on every module in `defaultModules`.
+   * The other slots stay available through the widget picker.
+   */
+  defaultSlot?: WidgetSlotName;
   /** Module ids where the widget appears out of the box. Defaults to the registering module. */
   defaultModules?: string[];
   /**

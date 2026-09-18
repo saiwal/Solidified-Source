@@ -734,3 +734,29 @@ img.emoji.single-emoji:hover {
 /* Bootstrap-only switch chrome around the real checkbox — nothing to show. */
 .addon-admin-form .onoffswitch-inner,
 .addon-admin-form .onoffswitch-switch { display: none; }
+
+/* Rainbow mode for the tag/category widgets. The hue comes from
+   rainbowHue() in src/shared/stream/components/rainbow.ts as --rainbow-h;
+   the lightness is fixed per theme so every tag stays legible. Keyed off the
+   .dark class rather than color-scheme, because that is how this app switches
+   themes (see index.tsx).
+
+   The chroma is deliberately past the sRGB boundary: every hue then gamut-maps
+   to its own maximum at that lightness, instead of all of them sharing the one
+   low value that the dullest hue can reach. Browsers map by reducing chroma
+   and keeping L and H, so legibility is unchanged. */
+.rainbow-text { color: oklch(0.55 0.30 var(--rainbow-h)); }
+.dark .rainbow-text { color: oklch(0.78 0.26 var(--rainbow-h)); }
+
+/* Cloud-style pill: tint the background with the same hue too. A single shared
+   accent tint behind rainbow text washes the colour out. */
+.rainbow-pill {
+  color: oklch(0.48 0.30 var(--rainbow-h));
+  background: oklch(0.55 0.30 var(--rainbow-h) / 0.16);
+}
+.rainbow-pill:hover { background: oklch(0.55 0.30 var(--rainbow-h) / 0.30); }
+.dark .rainbow-pill {
+  color: oklch(0.84 0.26 var(--rainbow-h));
+  background: oklch(0.78 0.26 var(--rainbow-h) / 0.18);
+}
+.dark .rainbow-pill:hover { background: oklch(0.78 0.26 var(--rainbow-h) / 0.32); }

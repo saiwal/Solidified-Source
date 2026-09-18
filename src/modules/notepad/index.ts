@@ -49,12 +49,27 @@ registerModule({
       helpTarget: "widgets.quick_note",
     },
     {
+      // Style (list | calendar) comes from the widget config.
       id: "notepad.archive",
       label: () => useI18n().t("widgets.note_archive"),
       loader: () => import("./widgets/NoteArchiveWidget"),
-      slot: "right",
+      slot: ["right", "footer"],
+      defaultSlot: "right",
       visitorVisible: false,
-      helpTarget: "widgets.archive_tree",
+      configComponent: () => import("@/shared/stream/components/ArchiveStyleConfig"),
+      helpTarget: "widgets.archive",
+    },
+    {
+      // A note's categories are its notebooks.
+      // Style (list | cloud) and rainbow mode come from the widget config.
+      id: "notepad.categories",
+      label: () => useI18n().t("widgets.note_categories"),
+      loader: () => import("./widgets/NoteCategoryWidget"),
+      slot: ["right", "footer"],
+      defaultSlot: "right",
+      visitorVisible: false,
+      configComponent: () => import("@/shared/stream/components/CategoryStyleConfig"),
+      helpTarget: "widgets.categories",
     },
     {
       id: "notepad.drafts",
@@ -65,34 +80,15 @@ registerModule({
       helpTarget: "widgets.drafts",
     },
     {
-      // Opt-in alternate layout for notepad.archive — picker only, no default placement
-      id: "notepad.archive_grid",
-      label: () => useI18n().t("widgets.archive_grid"),
-      loader: () => import("./widgets/NoteArchiveGridWidget"),
-      slot: ["footer", "right"],
-      defaultModules: [],
-      contexts: ["notepad"],
-      visitorVisible: false,
-      helpTarget: "widgets.archive_calendar",
-    },
-    {
+      // Style (cloud | list) and rainbow mode come from the widget config.
       id: "notepad.tags",
       label: () => useI18n().t("widgets.note_tags"),
       loader: () => import("./widgets/NoteTagWidget"),
-      slot: "right",
+      slot: ["right", "footer"],
+      defaultSlot: "right",
       visitorVisible: false,
-      helpTarget: "widgets.tags_cloud",
-    },
-    {
-      // Opt-in alternate layout for notepad.tags — picker only, no default placement
-      id: "notepad.tags_list",
-      label: () => useI18n().t("widgets.tag_list"),
-      loader: () => import("./widgets/NoteTagListWidget"),
-      slot: "right",
-      defaultModules: [],
-      contexts: ["notepad"],
-      visitorVisible: false,
-      helpTarget: "widgets.tags_list",
+      configComponent: () => import("@/shared/stream/components/TagStyleConfig"),
+      helpTarget: "widgets.tags",
     },
   ],
   permissions: [],

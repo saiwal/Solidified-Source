@@ -8,6 +8,7 @@ import { type Component, createEffect, on, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { rainbowStyle } from "./rainbow";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,7 +26,7 @@ export interface CategoryItem {
 
 export async function fetchCategories(params: {
   channelNick?: string;
-  type?: "articles" | "cards" | "posts";
+  type?: "articles" | "cards" | "posts" | "notes";
 }): Promise<CategoryItem[]> {
   const url = new URL("/spa/stream-widgets/categories", window.location.origin);
   if (params.channelNick) url.searchParams.set("channel_nick", params.channelNick);
@@ -65,13 +66,17 @@ function CategorySkeleton() {
 
 export interface CategoryWidgetProps {
   channelNick?: string;
-  type?: "articles" | "cards" | "posts";
+  type?: "articles" | "cards" | "posts" | "notes";
   /** Called when the user clicks a category row */
   onCategoryClick?: (slug: string) => void;
   /** Slug of the currently active/filtered category */
   activeSlug?: string;
   /** Pre-fetched data — skips the internal fetch when provided */
   data?: CategoryItem[];
+  /** Card heading. Defaults to the generic "Categories". */
+  title?: string;
+  /** Colour each category name by a hue derived from the name. */
+  rainbow?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +104,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
       {/* Header */}
       <div class="px-4 py-3 border-b border-rim">
-        <h3 class="text-sm font-semibold text-txt">{t("widgets.categories")}</h3>
+        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.categories")}</h3>
       </div>
 
       {/* Loading */}
@@ -117,7 +122,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
             </p>
           }
         >
-          <ul class="divide-y divide-rim">
+          <ul class="divide-y divide-rim max-h-80 overflow-y-auto">
             <For each={categories()}>
               {(cat) => {
                 const pct = () =>
@@ -144,9 +149,11 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
                       {/* Label */}
                       <span
                         class="flex-1 text-sm truncate transition-colors"
+                        style={rainbowStyle(cat.name, props.rainbow)}
                         classList={{
                           "text-accent font-medium": isActive(),
-                          "text-txt group-hover:text-accent": !isActive(),
+                          "rainbow-text": !isActive() && !!props.rainbow,
+                          "text-txt group-hover:text-accent": !isActive() && !props.rainbow,
                         }}
                       >
                         {cat.name}

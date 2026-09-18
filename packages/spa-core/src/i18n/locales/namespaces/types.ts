@@ -405,14 +405,17 @@ export type RawDictionary = {
     load_error:     string;
     show_more_tags: string;
     archive:        string;
-    archive_grid:   string;
     archive_prev_year:  string;
     archive_prev_month: string;
     archive_next_month: string;
     archive_next_year:  string;
-    category_cloud: string;
-    tag_list:       string;
     no_archive:     string;
+    // Taxonomy widget config (style picker + rainbow mode)
+    widget_style:   string;
+    style_list:     string;
+    style_cloud:    string;
+    style_calendar: string;
+    rainbow_mode:   string;
     connections:    string;
     view_all:       string;
     // Widget labels (picker / edit mode)
@@ -433,6 +436,7 @@ export type RawDictionary = {
     note_archive:       string;
     note_drafts:        string;
     note_tags:          string;
+    note_categories:    string;
     note_quick:         string;
     calendar:           string;
     shopping_cart:      string;

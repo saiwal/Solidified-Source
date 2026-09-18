@@ -127,55 +127,37 @@ registerModule({
       helpTarget: "widgets.popular_posts",
     },
     {
+      // Style (list | cloud) and rainbow mode come from the widget config.
       id: "channel.categories",
       label: () => useI18n().t("widgets.categories"),
       loader: () => import("./widgets/ChannelCategoryWidget"),
       ...channelWidgetPlacement,
-      helpTarget: "widgets.categories_list",
+      slot: ["right", "footer"],
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/CategoryStyleConfig"),
+      helpTarget: "widgets.categories",
     },
     {
+      // Style (cloud | list) and rainbow mode come from the widget config.
       id: "channel.tags",
       label: () => useI18n().t("widgets.tags"),
       loader: () => import("./widgets/ChannelTagWidget"),
       ...channelWidgetPlacement,
-      helpTarget: "widgets.tags_cloud",
+      slot: ["right", "footer"],
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/TagStyleConfig"),
+      helpTarget: "widgets.tags",
     },
     {
+      // Style (list | calendar) comes from the widget config.
       id: "channel.archive",
       label: () => useI18n().t("widgets.archive"),
       loader: () => import("./widgets/ChannelArchiveWidget"),
       ...channelWidgetPlacement,
-      helpTarget: "widgets.archive_tree",
-    },
-    {
-      // Opt-in alternate layout for channel.tags — picker only, no default placement
-      id: "channel.tags_list",
-      label: () => useI18n().t("widgets.tag_list"),
-      loader: () => import("./widgets/ChannelTagListWidget"),
       slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["channel", "profile"],
-      helpTarget: "widgets.tag_list",
-    },
-    {
-      // Opt-in alternate layout for channel.categories — picker only, no default placement
-      id: "channel.categories_cloud",
-      label: () => useI18n().t("widgets.category_cloud"),
-      loader: () => import("./widgets/ChannelCategoryCloudWidget"),
-      slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["channel", "profile"],
-      helpTarget: "widgets.category_cloud",
-    },
-    {
-      // Opt-in alternate layout for channel.archive — picker only, no default placement
-      id: "channel.archive_grid",
-      label: () => useI18n().t("widgets.archive_grid"),
-      loader: () => import("./widgets/ChannelArchiveGridWidget"),
-      slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["channel", "profile"],
-      helpTarget: "widgets.archive_calendar",
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/ArchiveStyleConfig"),
+      helpTarget: "widgets.archive",
     },
 
     {

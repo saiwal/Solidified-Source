@@ -15,6 +15,7 @@ import {
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { rainbowStyle } from "./rainbow";
 import { fetchTags, type TagItem, type TagWidgetProps } from "./TagWidget";
 
 function ListSkeleton() {
@@ -59,7 +60,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
   return (
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
       <div class="px-4 py-3 border-b border-rim">
-        <h3 class="text-sm font-semibold text-txt">{t("widgets.tags")}</h3>
+        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.tags")}</h3>
       </div>
 
       <Show when={!props.data && remote.loading}>
@@ -73,7 +74,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
             <p class="px-4 py-3 text-xs text-muted">{t("widgets.no_tags")}</p>
           }
         >
-          <ul class="divide-y divide-rim">
+          <ul class="divide-y divide-rim max-h-80 overflow-y-auto">
             <For each={visibleTags()}>
               {(tag) => {
                 const pct = () => Math.round((tag.count / maxCount()) * 100);
@@ -99,9 +100,11 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
 
                       <span
                         class="flex-1 text-sm truncate transition-colors"
+                        style={rainbowStyle(tag.name, props.rainbow)}
                         classList={{
                           "text-accent font-medium": isActive(),
-                          "text-txt group-hover:text-accent": !isActive(),
+                          "rainbow-text": !isActive() && !!props.rainbow,
+                          "text-txt group-hover:text-accent": !isActive() && !props.rainbow,
                         }}
                       >
                         {tag.name}

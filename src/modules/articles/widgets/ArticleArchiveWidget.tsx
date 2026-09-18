@@ -2,11 +2,10 @@ import { Show } from "solid-js";
 import ArchiveWidget, { dayRange, monthRange } from "@/shared/stream/components/ArchiveWidget";
 import ArchiveGridWidget from "@/shared/stream/components/ArchiveGridWidget";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
-import { useI18n } from "@utsukta/spa-core/i18n";
+import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useSearchParams } from "@solidjs/router";
 
-export default function NoteArchiveWidget(props: WidgetProps) {
-  const { t } = useI18n();
+export default function ArticleArchiveWidget(props: WidgetProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeDbegin = () => String(searchParams.dbegin ?? "");
   const activeDend   = () => String(searchParams.dend   ?? "");
@@ -15,13 +14,13 @@ export default function NoteArchiveWidget(props: WidgetProps) {
     if (activeDbegin() === dbegin && activeDend() === dend) {
       setSearchParams({ dbegin: undefined, dend: undefined });
     } else {
-      setSearchParams({ dbegin, dend, tag: undefined });
+      setSearchParams({ dbegin, dend, tag: undefined, cat: undefined });
     }
   };
 
   const shared = () => ({
-    type: "notes" as const,
-    title: t("widgets.note_archive"),
+    channelNick: usePageNick()(),
+    type: "articles" as const,
     activeDbegin: activeDbegin(),
     activeDend: activeDend(),
     onMonthClick: (y: number, m: number) => applyRange(monthRange(y, m)),

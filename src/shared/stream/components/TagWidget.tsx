@@ -15,6 +15,7 @@ import {
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { rainbowStyle } from "./rainbow";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,6 +79,10 @@ export interface TagWidgetProps {
   data?: TagItem[];
   /** Max tags before the "show more" collapse. Default: 20 */
   maxVisible?: number;
+  /** Card heading. Defaults to the generic "Tags". */
+  title?: string;
+  /** Colour each tag name by a hue derived from the name. */
+  rainbow?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -109,7 +114,7 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
       {/* Header */}
       <div class="px-4 py-3 border-b border-rim">
-        <h3 class="text-sm font-semibold text-txt">{t("widgets.tags")}</h3>
+        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.tags")}</h3>
       </div>
 
       {/* Loading */}
@@ -135,12 +140,13 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
                 return (
                   <button
                     onClick={() => props.onTagClick?.(tag.name)}
-                    style={{ "font-size": `${size}px` }}
+                    style={{ "font-size": `${size}px`, ...rainbowStyle(tag.name, props.rainbow) }}
                     class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full
                            transition-colors leading-tight"
                     classList={{
                       "bg-accent text-accent-fg": isActive(),
-                      "bg-accent-muted text-accent hover:bg-accent hover:text-base": !isActive(),
+                      "rainbow-pill": !isActive() && !!props.rainbow,
+                      "bg-accent-muted text-accent hover:bg-accent hover:text-base": !isActive() && !props.rainbow,
                     }}
                     title={`${tag.count} post${tag.count !== 1 ? "s" : ""}`}
                   >

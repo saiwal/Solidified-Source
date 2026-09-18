@@ -24,6 +24,7 @@ export type NotesResponse = {
 
 export type NoteFilters = {
   tag?: string;
+  cat?: string;
   dbegin?: string;
   dend?: string;
   search?: string;
@@ -36,6 +37,7 @@ export async function fetchNotes(
 ): Promise<NotesResponse> {
   const params = new URLSearchParams({ start: String(start), limit: String(limit) });
   if (filters.tag) params.set("tag", filters.tag);
+  if (filters.cat) params.set("cat", filters.cat);
   if (filters.dbegin) params.set("dbegin", filters.dbegin);
   if (filters.dend) params.set("dend", filters.dend);
   if (filters.search) params.set("search", filters.search);

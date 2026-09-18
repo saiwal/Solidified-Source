@@ -70,38 +70,24 @@ registerModule({
       helpTarget: "widgets.popular_cards",
     },
     {
+      // Style (list | cloud) and rainbow mode come from the widget config.
       id: "cards.categories",
       label: () => useI18n().t("widgets.card_categories"),
       loader: () => import("./widgets/CardCategoryWidget"),
-      slot: "right",
-      helpTarget: "widgets.categories_list",
-    },
-    {
-      // Opt-in alternate layout for cards.categories — picker only, no default placement
-      id: "cards.categories_cloud",
-      label: () => useI18n().t("widgets.category_cloud"),
-      loader: () => import("./widgets/CardCategoryCloudWidget"),
       slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["cards"],
-      helpTarget: "widgets.categories_cloud",
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/CategoryStyleConfig"),
+      helpTarget: "widgets.categories",
     },
     {
+      // Style (cloud | list) and rainbow mode come from the widget config.
       id: "cards.tags",
       label: () => useI18n().t("widgets.card_tags"),
       loader: () => import("./widgets/CardTagWidget"),
-      slot: "right",
-      helpTarget: "widgets.tags_cloud",
-    },
-    {
-      // Opt-in alternate layout for cards.tags — picker only, no default placement
-      id: "cards.tags_list",
-      label: () => useI18n().t("widgets.tag_list"),
-      loader: () => import("./widgets/CardTagListWidget"),
       slot: ["right", "footer"],
-      defaultModules: [],
-      contexts: ["cards"],
-      helpTarget: "widgets.tags_list",
+      defaultSlot: "right",
+      configComponent: () => import("@/shared/stream/components/TagStyleConfig"),
+      helpTarget: "widgets.tags",
     },
     {
       // Opt-in card showcase; place several, each configured with a card

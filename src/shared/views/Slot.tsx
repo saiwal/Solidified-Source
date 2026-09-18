@@ -241,7 +241,14 @@ const Slot: Component<SlotProps> = (props) => {
     const entries = [...currentEntries()];
     const e = entries[index];
     if (e === undefined) return;
-    entries[index] = { id: entryId(e), key: entryKey(e), config };
+    const span = entrySpan(e);
+    // Keep the width — saving config used to drop it.
+    entries[index] = {
+      id: entryId(e),
+      key: entryKey(e),
+      config,
+      ...(span !== undefined ? { span } : {}),
+    };
     void persist(entries);
     setConfigOpenKey(null);
   };

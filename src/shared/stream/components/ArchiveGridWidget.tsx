@@ -126,7 +126,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
   return (
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
       <div class="px-4 py-3 border-b border-rim">
-        <h3 class="text-sm font-semibold text-txt">{t("widgets.archive_grid")}</h3>
+        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.archive")}</h3>
       </div>
 
       <div class="px-3 pt-3">
