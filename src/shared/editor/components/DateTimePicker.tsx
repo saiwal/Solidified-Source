@@ -1,6 +1,7 @@
 import { createSignal, createMemo, For, Show, onCleanup, useContext, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 import { MdOutlineSchedule } from "solid-icons/md";
+import { createMediaQuery } from "@solid-primitives/media";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { ComposerMenuContext, composerTriggerClass } from "./buttons";
 
@@ -43,6 +44,7 @@ export default function DateTimePicker(props: Props) {
   const { t, locale } = useI18n();
   const inMenu = useContext(ComposerMenuContext);
   const [open, setOpen] = createSignal(false);
+  const coarse = createMediaQuery("(pointer: coarse)");
   const selected = createMemo(() => parseValue(props.value));
   const [viewMonth, setViewMonth] = createSignal(startOfMonth(selected() ?? new Date()));
   // Trigger rect at open time — the popup renders in a body Portal with fixed
@@ -190,7 +192,56 @@ export default function DateTimePicker(props: Props) {
         ? "bg-accent text-accent-fg"
         : "text-txt hover:bg-elevated cursor-pointer");
 
+  // ── Touch: hand the job to the OS ─────────────────────────────────────────
+  // iOS's wheel and Android's Material dialog beat anything hand-rolled on a
+  // phone, and take min + locale for free. Same "" | "YYYY-MM-DDTHH:mm" value
+  // contract, so it is a straight swap. The popup below stays for mouse, where
+  // Firefox's time half is type-only.
+  const nativeTrigger = () => (
+    <div class={inMenu ? "relative w-full" : "relative"}>
+      <span class={composerTriggerClass(!!props.value, inMenu)}>
+        <span class="shrink-0">{props.icon ?? <MdOutlineSchedule size={14} />}</span>
+        <Show
+          when={selected()}
+          fallback={
+            <span class={inMenu ? "" : "hidden sm:inline"}>{props.placeholder ?? props.title}</span>
+          }
+        >
+          <Show when={inMenu}>
+            <span>{props.title}</span>
+          </Show>
+          <span class={"tabular-nums" + (inMenu ? " ml-auto" : "")}>
+            {fmtTrigger().format(selected()!)}
+          </span>
+        </Show>
+      </span>
+      {/* Invisible native input laid over the chip: tapping it opens the OS
+          picker without showPicker(), which older Safari lacks. */}
+      <input
+        type="datetime-local"
+        aria-label={props.title}
+        value={props.value}
+        min={minDate() ? toValue(minDate()!) : undefined}
+        onInput={(e) => props.onChange(e.currentTarget.value)}
+        class="absolute inset-0 w-full h-full opacity-0"
+      />
+      {/* Clearing is the one thing the OS pickers don't reliably offer. */}
+      <Show when={props.value}>
+        <button
+          type="button"
+          title={t("editor.dtp_clear")}
+          onClick={() => props.onChange("")}
+          class="absolute right-1 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded
+                 text-muted hover:text-red-500 bg-surface"
+        >
+          ×
+        </button>
+      </Show>
+    </div>
+  );
+
   return (
+    <Show when={!coarse()} fallback={nativeTrigger()}>
     <div ref={rootRef} class={inMenu ? "relative w-full" : "relative"}>
       {/* Trigger */}
       <button
@@ -330,5 +381,6 @@ export default function DateTimePicker(props: Props) {
         </Portal>
       </Show>
     </div>
+    </Show>
   );
 }

@@ -39,6 +39,7 @@ import {
   MdOutlineDrag_indicator,
   MdFillGavel,
   MdFillStyle,
+  MdFillPoll,
 } from "solid-icons/md";
 
 
@@ -85,6 +86,7 @@ const ICON_MAP: Record<string, (size: number) => JSX.Element> = {
   tools: (s) => <MdFillHardware size={s} />,
 	games: (s) => <MdFillVideogame_asset size={s}/>,
   moderate: (s) => <MdFillGavel size={s} />,
+  poll: (s) => <MdFillPoll size={s} />,
 };
 
 export function getNavIcon(token?: string, size = 20): JSX.Element {

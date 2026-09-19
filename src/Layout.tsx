@@ -325,7 +325,7 @@ const Layout: ParentComponent = (props) => {
             id="main-content"
             ref={setMainRef}
             onScroll={onMainScroll}
-            class="flex-1 overflow-y-auto [scrollbar-gutter:stable] p-4 lg:p-6 pb-16 lg:pb-6 relative flex flex-col"
+            class="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] p-4 lg:p-6 pb-16 lg:pb-6 relative flex flex-col"
           >
             <div class="flex flex-col flex-1">
               <span class="sr-only" aria-live="polite" aria-atomic="true">

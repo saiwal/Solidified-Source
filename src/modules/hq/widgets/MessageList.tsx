@@ -414,7 +414,7 @@ const MessageItem: Component<{
                   checked={false}
                   aria-label={t("hq.select_message")}
                   onClick={(ev) => { ev.stopPropagation(); props.onToggleSelect?.(ev.shiftKey); }}
-                  class="absolute inset-0 w-7 h-7 opacity-0 group-hover:opacity-100 focus:opacity-100
+                  class="absolute inset-0 w-7 h-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100
                          rounded-full cursor-pointer accent-accent"
                 />
               </Show>

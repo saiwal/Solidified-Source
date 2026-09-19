@@ -434,7 +434,7 @@ const ThumbnailGrid: Component<{
               <div class={`absolute top-1.5 left-1.5 z-10 transition-opacity ${
                 isSelected() || props.selected.size > 0
                   ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+                  : "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100"
               }`}>
                 <SelectBox
                   checked={isSelected()}

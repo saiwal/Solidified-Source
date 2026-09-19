@@ -1,6 +1,7 @@
-import { createSignal, createEffect, onCleanup, Show } from "solid-js";
-import { BiRegularEraser } from "solid-icons/bi";
-import { MdOutlineOpen_in_full, MdOutlinePerson } from "solid-icons/md";
+import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
+import { MdOutlineOpen_in_full, MdOutlinePerson, MdOutlineCleaning_services } from "solid-icons/md";
+import { useQuickActions, type QuickAction } from "../quick-actions";
+import { getNavIcon } from "@/shared/views/NavItem";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
@@ -23,8 +24,8 @@ const DRAFT_KEY = "hz_hq_draft";
 const MIME = "text/bbcode";
 // Same surface and attachment pipeline as every other composer — this bar used
 // to hand-roll its own contenteditable, which is where its base64 image paste
-// and its dead link button came from. The "quick" toolbar level keeps that to
-// one row.
+// and its dead link button came from. The toolbar is off ("none"): the action
+// row below the surface is this bar's only chrome.
 const CAPS = CAPABILITIES.quick;
 
 export default function HqComposerSlot() {
@@ -40,6 +41,7 @@ function HqComposer() {
   const { t } = useI18n();
   const auth = useAuth();
   const viewer = useNavViewer();
+  const quickActions = useQuickActions();
   const [body, setBody] = createSignal("");
   const [aclMode, setAclMode] = createSignal<AclMode>("connections");
   const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set<string>());
@@ -97,6 +99,20 @@ function HqComposer() {
   onCleanup(() => window.removeEventListener("keydown", onKeyDown));
 
   let bodyEl: HTMLDivElement | undefined;
+  let rootEl: HTMLDivElement | undefined;
+
+  // Collapse on a click elsewhere on the page. The mention/emoji/ACL panels are
+  // Portal-mounted to document.body, i.e. outside #root, so restricting this to
+  // clicks inside #root leaves them working without listing them one by one.
+  function onDocPointerDown(e: PointerEvent) {
+    if (!expanded()) return;
+    const target = e.target as Node | null;
+    if (!target || !document.getElementById("root")?.contains(target)) return;
+    if (rootEl?.contains(target)) return;
+    setExpanded(false);
+  }
+  document.addEventListener("pointerdown", onDocPointerDown);
+  onCleanup(() => document.removeEventListener("pointerdown", onDocPointerDown));
 
   function expandAndFocus() {
     setExpanded(true);
@@ -215,6 +231,7 @@ function HqComposer() {
   // minimized and carried to another page. Read eagerly (not in a closure) so
   // it captures what the inline composer holds at click time.
   function openFullComposer() {
+    setExpanded(false);
     openComposer({
       kind: "post",
       scope: "post:new",
@@ -229,29 +246,42 @@ function HqComposer() {
     });
   }
 
+  // Same list as the quick-compose widget, plus a poll — which has no inline
+  // UI here, so it hands off to the full composer with the panel already open.
+  const actions = (): QuickAction[] => [
+    ...quickActions(),
+    {
+      key: "poll",
+      label: t("editor.poll_toggle"),
+      icon: "poll",
+      onClick: () => {
+        setExpanded(false);
+        openComposer({
+          kind: "post",
+          scope: "post:new",
+          title: t("editor.new_post"),
+          props: {
+            profileUid: auth()!.uid,
+            initialBody: body(),
+            initialPoll: true,
+            onPosted: () => resetComposer(),
+          },
+        });
+      },
+    },
+  ];
+
   return (
-    <div data-tour="hq.composer" class="bg-surface border border-rim rounded-2xl p-3.5 shadow-sm flex flex-col max-w-5xl mx-auto">
+    <div ref={rootEl} data-tour="hq.composer" class="bg-surface border border-rim rounded-2xl p-3.5 shadow-sm flex flex-col gap-3 max-w-5xl mx-auto">
 
-      {/* Header — hidden while compact */}
-      <Show when={expanded()}>
-        <div class="mb-2.5">
-          <span class="text-xs font-medium uppercase tracking-wider text-muted">
-            {t("hq.post_composer")}
-          </span>
-        </div>
-      </Show>
-
-      {/* Body area — single line when compact, grows to fill card height when expanded */}
-      <div
-        ref={wiring.wrapperRef}
-        class={"flex gap-2.5 " + (expanded() ? "flex-1 min-h-[84px] items-start" : "items-center")}
-      >
+      {/* Body area — two lines tall until the text outgrows them */}
+      <div ref={wiring.wrapperRef} class="flex gap-2.5 items-start">
         <Show when={auth()?.nick}>
           <Show
             when={viewer()?.avatar}
             fallback={
-              <div class="w-7 h-7 rounded-full bg-accent-muted text-accent flex items-center
-                          justify-center shrink-0 mt-0.5 select-none">
+              <div class="w-9 h-9 rounded-full bg-accent-muted text-accent flex items-center
+                          justify-center shrink-0 select-none">
                 <MdOutlinePerson class="w-4 h-4" />
               </div>
             }
@@ -259,7 +289,7 @@ function HqComposer() {
             <img
               src={viewer()!.avatar}
               alt={viewer()!.name}
-              class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 select-none"
+              class="w-9 h-9 rounded-full object-cover shrink-0 select-none"
               loading="lazy"
             />
           </Show>
@@ -272,7 +302,7 @@ function HqComposer() {
               type="button"
               data-tour="hq.composer.placeholder"
               onClick={expandAndFocus}
-              class="flex-1 text-left bg-transparent text-sm text-muted
+              class="flex-1 text-left bg-transparent text-base text-muted py-2
                      focus:outline-none truncate"
             >
               {t("editor.write_placeholder")}
@@ -291,39 +321,59 @@ function HqComposer() {
               onPasteFiles={(files) => attach.addUploads(files)}
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               placeholder={t("editor.write_placeholder")}
-              minHeight="60px"
+              minHeight="3.5rem"
               maxHeight="480px"
-              toolbarTrailing={
-                <>
-                  <button
-                    type="button"
-                    title={t("editor.clear_composer")}
-                    onClick={resetComposer}
-                    class="w-7 h-7 flex items-center justify-center rounded text-muted
-                           hover:bg-elevated hover:text-red-500 transition-colors"
-                  >
-                    <BiRegularEraser class="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title={t("editor.open_full_composer")}
-                    data-tour="hq.composer.full"
-                    onClick={openFullComposer}
-                    class="w-7 h-7 flex items-center justify-center rounded text-muted
-                           hover:bg-elevated hover:text-txt transition-colors"
-                  >
-                    <MdOutlineOpen_in_full class="w-3.5 h-3.5" />
-                  </button>
-                </>
-              }
             />
           </div>
         </Show>
       </div>
 
-      {/* ACL + submit row — clear and open-in-full ride the editor's own toolbar. */}
+      {/* Action row — the quick-compose actions, always visible */}
+      <div class="flex items-center gap-2 flex-wrap">
+        <For each={actions()}>
+          {(action) => (
+            <button
+              type="button"
+              data-tour={`hq.composer.${action.key}`}
+              onClick={action.onClick}
+              title={action.label}
+              aria-label={action.label}
+              class="flex h-9 w-9 items-center justify-center rounded-full text-accent
+                     hover:bg-elevated transition-colors"
+            >
+              {getNavIcon(action.icon, 17)}
+            </button>
+          )}
+        </For>
+
+        <div class="ml-auto flex items-center gap-1">
+          <Show when={expanded()}>
+            <button
+              type="button"
+              title={t("editor.clear_composer")}
+              onClick={resetComposer}
+              class="flex h-9 w-9 items-center justify-center rounded-full text-muted
+                     hover:bg-elevated hover:text-red-500 transition-colors"
+            >
+              <MdOutlineCleaning_services class="w-4 h-4" />
+            </button>
+          </Show>
+          <button
+            type="button"
+            title={t("editor.open_full_composer")}
+            data-tour="hq.composer.full"
+            onClick={openFullComposer}
+            class="flex h-9 w-9 items-center justify-center rounded-full text-muted
+                   hover:bg-elevated hover:text-txt transition-colors"
+          >
+            <MdOutlineOpen_in_full class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* ACL + submit row */}
       <Show when={expanded()}>
-        <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+        <div class="flex items-center gap-1 flex-wrap">
           <AclPicker
             dataTour="hq.composer.acl"
             mode={aclMode()}

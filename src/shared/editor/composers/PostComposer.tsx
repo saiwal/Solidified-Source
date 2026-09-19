@@ -82,6 +82,8 @@ export interface ComposerProps {
    *  allow/deny chip resolves to a name/photo immediately. */
   initialResolvedEntries?: AclEntry[];
   parentId?: number;
+  /** Open with the poll panel already on (the quick bar's poll button). */
+  initialPoll?: boolean;
   /** Hide the ACL picker and lock scope to "connections" (channel owner's default).
    *  Use when the poster is a visitor — they don't control the wall's privacy. */
   hideAcl?: boolean;
@@ -169,6 +171,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
 
   // ── Poll state ─────────────────────────────────────────────────────────────
   const poll = usePollState();
+  if (props.initialPoll) poll.setEnabled(true);
 
   // ── Sync ACL to attachment store ───────────────────────────────────────────
   createEffect(() => {

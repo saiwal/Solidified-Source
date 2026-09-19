@@ -216,7 +216,7 @@ export default function ChatRoomView() {
 	});
 
 	return (
-		<div class="flex flex-col h-[calc(100vh-8rem)] max-w-3xl mx-auto">
+		<div class="flex flex-col h-[calc(100dvh-8rem)] max-w-3xl mx-auto">
 			{/* Header */}
 			<div class="flex items-center gap-3 px-4 py-3 border-b border-rim bg-surface shrink-0">
 				<button

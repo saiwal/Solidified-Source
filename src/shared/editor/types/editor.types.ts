@@ -8,9 +8,11 @@ export type { MimeType };
 
 // "full": everything. "quick": inline marks + link + emoji, one row — for
 // compact bars that sit in a page rather than a modal. "comment": inline
-// marks only. ("minimal" used to sit between full and comment and was never
-// used by any composer; "quick" replaced it.)
-export type ToolbarLevel = "full" | "quick" | "comment";
+// marks only. "none": no toolbar row at all — for bars that spell their
+// actions out themselves (the HQ quick post composer). ("minimal" used to sit
+// between full and comment and was never used by any composer; "quick"
+// replaced it.)
+export type ToolbarLevel = "full" | "quick" | "comment" | "none";
 export type AttachmentsMode = "none" | "files" | "photos" | "both";
 // How the LaTeX toolbar button inserts an equation:
 // - "image": render to PNG, upload as a photo, insert a hosted [img] URL —
@@ -245,10 +247,10 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     nonBbcodeWysiwyg: true,
     bbcodeFallback: false,
   },
-  // HQ quick-post bar — a wall post, so same pipeline as `post`, but the
-  // toolbar has to stay one row tall in a page-level card.
+  // HQ quick-post bar — a wall post, so same pipeline as `post`, but with no
+  // toolbar at all: the bar renders its own action row beneath the surface.
   quick: {
-    toolbar: "quick",
+    toolbar: "none",
     title: false,
     summary: false,
     slug: false,

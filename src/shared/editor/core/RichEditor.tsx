@@ -110,6 +110,10 @@ export default function RichEditor(props: Props) {
     return `max(${ceiling}, ${minH()})`;
   };
   const surfaceGrowClass = () => (props.fill ? "flex-1 min-h-0" : "grow");
+  // No toolbar docked below means nothing to square the bottom corners against,
+  // and no chrome to sit apart from — the surface blends into its host card.
+  const surfaceSkin = () =>
+    props.capabilities.toolbar === "none" ? "rounded-lg" : "rounded-t-lg bg-elevated";
   const inShell = useContext(ZenHostContext);
   // Zen is a full-viewport writing mode driven by a single global signal
   // (zen.ts), so it cannot serve two docked composers at once — and it means
@@ -460,7 +464,7 @@ export default function RichEditor(props: Props) {
           onBlur={onEditorBlur}
           data-placeholder={props.placeholder ?? t("editor.write_placeholder")}
           style={{ "min-height": minH(), "max-height": maxH() }}
-          class={`${surfaceGrowClass()} overflow-y-auto rounded-t-lg p-3 outline-none text-sm text-txt bg-elevated
+          class={`${surfaceGrowClass()} overflow-y-auto ${surfaceSkin()} p-3 outline-none text-sm text-txt
                  ${POST_PROSE} prose-p:my-1
                  [&_img]:max-w-full [&_img]:h-auto
                  empty:before:content-[attr(data-placeholder)]
@@ -479,7 +483,7 @@ export default function RichEditor(props: Props) {
           onPaste={handlePaste}
           onDrop={handleDrop}
           style={{ "min-height": minH(), "max-height": maxH() }}
-          class={`${surfaceGrowClass()} overflow-y-auto rounded-t-lg w-full p-3 text-sm font-mono text-txt bg-elevated outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
+          class={`${surfaceGrowClass()} overflow-y-auto ${surfaceSkin()} w-full p-3 text-sm font-mono text-txt outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
           placeholder={
             mime() === "text/markdown"
               ? t("editor.markdown_source_placeholder")
@@ -499,6 +503,7 @@ export default function RichEditor(props: Props) {
       {/* ── Unified toolbar (wysiwyg + source tabs) — docked at the bottom
            of the surface so it stays visible while the surface above it
            scrolls internally past long content. ── */}
+      <Show when={props.capabilities.toolbar !== "none"}>
       <EditorToolbar
         level={props.capabilities.toolbar}
         latexMode={props.capabilities.latexMode}
@@ -512,6 +517,7 @@ export default function RichEditor(props: Props) {
         onSourceChange={(v) => { props.onInput(v); }}
         trailing={props.toolbarTrailing}
       />
+      </Show>
 
       {/* ── Image resize popup ───────────────────────────── */}
       <Show when={imgSel()}>
