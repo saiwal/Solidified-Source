@@ -1321,6 +1321,11 @@ export type RawDictionary = {
     comment_order_hint:      string;
     comment_order_oldest:    string;
     comment_order_newest:    string;
+    composer_mode:           string;
+    composer_mode_hint:      string;
+    composer_mode_modal:     string;
+    composer_mode_dock:      string;
+    composer_mode_page:      string;
     show_emoji_images:       string;
     show_emoji_images_hint:  string;
     bg_image_url:            string;

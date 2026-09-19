@@ -8,6 +8,7 @@ import { useListBehavior, setListBehavior, type ListBehavior } from "@utsukta/sp
 import { scrollStylePref, setScrollStyle, type ScrollStyle } from "@utsukta/spa-core/store/scroll-style";
 import { usePostHeight, setPostHeight } from "@utsukta/spa-core/store/post-height";
 import { useCommentOrder, setCommentOrder, type CommentOrder } from "@utsukta/spa-core/store/comment-order";
+import { defaultComposerMode, setDefaultComposerMode } from "@/shared/editor/store/composer-host";
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
 import { setEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
@@ -38,6 +39,7 @@ export default function DisplaySection() {
   const scrollStyle = scrollStylePref();
   const postHeight = usePostHeight();
   const commentOrder = useCommentOrder();
+  const composerMode = defaultComposerMode;
   const { customColors, updateCustomColors, switchTheme } = useTheme();
 
   const [previewSize, setPreviewSize] = createSignal<FontSize>("medium");
@@ -74,6 +76,7 @@ export default function DisplaySection() {
     if (d.scroll_style) setScrollStyle(d.scroll_style as ScrollStyle);
     if (d.post_height !== undefined) setPostHeight(Number(d.post_height));
     if (d.comment_order) setCommentOrder(d.comment_order as CommentOrder);
+    if (d.composer_mode) setDefaultComposerMode(d.composer_mode);
     if (d.thread_mode) setThreadMode(d.thread_mode === "threaded");
     if (d.corner_radius) {
       setCornerRadius(d.corner_radius as CornerRadius);
@@ -444,6 +447,25 @@ export default function DisplaySection() {
                   <span class="text-sm text-txt">
                     {mode === "oldest_first" ? t("settings.comment_order_oldest") : t("settings.comment_order_newest")}
                   </span>
+                </label>
+              ))}
+            </div>
+          </Field>
+
+          {/* Composer window */}
+          <Field label={t("settings.composer_mode")} hint={t("settings.composer_mode_hint")}>
+            <div class="flex flex-wrap gap-4">
+              {(["modal", "dock", "page"] as const).map((mode) => (
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="composer_mode"
+                    value={mode}
+                    checked={composerMode() === mode}
+                    onChange={() => setDefaultComposerMode(mode)}
+                    class="accent-accent cursor-pointer"
+                  />
+                  <span class="text-sm text-txt">{t(`settings.composer_mode_${mode}`)}</span>
                 </label>
               ))}
             </div>

@@ -9,12 +9,17 @@
  *
  * Pattern copied from `store/share.ts` + `views/ShareModalHost.tsx`.
  *
- * Imports only solid-js, deliberately: node can then run composer-host.test.ts
- * against the real module (a `@utsukta/spa-core/…` alias, or a relative import
- * without a `.ts` extension, would not resolve). That is also why resetting zen
- * lives in ComposerHost's frame wrapper rather than here.
+ * Imports stay node-resolvable, deliberately: node runs composer-host.test.ts
+ * against the real module, so nothing here may use the `@/` alias or a
+ * relative import without a `.ts` extension. `@utsukta/spa-core/*` is fine —
+ * node follows the workspace symlink and the package's exports map. That is
+ * also why resetting zen lives in ComposerHost's frame wrapper rather than
+ * here.
  */
 import { createContext, createSignal, type Accessor, type Setter } from "solid-js";
+// Package import, not the "@/" alias: node resolves it through the workspace
+// symlink + exports map, so composer-host.test.ts still runs.
+import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 
 /**
  * - `modal` — the centred dialog, unchanged from before this existed.
@@ -25,6 +30,15 @@ import { createContext, createSignal, type Accessor, type Setter } from "solid-j
  *             in-flight uploads survive.
  */
 export type ComposerMode = "modal" | "dock" | "page" | "min";
+
+/**
+ * Which mode a composer opens in when the opener doesn't name one (none do).
+ * User preference, Settings → Display; "min" is not offerable — a composer that
+ * opened as a pill would look like nothing happened.
+ */
+export const [defaultComposerMode, setDefaultComposerMode] = persistedSignal<
+  Exclude<ComposerMode, "min">
+>("hz-composer-mode", "modal", oneOf("modal", "dock", "page"));
 
 export const isExpanded = (m: ComposerMode) => m !== "min";
 
@@ -158,12 +172,14 @@ export function openComposer(spec: OpenComposerSpec): string {
     setComposerMode(
       existing.id,
       spec.mode ??
-        (isExpanded(existing.mode()) ? existing.mode() : (existing.restoreTo ?? "modal")),
+        (isExpanded(existing.mode())
+          ? existing.mode()
+          : (existing.restoreTo ?? defaultComposerMode())),
     );
     return existing.id;
   }
 
-  const [mode, setMode] = createSignal<ComposerMode>(spec.mode ?? "modal");
+  const [mode, setMode] = createSignal<ComposerMode>(spec.mode ?? defaultComposerMode());
   const [docTitle, setDocTitle] = createSignal("");
   const entry: ComposerEntry = {
     id: `composer-${++seq}`,
@@ -205,7 +221,7 @@ export function setComposerMode(id: string, mode: ComposerMode): void {
 /** Restore a minimized composer to whatever it was before. */
 export function restoreComposer(id: string): void {
   const entry = entries().find((e) => e.id === id);
-  setComposerMode(id, entry?.restoreTo ?? "modal");
+  setComposerMode(id, entry?.restoreTo ?? defaultComposerMode());
 }
 
 export function closeComposer(id: string): void {
