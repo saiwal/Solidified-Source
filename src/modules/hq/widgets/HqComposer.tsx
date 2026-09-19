@@ -1,5 +1,6 @@
 import { createSignal, createEffect, onCleanup, Show } from "solid-js";
-import { MdOutlinePerson, MdOutlineClose } from "solid-icons/md";
+import { BiRegularEraser } from "solid-icons/bi";
+import { MdOutlineOpen_in_full, MdOutlinePerson } from "solid-icons/md";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
@@ -292,42 +293,36 @@ function HqComposer() {
               placeholder={t("editor.write_placeholder")}
               minHeight="60px"
               maxHeight="480px"
+              toolbarTrailing={
+                <>
+                  <button
+                    type="button"
+                    title={t("editor.clear_composer")}
+                    onClick={resetComposer}
+                    class="w-7 h-7 flex items-center justify-center rounded text-muted
+                           hover:bg-elevated hover:text-red-500 transition-colors"
+                  >
+                    <BiRegularEraser class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title={t("editor.open_full_composer")}
+                    data-tour="hq.composer.full"
+                    onClick={openFullComposer}
+                    class="w-7 h-7 flex items-center justify-center rounded text-muted
+                           hover:bg-elevated hover:text-txt transition-colors"
+                  >
+                    <MdOutlineOpen_in_full class="w-3.5 h-3.5" />
+                  </button>
+                </>
+              }
             />
           </div>
         </Show>
       </div>
 
-      {/* Toolbar row */}
+      {/* ACL + submit row — clear and open-in-full ride the editor's own toolbar. */}
       <Show when={expanded()}>
-        <div class="flex items-center gap-0.5 mt-1.5 pt-1.5 border-t border-rim">
-          {/* Reset */}
-          <button
-            type="button"
-            title={t("editor.clear_composer")}
-            onClick={resetComposer}
-            class="ml-auto w-7 h-7 flex items-center justify-center rounded text-muted
-                   hover:bg-elevated hover:text-red-500 transition-colors"
-          >
-            <MdOutlineClose class="w-3.5 h-3.5" />
-          </button>
-
-          {/* Open full composer */}
-          <button
-            type="button"
-            title={t("editor.open_full_composer")}
-            data-tour="hq.composer.full"
-            onClick={openFullComposer}
-            class="w-7 h-7 flex items-center justify-center rounded text-muted
-                   hover:bg-elevated hover:text-txt transition-colors"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-            </svg>
-          </button>
-        </div>
-
-        {/* ACL + submit row */}
         <div class="flex items-center gap-1 mt-1.5 flex-wrap">
           <AclPicker
             dataTour="hq.composer.acl"

@@ -37,7 +37,7 @@ import {
 	removeChatBookmark,
 } from "../bookmarks";
 import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
-import { MdFillArrow_back, MdFillPeople, MdFillChat, MdFillLock, MdFillLock_open, MdOutlineTimer } from "solid-icons/md";
+import { MdFillArrow_back, MdFillChat, MdFillLock, MdFillLock_open, MdFillPeople, MdOutlineBookmark_border, MdOutlineTimer } from "solid-icons/md";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import ChatComposer from "../ChatComposer";
 import DOMPurify from "dompurify";
@@ -290,13 +290,7 @@ export default function ChatRoomView() {
 							"text-muted hover:text-txt": !isBookmarked(),
 						}}
 					>
-						<svg class="w-4 h-4" viewBox="0 0 24 24"
-							fill={isBookmarked() ? "currentColor" : "none"}
-							stroke="currentColor" stroke-width="2"
-						>
-							<path stroke-linecap="round" stroke-linejoin="round"
-								d="M5 3a2 2 0 00-2 2v16l7-3 7 3V5a2 2 0 00-2-2H5z" />
-						</svg>
+						<MdOutlineBookmark_border class="w-4 h-4" />
 					</button>
 				</Show>
 				<button

@@ -26,6 +26,7 @@ import {
   type ComposerKind,
 } from "../store/composer-host";
 import { ComposerKindIcon } from "./ComposerModal";
+import { MdOutlineClose } from "solid-icons/md";
 
 
 const PostComposer = lazy(() => import("../composers/PostComposer"));
@@ -199,9 +200,7 @@ export default function ComposerHost(props: {
                     title={t("editor.close_esc")}
                     onClick={() => closeComposer(entry.id)}
                   >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
+                    <MdOutlineClose class="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}

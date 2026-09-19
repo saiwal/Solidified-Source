@@ -10,6 +10,7 @@ import { fetchGroups } from "@/modules/directory/groups/api";
 import { toggleMember } from "@/modules/directory/groups/api";
 import { fetchProfiles } from "@/modules/profiles/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineCheck, MdOutlineClose, MdOutlineRefresh } from "solid-icons/md";
 
 interface Props {
   connection: Connection;
@@ -23,15 +24,11 @@ interface Props {
 type Tab = "settings" | "perms" | "filters";
 
 const CheckIcon = () => (
-  <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-  </svg>
+  <MdOutlineCheck class="w-3.5 h-3.5 text-emerald-400 shrink-0" />
 );
 
 const CrossIcon = () => (
-  <svg class="w-3.5 h-3.5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-  </svg>
+  <MdOutlineClose class="w-3.5 h-3.5 text-red-400 shrink-0" />
 );
 
 function FlagToggle(p: { label: string; active: boolean; onChange: (v: boolean) => void }) {
@@ -238,9 +235,7 @@ export default function ConnectionEditorModal(props: Props) {
               class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
               aria-label={t("connection.close")}
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <MdOutlineClose class="w-4 h-4" />
             </button>
           </div>
 
@@ -553,13 +548,7 @@ export default function ConnectionEditorModal(props: Props) {
                        border-rim text-muted hover:border-accent hover:text-accent transition-colors
                        disabled:opacity-50 disabled:cursor-default"
               >
-                <svg
-                  class={`w-3.5 h-3.5 ${refreshing() ? "animate-spin" : ""}`}
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <MdOutlineRefresh class={`w-3.5 h-3.5 ${refreshing() ? "animate-spin" : ""}`} />
                 {refreshing() ? t("connection.refreshing") : t("connection.refresh_perms")}
               </button>
               <Show when={refreshFailed()}>

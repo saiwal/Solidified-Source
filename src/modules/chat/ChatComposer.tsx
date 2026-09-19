@@ -24,14 +24,7 @@ import { sendChatMessage, roomName, roomAcl } from "./store";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { uploadChatMedia } from "./chatAttach";
 import { htmlToSource } from "@/shared/editor/core/htmlToSource";
-import {
-  MdFillSend,
-  MdOutlineEmoji_emotions,
-  MdOutlineImage,
-  MdOutlineVideocam,
-  MdOutlineMic,
-  MdOutlineCamera_alt,
-} from "solid-icons/md";
+import { MdFillSend, MdOutlineCamera_alt, MdOutlineEmoji_emotions, MdOutlineImage, MdOutlineLock, MdOutlineMic, MdOutlineVideocam } from "solid-icons/md";
 
 const CameraCapture = lazy(() => import("@/shared/editor/attachments/CameraCapture"));
 
@@ -292,10 +285,7 @@ export default function ChatComposer(props: Props) {
                 onClick={() => setSessionSetupOpen((o) => !o)}
                 disabled={false}
               >
-                <svg class="w-[1.125rem] h-[1.125rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                </svg>
+                <MdOutlineLock class="w-[1.125rem] h-[1.125rem]" />
               </MediaBtn>
             </Show>
           </Show>

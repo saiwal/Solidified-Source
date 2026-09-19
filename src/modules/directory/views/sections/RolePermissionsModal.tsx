@@ -3,6 +3,7 @@ import { Portal } from "solid-js/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPermcatDetail, updatePermcatPerms } from "../../connections/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineClose } from "solid-icons/md";
 
 interface Props {
   name: string;
@@ -80,9 +81,7 @@ export default function RolePermissionsModal(props: Props) {
               class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
               aria-label={t("directory.cancel")}
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <MdOutlineClose class="w-4 h-4" />
             </button>
           </div>
 

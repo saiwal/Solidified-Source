@@ -21,7 +21,7 @@ import { useConnectionSearch } from "./useConnectionSearch";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { motion } from "solid-motionone";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlinePublic, MdFillLock, MdOutlineTune, MdFillCheck, MdOutlineGroup, MdOutlinePerson, MdFillPerson } from "solid-icons/md";
+import { MdFillCheck, MdFillLock, MdFillPerson, MdOutlineExpand_more, MdOutlineGroup, MdOutlinePerson, MdOutlinePublic, MdOutlineTune } from "solid-icons/md";
 void motion;
 
 import { entryKey, type AclMode } from "./acl-mode";
@@ -191,12 +191,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
         <Show when={props.mode === "custom" && totalSelected() > 0}>
           <span class="tabular-nums sm:hidden">{totalSelected()}</span>
         </Show>
-        <svg
-          class={`w-3 h-3 transition-transform ${open() ? "rotate-180" : "rotate-0"}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        <MdOutlineExpand_more class={`w-3 h-3 transition-transform ${open() ? "rotate-180" : "rotate-0"}`} />
       </button>
 
       {/* Dropdown — Portal to escape the host modal's stacking context. The

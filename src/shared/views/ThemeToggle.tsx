@@ -6,6 +6,7 @@ import { BiRegularPalette } from "solid-icons/bi";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { Motion, Presence, scalePreset } from "@utsukta/spa-core/lib/motion-presets";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineCheck } from "solid-icons/md";
 
 const ThemeToggle = () => {
   const { t } = useI18n();
@@ -70,9 +71,7 @@ const ThemeToggle = () => {
                       <div class="flex items-center justify-between">
                         <span class="text-xs text-txt truncate">{t.label}</span>
                         <Show when={active()}>
-                          <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                          </svg>
+                          <MdOutlineCheck class="w-3.5 h-3.5 text-accent" />
                         </Show>
                       </div>
                     </button>
@@ -101,9 +100,7 @@ const ThemeToggle = () => {
                   <span class="text-xs text-txt">{t("ui.custom")}</span>
                   <div class="flex items-center gap-1.5">
                     <Show when={isCustom()}>
-                      <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <MdOutlineCheck class="w-3.5 h-3.5 text-accent" />
                     </Show>
                     <span class="text-xs text-muted">{t("ui.display_settings")}</span>
                   </div>

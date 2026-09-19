@@ -2,15 +2,14 @@ import { For, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import { toasts, dismiss, type Toast, type ToastType } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineCheck, MdOutlineClose } from "solid-icons/md";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function ToastIcon(props: { type: ToastType }) {
   if (props.type === "success") {
     return (
-      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-      </svg>
+      <MdOutlineCheck class="w-4 h-4 shrink-0" />
     );
   }
   if (props.type === "warning") {
@@ -105,9 +104,7 @@ function ToastItem(props: { toast: Toast }) {
         class="mt-2.5 mr-2.5 shrink-0 p-0.5 rounded text-muted hover:text-txt
                hover:bg-elevated transition-colors"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <MdOutlineClose class="w-3.5 h-3.5" />
       </button>
     </div>
   );

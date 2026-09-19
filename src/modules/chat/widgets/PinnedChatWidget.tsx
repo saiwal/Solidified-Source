@@ -3,7 +3,7 @@ import {
   For, Show, createSignal, createEffect, on, onCleanup,
 } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { MdFillLock, MdFillLock_open } from "solid-icons/md";
+import { MdFillLock, MdFillLock_open, MdOutlineChevron_right, MdOutlineClose, MdOutlineOpen_in_new, MdOutlineSend } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMessages, sendMessage } from "../api";
 import type { ChatMessage } from "../api";
@@ -85,13 +85,7 @@ function PinnedRoomPanel(props: { room: PinnedRoom; onUnpin: () => void }) {
           class="flex-1 flex items-center gap-2 text-left min-w-0"
           onClick={() => setOpen((v) => !v)}
         >
-          <svg
-            class="w-3 h-3 text-muted shrink-0 transition-transform"
-            classList={{ "rotate-90": open() }}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
+          <MdOutlineChevron_right class="w-3 h-3 text-muted shrink-0 transition-transform" classList={{ "rotate-90": open() }} />
 
           <span class="text-xs font-medium text-txt truncate">{props.room.name}</span>
 
@@ -111,10 +105,7 @@ function PinnedRoomPanel(props: { room: PinnedRoom; onUnpin: () => void }) {
           title="Open chatroom"
           class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-accent transition-all shrink-0"
         >
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+          <MdOutlineOpen_in_new class="w-3 h-3" />
         </button>
 
         <button
@@ -122,10 +113,7 @@ function PinnedRoomPanel(props: { room: PinnedRoom; onUnpin: () => void }) {
           title={t("chat.unpin") as string}
           class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-red-500 transition-all shrink-0"
         >
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <MdOutlineClose class="w-3 h-3" />
         </button>
       </div>
 
@@ -176,10 +164,7 @@ function PinnedRoomPanel(props: { room: PinnedRoom; onUnpin: () => void }) {
                 disabled={!text().trim() || sending()}
                 class="px-2 py-1 bg-accent text-accent-fg text-xs rounded-lg disabled:opacity-40 transition-opacity shrink-0"
               >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
+                <MdOutlineSend class="w-3.5 h-3.5" />
               </button>
             </div>
           </Show>

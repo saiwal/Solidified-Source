@@ -12,7 +12,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
-import { MdFillPush_pin } from "solid-icons/md";
+import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
 import { BiRegularRss } from "solid-icons/bi";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
 
@@ -53,9 +53,7 @@ function Byline(props: { post: ThreadNode; onOpen: () => void; handlers: StreamH
             class="flex items-center gap-1 transition-colors"
             classList={{ "text-accent": props.post.viewerLiked, "hover:text-accent": !props.post.viewerLiked }}
           >
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill={props.post.viewerLiked ? "currentColor" : "none"} stroke="currentColor" stroke-width="2">
-              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
+            <MdOutlineFavorite_border class="w-3 h-3" />
             <Show when={props.post.likeCount > 0}>{props.post.likeCount}</Show>
           </button>
         </Show>

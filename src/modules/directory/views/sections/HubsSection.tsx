@@ -2,6 +2,7 @@ import { For, Show, createSignal, createMemo } from 'solid-js';
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPubsites, type PubSite } from '../../hubs/api';
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineOpen_in_new } from "solid-icons/md";
 
 const ACCESS_STYLES: Record<string, string> = {
   free:   'bg-accent-muted text-accent',
@@ -85,12 +86,8 @@ function HubCard(props: { site: PubSite }) {
             <span class="ml-1 font-mono">{version()}</span>
           </Show>
         </span>
-        <svg class="w-3.5 h-3.5 text-muted group-hover:text-accent
-                    group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
+        <MdOutlineOpen_in_new class="w-3.5 h-3.5 text-muted group-hover:text-accent
+                    group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
       </div>
     </a>
   );

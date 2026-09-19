@@ -2,6 +2,7 @@ import { useI18n, LOCALES, type Locale } from "@utsukta/spa-core/i18n/index";
 import { For, Show } from "solid-js";
 import { Motion, Presence, scalePreset } from "@utsukta/spa-core/lib/motion-presets";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
+import { MdOutlineCheck } from "solid-icons/md";
 
 const LanguageSwitcher = () => {
   const { t, locale, setLocale } = useI18n();
@@ -49,9 +50,7 @@ const LanguageSwitcher = () => {
                     <span class="text-xs font-semibold uppercase tracking-wide w-6 shrink-0">{l.value}</span>
                     <span>{l.label}</span>
                     <Show when={locale() === l.value}>
-                      <svg class="w-3.5 h-3.5 ml-auto shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <MdOutlineCheck class="w-3.5 h-3.5 ml-auto shrink-0" />
                     </Show>
                   </button>
                 )}

@@ -2,7 +2,7 @@ import { createSignal, createEffect, on, For, Show, onMount } from "solid-js";
 import { storageSet } from "@utsukta/spa-core/lib/storage";
 import type { SavedDraft } from "../store/createComposerStore";
 import { listServerDrafts, deleteServerDraft, draftsVersion } from "../api/drafts";
-import { MdFillDelete } from "solid-icons/md";
+import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
 
 // Shared list UI behind the per-module drafts widgets (articles, webpages,
 // wiki, …) — one card with header/skeleton/empty-state/list chrome, fetching
@@ -108,12 +108,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
       {/* Header */}
       <div class="px-4 pt-3.5 pb-3 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M15 3v5H9V3m0 14h6" />
-          </svg>
+          <MdOutlineDescription class="w-4 h-4 text-muted" />
           <h3 class="text-sm font-semibold text-txt">{props.title}</h3>
         </div>
         <div class="flex items-center gap-2">
@@ -128,12 +123,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
             disabled={loading()}
             class="p-0.5 rounded text-muted hover:text-txt transition-colors disabled:opacity-40"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              classList={{ "animate-spin": loading() }}>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003
-                   8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
           </button>
         </div>
       </div>
@@ -146,12 +136,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
       {/* Empty state */}
       <Show when={!loading() && entries().length === 0}>
         <div class="px-4 py-6 flex flex-col items-center gap-2 text-muted">
-          <svg class="w-8 h-8 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M15 3v5H9V3m0 14h6" />
-          </svg>
+          <MdOutlineDescription class="w-8 h-8 opacity-30" />
           <span class="text-xs">{props.emptyText}</span>
         </div>
       </Show>
@@ -202,11 +187,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
                         <Show
                           when={!isDeleting()}
                           fallback={
-                            <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0
-                                   0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
+                            <MdOutlineRefresh class="w-3 h-3 animate-spin" />
                           }
                         >
                           <MdFillDelete size={12} />

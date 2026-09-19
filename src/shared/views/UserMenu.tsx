@@ -3,6 +3,7 @@ import { Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import NavItem from "./NavItem";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
+import { MdOutlineExpand_more } from "solid-icons/md";
 void helpable;
 
 interface NavUtilitiesProps {
@@ -50,15 +51,8 @@ const Usermenu = (props: NavUtilitiesProps) => {
             <span class="flex-1 text-sm font-medium text-txt truncate text-left">
               {props.viewer!.name}
             </span>
-            <svg
-              class={`w-3.5 h-3.5 shrink-0 text-muted transition-transform duration-200 ease-out
-                      ${props.actionsOpen ? "rotate-180" : "rotate-0"}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
+            <MdOutlineExpand_more class={`w-3.5 h-3.5 shrink-0 text-muted transition-transform duration-200 ease-out
+                      ${props.actionsOpen ? "rotate-180" : "rotate-0"}`} />
           </button>
         </div>
       </Show>

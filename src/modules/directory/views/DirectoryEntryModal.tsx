@@ -5,7 +5,7 @@ import { chanviewHref, type DirectoryEntry } from "../people/api";
 import { connectToChannel } from "../connections/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillCheck } from "solid-icons/md";
+import { MdFillCheck, MdOutlineBlock, MdOutlineClose } from "solid-icons/md";
 
 interface Props {
   entry: DirectoryEntry | null;
@@ -99,9 +99,7 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                     class="shrink-0 p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors"
                     aria-label={t("directory.close")}
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
+                    <MdOutlineClose class="w-4 h-4" />
                   </button>
                 </div>
 
@@ -229,10 +227,7 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                   title={t("directory.ignore")}
                   class="p-2 rounded-lg border border-rim text-muted hover:text-txt hover:bg-overlay transition-colors"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                  </svg>
+                  <MdOutlineBlock class="w-4 h-4" />
                 </a>
               </Show>
               <Show when={connectError()}>

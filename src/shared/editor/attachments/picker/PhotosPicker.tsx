@@ -8,6 +8,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchAlbums, fetchPhotoAlbum } from "@/modules/photos/api/api";
 import type { Photo, Album } from "@/modules/photos/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineCheck, MdOutlineImage, MdOutlineSentiment_dissatisfied } from "solid-icons/md";
 
 interface Props {
   nick: string;
@@ -128,9 +129,7 @@ const PhotosPicker: Component<Props> = (props) => {
                         <Show when={isSelected()}>
                           <div class="absolute inset-0 bg-accent/20 flex items-center justify-center">
                             <div class="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
-                              <svg class="w-3.5 h-3.5 text-accent-fg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                              </svg>
+                              <MdOutlineCheck class="w-3.5 h-3.5 text-accent-fg" />
                             </div>
                           </div>
                         </Show>
@@ -166,10 +165,7 @@ function GridSkeleton(props: { count: number }) {
 function AlbumPlaceholder() {
   return (
     <div class="w-full h-full flex items-center justify-center bg-elevated">
-      <svg class="w-8 h-8 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
+      <MdOutlineImage class="w-8 h-8 text-muted" />
     </div>
   );
 }
@@ -177,10 +173,7 @@ function AlbumPlaceholder() {
 function EmptyState(props: { label: string }) {
   return (
     <div class="flex flex-col items-center justify-center py-12 text-muted">
-      <svg class="w-10 h-10 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
+      <MdOutlineSentiment_dissatisfied class="w-10 h-10 mb-2 opacity-40" />
       <p class="text-sm">{props.label}</p>
     </div>
   );

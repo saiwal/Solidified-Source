@@ -2,6 +2,7 @@ import { createSignal, onCleanup, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import type { Attachment } from "./types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineArticle, MdOutlineClose, MdOutlineWarning_amber } from "solid-icons/md";
 
 interface Props {
   attachment: Attachment;
@@ -93,10 +94,7 @@ const AttachmentPreview: Component<Props> = (props) => {
         {/* Error overlay */}
         <Show when={isError()}>
           <div class="absolute inset-0 flex items-center justify-center rounded-lg bg-red-900/40">
-            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            </svg>
+            <MdOutlineWarning_amber class="w-5 h-5 text-red-400" />
           </div>
         </Show>
       </div>
@@ -144,9 +142,7 @@ const AttachmentPreview: Component<Props> = (props) => {
                flex items-center justify-center text-muted hover:text-red-400 hover:border-red-400
                transition-colors shadow-sm"
       >
-        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <MdOutlineClose class="w-2.5 h-2.5" />
       </button>
 
       {/* Alt text popover */}
@@ -164,9 +160,7 @@ const AttachmentPreview: Component<Props> = (props) => {
                 onClick={() => setAltOpen(false)}
                 class="p-0.5 rounded text-muted hover:text-txt transition-colors"
               >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <MdOutlineClose class="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -210,10 +204,7 @@ function FileIcon(props: { filename: string }) {
 
   return (
     <div class={`flex flex-col items-center gap-0.5 ${color()}`}>
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
+      <MdOutlineArticle class="w-8 h-8" />
       <span class="text-[0.5625rem] font-mono uppercase">{ext()}</span>
     </div>
   );

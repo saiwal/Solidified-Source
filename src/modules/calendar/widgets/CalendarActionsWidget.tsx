@@ -5,6 +5,7 @@ import EventCreatorModal from "./EventCreatorModal";
 import { importCalendar } from "../api";
 import { nick as calNick, range as calRange, loadCalendar, monthRange } from "../store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
+import { MdOutlineAdd, MdOutlineCalendar_today, MdOutlineFile_download, MdOutlineFile_upload } from "solid-icons/md";
 
 export default function CalendarActionsWidget() {
   const { t } = useI18n();
@@ -73,10 +74,7 @@ export default function CalendarActionsWidget() {
       <div class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden">
         {/* Header */}
         <div class="px-4 pt-3.5 pb-3 shrink-0 flex items-center gap-2">
-          <svg class="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
+          <MdOutlineCalendar_today class="w-4 h-4 text-muted shrink-0" />
           <h3 class="text-sm font-semibold text-txt">{t("calendar.calendar_actions")}</h3>
         </div>
 
@@ -88,9 +86,7 @@ export default function CalendarActionsWidget() {
             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                    bg-accent text-accent-fg hover:opacity-90 transition-opacity"
           >
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-            </svg>
+            <MdOutlineAdd class="w-4 h-4 shrink-0" />
             {t("calendar.new_event")}
           </button>
 
@@ -101,10 +97,7 @@ export default function CalendarActionsWidget() {
             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                    border border-rim text-txt hover:bg-elevated transition-colors"
           >
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <MdOutlineFile_download class="w-4 h-4 shrink-0" />
             {t("calendar.export_ical")}
           </button>
 
@@ -114,10 +107,7 @@ export default function CalendarActionsWidget() {
                    border border-rim text-txt hover:bg-elevated transition-colors cursor-pointer
                    ${importing() ? "opacity-60 pointer-events-none" : ""}`}
           >
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
-            </svg>
+            <MdOutlineFile_upload class="w-4 h-4 shrink-0" />
             {importing() ? t("calendar.importing") : t("calendar.import_ical")}
             <input
               type="file"

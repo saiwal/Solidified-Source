@@ -9,6 +9,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { listFolderMeta } from "@/modules/files/api";
 import type { FileMeta } from "@/modules/files/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineArticle, MdOutlineCheck, MdOutlineChevron_right } from "solid-icons/md";
 
 export type FilesPickerAccept = "files" | "photos" | "both";
 
@@ -137,10 +138,7 @@ const FilesPicker: Component<Props> = (props) => {
                       <span class="flex-1 min-w-0">
                         <span class="text-sm text-txt truncate block">{item.filename}</span>
                       </span>
-                      <svg class="w-4 h-4 text-muted group-hover:text-txt transition-colors shrink-0"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                      </svg>
+                      <MdOutlineChevron_right class="w-4 h-4 text-muted group-hover:text-txt transition-colors shrink-0" />
                     </button>
                   );
                 }
@@ -167,9 +165,7 @@ const FilesPicker: Component<Props> = (props) => {
                     </span>
                     <Show when={selected()}>
                       <div class="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
-                        <svg class="w-3 h-3 text-accent-fg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                        </svg>
+                        <MdOutlineCheck class="w-3 h-3 text-accent-fg" />
                       </div>
                     </Show>
                   </button>
@@ -216,10 +212,7 @@ function FileTypeIcon(props: { filetype: string; filename: string; isPhoto: bool
   const ext = () => props.filename.split(".").pop()?.toUpperCase().slice(0, 4) ?? "";
   return (
     <div class={`w-8 h-8 shrink-0 flex flex-col items-center justify-center ${color()}`}>
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
+      <MdOutlineArticle class="w-6 h-6" />
       <span class="text-[0.5rem] font-mono leading-none -mt-1">{ext()}</span>
     </div>
   );

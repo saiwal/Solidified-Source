@@ -2,8 +2,7 @@ import { createEffect, createResource, createSignal, For, lazy, onCleanup, Show,
 import { Portal } from "solid-js/web";
 import { marked } from "marked";
 import ePub, { type Rendition } from "epubjs";
-import { MdFillOpen_in_full, MdFillClose_fullscreen, MdOutlineEdit } from "solid-icons/md";
-import { HiOutlineChevronLeft, HiOutlineChevronRight } from "solid-icons/hi";
+import { MdFillClose_fullscreen, MdFillOpen_in_full, MdOutlineChevron_left, MdOutlineChevron_right, MdOutlineEdit } from "solid-icons/md";
 import { classifyPreview, TEXT_PREVIEW_MAX_BYTES } from "@utsukta/spa-core/lib/filePreview";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -282,7 +281,7 @@ const FilePreviewModal: Component<Props> = (props) => {
                       title="Previous page"
                       class="shrink-0 text-muted hover:text-txt"
                     >
-                      <HiOutlineChevronLeft size={24} />
+                      <MdOutlineChevron_left size={24} />
                     </button>
                     <div ref={epubContainer} class="flex-1 h-full rounded-lg border border-rim" />
                     <button
@@ -290,7 +289,7 @@ const FilePreviewModal: Component<Props> = (props) => {
                       title="Next page"
                       class="shrink-0 text-muted hover:text-txt"
                     >
-                      <HiOutlineChevronRight size={24} />
+                      <MdOutlineChevron_right size={24} />
                     </button>
                   </div>
                 </Show>
@@ -394,9 +393,7 @@ const FilePreviewModal: Component<Props> = (props) => {
                 onClick={() => setEditingVideo(null)}
                 class="flex items-center gap-1.5 text-sm text-muted hover:text-txt transition-colors"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
+                <MdOutlineChevron_left class="w-4 h-4" />
                 Back
               </button>
             </div>

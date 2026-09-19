@@ -1,6 +1,7 @@
 import { Index, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { PollState } from "./usePollState";
+import { MdOutlineClose } from "solid-icons/md";
 
 export interface PollPanelProps {
   poll: PollState;
@@ -34,9 +35,7 @@ const PollPanel: Component<PollPanelProps> = (props) => {
                 title={t("editor.poll_remove_answer")}
                 class="p-1 rounded text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
               >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <MdOutlineClose class="w-3.5 h-3.5" />
               </button>
             </Show>
           </div>

@@ -8,7 +8,7 @@ import { excerptOf, firstImageSrc } from "./postExcerpt";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
-import { MdFillPush_pin } from "solid-icons/md";
+import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
 
 type Entry =
   | { kind: "day"; key: string; label: string }
@@ -101,9 +101,7 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
               class="flex items-center gap-1.5 text-sm transition-colors"
               classList={{ "text-accent": p.viewerLiked, "text-muted hover:text-accent": !p.viewerLiked }}
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill={p.viewerLiked ? "currentColor" : "none"} stroke="currentColor" stroke-width="2">
-                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
+              <MdOutlineFavorite_border class="w-4 h-4" />
               {p.likeCount || ""}
             </button>
           </Show>

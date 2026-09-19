@@ -8,6 +8,7 @@ import { Portal } from "solid-js/web";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import SharedImageEditor from "@/shared/views/ImageEditor";
 import { VideoEditor } from "@/modules/tools/components/VideoEditor";
+import { MdOutlineChevron_left, MdOutlineClose, MdOutlineRefresh, MdOutlineVideocam } from "solid-icons/md";
 
 type Mode  = "photo" | "video" | "audio";
 type Stage = "initializing" | "streaming" | "captured" | "editing" | "editing-video" | "error";
@@ -267,9 +268,7 @@ const CameraCapture: Component<Props> = (props) => {
                 onClick={() => setStage("captured")}
                 class="flex items-center gap-1.5 text-sm text-muted hover:text-txt transition-colors"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
+                <MdOutlineChevron_left class="w-4 h-4" />
                 Back
               </button>
               <span class="text-sm font-semibold text-txt">{String(t("editor.cam_edit"))}</span>
@@ -302,9 +301,7 @@ const CameraCapture: Component<Props> = (props) => {
                   aria-label={String(t("editor.cancel_btn"))}
                   class="p-1 rounded-lg text-muted hover:text-txt hover:bg-elevated transition-colors"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12" />
-                  </svg>
+                  <MdOutlineClose class="w-4 h-4" />
                 </button>
               </div>
 
@@ -409,10 +406,7 @@ const CameraCapture: Component<Props> = (props) => {
                 {/* Error overlay */}
                 <Show when={stage() === "error"}>
                   <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center">
-                    <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                    </svg>
+                    <MdOutlineVideocam class="w-10 h-10 text-red-400" />
                     <p class="text-sm text-white/80">{String(t("editor.cam_error_access"))}</p>
                     <Show when={errorMsg()}>
                       <p class="text-xs text-white/50">{errorMsg()}</p>
@@ -462,10 +456,7 @@ const CameraCapture: Component<Props> = (props) => {
                     aria-label={String(t("editor.cam_flip"))}
                     class="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
                   >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
+                    <MdOutlineRefresh class="w-5 h-5" />
                   </button>
                 </Show>
               </div>

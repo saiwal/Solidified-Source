@@ -19,6 +19,7 @@ import {
   type Component,
   type JSX,
 } from "solid-js";
+import { MdOutlineExpand_less } from "solid-icons/md";
 
 /**
  * True inside SplitSubmitButton's menu. A PopoverButton there expands its panel
@@ -299,12 +300,7 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           class="px-2 rounded-r-lg border-l border-accent-fg/25 bg-accent text-accent-fg
                  hover:opacity-90 active:opacity-80 transition-opacity"
         >
-          <svg
-            class={"w-3.5 h-3.5 transition-transform " + (open() ? "rotate-180" : "")}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 15l-7-7-7 7" />
-          </svg>
+          <MdOutlineExpand_less class={"w-3.5 h-3.5 transition-transform " + (open() ? "rotate-180" : "")} />
         </button>
 
         <Show when={open()}>

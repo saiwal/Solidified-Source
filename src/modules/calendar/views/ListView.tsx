@@ -1,6 +1,6 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillLocation_on, MdFillOpen_in_new } from "solid-icons/md";
+import { MdFillLocation_on, MdFillOpen_in_new, MdOutlineCalendar_today } from "solid-icons/md";
 import DOMPurify from "dompurify";
 import type { CalEvent } from "../api";
 import { isoDateStr, localDay, fmtEventRange } from "./calUtils";
@@ -42,10 +42,7 @@ export default function ListView(props: Props) {
         when={grouped().length > 0}
         fallback={
           <div class="flex flex-col items-center py-16 text-center gap-2">
-            <svg class="w-10 h-10 text-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <MdOutlineCalendar_today class="w-10 h-10 text-muted/40" />
             <p class="text-sm text-muted">{t("calendar.no_upcoming_events")}</p>
           </div>
         }

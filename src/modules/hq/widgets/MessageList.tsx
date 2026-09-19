@@ -1,6 +1,6 @@
 import { markItemSeen } from '@utsukta/spa-core/lib/markSeen';
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineWarning } from "solid-icons/md";
+import { MdOutlineChevron_left, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineMenu, MdOutlineSearch, MdOutlineWarning } from "solid-icons/md";
 import {
   createSignal,
   createEffect,
@@ -95,14 +95,7 @@ export const [folderViewMode, setFolderViewMode] = persistedSignal<ViewMode>(
 );
 
 const ListIcon: Component<{ class?: string }> = (props) => (
-  <svg class={props.class} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      d="M4 6h16M4 12h16M4 18h16"
-    />
-  </svg>
+  <MdOutlineMenu class={props.class} />
 );
 
 const GridIcon: Component<{ class?: string }> = (props) => (
@@ -947,14 +940,7 @@ export const MessageList: Component<{
 
       <Show when={empty() && !loading() && filtered()}>
         <div class="flex flex-col items-center justify-center h-full gap-2 text-sm text-muted py-16">
-          <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          <MdOutlineSearch class="w-8 h-8 opacity-40" />
           <span>{t("hq.no_filter_matches")}</span>
         </div>
       </Show>
@@ -1032,9 +1018,7 @@ export const MessageList: Component<{
             class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
                    hover:bg-overlay hover:text-txt transition-colors"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 19l-7-7 7-7" />
-            </svg>
+            <MdOutlineChevron_left class="w-4 h-4" />
             {t("hq.back_to_list")}
           </button>
 
@@ -1055,9 +1039,7 @@ export const MessageList: Component<{
             aria-label={t("hq.previous_message")}
             class="p-1 rounded-md text-muted hover:bg-overlay hover:text-txt disabled:opacity-30 transition-colors"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 15l7-7 7 7" />
-            </svg>
+            <MdOutlineExpand_less class="w-4 h-4" />
           </button>
           <button
             type="button"
@@ -1067,9 +1049,7 @@ export const MessageList: Component<{
             aria-label={t("hq.next_message")}
             class="p-1 rounded-md text-muted hover:bg-overlay hover:text-txt disabled:opacity-30 transition-colors"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 9l-7 7-7-7" />
-            </svg>
+            <MdOutlineExpand_more class="w-4 h-4" />
           </button>
         </div>
 

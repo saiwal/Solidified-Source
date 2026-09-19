@@ -9,6 +9,7 @@ import { resolveNotifyPath, connectionRequestId } from "@utsukta/spa-core/lib/no
 import { openConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
 import { fetchNotifications, type NotificationEntry } from "../api";
 import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
+import { MdOutlineNotifications_none } from "solid-icons/md";
 
 
 export default function NotificationsListView() {
@@ -54,19 +55,7 @@ export default function NotificationsListView() {
     <div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
       {/* Page header */}
       <div class="flex items-center gap-3">
-        <svg
-          class="w-5 h-5 text-accent shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-          />
-        </svg>
+        <MdOutlineNotifications_none class="w-5 h-5 text-accent shrink-0" />
         <h1 class="text-lg font-semibold text-txt">{t("notify.all_title")}</h1>
         <Show when={!entries.loading && (entries() ?? []).length > 0}>
           <span class="text-xs text-muted tabular-nums ml-auto">
@@ -118,19 +107,7 @@ export default function NotificationsListView() {
         when={!entries.loading && !entries.error && (entries() ?? []).length === 0}
       >
         <div class="flex flex-col items-center gap-3 py-16 text-muted">
-          <svg
-            class="w-10 h-10 opacity-30"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-          </svg>
+          <MdOutlineNotifications_none class="w-10 h-10 opacity-30" />
           <p class="text-sm font-medium">{t("notify.empty")}</p>
         </div>
       </Show>

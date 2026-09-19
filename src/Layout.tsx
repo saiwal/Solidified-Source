@@ -10,11 +10,7 @@ import Slot from "./shared/views/Slot";
 import SiteCredits from "./shared/views/SiteCredits";
 import RemoteAuthBanner from "./shared/views/RemoteAuthBanner";
 import HelpOverlay from "./shared/views/HelpOverlay";
-import {
-  MdFillChevron_right,
-  MdFillMore_horiz,
-  MdFillSwitch_left,
-} from "solid-icons/md";
+import { MdFillChevron_right, MdFillMore_horiz, MdFillSwitch_left, MdOutlineExpand_less } from "solid-icons/md";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { templateUsageCount, templateName } from "@utsukta/spa-core/store/widget-templates";
 import NavUtilities from "./shared/views/NavUtilities";
@@ -408,19 +404,7 @@ const Layout: ParentComponent = (props) => {
                      shadow hover:shadow-md transition-all`}
               aria-label="Scroll to top"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
+              <MdOutlineExpand_less class="w-4 h-4" />
             </button>
           </Show>
 

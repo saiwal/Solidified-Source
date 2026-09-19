@@ -22,6 +22,7 @@ import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { renderLatexPreview, renderLatexToPngFile, LatexRenderError } from "./renderLatexImage";
 import { bbAlt } from "../attachments/insertHelpers";
+import { MdOutlineClose } from "solid-icons/md";
 
 interface Props {
   mode: "image" | "live";
@@ -130,9 +131,7 @@ const LatexComposerModal: Component<Props> = (props) => {
               onClick={props.onClose}
               class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
+              <MdOutlineClose class="w-4 h-4" />
             </button>
           </header>
 

@@ -5,6 +5,7 @@ import { getNavIcon } from "./NavItem";
 import { doSwitchChannel } from "@/modules/manage/store";
 import { Motion, Presence, slideDownPreset } from "@utsukta/spa-core/lib/motion-presets";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineCheck, MdOutlineExpand_more } from "solid-icons/md";
 
 interface ChannelSwitcherProps {
   channels: NavChannel[];
@@ -43,15 +44,8 @@ const ChannelSwitcher = (props: ChannelSwitcherProps) => {
           {getNavIcon("manage", 20)}
         </span>
         <span class="flex-1 truncate leading-tight text-left">{props.label}</span>
-        <svg
-          class={`w-3.5 h-3.5 shrink-0 text-muted transition-transform duration-200 ease-out
-                  ${props.open ? "rotate-180" : "rotate-0"}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        <MdOutlineExpand_more class={`w-3.5 h-3.5 shrink-0 text-muted transition-transform duration-200 ease-out
+                  ${props.open ? "rotate-180" : "rotate-0"}`} />
       </button>
 
       <Presence>
@@ -75,14 +69,7 @@ const ChannelSwitcher = (props: ChannelSwitcherProps) => {
                   >
                     <span class="truncate flex-1">{ch.name}</span>
                     <Show when={isCurrent()}>
-                      <svg
-                        class="w-3.5 h-3.5 text-accent shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                      </svg>
+                      <MdOutlineCheck class="w-3.5 h-3.5 text-accent shrink-0" />
                     </Show>
                   </button>
                 );

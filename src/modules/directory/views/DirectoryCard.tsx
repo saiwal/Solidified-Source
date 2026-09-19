@@ -4,7 +4,7 @@ import { addConnection, censorEntry, chanviewHref, type DirectoryEntry } from ".
 import { isDirectoryAdmin, setEntryCensored } from "../people/store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillCheck } from "solid-icons/md";
+import { MdFillCheck, MdOutlineBlock } from "solid-icons/md";
 
 interface Props {
   entry: DirectoryEntry;
@@ -163,10 +163,7 @@ const DirectoryCard: Component<Props> = (props) => {
             title={t("directory.ignore")}
             class="p-1.5 rounded-lg border border-rim text-muted hover:text-txt hover:bg-overlay transition-colors"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-            </svg>
+            <MdOutlineBlock class="w-3.5 h-3.5" />
           </a>
         </Show>
         <Show when={isDirectoryAdmin()}>

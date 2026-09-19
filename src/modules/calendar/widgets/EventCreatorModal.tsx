@@ -21,6 +21,7 @@ import CategoryTagsField from "@/shared/editor/components/CategoryTagsField";
 import { useCategoryTags } from "@/shared/editor/components/useCategoryTags";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { prevDay, nextDay, zonedTimeToUtc, utcToZonedDateTime } from "../views/calUtils";
+import { MdOutlineClose, MdOutlineExpand_more } from "solid-icons/md";
 
 function timezones(): string[] {
   try {
@@ -277,9 +278,7 @@ export default function EventCreatorModal(props: Props) {
             class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
             aria-label="Close"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <MdOutlineClose class="w-4 h-4" />
           </button>
         </div>
 
@@ -308,9 +307,7 @@ export default function EventCreatorModal(props: Props) {
                   style={{ background: calendarOptions()[selectedCalIdx()]?.color ?? "#3a87ad" }}
                 />
                 <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <MdOutlineExpand_more class="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>

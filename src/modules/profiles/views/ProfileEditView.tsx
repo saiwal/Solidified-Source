@@ -13,6 +13,7 @@ import SourceToggleButton from "@/shared/editor/components/SourceToggleButton";
 import { CAPABILITIES } from "@/shared/editor/types/editor.types";
 import type { EditorTab } from "@/shared/editor/types/editor.types";
 import { isAnimatedImage } from "@utsukta/spa-core/lib/isAnimatedImage";
+import { MdOutlineClose } from "solid-icons/md";
 
 // Lazy-loaded so Filerobot + React don't inflate the profile chunk
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
@@ -553,9 +554,7 @@ function ProfilePhotoPickerModal(props: {
               onClick={props.onClose}
               class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12" />
-              </svg>
+              <MdOutlineClose class="w-4 h-4" />
             </button>
           </header>
 

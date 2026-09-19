@@ -29,6 +29,7 @@ import formatPostDate from "@utsukta/spa-core/lib/date";
 import DOMPurify from "dompurify";
 import type { StreamHandlers } from "../types";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
+import { MdOutlineChat_bubble_outline } from "solid-icons/md";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 
 // ---------------------------------------------------------------------------
@@ -170,19 +171,7 @@ function PopularPostRow(props: {
 
             {/* Comment count */}
             <div class="flex items-center gap-1">
-              <svg
-                class="w-3 h-3 text-muted shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
+              <MdOutlineChat_bubble_outline class="w-3 h-3 text-muted shrink-0" />
               <span class="text-xs text-muted">
                 {p.commentCount}{" "}
                 {p.commentCount === 1 ? "comment" : "comments"}

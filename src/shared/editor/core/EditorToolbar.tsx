@@ -1,18 +1,9 @@
-import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js";
+import { createSignal, lazy, onCleanup, Show, Suspense, type JSX } from "solid-js";
 import type { LatexInsertMode, MimeType, ToolbarLevel } from "../types/editor.types";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { persistedSignal, boolFlag } from "@utsukta/spa-core/lib/persisted";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import {
-  MdOutlineLink, MdOutlineImage,
-  MdOutlineFormat_bold, MdOutlineFormat_italic, MdOutlineFormat_underlined,
-  MdOutlineFormat_strikethrough, MdOutlineHighlight,
-  MdOutlineFormat_color_text, MdOutlineFont_download, MdOutlineFormat_size,
-  MdOutlineFormat_quote, MdOutlineCode, MdOutlineHorizontal_rule,
-  MdOutlineFunctions, MdOutlineStyle,
-  MdOutlineTable_chart, MdOutlineVisibility_off, MdOutlineFormat_clear,
-  MdOutlineBrush, MdOutlineMap,
-} from "solid-icons/md";
+import { MdOutlineAttach_file, MdOutlineBrush, MdOutlineChevron_right, MdOutlineCode, MdOutlineFont_download, MdOutlineFormat_bold, MdOutlineFormat_clear, MdOutlineFormat_color_text, MdOutlineFormat_italic, MdOutlineFormat_quote, MdOutlineFormat_size, MdOutlineFormat_strikethrough, MdOutlineFormat_underlined, MdOutlineFunctions, MdOutlineHighlight, MdOutlineHorizontal_rule, MdOutlineImage, MdOutlineLink, MdOutlineMap, MdOutlinePhoto_camera, MdOutlineStyle, MdOutlineTable_chart, MdOutlineVisibility_off } from "solid-icons/md";
 import EmojiPicker from "../emoji/EmojiPicker";
 import { ColorPicker, OptionMenu, PromptPanel, SIZE_OPTIONS, FONT_OPTIONS } from "./ToolbarPickers";
 import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
@@ -48,6 +39,9 @@ interface Props {
    *  Given, the three buttons render here immediately before Insert link;
    *  omitted, AttachmentBar keeps them in its own row. */
   attach?: AttachmentActions;
+  /** Buttons pinned to the row's right end — the quick composer's clear and
+   *  open-in-full, which would otherwise need a second row of their own. */
+  trailing?: JSX.Element;
 }
 
 /**
@@ -619,24 +613,13 @@ export default function EditorToolbar(props: Props) {
       {(a) => (
         <>
           <Btn title={t("editor.attach_file_title")} onPress={() => a().openFile()}>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
+            <MdOutlineAttach_file class="w-4 h-4" />
           </Btn>
           <Btn title={t("editor.attach_browse_title")} onPress={() => a().openBrowse()}>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <MdOutlineImage class="w-4 h-4" />
           </Btn>
           <Btn title={t("editor.cam_btn_title")} onPress={() => a().openCamera()}>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <MdOutlinePhoto_camera class="w-4 h-4" />
           </Btn>
         </>
       )}
@@ -653,12 +636,7 @@ export default function EditorToolbar(props: Props) {
         onPress={() => setToolsOpen(!toolsOpen())}
         active={toolsOpen()}
       >
-        <svg
-          class={"w-4 h-4 transition-transform duration-200 " + (toolsOpen() ? "rotate-180" : "")}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
+        <MdOutlineChevron_right class={"w-4 h-4 transition-transform duration-200 " + (toolsOpen() ? "rotate-180" : "")} />
       </Btn>
     </>
   );
@@ -916,6 +894,10 @@ export default function EditorToolbar(props: Props) {
             <ToolsToggle />
           </Show>
         </>
+      </Show>
+
+      <Show when={props.trailing}>
+        <span class="ml-auto flex items-center gap-0.5">{props.trailing}</span>
       </Show>
     </div>
     <Show when={latexOpen()}>

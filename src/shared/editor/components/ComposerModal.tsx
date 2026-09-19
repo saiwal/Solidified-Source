@@ -19,6 +19,7 @@ import {
   type ComposerMode,
 } from "../store/composer-host";
 import { draftSavedAt } from "../store/createComposerStore";
+import { MdOutlineArticle, MdOutlineClose, MdOutlineDescription, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
 
 // Shared modal shell for the compose surfaces (post, DM, article, note) —
@@ -36,22 +37,13 @@ void helpable;
 /** One glyph per kind, so the header says what is being written at a glance. */
 const KIND_ICON: Record<ComposerKind, () => JSX.Element> = {
   post: () => (
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
+    <MdOutlineEdit class="w-4 h-4" />
   ),
   dm: () => (
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
+    <MdOutlineMail_outline class="w-4 h-4" />
   ),
   article: () => (
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
+    <MdOutlineArticle class="w-4 h-4" />
   ),
   card: () => (
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,10 +52,7 @@ const KIND_ICON: Record<ComposerKind, () => JSX.Element> = {
     </svg>
   ),
   note: () => (
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M9 12h6m-6 4h3m6-9V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2h6l6-6V7z" />
-    </svg>
+    <MdOutlineDescription class="w-4 h-4" />
   ),
 };
 
@@ -247,9 +236,7 @@ export default function ComposerModal(props: ComposerModalProps) {
                       title={t("editor.minimize")}
                       onClick={() => f().setMode("min")}
                     >
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14" />
-                      </svg>
+                      <MdOutlineRemove class="w-4 h-4" />
                     </IconButton>
                     <IconButton
                       title={f().mode() === "dock" ? t("editor.modal_mode") : t("editor.dock_mode")}
@@ -277,9 +264,7 @@ export default function ComposerModal(props: ComposerModalProps) {
                 )}
               </Show>
               <IconButton title={t("editor.close_esc")} dataTour="composer.close" onClick={props.onClose}>
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
+                <MdOutlineClose class="w-4 h-4" />
               </IconButton>
             </div>
           </header>

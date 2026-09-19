@@ -4,6 +4,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useLocation, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchNav, type NavNode } from "../api";
+import { MdOutlineChevron_right } from "solid-icons/md";
 
 function NavItem(props: {
   node: NavNode;
@@ -36,19 +37,7 @@ function NavItem(props: {
             class="w-4 h-4 shrink-0 flex items-center justify-center
                    text-subtle hover:text-txt transition-colors rounded"
           >
-            <svg
-              class={`w-2.5 h-2.5 transition-transform ${open() ? "rotate-90" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2.5"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <MdOutlineChevron_right class={`w-2.5 h-2.5 transition-transform ${open() ? "rotate-90" : ""}`} />
           </button>
         </Show>
 

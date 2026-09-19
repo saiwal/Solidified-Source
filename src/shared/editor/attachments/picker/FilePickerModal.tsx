@@ -10,6 +10,7 @@ import type { FileMeta } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
 import type { AttachmentAccept } from "../AttachmentBar";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineClose } from "solid-icons/md";
 
 type Tab = "photos" | "files";
 
@@ -90,9 +91,7 @@ const FilePickerModal: Component<Props> = (props) => {
               onClick={props.onClose}
               class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6 6 18M6 6l12 12" />
-              </svg>
+              <MdOutlineClose class="w-4 h-4" />
             </button>
           </header>
 

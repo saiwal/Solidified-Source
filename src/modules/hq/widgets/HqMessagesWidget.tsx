@@ -1,7 +1,7 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { openComposer } from "@/shared/editor/store/composer-host";
 import { createSignal, Show, lazy } from "solid-js";
-import { MdOutlineEdit, MdOutlineMail, MdOutlineRefresh } from "solid-icons/md";
+import { MdOutlineEdit, MdOutlineMail, MdOutlineRefresh, MdOutlineSearch } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { MessageList, FolderViewToggle, folderViewMode, setFolderViewMode } from "./MessageList";
 import { TABS, type Tab } from "./MessageTabs";
@@ -80,19 +80,7 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
         <div class="flex items-center gap-1 min-w-0">
           <Show when={isFeed()} fallback={<FolderViewToggle mode={folderViewMode()} onChange={setFolderViewMode} />}>
             <div class="relative min-w-0">
-              <svg
-                class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <MdOutlineSearch class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
               <input
                 type="text"
                 placeholder={t("hq.filter_placeholder")}

@@ -1,5 +1,5 @@
 import { POST_PROSE } from "@/shared/lib/prose";
-import { createEffect, createSignal, onCleanup, useContext, For, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, useContext, For, Show, type JSX } from "solid-js";
 import { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
@@ -57,6 +57,8 @@ interface Props {
    * grow into. Has no effect if no ancestor in the flex chain is bounded.
    */
   fill?: boolean;
+  /** Extra buttons for the toolbar's right end. */
+  toolbarTrailing?: JSX.Element;
 }
 
 export default function RichEditor(props: Props) {
@@ -508,6 +510,7 @@ export default function RichEditor(props: Props) {
         editorRef={() => editorRef}
         textareaRef={() => textareaRef}
         onSourceChange={(v) => { props.onInput(v); }}
+        trailing={props.toolbarTrailing}
       />
 
       {/* ── Image resize popup ───────────────────────────── */}

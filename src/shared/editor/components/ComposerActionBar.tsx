@@ -14,8 +14,10 @@
  * the row is just the action cluster for them.
  */
 import { Show, type Component, type JSX } from "solid-js";
+import { BiRegularEraser } from "solid-icons/bi";
+import { MdOutlineDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { IconButton, SecondaryButton, SplitSubmitButton } from "./buttons";
+import { IconButton, SplitSubmitButton } from "./buttons";
 
 export interface ComposerActionBarProps {
   /** Left-aligned scope control — the ACL picker where there is one. */
@@ -43,16 +45,17 @@ const ComposerActionBar: Component<ComposerActionBarProps> = (props) => {
 
       <div class="flex items-center gap-2 ml-auto shrink-0">
         <Show when={props.onCancel}>
-          <SecondaryButton onClick={() => props.onCancel!()}>
-            {props.cancelLabel ?? t("editor.discard")}
-          </SecondaryButton>
+          <IconButton
+            title={props.cancelLabel ?? t("editor.discard")}
+            onClick={() => props.onCancel!()}
+          >
+            <MdOutlineDelete class="w-4 h-4" />
+          </IconButton>
         </Show>
 
         <Show when={props.onClear}>
           <IconButton title={t("editor.clear_composer")} onClick={() => props.onClear!()} variant="danger">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <BiRegularEraser class="w-4 h-4" />
           </IconButton>
         </Show>
 

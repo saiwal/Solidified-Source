@@ -14,7 +14,7 @@ import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useListBehavior } from "@utsukta/spa-core/store/list-behavior";
-import { MdOutlineSchedule, MdOutlineTimer, MdFillPush_pin, MdOutlineReply, MdFillKeyboard_arrow_down, MdOutlineRefresh } from "solid-icons/md";
+import { MdFillKeyboard_arrow_down, MdFillPush_pin, MdOutlineChat_bubble_outline, MdOutlineExpand_more, MdOutlineOpen_in_new, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
@@ -109,17 +109,7 @@ function VoteGutter(props: { post: ThreadNode; handlers: StreamHandlers }) {
             "text-subtle hover:text-subtle/60": !p.viewerDisliked,
           }}
         >
-          <svg
-            class="w-3.5 h-3.5"
-            viewBox="0 0 24 24"
-            fill={p.viewerDisliked ? "currentColor" : "none"}
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
+          <MdOutlineExpand_more class="w-3.5 h-3.5" />
         </button>
       </Show>
     </div>
@@ -155,19 +145,7 @@ function RowDetails(props: {
             "text-muted hover:text-txt hover:bg-elevated": !p.viewerRepeated,
           }}
         >
-          <svg
-            class="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
+          <MdOutlineRefresh class="w-3 h-3" />
           <Show when={p.repeatCount > 0}>
             <span>{p.repeatCount}</span>
           </Show>
@@ -183,19 +161,7 @@ function RowDetails(props: {
           "text-muted hover:text-txt hover:bg-elevated": !props.repliesActive,
         }}
       >
-        <svg
-          class="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
+        <MdOutlineChat_bubble_outline class="w-3 h-3" />
         <Show when={props.replyCount > 0}>
           <span>{props.replyCount}</span>
         </Show>
@@ -208,19 +174,7 @@ function RowDetails(props: {
           class="flex items-center gap-1 text-[0.6875rem] px-2 py-1 rounded-md
                  text-muted hover:text-txt hover:bg-elevated transition-colors min-w-0"
         >
-          <svg
-            class="w-3 h-3 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
+          <MdOutlineRefresh class="w-3 h-3 shrink-0" />
           <span>via</span>
           <span class="font-medium truncate max-w-[120px]">{p.via!.name}</span>
         </a>
@@ -234,19 +188,7 @@ function RowDetails(props: {
           class="flex items-center gap-1 text-[0.6875rem] px-2 py-1 rounded-md
                  text-muted hover:text-txt hover:bg-elevated transition-colors"
         >
-          <svg
-            class="w-3 h-3"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-            />
-          </svg>
+          <MdOutlineOpen_in_new class="w-3 h-3" />
           <span class="hidden sm:inline">{t("post.original")}</span>
         </a>
       </Show>
@@ -825,20 +767,7 @@ function InboxRow(props: {
               {formatPostDate(p.created, locale())}
             </span>
 
-            <svg
-              class="w-3 h-3 text-muted/50 ml-auto transition-transform duration-200"
-              classList={{ "rotate-180": expanded() }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <MdOutlineExpand_more class="w-3 h-3 text-muted/50 ml-auto transition-transform duration-200" classList={{ "rotate-180": expanded() }} />
           </div>
 
           <DmRecipients

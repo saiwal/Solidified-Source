@@ -4,7 +4,7 @@ import {
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useAuth, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillChevron_left, MdFillChevron_right } from "solid-icons/md";
+import { MdFillChevron_left, MdFillChevron_right, MdOutlineAdd } from "solid-icons/md";
 import {
   events, loading, loadCalendar, monthRange, calendarRefreshVersion,
 } from "../store";
@@ -192,9 +192,7 @@ export default function CalendarContentWidget() {
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                    bg-accent text-accent-fg hover:opacity-90 transition-opacity"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-            </svg>
+            <MdOutlineAdd class="w-3.5 h-3.5" />
             {t("calendar.new_event")}
           </button>
         </Show>

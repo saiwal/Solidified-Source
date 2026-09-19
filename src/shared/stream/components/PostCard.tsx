@@ -27,44 +27,7 @@ import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { scrollHighlightIntoView } from "@utsukta/spa-core/lib/scrollHighlightIntoView";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
-import {
-  MdFillBar_chart,
-  MdFillChat,
-  MdFillKeyboard_arrow_down,
-  MdFillKeyboard_arrow_up,
-  MdFillShare,
-  MdFillThumb_down,
-  MdFillThumb_up,
-  MdOutlineShare,
-  MdOutlineThumb_down,
-  MdOutlineThumb_up,
-  MdFillStar,
-  MdFillStar_border,
-  MdOutlineDelete,
-  MdOutlineRefresh,
-  MdOutlineCloud_download,
-  MdFillNotifications,
-  MdOutlineNotifications_none,
-  MdOutlineCode,
-  MdOutlineEdit,
-  MdOutlineReply,
-  MdFillFolder,
-  MdFillFolder_open,
-  MdFillAdd,
-  MdFillUnfold_more,
-  MdFillMore_vert,
-  MdOutlineSend,
-  MdOutlineLocation_on,
-  MdOutlineTimer,
-  MdOutlineSchedule,
-  MdOutlineCheck,
-  MdOutlineClose,
-  MdOutlineFlag,
-  MdFillPush_pin,
-  MdOutlinePush_pin,
-  MdOutlineVisibility,
-  MdOutlineEvent,
-} from "solid-icons/md";
+import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillKeyboard_arrow_up, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { BiRegularLinkExternal, BiSolidShareAlt } from "solid-icons/bi";
 import { isDirectMessage as isDM, DmBadge, DmRecipientsPC, DmRecipients } from "./DmMeta";
@@ -1987,19 +1950,7 @@ export default function PostCard(props: {
                   class="flex items-center gap-1 text-xs text-accent hover:text-accent-txt
                          bg-overlay/90 px-2 py-0.5 rounded-full border border-accent/50 transition-colors"
                 >
-                  <svg
-                    class="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <MdOutlineExpand_more class="w-3 h-3" />
                   {t("ui.show_more")}
                 </button>
               </div>
@@ -2013,19 +1964,7 @@ export default function PostCard(props: {
                 setBodyExpanded(false);
               }}
             >
-              <svg
-                class="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
+              <MdOutlineExpand_less class="w-3 h-3" />
               {t("ui.show_less")}
             </button>
           </Show>

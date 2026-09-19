@@ -19,7 +19,7 @@ import DOMPurify from "dompurify";
 import EventCard from "@/shared/stream/components/EventCard";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
-import { MdOutlineSchedule, MdOutlineTimer, MdFillPush_pin, MdOutlineReply } from "solid-icons/md";
+import { MdFillPush_pin, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFavorite_border, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
 function useColumnCount(el: () => HTMLElement | undefined): () => number {
@@ -155,19 +155,7 @@ function MasonryCard(props: {
               </p>
               <Show when={p.via}>
                 <div class="flex items-center gap-1 shrink-0">
-                  <svg
-                    class="w-2.5 h-2.5 text-muted shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
+                  <MdOutlineRefresh class="w-2.5 h-2.5 text-muted shrink-0" />
                   <span class="text-xs text-muted">via</span>
                   <a
                     href={p.via!.url}
@@ -263,19 +251,7 @@ function MasonryCard(props: {
                   class="flex items-center gap-1 text-xs text-accent hover:text-accent-txt
                              bg-overlay/90 px-2 py-0.5 rounded-full border border-accent/50 transition-colors"
                 >
-                  <svg
-                    class="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <MdOutlineExpand_more class="w-3 h-3" />
                   {t("ui.show_more")}
                 </button>
               </div>
@@ -290,19 +266,7 @@ function MasonryCard(props: {
                 setExpanded(false);
               }}
             >
-              <svg
-                class="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
+              <MdOutlineExpand_less class="w-3 h-3" />
               {t("ui.show_less")}
             </button>
           </Show>
@@ -324,19 +288,7 @@ function MasonryCard(props: {
                 "text-muted hover:text-accent": !p.viewerLiked,
               }}
             >
-              <svg
-                class="w-3.5 h-3.5"
-                fill={p.viewerLiked ? "currentColor" : "none"}
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
+              <MdOutlineFavorite_border class="w-3.5 h-3.5" />
               {p.likeCount || ""}
             </button>
           </Show>
@@ -352,19 +304,7 @@ function MasonryCard(props: {
                 "text-muted hover:text-accent": !p.viewerRepeated,
               }}
             >
-              <svg
-                class="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
+              <MdOutlineRefresh class="w-3.5 h-3.5" />
               {p.repeatCount || ""}
             </button>
           </Show>

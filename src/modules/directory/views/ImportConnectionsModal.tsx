@@ -4,6 +4,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { connectToChannel } from "../connections/api";
 import { parseFollowingCsv } from "../connections/csv";
 import { refetch } from "../connections/store";
+import { MdOutlineClose } from "solid-icons/md";
 
 type RowStatus = "pending" | "connecting" | "connected" | "already" | "failed";
 
@@ -116,9 +117,7 @@ const ImportConnectionsModal: Component<Props> = (props) => {
                 class="shrink-0 p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors"
                 aria-label={t("directory.close")}
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
+                <MdOutlineClose class="w-4 h-4" />
               </button>
             </div>
 

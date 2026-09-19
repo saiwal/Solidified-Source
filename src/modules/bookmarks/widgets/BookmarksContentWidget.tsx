@@ -14,6 +14,7 @@ import {
   type BookmarkItem,
 } from "../api";
 import { resetChatBookmarks } from "@/modules/chat/bookmarks";
+import { MdOutlineBookmark_border, MdOutlineDelete, MdOutlineExpand_less, MdOutlineExpand_more } from "solid-icons/md";
 
 export default function BookmarksContentWidget() {
   const { t } = useI18n();
@@ -139,9 +140,7 @@ export default function BookmarksContentWidget() {
 
       <Show when={!menus.loading && totalCount() === 0}>
         <div class="flex flex-col items-center gap-3 py-16 text-muted">
-          <svg class="w-10 h-10 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 3a2 2 0 00-2 2v16l7-3 7 3V5a2 2 0 00-2-2H5z" />
-          </svg>
+          <MdOutlineBookmark_border class="w-10 h-10 opacity-30" />
           <p class="text-sm font-medium">{t("bookmarks.no_bookmarks")}</p>
           <p class="text-xs text-center max-w-xs">{t("bookmarks.no_bookmarks_desc")}</p>
         </div>
@@ -264,9 +263,7 @@ export default function BookmarksContentWidget() {
                                       class="p-1 rounded text-muted hover:text-txt disabled:opacity-30 transition-colors"
                                       title={t("bookmarks.move_up") as string}
                                     >
-                                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                      </svg>
+                                      <MdOutlineExpand_less class="w-3 h-3" />
                                     </button>
                                     <button
                                       onClick={() => void nudge(menu, index(), 1)}
@@ -274,9 +271,7 @@ export default function BookmarksContentWidget() {
                                       class="p-1 rounded text-muted hover:text-txt disabled:opacity-30 transition-colors"
                                       title={t("bookmarks.move_down") as string}
                                     >
-                                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                      </svg>
+                                      <MdOutlineExpand_more class="w-3 h-3" />
                                     </button>
                                     <button
                                       onClick={() => visit(item)}
@@ -297,10 +292,7 @@ export default function BookmarksContentWidget() {
                                       class="p-1 rounded text-muted hover:text-red-500 transition-colors"
                                       title={t("bookmarks.remove") as string}
                                     >
-                                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
+                                      <MdOutlineDelete class="w-3.5 h-3.5" />
                                     </button>
                                   </div>
                                 </div>

@@ -34,7 +34,7 @@ import LanguageField from "../components/LanguageField";
 import SeriesField from "../components/SeriesField";
 import { ToggleButton } from "../components/buttons";
 import ComposerActionBar from "../components/ComposerActionBar";
-import { MdOutlineTimer, MdOutlineSchedule } from "solid-icons/md";
+import { MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import DateTimePicker from "../components/DateTimePicker";
 import ComposerShell from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
@@ -506,10 +506,7 @@ export default function ArticleComposer(props: Props) {
                 onClick={() => setNoComment((v) => !v)}
                 title={t("editor.nocomment_toggle")}
               >
-                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 12h8m-4-9a9 9 0 100 18 9 9 0 000-18z" />
-                </svg>
+                <MdOutlineRemove_circle_outline class="w-3.5 h-3.5 shrink-0" />
               </ToggleButton>
             </Show>
 

@@ -6,6 +6,7 @@ import EventCreatorModal from "@/modules/calendar/widgets/EventCreatorModal";
 import DayDetailModal from "@/modules/calendar/views/DayDetailModal";
 import { localDay, todayKey } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
 
 function next30DaysRange() {
   const start = new Date();
@@ -85,9 +86,7 @@ export default function UpcomingEventsWidget() {
             class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
                    bg-accent text-accent-fg hover:opacity-90 transition-opacity"
           >
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-            </svg>
+            <MdOutlineAdd class="w-3 h-3" />
             {t("hq.new_event")}
           </button>
         </div>
@@ -106,10 +105,7 @@ export default function UpcomingEventsWidget() {
 
           <Show when={!loading() && !error() && events().length === 0}>
             <div class="px-4 py-6 flex flex-col items-center gap-2 text-muted">
-              <svg class="w-7 h-7 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <MdOutlineCalendar_today class="w-7 h-7 opacity-30" />
               <span class="text-xs">{t("hq.no_upcoming_events")}</span>
               <button
                 type="button"

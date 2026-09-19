@@ -17,26 +17,7 @@ import {
   notifyCountLimit,
 } from "@utsukta/spa-core/store/auth-store";
 import { useIsAdmin } from "@utsukta/spa-core/store/site-config";
-import {
-  MdFillNotifications,
-  MdFillClose,
-  MdFillRefresh,
-  MdFillDone_all,
-  MdFillForum,
-  MdFillPublic,
-  MdFillMail,
-  MdFillHome,
-  MdFillPeople,
-  MdFillInsert_drive_file,
-  MdFillEvent,
-  MdFillApp_registration,
-  MdFillWifi,
-  MdFillWifi_off,
-  MdFillOpen_in_new,
-  MdFillCircle,
-  MdOutlineCampaign,
-  MdOutlineAnnouncement,
-} from "solid-icons/md";
+import { MdFillApp_registration, MdFillCircle, MdFillClose, MdFillDone_all, MdFillEvent, MdFillForum, MdFillHome, MdFillInsert_drive_file, MdFillMail, MdFillNotifications, MdFillOpen_in_new, MdFillPeople, MdFillPublic, MdFillRefresh, MdFillWifi, MdFillWifi_off, MdOutlineAnnouncement, MdOutlineCampaign, MdOutlineExpand_more } from "solid-icons/md";
 import DOMPurify from "dompurify";
 import {
   DISPLAY_ORDER,
@@ -561,19 +542,7 @@ function StreamSection(props: {
                 {formatCount(props.bucket.count, props.countLimit)}
               </span>
             </Show>
-            <svg
-              class={`w-3 h-3 text-subtle transition-transform ${open() ? "" : "-rotate-90"}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <MdOutlineExpand_more class={`w-3 h-3 text-subtle transition-transform ${open() ? "" : "-rotate-90"}`} />
           </button>
         </span>
       </div>

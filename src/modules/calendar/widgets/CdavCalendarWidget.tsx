@@ -21,6 +21,7 @@ import {
   type CdavCalendarsData,
 } from "../api/cdav";
 import { bumpCalendarRefresh } from "../store";
+import { MdOutlineAdd, MdOutlineCalendar_today, MdOutlineDelete, MdOutlineEdit, MdOutlineExpand_more, MdOutlineFile_download, MdOutlineFile_upload } from "solid-icons/md";
 
 // ── small shared primitives ───────────────────────────────────────────────────
 
@@ -168,10 +169,7 @@ function CalendarRow(props: {
           <Show
             when={enabled()}
             fallback={
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <MdOutlineCalendar_today class="w-4 h-4" />
             }
           >
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"
@@ -201,10 +199,7 @@ function CalendarRow(props: {
             class="p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
             title="Export"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <MdOutlineFile_download class="w-3.5 h-3.5" />
           </a>
 
           <Show when={isOwned()}>
@@ -216,10 +211,7 @@ function CalendarRow(props: {
                 ${panel() === "edit" ? "text-accent bg-accent-muted" : "text-muted hover:text-txt hover:bg-elevated"}`}
               title="Edit"
             >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
+              <MdOutlineEdit class="w-3.5 h-3.5" />
             </button>
 
             {/* Share */}
@@ -244,10 +236,7 @@ function CalendarRow(props: {
                 ${panel() === "delete" ? "text-red-500 bg-red-500/10" : "text-muted hover:text-red-500 hover:bg-elevated"}`}
               title="Delete"
             >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <MdOutlineDelete class="w-3.5 h-3.5" />
             </button>
           </Show>
         </div>
@@ -379,12 +368,7 @@ function Section(props: {
         class="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-muted hover:text-txt hover:bg-elevated/50 transition-colors"
       >
         <span>{props.label}</span>
-        <svg
-          class={`w-3.5 h-3.5 transition-transform ${open() ? "rotate-180" : ""}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
+        <MdOutlineExpand_more class={`w-3.5 h-3.5 transition-transform ${open() ? "rotate-180" : ""}`} />
       </button>
       <Show when={open()}>
         <div class="px-3 pb-2">{props.children}</div>
@@ -419,10 +403,7 @@ function ChannelCalendarRow(props: {
         <Show
           when={enabled()}
           fallback={
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <MdOutlineCalendar_today class="w-4 h-4" />
           }
         >
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: props.cal.color }}>
@@ -441,10 +422,7 @@ function ChannelCalendarRow(props: {
         class="p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
         title={t("calendar.export_ical") as string}
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
+        <MdOutlineFile_download class="w-3.5 h-3.5" />
       </a>
     </div>
   );
@@ -484,9 +462,7 @@ function CreateCalendarForm(props: { onCreated: () => void }) {
         onClick={() => setOpen((o) => !o)}
         class="w-full flex items-center gap-1.5 px-1 py-1.5 rounded-lg text-xs text-muted hover:text-txt hover:bg-elevated/50 transition-colors"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-        </svg>
+        <MdOutlineAdd class="w-3.5 h-3.5" />
         {t("calendar.create_calendar")}
       </button>
 
@@ -536,10 +512,7 @@ export default function CdavCalendarWidget() {
     <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
       <div class="px-4 pt-3.5 pb-3 flex items-center gap-2 shrink-0">
-        <svg class="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
+        <MdOutlineCalendar_today class="w-4 h-4 text-muted shrink-0" />
         <h3 class="text-sm font-semibold text-txt flex-1">{t("calendar.calendar_actions")}</h3>
         <Show when={data.loading}>
           <span class="text-xs text-muted">{t("calendar.loading")}</span>
@@ -675,10 +648,7 @@ function ImportSection(props: {
         onClick={() => setOpen((o) => !o)}
         class="w-full flex items-center gap-1.5 px-1 py-1.5 rounded-lg text-xs text-muted hover:text-txt hover:bg-elevated/50 transition-colors"
       >
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
-        </svg>
+        <MdOutlineFile_upload class="w-3.5 h-3.5" />
         {t("calendar.import_ical")}
       </button>
 
@@ -701,10 +671,7 @@ function ImportSection(props: {
                     text-muted hover:bg-elevated cursor-pointer transition-colors
                     ${importing() ? "opacity-60 pointer-events-none" : ""}`}
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
-            </svg>
+            <MdOutlineFile_upload class="w-3.5 h-3.5" />
             {importing() ? t("calendar.importing") : t("calendar.import_ical")}
             <input
               type="file"

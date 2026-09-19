@@ -20,6 +20,7 @@ import {
   trailingOperator,
   type OperatorInfo,
 } from "./query";
+import { MdOutlineClose, MdOutlineExpand_more, MdOutlineSearch } from "solid-icons/md";
 
 /** Toggles that aren't already a row in the folder sidebar. */
 const PILLS = [
@@ -94,13 +95,7 @@ export const InboxSearchBar: Component<{
     <div class="px-4 py-2 shrink-0 flex flex-col gap-1.5 border-b border-rim">
       <div class="flex items-center gap-2">
         <div class="relative flex-1 min-w-0">
-          <svg
-            class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none"
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <MdOutlineSearch class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
           <input
             ref={(el) => { inputEl = el; props.inputRef?.(el); }}
             type="text"
@@ -119,9 +114,7 @@ export const InboxSearchBar: Component<{
                 aria-label={t("hq.clear_search")}
                 class="p-0.5 rounded text-muted hover:text-txt hover:bg-elevated"
               >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <MdOutlineClose class="w-3.5 h-3.5" />
               </button>
             </Show>
             <span ref={pop.ref}>
@@ -133,9 +126,7 @@ export const InboxSearchBar: Component<{
                 aria-expanded={pop.open()}
                 class="p-0.5 rounded text-muted hover:text-txt hover:bg-elevated"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                <MdOutlineExpand_more class="w-4 h-4" />
               </button>
             </span>
           </div>
