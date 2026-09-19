@@ -34,6 +34,8 @@ interface Props {
   items: SubPageItem[];
   activeKey: string;
   children: JSX.Element;
+  /** Rendered above the nav list — the inbox's compose buttons. */
+  sidebarHeader?: JSX.Element;
   sidebarFooter?: JSX.Element;
   /** Override the content area wrapper classes. Default: "flex-1 overflow-y-auto" */
   contentClass?: string;
@@ -113,6 +115,9 @@ export default function SubPageLayout(props: Props) {
           atBase() ? "flex" : "hidden md:flex",
         ].join(" ")}
       >
+        <Show when={props.sidebarHeader}>
+          <div class="px-3 pt-3">{props.sidebarHeader}</div>
+        </Show>
         <SubPageNav
           base={props.base}
           items={visibleItems()}

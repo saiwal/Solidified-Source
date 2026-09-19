@@ -12,7 +12,7 @@ import ImportConnectionsModal from "../ImportConnectionsModal";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import { PlatformIcon } from "@/shared/stream/components/PlatformIcons";
 import Tooltip from "@/shared/views/Tooltip";
-import DMComposer from "@/shared/editor/composers/DMComposer";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { createRoom } from "@/modules/chat/api";
 import { MdOutlineEdit, MdOutlineEmail, MdOutlineChat_bubble } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -75,7 +75,30 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
   const [busy, setBusy] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
   const [editOpen, setEditOpen] = createSignal(false);
-  const [dmOpen, setDmOpen] = createSignal(false);
+  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // carries the recipient, so DMs to two different people are two composers
+  // with two drafts rather than one that overwrites the other.
+  const openDm = (r: {
+    xid: string; name: string; nick: string; photo?: string;
+  }) =>
+    openComposer({
+      kind: "dm",
+      scope: `dm:new:${r.xid}`,
+      title: t("editor.dm_new_message"),
+      props: {
+        profileUid: auth()!.uid,
+        scopeKey: `dm:new:${r.xid}`,
+        initialRecipients: [{
+          type: "c",
+          xid: r.xid,
+          id: r.xid,
+          name: r.name,
+          nick: r.nick,
+          link: r.nick,
+          photo: r.photo,
+        }],
+      },
+    });
   const [chatPanelOpen, setChatPanelOpen] = createSignal(false);
   const [chatCreating, setChatCreating] = createSignal(false);
   const [chatExpire, setChatExpire] = createSignal(0);
@@ -206,7 +229,14 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
           </Show>
           <Show when={!props.conn.pending}>
             <button
-              onClick={() => setDmOpen(true)}
+              onClick={() =>
+                openDm({
+                  xid: props.conn.xchan_hash,
+                  name: props.conn.name,
+                  nick: props.conn.address,
+                  photo: props.conn.photo,
+                })
+              }
               title={t("ui.send_dm")}
               class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
             >
@@ -354,23 +384,6 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
             setEditOpen(false);
             props.onDeleted();
           }}
-        />
-      </Show>
-
-      <Show when={dmOpen() && auth()}>
-        <DMComposer
-          open={dmOpen()}
-          onClose={() => setDmOpen(false)}
-          profileUid={auth()!.uid}
-          initialRecipients={[{
-            type: "c",
-            xid: props.conn.xchan_hash,
-            id: props.conn.xchan_hash,
-            name: props.conn.name,
-            nick: props.conn.address,
-            link: props.conn.address,
-            photo: props.conn.photo,
-          }]}
         />
       </Show>
     </div>

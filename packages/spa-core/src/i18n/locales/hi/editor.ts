@@ -8,6 +8,15 @@ export const editor: RawDictionary["editor"] = {
   edit_post:              "पोस्ट संपादित करें",
   zen_mode:               "ज़ेन मोड",
   close_esc:              "बंद करें (Esc)",
+  draft_saved:            "ड्राफ़्ट सहेजा गया",
+  more_options:           "अधिक विकल्प",
+  // Presentation modes (ComposerModal / ComposerHost)
+  minimize:               "छोटा करें",
+  restore:                "पुनर्स्थापित करें",
+  modal_mode:             "केंद्रित विंडो",
+  dock_mode:              "कोने में लगाएँ",
+  page_mode:              "पूरा पृष्ठ",
+  minimized_composers:    "छोटे किए गए संपादक",
   title_placeholder:      "शीर्षक (वैकल्पिक)",
   category_placeholder:   "श्रेणियाँ (वैकल्पिक, अल्पविराम से अलग करें)",
   drafts_btn:             "मसौदे ({{count}})",
@@ -279,6 +288,7 @@ export const editor: RawDictionary["editor"] = {
   dm_bcc_failed:          "{{names}} को गुप्त प्रति नहीं भेजी जा सकी।",
   send_btn:               "भेजें",
   sending_dm:              "भेजा जा रहा है…",
+  dm_scheduled:           "संदेश शेड्यूल किया गया",
   dm_recipient_required:  "कम से कम एक प्राप्तकर्ता चुनें।",
   dm_recipient_not_permitted: "{{name}} ने आपको सीधा संदेश भेजने की अनुमति नहीं दी है।",
 };

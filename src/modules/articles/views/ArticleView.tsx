@@ -10,7 +10,7 @@ import { useParams, A, useNavigate } from "@solidjs/router";
 import { fetchArticle, deleteArticle } from "../api";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
-import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import { languageLabel } from "@utsukta/spa-core/lib/languages";
 import DOMPurify from "dompurify";
@@ -115,10 +115,67 @@ export default function ArticleView() {
     }
   });
 
-  // editing / deleting state
-  const [editing, setEditing] = createSignal(false);
+  // ── Deleting state ────────────────────────────────────────────────────────
   const [confirmDelete, setConfirmDelete] = createSignal(false);
-  const [translating, setTranslating] = createSignal(false);
+
+  // ── Editing / translating ─────────────────────────────────────────────────
+  // Both hand the composer to ComposerHost, so it can be docked or minimized
+  // while the article itself stays on screen. `initial` is read eagerly here,
+  // which is also what the two <Show>-mounted modals used to do on open.
+  // refetch() is this route's resource: if the composer saves after the reader
+  // has navigated away it is a harmless no-op (the host guards it).
+  type Article = NonNullable<ReturnType<typeof data>>["article"];
+
+  const openEditor = (article: Article) =>
+    openComposer({
+      kind: "article",
+      scope: `article:edit:${article.uuid}`,
+      title: t("articles.edit_article"),
+      props: {
+        uid: auth()!.uid,
+        nick: nick(),
+        initial: {
+          uuid:          article.uuid,
+          iid:           article.iid,
+          title:         article.title,
+          summary:       article.summary ?? "",
+          slug:          article.slug ?? "",
+          // Must be passed: the composer sends `category` on save and the
+          // server treats it as authoritative, so omitting it here meant
+          // every edit saved "" and cleared the article's categories.
+          category:      (article.categories ?? []).join(", "),
+          body:          article.rawBody ?? "",
+          public_policy: article.publicPolicy,
+          allow_cid:     article.allowCid,
+          allow_gid:     article.allowGid,
+          deny_cid:      article.denyCid,
+          deny_gid:      article.denyGid,
+          lang:          article.lang,
+          series:        article.series,
+        },
+        onSaved: () => refetch(),
+      },
+    });
+
+  const openTranslation = (article: Article) =>
+    openComposer({
+      kind: "article",
+      scope: `article:new:translation:${article.uuid}`,
+      title: t("articles.add_translation"),
+      props: {
+        uid: auth()!.uid,
+        nick: nick(),
+        translationOf: {
+          uuid: article.uuid,
+          excludeLangs: [
+            article.lang,
+            ...(article.translations ?? []).map((tr) => tr.lang),
+          ].filter((l): l is string => !!l),
+        },
+        onSaved: () => refetch(),
+      },
+    });
+
 
   // Reaction state — optimistic local copy initialised from fetched article
   const [reactions, setReactions] = createSignal({
@@ -336,56 +393,6 @@ export default function ArticleView() {
                 />
               </Show>
 
-              {/* Edit modal */}
-              <Show when={editing()}>
-                <ArticleComposerModal
-                  uid={auth()!.uid}
-                  heading={t("articles.edit_article")}
-                  initial={{
-                    uuid:          d().article.uuid,
-                    iid:           d().article.iid,
-                    title:         d().article.title,
-                    summary:       d().article.summary ?? "",
-                    slug:          d().article.slug ?? "",
-                    // Must be passed: the composer sends `category` on save and the
-                    // server treats it as authoritative, so omitting it here meant
-                    // every edit saved "" and cleared the article's categories.
-                    category:      (d().article.categories ?? []).join(", "),
-                    body:          d().article.rawBody ?? "",
-                    public_policy: d().article.publicPolicy,
-                    allow_cid:     d().article.allowCid,
-                    allow_gid:     d().article.allowGid,
-                    deny_cid:      d().article.denyCid,
-                    deny_gid:      d().article.denyGid,
-                    lang:          d().article.lang,
-                    series:        d().article.series,
-                  }}
-                  nick={nick()}
-                  onSaved={() => { setEditing(false); refetch(); }}
-                  onClose={() => setEditing(false)}
-                />
-              </Show>
-
-              {/* Add-translation modal */}
-              <Show when={translating()}>
-                <ArticleComposerModal
-                  uid={auth()!.uid}
-                  nick={nick()}
-                  heading={t("articles.add_translation")}
-                  translationOf={{
-                    uuid: d().article.uuid,
-                    excludeLangs: [
-                      d().article.lang,
-                      ...(d().article.translations ?? []).map((tr) => tr.lang),
-                    ].filter((l): l is string => !!l),
-                  }}
-                  onSaved={() => { setTranslating(false); refetch(); }}
-                  onClose={() => setTranslating(false)}
-                />
-              </Show>
-
-              {/* Normal view */}
-              <Show when={!editing()}>
                 {/* Header */}
                 <header class="space-y-2 border-b border-rim pb-4">
                   <div class="flex items-center gap-2 flex-wrap">
@@ -521,7 +528,7 @@ export default function ArticleView() {
                   <Show when={isOwner()}>
                     <button
                       type="button"
-                      onClick={() => { setConfirmDelete(false); setEditing(false); setTranslating(true); }}
+                      onClick={() => { setConfirmDelete(false); openTranslation(d().article); }}
                       title={t("articles.add_translation")}
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
                              transition-colors hover:bg-overlay text-muted hover:text-txt"
@@ -530,7 +537,7 @@ export default function ArticleView() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setConfirmDelete(false); setEditing(true); }}
+                      onClick={() => { setConfirmDelete(false); openEditor(d().article); }}
                       title="Edit article"
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
                              transition-colors hover:bg-overlay text-muted hover:text-txt"
@@ -539,7 +546,7 @@ export default function ArticleView() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setEditing(false); setConfirmDelete(true); }}
+                      onClick={() => setConfirmDelete(true)}
                       title="Delete article"
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
                              transition-colors hover:bg-overlay text-muted hover:text-red-500"
@@ -578,7 +585,6 @@ export default function ArticleView() {
                     />
                   </Show>
                 </section>
-              </Show>
             </article>
           </div>
         )}

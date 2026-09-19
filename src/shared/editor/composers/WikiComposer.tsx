@@ -9,7 +9,8 @@ import ComposerShell from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { countWords } from "../lib/textStats";
 import { zenMode } from "@utsukta/spa-core/store/zen";
-import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
+import { SecondaryButton } from "../components/buttons";
+import ComposerActionBar from "../components/ComposerActionBar";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
@@ -108,24 +109,23 @@ export default function WikiComposer(props: Props) {
         />
       }
       actions={
-        <>
-          <div class="flex gap-2 items-center">
-            <SecondaryButton onClick={props.onCancel}>{t("wiki.cancel_edit")}</SecondaryButton>
+        <ComposerActionBar
+          menu={
+            // Wiki is the one composer with no createComposerStore — its body
+            // is a prop and WikiPageView owns the draft — so it has no 5s
+            // autosave to replace this with. Kept deliberately.
             <Show when={props.onSaveDraft && body().trim()}>
               <SecondaryButton onClick={() => props.onSaveDraft!(body(), commitMsg())}>
                 {t("editor.save_draft")}
               </SecondaryButton>
             </Show>
-          </div>
-          <div class="flex items-center gap-2 ml-auto">
-            <PrimarySubmitButton
-              onClick={() => props.onSave(body(), commitMsg(), mime())}
-              disabled={props.saving || !body().trim()}
-            >
-              {props.saving ? t("wiki.saving") : t("wiki.save")}
-            </PrimarySubmitButton>
-          </div>
-        </>
+          }
+          onCancel={props.onCancel}
+          cancelLabel={t("wiki.cancel_edit")}
+          submitDisabled={props.saving || !body().trim()}
+          onSubmit={() => props.onSave(body(), commitMsg(), mime())}
+          submitLabel={props.saving ? t("wiki.saving") : t("wiki.save")}
+        />
       }
     />
   );

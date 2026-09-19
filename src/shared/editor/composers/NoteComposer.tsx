@@ -1,4 +1,4 @@
-import { Show, lazy } from "solid-js";
+import { Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
@@ -9,9 +9,10 @@ import ComposerShell from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import { countWords } from "../lib/textStats";
-import { PrimarySubmitButton, SecondaryButton } from "../components/buttons";
+import ComposerActionBar from "../components/ComposerActionBar";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useEncrypt } from "../useEncrypt";
@@ -22,8 +23,6 @@ import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import EncryptToggle from "../components/EncryptToggle";
 // Lazy: only fetched once the user opts into encrypting or decrypting — see
 // PostComposer/DMComposer for the same split.
-const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
-const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 
 interface Props {
   nick: string;
@@ -53,6 +52,9 @@ export default function NoteComposer(props: Props) {
     : "note:new";
 
   const attach = props.minimal ? null : createAttachmentStore(currentNick(), scope);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach!, currentNick, () => "both");
 
   const store = createComposerStore(async (body, meta) => {
     // Files (non-image) attach automatically; images are inserted inline via
@@ -154,7 +156,7 @@ export default function NoteComposer(props: Props) {
 
   return (
     <ComposerShell
-      class={props.fill ? "p-4" : undefined}
+      class={props.fill ? "p-3" : undefined}
       // Mirrors the pre-shell wrapper exactly: a real floor only in fill mode,
       // and none for the inline widget or the `minimal` plain-textarea mode,
       // whose own max-h-[50vh] textarea must stay small.
@@ -170,6 +172,8 @@ export default function NoteComposer(props: Props) {
           <EditorStats
             words={() => countWords(store.body())}
             chars={() => store.body().length}
+            tab={store.tab()}
+            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
           />
         </Show>
       }
@@ -197,6 +201,7 @@ export default function NoteComposer(props: Props) {
       >
         <>
           <RichEditor
+            attach={attach ? attachActions : undefined}
             onImageAlt={(src, alt) => attach?.setAltByUrl(src, alt)}
             body={store.body()}
             wysiwygAvailable={wysiwygAvailable()}
@@ -212,6 +217,7 @@ export default function NoteComposer(props: Props) {
           />
 
           <AttachmentBar
+            actions={attachActions}
             store={attach!}
             nick={currentNick()}
             accept="both"
@@ -221,55 +227,32 @@ export default function NoteComposer(props: Props) {
             onAltChange={(att) => {
               store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
             }}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={wysiwygAvailable()}
           />
         </>
       </Show>
       }
       panels={
         <>
-          {/* ── Encrypt panel ── */}
-          <Show when={enc.open()}>
-            <EncryptPanel enc={enc} />
-          </Show>
 
-          {/* ── Decrypt-to-edit panel ── */}
-          <Show when={enc.decryptOpen()}>
-            <DecryptPanel enc={enc} body={store.body} />
-          </Show>
         </>
       }
       actions={
-        <>
-          <Show when={!props.minimal && isFeatureEnabled("content_encrypt")}>
-            <EncryptToggle enc={enc} body={store.body} />
-          </Show>
-
-          <div class="flex items-center gap-2 ml-auto">
-            <Show when={props.onCancel}>
-              <SecondaryButton
-                onClick={() => { store.reset(); attach?.clear(); enc.reset(); props.onCancel?.(); }}
-              >
-                {t("notepad.cancel")}
-              </SecondaryButton>
+        <ComposerActionBar
+          menu={
+            <Show when={!props.minimal && isFeatureEnabled("content_encrypt")}>
+              <EncryptToggle enc={enc} body={store.body} />
             </Show>
-
-            <Show when={store.body().trim()}>
-              <SecondaryButton onClick={() => void store.saveAsDraft()}>
-                {t("editor.save_draft")}
-              </SecondaryButton>
-            </Show>
-
-            <PrimarySubmitButton
-              onClick={() => void store.submit()}
-              disabled={store.submitting() || !!attach?.uploading() || !store.body().trim()}
-            >
-              {store.submitting() ? t("notepad.saving") : t("notepad.save_btn")}
-            </PrimarySubmitButton>
-          </div>
-        </>
+          }
+          onCancel={
+            props.onCancel
+              ? () => { store.reset(); attach?.clear(); enc.reset(); props.onCancel?.(); }
+              : undefined
+          }
+          cancelLabel={t("notepad.cancel")}
+          submitDisabled={store.submitting() || !!attach?.uploading() || !store.body().trim()}
+          onSubmit={() => void store.submit()}
+          submitLabel={store.submitting() ? t("notepad.saving") : t("notepad.save_btn")}
+        />
       }
     />
   );

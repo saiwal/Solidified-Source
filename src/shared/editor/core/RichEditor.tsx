@@ -2,6 +2,8 @@ import { POST_PROSE } from "@/shared/lib/prose";
 import { createEffect, createSignal, onCleanup, useContext, For, Show } from "solid-js";
 import { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
+import type { AttachmentActions } from "../attachments/useAttachmentActions";
+import { ComposerFrameContext } from "../store/composer-host";
 import { Portal } from "solid-js/web";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
@@ -15,6 +17,9 @@ interface Props {
   body: string;
   onInput: (v: string) => void;
   capabilities: EditorCapabilities;
+  /** Forwarded to EditorToolbar, which renders upload/browse/camera before
+   *  the link button. Omitted, AttachmentBar keeps those buttons instead. */
+  attach?: AttachmentActions;
   tab: EditorTab;
   onTabChange: (t: EditorTab) => void;
   mimetype?: MimeType;
@@ -104,6 +109,11 @@ export default function RichEditor(props: Props) {
   };
   const surfaceGrowClass = () => (props.fill ? "flex-1 min-h-0" : "grow");
   const inShell = useContext(ZenHostContext);
+  // Zen is a full-viewport writing mode driven by a single global signal
+  // (zen.ts), so it cannot serve two docked composers at once — and it means
+  // nothing in a 416px panel anyway. Expand to page mode instead.
+  const frame = useContext(ComposerFrameContext);
+  const zenOffered = () => inShell && frame?.mode() !== "dock";
 
   // Seed the WYSIWYG surface whenever it (re)mounts. The <Show> around the
   // surface destroys the div on every tab switch, so this must run per mount
@@ -477,7 +487,7 @@ export default function RichEditor(props: Props) {
           }
         />
       </Show>
-        <Show when={inShell}>
+        <Show when={zenOffered()}>
           <div class="absolute bottom-2 right-4 z-10 rounded-full bg-surface/80 backdrop-blur-sm ring-1 ring-rim shadow-sm">
             <ZenToggleButton />
           </div>
@@ -493,6 +503,7 @@ export default function RichEditor(props: Props) {
         cardPicker={props.capabilities.cardPicker}
         tab={tab()}
         mimetype={mime()}
+        attach={props.attach}
         editorRef={() => editorRef}
         textareaRef={() => textareaRef}
         onSourceChange={(v) => { props.onInput(v); }}

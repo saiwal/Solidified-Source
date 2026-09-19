@@ -10,7 +10,7 @@ import { useParams, A, useNavigate } from "@solidjs/router";
 import { fetchCard, deleteCard } from "../api";
 import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
-import CardComposerModal from "@/shared/editor/composers/CardComposerModal";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
@@ -119,8 +119,42 @@ export default function CardView() {
     }
   });
 
-  // editing / deleting state
-  const [editing, setEditing] = createSignal(false);
+  // ── Editing / deleting ────────────────────────────────────────────────────
+  // The editor is handed to ComposerHost, so it can be docked or minimized
+  // while the card itself stays on screen. `initial` is read eagerly here, as
+  // the <Show>-mounted modal used to do on open. refetch() is this route's
+  // resource: saving after the reader navigated away is a harmless no-op.
+  type Card = NonNullable<ReturnType<typeof data>>["card"];
+
+  const openEditor = (card: Card) =>
+    openComposer({
+      kind: "card",
+      scope: `card:edit:${card.uuid}`,
+      title: t("cards.edit_card"),
+      props: {
+        uid: auth()!.uid,
+        nick: nick(),
+        initial: {
+          uuid:          card.uuid,
+          iid:           card.iid,
+          title:         card.title,
+          summary:       card.summary ?? "",
+          slug:          card.slug ?? "",
+          // Must be passed: the composer sends `category` on save and the
+          // server treats it as authoritative, so omitting it here meant
+          // every edit saved "" and cleared the card's categories.
+          category:      (card.categories ?? []).join(", "),
+          body:          card.rawBody ?? "",
+          public_policy: card.publicPolicy,
+          allow_cid:     card.allowCid,
+          allow_gid:     card.allowGid,
+          deny_cid:      card.denyCid,
+          deny_gid:      card.denyGid,
+          deck:          card.deck,
+        },
+        onSaved: () => refetch(),
+      },
+    });
   const [confirmDelete, setConfirmDelete] = createSignal(false);
 
   // Reaction state — optimistic local copy initialised from fetched card
@@ -337,37 +371,6 @@ export default function CardView() {
                 />
               </Show>
 
-              {/* Edit modal */}
-              <Show when={editing()}>
-                <CardComposerModal
-                  uid={auth()!.uid}
-                  heading={t("cards.edit_card")}
-                  initial={{
-                    uuid:          d().card.uuid,
-                    iid:           d().card.iid,
-                    title:         d().card.title,
-                    summary:       d().card.summary ?? "",
-                    slug:          d().card.slug ?? "",
-                    // Must be passed: the composer sends `category` on save and the
-                    // server treats it as authoritative, so omitting it here meant
-                    // every edit saved "" and cleared the card's categories.
-                    category:      (d().card.categories ?? []).join(", "),
-                    body:          d().card.rawBody ?? "",
-                    public_policy: d().card.publicPolicy,
-                    allow_cid:     d().card.allowCid,
-                    allow_gid:     d().card.allowGid,
-                    deny_cid:      d().card.denyCid,
-                    deny_gid:      d().card.denyGid,
-                    deck:        d().card.deck,
-                  }}
-                  nick={nick()}
-                  onSaved={() => { setEditing(false); refetch(); }}
-                  onClose={() => setEditing(false)}
-                />
-              </Show>
-
-              {/* Normal view */}
-              <Show when={!editing()}>
                 {/* Header */}
                 <header class="space-y-2 border-b border-rim pb-4">
                   <div class="flex items-center gap-2 flex-wrap">
@@ -481,7 +484,7 @@ export default function CardView() {
                   <Show when={isOwner()}>
                     <button
                       type="button"
-                      onClick={() => { setConfirmDelete(false); setEditing(true); }}
+                      onClick={() => { setConfirmDelete(false); openEditor(d().card); }}
                       title={t("cards.edit_card")}
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
                              transition-colors hover:bg-overlay text-muted hover:text-txt"
@@ -490,7 +493,7 @@ export default function CardView() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setEditing(false); setConfirmDelete(true); }}
+                      onClick={() => setConfirmDelete(true)}
                       title={t("cards.delete_card")}
                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
                              transition-colors hover:bg-overlay text-muted hover:text-red-500"
@@ -561,7 +564,6 @@ export default function CardView() {
                     />
                   </Show>
                 </section>
-              </Show>
             </article>
           </div>
         )}

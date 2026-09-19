@@ -20,6 +20,9 @@ export interface SourceToggleButtonProps {
    *  RichEditor forces the source tab when it isn't, so the toggle hides
    *  rather than sitting there doing nothing. Omitted = shown. */
   canWysiwyg?: boolean;
+  /** Drops the border/background chrome — for the word-count row, where it is
+   *  one more piece of quiet metadata rather than a button in a control row. */
+  borderless?: boolean;
 }
 
 const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
@@ -32,10 +35,13 @@ const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
       onClick={props.onToggle}
       title={isSource() ? t("editor.write_tab") : t("editor.source_tab")}
       class={
-        "flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs border transition-colors shrink-0 " +
-        (isSource()
-          ? "bg-accent/10 text-accent border-accent/30"
-          : "text-muted hover:text-txt hover:bg-elevated border-rim")
+        "flex items-center gap-1.5 rounded-md text-xs transition-colors shrink-0 " +
+        (props.borderless
+          ? "px-1 py-0.5 " + (isSource() ? "text-accent" : "text-muted hover:text-txt")
+          : "px-2 sm:px-2.5 py-1 border " +
+            (isSource()
+              ? "bg-accent/10 text-accent border-accent/30"
+              : "text-muted hover:text-txt hover:bg-elevated border-rim"))
       }
     >
       <MdOutlineCode class="w-3.5 h-3.5" />

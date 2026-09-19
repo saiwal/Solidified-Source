@@ -14,26 +14,32 @@
  * shared thread between the copies — that is what makes them blind.
  */
 
-import { createSignal, createEffect, on, onCleanup, Show, For, lazy, type Component } from "solid-js";
+import { createSignal, createEffect, on, onCleanup, useContext, Show, For, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
+import { ComposerFrameContext } from "../store/composer-host";
 import ComposerShell from "../components/ComposerShell";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { CAPABILITIES } from "../types/editor.types";
 import { fetchConnections, type AclEntry } from "@/modules/network/api";
 import { entryKey } from "../components/AclPicker";
 import RecipientField from "../components/RecipientField";
-import { DraftsList } from "../components/DraftsList";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
-import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
+import ComposerActionBar from "../components/ComposerActionBar";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
+import EditorStats from "../components/EditorStats";
+import { countWords } from "../lib/textStats";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
+import { toast } from "@utsukta/spa-core/store/toast";
+import { MdOutlineSchedule } from "solid-icons/md";
+import DateTimePicker from "../components/DateTimePicker";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiError } from "@utsukta/spa-core/lib/fetch";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
@@ -43,8 +49,6 @@ import EncryptToggle from "../components/EncryptToggle";
 // decrypting, so their code (and the libsodium-wrappers dependency it
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
 // initial bundle.
-const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
-const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 
 export interface DMComposerProps {
   open: boolean;
@@ -64,6 +68,12 @@ const DMComposer: Component<DMComposerProps> = (props) => {
 
   const scope = props.scopeKey ?? "dm:new";
   const attach = createAttachmentStore(currentNick(), scope);
+  // Delayed delivery. /spa/item stores a future `created` with item_delayed = 1
+  // regardless of scope, so a scheduled DM needs nothing on the server.
+  const [publishAt, setPublishAt] = createSignal("");
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
 
   const [recipients, setRecipients] = createSignal<AclEntry[]>(props.initialRecipients ?? []);
   const [bcc, setBcc] = createSignal<AclEntry[]>([]);
@@ -155,6 +165,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
           group_allow: [] as string[],
           contact_deny: [] as string[],
           group_deny: [] as string[],
+          created: publishAt() || undefined,
         }),
       });
 
@@ -192,15 +203,22 @@ const DMComposer: Component<DMComposerProps> = (props) => {
       throw new Error(t("editor.dm_bcc_failed", { names: failed.map((r) => r.name).join(", ") }));
     }
 
+    // A delayed DM is stored with item_delayed = 1, so it appears nowhere until
+    // the cron publishes it — say so, or sending looks like it did nothing.
+    if (publishAt()) toast.success(t("editor.dm_scheduled"));
     props.onSent?.(iid);
     attach.clear();
     props.onClose();
-  }, scope);
+  }, scope, {
+    // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
+    // Read lazily, so it can reference buildDraftExtra declared below.
+    autosaveExtra: () => buildDraftExtra(),
+  });
 
   // Recipients are the one part of a DM draft the composer store knows
   // nothing about, so they ride in the draft's `extra` bag — whole entries,
   // not just xids, so the restored chips still have a name and avatar.
-  const buildDraftExtra = () => ({ to: recipients(), bcc: bcc() });
+  const buildDraftExtra = () => ({ to: recipients(), bcc: bcc(), publishAt: publishAt() });
 
   createEffect(() => {
     const extra = store.restoredExtra();
@@ -210,9 +228,9 @@ const DMComposer: Component<DMComposerProps> = (props) => {
       setBcc(extra.bcc as AclEntry[]);
       if ((extra.bcc as AclEntry[]).length) setShowBcc(true);
     }
+    if (typeof extra.publishAt === "string") setPublishAt(extra.publishAt);
   });
 
-  const [draftsOpen, setDraftsOpen] = createSignal(false);
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
@@ -223,10 +241,15 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     mimetype: store.mimetype,
   });
 
+  // Escape minimizes a hosted composer (recoverable from the dock) and closes
+  // a locally-mounted one, matching ComposerModal.dismiss.
+  const frame = useContext(ComposerFrameContext);
+
   function onKey(e: KeyboardEvent) {
     if (wiring.onKeyDown(e)) return;
     if (e.key === "Escape") {
-      props.onClose();
+      if (frame) frame.setMode("min");
+      else props.onClose();
       return;
     }
     if (e.ctrlKey && e.key === "Enter") {
@@ -235,7 +258,11 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   }
 
   createEffect(() => {
-    if (props.open) document.addEventListener("keydown", onKey);
+    // Gated on the frame mode too: a minimized composer is still mounted, so
+    // without this every pill in the dock would keep a live document listener —
+    // one Escape would minimize them all and Ctrl+Enter would post from a
+    // composer nobody can see.
+    if (props.open && frame?.mode() !== "min") document.addEventListener("keydown", onKey);
     else document.removeEventListener("keydown", onKey);
   });
   onCleanup(() => document.removeEventListener("keydown", onKey));
@@ -249,7 +276,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
         manageEscape={false}
       >
         <ComposerShell
-          class="p-4"
+          class="p-3"
           meta={
             <>
               {/* ── To: field ── */}
@@ -304,6 +331,13 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                 />
               </div>
 
+              <EditorStats
+                words={() => countWords(store.body())}
+                chars={() => store.body().length}
+                tab={store.tab()}
+                onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+              />
+
               {/* ── Editor area — fills the remaining modal height; the surface
                    inside RichEditor scrolls internally past long text while the
                    bottom-docked toolbar stays put. ── */}
@@ -315,6 +349,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
           editor={
             <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
               <RichEditor
+                attach={attachActions}
                 onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
                 body={store.body()}
                 onInput={store.setBody}
@@ -329,6 +364,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                 fill
               />
               <AttachmentBar
+                actions={attachActions}
                 store={attach}
                 nick={currentNick()}
                 accept="both"
@@ -338,94 +374,56 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                 onAltChange={(att) => {
                   store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
                 }}
-                tab={store.tab()}
-                onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
               />
             </div>
 
           }
           panels={
             <>
-              {/* ── Encrypt panel ── */}
-              <Show when={enc.open()}>
-                <EncryptPanel enc={enc} />
-              </Show>
 
-              {/* ── Decrypt-to-edit panel ── */}
-              <Show when={enc.decryptOpen()}>
-                <DecryptPanel enc={enc} body={store.body} />
-              </Show>
 
-              <Show when={draftsOpen()}>
-                <DraftsList
-                  drafts={store.savedDrafts()}
-                  onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-                  onDelete={(id) => void store.deleteSavedDraft(id)}
-                  onClose={() => setDraftsOpen(false)}
-                />
-              </Show>
             </>
-          }
-          options={
-            <Show when={isFeatureEnabled("content_encrypt")}>
-              <EncryptToggle enc={enc} body={store.body} />
-            </Show>
           }
           actions={
-            <>
-              <SecondaryButton onClick={props.onClose}>{t("editor.discard")}</SecondaryButton>
-
-              <Show when={store.body().trim() || allRecipients().length > 0}>
-                <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
-                  {t("editor.save_draft")}
-                </SecondaryButton>
-              </Show>
-
-              <Show when={store.savedDrafts().length > 0}>
-                <button
-                  type="button"
-                  onClick={() => setDraftsOpen((o) => !o)}
-                  class={
-                    "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
-                    (draftsOpen()
-                      ? "border-rim bg-elevated text-txt"
-                      : "border-rim text-muted hover:text-txt hover:bg-elevated")
-                  }
-                >
-                  {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-                </button>
-              </Show>
-
-              <div class="flex items-center gap-2 ml-auto">
-                <IconButton
-                  title={t("editor.clear_composer")}
-                  variant="danger"
-                  onClick={() => {
-                    store.reset();
-                    attach.clear();
-                    setRecipients([]);
-                    setBcc([]);
-                    enc.reset();
-                  }}
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </IconButton>
-                <PrimarySubmitButton
-                  disabled={
-                    store.submitting() ||
-                    attach.uploading() ||
-                    allRecipients().length === 0 ||
-                    unpermittedRecipients().length > 0 ||
-                    !store.body().trim()
-                  }
-                  onClick={() => void store.submit()}
-                >
-                  {store.submitting() ? t("editor.sending_dm") : t("editor.send_btn")}
-                </PrimarySubmitButton>
-              </div>
-            </>
+            <ComposerActionBar
+              menu={
+                <>
+                  {/* Delayed delivery — gated behind Settings → Features →
+                      Delayed Posting, same as a scheduled post. */}
+                  <Show when={isFeatureEnabled("delayed_posting")}>
+                    <DateTimePicker
+                      value={publishAt()}
+                      onChange={setPublishAt}
+                      min={() => new Date()}
+                      icon={<MdOutlineSchedule size={14} />}
+                      title={t("editor.publish_at")}
+                      placeholder={t("editor.publish_at")}
+                    />
+                  </Show>
+                  <Show when={isFeatureEnabled("content_encrypt")}>
+                    <EncryptToggle enc={enc} body={store.body} />
+                  </Show>
+                </>
+              }
+              onCancel={props.onClose}
+              onClear={() => {
+                store.reset();
+                attach.clear();
+                setRecipients([]);
+                setBcc([]);
+                setPublishAt("");
+                enc.reset();
+              }}
+              submitDisabled={
+                store.submitting() ||
+                attach.uploading() ||
+                allRecipients().length === 0 ||
+                unpermittedRecipients().length > 0 ||
+                !store.body().trim()
+              }
+              onSubmit={() => void store.submit()}
+              submitLabel={store.submitting() ? t("editor.sending_dm") : t("editor.send_btn")}
+            />
           }
         />
       </ComposerModal>

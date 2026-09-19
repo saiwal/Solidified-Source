@@ -19,15 +19,19 @@ import { useFloating, type UseFloatingOptions } from "./useFloating";
 export function useDropdown(options: UseFloatingOptions = {}) {
   const [open, setOpen] = createSignal(false);
 
-  let triggerEl: Element | undefined;
-  let panelEl: HTMLElement | undefined;
+  // Signals, not plain variables: a panel whose content is `lazy()` resolves
+  // asynchronously, so its ref can land *after* this effect has already run.
+  // With a plain variable nothing re-triggers it, mount() never happens, and
+  // the panel sits at the viewport's top-left corner forever.
+  const [triggerEl, setTriggerEl] = createSignal<Element>();
+  const [panelEl, setPanelEl] = createSignal<HTMLElement>();
 
-  const { x, y, mount, unmount } = useFloating(options);
+  const { x, y, positioned, mount, unmount } = useFloating(options);
 
-  // Render effects (refs) run before user effects, so panelEl is assigned
-  // by the time this fires after open() becomes true.
   createEffect(() => {
-    if (open() && triggerEl && panelEl) mount(triggerEl, panelEl);
+    const trigger = triggerEl();
+    const panel = panelEl();
+    if (open() && trigger && panel) mount(trigger, panel);
     else unmount();
   });
 
@@ -36,7 +40,7 @@ export function useDropdown(options: UseFloatingOptions = {}) {
     if (!open()) return;
     const onDocClick = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (!triggerEl?.contains(t) && !panelEl?.contains(t)) setOpen(false);
+      if (!triggerEl()?.contains(t) && !panelEl()?.contains(t)) setOpen(false);
     };
     document.addEventListener("click", onDocClick);
     onCleanup(() => document.removeEventListener("click", onDocClick));
@@ -48,9 +52,14 @@ export function useDropdown(options: UseFloatingOptions = {}) {
     toggle: () => setOpen((o) => !o),
     x,
     y,
+    // useFloating also exposes `positioned` for hiding the pre-placement frame.
+    // Deliberately NOT folded into floatStyle: if positioning never completes
+    // the panel becomes invisible with no clue why, which is far harder to
+    // diagnose than a panel that is briefly in the wrong place.
+    positioned,
     floatStyle: () =>
       ({ position: "fixed" as const, top: `${y()}px`, left: `${x()}px` }),
-    setTriggerRef: (el: Element) => { triggerEl = el; },
-    setPanelRef: (el: HTMLElement) => { panelEl = el; },
+    setTriggerRef: (el: Element) => setTriggerEl(el),
+    setPanelRef: (el: HTMLElement) => setPanelEl(el),
   };
 }

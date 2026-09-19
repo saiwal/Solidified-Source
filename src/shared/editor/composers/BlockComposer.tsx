@@ -1,9 +1,8 @@
-import { Show, onCleanup, createSignal, createEffect, lazy } from "solid-js";
+import { Show, onCleanup, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { createComposerStore } from "../store/createComposerStore";
-import { DraftsList } from "../components/DraftsList";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import { useEncrypt } from "../useEncrypt";
@@ -12,14 +11,13 @@ import EncryptToggle from "../components/EncryptToggle";
 // decrypting, so their code (and the libsodium-wrappers dependency it
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
 // initial bundle.
-const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
-const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import EditorStats from "../components/EditorStats";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import AclPicker, { aclModeFrom, aclEntryKeys, type AclMode } from "../components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
@@ -31,7 +29,7 @@ import FormatSelect from "../components/FormatSelect";
 import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
-import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
+import ComposerActionBar from "../components/ComposerActionBar";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
 
@@ -70,7 +68,9 @@ export default function BlockComposer(props: Props) {
     : "block:new";
 
   const attach = createAttachmentStore(props.nick, scope);
-  const [draftsOpen, setDraftsOpen] = createSignal(false);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");
 
   // ── ACL state — initialize from existing block data when editing ─────────────
   // "Only me" is stored as allow_cid = [the owner's own hash], so recovering it
@@ -161,7 +161,11 @@ export default function BlockComposer(props: Props) {
 
     attach.clear();
     props.onSaved?.();
-  }, scope, { initialBody: props.initial?.body });
+  }, scope, {
+    initialBody: props.initial?.body,
+    // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
+    autosaveExtra: () => buildDraftExtra(),
+  });
 
   const wordCount = () => countWords(store.body());
   const charCount = () => store.body().length;
@@ -245,13 +249,19 @@ export default function BlockComposer(props: Props) {
             <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} />
           </Show>
 
-          <EditorStats words={wordCount} chars={charCount} />
+          <EditorStats
+            words={wordCount}
+            chars={charCount}
+            tab={store.tab()}
+            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+          />
         </>
       }
       editor={
         <>
           <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
             <RichEditor
+            attach={attachActions}
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               body={store.body()}
               wysiwygAvailable={wysiwygAvailable()}
@@ -265,6 +275,7 @@ export default function BlockComposer(props: Props) {
               fill={zenMode()}
             />
             <AttachmentBar
+            actions={attachActions}
               store={attach}
               nick={props.nick}
               accept="files"
@@ -274,9 +285,6 @@ export default function BlockComposer(props: Props) {
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
               }}
-              tab={store.tab()}
-              onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              canWysiwyg={wysiwygAvailable()}
             />
           </div>
         </>
@@ -285,29 +293,15 @@ export default function BlockComposer(props: Props) {
         <>
           <MentionEmojiPopups wiring={wiring} />
 
-          {/* Encrypt panel */}
-          <Show when={enc.open()}>
-            <EncryptPanel enc={enc} />
-          </Show>
 
-          {/* Decrypt-to-edit panel */}
-          <Show when={enc.decryptOpen()}>
-            <DecryptPanel enc={enc} body={store.body} />
-          </Show>
 
           {/* Drafts panel */}
-          <Show when={draftsOpen()}>
-            <DraftsList
-              drafts={store.savedDrafts()}
-              onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-              onDelete={(id) => void store.deleteSavedDraft(id)}
-              onClose={() => setDraftsOpen(false)}
-            />
-          </Show>
         </>
       }
-      options={
-        <>
+      actions={
+        <ComposerActionBar
+          leading={
+            <>
           <Show when={caps.aclPicker}>
             <AclPicker
               mode={acl.mode()}
@@ -318,78 +312,41 @@ export default function BlockComposer(props: Props) {
               onClear={acl.clearEntries}
             />
           </Show>
-
+            </>
+          }
+          menu={
+            <>
           <Show when={isFeatureEnabled("content_encrypt")}>
             <EncryptToggle enc={enc} body={store.body} />
           </Show>
-        </>
-      }
-      actions={
-        <>
-          <div class="flex gap-2 items-center">
-            <SecondaryButton
-              onClick={() => {
-                store.reset();
-                attach.clear();
-                acl.reset();
-                enc.reset();
-                props.onCancel?.();
-              }}
-            >
-              {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
-            </SecondaryButton>
-            <Show when={store.body().trim()}>
-              <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
-                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
-                </svg>
-                {t("editor.save_draft")}
-              </SecondaryButton>
-            </Show>
-            <Show when={store.savedDrafts().length > 0}>
-              <button
-                type="button"
-                onClick={() => setDraftsOpen((o) => !o)}
-                class={
-                  "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
-                  (draftsOpen()
-                    ? "border-rim bg-elevated text-txt"
-                    : "border-rim text-muted hover:text-txt hover:bg-elevated")
-                }
-              >
-                {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-              </button>
-            </Show>
-          </div>
-
-          <div class="flex items-center gap-2 ml-auto">
-            <IconButton
-              title={t("editor.clear_composer")}
-              variant="danger"
-              onClick={() => {
-                store.reset();
-                attach.clear();
-                acl.reset();
-                enc.reset();
-              }}
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </IconButton>
-            <PrimarySubmitButton
-              disabled={store.submitting() || attach.uploading() || !store.body().trim() || !store.title().trim()}
-              onClick={() => void store.submit()}
-            >
-              {store.submitting()
-                ? t("editor.saving")
-                : isEditing()
-                  ? t("editor.save_changes")
-                  : t("editor.publish_btn")}
-            </PrimarySubmitButton>
-          </div>
-        </>
+            </>
+          }
+          onCancel={() => {
+            store.reset();
+            attach.clear();
+            acl.reset();
+            enc.reset();
+            props.onCancel?.();
+          }}
+          cancelLabel={isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
+          onClear={() => {
+            store.reset();
+            attach.clear();
+            acl.reset();
+            enc.reset();
+          }}
+          submitDisabled={
+            store.submitting() || attach.uploading() || !store.body().trim() || !store.title().trim()
+          }
+          onSubmit={() => void store.submit()}
+          submitLabel={
+            store.submitting()
+              ? t("editor.saving")
+              : isEditing()
+                ? t("editor.save_changes")
+                : t("editor.publish_btn")
+          }
+        />
       }
     />
   );

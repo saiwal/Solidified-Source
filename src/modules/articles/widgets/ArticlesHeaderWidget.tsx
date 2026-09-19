@@ -5,29 +5,9 @@ import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
-import ArticleComposer from "@/shared/editor/composers/ArticleComposer";
-import ComposerModal from "@/shared/editor/components/ComposerModal";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { resetPosts, loadArticles } from "../store";
 import { useIsArticlesList } from "../lib/isArticlesList";
-
-function ArticleModal(props: { uid: number; nick: string; onClose: () => void }) {
-  const { t } = useI18n();
-
-  return (
-    <ComposerModal title={t("articles.new_article")} onClose={props.onClose} widthClass="max-w-3xl">
-      <ArticleComposer
-        profileUid={props.uid}
-        nick={props.nick}
-        onSaved={() => {
-          props.onClose();
-          resetPosts();
-          loadArticles(props.nick);
-        }}
-        onCancel={props.onClose}
-      />
-    </ComposerModal>
-  );
-}
 
 export default function ArticlesHeaderWidget() {
   const { t, locale } = useI18n();
@@ -41,7 +21,22 @@ export default function ArticlesHeaderWidget() {
   const activeTag = () => p("tag");
   const activeDbegin = () => p("dbegin");
   const activeSearch = () => p("search");
-  const [open, setOpen] = createSignal(false);
+  // resetPosts/loadArticles are module-level (../store), so they still work
+  // when the composer publishes from another page.
+  const openArticle = () =>
+    openComposer({
+      kind: "article",
+      scope: "article:new",
+      title: t("articles.new_article"),
+      props: {
+        uid: auth()!.uid,
+        nick: nick(),
+        onSaved: () => {
+          resetPosts();
+          void loadArticles(nick());
+        },
+      },
+    });
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());
 
@@ -63,7 +58,7 @@ export default function ArticlesHeaderWidget() {
     if (auth.loading) return;
     if (initialized) return;
     initialized = true;
-    if (searchParams.new === "1" && role() === "owner") setOpen(true);
+    if (searchParams.new === "1" && role() === "owner") openArticle();
   });
 
   return (
@@ -118,7 +113,7 @@ export default function ArticlesHeaderWidget() {
             <Show when={role() === "owner"}>
               <button
                 type="button"
-                onClick={() => setOpen(true)}
+                onClick={openArticle}
                 class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
                        rounded-lg bg-accent text-accent-fg hover:opacity-90
                        transition-opacity"
@@ -155,14 +150,6 @@ export default function ArticlesHeaderWidget() {
               {t("articles.clear")}
             </button>
           </div>
-        </Show>
-
-        <Show when={open()}>
-          <ArticleModal
-            uid={auth()!.uid}
-            nick={nick()}
-            onClose={() => setOpen(false)}
-          />
         </Show>
       </div>
     </Show>

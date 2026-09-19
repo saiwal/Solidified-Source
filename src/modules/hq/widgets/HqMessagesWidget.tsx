@@ -1,9 +1,8 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { createSignal, Show, lazy } from "solid-js";
 import { MdOutlineEdit, MdOutlineMail, MdOutlineRefresh } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-import PostComposer from "@/shared/editor/composers/PostComposer";
-import DMComposer from "@/shared/editor/composers/DMComposer";
 import { MessageList, FolderViewToggle, folderViewMode, setFolderViewMode } from "./MessageList";
 import { TABS, type Tab } from "./MessageTabs";
 
@@ -27,7 +26,13 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
   const [tab, setTab] = createSignal<Tab>((props.config?.tab as Tab) ?? "");
 
   const [authorFilter, setAuthorFilter] = createSignal("");
-  const [composing, setComposing] = createSignal<"post" | "dm" | null>(null);
+  const compose = (kind: "post" | "dm") =>
+    openComposer({
+      kind,
+      scope: kind === "post" ? "post:new" : "dm:new",
+      title: kind === "post" ? t("editor.new_post") : t("editor.dm_new_message"),
+      props: { profileUid: auth()!.uid },
+    });
   const [reloadKey, setReloadKey] = createSignal(0);
   const [refreshing, setRefreshing] = createSignal(false);
 
@@ -54,7 +59,7 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
             <button
               type="button"
               title={t("hq.new_post")}
-              onClick={() => setComposing("post")}
+              onClick={() => compose("post")}
               class="w-6 h-6 flex items-center justify-center rounded-md text-muted
                      hover:bg-overlay hover:text-txt transition-colors"
             >
@@ -63,7 +68,7 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
             <button
               type="button"
               title={t("hq.new_dm")}
-              onClick={() => setComposing("dm")}
+              onClick={() => compose("dm")}
               class="w-6 h-6 flex items-center justify-center rounded-md text-muted
                      hover:bg-overlay hover:text-txt transition-colors"
             >
@@ -154,24 +159,6 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
           </Show>
         </div>
       </div>
-
-      <Show when={composing() === "post"}>
-        <PostComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onPosted={() => setComposing(null)}
-          onClose={() => setComposing(null)}
-        />
-      </Show>
-
-      <Show when={composing() === "dm"}>
-        <DMComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onSent={() => setComposing(null)}
-          onClose={() => setComposing(null)}
-        />
-      </Show>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { createSignal, For, Show, type Component } from "solid-js";
+import { For, Show, type Component } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import {
   MdOutlineEdit,
@@ -12,9 +12,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive, isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import PostComposer from "@/shared/editor/composers/PostComposer";
-import DMComposer from "@/shared/editor/composers/DMComposer";
-import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
+import { openComposer } from "@/shared/editor/store/composer-host";
 
 type IconType = Component<{ size?: number; class?: string }>;
 
@@ -24,10 +22,6 @@ export default function QuickComposeWidget() {
   const nick = usePageNick();
   const navigate = useNavigate();
   const installedApps = useInstalledApps();
-
-  const [showPost, setShowPost] = createSignal(false);
-  const [showDM, setShowDM] = createSignal(false);
-  const [showArticle, setShowArticle] = createSignal(false);
 
   // Post has no routed SPA module to key off of (it's a plain Hubzilla
   // app), so it checks the raw installed-app name directly; DM is always
@@ -41,14 +35,26 @@ export default function QuickComposeWidget() {
         key: "post",
         label: t("hq.new_post"),
         icon: MdOutlineEdit,
-        onClick: () => setShowPost(true),
+        onClick: () =>
+          openComposer({
+            kind: "post",
+            scope: "post:new",
+            title: t("editor.new_post"),
+            props: { profileUid: auth()?.uid ?? 0 },
+          }),
       });
     }
     list.push({
       key: "dm",
       label: t("hq.new_dm"),
       icon: MdOutlineMail,
-      onClick: () => setShowDM(true),
+      onClick: () =>
+        openComposer({
+          kind: "dm",
+          scope: "dm:new",
+          title: t("editor.dm_new_message"),
+          props: { profileUid: auth()?.uid ?? 0 },
+        }),
     });
     if (isModuleActive("webpages", apps)) {
       list.push({
@@ -71,7 +77,13 @@ export default function QuickComposeWidget() {
         key: "article",
         label: t("hq.new_article"),
         icon: MdOutlineArticle,
-        onClick: () => setShowArticle(true),
+        onClick: () =>
+          openComposer({
+            kind: "article",
+            scope: "article:new",
+            title: t("articles.new_article"),
+            props: { uid: auth()?.uid ?? 0, nick: nick() },
+          }),
       });
     }
     return list;
@@ -101,33 +113,6 @@ export default function QuickComposeWidget() {
         </div>
       </div>
 
-      <Show when={showPost() && !auth.loading && auth()?.uid}>
-        <PostComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onPosted={() => setShowPost(false)}
-          onClose={() => setShowPost(false)}
-        />
-      </Show>
-
-      <Show when={showDM() && !auth.loading && auth()?.uid}>
-        <DMComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onSent={() => setShowDM(false)}
-          onClose={() => setShowDM(false)}
-        />
-      </Show>
-
-      <Show when={showArticle() && !auth.loading && auth()?.uid}>
-        <ArticleComposerModal
-          uid={auth()!.uid}
-          nick={nick()}
-          heading={t("articles.new_article")}
-          onSaved={() => setShowArticle(false)}
-          onClose={() => setShowArticle(false)}
-        />
-      </Show>
     </Show>
   );
 }

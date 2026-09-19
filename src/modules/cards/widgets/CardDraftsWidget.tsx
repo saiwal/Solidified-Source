@@ -1,7 +1,7 @@
-import { createSignal, Show } from "solid-js";
+import { Show } from "solid-js";
 import { storageDel } from "@utsukta/spa-core/lib/storage";
-import DraftsWidgetBase, { type DraftEntry, type DraftsWidgetApi } from "@/shared/editor/components/DraftsWidgetBase";
-import CardComposerModal from "@/shared/editor/composers/CardComposerModal";
+import DraftsWidgetBase, { type DraftEntry } from "@/shared/editor/components/DraftsWidgetBase";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -23,14 +23,9 @@ export default function CardDraftsWidget() {
   const pageNick = usePageNick();
   const { t } = useI18n();
 
-  const [activeEntry, setActiveEntry] = createSignal<DraftEntry | null>(null);
-  let api: DraftsWidgetApi | undefined;
-
   // For edit drafts the composer needs the card uuid (it posts to
   // /api/item/:uuid/edit); field values come from the draft itself
-  function cardInitial() {
-    const entry = activeEntry();
-    if (!entry) return undefined;
+  function cardInitial(entry: DraftEntry) {
     const { action, uuid } = scopeParts(entry.scope);
     if (action !== "edit" || !uuid) return undefined;
     const d = entry.draft;
@@ -42,6 +37,28 @@ export default function CardDraftsWidget() {
       category: d.category,
       body: d.body,
     };
+  }
+
+  // Mounted by ComposerHost and keyed on the draft scope, so it survives
+  // navigation and reloading the same draft surfaces the live composer.
+  // No reload callback: DraftsWidgetBase already refetches on draftsVersion.
+  function loadDraft(entry: DraftEntry) {
+    const initial = cardInitial(entry);
+    openComposer({
+      kind: "card",
+      scope: entry.scope,
+      title: initial ? t("cards.edit_card") : t("cards.new_card"),
+      props: {
+        uid: auth()!.uid,
+        nick: pageNick(),
+        initial,
+        onClose: () => void storageDel(`pending-draft:${entry.scope}`),
+        onSaved: () => {
+          resetPosts();
+          void loadCards(pageNick());
+        },
+      },
+    });
   }
 
   return (
@@ -56,31 +73,9 @@ export default function CardDraftsWidget() {
         emptyDraftText={t("cards.empty_draft")}
         badgeClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
         badgeLabel={(scope) => scopeParts(scope).action === "edit" ? t("cards.draft_edit") : t("cards.draft_new")}
-        onLoad={(entry) => { setActiveEntry(entry); }}
-        apiRef={(a) => { api = a; }}
+        onLoad={loadDraft}
       />
 
-      {/* Card composer — opened when loading a draft */}
-      <Show when={activeEntry() !== null}>
-        <CardComposerModal
-          uid={auth()!.uid}
-          nick={pageNick()}
-          heading={cardInitial() ? t("cards.edit_card") : t("cards.new_card")}
-          initial={cardInitial()}
-          onClose={() => {
-            // onSaved may have cleared it already — the composer fires both
-            const entry = activeEntry();
-            if (entry) void storageDel(`pending-draft:${entry.scope}`);
-            setActiveEntry(null);
-          }}
-          onSaved={() => {
-            setActiveEntry(null);
-            void api?.reload();
-            resetPosts();
-            void loadCards(pageNick());
-          }}
-        />
-      </Show>
     </Show>
   );
 }

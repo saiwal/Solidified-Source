@@ -8,6 +8,10 @@
  * Article, Card, Webpage and Block. This owns that rhythm so a composer only
  * decides *what* goes in each region, never how the regions are spaced.
  *
+ * The rhythm is deliberately tight (gap-2.5 between regions, space-y-2 inside
+ * them): a docked composer is ~416px wide and the modal is height-capped, so
+ * every row of slack costs the editor real space.
+ *
  * Deliberately sets no padding, no `max-w-*` and no `mx-auto`: the outer box
  * belongs to the host (the page view's own wrapper plus Layout's page
  * padding, or ComposerModal's dialog). An auto cross-axis margin on a flex
@@ -24,7 +28,7 @@ import { zenMode, setZenMode } from "@utsukta/spa-core/store/zen";
  *
  * `<Show when={props.x}>` only tells us the prop was passed — a fragment is
  * truthy even when every <Show> inside it is false. Without this the wrapper
- * still renders, and since the root is a `gap-4` flex column an empty div is
+ * still renders, and since the root is a `gap-2.5` flex column an empty div is
  * still a flex item with a gap on either side: a blank band (and, for the
  * options row, a stray border-t rule).
  *
@@ -41,10 +45,9 @@ export interface ComposerShellProps {
   editor: JSX.Element;
   /** Full-width extras below the editor: encrypt/decrypt, drafts, location. */
   panels?: JSX.Element;
-  /** ACL, expiry, schedule, disable-comments, encrypt toggle. Omit for the
-   *  composers that have no options (wiki, note) so they get no stray rule. */
-  options?: JSX.Element;
-  /** Discard / save-draft / clear / submit. */
+  /** The single bottom row — ComposerActionBar for every composer: scope on
+   *  the left, the primary action and its options menu on the right. The
+   *  separate options row it replaced is gone. */
   actions: JSX.Element;
   /**
    * Overrides the editor region's wrapper classes. Pass "contents" when the
@@ -71,9 +74,11 @@ export const ZenHostContext = createContext(false);
 const ComposerShell: Component<ComposerShellProps> = (props) => {
   // Zen outlives its composer otherwise (closed, navigated away from), and the
   // next composer would open straight into it.
-  // ponytail: any shell's unmount clears it, not just the one in zen — while
-  // zen is on the other shells are behind an opaque overlay, so nothing can
-  // reach them to unmount them.
+  // ponytail: any shell's unmount clears it, not just the one in zen. While zen
+  // is on, the other shells are behind an opaque overlay and unreachable — but
+  // with ComposerHost keeping several composers mounted, closing a *minimized*
+  // one's pill now also drops zen in the expanded one. Rare enough to accept;
+  // make zen a context keyed on the composer if it starts to bite.
   onCleanup(() => setZenMode(false));
 
   // Zen hides the four non-editor regions with a class rather than a <Show>:
@@ -96,11 +101,11 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
       class={
         zenMode()
           ? "fixed inset-0 z-[160] mx-auto max-w-4xl flex flex-col gap-2 bg-surface p-2 sm:p-4"
-          : `flex flex-col flex-1 min-h-0 gap-4 ${props.class ?? ""}`
+          : `flex flex-col flex-1 min-h-0 gap-2.5 ${props.class ?? ""}`
       }
     >
       <Show when={props.meta}>
-        <div class={`shrink-0 space-y-4 ${collapseWhenEmpty} ${zenHidden()}`}>{props.meta}</div>
+        <div class={`shrink-0 space-y-2 ${collapseWhenEmpty} ${zenHidden()}`}>{props.meta}</div>
       </Show>
 
       <div
@@ -114,18 +119,10 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
       </div>
 
       <Show when={props.panels}>
-        <div class={`shrink-0 space-y-4 ${collapseWhenEmpty} ${zenHidden()}`}>{props.panels}</div>
+        <div class={`shrink-0 space-y-2 ${collapseWhenEmpty} ${zenHidden()}`}>{props.panels}</div>
       </Show>
 
-      <Show when={props.options}>
-        <div
-          class={`shrink-0 flex flex-wrap items-center gap-3 ${collapseWhenEmpty} ${zenHidden()}`}
-        >
-          {props.options}
-        </div>
-      </Show>
-
-      <div class={`shrink-0 flex flex-wrap items-center gap-3 pb-3 ${zenHidden()}`}>
+      <div class={`shrink-0 flex flex-wrap items-center gap-2 pb-1 ${zenHidden()}`}>
         {props.actions}
       </div>
     </div>

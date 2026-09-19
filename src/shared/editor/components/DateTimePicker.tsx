@@ -1,7 +1,8 @@
-import { createSignal, createMemo, For, Show, onCleanup, type JSX } from "solid-js";
+import { createSignal, createMemo, For, Show, onCleanup, useContext, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { ComposerMenuContext, composerTriggerClass } from "./buttons";
 
 interface Props {
   /** "" or local "YYYY-MM-DDTHH:mm" (same contract as <input type="datetime-local">) */
@@ -40,6 +41,7 @@ const sameDay = (a: Date, b: Date) =>
  */
 export default function DateTimePicker(props: Props) {
   const { t, locale } = useI18n();
+  const inMenu = useContext(ComposerMenuContext);
   const [open, setOpen] = createSignal(false);
   const selected = createMemo(() => parseValue(props.value));
   const [viewMonth, setViewMonth] = createSignal(startOfMonth(selected() ?? new Date()));
@@ -189,22 +191,29 @@ export default function DateTimePicker(props: Props) {
         : "text-txt hover:bg-elevated cursor-pointer");
 
   return (
-    <div ref={rootRef} class="relative">
+    <div ref={rootRef} class={inMenu ? "relative w-full" : "relative"}>
       {/* Trigger */}
       <button
         type="button"
         title={props.title}
         onClick={toggle}
-        class={
-          "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-2 sm:py-1 rounded-md text-xs border transition-colors " +
-          (props.value || open()
-            ? "bg-accent/10 text-accent border-accent/30"
-            : "text-muted hover:text-txt hover:bg-elevated border-rim")
-        }
+        class={composerTriggerClass(!!props.value || open(), inMenu)}
       >
         <span class="shrink-0">{props.icon ?? <MdOutlineSchedule size={14} />}</span>
-        <Show when={selected()} fallback={<span class="hidden sm:inline">{props.placeholder ?? props.title}</span>}>
-          <span class="tabular-nums">{fmtTrigger().format(selected()!)}</span>
+        <Show
+          when={selected()}
+          fallback={
+            <span class={inMenu ? "" : "hidden sm:inline"}>{props.placeholder ?? props.title}</span>
+          }
+        >
+          {/* In a menu the label stays, so the row still says what the date is
+              for once one is picked. */}
+          <Show when={inMenu}>
+            <span>{props.title}</span>
+          </Show>
+          <span class={"tabular-nums" + (inMenu ? " ml-auto" : "")}>
+            {fmtTrigger().format(selected()!)}
+          </span>
         </Show>
       </button>
 
@@ -213,6 +222,7 @@ export default function DateTimePicker(props: Props) {
         <Portal mount={document.body}>
         <div
           ref={popupRef}
+          data-composer-popup=""
           style={popupStyle()}
           class="flex gap-2 p-2.5 rounded-xl
                  border border-rim bg-surface shadow-xl select-none"

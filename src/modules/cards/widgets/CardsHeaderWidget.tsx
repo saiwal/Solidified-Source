@@ -5,8 +5,7 @@ import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
-import CardComposer from "@/shared/editor/composers/CardComposer";
-import ComposerModal from "@/shared/editor/components/ComposerModal";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import {
   activeCategory, activeTag, activeDbegin, activeSearch,
   setCardSearch, clearCardFilter,
@@ -17,25 +16,6 @@ import { useIsCardsList } from "../lib/isCardsList";
 import { boardView, setBoardView } from "../lib/kanban";
 import { fetchKanban } from "../api";
 
-function CardModal(props: { uid: number; nick: string; onClose: () => void }) {
-  const { t } = useI18n();
-
-  return (
-    <ComposerModal title={t("cards.new_card")} onClose={props.onClose} widthClass="max-w-3xl">
-      <CardComposer
-        profileUid={props.uid}
-        nick={props.nick}
-        onSaved={() => {
-          props.onClose();
-          resetPosts();
-          loadCards(props.nick);
-        }}
-        onCancel={props.onClose}
-      />
-    </ComposerModal>
-  );
-}
-
 export default function CardsHeaderWidget() {
   const { t, locale } = useI18n();
   const auth = useAuth();
@@ -45,7 +25,22 @@ export default function CardsHeaderWidget() {
   const [searchParams] = useSearchParams();
   // Same query key as CardsContentWidget and the board — one request.
   const [kanban] = createQueryResource("kanban-config", nick, fetchKanban);
-  const [open, setOpen] = createSignal(false);
+  // resetPosts/loadCards are module-level (../store), so they still work when
+  // the composer publishes from another page.
+  const openCard = () =>
+    openComposer({
+      kind: "card",
+      scope: "card:new",
+      title: t("cards.new_card"),
+      props: {
+        uid: auth()!.uid,
+        nick: nick(),
+        onSaved: () => {
+          resetPosts();
+          void loadCards(nick());
+        },
+      },
+    });
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());
 
@@ -67,7 +62,7 @@ export default function CardsHeaderWidget() {
     if (auth.loading) return;
     if (initialized) return;
     initialized = true;
-    if (searchParams.new === "1" && role() === "owner") setOpen(true);
+    if (searchParams.new === "1" && role() === "owner") openCard();
   });
 
   return (
@@ -147,7 +142,7 @@ export default function CardsHeaderWidget() {
             <Show when={role() === "owner"}>
               <button
                 type="button"
-                onClick={() => setOpen(true)}
+                onClick={openCard}
                 class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
                        rounded-lg bg-accent text-accent-fg hover:opacity-90
                        transition-opacity"
@@ -184,14 +179,6 @@ export default function CardsHeaderWidget() {
               {t("cards.clear")}
             </button>
           </div>
-        </Show>
-
-        <Show when={open()}>
-          <CardModal
-            uid={auth()!.uid}
-            nick={nick()}
-            onClose={() => setOpen(false)}
-          />
         </Show>
       </div>
     </Show>

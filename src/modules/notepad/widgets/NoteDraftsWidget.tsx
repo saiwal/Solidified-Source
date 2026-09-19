@@ -1,7 +1,7 @@
-import { createSignal, Show } from "solid-js";
+import { Show } from "solid-js";
 import { storageDel } from "@utsukta/spa-core/lib/storage";
-import DraftsWidgetBase, { type DraftEntry, type DraftsWidgetApi } from "@/shared/editor/components/DraftsWidgetBase";
-import NoteComposerModal from "@/shared/editor/composers/NoteComposerModal";
+import DraftsWidgetBase, { type DraftEntry } from "@/shared/editor/components/DraftsWidgetBase";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNotes } from "../store";
@@ -23,14 +23,9 @@ export default function NoteDraftsWidget() {
   const auth = useAuth();
   const { t } = useI18n();
 
-  const [activeEntry, setActiveEntry] = createSignal<DraftEntry | null>(null);
-  let api: DraftsWidgetApi | undefined;
-
   // For edit drafts the composer needs the note's mid (it posts to
   // /api/item/:mid/edit); field values come from the draft itself
-  function noteInitial() {
-    const entry = activeEntry();
-    if (!entry) return undefined;
+  function noteInitial(entry: DraftEntry) {
     const { action, mid } = scopeParts(entry.scope);
     if (action !== "edit" || !mid) return undefined;
     return {
@@ -38,6 +33,24 @@ export default function NoteDraftsWidget() {
       body: entry.draft.body,
       mimetype: entry.draft.mimetype,
     };
+  }
+
+  // Mounted by ComposerHost and keyed on the draft scope, so it survives
+  // navigation and reloading the same draft surfaces the live composer.
+  // No reload callback: DraftsWidgetBase already refetches on draftsVersion.
+  function loadDraft(entry: DraftEntry) {
+    const initial = noteInitial(entry);
+    openComposer({
+      kind: "note",
+      scope: entry.scope,
+      title: initial ? t("notepad.edit_note") : t("notepad.new_note"),
+      props: {
+        nick: auth()?.nick ?? "",
+        initial,
+        onClose: () => void storageDel(`pending-draft:${entry.scope}`),
+        onSaved: () => void loadNotes(true),
+      },
+    });
   }
 
   return (
@@ -52,29 +65,9 @@ export default function NoteDraftsWidget() {
         emptyDraftText={t("notepad.empty_draft")}
         badgeClassName="bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/25"
         badgeLabel={(scope) => scopeParts(scope).action === "edit" ? t("notepad.draft_edit") : t("notepad.draft_new")}
-        onLoad={(entry) => { setActiveEntry(entry); }}
-        apiRef={(a) => { api = a; }}
+        onLoad={loadDraft}
       />
 
-      {/* Note composer — opened when loading a draft */}
-      <Show when={activeEntry() !== null}>
-        <NoteComposerModal
-          nick={auth()?.nick ?? ""}
-          heading={noteInitial() ? t("notepad.edit_note") : t("notepad.new_note")}
-          initial={noteInitial()}
-          onClose={() => {
-            // onSaved may have cleared it already — the composer fires both
-            const entry = activeEntry();
-            if (entry) void storageDel(`pending-draft:${entry.scope}`);
-            setActiveEntry(null);
-          }}
-          onSaved={() => {
-            setActiveEntry(null);
-            void api?.reload();
-            void loadNotes(true);
-          }}
-        />
-      </Show>
     </Show>
   );
 }

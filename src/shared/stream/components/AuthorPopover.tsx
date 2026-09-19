@@ -9,7 +9,7 @@ import { addConnection } from "@/modules/directory/people/api";
 import { fetchConnectionByAddress } from "@/modules/directory/connections/api";
 import type { Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
-import DMComposer from "@/shared/editor/composers/DMComposer";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { createRoom } from "@/modules/chat/api";
 import { blockChannel, blockChannelFromSite } from "@utsukta/spa-core/lib/blocklist-api";
 import { useNavigate } from "@solidjs/router";
@@ -50,7 +50,30 @@ export default function AuthorPopover(props: Props) {
   const [open, setOpen] = createSignal(false);
   const [connState, setConnState] = createSignal<ConnState>({ tag: "idle" });
   const [editOpen, setEditOpen] = createSignal(false);
-  const [dmOpen, setDmOpen] = createSignal(false);
+  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // carries the recipient, so DMs to two different people are two composers
+  // with two drafts rather than one that overwrites the other.
+  const openDm = (r: {
+    xid: string; name: string; nick: string; photo?: string;
+  }) =>
+    openComposer({
+      kind: "dm",
+      scope: `dm:new:${r.xid}`,
+      title: t("editor.dm_new_message"),
+      props: {
+        profileUid: auth()!.uid,
+        scopeKey: `dm:new:${r.xid}`,
+        initialRecipients: [{
+          type: "c",
+          xid: r.xid,
+          id: r.xid,
+          name: r.name,
+          nick: r.nick,
+          link: r.nick,
+          photo: r.photo,
+        }],
+      },
+    });
   const [xchanHash, setXchanHash] = createSignal<string | null>(null);
   const [pdesc, setPdesc] = createSignal<string>("");
   const [chatCreating, setChatCreating] = createSignal(false);
@@ -173,7 +196,12 @@ export default function AuthorPopover(props: Props) {
     e.preventDefault();
     e.stopPropagation();
     setOpen(false);
-    setDmOpen(true);
+    openDm({
+      xid: xchanHash()!,
+      name: props.name,
+      nick: props.address ?? "",
+      photo: props.avatar,
+    });
   }
 
   function handleChatButtonClick(e: MouseEvent) {
@@ -563,24 +591,6 @@ export default function AuthorPopover(props: Props) {
             setConnState({ tag: "not_connected" });
             setEditOpen(false);
           }}
-        />
-      </Show>
-
-      {/* DM composer */}
-      <Show when={dmOpen() && auth() && xchanHash()}>
-        <DMComposer
-          open={dmOpen()}
-          onClose={() => setDmOpen(false)}
-          profileUid={auth()!.uid}
-          initialRecipients={[{
-            type: "c",
-            xid: xchanHash()!,
-            id: xchanHash()!,
-            name: props.name,
-            nick: props.address ?? "",
-            link: props.address ?? "",
-            photo: props.avatar,
-          }]}
         />
       </Show>
     </>

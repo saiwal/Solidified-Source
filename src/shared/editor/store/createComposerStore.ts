@@ -1,12 +1,25 @@
 import { truncateError } from "@utsukta/spa-core/lib/fetch";
-import { createSignal, createEffect } from "solid-js";
+import { createSignal, createEffect, onCleanup, useContext } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { listServerDrafts, saveServerDraft, deleteServerDraft } from "../api/drafts";
 import { isEncryptedBody } from "@utsukta/spa-core/lib/postCrypto";
+import { ComposerFrameContext } from "./composer-host";
 import type { MimeType, ComposerMeta } from "../types/editor.types";
 
 export type SubmitFn = (body: string, meta: ComposerMeta) => Promise<void>;
+
+/**
+ * Bumped to Date.now() whenever a draft reaches the server, so the composer
+ * chrome can say so — the autosave is silent otherwise and a writer has no way
+ * to know their work is safe.
+ *
+ * Module-level rather than per-store because the indicator lives in
+ * ComposerModal's header, which knows nothing about the store inside it.
+ * ponytail: global signal — with two composers docked side by side a save in
+ * one flashes the badge in both; make it a per-scope map if that ever matters.
+ */
+export const [draftSavedAt, setDraftSavedAt] = createSignal(0);
 
 export type ComposerStore = ReturnType<typeof createComposerStore>;
 
@@ -57,6 +70,12 @@ export function createComposerStore(
     initialSummary?: string;
     initialCategory?: string;
     initialMimetype?: MimeType;
+    /**
+     * Composer-specific fields (ACL, poll, article language, …) for the
+     * autosaved server draft — the same shape the manual save used to build.
+     * Omitted, the composer autosaves only the fields this store owns.
+     */
+    autosaveExtra?: () => Record<string, unknown> | null;
   },
 ) {
   const DRAFT_KEY = `draft:${scope}`;
@@ -68,6 +87,13 @@ export function createComposerStore(
   const [category, setCategory] = createSignal(options?.initialCategory ?? "");
   const [mimetype, setMimetype] = createSignal<MimeType>(options?.initialMimetype ?? "text/bbcode");
   const [submitting, setSubmitting] = createSignal(false);
+
+  // Every composer builds one of these, so this is the single place that can
+  // name what is actually being written: a hosted composer's minimized pill
+  // shows the title field instead of the generic heading. No frame (locally
+  // mounted composer) means nobody is listening.
+  const frame = useContext(ComposerFrameContext);
+  if (frame) createEffect(() => frame.setDocTitle(title().trim()));
   const [error, setError]       = createSignal<string | null>(null);
   // WYSIWYG has nothing meaningful to show for already-encrypted content —
   // bbcodeToHtml() just renders an inert "🔒 Encrypted content" placeholder
@@ -150,6 +176,33 @@ export function createComposerStore(
     else storageDel(DRAFT_KEY);
   });
 
+  // ── Server autosave ────────────────────────────────────────────────────────
+  // The local snapshot above is per-keystroke and is what recovers a composer
+  // you closed. This is the *draft* — it reaches /spa/drafts, so it shows up in
+  // the drafts widgets and on another device — and is debounced to 5s of quiet
+  // because each one is an API write.
+  //
+  // saveAsDraft() reuses loadedDraftId, so repeated autosaves update one draft
+  // item rather than piling up new ones. Failures stay silent: an autosave the
+  // user did not ask for must not interrupt them with a toast, and the local
+  // snapshot has the content either way.
+  const AUTOSAVE_MS = 5000;
+  let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+
+  createEffect(() => {
+    if (!initialized()) return;
+    // Track what a draft is made of, so any of them restarts the countdown.
+    const snapshot = [body(), title(), summary(), slug(), category()].join("\u0000");
+    clearTimeout(autosaveTimer);
+    if (!body().trim() || submitting()) return;
+    autosaveTimer = setTimeout(() => {
+      void saveAsDraft(options?.autosaveExtra?.() ?? undefined, undefined, true);
+    }, AUTOSAVE_MS);
+    void snapshot;
+  });
+
+  onCleanup(() => clearTimeout(autosaveTimer));
+
   async function submit(extra: ComposerMeta = {}, bodyOverride?: string) {
     const submitBody = bodyOverride ?? body();
     if (!submitBody.trim() || submitting()) return;
@@ -214,6 +267,8 @@ export function createComposerStore(
   async function saveAsDraft(
     extra?: Record<string, unknown>,
     bodyOverride?: string,
+    /** Autosave: stay silent on failure rather than interrupting the writer. */
+    silent = false,
   ): Promise<void> {
     const draftBody = bodyOverride ?? body();
     const now = Date.now();
@@ -237,13 +292,14 @@ export function createComposerStore(
     };
     const serverMid = await saveServerDraft(tempDraft, scope);
     if (!serverMid) {
-      toast.error("Failed to save draft");
+      if (!silent) toast.error("Failed to save draft");
       return;
     }
     const draft: SavedDraft = { ...tempDraft, id: serverMid, serverMid };
     setLoadedDraftId(serverMid);
     setLoadedDraftCreated(draft.created);
     setSavedDrafts([draft, ...savedDrafts().filter((d) => d.id !== serverMid)]);
+    setDraftSavedAt(Date.now());
   }
 
   function loadSavedDraft(draft: SavedDraft): void {

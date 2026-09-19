@@ -9,11 +9,11 @@ const EncryptPanel: Component<{ enc: EncryptState }> = (props) => {
   const e = props.enc;
 
   return (
-    <div class="px-4 py-3 border-t border-rim bg-elevated/40 shrink-0 space-y-2">
+    <div class="space-y-2">
       <span class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">
         {t("editor.encrypt_panel_title")}
       </span>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div class="grid grid-cols-1 gap-2">
         <div class="flex flex-col gap-0.5">
           <label class="text-xs text-muted">{t("editor.encrypt_password_label")}</label>
           <input

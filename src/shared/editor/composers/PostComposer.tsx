@@ -15,16 +15,16 @@ import {
   createSignal,
   createEffect,
   onCleanup,
+  useContext,
   Show,
-  lazy,
   type Component,
 } from "solid-js";
-import { DraftsList } from "../components/DraftsList";
 import { Portal } from "solid-js/web";
 import { MdOutlineTimer, MdOutlineSchedule } from "solid-icons/md";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
+import { ComposerFrameContext } from "../store/composer-host";
 import ComposerShell from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { CAPABILITIES, type MimeType } from "../types/editor.types";
@@ -44,9 +44,11 @@ import PollPanel from "../poll/PollPanel";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import SummaryField from "../components/SummaryField";
-import { PrimarySubmitButton, SecondaryButton, ToggleButton, IconButton } from "../components/buttons";
+import { ToggleButton, PopoverButton } from "../components/buttons";
+import ComposerActionBar from "../components/ComposerActionBar";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { currentNick, isFeatureEnabled, isLocalOnlyPostsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import type { FileAcl } from "@/modules/files/api";
@@ -59,8 +61,6 @@ import EncryptToggle from "../components/EncryptToggle";
 // decrypting, so their code (and the libsodium-wrappers dependency it
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
 // initial bundle.
-const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
-const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
@@ -134,6 +134,9 @@ const PostComposer: Component<ComposerProps> = (props) => {
 
   // ── Attachment store ───────────────────────────────────────────────────────
   const attach = createAttachmentStore(currentNick(), scope);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
 
   // ── ACL state ───────────────────────────────────────────────────────────────
   const acl = useAclState({
@@ -141,7 +144,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
     allowEntries: props.initialAllowEntries,
   });
   const [expiry, setExpiry] = createSignal("");
-  const [draftsOpen, setDraftsOpen] = createSignal(false);
 
   // ── Location / delayed publish / comment lock ─────────────────────────────
   const [locationOpen, setLocationOpen] = createSignal(false);
@@ -332,6 +334,8 @@ const PostComposer: Component<ComposerProps> = (props) => {
       initialSummary: props.initialSummary,
       initialCategory: props.initialCategory,
       initialMimetype: props.initialMimetype ?? postMimetype(),
+      // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
+      autosaveExtra: buildDraftExtra,
     },
   );
 
@@ -426,10 +430,15 @@ const PostComposer: Component<ComposerProps> = (props) => {
   });
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
+  // Escape minimizes a hosted composer (recoverable from the dock) and closes
+  // a locally-mounted one, matching ComposerModal.dismiss.
+  const frame = useContext(ComposerFrameContext);
+
   function onKey(e: KeyboardEvent) {
     if (wiring.onKeyDown(e)) return;
     if (e.key === "Escape") {
-      props.onClose();
+      if (frame) frame.setMode("min");
+      else props.onClose();
       return;
     }
     if (e.ctrlKey && e.key === "Enter") {
@@ -438,7 +447,11 @@ const PostComposer: Component<ComposerProps> = (props) => {
   }
 
   createEffect(() => {
-    if (props.open) document.addEventListener("keydown", onKey);
+    // Gated on the frame mode too: a minimized composer is still mounted, so
+    // without this every pill in the dock would keep a live document listener —
+    // one Escape would minimize them all and Ctrl+Enter would post from a
+    // composer nobody can see.
+    if (props.open && frame?.mode() !== "min") document.addEventListener("keydown", onKey);
     else document.removeEventListener("keydown", onKey);
   });
   onCleanup(() => document.removeEventListener("keydown", onKey));
@@ -464,7 +477,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
             shrink-0/flex-1/shrink-0 groups), rather than passing them as
             separate top-level children of ComposerModal's body. */}
         <ComposerShell
-          class="p-4"
+          class="p-3"
           meta={
             <>
               <Show when={caps.title}>
@@ -507,12 +520,19 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 />
               </Show>
 
-              <EditorStats words={wordCount} chars={charCount} />
+              <EditorStats
+                words={wordCount}
+                chars={charCount}
+                tab={store.tab()}
+                onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+                canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
+              />
             </>
           }
           editor={
           <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
             <RichEditor
+              attach={attachActions}
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               body={store.body()}
               onInput={store.setBody}
@@ -534,6 +554,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 item.attach if removing files matters. */}
             <AttachmentBar
               store={attach}
+              actions={attachActions}
               nick={currentNick()}
               accept="both"
               onInsert={(bbcode) => {
@@ -542,25 +563,12 @@ const PostComposer: Component<ComposerProps> = (props) => {
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
               }}
-              tab={store.tab()}
-              onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
             />
           </div>
 
           }
           panels={
             <>
-              {/* ── Drafts panel ── */}
-              <Show when={draftsOpen()}>
-                <DraftsList
-                  drafts={store.savedDrafts()}
-                  onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-                  onDelete={(id) => void store.deleteSavedDraft(id)}
-                  onClose={() => setDraftsOpen(false)}
-                />
-              </Show>
-
               {/* ── Editor area — fills the remaining modal height; the surface
                    inside RichEditor scrolls internally past long text while the
                    bottom-docked toolbar stays put. ── */}
@@ -568,69 +576,18 @@ const PostComposer: Component<ComposerProps> = (props) => {
                   300px floor plus AttachmentBar's row, so this can't be squeezed
                   smaller than its children need — see RichEditor.tsx's wrapper
                   comment for why min-h-0/auto both fail here. */}
-              {/* ── Location panel ── */}
-              <Show when={locationOpen()}>
-                <div class="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-rim bg-elevated/40 shrink-0">
-                  <input
-                    type="text"
-                    value={location()}
-                    placeholder={t("editor.location_placeholder")}
-                    onInput={(e) => setLocation(e.currentTarget.value)}
-                    class="flex-1 min-w-40 bg-transparent border border-rim rounded px-2.5 py-1 text-sm
-                           text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
-                  />
-                  <Show
-                    when={!coord()}
-                    fallback={
-                      <button
-                        type="button"
-                        onClick={() => setCoord("")}
-                        title={t("editor.location_clear_coord")}
-                        class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border bg-accent/10 text-accent border-accent/30 hover:opacity-80 transition-opacity"
-                      >
-                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        {coord().split(" ").map((c) => Number(c).toFixed(3)).join(", ")}
-                      </button>
-                    }
-                  >
-                    <button
-                      type="button"
-                      onClick={geotag}
-                      disabled={locating()}
-                      title={t("editor.location_use_browser")}
-                      class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-rim text-muted
-                             hover:text-txt hover:bg-elevated transition-colors disabled:opacity-40"
-                    >
-                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="3" stroke-width="2" />
-                        <path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
-                      </svg>
-                      {locating() ? t("editor.location_locating") : t("editor.location_use_browser")}
-                    </button>
-                  </Show>
-                </div>
-              </Show>
-
               {/* ── Poll panel ── */}
               <Show when={caps.poll && poll.enabled()}>
                 <PollPanel poll={poll} />
               </Show>
 
-              {/* ── Encrypt panel ── */}
-              <Show when={enc.open()}>
-                <EncryptPanel enc={enc} />
-              </Show>
 
-              {/* ── Decrypt-to-edit panel ── */}
-              <Show when={enc.decryptOpen()}>
-                <DecryptPanel enc={enc} body={store.body} />
-              </Show>
             </>
           }
-          options={
-            <>
+          actions={
+            <ComposerActionBar
+              leading={
+                <>
               {/* ACL Picker — hidden for visitors posting to another channel's
                   wall (replaced by a note), and entirely absent when editing,
                   where privacy isn't among the editable fields. */}
@@ -653,7 +610,10 @@ const PostComposer: Component<ComposerProps> = (props) => {
                   />
                 </Show>
               </Show>
-
+                </>
+              }
+              menu={
+                <>
               {/* Expiry — gated behind Settings → Features → Content Expiration */}
               <Show when={isFeatureEnabled("content_expire") && !props.parentId && !isEdit()}>
                 <DateTimePicker
@@ -666,18 +626,75 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 />
               </Show>
 
-              {/* Location toggle */}
-              <ToggleButton
-                active={locationOpen() || !!location().trim() || !!coord()}
-                onClick={() => setLocationOpen((o) => !o)}
+              {/* Location — a popover rather than a band in the body, like the
+                  toolbar's link button; it is set once and rarely revisited. */}
+              <PopoverButton
                 title={t("editor.location_toggle")}
+                open={locationOpen}
+                setOpen={setLocationOpen}
+                active={locationOpen() || !!location().trim() || !!coord()}
+                icon={
+                  <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <circle cx="12" cy="11" r="3" stroke-width="2" />
+                  </svg>
+                }
               >
-                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <circle cx="12" cy="11" r="3" stroke-width="2" />
-                </svg>
-              </ToggleButton>
+                <div class="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={location()}
+                    placeholder={t("editor.location_placeholder")}
+                    onInput={(e) => setLocation(e.currentTarget.value)}
+                    class="w-full bg-transparent border border-rim rounded px-2.5 py-1 text-sm
+                           text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
+                  />
+                  <Show
+                    when={!locating()}
+                    fallback={
+                      <span class="flex items-center gap-1.5 px-2 py-1 text-xs text-muted">
+                        <svg class="w-3.5 h-3.5 shrink-0 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="9" stroke-width="2" class="opacity-25" />
+                          <path stroke-linecap="round" stroke-width="2" d="M21 12a9 9 0 00-9-9" />
+                        </svg>
+                        {t("editor.location_locating")}
+                      </span>
+                    }
+                  >
+                  <Show
+                    when={!coord()}
+                    fallback={
+                      <button
+                        type="button"
+                        onClick={() => setCoord("")}
+                        title={t("editor.location_clear_coord")}
+                        class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border bg-accent/10 text-accent border-accent/30 hover:opacity-80 transition-opacity"
+                      >
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        {coord().split(" ").map((c) => Number(c).toFixed(3)).join(", ")}
+                      </button>
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={geotag}
+                      title={t("editor.location_use_browser")}
+                      class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-rim text-muted
+                             hover:text-txt hover:bg-elevated transition-colors"
+                    >
+                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3" stroke-width="2" />
+                        <path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+                      </svg>
+                      {t("editor.location_use_browser")}
+                    </button>
+                  </Show>
+                  </Show>
+                </div>
+              </PopoverButton>
 
               {/* Delayed publish — gated behind Settings → Features → Delayed Posting */}
               <Show when={isFeatureEnabled("delayed_posting") && !props.parentId && !isEdit()}>
@@ -734,56 +751,18 @@ const PostComposer: Component<ComposerProps> = (props) => {
               <Show when={isFeatureEnabled("content_encrypt") && !props.parentId}>
                 <EncryptToggle enc={enc} body={store.body} />
               </Show>
-            </>
-          }
-          actions={
-            <>
-              <div class="flex items-center gap-2">
-                <SecondaryButton onClick={props.onClose}>
-                  {t("editor.discard")}
-                </SecondaryButton>
-                <Show when={store.body().trim()}>
-                  <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra())}>
-                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
-                    </svg>
-                    {t("editor.save_draft")}
-                  </SecondaryButton>
-                </Show>
-                <Show when={store.savedDrafts().length > 0}>
-                  <button
-                    type="button"
-                    title={t("editor.saved_drafts")}
-                    onClick={() => setDraftsOpen((o) => !o)}
-                    class={
-                      "px-2 py-1 rounded-md text-xs transition-colors " +
-                      (draftsOpen()
-                        ? "bg-overlay text-txt"
-                        : "text-muted hover:text-txt hover:bg-overlay")
-                    }
-                  >
-                    {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-                  </button>
-                </Show>
-              </div>
-
-              <div class="flex items-center gap-3 ml-auto shrink-0">
-                <IconButton title={t("editor.clear_composer")} onClick={resetAll} variant="danger">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </IconButton>
-                <PrimarySubmitButton
-                  disabled={store.submitting() || attach.uploading()}
-                  onClick={() => void store.submit()}
-                >
-                  {store.submitting()
-                    ? t(isEdit() ? "editor.saving" : "editor.posting")
-                    : t(isEdit() ? "editor.save_changes" : "editor.post_btn")}
-                </PrimarySubmitButton>
-              </div>
-            </>
+                </>
+              }
+              onCancel={props.onClose}
+              onClear={resetAll}
+              submitDisabled={store.submitting() || attach.uploading()}
+              onSubmit={() => void store.submit()}
+              submitLabel={
+                store.submitting()
+                  ? t(isEdit() ? "editor.saving" : "editor.posting")
+                  : t(isEdit() ? "editor.save_changes" : "editor.post_btn")
+              }
+            />
           }
         />
       </ComposerModal>

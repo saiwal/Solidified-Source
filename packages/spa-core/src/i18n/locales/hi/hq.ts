@@ -67,7 +67,7 @@ export const hq: RawDictionary["hq"] = {
   post_composer:        "पोस्ट कंपोज़र",
   stats:                "आँकड़े",
   upcoming_events:      "आगामी कार्यक्रम",
-  scheduled:            "निर्धारित पोस्ट",
+  scheduled:            "निर्धारित",
   scheduled_for:        "प्रकाशन समय",
   publish_now:          "अभी प्रकाशित करें",
   cancel_scheduled:     "रद्द करें",

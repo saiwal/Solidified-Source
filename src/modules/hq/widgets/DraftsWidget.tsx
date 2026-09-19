@@ -1,12 +1,9 @@
-import { createSignal, For, Show, onMount } from "solid-js";
+import { createSignal, createEffect, on, For, Show, onMount } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import type { SavedDraft } from "@/shared/editor/store/createComposerStore";
-import { listServerDrafts, deleteServerDraft } from "@/shared/editor/api/drafts";
-import PostComposer from "@/shared/editor/composers/PostComposer";
-import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
-import NoteComposerModal from "@/shared/editor/composers/NoteComposerModal";
-import DMComposer from "@/shared/editor/composers/DMComposer";
+import { listServerDrafts, deleteServerDraft, draftsVersion } from "@/shared/editor/api/drafts";
+import { openComposer, type ComposerKind } from "@/shared/editor/store/composer-host";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete } from "solid-icons/md";
@@ -85,10 +82,6 @@ export default function DraftsWidget() {
 
   const [entries, setEntries] = createSignal<DraftEntry[]>([]);
   const [loading, setLoading] = createSignal(true);
-  const [activeEntry, setActiveEntry] = createSignal<DraftEntry | null>(null);
-  const [articleEntry, setArticleEntry] = createSignal<DraftEntry | null>(null);
-  const [noteEntry, setNoteEntry] = createSignal<DraftEntry | null>(null);
-  const [dmEntry, setDmEntry] = createSignal<DraftEntry | null>(null);
   const [deleting, setDeleting] = createSignal<string | null>(null);
 
   // Reactive label — called in JSX so Solid tracks t() reads
@@ -127,6 +120,12 @@ export default function DraftsWidget() {
 
   onMount(loadAll);
 
+  // Composers are mounted by ComposerHost now, so one can publish a draft from
+  // another page entirely — there is no per-composer callback that could refresh
+  // this list. deleteServerDraft bumps draftsVersion; that is the signal.
+  // (Same wiring as DraftsWidgetBase, which the per-module drafts widgets use.)
+  createEffect(on(draftsVersion, () => void loadAll(), { defer: true }));
+
   // ── Delete ────────────────────────────────────────────────────────────────
 
   async function deleteDraft(scope: string, id: string) {
@@ -139,14 +138,6 @@ export default function DraftsWidget() {
     }
   }
 
-  // A composer can fire onSent/onSaved *and then* onClose (DMComposer does),
-  // so the close handler must not assume its entry signal is still set.
-  const closeEntry =
-    (get: () => DraftEntry | null, set: (v: DraftEntry | null) => void) => () => {
-      const entry = get();
-      if (entry) void storageDel(`pending-draft:${entry.scope}`);
-      set(null);
-    };
 
   // ── Load ──────────────────────────────────────────────────────────────────
 
@@ -157,28 +148,6 @@ export default function DraftsWidget() {
     // (and sets loadedDraftId, which auto-deletes the draft on publish)
     await storageSet(`pending-draft:${entry.scope}`, entry.draft);
 
-    if (type === "post" && action === "new") {
-      setActiveEntry(entry);
-      return;
-    }
-
-    if (type === "article") {
-      setArticleEntry(entry);
-      return;
-    }
-
-    if (type === "note") {
-      setNoteEntry(entry);
-      return;
-    }
-
-    // DM recipients ride in the draft's `extra`, restored by DMComposer from
-    // the pending-draft written above — nothing extra to pass in here.
-    if (type === "dm" && action === "new") {
-      setDmEntry(entry);
-      return;
-    }
-
     // Webpage/wiki composers live on their own routed pages, not modals —
     // the pending-draft written above is picked up automatically once that
     // page mounts (webpage via createComposerStore, wiki via WikiPageView).
@@ -186,41 +155,48 @@ export default function DraftsWidget() {
       navigate(`/webpages/${auth()?.nick ?? ""}/new`);
       return;
     }
-
     if (type === "wiki") {
       navigate(`/wiki/${auth()?.nick ?? ""}/${action}/${id}`);
+      return;
     }
+
+    // The rest are hosted composers, keyed on the draft scope itself — so
+    // loading a draft that is already open surfaces that composer rather than
+    // opening a second one on the same draft.
+    const kind = type as ComposerKind;
+    openComposer({
+      kind,
+      scope: entry.scope,
+      title: scopeLabel(entry.scope),
+      props: {
+        profileUid: auth()?.uid ?? 0,
+        uid: auth()?.uid ?? 0,
+        nick: auth()?.nick ?? "",
+        initial: composerInitial(entry),
+        // DM recipients ride in the draft's `extra`, restored by DMComposer
+        // from the pending-draft written above.
+        onPosted: () => void deleteDraft(entry.scope, entry.draft.id),
+        onClose: () => void storageDel(`pending-draft:${entry.scope}`),
+      },
+    });
   }
 
-  // For edit drafts the composer needs the article uuid (it posts to
-  // /api/item/:uuid/edit); field values come from the draft itself
-  function articleInitial() {
-    const entry = articleEntry();
-    if (!entry) return undefined;
-    const { action, id: uuid } = scopeParts(entry.scope);
-    if (action !== "edit" || !uuid) return undefined;
+  // An edit draft's composer needs the target's own id (it posts to
+  // /spa/item/:id/edit) — articles carry a uuid, notes a mid; every field value
+  // comes from the draft itself. A `new` draft seeds entirely from the
+  // pending-draft key, so it needs no `initial` at all.
+  function composerInitial(entry: DraftEntry) {
+    const { type, action, id } = scopeParts(entry.scope);
+    if (action !== "edit" || !id) return undefined;
     const d = entry.draft;
+    if (type === "note") return { mid: id, body: d.body, mimetype: d.mimetype };
     return {
-      uuid,
+      uuid: id,
       title: d.title,
       summary: d.summary,
       slug: d.slug,
       category: d.category,
       body: d.body,
-    };
-  }
-
-  // For edit drafts the composer needs the target note's mid (it posts to
-  // /api/item/:mid/edit); field values come from the draft itself
-  function noteInitial() {
-    const entry = noteEntry();
-    if (!entry) return undefined;
-    const { action, id: mid } = scopeParts(entry.scope);
-    if (action !== "edit" || !mid) return undefined;
-    return {
-      mid,
-      body: entry.draft.body,
-      mimetype: entry.draft.mimetype,
     };
   }
 
@@ -347,57 +323,6 @@ export default function DraftsWidget() {
         </Show>
       </div>
 
-      {/* Article composer — opened when loading an article draft */}
-      <Show when={articleEntry() !== null && !auth.loading && auth()?.uid}>
-        <ArticleComposerModal
-          uid={auth()!.uid}
-          nick={auth()?.nick ?? ""}
-          heading={articleInitial() ? t("articles.edit_article") : t("articles.new_article")}
-          initial={articleInitial()}
-          onSaved={() => {
-            setArticleEntry(null);
-            void loadAll();
-          }}
-          onClose={closeEntry(articleEntry, setArticleEntry)}
-        />
-      </Show>
-
-      {/* Note composer — opened when loading a note draft */}
-      <Show when={noteEntry() !== null && !auth.loading}>
-        <NoteComposerModal
-          nick={auth()?.nick ?? ""}
-          heading={noteInitial() ? t("notepad.edit_note") : t("notepad.new_note")}
-          initial={noteInitial()}
-          onSaved={() => {
-            setNoteEntry(null);
-            void loadAll();
-          }}
-          onClose={closeEntry(noteEntry, setNoteEntry)}
-        />
-      </Show>
-
-      {/* DM composer — opened when loading a dm:new draft */}
-      <Show when={dmEntry() !== null && !auth.loading && auth()?.uid}>
-        <DMComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onSent={() => void loadAll()}
-          onClose={closeEntry(dmEntry, setDmEntry)}
-        />
-      </Show>
-
-      {/* Post composer — opened when loading a post:new draft */}
-      <Show when={activeEntry() !== null && !auth.loading && auth()?.uid}>
-        <PostComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onPosted={() => {
-            void deleteDraft(activeEntry()!.scope, activeEntry()!.draft.id);
-            setActiveEntry(null);
-          }}
-          onClose={closeEntry(activeEntry, setActiveEntry)}
-        />
-      </Show>
     </>
   );
 }

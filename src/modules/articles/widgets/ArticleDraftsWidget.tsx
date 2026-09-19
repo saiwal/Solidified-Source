@@ -1,7 +1,7 @@
-import { createSignal, Show } from "solid-js";
+import { Show } from "solid-js";
 import { storageDel } from "@utsukta/spa-core/lib/storage";
-import DraftsWidgetBase, { type DraftEntry, type DraftsWidgetApi } from "@/shared/editor/components/DraftsWidgetBase";
-import ArticleComposerModal from "@/shared/editor/composers/ArticleComposerModal";
+import DraftsWidgetBase, { type DraftEntry } from "@/shared/editor/components/DraftsWidgetBase";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -23,14 +23,9 @@ export default function ArticleDraftsWidget() {
   const pageNick = usePageNick();
   const { t } = useI18n();
 
-  const [activeEntry, setActiveEntry] = createSignal<DraftEntry | null>(null);
-  let api: DraftsWidgetApi | undefined;
-
   // For edit drafts the composer needs the article uuid (it posts to
   // /api/item/:uuid/edit); field values come from the draft itself
-  function articleInitial() {
-    const entry = activeEntry();
-    if (!entry) return undefined;
+  function articleInitial(entry: DraftEntry) {
     const { action, uuid } = scopeParts(entry.scope);
     if (action !== "edit" || !uuid) return undefined;
     const d = entry.draft;
@@ -42,6 +37,28 @@ export default function ArticleDraftsWidget() {
       category: d.category,
       body: d.body,
     };
+  }
+
+  // Mounted by ComposerHost and keyed on the draft scope, so it survives
+  // navigation and reloading the same draft twice surfaces the live composer.
+  // No reload callback: DraftsWidgetBase already refetches on draftsVersion.
+  function loadDraft(entry: DraftEntry) {
+    const initial = articleInitial(entry);
+    openComposer({
+      kind: "article",
+      scope: entry.scope,
+      title: initial ? t("articles.edit_article") : t("articles.new_article"),
+      props: {
+        uid: auth()!.uid,
+        nick: pageNick(),
+        initial,
+        onClose: () => void storageDel(`pending-draft:${entry.scope}`),
+        onSaved: () => {
+          resetPosts();
+          void loadArticles(pageNick());
+        },
+      },
+    });
   }
 
   return (
@@ -56,31 +73,9 @@ export default function ArticleDraftsWidget() {
         emptyDraftText={t("articles.empty_draft")}
         badgeClassName="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
         badgeLabel={(scope) => scopeParts(scope).action === "edit" ? t("articles.draft_edit") : t("articles.draft_new")}
-        onLoad={(entry) => { setActiveEntry(entry); }}
-        apiRef={(a) => { api = a; }}
+        onLoad={loadDraft}
       />
 
-      {/* Article composer — opened when loading a draft */}
-      <Show when={activeEntry() !== null}>
-        <ArticleComposerModal
-          uid={auth()!.uid}
-          nick={pageNick()}
-          heading={articleInitial() ? t("articles.edit_article") : t("articles.new_article")}
-          initial={articleInitial()}
-          onClose={() => {
-            // onSaved may have cleared it already — the composer fires both
-            const entry = activeEntry();
-            if (entry) void storageDel(`pending-draft:${entry.scope}`);
-            setActiveEntry(null);
-          }}
-          onSaved={() => {
-            setActiveEntry(null);
-            void api?.reload();
-            resetPosts();
-            void loadArticles(pageNick());
-          }}
-        />
-      </Show>
     </Show>
   );
 }

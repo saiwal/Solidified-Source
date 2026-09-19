@@ -4,7 +4,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { motion } from "solid-motionone";
-import PostComposer from "@/shared/editor/composers/PostComposer";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import RichEditor from "@/shared/editor/core/RichEditor";
 import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
 import { bbcodeToInsert, appendInsert } from "@/shared/editor/attachments/insertHelpers";
@@ -44,7 +44,6 @@ function HqComposer() {
   const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys] = createSignal<Set<string>>(new Set<string>());
   const [submitting, setSubmitting] = createSignal(false);
-  const [fullOpen, setFullOpen] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
   const [tab, setTab] = createSignal<EditorTab>("wysiwyg");
 
@@ -211,6 +210,24 @@ function HqComposer() {
     setExpanded(false);
   }
 
+  // Hands the inline draft to the hosted full composer, which can then be
+  // minimized and carried to another page. Read eagerly (not in a closure) so
+  // it captures what the inline composer holds at click time.
+  function openFullComposer() {
+    openComposer({
+      kind: "post",
+      scope: "post:new",
+      title: t("editor.new_post"),
+      props: {
+        profileUid: auth()!.uid,
+        initialBody: body(),
+        initialAclMode: aclMode(),
+        initialAllowEntries: allowKeys(),
+        onPosted: () => resetComposer(),
+      },
+    });
+  }
+
   return (
     <div data-tour="hq.composer" class="bg-surface border border-rim rounded-2xl p-3.5 shadow-sm flex flex-col max-w-5xl mx-auto">
 
@@ -299,7 +316,7 @@ function HqComposer() {
             type="button"
             title={t("editor.open_full_composer")}
             data-tour="hq.composer.full"
-            onClick={() => setFullOpen(true)}
+            onClick={openFullComposer}
             class="w-7 h-7 flex items-center justify-center rounded text-muted
                    hover:bg-elevated hover:text-txt transition-colors"
           >
@@ -336,19 +353,6 @@ function HqComposer() {
 
       {/* Mention + emoji popups */}
       <MentionEmojiPopups wiring={wiring} />
-
-      {/* Full composer modal — remounts on open so initialBody/initialAclMode capture current state */}
-      <Show when={fullOpen()}>
-        <PostComposer
-          profileUid={auth()!.uid}
-          open={true}
-          onClose={() => setFullOpen(false)}
-          initialBody={body()}
-          initialAclMode={aclMode()}
-          initialAllowEntries={allowKeys()}
-          onPosted={() => resetComposer()}
-        />
-      </Show>
     </div>
   );
 }

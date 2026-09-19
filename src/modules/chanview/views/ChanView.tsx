@@ -10,7 +10,7 @@ import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { fetchConnectionByAddress } from "@/modules/directory/connections/api";
 import type { Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
-import DMComposer from "@/shared/editor/composers/DMComposer";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { MessageList } from "@/modules/hq/widgets/MessageList";
 import { createStreamStore } from "@/shared/stream/store/createStreamStore";
 import { createActionHandlers } from "@/shared/stream/store/actions-store";
@@ -170,7 +170,30 @@ export default function ChanView() {
   const [editOpen, setEditOpen] = createSignal(false);
   const [disconnected, setDisconnected] = createSignal(false);
   const [addressCopied, setAddressCopied] = createSignal(false);
-  const [dmOpen, setDmOpen] = createSignal(false);
+  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // carries the recipient, so DMs to two different people are two composers
+  // with two drafts rather than one that overwrites the other.
+  const openDm = (r: {
+    xid: string; name: string; nick: string; photo?: string;
+  }) =>
+    openComposer({
+      kind: "dm",
+      scope: `dm:new:${r.xid}`,
+      title: t("editor.dm_new_message"),
+      props: {
+        profileUid: auth()!.uid,
+        scopeKey: `dm:new:${r.xid}`,
+        initialRecipients: [{
+          type: "c",
+          xid: r.xid,
+          id: r.xid,
+          name: r.name,
+          nick: r.nick,
+          link: r.nick,
+          photo: r.photo,
+        }],
+      },
+    });
 
   function copyAddress(address: string) {
     navigator.clipboard.writeText(address).then(() => {
@@ -376,7 +399,14 @@ export default function ChanView() {
 
                     <Show when={canEdit() && xdata().xchan_hash}>
                       <button
-                        onClick={() => setDmOpen(true)}
+                        onClick={() =>
+                          openDm({
+                            xid: x()!.xchan_hash,
+                            name: x()!.name,
+                            nick: x()!.address,
+                            photo: x()!.photo,
+                          })
+                        }
                         title={t("ui.send_dm")}
                         class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
                                border border-rim text-muted hover:border-accent hover:text-accent transition-colors"
@@ -546,23 +576,6 @@ export default function ChanView() {
         />
       </Show>
 
-      <Show when={dmOpen() && auth()?.uid && x()?.xchan_hash}>
-        <DMComposer
-          open={true}
-          onClose={() => setDmOpen(false)}
-          onSent={() => setDmOpen(false)}
-          profileUid={auth()!.uid}
-          initialRecipients={[{
-            type: "c",
-            xid: x()!.xchan_hash,
-            id: x()!.xchan_hash,
-            name: x()!.name,
-            nick: x()!.address,
-            link: x()!.address,
-            photo: x()!.photo,
-          }]}
-        />
-      </Show>
     </div>
   );
 }

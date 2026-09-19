@@ -27,9 +27,8 @@ import {
   type SortRange,
 } from "@/shared/stream/filters";
 import { MdFillSearch, MdFillClose, MdFillCreate, MdFillMail } from "solid-icons/md";
-import { lazy } from "solid-js";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
+import { openComposer } from "@/shared/editor/store/composer-host";
 
 // Toolbar/search/pagination/composer chrome shared by `channel.feed` and its
 // alternate-layout widgets (newspaper/timeline/scrapbook) — only the post
@@ -53,15 +52,26 @@ export default function ChannelFeedShell(props: {
 
   const [searchOpen, setSearchOpen] = createSignal(!!searchParams.search);
   const [searchInput, setSearchInput] = createSignal(currentSearch());
-  const [composeOpen, setComposeOpen] = createSignal(false);
-  const [composeEverOpened, setComposeEverOpened] = createSignal(false);
-  const openCompose = () => { setComposeEverOpened(true); setComposeOpen(true); };
   const auth = useAuth();
   const viewerRole = useViewerRole();
   // profileUid() (from the loaded-posts stream) is 0 until a post loads, so an
   // empty wall would wrongly read as "visiting someone else" — use the
   // post-independent viewer role instead.
   const isVisitor = () => (auth()?.uid ?? 0) > 0 && viewerRole() !== "owner";
+
+  // Mounted by ComposerHost, not here, so it can be minimized and carried to
+  // another page. Its scope doubles as the dedupe key (see openComposer).
+  const openCompose = () =>
+    openComposer({
+      kind: "post",
+      scope: "post:new",
+      title: t("editor.new_post"),
+      props: {
+        profileUid: profileUid(),
+        hideAcl: isVisitor(),
+        onPosted: () => loadChannel(nick()),
+      },
+    });
 
   const submitSearch = (e?: Event) => {
     e?.preventDefault();
@@ -275,15 +285,6 @@ export default function ChannelFeedShell(props: {
         <p class="text-center text-xs text-muted py-6">{t("channel.all_caught_up")}</p>
       </Show>
 
-      <Show when={composeEverOpened()}>
-        <PostComposer
-          open={composeOpen()}
-          onClose={() => setComposeOpen(false)}
-          profileUid={profileUid()}
-          hideAcl={isVisitor()}
-          onPosted={() => loadChannel(nick())}
-        />
-      </Show>
     </>
   );
 }

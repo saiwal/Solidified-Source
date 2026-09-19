@@ -25,6 +25,7 @@ import ToastContainer from "@/shared/views/ToastContainer";
 import ConnectionRequestModalHost from "@/shared/views/ConnectionRequestModalHost";
 import FeedModalHost from "@/shared/views/FeedModalHost";
 import ShareModalHost from "@/shared/views/ShareModalHost";
+import ComposerHost from "@/shared/editor/components/ComposerHost";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePWA } from "@/pwa";
 import DOMPurify from "dompurify";
@@ -154,6 +155,7 @@ const Layout: ParentComponent = (props) => {
       <ConnectionRequestModalHost />
       <FeedModalHost />
       <ShareModalHost />
+      <ComposerHost navOpen={moreOpen() || rightOpen()} />
       <Show when={isRouting()}>
         <div
           class="fixed top-0 inset-x-0 z-[150] h-[2px] overflow-hidden"
@@ -649,7 +651,11 @@ const Layout: ParentComponent = (props) => {
           <nav
             aria-label={t("layout.navigation")}
             data-tour="nav.bottom"
-            class="fixed bottom-0 left-0 right-0 z-50 h-16 lg:hidden
+            // z-[55], above the composer dock's minimized pills (z-50, which
+            // sit just over this bar at bottom-16): if they ever overlap, the
+            // pill's edge gets clipped rather than a nav button becoming
+            // untappable. Still below the nested-picker band (z-[60]).
+            class="fixed bottom-0 left-0 right-0 z-[55] h-16 lg:hidden
                    bg-surface border-t border-rim
                    flex items-center px-2 gap-1"
           >

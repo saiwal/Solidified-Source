@@ -13,7 +13,7 @@ const DecryptPanel: Component<{ enc: EncryptState; body: () => string }> = (prop
   const hint = () => getPayloadHint(extractCryptPayload(props.body()));
 
   return (
-    <div class="px-4 py-3 border-t border-rim bg-elevated/40 shrink-0 space-y-2">
+    <div class="space-y-2">
       <span class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">
         {t("editor.decrypt_panel_title")}
       </span>

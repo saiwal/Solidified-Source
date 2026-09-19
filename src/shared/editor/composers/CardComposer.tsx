@@ -1,8 +1,7 @@
-import { createSignal, createEffect, createMemo, Show, For, onCleanup, lazy } from "solid-js";
+import { createSignal, createEffect, createMemo, Show, For, onCleanup } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { fetchDeckList } from "@/modules/cards/api";
-import { DraftsList } from "../components/DraftsList";
 import { createComposerStore } from "../store/createComposerStore";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import RichEditor from "../core/RichEditor";
@@ -16,8 +15,6 @@ import EncryptToggle from "../components/EncryptToggle";
 // decrypting, so their code (and the libsodium-wrappers dependency it
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
 // initial bundle.
-const EncryptPanel = lazy(() => import("../components/EncryptPanel"));
-const DecryptPanel = lazy(() => import("../components/DecryptPanel"));
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
@@ -26,6 +23,7 @@ import ComposerShell from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { useAclState } from "../components/useAclState";
 import type { AclMode } from "../components/AclPicker";
@@ -35,7 +33,8 @@ import SlugField from "../components/SlugField";
 import FormatSelect from "../components/FormatSelect";
 import SummaryField from "../components/SummaryField";
 import DeckField from "../components/DeckField";
-import { PrimarySubmitButton, SecondaryButton, IconButton } from "../components/buttons";
+import { IconButton } from "../components/buttons";
+import ComposerActionBar from "../components/ComposerActionBar";
 import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { countWords } from "../lib/textStats";
@@ -78,7 +77,6 @@ export default function CardComposer(props: Props) {
   const { t } = useI18n();
   const caps = CAPABILITIES.card;
   const [wordCount, setWordCount] = createSignal(0);
-  const [draftsOpen, setDraftsOpen] = createSignal(false);
   const isEditing = () => !!props.initial?.uuid;
 
   // ── Scope (shared by both stores for matching IDB keys) ─────────────────────
@@ -88,6 +86,9 @@ export default function CardComposer(props: Props) {
 
   // ── Attachment store ─────────────────────────────────────────────────────────
   const attach = createAttachmentStore(props.nick, scope);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");
 
   // ── ACL state — initialize from the existing card's ACL when editing ─────
   // "Only me" is stored as allow_cid = [the owner's own hash], so recovering it
@@ -294,7 +295,10 @@ export default function CardComposer(props: Props) {
 
     attach.clear();
     props.onSaved?.();
-  }, scope);
+  }, scope, {
+    // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
+    autosaveExtra: () => buildDraftExtra(),
+  });
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
@@ -405,7 +409,7 @@ export default function CardComposer(props: Props) {
     // of the row — and since the three assembled templates hide the editor
     // (the one wide child), the quote/definition/link tabs visibly shrank.
     <ComposerShell
-      class="p-4"
+      class="p-3"
       editorClass="contents"
       meta={
         <>
@@ -493,7 +497,12 @@ export default function CardComposer(props: Props) {
             />
           </Show>
 
-          <EditorStats words={wordCount} chars={charCount} />
+          <EditorStats
+            words={wordCount}
+            chars={charCount}
+            tab={store.tab()}
+            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+          />
 
           {/* Template sub-forms — the three assembled templates collect their
               parts here instead of using the rich editor. */}
@@ -608,6 +617,7 @@ export default function CardComposer(props: Props) {
           classList={{ hidden: template() !== "freeform" }}
         >
           <RichEditor
+            attach={attachActions}
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             wysiwygAvailable={wysiwygAvailable()}
@@ -621,6 +631,7 @@ export default function CardComposer(props: Props) {
             fill
           />
           <AttachmentBar
+            actions={attachActions}
             store={attach}
             nick={props.nick}
             accept="both"
@@ -630,42 +641,23 @@ export default function CardComposer(props: Props) {
             onAltChange={(att) => {
               store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
             }}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={wysiwygAvailable()}
           />
         </div>
       }
       panels={
         <>
-          {/* Encrypt panel */}
-          <Show when={enc.open()}>
-            <EncryptPanel enc={enc} />
-          </Show>
 
-          {/* Decrypt-to-edit panel */}
-          <Show when={enc.decryptOpen()}>
-            <DecryptPanel enc={enc} body={store.body} />
-          </Show>
 
           <MentionEmojiPopups wiring={wiring} />
 
           {/* Drafts panel */}
-          <Show when={draftsOpen()}>
-            <DraftsList
-              drafts={store.savedDrafts()}
-              onLoad={(d) => { store.loadSavedDraft(d); setDraftsOpen(false); }}
-              onDelete={(id) => void store.deleteSavedDraft(id)}
-              onClose={() => setDraftsOpen(false)}
-            />
-          </Show>
 
         </>
       }
-      options={
-        <>
-          {/* Options row: ACL + encrypt */}
-          <div class="flex flex-wrap items-center gap-3 border-t border-rim pt-4">
+      actions={
+        <ComposerActionBar
+          leading={
+            <>
             <Show when={caps.aclPicker}>
               <AclPicker
                 mode={acl.mode()}
@@ -676,87 +668,42 @@ export default function CardComposer(props: Props) {
                 onClear={acl.clearEntries}
               />
             </Show>
-
+            </>
+          }
+          menu={
+            <>
             <Show when={isFeatureEnabled("content_encrypt")}>
               <EncryptToggle enc={enc} body={store.body} />
             </Show>
-          </div>
-
-        </>
-      }
-      actions={
-        <>
-            {/* Action row: discard/save-draft/drafts on the left, clear/submit on the right */}
-            <div class="flex flex-wrap items-center gap-3">
-              <div class="flex gap-2 items-center">
-                <SecondaryButton onClick={() => props.onCancel?.()}>
-                  {isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
-                </SecondaryButton>
-                <Show when={composedBody().trim()}>
-                  <SecondaryButton onClick={() => void store.saveAsDraft(buildDraftExtra(), composedBody())}>
-                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3v5H9V3m0 14h6" />
-                    </svg>
-                    {t("editor.save_draft")}
-                  </SecondaryButton>
-                </Show>
-                <Show when={store.savedDrafts().length > 0}>
-                  <button
-                    type="button"
-                    onClick={() => setDraftsOpen((o) => !o)}
-                    class={
-                      "px-2.5 py-1.5 rounded-lg border text-xs transition-colors " +
-                      (draftsOpen()
-                        ? "border-rim bg-elevated text-txt"
-                        : "border-rim text-muted hover:text-txt hover:bg-elevated")
-                    }
-                  >
-                    {t("editor.drafts_btn", { count: store.savedDrafts().length })}
-                  </button>
-                </Show>
-              </div>
-
-              <div class="flex items-center gap-2 ml-auto">
-                <IconButton
-                  title={t("editor.clear_composer")}
-                  variant="danger"
-                  onClick={() => {
-                    store.reset();
-                    attach.clear();
-                    acl.reset();
-                    categoryTags.setPendingCategory("");
-                    enc.reset();
-                    // store.reset() only knows about the editor body — the
-                    // assembled templates keep theirs here.
-                    setFields(emptyTemplateFields());
-                    setIncludeImage(false);
-                    setFetchedUrl("");
-                    setMetaError(false);
-                  }}
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </IconButton>
-                <PrimarySubmitButton
-                  disabled={
-                    store.submitting() ||
-                    attach.uploading() ||
-                    !composedBody().trim() ||
-                    !store.title().trim()
-                  }
-                  onClick={() => void store.submit({}, composedBody())}
-                >
-                  {store.submitting()
-                    ? t("editor.saving")
-                    : isEditing()
-                      ? t("editor.save_changes")
-                      : t("editor.publish_btn")}
-                </PrimarySubmitButton>
-              </div>
-            </div>
-        </>
+            </>
+          }
+          onCancel={() => props.onCancel?.()}
+          cancelLabel={isEditing() ? t("editor.cancel_btn") : t("editor.discard")}
+          onClear={() => {
+            store.reset();
+            attach.clear();
+            acl.reset();
+            categoryTags.setPendingCategory("");
+            enc.reset();
+            // store.reset() only knows about the editor body — the
+            // assembled templates keep theirs here.
+            setFields(emptyTemplateFields());
+          }}
+          submitDisabled={
+            store.submitting() ||
+            attach.uploading() ||
+            !composedBody().trim() ||
+            !store.title().trim()
+          }
+          onSubmit={() => void store.submit({}, composedBody())}
+          submitLabel={
+            store.submitting()
+              ? t("editor.saving")
+              : isEditing()
+                ? t("editor.save_changes")
+                : t("editor.publish_btn")
+          }
+        />
       }
     />
   );

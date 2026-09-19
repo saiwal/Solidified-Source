@@ -18,6 +18,11 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { syncInbox, setInboxActive } from "@utsukta/spa-core/lib/message-store";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
+import { isAppInstalled } from "@utsukta/spa-core/module-registry";
+import { MdOutlineEdit, MdOutlineMail } from "solid-icons/md";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
 import { parseQuery } from "../query";
@@ -33,6 +38,10 @@ import {
 } from "@/modules/hq/widgets/MessageList";
 
 const FOLDER_PREFIX = "folder/";
+
+const COMPOSE_BTN =
+  "flex-1 flex items-center justify-center py-2 rounded-xl " +
+  "bg-accent text-accent-fg hover:opacity-90 transition-opacity";
 
 const TRASH_ICON =
   "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16";
@@ -79,6 +88,8 @@ const Badge: Component<{ n: number }> = (props) => (
 
 export default function InboxView() {
   const { t } = useI18n();
+  const auth = useAuth();
+  const installedApps = useInstalledApps();
   const location = useLocation();
   const online = useOnlineStatus();
 
@@ -125,10 +136,10 @@ export default function InboxView() {
     return { type: FEED_SECTIONS.find((s) => s.key === key)?.type ?? "", file: "" };
   });
 
+  // Only DMs get an unread badge — the all-messages count was every delivered
+  // post and stayed permanently lit.
   const feedBadge = (type: MessageType) =>
-    type === "" ? folderData()?.unread_all ?? 0
-    : type === "direct" ? folderData()?.unread_direct ?? 0
-    : 0;
+    type === "direct" ? folderData()?.unread_direct ?? 0 : 0;
 
   const items = createMemo<SubPageItem[]>(() => [
     ...FEED_SECTIONS.map((s, i) => ({
@@ -178,9 +189,43 @@ export default function InboxView() {
     setReloadKey((n) => n + 1);
   }
 
+  const compose = (kind: "post" | "dm") =>
+    openComposer({
+      kind,
+      scope: `${kind}:new`,
+      title: t(kind === "post" ? "editor.new_post" : "editor.dm_new_message") as string,
+      props: { profileUid: auth()?.uid ?? 0 },
+    });
+
   return (
     <SubPageLayout
       base="/inbox"
+      sidebarHeader={
+        <div class="flex items-center gap-1.5">
+          {/* Post has no routed module of its own — gate on the raw app,
+              as QuickComposeWidget does. */}
+          <Show when={isAppInstalled(installedApps(), "/rpost")}>
+            <button
+              type="button"
+              onClick={() => compose("post")}
+              title={t("hq.new_post")}
+              aria-label={t("hq.new_post")}
+              class={COMPOSE_BTN}
+            >
+              <MdOutlineEdit size={18} />
+            </button>
+          </Show>
+          <button
+            type="button"
+            onClick={() => compose("dm")}
+            title={t("hq.new_dm")}
+            aria-label={t("hq.new_dm")}
+            class={COMPOSE_BTN}
+          >
+            <MdOutlineMail size={18} />
+          </button>
+        </div>
+      }
       items={items()}
       activeKey={activeKey()}
       contentClass="flex-1 min-w-0 flex flex-col"

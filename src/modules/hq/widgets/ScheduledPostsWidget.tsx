@@ -2,6 +2,7 @@ import { createSignal, For, Show, onMount, lazy } from "solid-js";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 
@@ -12,6 +13,8 @@ type ScheduledPost = {
   title: string;
   body: string;
   created: string; // UTC publish time
+  /** item_private = 2 — a direct message rather than a wall post. */
+  dm?: boolean;
 };
 
 function makePreview(body: string): string {
@@ -85,12 +88,25 @@ export default function ScheduledPostsWidget() {
                 classList={{ "opacity-50 pointer-events-none": busy() === post.uuid }}
                 onClick={() => setModalUuid(post.uuid)}
               >
-                <Show when={post.title}>
-                  <p class="text-xs font-medium text-txt truncate leading-snug">
-                    {post.title}
-                  </p>
-                </Show>
-                <p class="text-xs text-muted truncate">{makePreview(post.body)}</p>
+                {/* The queue mixes wall posts and DMs — the same glyphs the
+                    composer header and dock pills use, so a kind reads the same
+                    wherever it appears. */}
+                <div class="flex items-start gap-2">
+                  <span
+                    class="shrink-0 mt-0.5"
+                    title={post.dm ? t("editor.dm_new_message") : t("editor.new_post")}
+                  >
+                    <ComposerKindIcon kind={post.dm ? "dm" : "post"} />
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <Show when={post.title}>
+                      <p class="text-xs font-medium text-txt truncate leading-snug">
+                        {post.title}
+                      </p>
+                    </Show>
+                    <p class="text-xs text-muted truncate">{makePreview(post.body)}</p>
+                  </div>
+                </div>
 
                 <div class="flex items-center justify-between gap-2 mt-1.5">
                   <span class="flex items-center gap-1 text-[0.625rem] text-muted/70 truncate" title={t("hq.scheduled_for")}>

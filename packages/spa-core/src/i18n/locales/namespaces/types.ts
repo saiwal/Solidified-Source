@@ -816,6 +816,14 @@ export type RawDictionary = {
     edit_post:              string;
     zen_mode:               string;
     close_esc:              string;
+    draft_saved:            string;
+    more_options:           string;
+    minimize:               string;
+    restore:                string;
+    modal_mode:             string;
+    dock_mode:              string;
+    page_mode:              string;
+    minimized_composers:    string;
     title_placeholder:      string;
     category_placeholder:   string;
     drafts_btn:             string;
@@ -1074,6 +1082,7 @@ export type RawDictionary = {
     dm_bcc_failed:          string;
     send_btn:               string;
     sending_dm:              string;
+    dm_scheduled:           string;
     dm_recipient_required:  string;
     dm_recipient_not_permitted: string;
   };

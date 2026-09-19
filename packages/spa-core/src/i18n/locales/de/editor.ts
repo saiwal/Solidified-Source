@@ -6,6 +6,15 @@ export const editor = {
   edit_post:              "Beitrag bearbeiten",
   zen_mode:               "Zen-Modus",
   close_esc:              "Schließen (Esc)",
+  draft_saved:            "Entwurf gespeichert",
+  more_options:           "Weitere Optionen",
+  // Presentation modes (ComposerModal / ComposerHost)
+  minimize:               "Minimieren",
+  restore:                "Wiederherstellen",
+  modal_mode:             "Zentriertes Fenster",
+  dock_mode:              "In die Ecke andocken",
+  page_mode:              "Ganze Seite",
+  minimized_composers:    "Minimierte Editoren",
   title_placeholder:      "Titel (optional)",
   category_placeholder:   "Kategorien (optional, durch Komma getrennt)",
   drafts_btn:             "Entwürfe ({{count}})",
@@ -288,6 +297,7 @@ export const editor = {
   dm_bcc_failed:          "Blindkopie an {{names}} konnte nicht gesendet werden.",
   send_btn:               "Senden",
   sending_dm:              "Wird gesendet…",
+  dm_scheduled:           "Nachricht geplant",
   dm_recipient_required:  "Mindestens einen Empfänger auswählen.",
   dm_recipient_not_permitted: "{{name}} hat dir keine Berechtigung erteilt, Direktnachrichten zu senden.",
 } as const;

@@ -5,7 +5,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { MdFillLocation_on, MdFillPublic, MdFillRss_feed, MdOutlineMail } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-import DMComposer from "@/shared/editor/composers/DMComposer";
+import { openComposer } from "@/shared/editor/store/composer-host";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { addConnection } from "@/modules/directory/people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -571,7 +571,30 @@ function FollowButton(props: { p: ChannelProfile; isVisitor: boolean }) {
   const { t } = useI18n();
   const auth = useAuth();
   const [state, setState] = createSignal<"idle" | "pending" | "done">("idle");
-  const [dmOpen, setDmOpen] = createSignal(false);
+  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // carries the recipient, so DMs to two different people are two composers
+  // with two drafts rather than one that overwrites the other.
+  const openDm = (r: {
+    xid: string; name: string; nick: string; photo?: string;
+  }) =>
+    openComposer({
+      kind: "dm",
+      scope: `dm:new:${r.xid}`,
+      title: t("editor.dm_new_message"),
+      props: {
+        profileUid: auth()!.uid,
+        scopeKey: `dm:new:${r.xid}`,
+        initialRecipients: [{
+          type: "c",
+          xid: r.xid,
+          id: r.xid,
+          name: r.name,
+          nick: r.nick,
+          link: r.nick,
+          photo: r.photo,
+        }],
+      },
+    });
 
   const nick = () => props.p.xchan_addr || props.p.channel_address;
   const connected = () => props.p.is_connected || state() === "done";
@@ -607,30 +630,20 @@ function FollowButton(props: { p: ChannelProfile; isVisitor: boolean }) {
               until they accept, so the send would be dropped on their hub. */}
           <Show when={props.p.is_connected && !pending() && !props.isVisitor && props.p.channel_hash && auth()?.uid}>
             <button
-              onClick={() => setDmOpen(true)}
+              onClick={() =>
+                openDm({
+                  xid: props.p.channel_hash!,
+                  name: props.p.channel_name,
+                  nick: nick(),
+                  photo: props.p.channel_photo_l,
+                })
+              }
               title={t("ui.send_dm")}
               aria-label={t("ui.send_dm")}
               class="shrink-0 p-2 rounded-full border border-rim text-muted hover:text-accent hover:border-accent transition-colors"
             >
               <MdOutlineMail size={16} />
             </button>
-            <Show when={dmOpen()}>
-              <DMComposer
-                open={true}
-                onClose={() => setDmOpen(false)}
-                onSent={() => setDmOpen(false)}
-                profileUid={auth()!.uid}
-                initialRecipients={[{
-                  type: "c",
-                  xid: props.p.channel_hash!,
-                  id: props.p.channel_hash!,
-                  name: props.p.channel_name,
-                  nick: nick(),
-                  link: nick(),
-                  photo: props.p.channel_photo_l,
-                }]}
-              />
-            </Show>
           </Show>
         </div>
       }

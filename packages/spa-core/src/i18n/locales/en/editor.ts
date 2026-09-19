@@ -6,6 +6,15 @@ export const editor = {
   edit_post:              "Edit Post",
   zen_mode:               "Zen mode",
   close_esc:              "Close (Esc)",
+  draft_saved:            "Draft saved",
+  more_options:           "More options",
+  // Presentation modes (ComposerModal / ComposerHost)
+  minimize:               "Minimize",
+  restore:                "Restore",
+  modal_mode:             "Centred window",
+  dock_mode:              "Dock to corner",
+  page_mode:              "Full page",
+  minimized_composers:    "Minimized composers",
   title_placeholder:      "Title (optional)",
   category_placeholder:   "Categories (optional, comma-separated)",
   drafts_btn:             "Drafts ({{count}})",
@@ -288,6 +297,7 @@ export const editor = {
   dm_bcc_failed:          "Could not send the blind copy to {{names}}.",
   send_btn:               "Send",
   sending_dm:              "Sending…",
+  dm_scheduled:           "Message scheduled",
   dm_recipient_required:  "Select at least one recipient.",
   dm_recipient_not_permitted: "{{name}} hasn't granted you permission to send direct messages.",
 } as const;
