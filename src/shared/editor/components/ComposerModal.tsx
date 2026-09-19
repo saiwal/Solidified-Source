@@ -181,9 +181,9 @@ export default function ComposerModal(props: ComposerModalProps) {
           // Flush with the bottom edge like the pills, so only the top corners
           // are rounded and the bottom border would just be a rule on the edge.
           "rounded-t-xl border-b-0 " +
-          // 600px, not 512: ComposerShell gives the editor region min-h-[360px]
-          // (ComposerShell.tsx:108), so a shorter panel guarantees a scrollbar
-          // on the modal body.
+          // 600px, not 512: the panel has to hold header + meta + action bar
+          // over the editor's docked floor (useEditorFloor in ComposerShell)
+          // without the body scrolling.
           "w-[min(26rem,calc(100vw_-_1rem))] h-[min(37.5rem,calc(100dvh_-_8rem))]"
         );
       case "page":

@@ -4,18 +4,12 @@ import { useNavigate } from "@solidjs/router";
 import DOMPurify from "dompurify";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { markNotifySeen } from "@utsukta/spa-core/lib/markSeen";
+import { markNotifySeen, markAllSeen } from "@utsukta/spa-core/lib/markSeen";
 import { resolveNotifyPath, connectionRequestId } from "@utsukta/spa-core/lib/notifyLink";
 import { openConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
 import { fetchNotifications, type NotificationEntry } from "../api";
 import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
 
-async function markAllSeen(): Promise<void> {
-  const res = await fetch("/notifications?markRead=notify", {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("Failed to mark all seen");
-}
 
 export default function NotificationsListView() {
   const { t } = useI18n();
@@ -47,7 +41,7 @@ export default function NotificationsListView() {
     if (marking()) return;
     setMarking(true);
     try {
-      await markAllSeen();
+      await markAllSeen("notify");
       await refetch();
     } finally {
       setMarking(false);

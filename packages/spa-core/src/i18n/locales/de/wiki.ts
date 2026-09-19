@@ -59,6 +59,7 @@ export const wiki: RawDictionary["wiki"] = {
   name_col:         "Name",
   format_col:       "Format",
   type_lock_label:  "Inhaltstyp für alle Seiten sperren",
+  post_visible_label: "Statusbeitrag für dieses Wiki erstellen",
   format_markdown:  "Markdown",
   format_bbcode:    "BBCode",
   format_plain:     "Reiner Text",

@@ -20,6 +20,8 @@ import { templateUsageCount, templateName } from "@utsukta/spa-core/store/widget
 import NavUtilities from "./shared/views/NavUtilities";
 import ChannelSwitcher, { ChannelSwitcherTiles } from "./shared/views/ChannelSwitcher";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
+import { formatCount } from "@/modules/notify/rows";
+import { notifyCountLimit } from "@utsukta/spa-core/store/auth-store";
 import { motion } from "solid-motionone";
 import ToastContainer from "@/shared/views/ToastContainer";
 import ConnectionRequestModalHost from "@/shared/views/ConnectionRequestModalHost";
@@ -332,7 +334,7 @@ const Layout: ParentComponent = (props) => {
             <div class="flex flex-col flex-1">
               <span class="sr-only" aria-live="polite" aria-atomic="true">
                 {notifCount() > 0
-                  ? `${notifCount()} notification${notifCount() === 1 ? "" : "s"}`
+                  ? `${formatCount(notifCount(), notifyCountLimit())} ${t("nav.notifications")}`
                   : ""}
               </span>
               <Show when={!hidesWidgetSlots()}>
@@ -741,7 +743,7 @@ const Layout: ParentComponent = (props) => {
                            text-[0.5625rem] font-bold leading-[14px] text-center
                            pointer-events-none select-none"
                   >
-                    {notifCount() > 99 ? "99+" : notifCount()}
+                    {formatCount(notifCount(), notifyCountLimit())}
                   </span>
                 </Show>
               </span>
@@ -774,7 +776,7 @@ const Layout: ParentComponent = (props) => {
                          text-[0.5625rem] font-bold leading-[14px] text-center
                          pointer-events-none select-none"
                 >
-                  {notifCount() > 99 ? "99+" : notifCount()}
+                  {formatCount(notifCount(), notifyCountLimit())}
                 </span>
               </Show>
             </span>

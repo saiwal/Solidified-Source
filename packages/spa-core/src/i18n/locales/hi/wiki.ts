@@ -58,6 +58,7 @@ export const wiki: RawDictionary["wiki"] = {
   name_col:         "नाम",
   format_col:       "प्रारूप",
   type_lock_label:  "सभी पृष्ठों के लिए सामग्री प्रकार लॉक करें",
+  post_visible_label: "इस विकी के लिए स्टेटस पोस्ट बनाएँ",
   format_markdown:  "मार्कडाउन",
   format_bbcode:    "बीबीकोड",
   format_plain:     "सादा पाठ",

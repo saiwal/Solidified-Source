@@ -32,6 +32,7 @@ const NOTIFY_FIELDS = [
   "vnotify11","vnotify12","vnotify13","vnotify14","vnotify15",
   "post_newfriend","post_joingroup","post_profilechange",
   "always_show_in_notices","update_notices_per_parent",
+  "invert_notifications_order",
 ] as const;
 
 export default function NotificationsSection() {
@@ -115,6 +116,7 @@ export default function NotificationsSection() {
             >
               <SwitchRow name="always_show_in_notices"    label={t("settings.notif_show_in_notices")}  checked={!!d().always_show_in_notices} />
               <SwitchRow name="update_notices_per_parent" label={t("settings.notif_mark_thread_read")} checked={!!d().update_notices_per_parent} />
+              <SwitchRow name="invert_notifications_order"  label={t("settings.notif_invert_order")}     checked={!!d().invert_notifications_order} />
               <DesktopNotifyRow />
               <PushNotifyRow />
               <div class="flex items-center justify-between gap-4 py-2.5">

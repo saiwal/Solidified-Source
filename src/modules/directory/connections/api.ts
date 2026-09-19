@@ -58,6 +58,8 @@ export interface ConnectionsResponse {
 
 export async function fetchConnections(params: {
   filter?: ConnectionFilter;
+  // Handlers/Connections.php adds `AND xchan.xchan_pubforum = 1` for this.
+  type?: "forum";
   search?: string;
   order?: ConnectionOrder;
   start?: number;
@@ -65,6 +67,7 @@ export async function fetchConnections(params: {
 }): Promise<ConnectionsResponse> {
   const q = new URLSearchParams();
   if (params.filter) q.set("filter", params.filter);
+  if (params.type)   q.set("type",   params.type);
   if (params.search) q.set("search", params.search);
   if (params.order)  q.set("order",  params.order);
   if (params.start)  q.set("start",  String(params.start));

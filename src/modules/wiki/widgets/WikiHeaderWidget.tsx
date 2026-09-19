@@ -21,6 +21,7 @@ export default function WikiHeaderWidget() {
   // so keep that as the default and let the user change it.
   const [newMime, setNewMime]   = createSignal<WikiMimeType>("text/bbcode");
   const [typeLock, setTypeLock] = createSignal(false);
+  const [postVisible, setPostVisible] = createSignal(false);
 
   const [createAclMode, setCreateAclMode]     = createSignal<AclMode>("public");
   const [createAllowKeys, setCreateAllowKeys] = createSignal<Set<string>>(new Set<string>());
@@ -42,6 +43,7 @@ export default function WikiHeaderWidget() {
     setNewName("");
     setNewMime("text/bbcode");
     setTypeLock(false);
+    setPostVisible(false);
     setCreateAclMode("public");
     setCreateAllowKeys(new Set<string>());
     setCreateDenyKeys(new Set<string>());
@@ -75,6 +77,7 @@ export default function WikiHeaderWidget() {
         name: newName().trim(),
         mime_type: newMime(),
         type_lock: typeLock(),
+        post_visible: postVisible(),
         allow_cid, allow_gid, deny_cid, deny_gid,
         scope: mode === "me" ? "private" : undefined,
       });
@@ -143,6 +146,14 @@ export default function WikiHeaderWidget() {
                   onChange={(e) => setTypeLock(e.currentTarget.checked)}
                 />
                 {t("wiki.type_lock_label")}
+              </label>
+              <label class="flex items-center gap-2 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={postVisible()}
+                  onChange={(e) => setPostVisible(e.currentTarget.checked)}
+                />
+                {t("wiki.post_visible_label")}
               </label>
             </div>
 

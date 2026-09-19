@@ -105,6 +105,7 @@ export async function createWiki(
     name: string;
     mime_type?: WikiMimeType;
     type_lock?: boolean;
+    post_visible?: boolean;
     allow_cid?: string[];
     allow_gid?: string[];
     deny_cid?: string[];

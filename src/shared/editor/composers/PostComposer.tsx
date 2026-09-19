@@ -572,10 +572,8 @@ const PostComposer: Component<ComposerProps> = (props) => {
               {/* ── Editor area — fills the remaining modal height; the surface
                    inside RichEditor scrolls internally past long text while the
                    bottom-docked toolbar stays put. ── */}
-              {/* min-h-[360px] (not min-h-0): a real floor covering RichEditor's own
-                  300px floor plus AttachmentBar's row, so this can't be squeezed
-                  smaller than its children need — see RichEditor.tsx's wrapper
-                  comment for why min-h-0/auto both fail here. */}
+              {/* The editor region's height floor belongs to ComposerShell
+                  (useEditorFloor) — it varies by host mode. */}
               {/* ── Poll panel ── */}
               <Show when={caps.poll && poll.enabled()}>
                 <PollPanel poll={poll} />

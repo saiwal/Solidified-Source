@@ -257,6 +257,7 @@ export const settings: RawDictionary["settings"] = {
   notif_visual_pubstream:  "अनदेखी सार्वजनिक स्ट्रीम गतिविधि",
   notif_show_in_notices:   "नई वॉल पोस्ट और संदेश नोटिस में दिखाएँ",
   notif_mark_thread_read:  "नोटिस क्लिक करने पर पूरा थ्रेड पढ़ा हुआ चिह्नित करें",
+  notif_invert_order: "पुरानी सूचनाएँ पहले दिखाएँ",
   notif_event_advance_days: "कार्यक्रम अग्रिम सूचना (दिन)",
   notif_event_advance_hint: "आगामी कार्यक्रम से इतने दिन पहले सूचित करें।",
   notif_desktop_title:     "डेस्कटॉप सूचनाएं",

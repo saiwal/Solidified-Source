@@ -17,6 +17,19 @@ export function markNotifySeen(nid: number): Promise<void> {
   );
 }
 
+/**
+ * Mark a whole notification bucket seen.
+ * Core's Zotlabs\Module\Notifications::get() switches on the key — it handles
+ * network, home, dm, all_events, notify, pubs and forum_<abook_id> by prefix,
+ * and silently does nothing for anything else — then killme()s with no body.
+ */
+export async function markAllSeen(key: string): Promise<void> {
+  const res = await fetch(`/notifications?markRead=${encodeURIComponent(key)}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to mark read");
+}
+
 // Accumulate UUIDs and flush as one batched request after a 1s idle.
 const pending = new Set<string>();
 let flushTimer: ReturnType<typeof setTimeout> | null = null;

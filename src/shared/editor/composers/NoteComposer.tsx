@@ -7,7 +7,7 @@ import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
 import type { MimeType } from "../types/editor.types";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import AttachmentBar from "../attachments/AttachmentBar";
-import ComposerShell from "../components/ComposerShell";
+import ComposerShell, { useEditorFloor } from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import { countWords } from "../lib/textStats";
@@ -46,6 +46,7 @@ interface Props {
 }
 
 export default function NoteComposer(props: Props) {
+  const floor = useEditorFloor();
   const { t } = useI18n();
   const caps = CAPABILITIES.note;
   const isEditing = () => !!props.initial?.mid;
@@ -163,7 +164,7 @@ export default function NoteComposer(props: Props) {
       // and none for the inline widget or the `minimal` plain-textarea mode,
       // whose own max-h-[50vh] textarea must stay small.
       editorClass={
-        props.fill && !props.minimal ? "flex-1 min-h-[340px] flex flex-col" : "contents"
+        props.fill && !props.minimal ? `flex-1 ${floor()} flex flex-col` : "contents"
       }
       // `minimal` is a bare textarea with no toolbar, so there is nothing for
       // zen to strip down to — and no counter row there either, keeping the

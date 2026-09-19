@@ -258,6 +258,7 @@ export const settings: RawDictionary["settings"] = {
   notif_visual_pubstream:  "Ungesehene Aktivität im öffentlichen Stream",
   notif_show_in_notices:   "Neue Pinnwandbeiträge und Nachrichten unter Hinweisen anzeigen",
   notif_mark_thread_read:  "Gesamten Thread als gelesen markieren, wenn ein Hinweis angeklickt wird",
+  notif_invert_order: "Älteste Benachrichtigungen zuerst anzeigen",
   notif_event_advance_days: "Terminvorankündigung (Tage)",
   notif_event_advance_hint: "Benachrichtige so viele Tage vor einem bevorstehenden Termin.",
   notif_desktop_title:     "Desktop-Benachrichtigungen",

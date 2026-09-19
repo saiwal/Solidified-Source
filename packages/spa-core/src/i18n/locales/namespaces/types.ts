@@ -1440,6 +1440,7 @@ export type RawDictionary = {
     notif_visual_pubstream:  string;
     notif_show_in_notices:   string;
     notif_mark_thread_read:  string;
+    notif_invert_order: string;
     notif_event_advance_days: string;
     notif_event_advance_hint: string;
     notif_desktop_title:     string;
@@ -2446,6 +2447,7 @@ export type RawDictionary = {
     name_col:         string;
     format_col:       string;
     type_lock_label:  string;
+    post_visible_label: string;
     format_markdown:  string;
     format_bbcode:    string;
     format_plain:     string;
@@ -3106,6 +3108,9 @@ export type RawDictionary = {
     time_minutes_ago: string;
     time_hours_ago:   string;
     time_days_ago:    string;
+    filter_name: string;
+    filter_starters: string;
+    clear_filter: string;
     mark_read:        string;
     bucket_network:   string;
     bucket_dm:        string;

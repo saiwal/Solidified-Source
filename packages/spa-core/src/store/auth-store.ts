@@ -21,6 +21,13 @@ export type AuthState = {
   uid: number; // local channel id, 0 for visitors/anonymous
   pageSize: number;
 	updateInterval: number;
+  // pconfig system/notifications_count_limit — core LIMITs every notification
+  // count query at this, so a saturated badge must read "<limit - 1>+" rather
+  // than claim a precision the query never had. Default 100 (Sse_bs.php:47).
+  notifyCountLimit: number;
+  // pconfig system/invert_notifications_order — core applies it in SQL
+  // (Sse_bs::$direction); the client only has to not re-sort against it.
+  notifyInvertOrder: boolean;
   features: Record<string, boolean>;
   localOnlyPostsEnabled: boolean; // Settings → Privacy opt-in for undelivered "wall only" posts
   // pconfig system/page_mimetype — the channel's default format for new
@@ -37,6 +44,8 @@ const ANONYMOUS: AuthState = {
   uid: 0,
   pageSize: 10,
 	updateInterval: 60,
+  notifyCountLimit: 100,
+  notifyInvertOrder: false,
   features: {},
   localOnlyPostsEnabled: false,
   pageMimetype: "",
@@ -131,6 +140,8 @@ async function fetchAuthState(): Promise<AuthState> {
     uid,
     pageSize: parseInt(data.system?.itemspage ?? "10", 10),
     updateInterval: parseInt(data.system?.update_interval ?? "60000", 10),
+    notifyCountLimit: parseInt(data.system?.notifications_count_limit ?? "100", 10) || 100,
+    notifyInvertOrder: !!parseInt(data.system?.invert_notifications_order ?? "0", 10),
     features: (data.features ?? {}) as Record<string, boolean>,
     localOnlyPostsEnabled: isLocal && data.spa?.local_only_posts === "1",
     pageMimetype: String(data.system?.page_mimetype ?? ""),
@@ -173,6 +184,12 @@ export function pageSize(): number {
 }
 export function updateInterval(): number{
 	return authState()?.updateInterval ?? 60000;
+}
+export function notifyCountLimit(): number {
+  return authState()?.notifyCountLimit ?? 100;
+}
+export function notifyInvertOrder(): boolean {
+  return authState()?.notifyInvertOrder ?? false;
 }
 export function isFeatureEnabled(name: string): boolean {
   return authState()?.features[name] === true;

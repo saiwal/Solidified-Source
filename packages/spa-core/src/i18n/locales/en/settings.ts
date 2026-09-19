@@ -258,6 +258,7 @@ export const settings: RawDictionary["settings"] = {
   notif_visual_pubstream:  "Unseen public stream activity",
   notif_show_in_notices:   "Show new wall posts and messages under Notices",
   notif_mark_thread_read:  "Mark entire thread read when clicking a notice",
+  notif_invert_order: "Show oldest notifications first",
   notif_event_advance_days: "Event advance notice (days)",
   notif_event_advance_hint: "Notify this many days before an upcoming event.",
   notif_desktop_title:     "Desktop notifications",

@@ -20,8 +20,24 @@
  * its own render root.
  */
 
-import { Show, onCleanup, createContext, type Component, type JSX } from "solid-js";
+import { Show, onCleanup, createContext, useContext, type Component, type JSX } from "solid-js";
 import { zenMode, setZenMode } from "@utsukta/spa-core/store/zen";
+import { ComposerFrameContext } from "../store/composer-host";
+
+/**
+ * The editor region's height floor, for the shell and for the two composers
+ * that own that box themselves (CardComposer, NoteComposer).
+ *
+ * A docked panel is only 600px tall, so a 360px floor plus header, meta rows
+ * and the action bar guarantees a scrollbar on the panel body — the one thing
+ * docking exists to avoid. The editor is `flex-1` in every host, so lowering
+ * the floor costs nothing where there IS height: it still fills the modal and
+ * the page. Below the floor RichEditor's surface keeps its own 150px min.
+ */
+export function useEditorFloor(): () => string {
+  const frame = useContext(ComposerFrameContext);
+  return () => (frame?.mode() === "dock" ? "min-h-[180px]" : "min-h-[360px]");
+}
 
 /**
  * Collapses a region whose content is currently all hidden.
@@ -72,6 +88,7 @@ export interface ComposerShellProps {
 export const ZenHostContext = createContext(false);
 
 const ComposerShell: Component<ComposerShellProps> = (props) => {
+  const floor = useEditorFloor();
   // Zen outlives its composer otherwise (closed, navigated away from), and the
   // next composer would open straight into it.
   // ponytail: any shell's unmount clears it, not just the one in zen. While zen
@@ -112,7 +129,7 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
         class={`${
           zenMode()
             ? "flex-1 min-h-0 flex flex-col"
-            : (props.editorClass ?? "flex-1 min-h-[360px] flex flex-col")
+            : (props.editorClass ?? `flex-1 ${floor()} flex flex-col`)
         }`}
       >
         {props.editor}

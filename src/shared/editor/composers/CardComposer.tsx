@@ -20,7 +20,7 @@ import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
-import ComposerShell from "../components/ComposerShell";
+import ComposerShell, { useEditorFloor } from "../components/ComposerShell";
 import EditorStats from "../components/EditorStats";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
 import { createAttachmentStore } from "../attachments/useAttachments";
@@ -76,6 +76,7 @@ interface Props {
 }
 
 export default function CardComposer(props: Props) {
+  const floor = useEditorFloor();
   const { t } = useI18n();
   const caps = CAPABILITIES.card;
   const [wordCount, setWordCount] = createSignal(0);
@@ -619,7 +620,7 @@ export default function CardComposer(props: Props) {
         // default wrapper would keep reserving its min-height while hidden.
         <div
           ref={wiring.wrapperRef}
-          class="flex-1 min-h-[360px] flex flex-col"
+          class={`flex-1 ${floor()} flex flex-col`}
           classList={{ hidden: template() !== "freeform" }}
         >
           <RichEditor
