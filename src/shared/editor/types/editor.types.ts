@@ -55,6 +55,16 @@ export type EditorCapabilities = {
   // normalising edit would read as a whole-file rewrite in the page history.
   // See markdownProtect.ts and canUseWysiwyg().
   nonBbcodeWysiwyg: boolean;
+  // Whether this body is converted to bbcode when it is saved — i.e. whether
+  // bbcode mixed into a non-bbcode source still works.
+  //
+  // True for posts, comments and DMs (the mdpost addon converts a text/markdown
+  // body on save), so the toolbar may spell underline, colour, font, size and
+  // spoiler as bbcode inside Markdown, which is what it has always done.
+  // False wherever the body is stored as typed — articles, cards, webpages,
+  // blocks, wiki pages, notes — because core renders those with MarkdownExtra
+  // alone and a [b] would show up literally. See core/markup.ts.
+  bbcodeFallback: boolean;
 };
 
 export type ComposerMeta = {
@@ -81,6 +91,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: true,
     format: false,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: true,
   },
   // Inline comment box under a PostCard — same full toolbar as the post
   // composer, only the meta fields (title/summary/ACL/…) are stripped.
@@ -98,6 +109,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: true,
     format: false,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: true,
   },
   // Direct message — same full toolbar as post, but recipients are picked
   // via a "To:" field (RecipientField) instead of the ACL picker, so
@@ -116,6 +128,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: false,
     format: false,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: true,
   },
   // Article / long-form post — read in-app like webpages/wiki, not federated
   // as a standalone object in the same way a stream post is, so LaTeX
@@ -134,6 +147,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: true,
     format: true,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: false,
   },
   // Card — short-form, item-backed content read in-app like articles, so
   // LaTeX renders live (KaTeX). A card body may itself embed another card:
@@ -152,6 +166,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: true,
     format: true,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: false,
   },
   // Hubzilla webpage (static page with slug) — read in-app, not federated as
   // a standalone object, so LaTeX renders live (KaTeX) rather than as an image.
@@ -169,6 +184,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: false,
     format: true,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: false,
   },
   // Hubzilla block (item-backed content preset, referenced by name rather
   // than URL slug — see core's Comanche [block]name[/block]) — read in-app
@@ -187,6 +203,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: false,
     format: true,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: false,
   },
   // Wiki page — full toolbar (uniform with the other composers), no ACL;
   // live LaTeX, same reasoning as webpage above. Attachments upload to the
@@ -207,6 +224,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: false,
     format: true,
     nonBbcodeWysiwyg: false,
+    bbcodeFallback: false,
   },
   // Personal note — always private, full toolbar (uniform with the other
   // composers); read in-app only, so LaTeX renders live (KaTeX) rather than
@@ -225,6 +243,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: false,
     format: false,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: false,
   },
   // HQ quick-post bar — a wall post, so same pipeline as `post`, but the
   // toolbar has to stay one row tall in a page-level card.
@@ -242,6 +261,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: true,
     format: false,
     nonBbcodeWysiwyg: true,
+    bbcodeFallback: true,
   },
   // Chat room message input — comment toolbar, untabbed, Ctrl+Enter sends
   chat: {
@@ -258,5 +278,6 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     cardPicker: false,
     format: false,
     nonBbcodeWysiwyg: false,
+    bbcodeFallback: true,
   },
 };

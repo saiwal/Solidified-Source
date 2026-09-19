@@ -10,6 +10,7 @@ import { initNsfwWords } from "./nsfw-settings";
 import { initDisabledFrontendModules } from "./disabled-frontend-modules";
 import { THEMES, type ThemeId } from "../types/theme.types";
 import { setMyAddress } from "../lib/zid";
+import { setBbcodeContext } from "../lib/renderBody";
 
 export type AuthState = {
   isLocal: boolean; // true = native logged-in user
@@ -65,6 +66,13 @@ async function fetchAuthState(): Promise<AuthState> {
   // core's get_my_address(); zidifyLinks() needs it to reach ACL-restricted
   // media on other hubs (see lib/zid.ts).
   setMyAddress(String(data.my_address ?? ""));
+
+  // [sitename] / [baseurl] / [observer…] — see setBbcodeContext.
+  setBbcodeContext({
+    siteName: String(data.sitename ?? ""),
+    siteRoot: String(data.baseurl ?? ""),
+    observer: data.observer ?? null,
+  });
 
   if (data.spa) {
     const validSizes   = new Set(["small", "medium", "large", "xl"]);

@@ -213,6 +213,11 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     // Read lazily, so it can reference buildDraftExtra declared below.
     autosaveExtra: () => buildDraftExtra(),
+    // Same "Markdown" feature as PostComposer/CommentComposer (the mdpost
+    // addon's toggle); a DM goes through the same POST and the server converts
+    // it to bbcode on save. Missing here, a DM was always text/bbcode, so
+    // ==highlight==, **bold** and the rest were stored literally.
+    initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
   });
 
   // Recipients are the one part of a DM draft the composer store knows

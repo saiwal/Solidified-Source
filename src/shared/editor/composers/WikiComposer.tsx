@@ -28,9 +28,10 @@ interface Props {
   initialBody: string;
   initialCommitMsg?: string;
   mimeType: string;
-  /** Offer a per-page format picker. Core shows one only on the create-page
-   *  form of a wiki whose type is not locked (Widget/Wiki_pages.php:68);
-   *  existing pages keep the format they were written in. */
+  /** Offer a per-page format picker — on any page of a wiki whose type is not
+   *  locked. Core only offers it on the create-page form
+   *  (Widget/Wiki_pages.php:68); the SPA also allows it when editing, which
+   *  needs Wiki.php to write the mimetype onto the saved revision itself. */
   allowFormatChange?: boolean;
   saving: boolean;
   onSave: (body: string, commitMsg: string, mimeType: string) => void;

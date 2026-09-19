@@ -272,6 +272,27 @@ function findShareEnd(s: string, start: number): number {
   return -1;
 }
 
+/**
+ * Tags bbcodeToHtml() *resolves* rather than renders: the site placeholders,
+ * and the observer/channel conditionals whose branches it picks between. In a
+ * display pass that is the point; in the editor it is destruction — the round
+ * trip would store the resolved text, so editing a post would silently replace
+ * [sitename] with the hub's name and throw away the branch not taken.
+ *
+ * So they are lifted out before the conversion and put back as literal text:
+ * the author sees the tag they typed, and htmlToSource hands it straight back.
+ */
+const LITERAL_RE =
+  /\[(?:sitename|baseurl|observer\.[a-z]+)\]|\[(observer|channel)[=!][^\]]*\][\s\S]*?\[\/\1\]/gi;
+
+function protectLiterals(src: string): { src: string; lits: string[] } {
+  const lits: string[] = [];
+  return {
+    src: src.replace(LITERAL_RE, (m) => `\x01LIT:${lits.push(m) - 1}\x01`),
+    lits,
+  };
+}
+
 function bbcodeToEditorHtml(body: string): string {
   const raws: string[] = [];
   let src = "";
@@ -305,7 +326,9 @@ function bbcodeToEditorHtml(body: string): string {
   // card embed is a [share] block, already claimed by the scan above.
   src = src.replace(/\[card=(\d+)\]\s*\[\/card\]/gi, (_m, id) => `\x01CARD:${id}\x01`);
 
-  let html = bbcodeToHtml(src);
+  const { src: litSrc, lits } = protectLiterals(src);
+  let html = bbcodeToHtml(litSrc);
+  html = html.replace(/\x01LIT:(\d+)\x01/g, (_m, i) => lits[Number(i)] ?? "");
 
   html = html.replace(/\x01SHARE:(\d+)\x01/g, (_m, id) => compactShareEmbed(id));
   html = html.replace(/\x01SHARERAW:(\d+)\x01/g, (_m, i) => {

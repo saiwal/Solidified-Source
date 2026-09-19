@@ -3,6 +3,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
+import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
+import type { MimeType } from "../types/editor.types";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
@@ -106,7 +108,7 @@ export default function NoteComposer(props: Props) {
   });
 
   if (props.initial?.mimetype) {
-    store.setMimetype(props.initial.mimetype as any);
+    if (isAuthorable(props.initial.mimetype ?? "")) store.setMimetype(props.initial.mimetype as MimeType);
   }
 
   const enc = useEncrypt(store.body, store.setBody);

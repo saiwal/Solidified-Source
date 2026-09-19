@@ -6,6 +6,7 @@ import { createComposerStore } from "../store/createComposerStore";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
+import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import AclPicker, { aclModeFrom, aclEntryKeys } from "../components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
@@ -67,6 +68,7 @@ interface Props {
     deck?: { name: string; order: number | null } | null;
     /** Which authoring tab produced the body — reopens on the same one. */
     template?: CardTemplate;
+    mimetype?: string;
   };
   onSaved?: () => void;
   /** Close the composer without saving — wired to the left-side Discard button. */
@@ -321,6 +323,10 @@ export default function CardComposer(props: Props) {
     store.setSlug(props.initial.slug);
     store.setCategory(props.initial.category);
     store.setBody(props.initial.body);
+    // Without this the toolbar (and the WYSIWYG probe) read text/bbcode on
+    // every edit, so reopening a markdown card spelled its buttons in bbcode.
+    const m = props.initial.mimetype ?? "";
+    if (isAuthorable(m)) store.setMimetype(m);
     // The assembled templates submit composedBody(), not store.body() — so
     // without unpacking the stored body back into their sub-forms, reopening a
     // quote/definition/link card for editing would show empty fields and save

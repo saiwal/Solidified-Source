@@ -129,6 +129,16 @@ const CORPUS = [
   "a\n\n[code]x\ny[/code]\n\nb",
   "a\n\n[list]\n[*]x\n[/list]\n\nb",
   "a\n\n[table]\n[tr][td]c[/td][/tr]\n[/table]\n\nb",
+  // Tags whose HTML had no case here, so the round trip dropped the markup
+  // and kept only the text: <sub>/<sup>, the <dl> (term styles live in its
+  // classes) and [checklist]'s <ul class="checklist"> of checkboxes, which
+  // the plain [list] case swallowed.
+  "x[sub]a[/sub] y[sup]b[/sup]",
+  '[dl terms="bi"]\n[*=Term] One.\n[*=Other] Two.\n[/dl]',
+  "[checklist]\n[x] done\n[] open\n[/checklist]",
+  // Renders as <div class="wall-item-footer">, which the generic div case
+  // serialized as a bare line, losing the tag.
+  "a\n[footer]note[/footer]",
 ];
 
 for (const src of CORPUS) {

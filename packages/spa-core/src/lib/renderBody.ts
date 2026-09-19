@@ -64,7 +64,24 @@ function escapeTags(s: string): string {
 // htmlToSource() on every blur and would write the zid back into the stored
 // source.
 export function bbcodeDisplay(text: string, opts?: BbcodeOptions): string {
-  return zidifyLinks(bbcodeToHtml(text, { zidResolver: zid, ...opts }));
+  return zidifyLinks(bbcodeToHtml(text, { zidResolver: zid, ...context, ...opts }));
+}
+
+// Facts about the hub and the viewer that bbcode() resolves rather than
+// renders: [sitename], [baseurl], the [observer…] conditionals and
+// [observer.name] and friends. No call site can supply them — renderBody()
+// runs inside the activity mapper at fetch time, outside any component — so
+// they are seeded once at boot from /spa/pconfig, the same shape and the same
+// reason as lib/zid.ts's myAddress. Until that response lands the placeholders
+// resolve empty; a stream that beat it renders without them and does not
+// re-render.
+let context: Pick<BbcodeOptions, "observer" | "siteRoot" | "siteName"> = {};
+
+/** Seeded from /spa/pconfig (auth-store). */
+export function setBbcodeContext(
+  next: Pick<BbcodeOptions, "observer" | "siteRoot" | "siteName">,
+): void {
+  context = next;
 }
 
 export function renderBody(
@@ -84,8 +101,15 @@ export function renderBody(
     // (prepare_text's `case 'application/x-pdl'`), and so do we — the SPA has
     // no Comanche renderer, it uses widget templates instead.
     case "application/x-pdl":
-    case "text/plain":
       return `<pre class="whitespace-pre-wrap">${escapeTags(body)}</pre>`;
+
+    // Core emits the escaped text bare, which eats the author's line breaks in
+    // HTML. Preserve them with whitespace-pre-wrap — but in a <div>, not a
+    // <pre>: inside a `prose` container (webpages, articles, wiki) a <pre> gets
+    // the code-block treatment, so an ordinary plaintext page rendered as a
+    // monospace boxed listing.
+    case "text/plain":
+      return `<div class="whitespace-pre-wrap">${escapeTags(body)}</div>`;
 
     // Rendered server-side by eval() in core; there is no client equivalent
     // and rendering the source would leak the channel's PHP. Callers that care

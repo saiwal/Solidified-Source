@@ -24,9 +24,16 @@ export function sanitizeHtml(html: string): string {
       // as a plain list until that is decided on its own merits.
       'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption',
       'del', 'hr',
+      // Same story, same silent drop: bbcode.ts renders [mark] as <mark>
+      // (:1017, :1021), [sup]/[sub] as <sup>/<sub> (:995), [dl] as
+      // <dl>/<dt>/<dd> (:494) and a share block's date as <time> (:282);
+      // marked emits <mark>/<sub>/<sup> for the ==x==, ~x~ and ^x^ the
+      // Markdown composer accepts. Missing here, every one of them lost its
+      // tag and rendered as undecorated text.
+      'mark', 'sub', 'sup', 'dl', 'dt', 'dd', 'time',
     ],
     ALLOWED_ATTR: [
-      'href', 'src', 'alt', 'title', 'rel',
+      'href', 'src', 'alt', 'title', 'rel', 'datetime',
       'align', 'colspan', 'rowspan', 'scope',
       'class', 'style', 'target',
       'controls', 'preload', 'poster', 'type',

@@ -34,7 +34,11 @@ export const BB_TAGS = [
   "list", "table", "tr", "th", "td", "h1", "h2", "h3", "h4", "h5", "h6",
   "center", "color", "size", "font", "spoiler", "summary", "share", "card",
   "crypt", "embed", "observer", "noparse", "nobb", "pre", "map", "video",
-  "audio", "attachment",
+  "audio", "attachment", "sub", "sup", "dl", "checklist", "hr", "footer",
+  // Resolved rather than rendered by bbcodeToHtml — see sourceToHtml's
+  // LITERAL_RE. Protected for the same reason: turndown would escape them to
+  // "\[sitename\]" and the save path would store the escape.
+  "sitename", "baseurl", "observer", "channel",
 ] as const;
 
 /**
@@ -44,7 +48,11 @@ export const BB_TAGS = [
 const BLOCK_TAGS = new Set([
   "quote", "list", "table", "tr", "code", "pre", "center", "share", "card",
   "video", "audio", "map", "h1", "h2", "h3", "h4", "h5", "h6",
+  "dl", "checklist", "hr", "footer",
 ]);
+
+/** Tags with no closer — the opening tag is the whole block. */
+const VOID_TAGS = new Set(["hr", "sitename", "baseurl"]);
 
 const OPEN_RE = new RegExp(`\\[(${BB_TAGS.join("|")})(?:[=\\s][^\\]]*)?\\]`, "gi");
 
@@ -98,7 +106,9 @@ export function protectBbcode(md: string): Protected {
     if (m.index < cursor) continue;
 
     const tag = m[1].toLowerCase();
-    const end = findTagEnd(md, m.index, tag);
+    const end = VOID_TAGS.has(tag)
+      ? m.index + m[0].length
+      : findTagEnd(md, m.index, tag);
     // Unclosed — leave it as literal text rather than swallowing the rest of
     // the document. Only reachable from hand-typed source, where no round trip
     // runs anyway.

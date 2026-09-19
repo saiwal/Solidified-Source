@@ -151,6 +151,7 @@ export default function CardView() {
           deny_cid:      card.denyCid,
           deny_gid:      card.denyGid,
           deck:          card.deck,
+          mimetype:      card.mimetype,
         },
         onSaved: () => refetch(),
       },

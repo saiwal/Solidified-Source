@@ -152,6 +152,7 @@ export default function ArticleView() {
           deny_gid:      article.denyGid,
           lang:          article.lang,
           series:        article.series,
+          mimetype:      article.mimetype,
         },
         onSaved: () => refetch(),
       },

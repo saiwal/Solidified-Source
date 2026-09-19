@@ -24,6 +24,7 @@ import { isAppInstalled, isModuleActive } from "@utsukta/spa-core/module-registr
 import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
 import { fetchLinkMeta, linkMetaToBbcode, linkMetaToHtml } from "../lib/linkMeta";
 import { readAlt } from "../attachments/insertHelpers";
+import { spell, bbcodeTokensWork, linkText, type Kind } from "./markup";
 
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
 const CardPickerModal = lazy(() => import("../cards/CardPickerModal"));
@@ -38,6 +39,8 @@ interface Props {
   tab: "wysiwyg" | "source";
   /** Source format, so the source tab spells a format the way that format does. */
   mimetype?: MimeType;
+  /** EditorCapabilities.bbcodeFallback — see core/markup.ts. */
+  bbcodeFallback?: boolean;
   editorRef: () => HTMLDivElement | undefined;
   textareaRef: () => HTMLTextAreaElement | undefined;
   onSourceChange: (v: string) => void;
@@ -70,21 +73,24 @@ export default function EditorToolbar(props: Props) {
   const [mapOpen, setMapOpen] = createSignal(false);
   const installedApps = useInstalledApps();
   const navData = useNavData();
-  const showCardPicker = () => props.cardPicker && isAppInstalled(installedApps(), "/cards/");
-  const showExcalidraw = () => isModuleActive("excalidraw", installedApps(), disabledFrontendModules());
+  const showCardPicker = () => props.cardPicker && bbTokens() && isAppInstalled(installedApps(), "/cards/");
+  const showExcalidraw = () => bbTokens() && isModuleActive("excalidraw", installedApps(), disabledFrontendModules());
   // navData().osm is null unless the core openstreetmap addon is enabled
   // site-wide; without it the tile server isn't in the page's frame-src.
   const showMap = () =>
-    !!navData()?.osm && isModuleActive("openstreetmap", installedApps(), disabledFrontendModules());
+    !!navData()?.osm && bbTokens() &&
+    isModuleActive("openstreetmap", installedApps(), disabledFrontendModules());
 
   const isSource  = () => props.tab === "source";
-  // Markdown is an optional input layer — the server converts the body to
-  // bbcode on save — so the source tab writes markdown for the constructs
-  // markdown actually spells, and bbcode for the rest (underline, colour,
-  // font, size, spoiler, centre, media, lettered lists). That is the same rule
-  // the WYSIWYG tab follows through markdownTurndown, so a button no longer
-  // produces different markup depending on which tab is open.
-  const isMd = () => props.mimetype === "text/markdown";
+  // What the current format spells, and what it cannot spell at all. The whole
+  // table lives in core/markup.ts — see there for why markdown sometimes falls
+  // back to bbcode and sometimes to inline HTML.
+  const fallback = () => props.bbcodeFallback ?? true;
+  const sp = (kind: Kind, arg?: string) => spell(kind, props.mimetype, fallback(), arg);
+  /** False hides the button: this format has no way to say it. */
+  const can = (kind: Kind) => sp(kind) !== null;
+  /** Whether a raw bbcode token would still be expanded (latex/card/map/draw). */
+  const bbTokens = () => bbcodeTokensWork(props.mimetype, fallback());
   const isComment = () => props.level === "comment";
   const isQuick   = () => props.level === "quick";
   const isFull    = () => props.level === "full";
@@ -306,9 +312,14 @@ export default function EditorToolbar(props: Props) {
 
   // ── Button actions (branch on tab for mode-aware behavior) ───────────────
 
-  /** Wrap the selection in the source tab, in markdown where markdown has it. */
-  const wrapFmt = (bb: string, md: string) =>
-    isMd() ? wrapSource(md, md) : wrapSource(`[${bb}]`, `[/${bb}]`);
+  /** Apply a format's spelling of `kind` to the source textarea. */
+  const applySpell = (kind: Kind, arg?: string) => {
+    const s = sp(kind, arg);
+    if (!s) return;
+    if ("text" in s) insertSource(s.text);
+    else if ("prefix" in s) prefixSource(s.prefix);
+    else wrapSource(s.open, s.close);
+  };
 
   // Each: clear the whole marked run when the caret is inside one (see
   // unwrapMark), otherwise the ordinary apply-to-the-selection command.
@@ -317,12 +328,11 @@ export default function EditorToolbar(props: Props) {
     exec(cmd);
   };
 
-  const bold      = () => isSource() ? wrapFmt("b", "**")  : toggleMark("bold", "bold");
-  const italic    = () => isSource() ? wrapFmt("i", "*")   : toggleMark("italic", "italic");
-  // No markdown spelling for underline — bbcode in both tabs.
-  const underline = () => isSource() ? wrapSource("[u]", "[/u]")   : toggleMark("underline", "underline");
+  const bold      = () => isSource() ? applySpell("b") : toggleMark("bold", "bold");
+  const italic    = () => isSource() ? applySpell("i") : toggleMark("italic", "italic");
+  const underline = () => isSource() ? applySpell("u") : toggleMark("underline", "underline");
   const highlight = (c: string) => {
-    if (isSource()) { wrapSource(`[mark=${c}]`, "[/mark]"); return; }
+    if (isSource()) { applySpell("mark", c); return; }
     // Firefox only honours hiliteColor with CSS styling on; the resulting
     // <span style="background-color:…"> round-trips through htmlToSource the
     // same as <font>, so it's safe to leave the flag set for this one command.
@@ -335,27 +345,27 @@ export default function EditorToolbar(props: Props) {
   // off, so clearing always means unwrapping the element — whatever the
   // selection is. Reached from the colour panel's "None" row.
   const clearHighlight = () => {
-    if (isSource()) { wrapSource("[mark]", "[/mark]"); return; }
+    if (isSource()) { applySpell("markClear"); return; }
     unwrapMark("highlight");
   };
 
   // Same gap: execCommand("strikeThrough") doesn't reliably toggle off inside
   // <s>, so try the unwrap first and only then apply.
   const strike = () => {
-    if (isSource()) { wrapFmt("s", "~~"); return; }
+    if (isSource()) { applySpell("s"); return; }
     if (unwrapMark("strikeThrough")) return;
     exec("strikeThrough");
   };
 
   const color = (c: string) =>
-    isSource() ? wrapSource(`[color=${c}]`, "[/color]") : exec("foreColor", c);
+    isSource() ? applySpell("color", c) : exec("foreColor", c);
 
   const font = (f: string) =>
-    isSource() ? wrapSource(`[font=${f}]`, "[/font]") : exec("fontName", f);
+    isSource() ? applySpell("font", f) : exec("fontName", f);
 
   const size = (v: string) => {
     if (isSource()) {
-      wrapSource(`[size=${v}]`, "[/size]");
+      applySpell("size", v);
       return;
     }
     // execCommand only speaks the legacy 1-7 scale; htmlToSource maps the
@@ -371,10 +381,7 @@ export default function EditorToolbar(props: Props) {
   // An author gives [quote=Author]; an empty field gives a plain quote.
   const quote = (author: string) => {
     if (isSource()) {
-      // Markdown's ">" carries no attribution, so a named quote is bbcode in
-      // either format — the same split markdownTurndown's bbQuote rule makes.
-      if (isMd() && !author) prefixSource("> ");
-      else wrapSource(author ? `[quote=${author}]` : "[quote]", "[/quote]");
+      applySpell(author ? "quoteAuthor" : "quote", author);
       return;
     }
     // formatBlock converts the current line so the user can type straight into
@@ -387,10 +394,9 @@ export default function EditorToolbar(props: Props) {
 
   const code = () => {
     if (isSource()) {
-      if (!isMd()) { wrapSource("[code]", "[/code]"); return; }
       const ta = props.textareaRef();
       const multi = !!ta && ta.value.slice(ta.selectionStart, ta.selectionEnd).includes("\n");
-      multi ? wrapSource("```\n", "\n```") : wrapFmt("code", "`");
+      applySpell(multi ? "codeblock" : "code");
       return;
     }
     // formatBlock always converts the whole current block, not just the
@@ -429,7 +435,7 @@ export default function EditorToolbar(props: Props) {
   // insertBlock rather than execCommand("insertHorizontalRule"): that command
   // leaves no node after the rule, so a rule at the end of the surface was a
   // dead end.
-  const hr = () => isSource() ? insertSource("[hr]\n") : insertBlock("<hr>");
+  const hr = () => isSource() ? applySpell("hr") : insertBlock("<hr>");
 
   // Lettered list (a. b. c.) — insertOrderedList gives a plain decimal <ol>,
   // so re-tag it with the same class/style bbcode.ts's sourceToHtml stamps
@@ -472,9 +478,12 @@ export default function EditorToolbar(props: Props) {
     if (isSource()) {
       const ta = props.textareaRef();
       if (ta && ta.selectionEnd > ta.selectionStart) {
-        isMd() ? wrapSource("[", `](${url})`) : wrapSource(`[url=${url}]`, "[/url]");
+        applySpell("url", url);
         return;
       }
+      // The scraped preview block is bbcode — only worth building where bbcode
+      // is still expanded. Elsewhere a bare link is the honest answer.
+      if (!bbTokens()) { insertSource(linkText(url, props.mimetype, fallback())); return; }
       setLinkLoading(true);
       const meta = await fetchLinkMeta(url);
       setLinkLoading(false);
@@ -499,19 +508,17 @@ export default function EditorToolbar(props: Props) {
     const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(u)?.[1]?.toLowerCase() ?? "";
     if (/^(mp4|webm|ogv|mov|m4v)$/.test(ext)) {
       isSource()
-        ? insertSource(`[video]${u}[/video]`)
+        ? applySpell("video", u)
         : insertBlock(`<video src="${u}" controls preload="none" style="max-width:100%"></video>`);
       return;
     }
     if (/^(mp3|ogg|oga|wav|m4a|flac|opus|aac)$/.test(ext)) {
       isSource()
-        ? insertSource(`[audio]${u}[/audio]`)
+        ? applySpell("audio", u)
         : insertBlock(`<audio src="${u}" controls preload="none"></audio>`);
       return;
     }
-    isSource()
-      ? insertSource(isMd() ? `![](${u})` : `[img]${u}[/img]`)
-      : exec("insertImage", u);
+    isSource() ? applySpell("img", u) : exec("insertImage", u);
   };
 
   // The text/bbcode is built by LatexComposerModal (it knows inline vs.
@@ -589,37 +596,17 @@ export default function EditorToolbar(props: Props) {
   const table = (colsRaw: string, rowsRaw: string) => {
     const cols = Math.min(20, Math.max(1, parseInt(colsRaw, 10) || 2));
     const rows = Math.min(50, Math.max(0, parseInt(rowsRaw, 10) || 2));
-    if (isSource() && isMd()) {
-      // GFM, which is what the WYSIWYG tab's table rule emits.
-      const row = (cells: string[]) => `| ${cells.join(" | ")} |`;
-      const md = [
-        row(Array.from({ length: cols }, (_, i) => `Header ${i + 1}`)),
-        row(Array.from({ length: cols }, () => "---")),
-        ...Array.from({ length: rows }, (_, r) =>
-          row(Array.from({ length: cols }, (_, c) => `Cell ${r + 1}-${c + 1}`))),
-      ].join("\n");
-      insertSource(`${md}\n`);
-      return;
-    }
-    if (isSource()) {
-      const header   = "[tr]" + Array.from({ length: cols }, (_, i) => `[th]Header ${i + 1}[/th]`).join("") + "[/tr]";
-      const dataRows = Array.from({ length: rows }, (_, r) =>
-        "[tr]" + Array.from({ length: cols }, (_, c) => `[td]Cell ${r + 1}-${c + 1}[/td]`).join("") + "[/tr]"
-      ).join("\n");
-      insertSource(`[table border=1]\n${header}\n${dataRows}\n[/table]\n`);
-    } else {
-      const header   = "<tr>" + Array.from({ length: cols }, (_, i) => `<th>Header ${i + 1}</th>`).join("") + "</tr>";
-      const dataRows = Array.from({ length: rows }, (_, r) =>
-        "<tr>" + Array.from({ length: cols }, (_, c) => `<td>Cell ${r + 1}-${c + 1}</td>`).join("") + "</tr>"
-      ).join("");
-      insertBlock(`<table border="1">${header}${dataRows}</table>`);
-    }
+    if (isSource()) { applySpell("table", `${cols}x${rows}`); return; }
+    const header   = "<tr>" + Array.from({ length: cols }, (_, i) => `<th>Header ${i + 1}</th>`).join("") + "</tr>";
+    const dataRows = Array.from({ length: rows }, (_, r) =>
+      "<tr>" + Array.from({ length: cols }, (_, c) => `<td>Cell ${r + 1}-${c + 1}</td>`).join("") + "</tr>"
+    ).join("");
+    insertBlock(`<table border="1">${header}${dataRows}</table>`);
   };
 
   const spoiler = (label: string) => {
-    const open  = label ? `[spoiler=${label}]` : "[spoiler]";
     if (isSource()) {
-      wrapSource(open, "[/spoiler]");
+      applySpell("spoiler", label);
     } else {
       wrapHtml(`<details><summary>${label || "Spoiler"}</summary><div>`, `</div></details>${ZWSP}`);
     }
@@ -677,6 +664,7 @@ export default function EditorToolbar(props: Props) {
   );
 
   const LinkPanel = () => (
+    <Show when={can("url")}>
     <PromptPanel
       title={t("editor.link")}
       icon={<MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />}
@@ -685,6 +673,7 @@ export default function EditorToolbar(props: Props) {
       disabled={linkLoading()}
       onSubmit={(v) => { void link(v.url); }}
     />
+    </Show>
   );
 
   return (
@@ -693,25 +682,37 @@ export default function EditorToolbar(props: Props) {
 
       {/* ── Group 1: Inline formatting — all levels ── */}
       {/* marks() only tracks the WYSIWYG caret, so the source tab shows none. */}
-      <Btn title={t("editor.bold")} onPress={bold} active={!isSource() && marks().bold}>
-        <MdOutlineFormat_bold class="w-4 h-4" />
-      </Btn>
-      <Btn title={t("editor.italic")} onPress={italic} active={!isSource() && marks().italic}>
-        <MdOutlineFormat_italic class="w-4 h-4" />
-      </Btn>
-      <Btn title={t("editor.underline")} onPress={underline} active={!isSource() && marks().underline}>
-        <MdOutlineFormat_underlined class="w-4 h-4" />
-      </Btn>
-      <Btn title={t("editor.strikethrough")} onPress={strike} active={!isSource() && marks().strikeThrough}>
-        <MdOutlineFormat_strikethrough class="w-4 h-4" />
-      </Btn>
-      <ColorPicker
-        title={t("editor.highlight")}
-        icon={<MdOutlineHighlight class="w-4 h-4" />}
-        onPick={highlight}
-        clearLabel={t("editor.highlight_none")}
-        onClear={clearHighlight}
-      />
+      {/* Each mark renders only where the current format can spell it —
+           text/plain can spell none of them, so the group disappears. */}
+      <Show when={can("b")}>
+        <Btn title={t("editor.bold")} onPress={bold} active={!isSource() && marks().bold}>
+          <MdOutlineFormat_bold class="w-4 h-4" />
+        </Btn>
+      </Show>
+      <Show when={can("i")}>
+        <Btn title={t("editor.italic")} onPress={italic} active={!isSource() && marks().italic}>
+          <MdOutlineFormat_italic class="w-4 h-4" />
+        </Btn>
+      </Show>
+      <Show when={can("u")}>
+        <Btn title={t("editor.underline")} onPress={underline} active={!isSource() && marks().underline}>
+          <MdOutlineFormat_underlined class="w-4 h-4" />
+        </Btn>
+      </Show>
+      <Show when={can("s")}>
+        <Btn title={t("editor.strikethrough")} onPress={strike} active={!isSource() && marks().strikeThrough}>
+          <MdOutlineFormat_strikethrough class="w-4 h-4" />
+        </Btn>
+      </Show>
+      <Show when={can("mark")}>
+        <ColorPicker
+          title={t("editor.highlight")}
+          icon={<MdOutlineHighlight class="w-4 h-4" />}
+          onPick={highlight}
+          clearLabel={t("editor.highlight_none")}
+          onClear={clearHighlight}
+        />
+      </Show>
 
       {/* Comments get the attachment inserts and nothing else — adding a file
            to a reply is common enough to earn a slot, the rest of the insert
@@ -744,6 +745,10 @@ export default function EditorToolbar(props: Props) {
           <Sep />
           <AttachButtons />
           <LinkPanel />
+          {/* Lists are WYSIWYG-only in every format (hence `disabled`), so in
+              text/plain — which has no WYSIWYG tab and no list syntax — the
+              button could never be anything but dead. */}
+          <Show when={can("b")}>
           <ListToolDropdown
             disabled={isSource()}
             onSelect={(kind) => {
@@ -752,41 +757,49 @@ export default function EditorToolbar(props: Props) {
               else listAlpha();
             }}
           />
+          </Show>
           <EmojiPicker onSelect={insertEmoji} />
 
           <Show when={toolsOpen()}>
             <>
-          {/* ── Group 2: Text appearance ── */}
-          <Sep />
-          <ColorPicker
-            title={t("editor.text_color")}
-            icon={<MdOutlineFormat_color_text class="w-4 h-4" />}
-            onPick={color}
-          />
-          <OptionMenu
-            title={t("editor.font_family")}
-            icon={<MdOutlineFont_download class="w-4 h-4" />}
-            options={FONT_OPTIONS}
-            onPick={font}
-          />
-          <OptionMenu
-            title={t("editor.font_size")}
-            icon={<MdOutlineFormat_size class="w-4 h-4" />}
-            options={SIZE_OPTIONS}
-            onPick={size}
-          />
+          {/* ── Group 2: Text appearance — nothing text/plain can say, so the
+               divider goes with it. ── */}
+          <Show when={can("color")}>
+            <Sep />
+          </Show>
+          <Show when={can("color")}>
+            <ColorPicker
+              title={t("editor.text_color")}
+              icon={<MdOutlineFormat_color_text class="w-4 h-4" />}
+              onPick={color}
+            />
+          </Show>
+          <Show when={can("font")}>
+            <OptionMenu
+              title={t("editor.font_family")}
+              icon={<MdOutlineFont_download class="w-4 h-4" />}
+              options={FONT_OPTIONS}
+              onPick={font}
+            />
+          </Show>
+          <Show when={can("size")}>
+            <OptionMenu
+              title={t("editor.font_size")}
+              icon={<MdOutlineFormat_size class="w-4 h-4" />}
+              options={SIZE_OPTIONS}
+              onPick={size}
+            />
+          </Show>
 
           {/* ── Group 3: Block elements ── */}
           <Sep />
           {/* Heading selector — full only. Works in source mode too: [h1]–[h6]
               are real bbcode (htmlToSource emits them, core renders them). */}
-          <Show when={isFull()}>
+          <Show when={isFull() && can("h")}>
             <HeadingToolDropdown
               onSelect={(val) => {
                 if (isSource()) {
-                  if (val === "p") return;
-                  if (isMd()) prefixSource("#".repeat(Number(val[1])) + " ");
-                  else wrapSource(`[${val}]`, `[/${val}]`);
+                  if (val !== "p") applySpell("h", val);
                   return;
                 }
                 if (!focusEditor()) return;
@@ -797,6 +810,7 @@ export default function EditorToolbar(props: Props) {
               }}
             />
           </Show>
+          <Show when={can("quote")}>
           <PromptPanel
             title={t("editor.blockquote")}
             icon={<MdOutlineFormat_quote class="w-4 h-4" />}
@@ -804,16 +818,20 @@ export default function EditorToolbar(props: Props) {
             submitLabel={t("editor.insert")}
             onSubmit={(v) => quote(v.author)}
           />
-          <Show when={isFull()}>
+          </Show>
+          <Show when={isFull() && can("code")}>
             <>
               <Btn title={t("editor.code_block")} onPress={code}>
                 <MdOutlineCode class="w-4 h-4" />
               </Btn>
             </>
           </Show>
-          <Btn title={t("editor.horizontal_rule")} onPress={hr}>
-            <MdOutlineHorizontal_rule class="w-4 h-4" />
-          </Btn>
+          <Show when={can("hr")}>
+            <Btn title={t("editor.horizontal_rule")} onPress={hr}>
+              <MdOutlineHorizontal_rule class="w-4 h-4" />
+            </Btn>
+          </Show>
+          <Show when={can("img")}>
           <PromptPanel
             title={t("editor.media")}
             icon={<MdOutlineImage class="w-4 h-4" />}
@@ -821,9 +839,15 @@ export default function EditorToolbar(props: Props) {
             submitLabel={t("editor.insert")}
             onSubmit={(v) => media(v.url)}
           />
+          </Show>
+          {/* LaTeX "image" mode inserts an [img] block and the card/draw/map
+              buttons insert raw tokens — all bbcode, so they only show where
+              bbcode is still expanded. "live" mode is plain $…$ text. */}
+          <Show when={props.latexMode === "live" || bbTokens()}>
           <Btn title={t("editor.latex_toolbar_title")} onPress={() => setLatexOpen(true)}>
             <MdOutlineFunctions class="w-4 h-4" />
           </Btn>
+          </Show>
           <Show when={showCardPicker()}>
             <Btn title={t("editor.card_toolbar_title")} onPress={() => setCardPickerOpen(true)}>
               <MdOutlineStyle class="w-4 h-4" />
@@ -840,9 +864,10 @@ export default function EditorToolbar(props: Props) {
             </Btn>
           </Show>
           {/* ── Group 6: Rich structure — full only ── */}
-          <Show when={isFull()}>
+          <Show when={isFull() && (can("table") || can("spoiler"))}>
             <>
               <Sep />
+              <Show when={can("table")}>
               <PromptPanel
                 title={t("editor.table")}
                 icon={<MdOutlineTable_chart class="w-4 h-4" />}
@@ -853,6 +878,8 @@ export default function EditorToolbar(props: Props) {
                 submitLabel={t("editor.insert")}
                 onSubmit={(v) => table(v.cols, v.rows)}
               />
+              </Show>
+              <Show when={can("spoiler")}>
               <PromptPanel
                 title={t("editor.spoiler")}
                 icon={<MdOutlineVisibility_off class="w-4 h-4" />}
@@ -860,6 +887,7 @@ export default function EditorToolbar(props: Props) {
                 submitLabel={t("editor.insert")}
                 onSubmit={(v) => spoiler(v.label)}
               />
+              </Show>
             </>
           </Show>
 
@@ -869,7 +897,7 @@ export default function EditorToolbar(props: Props) {
 
           {/* ── Group 7: Utility — full only, pushed right; disabled (not
               hidden) in source mode since it acts on the WYSIWYG DOM. ── */}
-          <Show when={isFull()}>
+          <Show when={isFull() && can("b")}>
             <>
               <span class="flex-1" />
               <Btn

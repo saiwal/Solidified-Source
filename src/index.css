@@ -353,6 +353,33 @@
     margin-top: 0.375rem;
   }
 
+  /* bbcode lists. Core leans on the browser default (`ul { list-style: disc }`)
+     plus bootstrap's indent and ships no rule for these classes at all; the
+     numbered variants carry an inline list-style-type, the bullet one does not.
+     Tailwind's preflight zeroes list-style, margin AND padding on every ul/ol,
+     so a [list] rendered outside a `prose` container — the inbox, chat, a
+     widget — lost its markers and its indent. Typography restores lists inside
+     prose but never touches <dl>, so [dl] had no styling anywhere. */
+  .listbullet { list-style-type: disc; }
+  .listbullet, .listnone, .listdecimal, .listlowerroman,
+  .listupperroman, .listloweralpha, .listupperalpha, .checklist {
+    padding-left: 1.5em;
+    margin: 0.5em 0;
+  }
+
+  /* [dl], matching redbasic (style.css:1359) — bbcode already emits the same
+     class names, so the rules port across unchanged. dl-horizontal is
+     bootstrap's in core and has no equivalent here; it falls back to the
+     ordinary stacked layout. */
+  dl.bb-dl > dt { font-weight: normal; }
+  dl.dl-terms-monospace > dt { font-family: monospace; }
+  dl.dl-terms-bold      > dt { font-weight: bold; }
+  dl.dl-terms-italic    > dt { font-style: italic; }
+  dl.dl-terms-underline > dt { text-decoration: underline; }
+  dl.dl-terms-large     > dt { font-size: 120%; }
+  dl.bb-dl:not(.dl-horizontal) > dd { display: block; margin-left: 2em; }
+  dl.bb-dl > dd > li { margin-left: 1em; }
+
   /* LaTeX equation rendered to an image (post/comment composer — federated
      content can't rely on client-side KaTeX). Tailwind's preflight sets
      `img { display: block }`, which both breaks inline flow with

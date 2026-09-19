@@ -6,6 +6,7 @@ import { createComposerStore } from "../store/createComposerStore";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
+import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import AclPicker, { aclModeFrom, aclEntryKeys } from "../components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
@@ -60,6 +61,7 @@ interface Props {
     deny_gid?: string[];
     lang?: string;
     series?: { name: string; order: number | null } | null;
+    mimetype?: string;
   };
   /**
    * Opens the composer in "add translation" mode: a blank article linked to
@@ -262,6 +264,10 @@ export default function ArticleComposer(props: Props) {
     store.setSlug(props.initial.slug);
     store.setCategory(props.initial.category);
     store.setBody(props.initial.body);
+    // Without this the toolbar (and the WYSIWYG probe) read text/bbcode on
+    // every edit, so reopening a markdown article spelled its buttons in bbcode.
+    const m = props.initial.mimetype ?? "";
+    if (isAuthorable(m)) store.setMimetype(m);
   }
 
   // ── Draft extra — lang, series, and ACL, which createComposerStore

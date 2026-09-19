@@ -62,6 +62,10 @@ for (const mime of ["text/plain", "application/x-pdl"]) {
   assert(!out.includes("<h1"), `${mime} must not parse markdown: ${out}`);
 }
 
+// text/plain keeps its line breaks but must not land in a <pre>: `prose` styles
+// those as code blocks, which is what a plaintext webpage is not.
+assert(renderBody("a\nb", "text/plain") === '<div class="whitespace-pre-wrap">a\nb</div>');
+
 // Core escapes text/plain twice — once at save (z_input_filter) and again at
 // display (prepare_text) — and gets away with it because escape_tags() is
 // htmlspecialchars(double_encode: false). Our escape must be idempotent too,

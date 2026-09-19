@@ -32,6 +32,7 @@ import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import SlugField from "../components/SlugField";
 import FormatSelect from "../components/FormatSelect";
 import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
+import type { MimeType } from "../types/editor.types";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import SummaryField from "../components/SummaryField";
@@ -244,7 +245,9 @@ export default function WebpageComposer(props: Props) {
     store.setTitle(props.initial.title);
     store.setSummary(props.initial.summary);
     store.setSlug(props.initial.slug);
-    if (props.initial.mimetype) store.setMimetype(props.initial.mimetype as any);
+    // isAuthorable, not a cast: an application/x-php page would otherwise land
+    // in a MimeType signal FormatSelect has no <option> for.
+    if (isAuthorable(props.initial.mimetype ?? "")) store.setMimetype(props.initial.mimetype as MimeType);
   } else if (isAuthorable(defaultPageMime)) {
     // New page: seed the channel's default format, the same pconfig core
     // reads for its own composer (system/page_mimetype — Webpages.php:134).

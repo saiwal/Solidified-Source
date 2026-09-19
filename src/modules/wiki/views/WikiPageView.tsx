@@ -640,6 +640,7 @@ export default function WikiPageView() {
               initialBody={draftContent()}
               initialCommitMsg={draftCommitMsg()}
               mimeType={pageData()?.page.mime_type ?? "text/bbcode"}
+              allowFormatChange={!currentWiki()?.type_lock}
               saving={saving()}
               onSave={handleSave}
               onSaveDraft={handleSaveDraft}

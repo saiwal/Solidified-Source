@@ -503,6 +503,7 @@ export default function RichEditor(props: Props) {
         cardPicker={props.capabilities.cardPicker}
         tab={tab()}
         mimetype={mime()}
+        bbcodeFallback={props.capabilities.bbcodeFallback}
         attach={props.attach}
         editorRef={() => editorRef}
         textareaRef={() => textareaRef}

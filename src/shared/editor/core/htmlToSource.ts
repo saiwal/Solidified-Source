@@ -51,7 +51,7 @@ function htmlToBBCode(html: string): string {
 // li/tr/th/td are absent on purpose: their parent's case walks them directly
 // and supplies its own separators.
 const BLOCK_TAGS =
-  /^(?:div|p|h[1-6]|blockquote|pre|ul|ol|table|hr|details|center)$/;
+  /^(?:div|p|h[1-6]|blockquote|pre|ul|ol|dl|table|hr|details|center)$/;
 
 const isBrNode = (n: Node) =>
   n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName.toLowerCase() === "br";
@@ -115,6 +115,15 @@ const listItems = (el: Element) =>
     .map((li) => `[*]${nodeTobbcode(li)}`)
     .join("\n");
 
+const DL_TERM_CLASSES: [string, string][] = [
+  ["b", "dl-terms-bold"],
+  ["i", "dl-terms-italic"],
+  ["u", "dl-terms-underline"],
+  ["l", "dl-terms-large"],
+  ["m", "dl-terms-monospace"],
+  ["h", "dl-horizontal"],
+];
+
 function nodeTobbcode(node: Node): string {
   // Zero-width spaces are caret anchors around share chips (sourceToHtml) —
   // keep them out of the stored bbcode.
@@ -151,6 +160,8 @@ function nodeTobbcode(node: Node): string {
     case "i":
     case "em":          return `[i]${children()}[/i]`;
     case "u":           return `[u]${children()}[/u]`;
+    case "sub":         return `[sub]${children()}[/sub]`;
+    case "sup":         return `[sup]${children()}[/sup]`;
     case "s":
     case "strike":
     case "del":         return `[s]${children()}[/s]`;
@@ -173,6 +184,10 @@ function nodeTobbcode(node: Node): string {
     // joinChildren() has already separated from its siblings.
     case "p":
     case "div": {
+      // [footer] renders as this div (bbcode.ts); without the class check the
+      // generic div handling below would drop the tag on the first round trip.
+      if (el.classList?.contains("wall-item-footer"))
+        return `[footer]${children()}[/footer]`;
       const align = getStyle(el, "text-align");
       const inner = children();
       return align === "center" ? `[center]${inner}[/center]` : inner;
@@ -196,6 +211,19 @@ function nodeTobbcode(node: Node): string {
     case "audio": return mediaBBCode(el);
 
     case "ul": {
+      // [checklist] renders as a <ul class="checklist"> of disabled
+      // checkboxes (bbcode.ts bbChecklist); the plain [list] case below would
+      // swallow both the class and the checked state.
+      if (el.classList?.contains("checklist")) {
+        const items = Array.from(el.children)
+          .filter((c) => c.tagName.toLowerCase() === "li")
+          .map((li) => {
+            const box = li.querySelector("input");
+            return `${box?.hasAttribute("checked") ? "[x]" : "[]"}${nodeTobbcode(li)}`;
+          })
+          .join("\n");
+        return `[checklist]\n${items}\n[/checklist]`;
+      }
       const items = listItems(el);
       return `[list]\n${items}\n[/list]`;
     }
@@ -204,6 +232,23 @@ function nodeTobbcode(node: Node): string {
       return `[list=${listMarker(el)}]\n${items}\n[/list]`;
     }
     case "li":  return children();
+
+    // [dl terms="..."] — the term styles ride in the <dl>'s classes
+    // (bbcode.ts bbDl), so they have to be read back off it.
+    case "dl": {
+      const terms = DL_TERM_CLASSES
+        .filter(([, cls]) => el.classList?.contains(cls))
+        .map(([letter]) => letter)
+        .join("");
+      const body = Array.from(el.children)
+        .map((c) => {
+          const t = c.tagName.toLowerCase();
+          if (t === "dt") return `\n[*=${nodeTobbcode(c)}]`;
+          return t === "dd" ? nodeTobbcode(c) : "";
+        })
+        .join("");
+      return `[dl${terms ? ` terms="${terms}"` : ""}]${body}\n[/dl]`;
+    }
 
     case "table": {
       const rows = Array.from(el.querySelectorAll("tr"));
