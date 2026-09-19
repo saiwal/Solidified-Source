@@ -8,6 +8,8 @@ export const editor: RawDictionary["editor"] = {
   edit_post:              "पोस्ट संपादित करें",
   zen_mode:               "ज़ेन मोड",
   close_esc:              "बंद करें (Esc)",
+  more_tools:             "अधिक फ़ॉर्मेटिंग",
+  fewer_tools:            "कम विकल्प",
   draft_saved:            "ड्राफ़्ट सहेजा गया",
   more_options:           "अधिक विकल्प",
   // Presentation modes (ComposerModal / ComposerHost)

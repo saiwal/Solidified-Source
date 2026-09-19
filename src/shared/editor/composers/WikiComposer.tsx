@@ -14,6 +14,7 @@ import ComposerActionBar from "../components/ComposerActionBar";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 
 // Core's wiki addon offers no HTML option (Mod_Wiki.php:221).
@@ -53,6 +54,9 @@ export default function WikiComposer(props: Props) {
   // are only ever referenced from the body — inserted as markup for the page's
   // own format by bbcodeToInsert().
   const attach = createAttachmentStore(props.nick, props.scope);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");
 
   return (
     <ComposerShell
@@ -70,12 +74,16 @@ export default function WikiComposer(props: Props) {
           <EditorStats
             words={() => countWords(body())}
             chars={() => body().length}
+            tab={tab()}
+            onToggleTab={() => setTab(tab() === "wysiwyg" ? "source" : "wysiwyg")}
+            canWysiwyg={canUseWysiwyg(mime(), caps.nonBbcodeWysiwyg)}
           />
         </>
       }
       editor={
         <>
           <RichEditor
+            attach={attachActions}
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={body()}
             onInput={setBody}
@@ -89,13 +97,11 @@ export default function WikiComposer(props: Props) {
           />
           <AttachmentBar
             store={attach}
+            actions={attachActions}
             nick={props.nick}
             accept="both"
             onInsert={(bbcode) => setBody(appendInsert(body(), bbcodeToInsert(bbcode, mime())))}
             onAltChange={(att) => setBody(patchInsertedAlt(body(), att, mime()))}
-            tab={tab()}
-            onToggleTab={() => setTab(tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(mime(), caps.nonBbcodeWysiwyg)}
           />
         </>
       }

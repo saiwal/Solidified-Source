@@ -6,6 +6,8 @@ export const editor = {
   edit_post:              "Beitrag bearbeiten",
   zen_mode:               "Zen-Modus",
   close_esc:              "Schließen (Esc)",
+  more_tools:             "Mehr Formatierung",
+  fewer_tools:            "Weniger Optionen",
   draft_saved:            "Entwurf gespeichert",
   more_options:           "Weitere Optionen",
   // Presentation modes (ComposerModal / ComposerHost)

@@ -11,8 +11,10 @@ import { useMentionEmojiWiring } from "@/shared/editor/mention/useMentionEmojiWi
 import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
+import { useAttachmentActions } from "../attachments/useAttachmentActions";
+import EditorStats from "../components/EditorStats";
+import { countWords } from "../lib/textStats";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
-import SourceToggleButton from "../components/SourceToggleButton";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
 interface Props {
@@ -31,6 +33,9 @@ export default function CommentComposer(props: Props) {
 
   const scope = `comment:${props.parentUuid ?? "new"}`;
   const attach = createAttachmentStore(currentNick(), scope);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
 
   const store = createComposerStore(
     async (body) => {
@@ -104,6 +109,7 @@ export default function CommentComposer(props: Props) {
 
         <div ref={wiring.wrapperRef} class="flex-1 min-w-0">
           <RichEditor
+            attach={auth()?.isLocal ? attachActions : undefined}
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             onInput={store.setBody}
@@ -119,23 +125,23 @@ export default function CommentComposer(props: Props) {
             minHeight="88px"
             resizable
           />
-          {/* Attachment uploads go through wall_attach/:nick — remote/OWA
-              commenters have no local nick on this server to upload against,
-              so they only get the source toggle without the rest of the bar. */}
-          <Show
-            when={auth()?.isLocal}
-            fallback={
-              <div class="flex justify-end mt-1">
-                <SourceToggleButton
-                  tab={store.tab()}
-                  onToggle={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-                  canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
-                />
-              </div>
-            }
-          >
+          {/* Same row every composer uses: counts plus the borderless source
+              toggle. Shown for every commenter — a remote/OWA one cannot
+              upload, but can still switch to source and count their words. */}
+          <EditorStats
+            words={() => countWords(store.body())}
+            chars={() => store.body().length}
+            tab={store.tab()}
+            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
+          />
+
+          {/* Uploads go through wall_attach/:nick, so a remote/OWA commenter
+              has no local nick to upload against and gets no bar at all. */}
+          <Show when={auth()?.isLocal}>
             <AttachmentBar
               store={attach}
+              actions={attachActions}
               nick={currentNick()}
               accept="both"
               onInsert={(bbcode) => {
@@ -144,9 +150,6 @@ export default function CommentComposer(props: Props) {
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
               }}
-              tab={store.tab()}
-              onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
             />
           </Show>
         </div>

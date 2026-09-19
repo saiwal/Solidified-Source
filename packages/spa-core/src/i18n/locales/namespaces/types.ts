@@ -816,6 +816,8 @@ export type RawDictionary = {
     edit_post:              string;
     zen_mode:               string;
     close_esc:              string;
+    more_tools:             string;
+    fewer_tools:            string;
     draft_saved:            string;
     more_options:           string;
     minimize:               string;

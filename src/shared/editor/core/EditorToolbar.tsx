@@ -1,6 +1,7 @@
 import { createSignal, lazy, onCleanup, Show, Suspense } from "solid-js";
 import type { LatexInsertMode, MimeType, ToolbarLevel } from "../types/editor.types";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
+import { persistedSignal, boolFlag } from "@utsukta/spa-core/lib/persisted";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdOutlineLink, MdOutlineImage,
@@ -45,6 +46,19 @@ interface Props {
    *  omitted, AttachmentBar keeps them in its own row. */
   attach?: AttachmentActions;
 }
+
+/**
+ * Whether the toolbar's second tier is unfolded. Persisted and shared by every
+ * editor on the page: it is a preference ("I want the full bar"), not per-
+ * composer state, and a writer who opens it once should not have to keep
+ * re-opening it. The basics alone fit one row on a phone, which is the point.
+ */
+const [toolsOpen, setToolsOpen] = persistedSignal(
+  "hz-editor-tools-open",
+  false,
+  boolFlag.parse,
+  boolFlag.format,
+);
 
 export default function EditorToolbar(props: Props) {
   const { t } = useI18n();
@@ -642,6 +656,26 @@ export default function EditorToolbar(props: Props) {
     </Show>
   );
 
+  // Rendered in two places (before the utility spacer when open, closing the
+  // basics row when not), so it lives here rather than being written twice.
+  const ToolsToggle = () => (
+    <>
+      <Sep />
+      <Btn
+        title={toolsOpen() ? t("editor.fewer_tools") : t("editor.more_tools")}
+        onPress={() => setToolsOpen(!toolsOpen())}
+        active={toolsOpen()}
+      >
+        <svg
+          class={"w-4 h-4 transition-transform duration-200 " + (toolsOpen() ? "rotate-180" : "")}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </Btn>
+    </>
+  );
+
   const LinkPanel = () => (
     <PromptPanel
       title={t("editor.link")}
@@ -679,6 +713,18 @@ export default function EditorToolbar(props: Props) {
         onClear={clearHighlight}
       />
 
+      {/* Comments get the attachment inserts and nothing else — adding a file
+           to a reply is common enough to earn a slot, the rest of the insert
+           group is still one row too many here. Renders only when the composer
+           passed `attach`, so a remote commenter (who cannot upload) sees
+           nothing. */}
+      <Show when={isComment() && props.attach}>
+        <>
+          <Sep />
+          <AttachButtons />
+        </>
+      </Show>
+
       {/* ── Quick level stops here, plus the two inserts a short post still
            wants. Everything below is one row too many for a compact bar. ── */}
       <Show when={isQuick()}>
@@ -693,6 +739,23 @@ export default function EditorToolbar(props: Props) {
       {/* ── Groups 2–7: hidden for the compact levels ── */}
       <Show when={!isCompact()}>
         <>
+          {/* ── Basics — always on, and they fit one row on a phone.
+              Everything else folds behind the toggle below. ── */}
+          <Sep />
+          <AttachButtons />
+          <LinkPanel />
+          <ListToolDropdown
+            disabled={isSource()}
+            onSelect={(kind) => {
+              if (kind === "bullet") exec("insertUnorderedList");
+              else if (kind === "number") exec("insertOrderedList");
+              else listAlpha();
+            }}
+          />
+          <EmojiPicker onSelect={insertEmoji} />
+
+          <Show when={toolsOpen()}>
+            <>
           {/* ── Group 2: Text appearance ── */}
           <Sep />
           <ColorPicker
@@ -751,23 +814,6 @@ export default function EditorToolbar(props: Props) {
           <Btn title={t("editor.horizontal_rule")} onPress={hr}>
             <MdOutlineHorizontal_rule class="w-4 h-4" />
           </Btn>
-
-          {/* ── Group 4: Lists — grouped in one dropdown; disabled (not
-              hidden) in source mode to keep the toolbar layout constant. ── */}
-          <Sep />
-          <ListToolDropdown
-            disabled={isSource()}
-            onSelect={(kind) => {
-              if (kind === "bullet") exec("insertUnorderedList");
-              else if (kind === "number") exec("insertOrderedList");
-              else listAlpha();
-            }}
-          />
-
-          {/* ── Group 5: Insert ── */}
-          <Sep />
-          <AttachButtons />
-          <LinkPanel />
           <PromptPanel
             title={t("editor.media")}
             icon={<MdOutlineImage class="w-4 h-4" />}
@@ -793,8 +839,6 @@ export default function EditorToolbar(props: Props) {
               <MdOutlineMap class="w-4 h-4" />
             </Btn>
           </Show>
-          <EmojiPicker onSelect={insertEmoji} />
-
           {/* ── Group 6: Rich structure — full only ── */}
           <Show when={isFull()}>
             <>
@@ -819,6 +863,10 @@ export default function EditorToolbar(props: Props) {
             </>
           </Show>
 
+          {/* Open, the toggle sits here — ahead of the utility group's flex-1
+              spacer, which would otherwise strand it alone at the far right. */}
+          <ToolsToggle />
+
           {/* ── Group 7: Utility — full only, pushed right; disabled (not
               hidden) in source mode since it acts on the WYSIWYG DOM. ── */}
           <Show when={isFull()}>
@@ -832,6 +880,12 @@ export default function EditorToolbar(props: Props) {
                 <MdOutlineFormat_clear class="w-4 h-4" />
               </Btn>
             </>
+          </Show>
+            </>
+          </Show>
+
+          <Show when={!toolsOpen()}>
+            <ToolsToggle />
           </Show>
         </>
       </Show>

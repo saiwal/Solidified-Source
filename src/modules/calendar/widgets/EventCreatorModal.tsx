@@ -10,6 +10,9 @@ import RichEditor from "@/shared/editor/core/RichEditor";
 import { CAPABILITIES, type EditorTab } from "@/shared/editor/types/editor.types";
 import AttachmentBar from "@/shared/editor/attachments/AttachmentBar";
 import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
+import { useAttachmentActions } from "@/shared/editor/attachments/useAttachmentActions";
+import EditorStats from "@/shared/editor/components/EditorStats";
+import { countWords } from "@/shared/editor/lib/textStats";
 import { bbcodeToInsert, patchInsertedAlt } from "@/shared/editor/attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AclPicker, { aclModeToScope } from "@/shared/editor/components/AclPicker";
@@ -89,6 +92,9 @@ export default function EventCreatorModal(props: Props) {
   const [description, setDescription] = createSignal(ev?.description ?? "");
   const [descriptionTab, setDescriptionTab] = createSignal<EditorTab>("wysiwyg");
   const attach = createAttachmentStore(currentNick(), `event:${ev?.id ?? "new"}`);
+  // Owned here so the editor toolbar and the attachment bar drive the same
+  // upload/browse/camera flows (the buttons live in the toolbar now).
+  const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
   const [submitting, setSubmitting] = createSignal(false);
   const [selectedCalIdx, setSelectedCalIdx] = createSignal(0);
   const [timezone, setTimezone] = createSignal(initialTz);
@@ -462,6 +468,7 @@ export default function EventCreatorModal(props: Props) {
           <div class="flex flex-col gap-1">
             <label class="text-xs font-medium text-muted">{t("calendar.description_label")}</label>
             <RichEditor
+              attach={attachActions}
               body={description()}
               onInput={setDescription}
               capabilities={CAPABILITIES.comment}
@@ -472,14 +479,22 @@ export default function EventCreatorModal(props: Props) {
               minHeight="80px"
               resizable
             />
+            {/* Same shape as every composer: counts plus the borderless source
+                toggle here, upload/browse/camera in the toolbar, and the bar
+                reduced to attachment chips (it collapses when there are none). */}
+            <EditorStats
+              words={() => countWords(description())}
+              chars={() => description().length}
+              tab={descriptionTab()}
+              onToggleTab={() => setDescriptionTab(descriptionTab() === "wysiwyg" ? "source" : "wysiwyg")}
+            />
             <AttachmentBar
               store={attach}
+              actions={attachActions}
               nick={currentNick()}
               accept="both"
               onInsert={(bbcode) => setDescription(description() + "\n" + bbcodeToInsert(bbcode, "text/bbcode"))}
               onAltChange={(att) => setDescription(patchInsertedAlt(description(), att, "text/bbcode"))}
-              tab={descriptionTab()}
-              onToggleTab={() => setDescriptionTab(descriptionTab() === "wysiwyg" ? "source" : "wysiwyg")}
             />
           </div>
 
