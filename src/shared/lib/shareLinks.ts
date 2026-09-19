@@ -4,6 +4,7 @@
 // Replaces the old per-module duplicates (articles/lib/articleLinks.ts and
 // cards/lib/cardLinks.ts, which were identical apart from the path prefix).
 
+import { variantSrc } from "@/modules/photos/api/api";
 import type { ShareTarget } from "@utsukta/spa-core/store/share";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import type { FileMeta } from "@/modules/files/api";
@@ -125,7 +126,6 @@ export function shareTargetForCard(nick: string, c: ArticleLike): ShareTarget {
 }
 
 /** Swap the Hubzilla size suffix (-0/-1/-2/-3) in a photo URL. */
-const variantSrc = (src: string, size: number) => src.replace(/-\d+(\.[^.]+)$/, `-${size}$1`);
 
 type PhotoLike = Pick<Photo, "resource_id" | "title" | "description" | "src"> & {
   filename?: string;

@@ -1949,6 +1949,12 @@ export type RawDictionary = {
     sort_name:        string;
     sort_size:        string;
     sort_date:        string;
+    sort_asc:         string;
+    sort_desc:        string;
+    tab_photos:       string;
+    tab_albums:       string;
+    tab_uploads:      string;
+    loading_more:     string;
     view_grid:        string;
     view_list:        string;
     new_album:            string;
@@ -1969,6 +1975,7 @@ export type RawDictionary = {
     delete_error:         string;
     select:               string;
     selected:             string;
+    select_all:           string;
     delete_selected:      string;
     download:             string;
     download_album:       string;

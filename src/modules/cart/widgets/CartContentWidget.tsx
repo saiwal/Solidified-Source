@@ -20,7 +20,7 @@ import {
   MdFillArrow_back,
 } from 'solid-icons/md';
 import { wallUpload } from '@/modules/files/api';
-import { fetchAlbums, fetchPhotoAlbum } from '@/modules/photos/api/api';
+import { fetchAlbums, fetchPhotoAlbum, variantSrc } from '@/modules/photos/api/api';
 import type { Album, Photo } from '@/modules/photos/api/api';
 import { toast } from '@utsukta/spa-core/store/toast';
 import {
@@ -1002,7 +1002,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
                         class="aspect-square rounded-lg overflow-hidden
                                hover:ring-2 hover:ring-accent transition-all"
                       >
-                        <img src={photo.src} alt={photo.title || photo.filename}
+                        <img src={variantSrc(photo.src, 3)} alt={photo.title || photo.filename}
                           class="w-full h-full object-cover" />
                       </button>
                     )}

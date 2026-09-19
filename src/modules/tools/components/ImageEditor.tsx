@@ -3,6 +3,7 @@ import { MdFillImage, MdFillCheck, MdFillFolder } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import SharedImageEditor from "@/shared/views/ImageEditor";
 import {
+  variantSrc,
   fetchPhotoSummary,
   fetchAlbums,
   uploadNewPhoto,
@@ -229,7 +230,7 @@ export function ImageEditor() {
                                 title={photo.filename}
                               >
                                 <img
-                                  src={photo.src}
+                                  src={variantSrc(photo.src, 3)}
                                   alt={photo.filename}
                                   class="w-full h-full object-cover"
                                 />

@@ -9,6 +9,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchPhotoAlbum } from "../api/api";
+import { variantSrc } from "../api/api";
 
 const MAX_THUMBS = 6;
 
@@ -65,7 +66,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
                     class="relative block aspect-square overflow-hidden rounded"
                   >
                     <img
-                      src={photo.src}
+                      src={variantSrc(photo.src, 3)}
                       alt={photo.title || photo.filename}
                       class={`w-full h-full object-cover hover:opacity-80 transition-opacity
                              ${photo.is_nsfw ? 'blur-lg scale-110' : ''}`}

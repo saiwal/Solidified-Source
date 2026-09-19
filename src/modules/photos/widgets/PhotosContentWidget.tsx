@@ -1,7 +1,8 @@
 import { A } from "@solidjs/router";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import { createEffect, createMemo, createSignal, lazy, on, onCleanup, Show, For } from "solid-js";
+import { createEffect, createMemo, createSignal, lazy, on, onMount, onCleanup, Show, For } from "solid-js";
+import type { JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -11,6 +12,7 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import {
   photos, albums, albumName, detail, loading, albumsLoading, albumsError, canWrite,
+  tab, photoSort, photoDir, loadingMore, setPhotoSorting, loadMorePhotos,
   loadSummary, loadAlbum, loadImage, loadAlbums,
   handleLike, handleDislike, addComment, handleCommentReaction,
   createNewAlbum, deletePhotoAction, batchDeleteAction, batchMoveAction, deleteAlbumAction, renamePhotoAction,
@@ -28,13 +30,11 @@ import {
   MdFillAdd, MdFillClose,
   MdFillCloud_upload, MdFillDelete_forever,
   MdFillCheck_box, MdFillCheck_box_outline_blank,
+  MdFillArrow_upward, MdFillArrow_downward,
 } from "solid-icons/md";
 import PhotoSwipe from "photoswipe";
 import "photoswipe/style.css";
 
-// Replace the Hubzilla size suffix (-0/-1/-2/-3) in a photo URL
-const variantSrc = (src: string, size: number) =>
-  src.replace(/-\d+(\.[^.]+)$/, `-${size}$1`);
 
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import { openShare } from "@utsukta/spa-core/store/share";
@@ -44,9 +44,11 @@ import AclEditor from "../components/AclEditor";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
-import type { PhotoComment, Album } from "../api/api";
-import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, fetchAlbums } from "../api/api";
+import type { PhotoComment, Album, Photo, SortDir } from "../api/api";
+import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, fetchAlbums, variantSrc } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { humanBytes } from "@/shared/lib/quota-format";
+import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -78,58 +80,534 @@ export default function PhotosContentWidget() {
   createEffect(() => {
     const n = nick() ?? '';
     const d = datum() ?? '';
+    // Albums load on every photos route, not just the summary: the header's
+    // tab switcher stays visible inside an album, and it needs the list to
+    // know whether this channel has automatic upload folders.
+    loadAlbums(n);
     if (datatype() === 'album') loadAlbum(n, d);
     else if (datatype() === 'image' && d) loadImage(n, d);
-    else {
-      loadSummary(n);
-      loadAlbums(n);
-    }
+    else loadSummary(n);
   });
 
   return (
     <div class="max-w-5xl mx-auto">
-      <Show when={loading()}>
-        <PhotoGridSkeleton />
-      </Show>
-      <Show when={!loading() && detail()}>
-        <ImageView />
-      </Show>
-      <Show when={!loading() && !detail()}>
-        <Show when={datatype() === 'album'} fallback={<SummaryView />}>
-          <AlbumGrid />
+      {/* The summary route owns its own loading state per tab, so it isn't
+          gated on loading() — otherwise switching to Albums would blank out
+          behind the photo-grid skeleton while photos refetch. */}
+      <Show when={datatype() === 'summary'} fallback={
+        <>
+          <Show when={loading()}>
+            <PhotoGridSkeleton />
+          </Show>
+          <Show when={!loading() && detail()}>
+            <ImageView />
+          </Show>
+          <Show when={!loading() && !detail() && datatype() === 'album'}>
+            <AlbumGrid />
+          </Show>
+        </>
+      }>
+        <Show when={tab() === 'photos'} fallback={<AlbumsView auto={tab() === 'uploads'} />}>
+          <AllPhotosView />
         </Show>
       </Show>
     </div>
   );
 }
 
-// ── SummaryView ───────────────────────────────────────────────────────────────
+// ── Shared sort/view controls ─────────────────────────────────────────────────
 
 type SortKey  = 'date' | 'name' | 'size';
 type ViewMode = 'grid' | 'list';
 
-function SummaryView() {
+/** Sort keys + asc/desc toggle + grid/list switch. Shared by both summary tabs. */
+function SortToolbar(props: {
+  sort: SortKey;
+  dir: SortDir;
+  onSort: (s: SortKey) => void;
+  onDir: (d: SortDir) => void;
+  view: ViewMode;
+  onView: (v: ViewMode) => void;
+  children?: JSX.Element;
+}) {
+  const { t } = useI18n();
+  const sortLabels: Record<SortKey, string> = {
+    date: t("photos.sort_date"),
+    name: t("photos.sort_name"),
+    size: t("photos.sort_size"),
+  };
+  return (
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-xs text-muted">{t("photos.sort_by")}:</span>
+      <For each={(['date', 'name', 'size'] as SortKey[])}>
+        {(s) => (
+          <button
+            onClick={() => props.onSort(s)}
+            class={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
+              ${props.sort === s
+                ? 'bg-surface text-txt'
+                : 'text-muted hover:text-txt hover:bg-surface/50'}`}
+          >
+            {sortLabels[s]}
+          </button>
+        )}
+      </For>
+      <button
+        onClick={() => props.onDir(props.dir === 'asc' ? 'desc' : 'asc')}
+        title={props.dir === 'asc' ? t("photos.sort_asc") : t("photos.sort_desc")}
+        class="p-1.5 rounded-md text-muted hover:text-txt transition-colors"
+      >
+        <Show when={props.dir === 'asc'} fallback={<MdFillArrow_downward size={16} />}>
+          <MdFillArrow_upward size={16} />
+        </Show>
+      </button>
+
+      <div class="flex items-center gap-1 ml-auto">
+        <button
+          onClick={() => props.onView('grid')}
+          title={t("photos.view_grid")}
+          class={`p-1.5 rounded-md transition-colors
+            ${props.view === 'grid' ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
+        >
+          <MdFillApps size={17} />
+        </button>
+        <button
+          onClick={() => props.onView('list')}
+          title={t("photos.view_list")}
+          class={`p-1.5 rounded-md transition-colors
+            ${props.view === 'list' ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
+        >
+          <MdFillFormat_list_bulleted size={17} />
+        </button>
+        {props.children}
+      </div>
+    </div>
+  );
+}
+
+// Masonry: explicit columns fed round-robin (splitIntoColumns' `i % n`), so
+// reading order runs left-to-right across the row — CSS `columns` would fill
+// each column top-to-bottom instead. Photos keep their own aspect ratio;
+// nothing is measured up front, the columns just grow.
+function PhotoMasonry<T>(props: { items: T[]; children: (item: T) => JSX.Element }) {
+  const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
+  const columns = useColumnCount(gridEl, 9, 4);
+  return (
+    <div ref={setGridEl} class="flex gap-2 items-start">
+      <For each={splitIntoColumns(props.items, columns())}>
+        {(col) => (
+          <div class="flex-1 min-w-0 flex flex-col gap-2">
+            <For each={col}>{(item) => props.children(item)}</For>
+          </div>
+        )}
+      </For>
+    </div>
+  );
+}
+
+// ── Photo selection (shared by the All Photos tab and the in-album grid) ──────
+// Multi-select, batch move and batch delete behave identically in both places;
+// only the surrounding album-level actions differ, so the state and the two
+// pieces of UI that read it live here rather than being written twice.
+
+function createPhotoSelection(nick: () => string, items: () => Photo[]) {
+  const { t } = useI18n();
+  const [selectMode, setSelectMode]       = createSignal(false);
+  const [selected, setSelected]           = createSignal<Set<string>>(new Set());
+  const [confirmBatch, setConfirmBatch]   = createSignal(false);
+  const [batchDeleting, setBatchDeleting] = createSignal(false);
+  // Album list for the move dropdown — fetched lazily, only when select opens.
+  const [moveTargets, setMoveTargets]     = createSignal<Album[]>([]);
+  const [moving, setMoving]               = createSignal(false);
+  const [pendingDelete, setPendingDelete] = createSignal<string | null>(null);
+
+  const allSelected = () => items().length > 0 && selected().size === items().length;
+
+  function toggleOne(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (allSelected()) setSelected(new Set<string>());
+    else setSelected(new Set(items().map(p => p.resource_id)));
+  }
+
+  function enterSelectMode() {
+    setSelectMode(true);
+    if (moveTargets().length === 0)
+      fetchAlbums(nick()).then(setMoveTargets).catch(() => {});
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelected(new Set<string>());
+    setConfirmBatch(false);
+  }
+
+  async function handleBatchMove(folder: string) {
+    setMoving(true);
+    try {
+      await batchMoveAction(nick(), Array.from(selected()), folder);
+      exitSelectMode();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("photos.move_error"));
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  async function handleBatchDelete() {
+    if (!confirmBatch()) { setConfirmBatch(true); return; }
+    setBatchDeleting(true);
+    try {
+      await batchDeleteAction(nick(), Array.from(selected()));
+      exitSelectMode();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("photos.delete_error"));
+    } finally {
+      setBatchDeleting(false);
+    }
+  }
+
+  async function handleDeletePhoto(resourceId: string) {
+    if (pendingDelete() !== resourceId) { setPendingDelete(resourceId); return; }
+    setPendingDelete(null);
+    try {
+      await deletePhotoAction(nick(), resourceId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("photos.delete_error"));
+    }
+  }
+
+  return {
+    nick, items, selectMode, selected, confirmBatch, batchDeleting, moveTargets, moving,
+    pendingDelete, setPendingDelete, setConfirmBatch, allSelected,
+    toggleOne, toggleSelectAll, enterSelectMode, exitSelectMode,
+    handleBatchMove, handleBatchDelete, handleDeletePhoto,
+  };
+}
+
+type PhotoSelection = ReturnType<typeof createPhotoSelection>;
+
+/** Select / Cancel toggle — sits among each view's own toolbar buttons. */
+function SelectToggle(props: { sel: PhotoSelection }) {
+  const { t } = useI18n();
+  return (
+    <Show when={!props.sel.selectMode()} fallback={
+      <button onClick={props.sel.exitSelectMode}
+        class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
+        {t("photos.cancel")}
+      </button>
+    }>
+      <button onClick={props.sel.enterSelectMode}
+        class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
+        {t("photos.select")}
+      </button>
+    </Show>
+  );
+}
+
+/** Batch action bar + select-all row. `folder` is the album being viewed, so it
+ *  can be dropped from the move targets (moving a photo to where it already is
+ *  is a no-op); the All Photos tab passes '' and keeps every album. */
+function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
+  const { t } = useI18n();
+  const sel = props.sel;
+  return (
+    <>
+      <Show when={sel.selectMode() && sel.selected().size > 0}>
+        <div class="flex items-center gap-x-3 gap-y-2 flex-wrap px-3 py-2 bg-surface rounded-xl border border-rim">
+          <span class="text-sm text-txt font-medium">
+            {sel.selected().size} {t("photos.selected")}
+          </span>
+          <div class="flex items-center gap-2 flex-wrap ml-auto">
+            <Show when={canWrite()}>
+              <select
+                disabled={sel.moving()}
+                value=""
+                onChange={(e) => {
+                  const v = e.currentTarget.value;
+                  e.currentTarget.value = "";
+                  if (v) sel.handleBatchMove(v === "__root__" ? "" : v);
+                }}
+                class="max-w-[9rem] px-2 py-1.5 rounded-lg text-xs font-medium bg-overlay text-txt
+                       border border-rim outline-none disabled:opacity-50"
+              >
+                <option value="">{sel.moving() ? t("photos.batch_moving") : t("photos.move_selected")}</option>
+                <option value="__root__">{t("photos.move_root")}</option>
+                <For each={sel.moveTargets().filter(a => a.folder !== (props.folder ?? ''))}>
+                  {(a) => <option value={a.folder}>{a.album}</option>}
+                </For>
+              </select>
+            </Show>
+            <Show when={sel.confirmBatch()} fallback={
+              <button onClick={sel.handleBatchDelete}
+                class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-500
+                       hover:bg-red-500/10 transition-colors">
+                {t("photos.delete_selected")}
+              </button>
+            }>
+              <span class="text-xs text-red-500">{t("photos.confirm")}?</span>
+              <button onClick={sel.handleBatchDelete} disabled={sel.batchDeleting()}
+                class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white
+                       hover:bg-red-600 transition-colors disabled:opacity-50">
+                {sel.batchDeleting() ? t("photos.batch_deleting") : t("photos.delete_selected")}
+              </button>
+              <button onClick={() => sel.setConfirmBatch(false)}
+                class="px-2 py-1 rounded-md text-xs text-muted hover:text-txt transition-colors">
+                {t("photos.cancel")}
+              </button>
+            </Show>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={sel.selectMode()}>
+        <div class="flex items-center gap-2 px-1">
+          <button onClick={sel.toggleSelectAll}
+            class="flex items-center gap-2 text-sm text-muted hover:text-txt transition-colors">
+            <Show when={sel.allSelected()} fallback={<MdFillCheck_box_outline_blank size={18} />}>
+              <MdFillCheck_box size={18} class="text-accent" />
+            </Show>
+            {t("photos.select_all")} ({sel.items().length})
+          </button>
+        </div>
+      </Show>
+    </>
+  );
+}
+
+/** One photo tile: opens the photo, or toggles its checkbox in select mode. */
+function PhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
+  const { t }    = useI18n();
+  const navigate = useNavigate();
+  const sel      = props.sel;
+  const photo    = props.photo;
+  const isSelected = () => sel.selected().has(photo.resource_id);
+  const isPending  = () => sel.pendingDelete() === photo.resource_id;
+
+  return (
+    <div class="group relative overflow-hidden rounded-xl bg-surface">
+      <button
+        onClick={() => sel.selectMode()
+          ? sel.toggleOne(photo.resource_id)
+          : navigate(`/photos/${sel.nick()}/image/${photo.resource_id}`)}
+        class="block w-full cursor-pointer"
+      >
+        <img
+          src={variantSrc(photo.src, 3)}
+          alt={photo.filename}
+          loading="lazy"
+          class={`w-full h-auto block ${photo.is_nsfw
+            ? 'blur-xl scale-110'
+            : 'transition-transform duration-300 group-hover:scale-105'}`}
+        />
+      </button>
+
+      <Show when={photo.is_nsfw}>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span class="px-2 py-0.5 rounded-md bg-black/60 text-red-400 text-xs font-bold tracking-wide">
+            {t("photos.nsfw")}
+          </span>
+        </div>
+      </Show>
+
+      <Show when={sel.selectMode()}>
+        <div class={`absolute top-1.5 left-1.5 drop-shadow pointer-events-none
+          ${isSelected() ? 'text-accent' : 'text-white'}`}>
+          <Show when={isSelected()} fallback={<MdFillCheck_box_outline_blank size={20} />}>
+            <MdFillCheck_box size={20} />
+          </Show>
+        </div>
+        <Show when={isSelected()}>
+          <div class="absolute inset-0 ring-2 ring-accent ring-inset rounded-xl pointer-events-none" />
+        </Show>
+      </Show>
+
+      <Show when={!sel.selectMode()}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            openShare(shareTargetForPhoto(sel.nick(), photo));
+          }}
+          title={t("share.action")}
+          class="absolute bottom-1.5 left-1.5 p-1 rounded-lg bg-black/50 text-white
+                 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+        >
+          <MdOutlineShare size={16} />
+        </button>
+
+        <a
+          href={photoDownloadUrl(sel.nick(), photo.resource_id)}
+          download={photo.filename}
+          title={t("photos.download")}
+          onClick={(e) => e.stopPropagation()}
+          class="absolute bottom-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
+                 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+        >
+          <MdOutlineDownload size={16} />
+        </a>
+      </Show>
+
+      <Show when={canWrite() && !sel.selectMode()}>
+        <Show when={isPending()} fallback={
+          <button
+            onClick={() => sel.handleDeletePhoto(photo.resource_id)}
+            class="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
+                   opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+          >
+            <MdFillDelete_forever size={16} />
+          </button>
+        }>
+          <div class="absolute top-1.5 right-1.5 flex items-center gap-1">
+            <button onClick={() => sel.handleDeletePhoto(photo.resource_id)}
+              class="px-2 py-0.5 rounded-md bg-red-500 text-white text-xs font-medium">
+              {t("photos.confirm")}
+            </button>
+            <button onClick={() => sel.setPendingDelete(null)}
+              class="p-1 rounded-md bg-black/50 text-white">
+              <MdFillClose size={14} />
+            </button>
+          </div>
+        </Show>
+      </Show>
+    </div>
+  );
+}
+
+// ── AllPhotosView (tab 1) ─────────────────────────────────────────────────────
+// Sorting and paging are server-side (see Photos.php::getSummary) — a client
+// sort would only order the page already fetched, which is wrong under scroll.
+
+function AllPhotosView() {
+  const nick     = usePageNick();
+  const navigate = useNavigate();
+  const { t }    = useI18n();
+  const [viewMode, setViewMode] = createSignal<ViewMode>('grid');
+  const sel = createPhotoSelection(() => nick() ?? '', photos);
+  let sentinel: HTMLDivElement | undefined;
+
+  onMount(() => {
+    const io = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMorePhotos(); },
+      { rootMargin: '400px' },
+    );
+    if (sentinel) io.observe(sentinel);
+    onCleanup(() => io.disconnect());
+  });
+
+  return (
+    <div class="flex flex-col gap-4">
+      <SortToolbar
+        sort={photoSort()}
+        dir={photoDir()}
+        onSort={(s) => setPhotoSorting(s, photoDir())}
+        onDir={(d) => setPhotoSorting(photoSort(), d)}
+        view={viewMode()}
+        onView={setViewMode}
+      >
+        <Show when={canWrite()}>
+          <SelectToggle sel={sel} />
+        </Show>
+      </SortToolbar>
+
+      <SelectionBar sel={sel} />
+
+      <Show when={loading()}>
+        <PhotoGridSkeleton />
+      </Show>
+
+      <Show when={!loading() && photos().length === 0}>
+        <p class="text-sm text-muted py-8 text-center">{t("photos.no_photos")}</p>
+      </Show>
+
+      <Show when={!loading() && viewMode() === 'grid'}>
+        <PhotoMasonry items={photos()}>
+          {(photo) => <PhotoTile photo={photo} sel={sel} />}
+        </PhotoMasonry>
+      </Show>
+
+      <Show when={!loading() && viewMode() === 'list'}>
+        <div class="flex flex-col divide-y divide-rim">
+          <For each={photos()}>
+            {(photo) => (
+              <button
+                onClick={() => sel.selectMode()
+                  ? sel.toggleOne(photo.resource_id)
+                  : navigate(`/photos/${nick()}/image/${photo.resource_id}`)}
+                class={`flex items-center gap-3 py-2.5 px-2 hover:bg-surface transition-colors
+                        rounded-lg text-left w-full cursor-pointer
+                        ${sel.selected().has(photo.resource_id) ? 'ring-2 ring-accent ring-inset' : ''}`}
+              >
+                <Show when={sel.selectMode()}>
+                  <Show when={sel.selected().has(photo.resource_id)}
+                    fallback={<MdFillCheck_box_outline_blank size={18} class="text-muted shrink-0" />}>
+                    <MdFillCheck_box size={18} class="text-accent shrink-0" />
+                  </Show>
+                </Show>
+                <div class="w-12 h-12 rounded-lg overflow-hidden bg-overlay flex-shrink-0">
+                  <img
+                    src={variantSrc(photo.src, 3)}
+                    alt={photo.filename}
+                    loading="lazy"
+                    class={`w-full h-full object-cover ${photo.is_nsfw ? 'blur-md scale-110' : ''}`}
+                  />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-txt truncate">
+                    {photo.title || photo.filename}
+                  </p>
+                  <p class="text-xs text-muted truncate">
+                    {photo.album || t("photos.move_root")} · {photo.created.slice(0, 10)}
+                    <Show when={photo.filesize > 0}>{' · ' + humanBytes(photo.filesize)}</Show>
+                  </p>
+                </div>
+                <MdFillChevron_right size={18} class="text-subtle flex-shrink-0" />
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
+
+      {/* Infinite-scroll sentinel */}
+      <div ref={sentinel} class="h-px" />
+      <Show when={loadingMore()}>
+        <p class="text-xs text-muted py-3 text-center">{t("photos.loading_more")}</p>
+      </Show>
+    </div>
+  );
+}
+
+// ── AlbumsView (tab 2) ────────────────────────────────────────────────────────
+
+// Both album tabs are this one view: `auto` picks the automatic photo-upload
+// folders (see Photos.php::autoAlbumRegex), !auto everything else — so the two
+// tabs partition the album list rather than overlapping.
+function AlbumsView(props: { auto: boolean }) {
   const nick     = usePageNick();
   const { t }    = useI18n();
   const [sortBy, setSortBy]         = createSignal<SortKey>('date');
+  const [sortDir, setSortDir]       = createSignal<SortDir>('desc');
   const [viewMode, setViewMode]     = createSignal<ViewMode>('grid');
   const [showForm, setShowForm]     = createSignal(false);
   const [newName, setNewName]       = createSignal('');
   const [creating, setCreating]     = createSignal(false);
   const [createError, setCreateError] = createSignal('');
 
+  // The whole album list arrives in one response, so sorting stays client-side
+  // here (unlike the Photos tab, which pages).
   const sortedAlbums = createMemo(() => {
-    const a = albums();
-    if (sortBy() === 'name') return [...a].sort((x, y) => x.album.localeCompare(y.album));
-    if (sortBy() === 'size') return [...a].sort((x, y) => y.total - x.total);
-    return a;
+    const cmp =
+      sortBy() === 'name' ? (x: Album, y: Album) => x.album.localeCompare(y.album)
+      : sortBy() === 'size' ? (x: Album, y: Album) => x.total - y.total
+      : (x: Album, y: Album) => (x.created ?? '').localeCompare(y.created ?? '');
+    const sorted = albums().filter(a => !!a.auto === props.auto).sort(cmp);
+    return sortDir() === 'desc' ? sorted.reverse() : sorted;
   });
-
-  const sortLabels: Record<SortKey, string> = {
-    date: t("photos.sort_date"),
-    name: t("photos.sort_name"),
-    size: t("photos.sort_size"),
-  };
 
   async function handleCreate(e: Event) {
     e.preventDefault();
@@ -151,54 +629,27 @@ function SummaryView() {
   return (
     <div class="flex flex-col gap-4">
       {/* Toolbar */}
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="text-xs text-muted">{t("photos.sort_by")}:</span>
-        <For each={(['date', 'name', 'size'] as SortKey[])}>
-          {(s) => (
-            <button
-              onClick={() => setSortBy(s)}
-              class={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
-                ${sortBy() === s
-                  ? 'bg-surface text-txt'
-                  : 'text-muted hover:text-txt hover:bg-surface/50'}`}
-            >
-              {sortLabels[s]}
-            </button>
-          )}
-        </For>
-
-        <div class="flex items-center gap-1 ml-auto">
+      <SortToolbar
+        sort={sortBy()}
+        dir={sortDir()}
+        onSort={setSortBy}
+        onDir={setSortDir}
+        view={viewMode()}
+        onView={setViewMode}
+      >
+        <Show when={canWrite() && !props.auto}>
           <button
-            onClick={() => setViewMode('grid')}
-            title={t("photos.view_grid")}
-            class={`p-1.5 rounded-md transition-colors
-              ${viewMode() === 'grid' ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
+            onClick={() => { setShowForm(v => !v); setCreateError(''); setNewName(''); }}
+            title={t("photos.new_album")}
+            class={`ml-1 p-1.5 rounded-md transition-colors
+              ${showForm() ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
           >
-            <MdFillApps size={17} />
+            <Show when={showForm()} fallback={<MdFillAdd size={17} />}>
+              <MdFillClose size={17} />
+            </Show>
           </button>
-          <button
-            onClick={() => setViewMode('list')}
-            title={t("photos.view_list")}
-            class={`p-1.5 rounded-md transition-colors
-              ${viewMode() === 'list' ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
-          >
-            <MdFillFormat_list_bulleted size={17} />
-          </button>
-
-          <Show when={canWrite()}>
-            <button
-              onClick={() => { setShowForm(v => !v); setCreateError(''); setNewName(''); }}
-              title={t("photos.new_album")}
-              class={`ml-1 p-1.5 rounded-md transition-colors
-                ${showForm() ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
-            >
-              <Show when={showForm()} fallback={<MdFillAdd size={17} />}>
-                <MdFillClose size={17} />
-              </Show>
-            </button>
-          </Show>
-        </div>
-      </div>
+        </Show>
+      </SortToolbar>
 
       {/* New album form */}
       <Show when={showForm()}>
@@ -373,24 +824,10 @@ function AlbumGrid() {
   // View controls
   const [sortBy, setSortBy] = createSignal<'date' | 'name'>('date');
 
-  // Selection
-  const [selectMode, setSelectMode]       = createSignal(false);
-  const [selected, setSelected]           = createSignal<Set<string>>(new Set());
-  const [confirmBatch, setConfirmBatch]   = createSignal(false);
-  const [batchDeleting, setBatchDeleting] = createSignal(false);
-
-  // Batch move — album list is fetched lazily, only when select mode opens
-  const [moveTargets, setMoveTargets] = createSignal<Album[]>([]);
-  const [moving, setMoving]           = createSignal(false);
-
   // Album deletion
   const [confirmAlbum, setConfirmAlbum]   = createSignal(false);
   const [deletingAlbum, setDeletingAlbum] = createSignal(false);
 
-  // Per-photo pending confirm (resource_id)
-  const [pendingDelete, setPendingDelete] = createSignal<string | null>(null);
-
-  // Share composer
 
   // ACL editor
   const [aclOpen, setAclOpen] = createSignal(false);
@@ -410,45 +847,7 @@ function AlbumGrid() {
     return [...p].sort((a, b) => b.created.localeCompare(a.created));
   });
 
-  const allSelected = () =>
-    sortedPhotos().length > 0 && selected().size === sortedPhotos().length;
-
-  function toggleSelectAll() {
-    if (allSelected()) setSelected(new Set<string>());
-    else setSelected(new Set(sortedPhotos().map(p => p.resource_id)));
-  }
-
-  function toggleOne(id: string) {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
-
-  function enterSelectMode() {
-    setSelectMode(true);
-    if (moveTargets().length === 0)
-      fetchAlbums(nick() ?? '').then(setMoveTargets).catch(() => {});
-  }
-
-  async function handleBatchMove(folder: string) {
-    setMoving(true);
-    try {
-      await batchMoveAction(nick() ?? '', Array.from(selected()), folder);
-      exitSelectMode();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("photos.move_error"));
-    } finally {
-      setMoving(false);
-    }
-  }
-
-  function exitSelectMode() {
-    setSelectMode(false);
-    setSelected(new Set<string>());
-    setConfirmBatch(false);
-  }
+  const sel = createPhotoSelection(() => nick() ?? '', sortedPhotos);
 
   async function handleFiles(files: FileList) {
     const n      = nick() ?? '';
@@ -480,29 +879,6 @@ function AlbumGrid() {
       toast.error(err instanceof Error ? err.message : t("photos.delete_error"));
       setDeletingAlbum(false);
       setConfirmAlbum(false);
-    }
-  }
-
-  async function handleDeletePhoto(resourceId: string) {
-    if (pendingDelete() !== resourceId) { setPendingDelete(resourceId); return; }
-    setPendingDelete(null);
-    try {
-      await deletePhotoAction(nick() ?? '', resourceId);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("photos.delete_error"));
-    }
-  }
-
-  async function handleBatchDelete() {
-    if (!confirmBatch()) { setConfirmBatch(true); return; }
-    setBatchDeleting(true);
-    try {
-      await batchDeleteAction(nick() ?? '', Array.from(selected()));
-      exitSelectMode();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("photos.delete_error"));
-    } finally {
-      setBatchDeleting(false);
     }
   }
 
@@ -595,21 +971,11 @@ function AlbumGrid() {
           </button>
 
           {/* Select / Cancel */}
-          <Show when={!selectMode()} fallback={
-            <button onClick={exitSelectMode}
-              class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
-              {t("photos.cancel")}
-            </button>
-          }>
-            <button onClick={enterSelectMode}
-              class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
-              {t("photos.select")}
-            </button>
-          </Show>
+          <SelectToggle sel={sel} />
 
           {/* Download album as a zip — albums are attach folders, so the files
               download endpoint zips them for us. */}
-          <Show when={!selectMode() && !!datum()}>
+          <Show when={!sel.selectMode() && !!datum()}>
             <a
               href={photoDownloadUrl(nick() ?? '', datum() ?? '')}
               download={`${albumName() || 'album'}.zip`}
@@ -622,7 +988,7 @@ function AlbumGrid() {
           </Show>
 
           {/* Delete album — bulk-destructive, stays owner-only regardless of write_storage */}
-          <Show when={!selectMode() && isOwner()}>
+          <Show when={!sel.selectMode() && isOwner()}>
             <Show when={confirmAlbum()} fallback={
               <button onClick={handleDeleteAlbum} disabled={deletingAlbum()}
                 class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-500/70
@@ -646,7 +1012,7 @@ function AlbumGrid() {
           </Show>
 
           {/* Album privacy — ACL changes stay owner-only, only for real albums (non-root) */}
-          <Show when={!selectMode() && !!datum() && isOwner()}>
+          <Show when={!sel.selectMode() && !!datum() && isOwner()}>
             <button
               onClick={() => setAclOpen(v => !v)}
               title={t("photos.acl_privacy")}
@@ -673,66 +1039,7 @@ function AlbumGrid() {
         />
       </Show>
 
-      {/* Batch action bar */}
-      <Show when={selectMode() && selected().size > 0}>
-        <div class="flex items-center gap-x-3 gap-y-2 flex-wrap px-3 py-2 bg-surface rounded-xl border border-rim">
-          <span class="text-sm text-txt font-medium">
-            {selected().size} {t("photos.selected")}
-          </span>
-          <div class="flex items-center gap-2 flex-wrap ml-auto">
-            <Show when={canWrite()}>
-              <select
-                disabled={moving()}
-                value=""
-                onChange={(e) => {
-                  const v = e.currentTarget.value;
-                  e.currentTarget.value = "";
-                  if (v) handleBatchMove(v === "__root__" ? "" : v);
-                }}
-                class="max-w-[9rem] px-2 py-1.5 rounded-lg text-xs font-medium bg-overlay text-txt
-                       border border-rim outline-none disabled:opacity-50"
-              >
-                <option value="">{moving() ? t("photos.batch_moving") : t("photos.move_selected")}</option>
-                <option value="__root__">{t("photos.move_root")}</option>
-                <For each={moveTargets().filter(a => a.folder !== datum())}>
-                  {(a) => <option value={a.folder}>{a.album}</option>}
-                </For>
-              </select>
-            </Show>
-            <Show when={confirmBatch()} fallback={
-              <button onClick={handleBatchDelete}
-                class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-500
-                       hover:bg-red-500/10 transition-colors">
-                {t("photos.delete_selected")}
-              </button>
-            }>
-              <span class="text-xs text-red-500">{t("photos.confirm")}?</span>
-              <button onClick={handleBatchDelete} disabled={batchDeleting()}
-                class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white
-                       hover:bg-red-600 transition-colors disabled:opacity-50">
-                {batchDeleting() ? t("photos.batch_deleting") : t("photos.delete_selected")}
-              </button>
-              <button onClick={() => setConfirmBatch(false)}
-                class="px-2 py-1 rounded-md text-xs text-muted hover:text-txt transition-colors">
-                {t("photos.cancel")}
-              </button>
-            </Show>
-          </div>
-        </div>
-      </Show>
-
-      {/* Select-all row */}
-      <Show when={selectMode()}>
-        <div class="flex items-center gap-2 px-1">
-          <button onClick={toggleSelectAll}
-            class="flex items-center gap-2 text-sm text-muted hover:text-txt transition-colors">
-            <Show when={allSelected()} fallback={<MdFillCheck_box_outline_blank size={18} />}>
-              <MdFillCheck_box size={18} class="text-accent" />
-            </Show>
-            Select all ({sortedPhotos().length})
-          </button>
-        </div>
-      </Show>
+      <SelectionBar sel={sel} folder={datum()} />
 
       <Show when={photos().length === 0}>
         <p class="text-sm text-muted py-8 text-center">{t("photos.no_photos")}</p>
@@ -741,107 +1048,9 @@ function AlbumGrid() {
       {/* Share composer — Show forces remount so initialBody is captured correctly */}
 
       {/* Photo grid */}
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-        <For each={sortedPhotos()}>
-          {(photo) => {
-            const isSelected = () => selected().has(photo.resource_id);
-            const isPending  = () => pendingDelete() === photo.resource_id;
-            return (
-              <div class="group relative aspect-[4/3] overflow-hidden rounded-xl bg-surface">
-                <button
-                  onClick={() => selectMode()
-                    ? toggleOne(photo.resource_id)
-                    : navigate(`/photos/${nick()}/image/${photo.resource_id}`)}
-                  class="block w-full h-full cursor-pointer"
-                >
-                  <img
-                    src={variantSrc(photo.src, 3)}
-                    alt={photo.filename}
-                    loading="lazy"
-                    class={`w-full h-full object-cover ${photo.is_nsfw
-                      ? 'blur-xl scale-110'
-                      : 'transition-transform duration-300 group-hover:scale-105'}`}
-                  />
-                </button>
-
-                {/* NSFW badge */}
-                <Show when={photo.is_nsfw}>
-                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span class="px-2 py-0.5 rounded-md bg-black/60 text-red-400 text-xs font-bold tracking-wide">
-                      {t("photos.nsfw")}
-                    </span>
-                  </div>
-                </Show>
-
-                {/* Checkbox overlay */}
-                <Show when={selectMode()}>
-                  <div class={`absolute top-1.5 left-1.5 drop-shadow pointer-events-none
-                    ${isSelected() ? 'text-accent' : 'text-white'}`}>
-                    <Show when={isSelected()} fallback={<MdFillCheck_box_outline_blank size={20} />}>
-                      <MdFillCheck_box size={20} />
-                    </Show>
-                  </div>
-                  <Show when={isSelected()}>
-                    <div class="absolute inset-0 ring-2 ring-accent ring-inset rounded-xl pointer-events-none" />
-                  </Show>
-                </Show>
-
-                <Show when={!selectMode()}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openShare(shareTargetForPhoto(nick(), photo));
-                    }}
-                    title={t("share.action")}
-                    class="absolute bottom-1.5 left-1.5 p-1 rounded-lg bg-black/50 text-white
-                           opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                  >
-                    <MdOutlineShare size={16} />
-                  </button>
-                </Show>
-
-                {/* Per-photo download */}
-                <Show when={!selectMode()}>
-                  <a
-                    href={photoDownloadUrl(nick() ?? '', photo.resource_id)}
-                    download={photo.filename}
-                    title={t("photos.download")}
-                    onClick={(e) => e.stopPropagation()}
-                    class="absolute bottom-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
-                           opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                  >
-                    <MdOutlineDownload size={16} />
-                  </a>
-                </Show>
-
-                {/* Per-photo delete (write access, non-select mode) */}
-                <Show when={canWrite() && !selectMode()}>
-                  <Show when={isPending()} fallback={
-                    <button
-                      onClick={() => handleDeletePhoto(photo.resource_id)}
-                      class="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
-                             opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                    >
-                      <MdFillDelete_forever size={16} />
-                    </button>
-                  }>
-                    <div class="absolute top-1.5 right-1.5 flex items-center gap-1">
-                      <button onClick={() => handleDeletePhoto(photo.resource_id)}
-                        class="px-2 py-0.5 rounded-md bg-red-500 text-white text-xs font-medium">
-                        {t("photos.confirm")}
-                      </button>
-                      <button onClick={() => setPendingDelete(null)}
-                        class="p-1 rounded-md bg-black/50 text-white">
-                        <MdFillClose size={14} />
-                      </button>
-                    </div>
-                  </Show>
-                </Show>
-              </div>
-            );
-          }}
-        </For>
-      </div>
+      <PhotoMasonry items={sortedPhotos()}>
+        {(photo) => <PhotoTile photo={photo} sel={sel} />}
+      </PhotoMasonry>
     </div>
   );
 }

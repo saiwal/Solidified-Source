@@ -1,8 +1,19 @@
 import { apiFetch } from '@utsukta/spa-core/lib/fetch';
+
+/** Swap the Hubzilla size suffix (-0/-1/-2/-3) in a photo URL.
+ *  Scales are 0=original, 1=1024px, 2=640px, 3=320px (include/photos.php);
+ *  4-6 exist for profile photos only. 3 is the smallest a normal photo has,
+ *  so it is what every preview/thumbnail grid should ask for. */
+export const variantSrc = (src: string, size: number) =>
+  src.replace(/-\d+(\.[^.]+)$/, `-${size}$1`);
 export interface Album {
   album:  string;       // display name
   folder: string;       // hash used in URLs
   total:  number;
+  created: string;      // newest photo in the album (sort key)
+  /** Folder produced by the channel's automatic photo-upload path
+   *  (pconfig system/photo_path, e.g. "%Y-%m") — shown in its own tab. */
+  auto:   boolean;
   url:    string;       // full Hubzilla URL (for reference)
   thumb:  string | null;
 }
@@ -17,6 +28,7 @@ export interface Photo {
   is_private:  boolean;
   album:       string;
   created:     string;
+  filesize:    number;
   src:         string;
   link:        string;
 }
@@ -29,14 +41,25 @@ export async function fetchPhotoSummary(nick: string, start = 0): Promise<Photo[
   return data as Photo[];
 }
 
-// Same as fetchPhotoSummary, but also surfaces whether the viewer holds
-// write_storage on this channel (any observer with the ACL grant, not just
-// the owner) — used to gate edit UI (upload, create album, etc).
-export async function fetchPhotoSummaryMeta(nick: string, start = 0): Promise<{ photos: Photo[]; canWrite: boolean }> {
-  const res = await apiFetch(`/spa/photos/${nick}?start=${start}`);
+export type PhotoSort = 'date' | 'name' | 'size';
+export type SortDir   = 'asc' | 'desc';
+
+// Same as fetchPhotoSummary, but sortable/paged and also surfaces whether the
+// viewer holds write_storage on this channel (any observer with the ACL grant,
+// not just the owner) — used to gate edit UI (upload, create album, etc).
+// `has_more` reflects the raw (pre folder-ACL-filter) page, so page by
+// start += limit, not by photos.length.
+export async function fetchPhotoSummaryMeta(
+  nick: string,
+  start = 0,
+  sort: PhotoSort = 'date',
+  dir: SortDir = 'desc',
+  limit = 30,
+): Promise<{ photos: Photo[]; canWrite: boolean; hasMore: boolean }> {
+  const res = await apiFetch(`/spa/photos/${nick}?start=${start}&limit=${limit}&sort=${sort}&dir=${dir}`);
   if (!res.ok) throw await res.json();
   const { data, meta } = await res.json();
-  return { photos: data as Photo[], canWrite: !!meta?.can_write };
+  return { photos: data as Photo[], canWrite: !!meta?.can_write, hasMore: !!meta?.has_more };
 }
 
 // fetchAlbums — album list with thumbs

@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import type { Photo, PhotoDetail, PhotoComment, Album } from "../api/api";
+import type { Photo, PhotoDetail, PhotoComment, Album, PhotoSort, SortDir } from "../api/api";
 import {
   fetchPhotoSummary, fetchPhotoSummaryMeta, fetchAlbumsMeta,
   fetchPhotoAlbum, fetchPhotoImage,
@@ -30,19 +30,60 @@ const [nick, setNick]             = createSignal('');
 // or remote) with the ACL grant, not just the owner. Refreshed by every loader.
 const [canWrite, setCanWrite]     = createSignal(false);
 
+// ─── /photos tab state (mirrors cart's store-held tab) ────────────────────────
+const PAGE = 30;
+type PhotoTab = 'photos' | 'albums' | 'uploads';
+const [tab, setTab]               = createSignal<PhotoTab>('photos');
+const [photoSort, setPhotoSort]   = createSignal<PhotoSort>('date');
+const [photoDir, setPhotoDir]     = createSignal<SortDir>('desc');
+const [hasMore, setHasMore]       = createSignal(false);
+const [loadingMore, setLoadingMore] = createSignal(false);
+// Raw offset, not photos().length — the API filters folder-private rows out of
+// a page after LIMIT/OFFSET, so a page can be short without being the last one.
+let nextStart = 0;
+
+export function switchTab(next: PhotoTab) { setTab(next); }
+
+export function setPhotoSorting(sort: PhotoSort, dir: SortDir) {
+  setPhotoSort(sort);
+  setPhotoDir(dir);
+  loadSummary(nick());
+}
+
+export async function loadMorePhotos() {
+  if (loadingMore() || !hasMore()) return;
+  setLoadingMore(true);
+  try {
+    const { photos: items, hasMore: more } =
+      await fetchPhotoSummaryMeta(nick(), nextStart, photoSort(), photoDir(), PAGE);
+    nextStart += PAGE;
+    setPhotos(prev => [...prev, ...items]);
+    setHasMore(more);
+  } catch (err) {
+    console.error('loadMorePhotos failed', err);
+    setHasMore(false);
+  } finally {
+    setLoadingMore(false);
+  }
+}
+
 // ─── Loaders ──────────────────────────────────────────────────────────────────
 
-export async function loadSummary(nickname: string, start = 0) {
+export async function loadSummary(nickname: string) {
   setNick(nickname);
   setLoading(true);
   setDetail(null);
   setAlbumName('');
+  nextStart = PAGE;
   try {
-    const { photos: items, canWrite: cw } = await fetchPhotoSummaryMeta(nickname, start);
+    const { photos: items, canWrite: cw, hasMore: more } =
+      await fetchPhotoSummaryMeta(nickname, 0, photoSort(), photoDir(), PAGE);
     setPhotos(items);
     setCanWrite(cw);
+    setHasMore(more);
   } catch (err) {
     console.error('loadSummary failed', err);
+    setHasMore(false);
   } finally {
     setLoading(false);
   }
@@ -228,4 +269,5 @@ export async function toggleNsfwAction(nick: string, resourceId: string, is_nsfw
   setDetail(prev => prev ? { ...prev, is_nsfw } : prev);
 }
 
-export { photos, albums, recentPhotos, albumName, detail, loading, albumsLoading, albumsError, nick, canWrite };
+export { photos, albums, recentPhotos, albumName, detail, loading, albumsLoading, albumsError, nick, canWrite,
+         tab, photoSort, photoDir, hasMore, loadingMore };

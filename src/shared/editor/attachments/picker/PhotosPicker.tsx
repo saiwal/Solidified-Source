@@ -5,7 +5,7 @@ import {
   type Component,
 } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { fetchAlbums, fetchPhotoAlbum } from "@/modules/photos/api/api";
+import { fetchAlbums, fetchPhotoAlbum, variantSrc } from "@/modules/photos/api/api";
 import type { Photo, Album } from "@/modules/photos/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineCheck, MdOutlineImage, MdOutlineSentiment_dissatisfied } from "solid-icons/md";
@@ -122,7 +122,7 @@ const PhotosPicker: Component<Props> = (props) => {
                         }
                       >
                         <img
-                          src={photo.src}
+                          src={variantSrc(photo.src, 3)}
                           alt={photo.filename}
                           class="w-full h-full object-cover"
                         />

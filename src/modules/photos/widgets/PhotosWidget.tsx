@@ -1,4 +1,4 @@
-import { createEffect, Show, For, onCleanup } from "solid-js";
+import { createEffect, createMemo, Show, For, onCleanup } from "solid-js";
 import { A, useParams } from "@solidjs/router";
 import { MdFillPhoto_library, MdFillImage } from "solid-icons/md";
 import {
@@ -6,16 +6,22 @@ import {
   loadRecentPhotos, loadAlbums,
 } from "../store/store";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { variantSrc } from "../api/api";
 import PhotoSwipe from "photoswipe";
 import "photoswipe/style.css";
 
-const variantSrc = (src: string, size: number) =>
-  src.replace(/-\d+(\.[^.]+)$/, `-${size}$1`);
+// Sidebar is tall but shared — past this the widget crowds out everything
+// below it, and "See all" takes over.
+const ALBUM_LIMIT = 12;
 
 export default function PhotosWidget() {
   const params = useParams<{ nick?: string }>();
   const { t } = useI18n();
   const nick = () => params.nick ?? '';
+  // Same split the /photos Albums tab makes: the automatic upload folders
+  // (Photos.php::autoAlbumRegex) are noise in a 6-slot sidebar widget — they
+  // live in their own tab, which "See all" links to.
+  const manualAlbums = createMemo(() => albums().filter(a => !a.auto));
   let pswpRef: PhotoSwipe | null = null;
 
   onCleanup(() => { pswpRef?.close(); });
@@ -121,7 +127,7 @@ export default function PhotosWidget() {
                   class="relative aspect-square rounded-lg overflow-hidden bg-surface block cursor-pointer"
                 >
                   <img
-                    src={photo.src}
+                    src={variantSrc(photo.src, 3)}
                     alt={photo.filename}
                     loading="lazy"
                     class={`w-full h-full object-cover ${photo.is_nsfw
@@ -141,33 +147,35 @@ export default function PhotosWidget() {
         </div>
       </Show>
 
-      {/* Album grid */}
-      <Show when={!albumsLoading() && albums().length > 0}>
+      {/* Album list */}
+      <Show when={!albumsLoading() && manualAlbums().length > 0}>
         <div>
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-semibold text-muted uppercase tracking-wide flex items-center gap-1">
               <MdFillPhoto_library size={13} /> {t("photos.albums")}
             </span>
-            <Show when={albums().length > 6}>
+            <Show when={manualAlbums().length > ALBUM_LIMIT}>
               <A href={`/photos/${nick()}`} class="text-xs text-accent hover:underline">
                 {t("photos.see_all")}
               </A>
             </Show>
           </div>
-          <div class="grid grid-cols-2 gap-1.5">
-            <For each={albums().slice(0, 6)}>
+          {/* Compact rows, not cards: a square-thumb grid fit 6 albums in the
+              height these fit ~12, and it matches the loading skeleton below. */}
+          <div class="flex flex-col">
+            <For each={manualAlbums().slice(0, ALBUM_LIMIT)}>
               {(album) => (
                 <A
                   href={`/photos/${nick()}/album/${album.folder}`}
-                  class="group block rounded-lg overflow-hidden bg-surface
-                         hover:bg-elevated transition-colors border border-rim"
+                  class="group flex items-center gap-2.5 p-1.5 rounded-lg
+                         hover:bg-surface transition-colors"
                 >
-                  <div class="aspect-square overflow-hidden bg-overlay">
+                  <div class="w-9 h-9 rounded-md overflow-hidden bg-overlay shrink-0">
                     <Show
                       when={album.thumb}
                       fallback={
                         <div class="w-full h-full flex items-center justify-center">
-                          <MdFillPhoto_library size={24} class="text-subtle" />
+                          <MdFillPhoto_library size={16} class="text-subtle" />
                         </div>
                       }
                     >
@@ -175,17 +183,15 @@ export default function PhotosWidget() {
                         src={album.thumb!}
                         alt={album.album}
                         loading="lazy"
-                        class="w-full h-full object-cover transition-transform
-                               duration-300 group-hover:scale-105"
+                        class="w-full h-full object-cover"
                       />
                     </Show>
                   </div>
-                  <div class="px-2 py-1.5">
-                    <p class="text-xs font-medium text-txt truncate group-hover:text-accent transition-colors">
-                      {album.album}
-                    </p>
-                    <p class="text-xs text-muted">{album.total}</p>
-                  </div>
+                  <p class="flex-1 min-w-0 text-xs font-medium text-txt truncate
+                            group-hover:text-accent transition-colors">
+                    {album.album}
+                  </p>
+                  <span class="text-xs text-muted shrink-0">{album.total}</span>
                 </A>
               )}
             </For>
