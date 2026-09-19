@@ -27,8 +27,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import DOMPurify from "dompurify";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import type { StreamHandlers } from "../types";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 
 // ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ function PopularPostRow(props: {
 
   const snippet = () => {
     const div = document.createElement("div");
-    div.innerHTML = DOMPurify.sanitize(bbcodeToHtml(p.body));
+    div.innerHTML = DOMPurify.sanitize(bbcodeDisplay(p.body));
     return (div.textContent ?? "").trim().slice(0, 90);
   };
 

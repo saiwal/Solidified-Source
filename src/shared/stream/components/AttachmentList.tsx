@@ -2,6 +2,7 @@ import { createSignal, For, Show } from "solid-js";
 import type { StreamAttachment } from "@utsukta/spa-core/types/post.types";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
+import { zid } from "@utsukta/spa-core/lib/zid";
 
 function safeDecode(s: string): string {
   try { return decodeURIComponent(s); } catch { return s; }
@@ -15,15 +16,23 @@ function formatBytes(raw: string): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// item.attach href is "/attach/hash" (served as download, not inline).
+// item.attach href is "<hub>/attach/hash" (served as download, not inline).
 // Photos are also in the photo table as resource_id = hash, served inline at
 // /photo/{hash}-2. Try that URL for display; fall back to a file chip.
 // No extension: core serves whatever variant it stored and sets the
 // Content-type itself, so guessing one off the mimetype only ever produced
 // 404s for anything it re-encoded on upload (avif/heic).
+//
+// The origin has to be carried over: on a delivered post the attachment lives
+// on the *author's* hub, and rebuilding the path against ours 404s every time.
+// zid() then gets the viewer past that hub's ACL, the same way a [zmg] in the
+// body does (lib/zid.ts) — without it a DM's private attachments stay
+// unauthorised until you log in there by hand.
 function photoDisplayUrl(href: string): string {
   const hash = href.split("/attach/").pop() ?? href.split("/").pop() ?? "";
-  return `/photo/${hash}-2`;
+  let origin = "";
+  try { origin = new URL(href, location.href).origin; } catch { /* relative */ }
+  return zid(`${origin}/photo/${hash}-2`);
 }
 
 export default function AttachmentList(props: { attachments: StreamAttachment[]; compact?: boolean }) {
@@ -107,7 +116,7 @@ export default function AttachmentList(props: { attachments: StreamAttachment[];
                       when={previewable()}
                       fallback={
                         <a
-                          href={file.href}
+                          href={zid(file.href)}
                           target="_blank"
                           rel="noopener noreferrer"
                           class="flex items-center gap-2 px-3 py-2 rounded-lg border border-rim bg-elevated
@@ -166,7 +175,7 @@ function LinkChip(props: { link: StreamAttachment }) {
 
   return (
     <a
-      href={props.link.href}
+      href={zid(props.link.href)}
       target="_blank"
       rel="noopener noreferrer"
       class="flex items-center gap-2 px-3 py-2 rounded-lg border border-rim bg-elevated
@@ -195,7 +204,7 @@ function ImageChip(props: { img: StreamAttachment; compact?: boolean }) {
         when={!failed()}
         fallback={
           <a
-            href={props.img.href}
+            href={zid(props.img.href)}
             target="_blank"
             rel="noopener noreferrer"
             class="flex items-center gap-2 px-3 py-2 rounded-lg border border-rim bg-elevated

@@ -1,7 +1,6 @@
 // mappers/activity.mapper.ts
 import { sanitizeHtml } from "./sanitize";
-import { bbcodeToHtml } from "./bbcode";
-import { renderBody } from "./renderBody";
+import { bbcodeDisplay, renderBody } from "./renderBody";
 import { oembedResolver } from "./oembedResolver";
 import { matchNsfwWord, wrapNsfwHtml } from "./nsfw";
 import { nsfwWordsList } from "../store/nsfw-settings";
@@ -18,7 +17,7 @@ export function parseEventData(raw: string): EventData | undefined {
   const start   = get("event-start");
   if (!summary || !start) return undefined;
   const rawDescription = get("event-description");
-  const description = rawDescription ? sanitizeHtml(bbcodeToHtml(rawDescription)) : "";
+  const description = rawDescription ? sanitizeHtml(bbcodeDisplay(rawDescription)) : "";
   return { summary, start, finish: get("event-finish"), id: get("event-id"), description };
 }
 
@@ -75,7 +74,7 @@ export function mapActivityToPost(activity: any): Post {
   const title = nsfwTitleMatch ? wrapNsfwHtml(rawTitle, nsfwTitleMatch) : rawTitle;
 
   const rawLocation: string = activity.location ?? "";
-  const location = rawLocation ? sanitizeHtml(bbcodeToHtml(rawLocation)) : undefined;
+  const location = rawLocation ? sanitizeHtml(bbcodeDisplay(rawLocation)) : undefined;
 
   return {
     id: activity.iid,

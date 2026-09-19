@@ -5,7 +5,6 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { addConnection } from "@/modules/directory/people/api";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { fetchConnectionByAddress } from "@/modules/directory/connections/api";
 import type { Connection } from "@/modules/directory/connections/api";
@@ -18,6 +17,7 @@ import { fetchNetworkStream, type NetworkParams } from "@/modules/network/api";
 import type { StreamHandlers } from "@/shared/stream/types";
 import TimelineView, { TimelinePlaceholder } from "@/shared/stream/feedviews/TimelineView";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import {
   MdOutlinePerson_add,
   MdOutlineEdit,
@@ -72,7 +72,7 @@ interface NetworkBadge {
 function renderBbcode(raw?: string): string {
   if (!raw) return "";
   try {
-    return sanitizeHtml(bbcodeToHtml(raw, { oembedResolver }));
+    return sanitizeHtml(bbcodeDisplay(raw, { oembedResolver }));
   } catch {
     return "";
   }

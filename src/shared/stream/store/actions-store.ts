@@ -19,6 +19,7 @@ import { updateNode } from "./createStreamStore";
 import { fetchComments, fetchItemDetail, apiDeleteItem, apiEditItem, apiToggleStar, type EditPayload } from "@utsukta/spa-core/lib/item-api";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import type { NavViewer } from "@utsukta/spa-core/lib/nav-api";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -45,7 +46,11 @@ export function tempCommentNode(parentMid: string, body: string, viewer?: NavVie
     uuid: tempMid, id: tempMid, mid: tempMid,
     parent_mid: parentMid, thr_parent: parentMid,
     top_mid: parentMid, parent: parentMid,
-    body: sanitizeHtml(body), title: "",
+    // The composer hands us source, not HTML — render it the way the mapper
+    // renders a fetched one, or the reader sees raw bbcode until the next load.
+    // Markdown input is converted to bbcode server-side, so bbcode is the only
+    // format a stored comment ever has.
+    body: sanitizeHtml(bbcodeDisplay(body)), rawBody: body, title: "",
     authorName: viewer?.name || currentNick(),
     authorAvatar: viewer?.avatar ?? "",
     authorUrl: viewer?.url ?? "",

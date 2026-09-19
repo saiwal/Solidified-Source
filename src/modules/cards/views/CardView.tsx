@@ -26,7 +26,6 @@ import {
   MdOutlineShare,
 } from "solid-icons/md";
 import { apiToggleLike, apiToggleDislike, apiDeleteItem, apiEditItem } from "@utsukta/spa-core/lib/item-api";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { buildThreadTree, countAllComments, REACTION_VERBS } from "@utsukta/spa-core/lib/thread";
@@ -35,6 +34,7 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -263,7 +263,7 @@ export default function CardView() {
     const viewer = navViewer();
     let renderedBody = "";
     try {
-      const converted = bbcodeToHtml(body, { oembedResolver });
+      const converted = bbcodeDisplay(body, { oembedResolver });
       renderedBody = sanitizeHtml(typeof converted === "string" ? converted : "");
     } catch {
       renderedBody = "";
@@ -327,7 +327,7 @@ export default function CardView() {
       const body = payload.body;
       let renderedBody = "";
       try {
-        const converted = bbcodeToHtml(body, { oembedResolver });
+        const converted = bbcodeDisplay(body, { oembedResolver });
         renderedBody = sanitizeHtml(typeof converted === "string" ? converted : "");
       } catch {
         renderedBody = "";

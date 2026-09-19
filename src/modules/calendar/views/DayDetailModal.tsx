@@ -9,7 +9,6 @@ import {
   MdFillDelete,
 } from "solid-icons/md";
 import DOMPurify from "dompurify";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -18,6 +17,7 @@ import { deleteEvent } from "../api";
 import CategoryChips from "./CategoryChips";
 import EventCreatorModal from "../widgets/EventCreatorModal";
 import { fmtEventRange } from "./calUtils";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
 function fmtFullDate(iso: string, locale: string) {
   return new Date(iso).toLocaleDateString(locale, {
@@ -204,7 +204,7 @@ function EventDetailPanel(props: { event: CalEvent; onEdit: () => void; onDelete
   const [confirming, setConfirming] = createSignal(false);
   const [deleting, setDeleting] = createSignal(false);
   const sanitized = () =>
-    ev.description ? DOMPurify.sanitize(bbcodeToHtml(ev.description)) : "";
+    ev.description ? DOMPurify.sanitize(bbcodeDisplay(ev.description)) : "";
 
   async function handleDelete() {
     setDeleting(true);

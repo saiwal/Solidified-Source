@@ -2,6 +2,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { bbcodeToHtml, type BbcodeOptions } from "./bbcode";
 import { normalizeMime } from "./mimetypes";
+import { zid, zidifyLinks } from "./zid";
 
 // The single body -> HTML entry point, mirroring core's prepare_text()
 // (include/text.php:2083). Hubzilla never converts between formats: a body is
@@ -53,6 +54,19 @@ function escapeTags(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// bbcode -> HTML for *display*: adds the observer's zid, the way core's
+// prepare_text() does. Every display site that isn't a post body (event
+// descriptions, chat, cards, articles, profiles, decrypted [crypt] payloads)
+// goes through here rather than calling bbcodeToHtml() raw, so none of them
+// can quietly lose access to an ACL-restricted image on another hub.
+//
+// The editor deliberately does NOT use it: it round-trips bbcodeToHtml() ->
+// htmlToSource() on every blur and would write the zid back into the stored
+// source.
+export function bbcodeDisplay(text: string, opts?: BbcodeOptions): string {
+  return zidifyLinks(bbcodeToHtml(text, { zidResolver: zid, ...opts }));
+}
+
 export function renderBody(
   body: string,
   mimetype?: string | null,
@@ -82,7 +96,7 @@ export function renderBody(
     // 'text/bbcode' and the empty string, which the item.mimetype column
     // defaults to and core's prepare_text() treats as bbcode.
     default:
-      return sanitize(stripBookmarkMarkers(bbcodeToHtml(body, opts)));
+      return sanitize(stripBookmarkMarkers(bbcodeDisplay(body, opts)));
   }
 }
 

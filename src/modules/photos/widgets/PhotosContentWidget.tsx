@@ -1,4 +1,6 @@
 import { A } from "@solidjs/router";
+import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { createEffect, createMemo, createSignal, lazy, on, onCleanup, Show, For } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useNavigate, useLocation } from "@solidjs/router";
@@ -857,7 +859,9 @@ function commentToNode(c: PhotoComment, photoMid: string, profileUid: number): T
     thr_parent: c.thr_parent || photoMid,
     top_mid: photoMid,
     parent: '',
-    body: c.body,
+    // Photo comments arrive as raw bbcode, same as stream items do.
+    body: sanitizeHtml(bbcodeDisplay(c.body ?? '')),
+    rawBody: c.body,
     title: '',
     authorName: c.author.name,
     authorAvatar: c.author.photo,

@@ -9,10 +9,10 @@ import { openComposer } from "@/shared/editor/store/composer-host";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { addConnection } from "@/modules/directory/people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
 type ChannelProfile = {
   channel_name: string;
@@ -73,7 +73,7 @@ async function fetchProfile(nick: string): Promise<ChannelProfile | null> {
 function renderBbcode(raw?: string): string {
   if (!raw) return "";
   try {
-    return sanitizeHtml(bbcodeToHtml(raw, { oembedResolver }));
+    return sanitizeHtml(bbcodeDisplay(raw, { oembedResolver }));
   } catch {
     return "";
   }

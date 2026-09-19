@@ -41,9 +41,9 @@ import { MdFillArrow_back, MdFillPeople, MdFillChat, MdFillLock, MdFillLock_open
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import ChatComposer from "../ChatComposer";
 import DOMPurify from "dompurify";
-import { bbcode } from "@utsukta/spa-core/lib/bbcode";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { decryptPayload, getPayloadHint } from "@utsukta/spa-core/lib/postCrypto";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
 export default function ChatRoomView() {
 	const params = useParams<{ nick: string; roomId: string }>();
@@ -471,7 +471,7 @@ export default function ChatRoomView() {
 													data-msg-id={String(msg.id)}
 													onClick={handleBubbleClick}
 												>
-													<span innerHTML={sanitizeHtml(bbcode(msg.body))} />
+													<span innerHTML={sanitizeHtml(bbcodeDisplay(msg.body))} />
 												</div>
 												<Show when={msg.isLast}>
 													<p

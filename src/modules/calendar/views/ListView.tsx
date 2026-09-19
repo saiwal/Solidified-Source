@@ -2,10 +2,10 @@ import { For, Show, createMemo, createSignal } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillLocation_on, MdFillOpen_in_new } from "solid-icons/md";
 import DOMPurify from "dompurify";
-import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import type { CalEvent } from "../api";
 import { isoDateStr, localDay, fmtEventRange } from "./calUtils";
 import CategoryChips from "./CategoryChips";
+import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
 interface Props {
   events: CalEvent[];
@@ -126,7 +126,7 @@ export default function ListView(props: Props) {
 function EventDetailPanel(props: { event: CalEvent }) {
   const ev = props.event;
   const { t } = useI18n();
-  const sanitized = () => ev.description ? DOMPurify.sanitize(bbcodeToHtml(ev.description)) : "";
+  const sanitized = () => ev.description ? DOMPurify.sanitize(bbcodeDisplay(ev.description)) : "";
 
   return (
     <div class="mt-1 ml-5 bg-base border border-rim/60 rounded-xl p-3.5 space-y-2">

@@ -9,6 +9,7 @@ import { initNavOrder } from "./nav-order";
 import { initNsfwWords } from "./nsfw-settings";
 import { initDisabledFrontendModules } from "./disabled-frontend-modules";
 import { THEMES, type ThemeId } from "../types/theme.types";
+import { setMyAddress } from "../lib/zid";
 
 export type AuthState = {
   isLocal: boolean; // true = native logged-in user
@@ -60,6 +61,10 @@ async function fetchAuthState(): Promise<AuthState> {
   const isRemote = data.is_remote === true;
   // Local: uid > 0 with a channel nick. Remote: explicitly flagged by server.
   const isLocal = uid > 0 && nick !== "";
+
+  // core's get_my_address(); zidifyLinks() needs it to reach ACL-restricted
+  // media on other hubs (see lib/zid.ts).
+  setMyAddress(String(data.my_address ?? ""));
 
   if (data.spa) {
     const validSizes   = new Set(["small", "medium", "large", "xl"]);

@@ -1,6 +1,6 @@
 // shared/lib/decrypt-click.ts
 // Shared click-delegation logic for the "🔒 Encrypted content" button
-// bbcodeToHtml() produces for a [crypt]...[/crypt] payload (see bbcode.ts).
+// bbcodeDisplay() produces for a [crypt]...[/crypt] payload (see bbcode.ts).
 // Every component that renders post/page/block body via innerHTML must wire
 // this into its click handler, or the button renders inert — mirrors nsfw.ts's
 // handleNsfwToggleClick, which has the same contract for the NSFW reveal toggle.
@@ -9,7 +9,7 @@
 
 import DOMPurify from "dompurify";
 import { decryptPayload, getPayloadHint } from "./postCrypto";
-import { bbcodeToHtml } from "./bbcode";
+import { bbcodeDisplay } from "./renderBody";
 
 export function handleDecryptClick(e: MouseEvent): boolean {
   const btn = (e.target as HTMLElement).closest<HTMLElement>(
@@ -64,7 +64,7 @@ export function handleDecryptClick(e: MouseEvent): boolean {
 
     try {
       const plain = await decryptPayload(payload, password);
-      const html = DOMPurify.sanitize(bbcodeToHtml(plain));
+      const html = DOMPurify.sanitize(bbcodeDisplay(plain));
       const div = document.createElement("div");
       div.innerHTML = html;
       form.replaceWith(div);
