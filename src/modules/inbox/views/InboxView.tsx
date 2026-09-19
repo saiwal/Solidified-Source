@@ -14,9 +14,7 @@ import { Portal } from "solid-js/web";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useOnlineStatus } from "@utsukta/spa-core/lib/useOnlineStatus";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { syncInbox, setInboxActive } from "@utsukta/spa-core/lib/message-store";
-import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
@@ -26,6 +24,7 @@ import { openComposer } from "@/shared/editor/store/composer-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
 import { parseQuery } from "../query";
+import { createFolderCounts } from "../folders";
 import InboxSearchBar from "../InboxSearchBar";
 import { dragPreview, hoverFolder, registerDropTarget } from "../useDragToFolder";
 import {
@@ -54,22 +53,6 @@ const FEED_SECTIONS: { key: string; type: MessageType }[] = [
   { key: "starred", type: "starred" },
   { key: "notices", type: "notification" },
 ];
-
-interface FolderCount { name: string; count: number; unread: number }
-interface FolderData { folders: FolderCount[]; unread_all: number; unread_direct: number }
-
-// counts=1 also carries the per-feed unread totals in `meta`, so the whole
-// sidebar - folders and feeds - is one request.
-async function fetchFolderCounts(): Promise<FolderData> {
-  const res = await apiFetch("/spa/folders?counts=1");
-  if (!res.ok) return { folders: [], unread_all: 0, unread_direct: 0 };
-  const { data, meta } = await res.json();
-  return {
-    folders: Array.isArray(data) ? data : [],
-    unread_all: meta?.unread_all ?? 0,
-    unread_direct: meta?.unread_direct ?? 0,
-  };
-}
 
 const Icon: Component<{ path: string }> = (props) => (
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,11 +90,9 @@ export default function InboxView() {
   });
   let searchRef: HTMLInputElement | undefined;
 
-  const [folderData, { refetch: refetchFolders }] = createQueryResource<FolderData>(
-    "inbox-folders",
-    fetchFolderCounts,
-    { initialValue: { folders: [], unread_all: 0, unread_direct: 0 } },
-  );
+  // counts=1 also carries the per-feed unread totals in `meta`, so the whole
+  // sidebar - folders and feeds - is one request, shared with HQ's Folders tab.
+  const [folderData, { refetch: refetchFolders }] = createFolderCounts();
 
   const folderNames = createMemo(() => (folderData()?.folders ?? []).map((f) => f.name));
 

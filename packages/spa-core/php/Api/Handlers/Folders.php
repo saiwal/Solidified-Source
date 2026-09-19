@@ -22,14 +22,21 @@ class Folders
             // everything but Trash itself.
             $item_normal = HqMessages::itemNormalSql($uid, 'i');
 
-            $unseen = "(i.item_unseen = 1 OR EXISTS (
-                SELECT 1 FROM item cu
-                WHERE cu.uid = i.uid AND cu.parent = i.parent
+            // Both of these are IN (...) against a *constant* uid rather than
+            // EXISTS correlated on i.uid: every row here belongs to $uid
+            // anyway, and the correlation was the whole cost. Correlated,
+            // EXPLAIN showed two DEPENDENT SUBQUERYs re-run per candidate
+            // thread top (i.e. per delivered thread in the channel, tens of
+            // thousands of index lookups a request); uncorrelated, both
+            // become a MATERIALIZED subquery evaluated once.
+            $unseen = "(i.item_unseen = 1 OR i.parent IN (
+                SELECT cu.parent FROM item cu
+                WHERE cu.uid = " . intval($uid) . "
                   AND cu.item_unseen = 1 AND cu.item_thread_top = 0
             ))";
 
             $not_trash = "i.id NOT IN (SELECT oid FROM term
-                WHERE ttype = " . intval(TERM_FILE) . " AND uid = i.uid
+                WHERE ttype = " . intval(TERM_FILE) . " AND uid = " . intval($uid) . "
                 AND term = '" . protect_sprintf(dbesc(HqMessages::TRASH)) . "')";
 
             // Per folder. LEFT JOIN, not an inner one: a folder you created
@@ -66,18 +73,25 @@ class Folders
             );
             $starredCount = $sr ? (int) $sr[0]['cnt'] : 0;
 
+            // DMs only. This used to count unread non-DM threads too, but
+            // nothing rendered that number — an "all messages" badge lit by
+            // every delivered post is permanently on and says nothing — and
+            // counting it is what made this the expensive query here: without
+            // the item_private filter the planner drives off
+            // uid_item_thread_top, i.e. one pass over every thread ever
+            // delivered to the channel, where the other two queries are
+            // bounded by what you filed and what you starred. With it, this
+            // rides uid_item_private and scales with your DMs.
             $cr = q(
-                "SELECT SUM(CASE WHEN i.item_private = 2 THEN 1 ELSE 0 END) AS dm,
-                        SUM(CASE WHEN i.item_private IN (0, 1) THEN 1 ELSE 0 END) AS all_
+                "SELECT COUNT(*) AS dm
                  FROM item i
-                 WHERE i.uid = %d AND i.item_thread_top = 1
+                 WHERE i.uid = %d AND i.item_private = 2 AND i.item_thread_top = 1
                    $item_normal AND $unseen AND $not_trash",
                 intval($uid)
             );
 
             Response::send($folders, [
                 'starred_count' => $starredCount,
-                'unread_all' => $cr ? (int) $cr[0]['all_'] : 0,
                 'unread_direct' => $cr ? (int) $cr[0]['dm'] : 0,
             ]);
         } else {

@@ -1,30 +1,11 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { createMemo, createSignal, For, Show, lazy, type Component } from "solid-js";
 import { FOLDER_ICON_PATH, TYPE_ICON_PATH, type ViewMode } from "./MessageList";
+import { createFolderCounts, type FolderCount } from "@/modules/inbox/folders";
 
 const FolderMessagesModal = lazy(() => import("./FolderMessagesModal"));
 
-interface FolderEntry {
-  name: string;
-  count: number;
-  special?: "starred";
-}
-
-interface FoldersData {
-  folders: FolderEntry[];
-  starredCount: number;
-}
-
-async function fetchFoldersData(): Promise<FoldersData> {
-  const res = await fetch("/spa/folders?counts=1");
-  if (!res.ok) return { folders: [], starredCount: 0 };
-  const { data, meta } = await res.json();
-  return {
-    folders: Array.isArray(data) ? data : [],
-    starredCount: Number(meta?.starred_count) || 0,
-  };
-}
+type FolderEntry = Pick<FolderCount, "name" | "count"> & { special?: "starred" };
 
 const SkeletonListRow: Component = () => (
   <div class="px-3.5 py-2 flex items-center gap-2 animate-pulse">
@@ -48,7 +29,7 @@ const SkeletonTile: Component = () => (
 export default function HqFoldersWidget(props: { viewMode: ViewMode }) {
   const { t } = useI18n();
   const [selectedFolder, setSelectedFolder] = createSignal<FolderEntry | null>(null);
-  const [foldersData] = createQueryResource("hq-folder-counts", () => true, fetchFoldersData);
+  const [foldersData] = createFolderCounts();
 
   const entries = createMemo<FolderEntry[]>(() => {
     const d = foldersData();
