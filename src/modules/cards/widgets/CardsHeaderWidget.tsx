@@ -1,5 +1,5 @@
 import { createEffect, createSignal, For, Show } from "solid-js";
-import { MdFillSearch, MdFillClose, MdOutlineGrid_view, MdOutlineView_kanban } from "solid-icons/md";
+import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -75,22 +75,20 @@ export default function CardsHeaderWidget() {
 
           <div class="flex items-center gap-1.5">
             <Show when={kanban()?.enabled}>
-              <div class="flex items-center rounded-lg border border-rim bg-surface overflow-hidden">
-                <For each={[["board", MdOutlineGrid_view, "cards.view_board"] as const,
-                            ["kanban", MdOutlineView_kanban, "cards.view_kanban"] as const]}>
-                  {([view, Icon, key]) => (
+              <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit">
+                <For each={[["board", "cards.view_board"] as const,
+                            ["kanban", "cards.view_kanban"] as const]}>
+                  {([view, key]) => (
                     <button
                       type="button"
-                      title={t(key)}
                       aria-pressed={boardView() === view}
                       onClick={() => setBoardView(view)}
-                      class="p-1.5 transition-colors"
-                      classList={{
-                        "bg-accent text-accent-fg": boardView() === view,
-                        "text-muted hover:bg-elevated hover:text-txt": boardView() !== view,
-                      }}
+                      class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
+                        ${boardView() === view
+                          ? "bg-accent text-accent-fg font-semibold"
+                          : "text-muted hover:text-txt"}`}
                     >
-                      <Icon size={15} />
+                      {t(key)}
                     </button>
                   )}
                 </For>
