@@ -372,3 +372,28 @@ function tightenFences(md: string): string {
 
   return out.join("\n");
 }
+
+/**
+ * GFM autolinks, back to the bare text they were typed as.
+ *
+ * marked's GFM autolinker turns a bare email or url in the body into an <a>,
+ * and turndown then writes that back as an explicit "[text](href)" — i.e. the
+ * preview pass rewrites the author's source as they type. Harmless-looking
+ * until it hits a mention: "@{chris@hub.tld}" came back as
+ * "@{[chris@hub.tld](mailto:chris@hub.tld)}", which handle_tag() no longer
+ * matches, so the post federated with no [zrl], no mention notification and a
+ * markdown link where the name should be.
+ *
+ * Only autolinks — an <a> whose text *is* its href. A real "[text](url)" link
+ * still round-trips through turndown's stock rule.
+ */
+markdownTurndown.addRule("autolink", {
+  filter: (node) =>
+    node.nodeName === "A" &&
+    !node.getAttribute("title") &&
+    node.getAttribute("href") ===
+      (/@/.test(node.textContent ?? "") && !/^[a-z][a-z0-9+.-]*:/i.test(node.textContent ?? "")
+        ? `mailto:${node.textContent}`
+        : node.textContent),
+  replacement: (content) => content,
+});

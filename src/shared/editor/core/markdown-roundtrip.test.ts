@@ -85,6 +85,12 @@ const STABLE: Record<string, string> = {
   "bb in list":    "- item with [b]bb[/b]\n- plain",
   "hashtag":       "Hello #hashtag there",
   "mention":       "Hi @{Some Person}",
+  // marked's GFM autolinker turns the webbie into a mailto <a>, and turndown
+  // wrote it back as "@{[chris@hub.tld](mailto:chris@hub.tld)}" — a mention
+  // handle_tag() no longer matches. See the autolink rule.
+  "webbie mention": "Hi @{chris@im.allmendenetz.de}",
+  "bare email":    "write to chris@hub.tld today",
+  "bare url":      "see https://example.com/a now",
   "md + bb mixed": "**bold** and [b]bb[/b] and #tag",
   // GFM. marked parses both; turndown ships rules for neither, so without
   // markdownTurndown's own the "~~" and the checkboxes were silently dropped.
