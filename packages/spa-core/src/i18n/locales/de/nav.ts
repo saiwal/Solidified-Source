@@ -31,7 +31,7 @@ export const nav: RawDictionary["nav"] = {
   channels:      "Kanäle",
   navhome:       "Nach Hause",
   logout:        "Abmelden",
-  login:         "Anmelden",
+  login:         "Anmelden/Externe Auth",
   remote_login:  "Externe Anmeldung",
   register:      "Registrieren",
   siteinfo:      "Seiteninfo",

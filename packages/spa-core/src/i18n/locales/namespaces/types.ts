@@ -124,7 +124,6 @@ export type RawDictionary = {
     remote_visitor_channel:  string;
     remote_guest:            string;
     go_home_link:            string;
-    sign_in_remote:          string;
     custom:                  string;
     display_settings:        string;
     write_reply:             string;

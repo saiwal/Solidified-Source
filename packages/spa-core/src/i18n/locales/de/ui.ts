@@ -23,7 +23,6 @@ export const ui: RawDictionary["ui"] = {
   remote_visitor_channel: "Du betrachtest den Kanal von {{nick}} als externer Besucher.",
   remote_guest:           "Du besuchst den Kanal von {{nick}} als Gast.",
   go_home_link:           "← Zu deiner Startseite",
-  sign_in_remote:         "Anmelden / Externe Authentifizierung",
   custom:                 "Benutzerdefiniert",
   display_settings:       "Einstellungen → Anzeige",
   write_reply:            "Antwort schreiben…",

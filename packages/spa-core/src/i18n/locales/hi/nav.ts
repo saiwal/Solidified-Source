@@ -31,7 +31,7 @@ export const nav: RawDictionary["nav"] = {
   channels:      "चैनल्स",
   navhome:       "मुखपृष्ठ पर जाएँ",
   logout:        "लॉगआउट",
-  login:         "लॉगिन",
+  login:         "साइन इन/रिमोट प्रमाणीकरण",
   remote_login:  "रिमोट लॉगिन",
   register:      "पंजीकरण",
   siteinfo:      "साइट जानकारी",
