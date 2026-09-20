@@ -14,6 +14,7 @@
 import { createSignal, createMemo, createEffect, on } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchConnections, type AclConnection } from "@/modules/network/api";
+import { mentionQueryAt, mentionTag } from "./mentionTag";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,9 +35,13 @@ function toMentionEntry(c: AclConnection): MentionEntry {
   return {
     nick: c.nick ?? "",
     name: c.name,
-    addr: c.link
-      ? c.link.replace(/^https?:\/\//, "").replace(/\/.*$/, "")
-      : (c.nick ?? ""),
+    // Core's /acl sets `link` to xchan_addr, falling back to xchan_url when
+    // the xchan has no addr (Acl.php:352). Pass it through verbatim: both
+    // spellings are what handle_tag()'s braced-mention branch matches on
+    // (xchan_addr OR xchan_url). Stripping the URL down to its host produced
+    // a mention of the *hub* for addr-less AP actors, which resolves to
+    // nothing.
+    addr: c.link || c.nick || "",
     photo: c.photo,
   };
 }
@@ -67,25 +72,17 @@ export function getWysiwygMentionQuery(): string | null {
   const range = sel.getRangeAt(0);
   const node = range.startContainer;
   if (node.nodeType !== Node.TEXT_NODE) return null;
-  const before = (node.textContent ?? "").slice(0, range.startOffset);
-  const atIdx = before.lastIndexOf("@");
-  if (atIdx === -1) return null;
-  const fragment = before.slice(atIdx + 1);
-  if (/\s/.test(fragment)) return null;
-  return fragment;
+  return mentionQueryAt((node.textContent ?? "").slice(0, range.startOffset));
 }
 
 /**
  * Same logic for a plain <textarea>, using selectionStart.
  */
 export function getTextareaMentionQuery(ta: HTMLTextAreaElement): string | null {
-  const before = ta.value.slice(0, ta.selectionStart);
-  const atIdx = before.lastIndexOf("@");
-  if (atIdx === -1) return null;
-  const fragment = before.slice(atIdx + 1);
-  if (/\s/.test(fragment)) return null;
-  return fragment;
+  return mentionQueryAt(ta.value.slice(0, ta.selectionStart));
 }
+
+export { mentionQueryAt, mentionTag };
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
@@ -216,7 +213,7 @@ export function useMention(): MentionState {
   }
 
   function insertWysiwyg(entry: MentionEntry, syncBody: () => void) {
-    const tag = `@${entry.addr}`;
+    const tag = mentionTag(entry);
     const sel = window.getSelection();
     const q = query() ?? "";
     if (sel && sel.rangeCount > 0) {
@@ -243,10 +240,10 @@ export function useMention(): MentionState {
     ta: HTMLTextAreaElement,
     setBody: (v: string) => void,
   ) {
-    const tag = `@${entry.addr}`;
+    const tag = mentionTag(entry);
     const cursor = ta.selectionStart;
     const before = ta.value.slice(0, cursor);
-    const atIdx = before.lastIndexOf("@");
+    const atIdx = before.length - (mentionQueryAt(before)?.length ?? 0) - 1;
     const newVal =
       ta.value.slice(0, atIdx) + tag + " " + ta.value.slice(cursor);
     setBody(newVal);
