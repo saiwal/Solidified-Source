@@ -70,31 +70,31 @@ export default function CardsHeaderWidget() {
       {/* Matches the content widget's width so the title row lines up with
           whichever board is showing. */}
       <div class="space-y-4 max-w-5xl mx-auto">
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
           <h1 class="text-xl font-bold text-txt">{t("cards.title")}</h1>
 
-          <div class="flex items-center gap-1.5">
-            <Show when={kanban()?.enabled}>
-              <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit">
-                <For each={[["board", "cards.view_board"] as const,
-                            ["kanban", "cards.view_kanban"] as const]}>
-                  {([view, key]) => (
-                    <button
-                      type="button"
-                      aria-pressed={boardView() === view}
-                      onClick={() => setBoardView(view)}
-                      class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
-                        ${boardView() === view
-                          ? "bg-accent text-accent-fg font-semibold"
-                          : "text-muted hover:text-txt"}`}
-                    >
-                      {t(key)}
-                    </button>
-                  )}
-                </For>
-              </div>
-            </Show>
+          <Show when={kanban()?.enabled}>
+            <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
+              <For each={[["board", "cards.view_board"] as const,
+                          ["kanban", "cards.view_kanban"] as const]}>
+                {([view, key]) => (
+                  <button
+                    type="button"
+                    aria-pressed={boardView() === view}
+                    onClick={() => setBoardView(view)}
+                    class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
+                      ${boardView() === view
+                        ? "bg-accent text-accent-fg font-semibold"
+                        : "text-muted hover:text-txt"}`}
+                  >
+                    {t(key)}
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
 
+          <div class="flex items-center gap-1.5">
             <Show
               when={searchOpen()}
               fallback={

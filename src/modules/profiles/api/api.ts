@@ -83,7 +83,19 @@ export async function createProfile(profile_name: string): Promise<number> {
   });
   if (!res.ok) throw new Error("Failed to create profile");
   const { data } = await res.json();
+  invalidateProfileViews();
   return data.id as number;
+}
+
+// The profile page, contact card, chanview and nav all read channel identity
+// (name, about, avatar, cover) under their own query keys; without this they
+// serve the pre-edit copy for staleTime after any profile/photo write.
+function invalidateProfileViews(): void {
+  const keys = ["channel-profile", "contact-card", "profiles", "xchan", "nav",
+                "photo-albums", "albums"];
+  queryClient.invalidateQueries({
+    predicate: (q) => keys.includes(q.queryKey[0] as string),
+  });
 }
 
 export async function saveProfile(
@@ -98,11 +110,7 @@ export async function saveProfile(
     const j = await res.json().catch(() => ({}));
     throw new Error(j?.error?.message ?? "Save failed");
   }
-  // The profile page / contact card read /spa/profile/:nick under their own
-  // query keys; without this they serve the pre-edit about text for staleTime.
-  queryClient.invalidateQueries({
-    predicate: (q) => ["channel-profile", "contact-card"].includes(q.queryKey[0] as string),
-  });
+  invalidateProfileViews();
 }
 
 export async function deleteProfile(id: string | number): Promise<void> {
@@ -114,6 +122,7 @@ export async function deleteProfile(id: string | number): Promise<void> {
     const j = await res.json().catch(() => ({}));
     throw new Error(j?.error?.message ?? "Delete failed");
   }
+  invalidateProfileViews();
 }
 
 export interface AvatarUploadResult {
@@ -156,6 +165,7 @@ export function uploadPhoto(
       if (xhr.status < 300) {
         try {
           const json = JSON.parse(xhr.responseText);
+          invalidateProfileViews();
           resolve((json.data ?? {}) as AvatarUploadResult);
         } catch {
           reject(new Error("Invalid upload response"));
