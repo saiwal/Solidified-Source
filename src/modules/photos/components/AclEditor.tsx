@@ -1,7 +1,7 @@
 import { createSignal, onMount, Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { AclEntry } from "@/shared/editor/components/AclPicker";
-import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, type AclMode } from "@/shared/editor/components/AclPicker";
+import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclPayload, type AclMode } from "@/shared/editor/components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { fetchAcl, saveAcl } from "../api/api";
 
@@ -51,29 +51,8 @@ export default function AclEditor(props: {
     setSaving(true);
     setError("");
     try {
-      const m = mode();
-      let allow_cid: string[] = [], allow_gid: string[] = [];
-      let deny_cid: string[]  = [], deny_gid: string[]  = [];
-
-      if (m === "custom") {
-        for (const key of allowKeys()) {
-          const [type, ...rest] = key.split(":");
-          const xid = rest.join(":");
-          if (type === "c") allow_cid.push(xid);
-          else if (type === "g") allow_gid.push(xid);
-        }
-        for (const key of denyKeys()) {
-          const [type, ...rest] = key.split(":");
-          const xid = rest.join(":");
-          if (type === "c") deny_cid.push(xid);
-          else if (type === "g") deny_gid.push(xid);
-        }
-      }
-
-      await saveAcl(props.nick, props.type, props.datum, {
-        allow_cid, allow_gid, deny_cid, deny_gid,
-        scope: m === "me" ? "private" : undefined,
-      });
+      await saveAcl(props.nick, props.type, props.datum,
+        aclPayload(mode(), allowKeys(), denyKeys()));
       props.onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("photos.acl_error"));

@@ -111,3 +111,28 @@ export function aclEntryKeys(acl: StoredAcl, mode: AclMode): {
     ]),
   };
 }
+
+/**
+ * The save payload for a picker state: the four ACL columns, plus the scope
+ * the server expands itself ("private" = only me, "connections" = the
+ * channel's default ACL). Non-custom modes store no explicit lists.
+ */
+export function aclPayload(mode: AclMode, allow: Set<string>, deny: Set<string>) {
+  const split = (keys: Set<string>) => {
+    const cid: string[] = [], gid: string[] = [];
+    for (const k of keys) {
+      const i = k.indexOf(":");
+      (k.slice(0, i) === "c" ? cid : gid).push(k.slice(i + 1));
+    }
+    return { cid, gid };
+  };
+  const a = mode === "custom" ? split(allow) : { cid: [], gid: [] };
+  const d = mode === "custom" ? split(deny)  : { cid: [], gid: [] };
+  return {
+    allow_cid: a.cid, allow_gid: a.gid,
+    deny_cid:  d.cid, deny_gid:  d.gid,
+    scope: mode === "me" ? "private" as const
+         : mode === "connections" ? "connections" as const
+         : undefined,
+  };
+}

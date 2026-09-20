@@ -8,7 +8,7 @@
  * can't remove.
  */
 import assert from "node:assert/strict";
-import { aclModeToScope, aclModeFrom, aclEntryKeys, aclIsRestricted, entryKey } from "./acl-mode.ts";
+import { aclModeToScope, aclModeFrom, aclEntryKeys, aclIsRestricted, aclPayload, entryKey } from "./acl-mode.ts";
 
 const ME = "zTgMRO7W4dTOself";
 const OTHER = "lNWu3pydOther";
@@ -79,5 +79,15 @@ assert.equal(aclModeFrom({ allow_cid: [ME] }, ME, { allow_cid: [ME] }), "me");
 
 assert.equal(aclIsRestricted({}), false);
 assert.equal(aclIsRestricted({ deny_gid: ["g"] }), true);
+
+// aclPayload: only "custom" carries explicit lists; the other modes ride on scope.
+assert.deepEqual(aclPayload("custom", new Set([`c:${ME}`, "g:friends"]), new Set(["c:x"])), {
+  allow_cid: [ME], allow_gid: ["friends"], deny_cid: ["x"], deny_gid: [], scope: undefined,
+});
+assert.deepEqual(aclPayload("connections", new Set([`c:${ME}`]), new Set()), {
+  allow_cid: [], allow_gid: [], deny_cid: [], deny_gid: [], scope: "connections",
+});
+assert.equal(aclPayload("me", new Set(), new Set()).scope, "private");
+assert.equal(aclPayload("public", new Set(), new Set()).scope, undefined);
 
 console.log("acl-mode: all assertions passed");

@@ -28,7 +28,7 @@ import { entryKey, type AclMode } from "./acl-mode";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export { entryKey, aclModeToScope, aclModeFrom, aclEntryKeys, aclIsRestricted } from "./acl-mode";
+export { entryKey, aclModeToScope, aclModeFrom, aclEntryKeys, aclIsRestricted, aclPayload } from "./acl-mode";
 export type { StoredAcl } from "./acl-mode";
 export type { AclMode };
 export type { AclEntry };

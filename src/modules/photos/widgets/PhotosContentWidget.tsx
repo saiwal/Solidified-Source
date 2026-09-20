@@ -45,7 +45,8 @@ import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
 import type { PhotoComment, Album, Photo, SortDir } from "../api/api";
-import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, fetchAlbums, variantSrc } from "../api/api";
+import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, fetchAlbums, variantSrc, saveAcl } from "../api/api";
+import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
 import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
@@ -597,6 +598,16 @@ function AlbumsView(props: { auto: boolean }) {
   const [newName, setNewName]       = createSignal('');
   const [creating, setCreating]     = createSignal(false);
   const [createError, setCreateError] = createSignal('');
+  const [aclMode, setAclMode]       = createSignal<AclMode>('public');
+  const [allowKeys, setAllowKeys]   = createSignal<Set<string>>(new Set<string>());
+  const [denyKeys, setDenyKeys]     = createSignal<Set<string>>(new Set<string>());
+
+  function toggleAcl(entry: AclEntry, list: 'allow' | 'deny') {
+    const key = entryKey(entry);
+    const [add, drop] = list === 'allow' ? [setAllowKeys, setDenyKeys] : [setDenyKeys, setAllowKeys];
+    add(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+    drop(prev => { const n = new Set(prev); n.delete(key); return n; });
+  }
 
   // The whole album list arrives in one response, so sorting stays client-side
   // here (unlike the Photos tab, which pages).
@@ -616,7 +627,13 @@ function AlbumsView(props: { auto: boolean }) {
     setCreating(true);
     setCreateError('');
     try {
-      await createNewAlbum(nick() ?? '', name);
+      const album = await createNewAlbum(nick() ?? '', name);
+      // The album is created public; a non-public pick is a second call, since
+      // attach_mkdir() takes no ACL.
+      if (aclMode() !== 'public' && album.folder) {
+        await saveAcl(nick() ?? '', 'album', album.folder,
+          aclPayload(aclMode(), allowKeys(), denyKeys()));
+      }
       setNewName('');
       setShowForm(false);
     } catch (err) {
@@ -639,7 +656,10 @@ function AlbumsView(props: { auto: boolean }) {
       >
         <Show when={canWrite() && !props.auto}>
           <button
-            onClick={() => { setShowForm(v => !v); setCreateError(''); setNewName(''); }}
+            onClick={() => {
+              setShowForm(v => !v); setCreateError(''); setNewName('');
+              setAclMode('public'); setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>());
+            }}
             title={t("photos.new_album")}
             class={`ml-1 p-1.5 rounded-md transition-colors
               ${showForm() ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
@@ -655,7 +675,7 @@ function AlbumsView(props: { auto: boolean }) {
       <Show when={showForm()}>
         <form
           onSubmit={handleCreate}
-          class="flex items-center gap-2 p-3 bg-surface rounded-xl border border-rim"
+          class="flex flex-wrap items-center gap-2 p-3 bg-surface rounded-xl border border-rim"
         >
           <input
             type="text"
@@ -664,8 +684,16 @@ function AlbumsView(props: { auto: boolean }) {
             placeholder={t("photos.album_name_ph")}
             disabled={creating()}
             autofocus
-            class="flex-1 bg-transparent text-sm text-txt placeholder:text-muted
+            class="flex-1 min-w-[8rem] bg-transparent text-sm text-txt placeholder:text-muted
                    outline-none disabled:opacity-50"
+          />
+          <AclPicker
+            mode={aclMode()}
+            onModeChange={setAclMode}
+            allowEntries={allowKeys()}
+            denyEntries={denyKeys()}
+            onToggle={toggleAcl}
+            onClear={() => { setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>()); }}
           />
           <Show when={createError()}>
             <span class="text-xs text-red-500">{createError()}</span>

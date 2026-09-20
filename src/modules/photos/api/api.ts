@@ -324,7 +324,7 @@ export async function saveAcl(
   nick: string,
   type: 'image' | 'album',
   datum: string,
-  acl: { allow_gid: string[]; allow_cid: string[]; deny_gid: string[]; deny_cid: string[]; scope?: "private" },
+  acl: { allow_gid: string[]; allow_cid: string[]; deny_gid: string[]; deny_cid: string[]; scope?: "private" | "connections" },
 ): Promise<void> {
   const { getCsrfToken } = await import('@utsukta/spa-core/lib/csrf');
   const token = await getCsrfToken().catch(() => '');
