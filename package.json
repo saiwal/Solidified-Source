@@ -14,7 +14,8 @@
     "watch": "vite build --watch",
     "typecheck": "tsc -b --watch",
     "games:download": "node scripts/download-puzzles.mjs",
-    "theme:create": "node scripts/create-theme.mjs"
+    "theme:create": "node scripts/create-theme.mjs",
+    "test:php": "bash scripts/test-php.sh"
   },
   "dependencies": {
     "@bbob/html": "^4.3.1",
