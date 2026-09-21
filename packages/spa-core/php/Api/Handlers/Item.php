@@ -1018,9 +1018,13 @@ class Item
                     'endTime'      => $pollEndTime,
                     'to'           => [ACTIVITY_PUBLIC_INBOX],
                 ];
-                if (empty($datarray['expires'])) {
-                    $datarray['expires'] = datetime_convert('UTC', 'UTC', $pollEndTime);
-                }
+                // Deliberately NOT setting 'expires' from the poll's end time.
+                // item.expires is what the expiry reaper deletes on, and core
+                // only ever sets it from the author's explicit expiry field
+                // (Zotlabs\Module\Item::post:561) — never from a poll. Setting
+                // it here made every poll made in the SPA delete itself, results
+                // and all, the moment it closed.
+                //
                 // Core closes comments on a poll when the poll closes
                 // (Zotlabs\Module\Item::post, the endTime branch) — otherwise a
                 // finished poll keeps taking replies here but not in redbasic.

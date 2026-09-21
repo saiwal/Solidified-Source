@@ -627,9 +627,22 @@ function runCases(string $nick, string $pass): void
          'poll_answers' => $answers, 'poll_expire_value' => 1, 'poll_expire_unit' => 'Days'],
         ['scope' => 'public', 'profile_uid' => $uid, 'body' => $ptag, 'mimetype' => 'text/bbcode',
          'poll_answers' => $answers, 'poll_expire_value' => 1, 'poll_expire_unit' => 'Days']);
-    // expires is minted from "now + 1 day" on each side, seconds apart.
-    diff("[$pass] poll", $cPoll, $sPoll, ['expires']);
+    // comments_closed is minted from the poll's end time on each side, a second
+    // or two apart — compared for closeness below rather than equality, so the
+    // fix that sets it at all stays guarded without the clock making the suite
+    // flaky. Everything else, including expires, must match exactly.
+    diff("[$pass] poll", $cPoll, $sPoll, ['comments_closed']);
     diffTarget("[$pass] poll", $cPoll, $sPoll);
+
+    if ($cPoll && $sPoll) {
+        $c = strtotime($cPoll['comments_closed']);
+        $v = strtotime($sPoll['comments_closed']);
+        $set = $v && $sPoll['comments_closed'] > '0002-01-01';
+        $set && abs($c - $v) <= 120
+            ? ok("[$pass] poll comments_closed within 2 minutes of core's")
+            : bad("[$pass] poll comments_closed",
+                "      spa=" . $sPoll['comments_closed'] . "  core=" . $cPoll['comments_closed'] . "\n");
+    }
 
     if ($cPoll && $sPoll) {
         // Voting on your OWN poll is broken in core on this build, and the
