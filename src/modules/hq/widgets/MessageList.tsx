@@ -201,6 +201,8 @@ const Avatar: Component<{ src?: string; name: string; size?: string }> = (props)
     <div
       class={`${size} rounded-full shrink-0 flex items-center justify-center text-xs font-semibold overflow-hidden select-none`}
       style={{
+        // Tint only behind initials — an avatar with alpha must show whatever
+        // the row sits on (card, pattern, wallpaper), not a disc of its own.
         background: props.src ? undefined : `hsl(${hue()}, 55%, 82%)`,
         color: `hsl(${hue()}, 45%, 35%)`,
       }}
@@ -414,8 +416,12 @@ const MessageItem: Component<{
                   checked={false}
                   aria-label={t("hq.select_message")}
                   onClick={(ev) => { ev.stopPropagation(); props.onToggleSelect?.(ev.shiftKey); }}
+                  // appearance-none + transparent: a native checkbox paints an
+                  // opaque 28px disc over the avatar (Preflight strips its
+                  // background/border, so it drew the page pattern instead).
+                  // Here it is just a hit target — the avatar stays visible.
                   class="absolute inset-0 w-7 h-7 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100
-                         rounded-full cursor-pointer accent-accent"
+                         appearance-none rounded-full cursor-pointer bg-transparent border-0"
                 />
               </Show>
             </div>
@@ -426,7 +432,7 @@ const MessageItem: Component<{
             checked
             aria-label={t("hq.select_message")}
             onClick={(ev) => { ev.stopPropagation(); props.onToggleSelect?.(ev.shiftKey); }}
-            class="w-7 h-7 shrink-0 rounded-full cursor-pointer accent-accent"
+            class="w-7 h-7 shrink-0 rounded-full cursor-pointer accent-accent bg-base border-2 border-rim"
           />
         </Show>
 
