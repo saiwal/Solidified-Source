@@ -766,6 +766,10 @@ if (getenv('PARITY_KEEP')) {
     // Reaction and boost rows carry core's own wording, not our probe tag, so
     // sweep everything this channel created during the run.
     q("DELETE FROM item WHERE uid = %d AND created >= '%s'", intval($uid), dbesc($startedAt));
+    // The event cases store an `event` row per probe as well, and deleting the
+    // item does not take it with it — 88 of these had piled up before this line
+    // existed.
+    q("DELETE FROM event WHERE uid = %d AND created >= '%s'", intval($uid), dbesc($startedAt));
     echo "\nprobes removed, limits restored\n";
 }
 

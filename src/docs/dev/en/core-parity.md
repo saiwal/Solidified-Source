@@ -27,7 +27,7 @@ core function the SPA already calls, so there is nothing to add.
 | `app` / `sysapp` | `Appman` on install and delete | `Settings` app actions | **fixed 2026-09-21** — installs and uninstalls reached no clone |
 | `chatroom` | `Chatroom::destroy` (inside), `Module\Chat::post` (create, in the module) | `Chat` | **fixed 2026-09-21** — `Chatroom::create()` does not sync, so creates reached no clone |
 | `menu` | `menu_sync_packet()`, called by `Module\Menu` / `Module\Mitem` | `Menus`, `Bookmarks` | covered (all 7 write paths call it) |
-| `event` / `event_item` | `Channel_calendar` on delete; `event_addtocal` | `Cal` | covered on create via item delivery; **delete path unverified** |
+| `event` / `event_item` | `Channel_calendar` on delete; `event_addtocal` | `Cal` | covered on create via item delivery; delete **fixed 2026-09-21** — see below |
 | `profile` | `Profiles`, `Profile_photo` | `Profiles`, `Avatar` | covered |
 | group/pgrp | `include/group.php` (inside `AccessList::add`/`remove`/…) | `PrivacyGroups` | free |
 | `atoken` | `Module\Tokens` | `Tokens` | covered |
@@ -57,6 +57,24 @@ under the recipient's *own* uid, where no delivery happens:
 - wall-to-wall comment → `NOTIFY_COMMENT` (**added 2026-09-21**; a visitor
   commenting on your wall post previously notified nobody)
 
+## Deleting an event
+
+`Cal::deleteEvent()` used to call `drop_item($id, DROPITEM_PHASE1)` and then
+`DELETE FROM event`, with no sync and no Notifier. `drop_item()` on its own only
+marks the row — it federates nothing — so an event deleted in the SPA stayed on
+every other hub and on the channel's own clones forever.
+
+It now mirrors core's phased shape, which is also what `Item::deleteItem()` in
+this codebase already did:
+
+1. `drop_item($id, DROPITEM_PHASE1)`
+2. re-read the row, `xchan_query` + `fetch_post_tags`, then
+   `Libsync::build_sync_packet($uid, ['item' => [encode_item($sync[0], true)]])`
+3. `tag_deliver($uid, $id)`
+4. `Master::Summon(['Notifier', 'drop', $id])` when `item_wall`
+5. the `event` row is clone-synced separately, flagged `event_deleted = 1`,
+   before the `DELETE`
+
 ## Hooks
 
 `call_hooks('post_local')` / `post_local_end')` run on the SPA's post and
@@ -66,8 +84,6 @@ hook — is skipped when posting from the SPA. See `ContentTypes.php`.
 
 ## Still unverified
 
-- `Cal` delete: core syncs the event with `event_deleted = 1` plus the item
-  drop (`Channel_calendar.php:412-430`). Not yet checked against the SPA.
 - The event *create* datarray: `Channel_calendar::post()` could not be driven
   headlessly, so `parity.test.php` asserts SPA invariants only for events.
 - `Cart`, `Admin`, `Register`, `NewChannel`, `SiteLogo`: site- and
