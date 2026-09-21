@@ -10,7 +10,10 @@ import { fetchGroups } from "@/modules/directory/groups/api";
 import { toggleMember } from "@/modules/directory/groups/api";
 import { fetchProfiles } from "@/modules/profiles/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineCheck, MdOutlineClose, MdOutlineRefresh } from "solid-icons/md";
+import FilterRuleBuilder from "./FilterRuleBuilder";
+import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
+import { MdOutlineCheck, MdOutlineClose, MdOutlineRefresh, MdOutlineWarning } from "solid-icons/md";
+import { A } from "@solidjs/router";
 
 interface Props {
   connection: Connection;
@@ -19,6 +22,8 @@ interface Props {
   onClose: () => void;
   onDeleted: () => void;
   onSaved?: () => void;
+  /** Tab to open on — the inbox rules list deep-links straight to "filters". */
+  initialTab?: Tab;
 }
 
 type Tab = "settings" | "perms" | "filters";
@@ -56,7 +61,7 @@ function formatDate(iso: string): string {
 
 export default function ConnectionEditorModal(props: Props) {
   const { t } = useI18n();
-  const [tab, setTab] = createSignal<Tab>("settings");
+  const [tab, setTab] = createSignal<Tab>(props.initialTab ?? "settings");
   const [role, setRole] = createSignal(props.connection.role ?? "");
   const [closeness, setCloseness] = createSignal(props.connection.closeness ?? 80);
   const [blocked, setBlocked] = createSignal(props.connection.status.includes("blocked"));
@@ -468,32 +473,36 @@ export default function ConnectionEditorModal(props: Props) {
                 }
               >
                 <div class="p-4 space-y-4">
+                  {/* post_is_importable() skips the whole abook loop unless this
+                      feature is on, so without the warning these rules look
+                      active while core ignores them. */}
+                  <Show when={!isFeatureEnabled("connfilter")}>
+                    <div class="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg
+                                bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      <MdOutlineWarning size={16} class="shrink-0" />
+                      <span class="flex-1 min-w-0 text-xs">{t("filters.connfilter_off")}</span>
+                      <A
+                        href="/settings/features"
+                        onClick={props.onClose}
+                        class="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium
+                               bg-overlay text-muted hover:bg-elevated hover:text-txt transition-colors"
+                      >
+                        {t("filters.connfilter_enable")}
+                      </A>
+                    </div>
+                  </Show>
                   <div>
                     <label class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">
                       {t("connection.filter_incl")}
                     </label>
-                    <textarea
-                      rows={4}
-                      value={incl()}
-                      onInput={(e) => setIncl(e.currentTarget.value)}
-                      class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-                             placeholder:text-muted focus:outline-none hover:border-rim-strong
-                             focus:border-rim-strong transition-colors resize-y font-mono"
-                    />
+<FilterRuleBuilder value={incl()} onChange={setIncl} />
                     <p class="text-[0.625rem] text-muted mt-1">{t("connection.filter_incl_hint")}</p>
                   </div>
                   <div>
                     <label class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">
                       {t("connection.filter_excl")}
                     </label>
-                    <textarea
-                      rows={4}
-                      value={excl()}
-                      onInput={(e) => setExcl(e.currentTarget.value)}
-                      class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-                             placeholder:text-muted focus:outline-none hover:border-rim-strong
-                             focus:border-rim-strong transition-colors resize-y font-mono"
-                    />
+<FilterRuleBuilder value={excl()} onChange={setExcl} />
                     <p class="text-[0.625rem] text-muted mt-1">{t("connection.filter_excl_hint")}</p>
                   </div>
                 </div>

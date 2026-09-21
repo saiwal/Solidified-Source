@@ -5,6 +5,7 @@ import { fetchChannelSettings, saveChannelSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
 import { SaveBar, Group, Field, SwitchRow, inputClass } from "../../store/FormHelpers";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import FilterRuleBuilder from "@/shared/views/FilterRuleBuilder";
 import { MdOutlineFilter_alt, MdOutlineManage_accounts, MdOutlineShield, MdOutlineTune } from "solid-icons/md";
 
 interface PermRow {
@@ -35,6 +36,13 @@ export default function ChannelSection() {
   const [permOpen, setPermOpen] = createSignal(false);
   const [permOverrides, setPermOverrides] = createSignal<Record<string, number>>({});
   const [gaOverride, setGaOverride] = createSignal<number | null>(null);
+
+  // The filter builder is not a form input, so its value rides in a hidden field.
+  // null = untouched, fall back to whatever the server sent.
+  const [incl, setIncl] = createSignal<string | null>(null);
+  const [excl, setExcl] = createSignal<string | null>(null);
+  const inclVal = () => incl() ?? data()?.message_filter_incl ?? "";
+  const exclVal = () => excl() ?? data()?.message_filter_excl ?? "";
 
   const effRole = () => roleSel() ?? data()?.permissions_role ?? "";
   const gaVal = () => gaOverride() ?? data()?.group_actor ?? 0;
@@ -169,10 +177,12 @@ export default function ChannelSection() {
                   <input type="number" name="expire" min="0" value={d().expire} class={NUMBER_ROW_INPUT} />
                 </div>
                 <Field label={t("settings.channel_filter_incl")} hint={t("settings.channel_filter_hint")}>
-                  <textarea name="message_filter_incl" rows="3" class={inputClass} value={d().message_filter_incl} />
+                  <FilterRuleBuilder value={inclVal()} onChange={setIncl} rows={3} />
+                  <input type="hidden" name="message_filter_incl" value={inclVal()} />
                 </Field>
                 <Field label={t("settings.channel_filter_excl")} hint={t("settings.channel_filter_hint")}>
-                  <textarea name="message_filter_excl" rows="3" class={inputClass} value={d().message_filter_excl} />
+                  <FilterRuleBuilder value={exclVal()} onChange={setExcl} rows={3} />
+                  <input type="hidden" name="message_filter_excl" value={exclVal()} />
                 </Field>
               </div>
             </Group>

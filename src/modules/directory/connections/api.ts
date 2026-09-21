@@ -23,7 +23,9 @@ export type ConnectionFilter =
   | "hidden"
   | "archived"
   | "recent"
-  | "all";
+  | "all"
+  // Connections that carry a message filter — the inbox rules overview.
+  | "filtered";
 
 export interface Connection {
   id: number;
@@ -41,6 +43,9 @@ export interface Connection {
   pending: boolean;
   profile_id: number | null;
   granted_perms: string[];
+  // abook_incl / abook_excl. Only populated by the paginated list endpoint.
+  incl?: string;
+  excl?: string;
 }
 
 export interface ConnectionsMeta {

@@ -19,13 +19,14 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
-import { MdOutlineEdit, MdOutlineMail } from "solid-icons/md";
+import { MdOutlineEdit, MdOutlineMail, MdOutlineFilter_alt } from "solid-icons/md";
 import { openComposer } from "@/shared/editor/store/composer-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
 import { parseQuery } from "../query";
 import { createFolderCounts } from "../folders";
 import InboxSearchBar from "../InboxSearchBar";
+import RulesPane from "../RulesPane";
 import { dragPreview, hoverFolder, registerDropTarget } from "../useDragToFolder";
 import {
   MessageList,
@@ -131,8 +132,9 @@ export default function InboxView() {
       trailing: <Badge n={feedBadge(s.type)} />,
       dividerAfter: i === FEED_SECTIONS.length - 1,
     })),
-    ...(folderData()?.folders ?? []).map((f) => ({
+    ...(folderData()?.folders ?? []).map((f, i, all) => ({
       path: `${FOLDER_PREFIX}${encodeURIComponent(f.name)}`,
+      dividerAfter: i === all.length - 1,
       label: f.name,
       icon: <Icon path={f.name === TRASH ? TRASH_ICON : FOLDER_ICON_PATH} />,
       trailing: <Badge n={f.unread} />,
@@ -144,6 +146,12 @@ export default function InboxView() {
       // the list straight onto the folder.
       ref: (el: HTMLElement) => onCleanup(registerDropTarget(f.name, el)),
     })),
+    // Not a feed — every message filter that decides what reaches this channel.
+    {
+      path: "rules",
+      label: () => t("filters.rules_title") as string,
+      icon: <MdOutlineFilter_alt size={16} />,
+    },
   ]);
 
   const [emptying, setEmptying] = createSignal(false);
@@ -211,6 +219,7 @@ export default function InboxView() {
       activeKey={activeKey()}
       contentClass="flex-1 min-w-0 flex flex-col"
     >
+      <Show when={activeKey() !== "rules"} fallback={<RulesPane />}>
       {/* Bounded height: MessageList scrolls its own body and paginates on
           scroll, so it needs a container that doesn't grow with its content.
           Kept as tall as the chrome allows — the reader fills this same box. */}
@@ -287,6 +296,7 @@ export default function InboxView() {
           )}
         </Show>
       </div>
+      </Show>
     </SubPageLayout>
   );
 }
