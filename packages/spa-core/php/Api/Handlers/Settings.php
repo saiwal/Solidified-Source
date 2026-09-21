@@ -1423,7 +1423,7 @@ class Settings
 
     // Feature groups/names not offered in the SPA (no corresponding UI, or
     // superseded — e.g. emoji reactions are always on here).
-    private const EXCLUDED_FEATURE_GROUPS = ['channel_home', 'connections'];
+    private const EXCLUDED_FEATURE_GROUPS = ['channel_home'];
     private const EXCLUDED_FEATURES = ['emojis'];
 
     private function getFeaturesSettings(): void

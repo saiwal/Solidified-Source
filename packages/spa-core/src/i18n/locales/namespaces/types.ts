@@ -2,6 +2,54 @@
 // All locale files import from here — never redeclare this type locally.
 
 export type RawDictionary = {
+  /** Message-filter rule builder. */
+  filters: {
+    rules_title:         string;
+    edit:                string;
+    rules_desc:          string;
+    scope_channel:       string;
+    scope_connections:   string;
+    rule_keep:           string;
+    rule_skip:           string;
+    join_and:            string;
+    join_or:             string;
+    rules_empty_channel: string;
+    rules_empty_conn:    string;
+    rules_none:          string;
+    connfilter_off:      string;
+    connfilter_enable:   string;
+    match_label:      string;
+    match_any:        string;
+    match_all:        string;
+    add_condition:    string;
+    remove:           string;
+    edit_as_text:     string;
+    edit_as_rules:    string;
+    raw_only:         string;
+    none:             string;
+    field_text:       string;
+    field_regex:      string;
+    field_hashtag:    string;
+    field_mention:    string;
+    field_category:   string;
+    field_lang:       string;
+    field_until:      string;
+    field_raw:        string;
+    op_is:            string;
+    op_not:           string;
+    op_any:           string;
+    op_count:         string;
+    ph_text:          string;
+    ph_regex:         string;
+    ph_hashtag:       string;
+    ph_mention:       string;
+    ph_category:      string;
+    ph_lang:          string;
+    ph_until:         string;
+    ph_raw:           string;
+    ph_count:         string;
+  };
+
   games: {
     label:    string;
     blackbox: string;

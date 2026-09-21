@@ -7,6 +7,7 @@ import { tools }      from "./tools";
 import { games }      from "./games";
 import { post }       from "./post";
 import { help }       from "./help";
+import { filters }    from "./filters";
 import { tour }       from "./tour";
 import { connection } from "./connection";
 import { auth }       from "./auth";
@@ -51,6 +52,7 @@ export const dict: RawDictionary = {
   games,
   post,
   help,
+  filters,
   tour,
   connection,
   auth,
