@@ -92,6 +92,7 @@ export const hq: RawDictionary["hq"] = {
   msg_tab_direct:       "Direkt",
   msg_tab_starred:      "Markiert",
   msg_tab_notices:      "Hinweise",
+  via:                  "über {{name}}",
   msg_tab_folders:      "Ordner",
   no_folders:           "Keine gespeicherten Ordner",
   filter_placeholder:   "Filter…",

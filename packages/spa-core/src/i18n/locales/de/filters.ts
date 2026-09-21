@@ -48,4 +48,24 @@ export const filters: RawDictionary["filters"] = {
   rules_none:          "Noch keine Regeln.",
   connfilter_off:      "Verbindungsfilterung ist aus, diese Regeln werden ignoriert.",
   connfilter_enable:   "Einschalten",
+
+  // Auto-filing rules (modules/inbox/rules.ts).
+  scope_autofile:       "Automatisch ablegen",
+  rules_empty_autofile: "Keine Regeln zum automatischen Ablegen.",
+  add_rule:             "Regel hinzufügen",
+  save_rule:            "Regel speichern",
+  cancel:               "Abbrechen",
+  rule_name:            "Regelname (optional)",
+  rule_enabled:         "Aktiv",
+  file_into:            "ablegen in",
+  folder:               "Ordner",
+  rerun:                "Auf vorhandene Nachrichten anwenden",
+  rerun_confirm:        "Diese Regeln auf bereits vorhandene Nachrichten anwenden? Beiträge, die du von Hand aus einem Ordner genommen hast, können erneut abgelegt werden.",
+  rerun_queued:         "Die Regeln laufen beim nächsten Laden des Posteingangs.",
+  autofile_hint:        "Regeln greifen beim Laden des Posteingangs und gelten für ab jetzt eintreffende Nachrichten.",
+
+  // Sender matching (auto-filing only).
+  field_author:       "Absendername",
+  field_author_addr:  "Absenderadresse",
+  op_contains:        "enthält",
 };

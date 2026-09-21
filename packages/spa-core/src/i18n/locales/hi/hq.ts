@@ -86,6 +86,7 @@ export const hq: RawDictionary["hq"] = {
   msg_tab_direct:       "सीधे",
   msg_tab_starred:      "स्टार किए गए",
   msg_tab_notices:      "सूचनाएँ",
+  via:                  "{{name}} के द्वारा",
   msg_tab_folders:      "फ़ोल्डर",
   no_folders:           "कोई सहेजा गया फ़ोल्डर नहीं",
   filter_placeholder:   "फ़िल्टर…",

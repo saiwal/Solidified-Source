@@ -440,6 +440,13 @@ const MessageItem: Component<{
               >
                 {e().author_name}
               </span>
+              {/* The resharer, or the group this came through — whoever put it
+                  in the stream when that isn't the author. */}
+              <Show when={e().via}>
+                <span class="text-[0.625rem] text-muted truncate shrink min-w-0 leading-snug">
+                  {t("hq.via", { name: e().via! })}
+                </span>
+              </Show>
             </div>
             <time class="text-[0.625rem] text-muted shrink-0 tabular-nums">
               {timeAgo(e().created)}
@@ -466,7 +473,11 @@ const MessageItem: Component<{
             <div class="flex flex-wrap gap-1 mt-0.5">
               <For each={entryFolders(e())}>
                 {(name) => (
-                  <span class="inline-flex items-center gap-1 py-0.5 rounded-md italic text-[0.625rem] text-muted font-medium">
+                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
+                               bg-overlay text-[0.625rem] font-medium text-muted">
+                    <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={FOLDER_ICON_PATH} />
+                    </svg>
                     <span class="truncate max-w-[200px]">{name}</span>
                   </span>
                 )}

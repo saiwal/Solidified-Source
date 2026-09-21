@@ -48,4 +48,24 @@ export const filters: RawDictionary["filters"] = {
   rules_none:          "No rules yet.",
   connfilter_off:      "Connection filtering is off, so these rules are ignored.",
   connfilter_enable:   "Turn on",
+
+  // Auto-filing rules (modules/inbox/rules.ts).
+  scope_autofile:       "File automatically",
+  rules_empty_autofile: "No auto-filing rules.",
+  add_rule:             "Add rule",
+  save_rule:            "Save rule",
+  cancel:               "Cancel",
+  rule_name:            "Rule name (optional)",
+  rule_enabled:         "Enabled",
+  file_into:            "file into",
+  folder:               "Folder",
+  rerun:                "Run on existing mail",
+  rerun_confirm:        "Run these rules over mail you already have? Posts you took out of a folder by hand may be filed again.",
+  rerun_queued:         "Rules will run the next time the inbox loads.",
+  autofile_hint:        "Rules run when the inbox loads and apply to mail that arrives from now on.",
+
+  // Sender matching (auto-filing only).
+  field_author:       "Sender name",
+  field_author_addr:  "Sender address",
+  op_contains:        "contains",
 };

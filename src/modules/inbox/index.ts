@@ -28,6 +28,7 @@ registerModule({
   // Settings → Integrations like Tools and Games.
   frontendFeature: {
     label: () => useI18n().t("nav.inbox"),
+    description: () => useI18n().t("nav.inbox_desc"),
     defaultEnabled: false,
   },
   permissions: [],

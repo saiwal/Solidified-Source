@@ -11,11 +11,16 @@ import { A } from "@solidjs/router";
 import { useQuery } from "@tanstack/solid-query";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
-import { parse, type FilterCond } from "@utsukta/spa-core/lib/filter-dsl";
-import { MdOutlineFilter_alt, MdOutlineWarning } from "solid-icons/md";
+import { isFeatureEnabled, inboxRules, type InboxRule } from "@utsukta/spa-core/store/auth-store";
+import { toast } from "@utsukta/spa-core/store/toast";
+import FilterRuleBuilder from "@/shared/views/FilterRuleBuilder";
+import { createFolderCounts } from "./folders";
+import { saveInboxRules, rerunInboxRules, newRule } from "./rules";
+import { parse, ALL_FIELDS, type FilterCond } from "@utsukta/spa-core/lib/filter-dsl";
+import { MdOutlineFilter_alt, MdOutlineWarning, MdOutlineAdd, MdOutlineClose } from "solid-icons/md";
 import { fetchConnections, type Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
+import SuggestInput from "@/shared/views/SuggestInput";
 
 interface Rule {
   kind: "incl" | "excl";
@@ -85,6 +90,193 @@ function RuleRow(props: { rule: Rule; action: any }) {
   );
 }
 
+// Auto-filing rules. Unlike the two sections below this one these are the
+// SPA's own, so they are edited here rather than linked out to another view.
+function AutoFileRules() {
+  const { t } = useI18n();
+  const [folderData] = createFolderCounts();
+  const [draft, setDraft] = createSignal<InboxRule | null>(null);
+
+  // Sender autocomplete. Only fetched once a rule is actually being edited —
+  // the list is useless on the read-only view and this is the whole address
+  // book. `all` rather than `active`: a rule may well name an archived or
+  // ignored connection.
+  const people = useQuery(() => ({
+    queryKey: ["connections", "all-names"] as const,
+    queryFn: () => fetchConnections({ filter: "all", limit: 200 }),
+    enabled: !!draft(),
+  }));
+  const suggest = createMemo(() => {
+    const list = people.data?.connections ?? [];
+    return {
+      author: [...new Set(list.map((c) => c.name).filter(Boolean))],
+      author_addr: [...new Set(list.map((c) => c.address).filter(Boolean))],
+    };
+  });
+  const [busy, setBusy] = createSignal(false);
+
+  const patch = (p: Partial<InboxRule>) => setDraft((d) => (d ? { ...d, ...p } : d));
+
+  async function commit(next: InboxRule[]) {
+    setBusy(true);
+    try {
+      await saveInboxRules(next);
+      setDraft(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const save = () => {
+    const d = draft();
+    if (!d?.folder.trim() || !d.expr.trim()) return;
+    const list = inboxRules();
+    void commit(list.some((r) => r.id === d.id)
+      ? list.map((r) => (r.id === d.id ? d : r))
+      : [...list, d]);
+  };
+
+  async function rerun() {
+    if (!confirm(t("filters.rerun_confirm") as string)) return;
+    setBusy(true);
+    try {
+      await rerunInboxRules();
+      toast.success(t("filters.rerun_queued") as string);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section class="rounded-xl border border-rim bg-surface">
+      <header class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-rim">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted">
+          {t("filters.scope_autofile")}
+        </h3>
+        <div class="flex items-center gap-2">
+          <Show when={inboxRules().length}>
+            <button type="button" class={EDIT_BTN} disabled={busy()} onClick={() => void rerun()}>
+              {t("filters.rerun")}
+            </button>
+          </Show>
+          <button
+            type="button"
+            class={EDIT_BTN}
+            onClick={() => setDraft(newRule())}
+          >
+            <MdOutlineAdd size={14} class="inline -mt-0.5 mr-0.5" />
+            {t("filters.add_rule")}
+          </button>
+        </div>
+      </header>
+
+      <div class="px-3.5 divide-y divide-rim">
+        <Show
+          when={inboxRules().length}
+          fallback={<p class="py-3 text-xs text-muted">{t("filters.rules_empty_autofile")}</p>}
+        >
+          <For each={inboxRules()}>
+            {(r) => (
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2">
+                <input
+                  type="checkbox"
+                  checked={r.enabled}
+                  disabled={busy()}
+                  title={t("filters.rule_enabled")}
+                  onChange={(e) =>
+                    void commit(inboxRules().map((x) =>
+                      x.id === r.id ? { ...x, enabled: e.currentTarget.checked } : x))
+                  }
+                  class="h-4 w-4 rounded border-rim accent-accent cursor-pointer shrink-0"
+                />
+                <span class="min-w-0 truncate text-sm text-txt">{r.name || r.folder}</span>
+                <code class="flex-1 min-w-0 truncate text-xs font-mono text-muted">{r.expr}</code>
+                <span class="shrink-0 px-2 py-0.5 rounded-md bg-overlay text-xs text-txt">
+                  → {r.folder}
+                </span>
+                <button type="button" class={EDIT_BTN} onClick={() => setDraft({ ...r })}>
+                  {t("filters.edit")}
+                </button>
+                <button
+                  type="button"
+                  title={t("filters.remove")}
+                  disabled={busy()}
+                  onClick={() => void commit(inboxRules().filter((x) => x.id !== r.id))}
+                  class="shrink-0 p-1 rounded-lg text-muted hover:text-txt hover:bg-base transition-colors"
+                >
+                  <MdOutlineClose size={16} />
+                </button>
+              </div>
+            )}
+          </For>
+        </Show>
+      </div>
+
+      <Show when={draft()}>
+        {(d) => (
+          <div class="px-3.5 py-3 border-t border-rim space-y-3 bg-base/40">
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={d().name}
+                placeholder={t("filters.rule_name")}
+                onInput={(e) => patch({ name: e.currentTarget.value })}
+                class="flex-1 min-w-[10rem] px-2.5 py-1.5 rounded-lg border border-rim bg-surface
+                       text-txt text-sm placeholder:text-muted focus:outline-none
+                       hover:border-rim-strong focus:border-rim-strong transition-colors"
+              />
+              <span class="text-xs text-muted">{t("filters.file_into")}</span>
+              {/* Folders are free-text file tags, so this suggests without
+                  restricting — a rule may create a folder that doesn't exist. */}
+              <SuggestInput
+                value={d().folder}
+                items={(folderData()?.folders ?? []).map((f) => f.name)}
+                placeholder={t("filters.folder")}
+                onInput={(v) => patch({ folder: v })}
+                class="w-40 px-2.5 py-1.5 rounded-lg border border-rim bg-surface
+                       text-txt text-sm placeholder:text-muted focus:outline-none
+                       hover:border-rim-strong focus:border-rim-strong transition-colors"
+              />
+            </div>
+
+            {/* Auto-filing is evaluated by FilesByRules.php, which injects the
+                sender keys — so this builder offers more than the ones core
+                evaluates at delivery. */}
+            <FilterRuleBuilder
+              value={d().expr}
+              onChange={(v) => patch({ expr: v })}
+              rows={3}
+              fields={ALL_FIELDS}
+              suggest={suggest()}
+            />
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={busy() || !d().folder.trim() || !d().expr.trim()}
+                onClick={save}
+                class="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-accent-fg
+                       hover:opacity-90 disabled:opacity-40 transition-opacity"
+              >
+                {t("filters.save_rule")}
+              </button>
+              <button type="button" class={EDIT_BTN} onClick={() => setDraft(null)}>
+                {t("filters.cancel")}
+              </button>
+            </div>
+          </div>
+        )}
+      </Show>
+
+      <p class="px-3.5 pb-3 text-[0.625rem] text-muted">{t("filters.autofile_hint")}</p>
+    </section>
+  );
+}
+
 export default function RulesPane() {
   const { t } = useI18n();
   const [editing, setEditing] = createSignal<Connection | null>(null);
@@ -119,6 +311,8 @@ export default function RulesPane() {
         <h2 class="text-sm font-semibold text-txt">{t("filters.rules_title")}</h2>
       </header>
       <p class="text-xs text-muted">{t("filters.rules_desc")}</p>
+
+      <AutoFileRules />
 
       <section class="rounded-xl border border-rim bg-surface">
         <header class="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-rim">

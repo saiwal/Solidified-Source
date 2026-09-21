@@ -62,6 +62,9 @@ export interface MessageEntry {
   starred?: boolean;
   unseen?: boolean;
   folders?: string[];
+  /** Name of whoever put this in the stream when that isn't the author — the
+   *  resharer, or the group it came through. Absent on older cached entries. */
+  via?: string;
 }
 
 export interface MessagesPage {

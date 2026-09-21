@@ -1,12 +1,11 @@
 import { For, Index, Show, createSignal, createEffect, batch } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
-  parse, compile, FIELD_OPS,
+  parse, compile, FIELD_OPS, CORE_FIELDS,
   type FilterRules, type FilterField, type FilterOp,
 } from "@utsukta/spa-core/lib/filter-dsl";
 import { MdOutlineClose, MdOutlineAdd } from "solid-icons/md";
-
-const FIELDS = Object.keys(FIELD_OPS) as FilterField[];
+import SuggestInput from "./SuggestInput";
 
 const selectClass = `px-2 py-1.5 rounded-lg border border-rim bg-surface text-txt text-sm
   hover:border-rim-strong focus:outline-none focus:border-rim-strong transition-colors`;
@@ -26,9 +25,15 @@ export default function FilterRuleBuilder(props: {
   value: string;
   onChange: (v: string) => void;
   rows?: number;
+  /** Fields to offer. Defaults to the ones core can evaluate at delivery —
+   *  pass ALL_FIELDS only where the SPA evaluates the rule itself. */
+  fields?: FilterField[];
+  /** Per-field value suggestions, shown in SuggestInput's themed panel. */
+  suggest?: Partial<Record<FilterField, string[]>>;
 }) {
   const { t } = useI18n();
 
+  const fields = () => props.fields ?? CORE_FIELDS;
   const [rules, setRules] = createSignal<FilterRules>({ join: "any", conds: [] });
   const [raw, setRaw] = createSignal(false);
   const [locked, setLocked] = createSignal(false);
@@ -108,7 +113,7 @@ export default function FilterRuleBuilder(props: {
                 value={c().field}
                 onChange={(e) => patch(i, { field: e.currentTarget.value as FilterField })}
               >
-                <For each={FIELDS}>
+                <For each={fields()}>
                   {(f) => <option value={f}>{t(`filters.field_${f}` as any)}</option>}
                 </For>
               </select>
@@ -126,12 +131,13 @@ export default function FilterRuleBuilder(props: {
               </Show>
 
               <Show when={c().op !== "any"}>
-                <input
+                <SuggestInput
                   type={c().field === "until" ? "date" : c().op === "count" ? "number" : "text"}
                   min={c().op === "count" ? 1 : undefined}
                   value={c().value}
+                  items={props.suggest?.[c().field] ?? []}
                   placeholder={t(`filters.ph_${c().op === "count" ? "count" : c().field}` as any)}
-                  onInput={(e) => patch(i, { value: e.currentTarget.value })}
+                  onInput={(v) => patch(i, { value: v })}
                   class={textClass}
                 />
               </Show>
@@ -154,7 +160,7 @@ export default function FilterRuleBuilder(props: {
 
         <button
           type="button"
-          onClick={() => emit({ ...rules(), conds: [...rules().conds, { field: "text", op: "is", value: "" }] })}
+          onClick={() => emit({ ...rules(), conds: [...rules().conds, { field: fields()[0], op: FIELD_OPS[fields()[0]][0], value: "" }] })}
           class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rim text-xs
                  text-txt hover:border-rim-strong hover:bg-base transition-colors"
         >

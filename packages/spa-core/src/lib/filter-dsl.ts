@@ -14,10 +14,17 @@ export type FilterField =
   | "category"  // $name, $*
   | "lang"      // lang=xx / lang!=xx
   | "until"     // until=<date>
-  | "raw";      // ?field OP value — the escape hatch, passed through verbatim
+  // Sender matching. MessageFilter's ?field tester is flat-key only, so these
+  // read helper keys injected onto a copy of the row by FilesByRules.php. They
+  // only resolve there — core's delivery-time evaluator has no such keys — so
+  // they are offered by the auto-filing builder alone (see CORE_FIELDS).
+  | "author"      // ?filter_author_name
+  | "author_addr" // ?filter_author_addr
+  | "raw";        // ?field OP value — the escape hatch, passed through verbatim
 
-/** `is` = plain match, `not` = lang!= only, `any` = the `*` wildcard, `count` = `>N`. */
-export type FilterOp = "is" | "not" | "any" | "count";
+/** `is` = plain match, `not` = lang!= only, `any` = the `*` wildcard,
+ *  `count` = `>N`, `contains` = substring (`~=`). */
+export type FilterOp = "is" | "not" | "any" | "count" | "contains";
 
 export interface FilterCond {
   field: FilterField;
@@ -45,7 +52,27 @@ export const FIELD_OPS: Record<FilterField, FilterOp[]> = {
   category: ["is", "any"],
   lang: ["is", "not"],
   until: ["is"],
+  author: ["contains", "is"],
+  author_addr: ["is", "contains"],
   raw: ["is"],
+};
+
+/** Fields whose rules are evaluated by core at delivery — the connection and
+ *  channel filter boxes. */
+export const CORE_FIELDS: FilterField[] = [
+  "text", "regex", "hashtag", "mention", "category", "lang", "until", "raw",
+];
+
+/** Everything, for rules the SPA evaluates itself (inbox auto-filing). */
+export const ALL_FIELDS: FilterField[] = [
+  "text", "regex", "hashtag", "mention", "category", "author", "author_addr",
+  "lang", "until", "raw",
+];
+
+/** Item key each sender field reads — shared with the parser. */
+const AUTHOR_KEY: Record<"author" | "author_addr", string> = {
+  author: "?filter_author_name",
+  author_addr: "?filter_author_addr",
 };
 
 export function compileCond(c: FilterCond): string {
@@ -63,6 +90,9 @@ export function compileCond(c: FilterCond): string {
       return (c.op === "not" ? "lang!=" : "lang=") + value;
     case "until":
       return "until=" + value;
+    case "author":
+    case "author_addr":
+      return `${AUTHOR_KEY[c.field]} ${c.op === "is" ? "==" : "~="} ${value}`;
     case "regex":
       // A bare word is a common mistake — wrap it so it is a valid pattern.
       return /^\/.*\/[a-z]*$/.test(value) ? value : `/${value}/`;
@@ -97,6 +127,11 @@ function parseCond(raw: string): FilterCond | null {
   if (s.startsWith("lang!=")) return { field: "lang", op: "not", value: s.slice(6).trim() };
   if (s.startsWith("lang=")) return { field: "lang", op: "is", value: s.slice(5).trim() };
   if (s.startsWith("until=")) return { field: "until", op: "is", value: s.slice(6).trim() };
+  // Before the generic `?` fallback, or a sender rule would round-trip as raw.
+  for (const field of ["author", "author_addr"] as const) {
+    const m = s.match(new RegExp(`^\\${AUTHOR_KEY[field]} (==|~=) (.*)$`));
+    if (m) return { field, op: m[1] === "==" ? "is" : "contains", value: m[2].trim() };
+  }
   if (s.startsWith("?")) return { field: "raw", op: "is", value: s };
   if (s.startsWith("/")) return { field: "regex", op: "is", value: s };
   return { field: "text", op: "is", value: s };

@@ -12,6 +12,7 @@ registerModule({
   routes: [],
   frontendFeature: {
     label: () => useI18n().t("nav.excalidraw"),
+    description: () => useI18n().t("nav.excalidraw_desc"),
     defaultEnabled: false,
   },
 });

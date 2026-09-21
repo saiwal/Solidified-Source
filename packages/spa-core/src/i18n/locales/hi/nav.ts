@@ -25,6 +25,11 @@ export const nav: RawDictionary["nav"] = {
   games:         "गेम्स",
   excalidraw:    "Excalidraw",
   openstreetmap: "OpenStreetMap",
+  inbox_desc: "फ़ोल्डर, फ़िल्टर और ऑफ़लाइन पठन के साथ एकीकृत संदेश इनबॉक्स।",
+  tools_desc: "छोटे उपकरण: कन्वर्टर, जनरेटर और डायग्राम एडिटर।",
+  games_desc: "ब्राउज़र में खेले जाने वाले आकस्मिक गेम।",
+  excalidraw_desc: "व्हाइटबोर्ड ड्रॉइंग, /tools में और एडिटर बटन के रूप में।",
+  openstreetmap_desc: "पोस्ट और इवेंट के लिए मानचित्र एम्बेड करें और स्थान चुनें।",
   // action items
   profile:       "प्रोफ़ाइल",
   edit_profile:  "प्रोफ़ाइल संपादित करें",

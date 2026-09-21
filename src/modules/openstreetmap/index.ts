@@ -21,6 +21,7 @@ registerModule({
   routes: [],
   frontendFeature: {
     label: () => useI18n().t("nav.openstreetmap"),
+    description: () => useI18n().t("nav.openstreetmap_desc"),
     defaultEnabled: false,
   },
 });

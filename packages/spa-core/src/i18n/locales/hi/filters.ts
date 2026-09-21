@@ -48,4 +48,24 @@ export const filters: RawDictionary["filters"] = {
   rules_none:          "अभी कोई नियम नहीं।",
   connfilter_off:      "संपर्क फ़िल्टरिंग बंद है, इसलिए ये नियम अनदेखे रहते हैं।",
   connfilter_enable:   "चालू करें",
+
+  // Auto-filing rules (modules/inbox/rules.ts).
+  scope_autofile:       "स्वतः फ़ोल्डर में रखें",
+  rules_empty_autofile: "स्वतः रखने का कोई नियम नहीं।",
+  add_rule:             "नियम जोड़ें",
+  save_rule:            "नियम सहेजें",
+  cancel:               "रद्द करें",
+  rule_name:            "नियम का नाम (वैकल्पिक)",
+  rule_enabled:         "सक्रिय",
+  file_into:            "इसमें रखें",
+  folder:               "फ़ोल्डर",
+  rerun:                "पुराने संदेशों पर चलाएँ",
+  rerun_confirm:        "क्या इन नियमों को पहले से मौजूद संदेशों पर चलाएँ? जिन पोस्ट को आपने स्वयं फ़ोल्डर से हटाया था, वे दोबारा रखी जा सकती हैं।",
+  rerun_queued:         "अगली बार इनबॉक्स खुलने पर नियम चलेंगे।",
+  autofile_hint:        "नियम इनबॉक्स खुलने पर चलते हैं और अब से आने वाले संदेशों पर लागू होते हैं।",
+
+  // Sender matching (auto-filing only).
+  field_author:       "भेजने वाले का नाम",
+  field_author_addr:  "भेजने वाले का पता",
+  op_contains:        "शामिल है",
 };

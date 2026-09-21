@@ -1,6 +1,6 @@
 // node --experimental-strip-types packages/spa-core/src/lib/filter-dsl.test.ts
 import assert from "node:assert";
-import { parse, compile, type FilterRules } from "./filter-dsl.ts";
+import { parse, compile, CORE_FIELDS, ALL_FIELDS, FIELD_OPS, type FilterRules } from "./filter-dsl.ts";
 
 const rt = (s: string) => {
   const r = parse(s);
@@ -71,5 +71,27 @@ assert.equal(compile({ join: "all", conds: [
   { field: "text", op: "is", value: "summer" },
   { field: "text", op: "is", value: "  " },
 ] }), "summer");
+
+// Sender fields compile to the flat helper keys FilesByRules.php injects, and
+// must round-trip rather than falling through to the generic `?` escape hatch.
+rt("?filter_author_name ~= alice");
+rt("?filter_author_addr == alice@hub.de");
+assert.deepEqual(parse("?filter_author_name ~= alice")!.conds[0],
+  { field: "author", op: "contains", value: "alice" });
+assert.deepEqual(parse("?filter_author_addr == alice@hub.de")!.conds[0],
+  { field: "author_addr", op: "is", value: "alice@hub.de" });
+// An unrelated ?expression still lands in raw
+assert.equal(parse("?filter_author_zzz == x")!.conds[0].field, "raw");
+assert.equal(compile({ join: "all", conds: [
+  { field: "author", op: "is", value: "Alice" },
+  { field: "hashtag", op: "is", value: "rust" },
+] }), "?filter_author_name == Alice && #rust");
+
+// The sender fields resolve only where the SPA evaluates the rule itself, so
+// they must not be offered in the boxes core evaluates at delivery.
+assert(!CORE_FIELDS.includes("author") && !CORE_FIELDS.includes("author_addr"));
+assert(ALL_FIELDS.includes("author") && ALL_FIELDS.includes("author_addr"));
+// Every offered field needs at least one operator, or its row renders empty
+for (const f of ALL_FIELDS) assert(FIELD_OPS[f]?.length, `no ops for ${f}`);
 
 console.log("filter-dsl: ok");

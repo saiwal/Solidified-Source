@@ -4,6 +4,22 @@
 export type RawDictionary = {
   /** Message-filter rule builder. */
   filters: {
+    field_author:         string;
+    field_author_addr:    string;
+    op_contains:          string;
+    scope_autofile:       string;
+    rules_empty_autofile: string;
+    add_rule:             string;
+    save_rule:            string;
+    cancel:               string;
+    rule_name:            string;
+    rule_enabled:         string;
+    file_into:            string;
+    folder:               string;
+    rerun:                string;
+    rerun_confirm:        string;
+    rerun_queued:         string;
+    autofile_hint:        string;
     rules_title:         string;
     edit:                string;
     rules_desc:          string;
@@ -118,6 +134,11 @@ export type RawDictionary = {
     games:         string;
     excalidraw:    string;
     openstreetmap: string;
+    inbox_desc: string;
+    tools_desc: string;
+    games_desc: string;
+    excalidraw_desc: string;
+    openstreetmap_desc: string;
     // action items
     profile:       string;
     edit_profile:  string;
@@ -1888,6 +1909,7 @@ export type RawDictionary = {
     msg_tab_direct:       string;
     msg_tab_starred:      string;
     msg_tab_notices:      string;
+    via:                  string;
     msg_tab_folders:      string;
     no_folders:           string;
     filter_placeholder:   string;

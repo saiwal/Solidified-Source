@@ -25,6 +25,11 @@ export const nav: RawDictionary["nav"] = {
   games:         "Games",
   excalidraw:    "Excalidraw",
   openstreetmap: "OpenStreetMap",
+  inbox_desc: "Unified message inbox with folders, filters and offline reading.",
+  tools_desc: "Small utilities: converters, generators and diagram editors.",
+  games_desc: "Casual games playable in the browser.",
+  excalidraw_desc: "Whiteboard drawing, in /tools and as an editor button.",
+  openstreetmap_desc: "Embed maps and pick locations for posts and events.",
   // action items
   profile:       "Profile",
   edit_profile:  "Edit Profile",

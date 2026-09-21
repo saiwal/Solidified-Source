@@ -33,6 +33,18 @@ export type AuthState = {
   // pconfig system/page_mimetype — the channel's default format for new
   // webpages and blocks (Webpages.php:134, Blocks.php:84). '' = bbcode.
   pageMimetype: string;
+  /** pconfig spa/inbox_rules — auto-filing rules for the inbox. Rides the boot
+   *  payload like widget_layout does; see Concerns/FilesByRules.php. */
+  inboxRules: InboxRule[];
+};
+
+export type InboxRule = {
+  id: string;
+  name: string;
+  folder: string;
+  /** A message-filter DSL expression, compiled by lib/filter-dsl.ts. */
+  expr: string;
+  enabled: boolean;
 };
 
 const ANONYMOUS: AuthState = {
@@ -49,7 +61,19 @@ const ANONYMOUS: AuthState = {
   features: {},
   localOnlyPostsEnabled: false,
   pageMimetype: "",
+  inboxRules: [],
 };
+
+/** Stored as a JSON string in pconfig; a malformed blob must not break boot. */
+function parseInboxRules(raw: unknown): InboxRule[] {
+  if (typeof raw !== "string" || !raw) return [];
+  try {
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? (list as InboxRule[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 function channelNickFromUrl(): string {
   const parts = window.location.pathname.split("/").filter(Boolean);
@@ -145,6 +169,7 @@ async function fetchAuthState(): Promise<AuthState> {
     features: (data.features ?? {}) as Record<string, boolean>,
     localOnlyPostsEnabled: isLocal && data.spa?.local_only_posts === "1",
     pageMimetype: String(data.system?.page_mimetype ?? ""),
+    inboxRules: parseInboxRules(isLocal ? data.spa?.inbox_rules : undefined),
   };
 }
 // Singleton resource — fetched once at boot, shared across the app
@@ -163,6 +188,15 @@ export function setFeatureEnabled(name: string, enabled: boolean) {
   authActions.mutate((prev) =>
     prev ? { ...prev, features: { ...prev.features, [name]: enabled } } : prev,
   );
+}
+
+/** Patch the inbox rule list in place after a save, same reasoning as above. */
+export function setInboxRules(rules: InboxRule[]) {
+  authActions.mutate((prev) => (prev ? { ...prev, inboxRules: rules } : prev));
+}
+
+export function inboxRules(): InboxRule[] {
+  return authState()?.inboxRules ?? [];
 }
 
 // Convenience derived helpers

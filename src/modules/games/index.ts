@@ -19,6 +19,7 @@ registerModule({
   },
   frontendFeature: {
     label: () => useI18n().t("nav.games"),
+    description: () => useI18n().t("nav.games_desc"),
     defaultEnabled: false,
   },
 });
