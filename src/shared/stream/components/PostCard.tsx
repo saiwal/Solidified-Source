@@ -75,13 +75,12 @@ import { useNavData, useInstalledApps } from "@utsukta/spa-core/store/nav-store"
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useOsmMap } from "@utsukta/spa-core/lib/useOsmMap";
 import { DEFAULT_TMS, osmLink, osmSearchLink, parseCoord } from "@utsukta/spa-core/lib/osm";
-import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
+import { fetchEvents } from "@/modules/calendar/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { postHeightPx } from "@utsukta/spa-core/store/post-height";
-import { openPost } from "@/shared/views/modal-host";
+import { openEvent, openPost } from "@/shared/views/modal-host";
 import { createMediaQuery } from "@solid-primitives/media";
 import { excerptOf } from "../feedviews/postExcerpt";
-const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
 
 export type { StreamHandlers as PostActions };
 
@@ -248,7 +247,6 @@ export default function PostCard(props: {
   const [editTab, setEditTab] = createSignal<EditorTab>("wysiwyg");
   const [editSaving, setEditSaving] = createSignal(false);
   const [editError, setEditError] = createSignal<string | null>(null);
-  const [editingEvent, setEditingEvent] = createSignal<CalEvent | null>(null);
   const [eventEditLoading, setEventEditLoading] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
   const [following, setFollowing] = createSignal(
@@ -749,7 +747,7 @@ export default function PostCard(props: {
         toast.error(t("post.event_edit_unavailable"));
         return;
       }
-      setEditingEvent(found);
+      openEvent({ event: found });
     } catch {
       toast.error(t("post.event_edit_failed"));
     } finally {
@@ -2539,15 +2537,6 @@ export default function PostCard(props: {
         <div class="mt-3 text-sm text-muted animate-pulse">
           {t("post.loading_comments")}
         </div>
-      </Show>
-      <Show when={editingEvent()}>
-        {(ev) => (
-          <EventCreatorModal
-            event={ev()}
-            onClose={() => setEditingEvent(null)}
-            onEdited={() => setEditingEvent(null)}
-          />
-        )}
       </Show>
       <CommentThread
         comments={visibleComments()}

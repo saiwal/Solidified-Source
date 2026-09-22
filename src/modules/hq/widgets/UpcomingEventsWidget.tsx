@@ -2,7 +2,7 @@ import { createSignal, For, Show, onMount } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
-import EventCreatorModal from "@/modules/calendar/widgets/EventCreatorModal";
+import { openEvent } from "@/shared/views/modal-host";
 import DayDetailModal from "@/modules/calendar/views/DayDetailModal";
 import { localDay, todayKey } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -49,7 +49,6 @@ export default function UpcomingEventsWidget() {
   const [events, setEvents] = createSignal<CalEvent[]>([]);
   const [loading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
-  const [showCreator, setShowCreator] = createSignal(false);
   const [activeEvent, setActiveEvent] = createSignal<CalEvent | null>(null);
 
   async function load() {
@@ -82,7 +81,7 @@ export default function UpcomingEventsWidget() {
           </span>
           <button
             type="button"
-            onClick={() => setShowCreator(true)}
+            onClick={() => openEvent({ onCreated: load })}
             class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
                    bg-accent text-accent-fg hover:opacity-90 transition-opacity"
           >
@@ -109,7 +108,7 @@ export default function UpcomingEventsWidget() {
               <span class="text-xs">{t("hq.no_upcoming_events")}</span>
               <button
                 type="button"
-                onClick={() => setShowCreator(true)}
+                onClick={() => openEvent({ onCreated: load })}
                 class="text-xs text-accent hover:underline mt-1"
               >
                 {t("hq.create_one")}
@@ -182,13 +181,6 @@ export default function UpcomingEventsWidget() {
           </For>
         </div>
       </div>
-
-      <Show when={showCreator()}>
-        <EventCreatorModal
-          onClose={() => setShowCreator(false)}
-          onCreated={load}
-        />
-      </Show>
 
       <Show when={activeEvent()}>
         {(ev) => (

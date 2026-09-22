@@ -10,7 +10,7 @@ import {
 } from "../store";
 import type { CalEvent, CalRange } from "../api";
 import DayDetailModal from "../views/DayDetailModal";
-import EventCreatorModal from "./EventCreatorModal";
+import { openEvent } from "@/shared/views/modal-host";
 import MonthView from "../views/MonthView";
 import WeekView from "../views/WeekView";
 import DayView from "../views/DayView";
@@ -49,7 +49,6 @@ export default function CalendarContentWidget() {
   const [anchor, setAnchor] = createSignal(today);
   const [activeDay, setActiveDay] = createSignal<string | null>(null);
   const [showModal, setShowModal] = createSignal(false);
-  const [showCreator, setShowCreator] = createSignal(false);
 
   const fetchRange = createMemo(() => rangeForView(viewType(), anchor()));
 
@@ -188,7 +187,7 @@ export default function CalendarContentWidget() {
         <Show when={canCreate()}>
           <button
             type="button"
-            onClick={() => setShowCreator(true)}
+            onClick={() => openEvent({ onCreated: refreshCurrent })}
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                    bg-accent text-accent-fg hover:opacity-90 transition-opacity"
           >
@@ -261,12 +260,6 @@ export default function CalendarContentWidget() {
         />
       </Show>
 
-      <Show when={showCreator()}>
-        <EventCreatorModal
-          onClose={() => setShowCreator(false)}
-          onCreated={() => { setShowCreator(false); refreshCurrent(); }}
-        />
-      </Show>
     </div>
   );
 }

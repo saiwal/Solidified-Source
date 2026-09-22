@@ -36,6 +36,7 @@ const ArticleComposerModal = lazy(() => import("@/shared/editor/composers/Articl
 const CardComposerModal = lazy(() => import("@/shared/editor/composers/CardComposerModal"));
 const NoteComposerModal = lazy(() => import("@/shared/editor/composers/NoteComposerModal"));
 const PostDetailModal = lazy(() => import("./PostDetailModal"));
+const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BY_KIND: Record<ComposerKind, Component<any>> = {
@@ -45,6 +46,7 @@ const BY_KIND: Record<ComposerKind, Component<any>> = {
   card: CardComposerModal,
   note: NoteComposerModal,
   thread: PostDetailModal,
+  event: EventCreatorModal,
 };
 
 /**
@@ -105,6 +107,8 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
         onSaved={after("onSaved")}
         onClose={after("onClose")}
         onCancel={after("onCancel")}
+        onCreated={after("onCreated")}
+        onEdited={after("onEdited")}
       />
     </ComposerFrameContext.Provider>
   );

@@ -18,7 +18,7 @@ import {
   type ComposerMode,
 } from "@/shared/views/modal-host";
 import { draftSavedAt } from "../store/createComposerStore";
-import { MdOutlineArticle, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
+import { MdOutlineArticle, MdOutlineCalendar_today, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
 
 import Modal from "@/shared/views/Modal";
@@ -56,6 +56,9 @@ const KIND_ICON: Record<ComposerKind, () => JSX.Element> = {
   ),
   thread: () => (
     <MdOutlineForum class="w-4 h-4" />
+  ),
+  event: () => (
+    <MdOutlineCalendar_today class="w-4 h-4" />
   ),
 };
 
@@ -107,7 +110,8 @@ export default function ComposerModal(props: ComposerModalProps) {
   const dismiss = () => (frame && frame.kind !== "thread" ? frame.setMode("min") : props.onClose());
   // An opened post has no draft: its surface is not a composer, so Escape and
   // backdrop close it outright, and the global autosave flash isn't about it.
-  const isComposer = frame?.kind !== "thread";
+  // Same for the event form, which has no autosave for the flash to report.
+  const isComposer = frame?.kind !== "thread" && frame?.kind !== "event";
 
   // Autosave is silent by design, so the header says so briefly — otherwise a
   // writer has no signal that their draft is safe.

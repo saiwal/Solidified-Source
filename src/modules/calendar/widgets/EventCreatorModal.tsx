@@ -1,4 +1,4 @@
-import { createSignal, Show, For, onMount, onCleanup, createUniqueId } from "solid-js";
+import { createSignal, Show, For, onMount } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createEvent, editEvent } from "../api";
@@ -18,9 +18,9 @@ import CategoryTagsField from "@/shared/editor/components/CategoryTagsField";
 import { useCategoryTags } from "@/shared/editor/components/useCategoryTags";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { prevDay, nextDay, zonedTimeToUtc, utcToZonedDateTime } from "../views/calUtils";
-import { MdOutlineClose, MdOutlineExpand_more } from "solid-icons/md";
+import { MdOutlineExpand_more } from "solid-icons/md";
+import ComposerModal from "@/shared/editor/components/ComposerModal";
 
-import Modal from "@/shared/views/Modal";
 function timezones(): string[] {
   try {
     return Intl.supportedValuesOf("timeZone");
@@ -155,12 +155,6 @@ export default function EventCreatorModal(props: Props) {
   let titleRef!: HTMLInputElement;
   onMount(() => titleRef?.focus());
 
-  function onKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape") props.onClose();
-  }
-  window.addEventListener("keydown", onKeyDown);
-  onCleanup(() => window.removeEventListener("keydown", onKeyDown));
-
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     if (!title().trim()) { toast.error(t("calendar.title_required")); return; }
@@ -256,103 +250,139 @@ export default function EventCreatorModal(props: Props) {
     "bg-overlay border border-rim rounded-lg px-3 py-2 text-sm text-txt " +
     "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 w-full";
 
-  const titleId = createUniqueId();
+  // ComposerModal supplies the header, close button, Escape handling and — when
+  // opened through openEvent() — the dock/page/minimize modes.
   return (
-    <Modal
+    <ComposerModal
+      title={(isEdit ? t("calendar.edit_event") : t("calendar.new_event")) as string}
       onClose={props.onClose}
-      labelledBy={titleId}
-      bare
-      class="fixed inset-0 w-full h-full z-[60] flex items-center justify-center p-4 bg-black/50"
+      widthClass="max-w-md"
+      fitContent
     >
-      <div class="bg-surface border border-rim rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+      {/* Form */}
+      <form onSubmit={handleSubmit} class="flex-1 p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
 
-        {/* Header */}
-        <div class="flex items-center justify-between px-5 pt-5 pb-4 border-b border-rim shrink-0">
-          <h2 id={titleId} class="text-base font-semibold text-txt">
-            {isEdit ? t("calendar.edit_event") : t("calendar.new_event")}
-          </h2>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
-            aria-label="Close"
-          >
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
+        {/* Calendar picker — only shown when creating and multiple options exist */}
+        <Show when={!isEdit && calendarOptions().length > 1}>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-muted">{t("calendar.calendar_label")}</label>
+            <div class="relative">
+              <select
+                value={selectedCalIdx()}
+                onChange={(e) => setSelectedCalIdx(parseInt(e.currentTarget.value))}
+                class={inputClass + " appearance-none pr-8 cursor-pointer"}
+              >
+                <For each={calendarOptions()}>
+                  {(opt, i) => (
+                    <option value={i()}>{opt.label}</option>
+                  )}
+                </For>
+              </select>
+              {/* Color dot overlay */}
+              <span
+                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                style={{ background: calendarOptions()[selectedCalIdx()]?.color ?? "#3a87ad" }}
+              />
+              <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
+                <MdOutlineExpand_more class="w-3.5 h-3.5" />
+              </span>
+            </div>
+          </div>
+        </Show>
+
+        {/* Title */}
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-muted">{t("calendar.title_label")}</label>
+          <input
+            ref={titleRef!}
+            type="text"
+            required
+            placeholder={t("calendar.title_placeholder") as string}
+            value={title()}
+            onInput={(e) => setTitle(e.currentTarget.value)}
+            class={inputClass}
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} class="flex-1 p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
+        {/* All-day toggle */}
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={allDay()}
+            onChange={(e) => setAllDay(e.currentTarget.checked)}
+            class="w-4 h-4 rounded accent-accent"
+          />
+          <span class="text-sm text-txt">{t("calendar.all_day")}</span>
+        </label>
 
-          {/* Calendar picker — only shown when creating and multiple options exist */}
-          <Show when={!isEdit && calendarOptions().length > 1}>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-muted">{t("calendar.calendar_label")}</label>
-              <div class="relative">
-                <select
-                  value={selectedCalIdx()}
-                  onChange={(e) => setSelectedCalIdx(parseInt(e.currentTarget.value))}
-                  class={inputClass + " appearance-none pr-8 cursor-pointer"}
-                >
-                  <For each={calendarOptions()}>
-                    {(opt, i) => (
-                      <option value={i()}>{opt.label}</option>
-                    )}
-                  </For>
-                </select>
-                {/* Color dot overlay */}
-                <span
-                  class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
-                  style={{ background: calendarOptions()[selectedCalIdx()]?.color ?? "#3a87ad" }}
-                />
-                <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
-                  <MdOutlineExpand_more class="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
-          </Show>
-
-          {/* Title */}
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.title_label")}</label>
+        {/* Start */}
+        <div class="flex gap-2">
+          <div class="flex flex-col gap-1 flex-1">
+            <label class="text-xs font-medium text-muted">{t("calendar.start_label")}</label>
             <input
-              ref={titleRef!}
-              type="text"
+              type="date"
               required
-              placeholder={t("calendar.title_placeholder") as string}
-              value={title()}
-              onInput={(e) => setTitle(e.currentTarget.value)}
+              value={startDate()}
+              onInput={(e) => {
+                const v = e.currentTarget.value;
+                setStartDate(v);
+                // Keep a stale end date (e.g. left over from the day cell
+                // that opened this modal) from silently producing an
+                // end-before-start event.
+                if (endDate() < v) setEndDate(v);
+              }}
               class={inputClass}
             />
           </div>
+          <Show when={!allDay()}>
+            <div class="flex flex-col gap-1 w-28">
+              <label class="text-xs font-medium text-muted">{t("calendar.time_label")}</label>
+              <input
+                type="time"
+                value={startTime()}
+                onChange={(e) => setStartTime(e.currentTarget.value)}
+                class={inputClass}
+              />
+            </div>
+          </Show>
+        </div>
 
-          {/* All-day toggle */}
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={allDay()}
-              onChange={(e) => setAllDay(e.currentTarget.checked)}
-              class="w-4 h-4 rounded accent-accent"
-            />
-            <span class="text-sm text-txt">{t("calendar.all_day")}</span>
-          </label>
+        {/* Timezone — only when "Event Timezone Selection" is enabled and the event has a time */}
+        <Show when={tzSelectable && !allDay()}>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-muted">{t("calendar.timezone_label")}</label>
+            <select
+              value={timezone()}
+              onChange={(e) => setTimezone(e.currentTarget.value)}
+              class={inputClass + " appearance-none cursor-pointer"}
+            >
+              <For each={timezones()}>
+                {(tz) => <option value={tz}>{tz}</option>}
+              </For>
+            </select>
+          </div>
+        </Show>
 
-          {/* Start */}
+        {/* No-end toggle */}
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={nofinish()}
+            onChange={(e) => setNofinish(e.currentTarget.checked)}
+            class="w-4 h-4 rounded accent-accent"
+          />
+          <span class="text-sm text-txt">{t("calendar.no_end_time")}</span>
+        </label>
+
+        {/* End */}
+        <Show when={!nofinish()}>
           <div class="flex gap-2">
             <div class="flex flex-col gap-1 flex-1">
-              <label class="text-xs font-medium text-muted">{t("calendar.start_label")}</label>
+              <label class="text-xs font-medium text-muted">{t("calendar.end_label")}</label>
               <input
                 type="date"
-                required
-                value={startDate()}
-                onInput={(e) => {
-                  const v = e.currentTarget.value;
-                  setStartDate(v);
-                  // Keep a stale end date (e.g. left over from the day cell
-                  // that opened this modal) from silently producing an
-                  // end-before-start event.
-                  if (endDate() < v) setEndDate(v);
-                }}
+                value={endDate()}
+                onInput={(e) => setEndDate(e.currentTarget.value)}
                 class={inputClass}
               />
             </div>
@@ -361,170 +391,117 @@ export default function EventCreatorModal(props: Props) {
                 <label class="text-xs font-medium text-muted">{t("calendar.time_label")}</label>
                 <input
                   type="time"
-                  value={startTime()}
-                  onChange={(e) => setStartTime(e.currentTarget.value)}
+                  value={endTime()}
+                  onChange={(e) => setEndTime(e.currentTarget.value)}
                   class={inputClass}
                 />
               </div>
             </Show>
           </div>
+        </Show>
 
-          {/* Timezone — only when "Event Timezone Selection" is enabled and the event has a time */}
-          <Show when={tzSelectable && !allDay()}>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-muted">{t("calendar.timezone_label")}</label>
-              <select
-                value={timezone()}
-                onChange={(e) => setTimezone(e.currentTarget.value)}
-                class={inputClass + " appearance-none cursor-pointer"}
-              >
-                <For each={timezones()}>
-                  {(tz) => <option value={tz}>{tz}</option>}
-                </For>
-              </select>
-            </div>
-          </Show>
+        {/* Location */}
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-muted">{t("calendar.location_label")}</label>
+          <input
+            type="text"
+            placeholder={t("calendar.optional") as string}
+            value={location()}
+            onInput={(e) => setLocation(e.currentTarget.value)}
+            class={inputClass}
+          />
+        </div>
 
-          {/* No-end toggle */}
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={nofinish()}
-              onChange={(e) => setNofinish(e.currentTarget.checked)}
-              class="w-4 h-4 rounded accent-accent"
-            />
-            <span class="text-sm text-txt">{t("calendar.no_end_time")}</span>
-          </label>
-
-          {/* End */}
-          <Show when={!nofinish()}>
-            <div class="flex gap-2">
-              <div class="flex flex-col gap-1 flex-1">
-                <label class="text-xs font-medium text-muted">{t("calendar.end_label")}</label>
-                <input
-                  type="date"
-                  value={endDate()}
-                  onInput={(e) => setEndDate(e.currentTarget.value)}
-                  class={inputClass}
-                />
-              </div>
-              <Show when={!allDay()}>
-                <div class="flex flex-col gap-1 w-28">
-                  <label class="text-xs font-medium text-muted">{t("calendar.time_label")}</label>
-                  <input
-                    type="time"
-                    value={endTime()}
-                    onChange={(e) => setEndTime(e.currentTarget.value)}
-                    class={inputClass}
-                  />
-                </div>
-              </Show>
-            </div>
-          </Show>
-
-          {/* Location */}
+        {/* Categories — channel calendar only, mirroring core, which hides its own
+            category field unless the target is the channel calendar. */}
+        <Show when={isNativeTarget()}>
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.location_label")}</label>
-            <input
-              type="text"
-              placeholder={t("calendar.optional") as string}
-              value={location()}
-              onInput={(e) => setLocation(e.currentTarget.value)}
-              class={inputClass}
+            <label class="text-xs font-medium text-muted">{t("calendar.categories_label")}</label>
+            <CategoryTagsField
+              showLabel
+              hideLabel
+              tags={categoryTags.categoryTags}
+              pending={categoryTags.pendingCategory}
+              onPendingInput={categoryTags.setPendingCategory}
+              onKeyDown={categoryTags.onCategoryKeyDown}
+              onRemove={categoryTags.removeCategoryTag}
+              onBlur={() => {
+                if (categoryTags.pendingCategory().trim()) {
+                  categoryTags.addCategoryTag(categoryTags.pendingCategory());
+                }
+              }}
+              suggestions={categoryTags.suggestions}
+              activeSuggestion={categoryTags.activeSuggestion}
+              onSelectSuggestion={categoryTags.addCategoryTag}
+              placeholder={t("calendar.categories_placeholder") as string}
             />
           </div>
+        </Show>
 
-          {/* Categories — channel calendar only, mirroring core, which hides its own
-              category field unless the target is the channel calendar. */}
+        {/* Description */}
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-muted">{t("calendar.description_label")}</label>
+          <RichEditor
+            attach={attachActions}
+            body={description()}
+            onInput={setDescription}
+            capabilities={CAPABILITIES.comment}
+            tab={descriptionTab()}
+            onTabChange={setDescriptionTab}
+            onPasteFiles={(files) => attach.addUploads(files)}
+            placeholder={t("calendar.optional") as string}
+            minHeight="80px"
+            resizable
+          />
+          {/* Same shape as every composer: counts plus the borderless source
+              toggle here, upload/browse/camera in the toolbar, and the bar
+              reduced to attachment chips (it collapses when there are none). */}
+          <AttachmentBar
+            store={attach}
+            actions={attachActions}
+            nick={currentNick()}
+            accept="both"
+            onInsert={(bbcode) => setDescription(description() + "\n" + bbcodeToInsert(bbcode, "text/bbcode"))}
+            onAltChange={(att) => setDescription(patchInsertedAlt(description(), att, "text/bbcode"))}
+          />
+        </div>
+
+        {/* Actions */}
+        <div class="flex items-center gap-2 pt-1">
+          {/* Audience — channel calendar (native events) only; CalDAV
+              calendars have no ACL concept in this app. */}
           <Show when={isNativeTarget()}>
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-muted">{t("calendar.categories_label")}</label>
-              <CategoryTagsField
-                showLabel
-                hideLabel
-                tags={categoryTags.categoryTags}
-                pending={categoryTags.pendingCategory}
-                onPendingInput={categoryTags.setPendingCategory}
-                onKeyDown={categoryTags.onCategoryKeyDown}
-                onRemove={categoryTags.removeCategoryTag}
-                onBlur={() => {
-                  if (categoryTags.pendingCategory().trim()) {
-                    categoryTags.addCategoryTag(categoryTags.pendingCategory());
-                  }
-                }}
-                suggestions={categoryTags.suggestions}
-                activeSuggestion={categoryTags.activeSuggestion}
-                onSelectSuggestion={categoryTags.addCategoryTag}
-                placeholder={t("calendar.categories_placeholder") as string}
-              />
-            </div>
+            <AclPicker
+              mode={acl.mode()}
+              onModeChange={acl.setMode}
+              allowEntries={acl.allowEntries()}
+              denyEntries={acl.denyEntries()}
+              onToggle={acl.toggleEntry}
+              onClear={acl.clearEntries}
+            />
           </Show>
 
-          {/* Description */}
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.description_label")}</label>
-            <RichEditor
-              attach={attachActions}
-              body={description()}
-              onInput={setDescription}
-              capabilities={CAPABILITIES.comment}
-              tab={descriptionTab()}
-              onTabChange={setDescriptionTab}
-              onPasteFiles={(files) => attach.addUploads(files)}
-              placeholder={t("calendar.optional") as string}
-              minHeight="80px"
-              resizable
-            />
-            {/* Same shape as every composer: counts plus the borderless source
-                toggle here, upload/browse/camera in the toolbar, and the bar
-                reduced to attachment chips (it collapses when there are none). */}
-            <AttachmentBar
-              store={attach}
-              actions={attachActions}
-              nick={currentNick()}
-              accept="both"
-              onInsert={(bbcode) => setDescription(description() + "\n" + bbcodeToInsert(bbcode, "text/bbcode"))}
-              onAltChange={(att) => setDescription(patchInsertedAlt(description(), att, "text/bbcode"))}
-            />
+          <div class="flex gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={props.onClose}
+              class="px-4 py-1.5 rounded-lg text-xs font-medium text-muted hover:bg-elevated hover:text-txt transition-colors"
+            >
+              {t("calendar.cancel")}
+            </button>
+            <button
+              type="submit"
+              disabled={submitting()}
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg
+                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            >
+              {submitting()
+                ? (isEdit ? t("calendar.saving") : t("calendar.creating"))
+                : (isEdit ? t("calendar.save_event") : t("calendar.create_event"))}
+            </button>
           </div>
-
-          {/* Actions */}
-          <div class="flex items-center gap-2 pt-1">
-            {/* Audience — channel calendar (native events) only; CalDAV
-                calendars have no ACL concept in this app. */}
-            <Show when={isNativeTarget()}>
-              <AclPicker
-                mode={acl.mode()}
-                onModeChange={acl.setMode}
-                allowEntries={acl.allowEntries()}
-                denyEntries={acl.denyEntries()}
-                onToggle={acl.toggleEntry}
-                onClear={acl.clearEntries}
-              />
-            </Show>
-
-            <div class="flex gap-2 ml-auto">
-              <button
-                type="button"
-                onClick={props.onClose}
-                class="px-4 py-1.5 rounded-lg text-xs font-medium text-muted hover:bg-elevated hover:text-txt transition-colors"
-              >
-                {t("calendar.cancel")}
-              </button>
-              <button
-                type="submit"
-                disabled={submitting()}
-                class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg
-                       hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-              >
-                {submitting()
-                  ? (isEdit ? t("calendar.saving") : t("calendar.creating"))
-                  : (isEdit ? t("calendar.save_event") : t("calendar.create_event"))}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </Modal>
+        </div>
+      </form>
+    </ComposerModal>
   );
 }

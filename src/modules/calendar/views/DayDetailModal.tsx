@@ -14,7 +14,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import type { CalEvent } from "../api";
 import { deleteEvent } from "../api";
 import CategoryChips from "./CategoryChips";
-import EventCreatorModal from "../widgets/EventCreatorModal";
+import { openEvent } from "@/shared/views/modal-host";
 import { fmtEventRange } from "./calUtils";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
@@ -44,11 +44,22 @@ export default function DayDetailModal(props: Props) {
   // local channel on this server, same as CalView's header button.
   const canCreate = () => auth()?.isLocal === true;
   const [activeEventId, setActiveEventId] = createSignal<number | null>(null);
-  const [showCreator, setShowCreator] = createSignal(false);
-  const [editingEvent, setEditingEvent] = createSignal<CalEvent | null>(null);
+  // The creator is hosted by ModalHost, so this modal steps aside for it: left
+  // open, its showModal() would make a docked or minimized creator inert.
+  // Callbacks are read now — this component is disposed by the onClose below.
+  function create() {
+    const onCreated = props.onEventCreated;
+    props.onClose();
+    openEvent({ defaultDate: props.date, onCreated });
+  }
+  function edit(event: CalEvent) {
+    const onEdited = props.onEventEdited;
+    props.onClose();
+    openEvent({ event, onEdited });
+  }
 
   function onKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape" && !showCreator()) props.onClose();
+    if (e.key === "Escape") props.onClose();
   }
   window.addEventListener("keydown", onKeyDown);
   onCleanup(() => window.removeEventListener("keydown", onKeyDown));
@@ -87,7 +98,7 @@ export default function DayDetailModal(props: Props) {
               <Show when={canCreate()}>
                 <button
                   type="button"
-                  onClick={() => setShowCreator(true)}
+                  onClick={create}
                   class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium
                          bg-accent text-accent-fg hover:opacity-90 transition-opacity"
                 >
@@ -116,7 +127,7 @@ export default function DayDetailModal(props: Props) {
                   <Show when={canCreate()}>
                     <button
                       type="button"
-                      onClick={() => setShowCreator(true)}
+                      onClick={create}
                       class="text-xs text-accent hover:underline mt-1"
                     >
                       {t("calendar.add_event_here")}
@@ -156,7 +167,7 @@ export default function DayDetailModal(props: Props) {
                     <Show when={activeEventId() === ev.id}>
                       <EventDetailPanel
                         event={ev}
-                        onEdit={() => setEditingEvent(ev)}
+                        onEdit={() => edit(ev)}
                         onDeleted={() => {
                           setActiveEventId(null);
                           props.onEventDeleted?.();
@@ -170,28 +181,6 @@ export default function DayDetailModal(props: Props) {
           </div>
         </div>
       </Modal>
-
-      <Show when={showCreator()}>
-        <EventCreatorModal
-          defaultDate={props.date}
-          onClose={() => setShowCreator(false)}
-          onCreated={() => {
-            setShowCreator(false);
-            props.onEventCreated?.();
-          }}
-        />
-      </Show>
-
-      <Show when={editingEvent() !== null}>
-        <EventCreatorModal
-          event={editingEvent()!}
-          onClose={() => setEditingEvent(null)}
-          onEdited={() => {
-            setEditingEvent(null);
-            props.onEventEdited?.();
-          }}
-        />
-      </Show>
     </>
   );
 }

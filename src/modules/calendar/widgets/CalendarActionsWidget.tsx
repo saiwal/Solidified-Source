@@ -1,7 +1,7 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
-import EventCreatorModal from "./EventCreatorModal";
+import { openEvent } from "@/shared/views/modal-host";
 import { importCalendar } from "../api";
 import { nick as calNick, range as calRange, loadCalendar, monthRange } from "../store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -10,7 +10,6 @@ import { MdOutlineAdd, MdOutlineCalendar_today, MdOutlineFile_download, MdOutlin
 export default function CalendarActionsWidget() {
   const { t } = useI18n();
   const pageNick = usePageNick();
-  const [showCreator, setShowCreator] = createSignal(false);
   const [importing, setImporting] = createSignal(false);
 
   function getNick() {
@@ -56,7 +55,6 @@ export default function CalendarActionsWidget() {
   }
 
   function handleCreated() {
-    setShowCreator(false);
     const nick = getNick();
     if (nick) {
       const r = calRange();
@@ -82,7 +80,7 @@ export default function CalendarActionsWidget() {
           {/* New Event */}
           <button
             type="button"
-            onClick={() => setShowCreator(true)}
+            onClick={() => openEvent({ onCreated: handleCreated })}
             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                    bg-accent text-accent-fg hover:opacity-90 transition-opacity"
           >
@@ -120,12 +118,6 @@ export default function CalendarActionsWidget() {
         </div>
       </div>
 
-      <Show when={showCreator()}>
-        <EventCreatorModal
-          onClose={() => setShowCreator(false)}
-          onCreated={handleCreated}
-        />
-      </Show>
     </>
   );
 }

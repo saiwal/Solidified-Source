@@ -116,7 +116,9 @@ export function enforceModeRules(list: readonly ModeHolder[], id: string): void 
 /** Kinds the host knows how to mount — see ModalHost's component map. */
 /** `thread` is not a composer: an opened post (PostDetailModal), hosted here so
  *  it gets the same dock/page/min modes and survives navigation. */
-export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread";
+/** `event` is EventCreatorModal — a form with no autosaved draft; minimizing it
+ *  keeps it mounted, which is all the state it has. */
+export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread" | "event";
 
 /**
  * Provided per entry by `ModalHost`. Absent for the callsites that still
@@ -242,6 +244,20 @@ export function restoreComposer(id: string): void {
  */
 export function openPost(uuid: string, props: Record<string, unknown> = {}): string {
   return openComposer({ kind: "thread", scope: `thread:${uuid}`, title: "", props: { ...props, uuid } });
+}
+
+/**
+ * Open the event creator — `props.event` set means edit. Scope matches the
+ * creator's own attachment store key, so reopening surfaces the live form.
+ * `onCreated`/`onEdited` run before the entry leaves, as with every composer.
+ */
+export function openEvent(props: Record<string, unknown> & { event?: { id: string | number } } = {}): string {
+  return openComposer({
+    kind: "event",
+    scope: `event:${props.event?.id ?? "new"}`,
+    title: "",
+    props,
+  });
 }
 
 export function closeComposer(id: string): void {
