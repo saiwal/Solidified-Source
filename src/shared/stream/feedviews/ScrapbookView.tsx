@@ -4,7 +4,7 @@ import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry"
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
-import PostDetailModal from "@/shared/views/PostDetailModal";
+import { openPost } from "@/shared/views/modal-host";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -147,7 +147,6 @@ export function ScrapbookPlaceholder(props: { count?: number }) {
 
 export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: StreamHandlers }) {
   const { t } = useI18n();
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
   const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
   const colCount = useColumnCount(gridEl, 16, 4);
   const columns = createMemo(() => splitIntoColumns(props.posts, colCount()));
@@ -166,7 +165,7 @@ export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: St
                   {(post) => {
                     const src = firstImageSrc(post.body);
                     const rotate = pickFor(post.uuid, ROTATIONS);
-                    const onOpen = () => setModalUuid(post.uuid);
+                    const onOpen = () => openPost(post.uuid);
                     return src ? (
                       <PhotoCard post={post} src={src} rotate={rotate} handlers={props.handlers} onOpen={onOpen} />
                     ) : (
@@ -180,15 +179,6 @@ export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: St
         </div>
       </Show>
 
-      <Show when={modalUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => setModalUuid(null)}
-            handlers={props.handlers}
-          />
-        )}
-      </Show>
     </div>
   );
 }

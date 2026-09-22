@@ -16,6 +16,7 @@ export interface DisplaySettings {
   corner_radius: "none" | "sm" | "default" | "lg" | "xl";
   comment_order: "oldest_first" | "newest_first";
   composer_mode: "modal" | "dock" | "page";
+  post_mode: "modal" | "dock" | "page";
   thread_mode: "threaded" | "flat";
   show_emoji_images: number; // 0 | 1
 }

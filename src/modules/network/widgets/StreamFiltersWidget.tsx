@@ -19,7 +19,7 @@ import {
   MdFillRefresh,
   MdFillBookmark_add,
 } from "solid-icons/md";
-import { createSignal, createEffect, on, lazy, For, Show } from "solid-js";
+import { createSignal, createEffect, on, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts, saveSortPref } from "../store";
@@ -28,7 +28,7 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { addSavedSearch } from "../saved-searches";
 
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 
 // Minimum characters before the connection typeahead searches the server.
 const CONN_SEARCH_MIN_CHARS = 3;
@@ -194,7 +194,6 @@ export default function StreamFiltersWidget() {
   };
 
   const [importing, setImporting] = createSignal(false);
-  const [importedUuid, setImportedUuid] = createSignal<string | null>(null);
 
   function sp(overrides: Record<string, string | undefined>) {
     setSearchParams({ ...overrides }, { replace: true });
@@ -229,7 +228,7 @@ export default function StreamFiltersWidget() {
         toast.error(body?.error?.message ?? "Could not fetch post");
         return;
       }
-      setImportedUuid(body.data.uuid);
+      openPost(body.data.uuid, { onClose: () => sp({ search: undefined }) });
     } catch {
       toast.error("Network error — could not fetch post");
     } finally {
@@ -714,15 +713,6 @@ export default function StreamFiltersWidget() {
           </div>
         </Show>
       </div>
-
-      <Show when={importedUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => { setImportedUuid(null); sp({ search: undefined }); }}
-          />
-        )}
-      </Show>
     </div>
   );
 }

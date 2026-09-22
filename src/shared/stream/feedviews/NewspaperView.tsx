@@ -1,9 +1,9 @@
 // src/shared/stream/feedviews/NewspaperView.tsx
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
-import PostDetailModal from "@/shared/views/PostDetailModal";
+import { openPost } from "@/shared/views/modal-host";
 import EventCard from "../components/EventCard";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
@@ -263,8 +263,7 @@ export default function NewspaperView(props: {
 }) {
   const { t, locale } = useI18n();
   const nick = usePageNick();
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
-  const open = (post: Pick<Post, "uuid">) => setModalUuid(post.uuid);
+  const open = (post: Pick<Post, "uuid">) => openPost(post.uuid);
 
   // Events get their own dedicated column below — keep them out of the
   // lead/secondary/wire-copy article flow so they aren't shown twice.
@@ -395,15 +394,6 @@ export default function NewspaperView(props: {
         </div>
       </Show>
 
-      <Show when={modalUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => setModalUuid(null)}
-            handlers={props.handlers}
-          />
-        )}
-      </Show>
     </div>
   );
 }

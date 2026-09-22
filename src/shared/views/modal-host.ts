@@ -40,6 +40,14 @@ export const [defaultComposerMode, setDefaultComposerMode] = persistedSignal<
   Exclude<ComposerMode, "min">
 >("hz-composer-mode", "modal", oneOf("modal", "dock", "page"));
 
+/** Same, for an opened post (Settings → Display, separate from composers). */
+export const [defaultPostMode, setDefaultPostMode] = persistedSignal<
+  Exclude<ComposerMode, "min">
+>("hz-post-mode", "modal", oneOf("modal", "dock", "page"));
+
+const defaultModeFor = (kind: ComposerKind) =>
+  kind === "thread" ? defaultPostMode() : defaultComposerMode();
+
 export const isExpanded = (m: ComposerMode) => m !== "min";
 
 /** The minimum shape the invariants need — a real entry has more. */
@@ -106,7 +114,9 @@ export function enforceModeRules(list: readonly ModeHolder[], id: string): void 
 }
 
 /** Kinds the host knows how to mount — see ModalHost's component map. */
-export type ComposerKind = "post" | "dm" | "article" | "card" | "note";
+/** `thread` is not a composer: an opened post (PostDetailModal), hosted here so
+ *  it gets the same dock/page/min modes and survives navigation. */
+export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread";
 
 /**
  * Provided per entry by `ModalHost`. Absent for the callsites that still
@@ -174,12 +184,12 @@ export function openComposer(spec: OpenComposerSpec): string {
       spec.mode ??
         (isExpanded(existing.mode())
           ? existing.mode()
-          : (existing.restoreTo ?? defaultComposerMode())),
+          : (existing.restoreTo ?? defaultModeFor(existing.kind))),
     );
     return existing.id;
   }
 
-  const [mode, setMode] = createSignal<ComposerMode>(spec.mode ?? defaultComposerMode());
+  const [mode, setMode] = createSignal<ComposerMode>(spec.mode ?? defaultModeFor(spec.kind));
   const [docTitle, setDocTitle] = createSignal("");
   const entry: ComposerEntry = {
     id: `composer-${++seq}`,
@@ -221,7 +231,17 @@ export function setComposerMode(id: string, mode: ComposerMode): void {
 /** Restore a minimized composer to whatever it was before. */
 export function restoreComposer(id: string): void {
   const entry = entries().find((e) => e.id === id);
-  setComposerMode(id, entry?.restoreTo ?? defaultComposerMode());
+  if (entry) setComposerMode(id, entry.restoreTo ?? defaultModeFor(entry.kind));
+}
+
+/**
+ * Open a post's thread view, or bring forward the one already showing it.
+ * `props` go to PostDetailModal as-is — an `onClose` there runs before the
+ * entry leaves (see ModalHost's `after`). Feed `handlers` are deliberately not
+ * accepted: they close over a feed store that dies on navigation.
+ */
+export function openPost(uuid: string, props: Record<string, unknown> = {}): string {
+  return openComposer({ kind: "thread", scope: `thread:${uuid}`, title: "", props: { ...props, uuid } });
 }
 
 export function closeComposer(id: string): void {

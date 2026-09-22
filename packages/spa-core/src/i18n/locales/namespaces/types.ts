@@ -1395,6 +1395,8 @@ export type RawDictionary = {
     composer_mode_modal:     string;
     composer_mode_dock:      string;
     composer_mode_page:      string;
+    post_mode:               string;
+    post_mode_hint:          string;
     show_emoji_images:       string;
     show_emoji_images_hint:  string;
     bg_image_url:            string;

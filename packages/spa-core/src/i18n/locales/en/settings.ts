@@ -137,6 +137,8 @@ export const settings: RawDictionary["settings"] = {
   composer_mode_modal:     "Floating dialog",
   composer_mode_dock:      "Docked panel",
   composer_mode_page:      "Full page",
+  post_mode:               "Post window",
+  post_mode_hint:          "How an opened post shows by default. You can still dock, maximise or minimise each one.",
   show_emoji_images:       "Show emoticons (smilies) as images",
   show_emoji_images_hint:  "Render :shortcode: emoji as images when reading posts, comments, and titles. When off, the raw shortcode text is shown instead.",
   bg_image_url:            "Background",

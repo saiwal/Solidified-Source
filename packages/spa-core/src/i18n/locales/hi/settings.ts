@@ -145,6 +145,8 @@ export const settings: RawDictionary["settings"] = {
   composer_mode_modal:     "तैरता संवाद",
   composer_mode_dock:      "डॉक किया पैनल",
   composer_mode_page:      "पूरा पृष्ठ",
+  post_mode:               "पोस्ट विंडो",
+  post_mode_hint:          "खोली गई पोस्ट डिफ़ॉल्ट रूप से कैसे दिखे। हर पोस्ट को अलग से डॉक, बड़ा या छोटा भी किया जा सकता है।",
   bg_image_url:            "पृष्ठभूमि",
   bg_image_url_hint:       "प्रीसेट चुनें या कस्टम URL दर्ज करें। फिट मोड स्वचालित रूप से सेट होता है।",
   bg_clear:                "साफ़ करें",

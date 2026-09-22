@@ -137,6 +137,8 @@ export const settings: RawDictionary["settings"] = {
   composer_mode_modal:     "Schwebender Dialog",
   composer_mode_dock:      "Angedocktes Fenster",
   composer_mode_page:      "Ganze Seite",
+  post_mode:               "Beitragsfenster",
+  post_mode_hint:          "Wie ein geöffneter Beitrag standardmäßig angezeigt wird. Pro Beitrag weiterhin andock-, maximier- und minimierbar.",
   show_emoji_images:       "Emoticons (Smilies) als Bilder anzeigen",
   show_emoji_images_hint:  "Zeigt :shortcode:-Emoji beim Lesen von Beiträgen, Kommentaren und Titeln als Bilder an. Wenn deaktiviert, wird stattdessen der rohe Shortcode-Text angezeigt.",
   bg_image_url:            "Hintergrund",

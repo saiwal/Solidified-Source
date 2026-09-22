@@ -1,10 +1,10 @@
-import { createSignal, For, Show, onMount, lazy } from "solid-js";
+import { createSignal, For, Show, onMount } from "solid-js";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 
 type ScheduledPost = {
   iid: number;
@@ -41,7 +41,6 @@ export default function ScheduledPostsWidget() {
   const { t } = useI18n();
   const [posts, setPosts] = createSignal<ScheduledPost[]>([]);
   const [busy, setBusy] = createSignal<string | null>(null);
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
 
   async function load() {
     try {
@@ -86,7 +85,7 @@ export default function ScheduledPostsWidget() {
               <div
                 class="px-3.5 py-2.5 hover:bg-elevated transition-colors cursor-pointer"
                 classList={{ "opacity-50 pointer-events-none": busy() === post.uuid }}
-                onClick={() => setModalUuid(post.uuid)}
+                onClick={() => openPost(post.uuid, { onClose: () => void load() })}
               >
                 {/* The queue mixes wall posts and DMs — the same glyphs the
                     composer header and dock pills use, so a kind reads the same
@@ -138,16 +137,6 @@ export default function ScheduledPostsWidget() {
         </div>
       </div>
 
-      <Show when={modalUuid()}>
-        <PostDetailModal
-          uuid={modalUuid()!}
-          onClose={() => {
-            setModalUuid(null);
-            // Publish time / body may have changed via edit inside the modal.
-            void load();
-          }}
-        />
-      </Show>
     </Show>
   );
 }

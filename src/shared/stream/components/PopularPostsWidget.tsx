@@ -17,8 +17,6 @@ import {
   type Component,
   createEffect,
   on,
-  createSignal,
-  lazy,
   For,
   Show,
 } from "solid-js";
@@ -30,7 +28,7 @@ import DOMPurify from "dompurify";
 import type { StreamHandlers } from "../types";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { MdOutlineChat_bubble_outline } from "solid-icons/md";
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -106,7 +104,6 @@ function PopularPostRow(props: {
   handlers?: StreamHandlers;
   locale: string;
 }) {
-  const [showModal, setShowModal] = createSignal(false);
   const p = props.post;
 
   const snippet = () => {
@@ -119,7 +116,7 @@ function PopularPostRow(props: {
     <>
       <li>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => openPost(p.uuid)}
           class="w-full px-4 py-3 flex items-start gap-3 text-left
                  hover:bg-elevated transition-colors group"
         >
@@ -181,13 +178,6 @@ function PopularPostRow(props: {
         </button>
       </li>
 
-      <Show when={showModal()}>
-        <PostDetailModal
-          uuid={p.uuid}
-          onClose={() => setShowModal(false)}
-          handlers={props.handlers}
-        />
-      </Show>
     </>
   );
 }

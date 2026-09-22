@@ -6,7 +6,6 @@ import {
   Show,
   createMemo,
   onCleanup,
-  lazy,
 } from "solid-js";
 import { createStore, reconcile, unwrap, produce } from "solid-js/store";
 import { useNavigate } from "@solidjs/router";
@@ -50,7 +49,7 @@ import {
   switchChannel,
   type ManagedChannel,
 } from "@/modules/manage/api";
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -992,7 +991,6 @@ export default function NotificationsAside() {
   const [connStatus, setConnStatus] = createSignal<ConnStatus>("connecting");
   const [booted, setBooted] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
   const [showNotices, setShowNotices] = createSignal(false);
   const [showAnnouncements, setShowAnnouncements] = createSignal(false);
   const [showOtherChannels, setShowOtherChannels] = createSignal(false);
@@ -1132,7 +1130,7 @@ export default function NotificationsAside() {
           onClick: () => {
             const uuid = getDisplayUuid(n);
             const connId = connectionRequestId(n.notify_link);
-            if (uuid) setModalUuid(uuid);
+            if (uuid) openPost(uuid);
             else if (connId) openConnectionRequestModal(connId);
             else window.location.assign(resolveNotifyPath(n.notify_link ?? meta?.href));
           },
@@ -1403,12 +1401,6 @@ export default function NotificationsAside() {
 
   return (
     <>
-      <Show when={modalUuid()}>
-        <PostDetailModal
-          uuid={modalUuid()!}
-          onClose={() => setModalUuid(null)}
-        />
-      </Show>
 
       <div class="space-y-3">
         {/* Header */}
@@ -1494,7 +1486,7 @@ export default function NotificationsAside() {
         </div>
 
         <Show when={showNotices()}>
-          <NoticesSection open={showNotices()} onOpenModal={setModalUuid} />
+          <NoticesSection open={showNotices()} onOpenModal={openPost} />
         </Show>
 
         <Show when={showOtherChannels() && otherChannels().length > 0}>
@@ -1580,7 +1572,7 @@ export default function NotificationsAside() {
                       /* silent */
                     }
                   }}
-                  onOpenModal={(uuid) => setModalUuid(uuid)}
+                  onOpenModal={(uuid) => openPost(uuid)}
                 />
               )}
             </For>

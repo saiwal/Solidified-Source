@@ -6,13 +6,12 @@ import {
   createMemo,
   onMount,
   onCleanup,
-  lazy,
 } from "solid-js";
 import { splitIntoColumns, useColumnCount as useMasonryColumnCount } from "@utsukta/spa-core/lib/masonry";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
@@ -369,7 +368,6 @@ export default function MasonryView(props: {
   // instead of appearing as a second, disjointed grid below.
   appendingCount?: number;
 }) {
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
   const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
   const colCount = useColumnCount(gridEl);
   const items = createMemo<MasonryItem[]>(() => [
@@ -407,7 +405,7 @@ export default function MasonryView(props: {
                         <MasonryCard
                           post={post()}
                           handlers={props.handlers}
-                          onOpenModal={() => setModalUuid(post().uuid)}
+                          onOpenModal={() => openPost(post().uuid)}
                         />
                       )}
                     </Show>
@@ -417,15 +415,6 @@ export default function MasonryView(props: {
             )}
           </For>
         </div>
-      </Show>
-      <Show when={modalUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => setModalUuid(null)}
-            handlers={props.handlers}
-          />
-        )}
       </Show>
     </>
   );

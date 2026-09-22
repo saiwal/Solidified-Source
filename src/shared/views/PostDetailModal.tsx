@@ -1,12 +1,11 @@
 // src/shared/views/PostDetailModal.tsx
-import { type Component, createEffect, createMemo, createSignal, on, Show, onMount } from "solid-js";
+import { type Component, createEffect, createMemo, createSignal, on, Show, onMount, useContext } from "solid-js";
 import PostCard from "../stream/components/PostCard";
 import type { StreamHandlers, EditPayload } from "../stream/types";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { buildThreadTree, appendNewBranches, mergeReplies, applyBranchMeta } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
-import { BiRegularX } from "solid-icons/bi";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiDeleteItem, apiEditItem, apiFetchRemoteReplies, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -19,7 +18,8 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
 
-import Modal from "@/shared/views/Modal";
+import ComposerModal from "@/shared/editor/components/ComposerModal";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 function flatNodes(posts: Post[]): ThreadNode[] {
   return posts.map((p) => ({ ...p, children: [] }));
 }
@@ -152,7 +152,9 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   const commentOrder = useCommentOrder();
   const threadMode = useThreadMode();
   const navViewer = useNavViewer();
-  let dialogRef!: HTMLDivElement;
+  // Set when ModalHost mounts this (openPost) — the dock/page/min chrome then
+  // comes from ComposerModal, and the pill is named after the post.
+  const frame = useContext(ComposerFrameContext);
   let scrollRef!: HTMLDivElement;
   onMount(() => scrollRef?.focus());
 
@@ -474,35 +476,23 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       }
     : undefined;
 
+  const title = () =>
+    nodeData() && isDirectMessage(nodeData()!) ? t("post.dm_title") : t("post.modal_title");
+  createEffect(() => {
+    const n = nodeData();
+    if (frame && n) frame.setDocTitle(n.title || n.authorName);
+  });
+
+  // No header of its own: ComposerModal supplies it, and inline the host (the
+  // inbox reader) has its own toolbar with a Back button.
   const panel = (
         <div
-          ref={dialogRef}
-          aria-labelledby={props.inline ? "post-modal-title" : undefined}
+          aria-label={props.inline ? title() : undefined}
           tabindex="-1"
           class={props.inline
             ? "relative w-full h-full flex flex-col bg-base overflow-clip focus:outline-none"
-            : `relative w-full max-w-full lg:max-w-[50%] max-h-[90svh] flex flex-col
-               bg-base rounded-2xl shadow-2xl overflow-clip focus:outline-none`}
+            : "relative flex-1 min-h-0 flex flex-col bg-base overflow-clip focus:outline-none"}
         >
-          {/* Header. Suppressed inline: the host (the inbox reader) supplies its
-              own toolbar, with a Back button that does what the X does here. */}
-          <div
-            class="flex items-center justify-between px-5 py-3 shrink-0 border-b border-rim bg-surface"
-            classList={{ hidden: props.inline }}
-          >
-            <h2 id="post-modal-title" class="text-sm font-semibold text-muted">
-              {nodeData() && isDirectMessage(nodeData()!) ? t("post.dm_title") : t("post.modal_title")}
-            </h2>
-            <button
-              onClick={props.onClose}
-              class="p-1.5 rounded-lg hover:bg-elevated
-                     text-subtle hover:text-txt transition-colors"
-              aria-label={t("post.modal_close")}
-            >
-              <BiRegularX />
-            </button>
-          </div>
-
           {/* Scrollable body */}
           <div
             ref={scrollRef}
@@ -594,11 +584,13 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   // top of it — only this outermost view is ever inline.
   const nested = (
     <Show when={nestedUuid()}>
+      <ComposerFrameContext.Provider value={undefined}>
       <PostDetailModal
         uuid={nestedUuid()!}
         onClose={() => setNestedUuid(null)}
         handlers={props.handlers}
       />
+      </ComposerFrameContext.Provider>
     </Show>
   );
 
@@ -607,10 +599,9 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   return (
     <>
       {nested}
-      <Modal onClose={props.onClose} labelledBy="post-modal-title" bare
-             class="fixed inset-0 w-full h-full z-50 flex items-center justify-center p-4 bg-overlay/80">
+      <ComposerModal title={title()} onClose={props.onClose} widthClass="max-w-3xl">
         {panel}
-      </Modal>
+      </ComposerModal>
     </>
   );
 };

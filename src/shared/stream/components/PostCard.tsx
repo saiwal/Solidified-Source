@@ -78,7 +78,7 @@ import { DEFAULT_TMS, osmLink, osmSearchLink, parseCoord } from "@utsukta/spa-co
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { postHeightPx } from "@utsukta/spa-core/store/post-height";
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
 
 export type { StreamHandlers as PostActions };
@@ -260,9 +260,6 @@ export default function PostCard(props: {
   const [sourceLoading, setSourceLoading] = createSignal(false);
   const [sourceData, setSourceData] = createSignal<unknown>(null);
   const [rssImporting, setRssImporting] = createSignal(false);
-  const [rssImportedUuid, setRssImportedUuid] = createSignal<string | null>(
-    null,
-  );
   const [showFolderPicker, setShowFolderPicker] = createSignal(false);
   const [itemFolders, setItemFolders] = createSignal<string[]>([]);
   const [allFolders, setAllFolders] = createSignal<string[]>([]);
@@ -857,7 +854,7 @@ export default function PostCard(props: {
       );
       const body = await res.json();
       if (res.ok && body?.data?.uuid) {
-        setRssImportedUuid(body.data.uuid);
+        openPost(body.data.uuid);
       }
     } finally {
       setRssImporting(false);
@@ -2516,15 +2513,6 @@ export default function PostCard(props: {
         </div>
       </Show>
       {props.contextBanner}
-
-      <Show when={rssImportedUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => setRssImportedUuid(null)}
-          />
-        )}
-      </Show>
     </div>
   );
 }

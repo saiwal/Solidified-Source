@@ -1,5 +1,5 @@
 // src/shared/stream/feedviews/ListView.tsx
-import { For, Show, createSignal, lazy, onMount, onCleanup } from "solid-js";
+import { For, Show, createSignal, onMount, onCleanup } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, flattenThread, isRootPost } from "@utsukta/spa-core/lib/thread";
 import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
@@ -18,7 +18,7 @@ import { MdFillKeyboard_arrow_down, MdFillPush_pin, MdOutlineChat_bubble_outline
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
-const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -852,7 +852,6 @@ export default function ListView(props: {
   posts: ThreadNode[];
   handlers: StreamHandlers;
 }) {
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
   const { t } = useI18n();
   const auth = useAuth();
   const listBehavior = useListBehavior();
@@ -894,21 +893,12 @@ export default function ListView(props: {
                 post={post}
                 handlers={props.handlers}
                 index={i()}
-                onOpenModal={() => setModalUuid(post.uuid)}
+                onOpenModal={() => openPost(post.uuid)}
               />
             )
           }
         </For>
       </div>
-      <Show when={listBehavior() === "list" && modalUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => setModalUuid(null)}
-            handlers={props.handlers}
-          />
-        )}
-      </Show>
     </>
   );
 }

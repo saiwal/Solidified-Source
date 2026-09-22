@@ -35,6 +35,7 @@ const DMComposer = lazy(() => import("@/shared/editor/composers/DMComposer"));
 const ArticleComposerModal = lazy(() => import("@/shared/editor/composers/ArticleComposerModal"));
 const CardComposerModal = lazy(() => import("@/shared/editor/composers/CardComposerModal"));
 const NoteComposerModal = lazy(() => import("@/shared/editor/composers/NoteComposerModal"));
+const PostDetailModal = lazy(() => import("./PostDetailModal"));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BY_KIND: Record<ComposerKind, Component<any>> = {
@@ -43,6 +44,7 @@ const BY_KIND: Record<ComposerKind, Component<any>> = {
   article: ArticleComposerModal,
   card: CardComposerModal,
   note: NoteComposerModal,
+  thread: PostDetailModal,
 };
 
 /**
@@ -193,7 +195,7 @@ export default function ModalHost(props: {
                     <ComposerKindIcon kind={entry.kind} />
                     {/* What is being written, when it has a title — the generic
                         heading ("New Post") only until then. */}
-                    <span class="truncate">{entry.docTitle() || entry.title}</span>
+                    <span class="truncate">{entry.docTitle() || entry.title || t("post.modal_title")}</span>
                   </button>
                   <button
                     type="button"

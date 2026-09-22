@@ -1,9 +1,9 @@
 // src/shared/stream/feedviews/TimelineView.tsx
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
-import PostDetailModal from "@/shared/views/PostDetailModal";
+import { openPost } from "@/shared/views/modal-host";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -168,7 +168,6 @@ export function TimelinePlaceholder(props: { count?: number }) {
 
 export default function TimelineView(props: { posts: ThreadNode[]; handlers: StreamHandlers }) {
   const { t, locale } = useI18n();
-  const [modalUuid, setModalUuid] = createSignal<string | null>(null);
   const entries = createMemo(() => buildEntries(props.posts, locale()));
 
   return (
@@ -193,7 +192,7 @@ export default function TimelineView(props: { posts: ThreadNode[]; handlers: Str
                   <div class="relative">
                     <div class="absolute left-4 sm:left-6 top-7 w-3 h-3 -translate-x-1/2 rounded-full bg-accent ring-4 ring-base z-10" />
                     <div class="ml-9 sm:ml-14">
-                      <TimelineCard post={entry.post} handlers={props.handlers} onOpen={() => setModalUuid(entry.post.uuid)} />
+                      <TimelineCard post={entry.post} handlers={props.handlers} onOpen={() => openPost(entry.post.uuid)} />
                     </div>
                   </div>
                 )
@@ -203,15 +202,6 @@ export default function TimelineView(props: { posts: ThreadNode[]; handlers: Str
         </div>
       </Show>
 
-      <Show when={modalUuid()}>
-        {(uuid) => (
-          <PostDetailModal
-            uuid={uuid()}
-            onClose={() => setModalUuid(null)}
-            handlers={props.handlers}
-          />
-        )}
-      </Show>
     </div>
   );
 }

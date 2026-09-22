@@ -122,4 +122,13 @@ assert.deepEqual(store.composerEntries().map((e) => e.id), [idB]);
 assert.equal(byId(idB).mode(), "min");
 assert.equal(byId(idB).restoreTo, "dock", "…but it still remembers its mode");
 
+// ── openPost: one viewer per post, opened in the post pref, not the composer's ──
+store.setDefaultComposerMode("modal");
+store.setDefaultPostMode("dock");
+const p1 = store.openPost("u1");
+assert.equal(store.openPost("u1"), p1, "reopening a post focuses the live viewer");
+assert.equal(byId(p1).kind, "thread");
+assert.equal(byId(p1).mode(), "dock", "a post follows defaultPostMode");
+store.closeComposer(p1);
+
 console.log("modal-host: ok");

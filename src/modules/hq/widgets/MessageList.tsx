@@ -12,6 +12,7 @@ import {
   type Component,
 } from "solid-js";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
+import { openPost } from "@/shared/views/modal-host";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -739,7 +740,10 @@ export const MessageList: Component<{
     // The click a browser fires after a drag's pointerup must not also open
     // the message that was just filed.
     if (drag.takeDragFlag()) return;
-    setOpenMid(entry.b64mid);
+    // Outside the inbox a message opens in ModalHost (dockable, survives
+    // navigation); only the reader pane keeps it local.
+    if (props.reader) setOpenMid(entry.b64mid);
+    else openPost(entry.b64mid);
     setCursor(flatRows().findIndex((r) => r.b64mid === entry.b64mid));
     setCursorVisible(false);
   }
@@ -1011,11 +1015,6 @@ export const MessageList: Component<{
         </div>
       </Show>
 
-      {/* The modal is still how HQ's cards and the folder modal open a
-          message; only the inbox swaps it for the reader below. */}
-      <Show when={openMid() && !props.reader}>
-        <PostDetailModal uuid={openMid()!} onClose={() => setOpenMid(null)} />
-      </Show>
     </div>
 
     {/* Reader. Laid over the list rather than replacing it, so going back

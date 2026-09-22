@@ -18,7 +18,7 @@ import {
   type ComposerMode,
 } from "@/shared/views/modal-host";
 import { draftSavedAt } from "../store/createComposerStore";
-import { MdOutlineArticle, MdOutlineClose, MdOutlineDescription, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
+import { MdOutlineArticle, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
 
 import Modal from "@/shared/views/Modal";
@@ -53,6 +53,9 @@ const KIND_ICON: Record<ComposerKind, () => JSX.Element> = {
   ),
   note: () => (
     <MdOutlineDescription class="w-4 h-4" />
+  ),
+  thread: () => (
+    <MdOutlineForum class="w-4 h-4" />
   ),
 };
 
@@ -97,7 +100,10 @@ export default function ComposerModal(props: ComposerModalProps) {
 
   /** Escape and backdrop-click are recoverable when hosted (the composer keeps
    *  its state in the dock) and destructive when not, so they differ. */
-  const dismiss = () => (frame ? frame.setMode("min") : props.onClose());
+  const dismiss = () => (frame && frame.kind !== "thread" ? frame.setMode("min") : props.onClose());
+  // An opened post has no draft: its surface is not a composer, so Escape and
+  // backdrop close it outright, and the global autosave flash isn't about it.
+  const isComposer = frame?.kind !== "thread";
 
   // Autosave is silent by design, so the header says so briefly — otherwise a
   // writer has no signal that their draft is safe.
@@ -218,7 +224,7 @@ export default function ComposerModal(props: ComposerModalProps) {
                 {(f) => <ComposerKindIcon kind={f().kind} />}
               </Show>
               <h2 class="text-sm font-semibold text-txt truncate">{props.title}</h2>
-              <Show when={savedFlash()}>
+              <Show when={isComposer && savedFlash()}>
                 <span class="shrink-0 text-xs text-muted animate-pulse">
                   {t("editor.draft_saved")}
                 </span>
