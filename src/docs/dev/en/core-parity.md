@@ -112,6 +112,18 @@ Unrelated but adjacent, and it costs an hour every time it bites:
 recognised and returns a raw `PDOStatement` instead of rows. Keep `SELECT` on
 the first line.
 
+## Why the app item types still build their own datarray
+
+Cards, articles, webpages and blocks cannot go through `Item::post()`, even
+though core routes its own through it with `$_POST['webpage']`. Core derives
+`public_policy` only when `item_type === ITEM_TYPE_POST`
+(`Zotlabs\Module\Item::post:432-436`), so for these four it is always ''.
+
+`ResolvesAcl::aclFromScope()`'s `connections` scope puts the entire restriction
+in `public_policy` with an empty ACL, and `aclFromComposerInput()` passes one
+explicitly. Drop the field and `item_private` computes to 0 — a connections-only
+webpage or block becomes public. So these keep their own datarray on purpose.
+
 ## Still unverified
 
 - The event *create* datarray: `Channel_calendar::post()` could not be driven
