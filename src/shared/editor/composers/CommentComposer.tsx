@@ -12,10 +12,7 @@ import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
-import EditorStats from "../components/EditorStats";
-import { countWords } from "../lib/textStats";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
-import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
 interface Props {
   /** Parent item uuid — full-URL mids break the /spa/item/:id path (slashes). */
@@ -128,13 +125,6 @@ export default function CommentComposer(props: Props) {
           {/* Same row every composer uses: counts plus the borderless source
               toggle. Shown for every commenter — a remote/OWA one cannot
               upload, but can still switch to source and count their words. */}
-          <EditorStats
-            words={() => countWords(store.body())}
-            chars={() => store.body().length}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
-          />
 
           {/* Uploads go through wall_attach/:nick, so a remote/OWA commenter
               has no local nick to upload against and gets no bar at all. */}

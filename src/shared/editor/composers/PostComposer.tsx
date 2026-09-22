@@ -27,7 +27,6 @@ import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
 import { ComposerFrameContext } from "../store/composer-host";
 import ComposerShell from "../components/ComposerShell";
-import EditorStats from "../components/EditorStats";
 import { CAPABILITIES, type MimeType } from "../types/editor.types";
 import type { EditPayload } from "@utsukta/spa-core/lib/item-api";
 import AclPicker from "../components/AclPicker";
@@ -63,8 +62,6 @@ import EncryptToggle from "../components/EncryptToggle";
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
 // initial bundle.
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { countWords } from "../lib/textStats";
-import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -343,8 +340,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
     },
   );
 
-  const wordCount = () => countWords(store.body());
-  const charCount = () => store.body().length;
 
   // ── Draft extra — the type-specific fields createComposerStore doesn't
   // know about (ACL, expiry, location, delayed publish, no-comment, poll) ──
@@ -524,13 +519,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 />
               </Show>
 
-              <EditorStats
-                words={wordCount}
-                chars={charCount}
-                tab={store.tab()}
-                onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-                canWysiwyg={canUseWysiwyg(store.mimetype(), caps.nonBbcodeWysiwyg)}
-              />
             </>
           }
           editor={

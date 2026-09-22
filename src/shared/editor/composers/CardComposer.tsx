@@ -21,7 +21,6 @@ import { useMentionEmojiWiring } from "../mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "../mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell, { useEditorFloor } from "../components/ComposerShell";
-import EditorStats from "../components/EditorStats";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
@@ -38,7 +37,6 @@ import { IconButton } from "../components/buttons";
 import ComposerActionBar from "../components/ComposerActionBar";
 import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { countWords } from "../lib/textStats";
 import { fetchLinkMeta } from "../lib/linkMeta";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import {
@@ -80,7 +78,6 @@ export default function CardComposer(props: Props) {
   const floor = useEditorFloor();
   const { t } = useI18n();
   const caps = CAPABILITIES.card;
-  const [wordCount, setWordCount] = createSignal(0);
   const isEditing = () => !!props.initial?.uuid;
 
   // ── Scope (shared by both stores for matching IDB keys) ─────────────────────
@@ -386,13 +383,6 @@ export default function CardComposer(props: Props) {
   window.addEventListener("keydown", wiring.onKeyDown);
   onCleanup(() => window.removeEventListener("keydown", wiring.onKeyDown));
 
-  const charCount = () => store.body().length;
-
-  const onBodyChange = (v: string) => {
-    store.setBody(v);
-    const text = v.replace(/<[^>]*>/g, " ");
-    setWordCount(countWords(text));
-  };
 
   // The slug is never derived from the title as you type — it stays empty until
   // the user asks for one via SlugField's ↻ button (or types it by hand).
@@ -504,125 +494,114 @@ export default function CardComposer(props: Props) {
               hideLabel
             />
           </Show>
-
-          <EditorStats
-            words={wordCount}
-            chars={charCount}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
-
-          {/* Template sub-forms — the three assembled templates collect their
-              parts here instead of using the rich editor. */}
-          <Show when={template() !== "freeform"}>
-            <div class="shrink-0 space-y-4">
-              <Show when={template() === "quote"}>
-                <textarea
-                  rows="4"
-                  placeholder={t("cards.quote_text")}
-                  value={fields().quoteText}
-                  onInput={(e) => setField("quoteText")(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
-                />
-                <input
-                  type="text"
-                  placeholder={t("cards.quote_attribution")}
-                  value={fields().quoteAttribution}
-                  onInput={(e) => setField("quoteAttribution")(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-                />
-              </Show>
-
-              <Show when={template() === "definition"}>
-                <input
-                  type="text"
-                  placeholder={t("cards.definition_term")}
-                  value={fields().defTerm}
-                  onInput={(e) => setField("defTerm")(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-                />
-                <textarea
-                  rows="4"
-                  placeholder={t("cards.definition_body")}
-                  value={fields().defBody}
-                  onInput={(e) => setField("defBody")(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
-                />
-              </Show>
-
-              <Show when={template() === "link"}>
-                {/* URL + fetch. Blur auto-fills the empty fields above; the button
-                    forces a re-fetch that overwrites them. */}
-                <div class="flex items-center gap-2">
-                  <input
-                    type="url"
-                    placeholder={t("cards.link_url")}
-                    value={fields().linkUrl}
-                    onInput={(e) => {
-                      setField("linkUrl")(e.currentTarget.value);
-                      setMetaError(false);
-                    }}
-                    onBlur={() => void loadLinkMeta()}
-                    class={`flex-1 min-w-0 px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-                  />
-                  <IconButton
-                    title={metaLoading() ? t("cards.link_fetching") : t("cards.link_fetch")}
-                    onClick={() => void loadLinkMeta(true)}
-                  >
-                    <MdOutlineRefresh class="w-4 h-4" classList={{ "animate-spin": metaLoading() }} />
-                  </IconButton>
-                </div>
-
-                <Show when={metaError()}>
-                  <p class="text-xs text-red-500">{t("cards.link_fetch_failed")}</p>
-                </Show>
-
-                {/* Fetched thumbnail — opt in, since not every link wants one. */}
-                <Show when={fields().linkImage}>
-                  <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeImage()}
-                      onChange={(e) => setIncludeImage(e.currentTarget.checked)}
-                      class="accent-accent"
-                    />
-                    <img
-                      src={fields().linkImage}
-                      alt=""
-                      class="w-16 h-10 object-cover rounded border border-rim"
-                      onError={() => setFields((f) => ({ ...f, linkImage: "" }))}
-                    />
-                    {t("cards.link_include_image")}
-                  </label>
-                </Show>
-
-                <textarea
-                  rows="3"
-                  placeholder={t("cards.link_note")}
-                  value={fields().linkNote}
-                  onInput={(e) => setField("linkNote")(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
-                />
-              </Show>
-            </div>
-          </Show>
         </>
       }
       editor={
-        // Owns its own box (the shell is passed editorClass="contents"): the
-        // assembled templates hide the editor via classList, and the shell's
-        // default wrapper would keep reserving its min-height while hidden.
-        <div
-          ref={wiring.wrapperRef}
-          class={`flex-1 ${floor()} flex flex-col`}
-          classList={{ hidden: template() !== "freeform" }}
-        >
+        <>
+      {/* Template sub-forms — the three assembled templates collect their
+          parts here instead of using the rich editor, and take the editor's
+          slot so they fill the modal the same way it does. */}
+      <Show when={template() !== "freeform"}>
+        <div class={`flex-1 ${floor()} flex flex-col gap-4`}>
+            <Show when={template() === "quote"}>
+              <textarea
+                placeholder={t("cards.quote_text")}
+                value={fields().quoteText}
+                onInput={(e) => setField("quoteText")(e.currentTarget.value)}
+                class={`w-full flex-1 min-h-[88px] px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
+              />
+              <input
+                type="text"
+                placeholder={t("cards.quote_attribution")}
+                value={fields().quoteAttribution}
+                onInput={(e) => setField("quoteAttribution")(e.currentTarget.value)}
+                class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
+              />
+            </Show>
+
+            <Show when={template() === "definition"}>
+              <input
+                type="text"
+                placeholder={t("cards.definition_term")}
+                value={fields().defTerm}
+                onInput={(e) => setField("defTerm")(e.currentTarget.value)}
+                class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
+              />
+              <textarea
+                placeholder={t("cards.definition_body")}
+                value={fields().defBody}
+                onInput={(e) => setField("defBody")(e.currentTarget.value)}
+                class={`w-full flex-1 min-h-[88px] px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
+              />
+            </Show>
+
+            <Show when={template() === "link"}>
+              {/* URL + fetch. Blur auto-fills the empty fields above; the button
+                  forces a re-fetch that overwrites them. */}
+              <div class="flex items-center gap-2">
+                <input
+                  type="url"
+                  placeholder={t("cards.link_url")}
+                  value={fields().linkUrl}
+                  onInput={(e) => {
+                    setField("linkUrl")(e.currentTarget.value);
+                    setMetaError(false);
+                  }}
+                  onBlur={() => void loadLinkMeta()}
+                  class={`flex-1 min-w-0 px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
+                />
+                <IconButton
+                  title={metaLoading() ? t("cards.link_fetching") : t("cards.link_fetch")}
+                  onClick={() => void loadLinkMeta(true)}
+                >
+                  <MdOutlineRefresh class="w-4 h-4" classList={{ "animate-spin": metaLoading() }} />
+                </IconButton>
+              </div>
+
+              <Show when={metaError()}>
+                <p class="text-xs text-red-500">{t("cards.link_fetch_failed")}</p>
+              </Show>
+
+              {/* Fetched thumbnail — opt in, since not every link wants one. */}
+              <Show when={fields().linkImage}>
+                <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeImage()}
+                    onChange={(e) => setIncludeImage(e.currentTarget.checked)}
+                    class="accent-accent"
+                  />
+                  <img
+                    src={fields().linkImage}
+                    alt=""
+                    class="w-16 h-10 object-cover rounded border border-rim"
+                    onError={() => setFields((f) => ({ ...f, linkImage: "" }))}
+                  />
+                  {t("cards.link_include_image")}
+                </label>
+              </Show>
+
+              <textarea
+                placeholder={t("cards.link_note")}
+                value={fields().linkNote}
+                onInput={(e) => setField("linkNote")(e.currentTarget.value)}
+                class={`w-full flex-1 min-h-[88px] px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
+              />
+            </Show>
+        </div>
+      </Show>
+      {/* Freeform owns its own box (the shell is passed editorClass="contents"),
+          and the assembled templates above replace it rather than hiding it:
+          a `hidden` next to a reactive `class` (floor() tracks the frame mode)
+          was wiped on a dock<->modal switch. */}
+        <Show when={template() === "freeform"}>
+        <div ref={wiring.wrapperRef} class={`flex-1 ${floor()} flex flex-col`}>
           <RichEditor
             attach={attachActions}
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             wysiwygAvailable={wysiwygAvailable()}
-            onInput={onBodyChange}
+            onInput={store.setBody}
             capabilities={caps}
             tab={store.tab()}
             onTabChange={store.setTab}
@@ -644,6 +623,8 @@ export default function CardComposer(props: Props) {
             }}
           />
         </div>
+        </Show>
+        </>
       }
       panels={
         <>

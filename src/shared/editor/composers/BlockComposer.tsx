@@ -15,7 +15,6 @@ import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
 import { zenMode } from "@utsukta/spa-core/store/zen";
-import EditorStats from "../components/EditorStats";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
@@ -32,7 +31,6 @@ import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import ComposerActionBar from "../components/ComposerActionBar";
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { countWords } from "../lib/textStats";
 
 interface Props {
   nick: string;
@@ -168,8 +166,6 @@ export default function BlockComposer(props: Props) {
     autosaveExtra: () => buildDraftExtra(),
   });
 
-  const wordCount = () => countWords(store.body());
-  const charCount = () => store.body().length;
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
@@ -252,12 +248,6 @@ export default function BlockComposer(props: Props) {
             <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} />
           </Show>
 
-          <EditorStats
-            words={wordCount}
-            chars={charCount}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
         </>
       }
       editor={

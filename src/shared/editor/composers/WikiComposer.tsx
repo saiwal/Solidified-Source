@@ -6,12 +6,9 @@ import type { MimeType, EditorTab } from "../types/editor.types";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import FormatSelect from "../components/FormatSelect";
 import ComposerShell from "../components/ComposerShell";
-import EditorStats from "../components/EditorStats";
-import { countWords } from "../lib/textStats";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import { SecondaryButton } from "../components/buttons";
 import ComposerActionBar from "../components/ComposerActionBar";
-import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
@@ -72,13 +69,6 @@ export default function WikiComposer(props: Props) {
             />
           </Show>
 
-          <EditorStats
-            words={() => countWords(body())}
-            chars={() => body().length}
-            tab={tab()}
-            onToggleTab={() => setTab(tab() === "wysiwyg" ? "source" : "wysiwyg")}
-            canWysiwyg={canUseWysiwyg(mime(), caps.nonBbcodeWysiwyg)}
-          />
         </>
       }
       editor={

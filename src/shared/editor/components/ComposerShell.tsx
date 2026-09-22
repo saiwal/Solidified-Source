@@ -28,7 +28,7 @@ import { ComposerFrameContext } from "../store/composer-host";
  * The editor region's height floor, for the shell and for the two composers
  * that own that box themselves (CardComposer, NoteComposer).
  *
- * A docked panel is only 600px tall, so a 360px floor plus header, meta rows
+ * A docked panel is only 600px tall, so a 260px floor plus header, meta rows
  * and the action bar guarantees a scrollbar on the panel body — the one thing
  * docking exists to avoid. The editor is `flex-1` in every host, so lowering
  * the floor costs nothing where there IS height: it still fills the modal and
@@ -36,7 +36,7 @@ import { ComposerFrameContext } from "../store/composer-host";
  */
 export function useEditorFloor(): () => string {
   const frame = useContext(ComposerFrameContext);
-  return () => (frame?.mode() === "dock" ? "min-h-[180px]" : "min-h-[360px]");
+  return () => (frame?.mode() === "dock" ? "min-h-[180px]" : "min-h-[260px]");
 }
 
 /**
@@ -67,9 +67,8 @@ export interface ComposerShellProps {
   actions: JSX.Element;
   /**
    * Overrides the editor region's wrapper classes. Pass "contents" when the
-   * composer must own that box itself — CardComposer hides its editor with
-   * classList for the assembled templates, and a wrapper with a fixed
-   * min-height would otherwise reserve 360px of dead space while it is hidden.
+   * composer must own that box itself — CardComposer swaps its editor for the
+   * assembled templates' sub-forms, and each branch applies the floor itself.
    */
   editorClass?: string;
   /**

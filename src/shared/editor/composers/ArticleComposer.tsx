@@ -37,9 +37,7 @@ import ComposerActionBar from "../components/ComposerActionBar";
 import { MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import DateTimePicker from "../components/DateTimePicker";
 import ComposerShell from "../components/ComposerShell";
-import EditorStats from "../components/EditorStats";
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { countWords } from "../lib/textStats";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 
 interface Props {
@@ -77,7 +75,6 @@ interface Props {
 export default function ArticleComposer(props: Props) {
   const { t } = useI18n();
   const caps = CAPABILITIES.article;
-  const [wordCount, setWordCount] = createSignal(0);
   const isEditing = () => !!props.initial?.uuid;
 
   // ── Scope (shared by both stores for matching IDB keys) ─────────────────────
@@ -310,13 +307,6 @@ export default function ArticleComposer(props: Props) {
   window.addEventListener("keydown", wiring.onKeyDown);
   onCleanup(() => window.removeEventListener("keydown", wiring.onKeyDown));
 
-  const charCount = () => store.body().length;
-
-  const onBodyChange = (v: string) => {
-    store.setBody(v);
-    const text = v.replace(/<[^>]*>/g, " ");
-    setWordCount(countWords(text));
-  };
 
   // The slug is never derived from the title as you type — it stays empty until
   // the user asks for one via SlugField's ↻ button (or types it by hand).
@@ -410,12 +400,6 @@ export default function ArticleComposer(props: Props) {
             />
           </Show>
 
-          <EditorStats
-            words={wordCount}
-            chars={charCount}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
         </>
       }
       editor={
@@ -425,7 +409,7 @@ export default function ArticleComposer(props: Props) {
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
             wysiwygAvailable={wysiwygAvailable()}
-            onInput={onBodyChange}
+            onInput={store.setBody}
             capabilities={caps}
             tab={store.tab()}
             onTabChange={store.setTab}

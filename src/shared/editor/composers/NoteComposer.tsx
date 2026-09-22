@@ -8,9 +8,7 @@ import type { MimeType } from "../types/editor.types";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell, { useEditorFloor } from "../components/ComposerShell";
-import EditorStats from "../components/EditorStats";
 import { zenMode } from "@utsukta/spa-core/store/zen";
-import { countWords } from "../lib/textStats";
 import ComposerActionBar from "../components/ComposerActionBar";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { createAttachmentStore } from "../attachments/useAttachments";
@@ -172,12 +170,6 @@ export default function NoteComposer(props: Props) {
       meta={
         <Show when={!props.minimal}>
           {notebookField()}
-          <EditorStats
-            words={() => countWords(store.body())}
-            chars={() => store.body().length}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
         </Show>
       }
       editor={

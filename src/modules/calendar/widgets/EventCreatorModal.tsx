@@ -10,8 +10,6 @@ import { CAPABILITIES, type EditorTab } from "@/shared/editor/types/editor.types
 import AttachmentBar from "@/shared/editor/attachments/AttachmentBar";
 import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
 import { useAttachmentActions } from "@/shared/editor/attachments/useAttachmentActions";
-import EditorStats from "@/shared/editor/components/EditorStats";
-import { countWords } from "@/shared/editor/lib/textStats";
 import { bbcodeToInsert, patchInsertedAlt } from "@/shared/editor/attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AclPicker, { aclModeToScope } from "@/shared/editor/components/AclPicker";
@@ -480,12 +478,6 @@ export default function EventCreatorModal(props: Props) {
             {/* Same shape as every composer: counts plus the borderless source
                 toggle here, upload/browse/camera in the toolbar, and the bar
                 reduced to attachment chips (it collapses when there are none). */}
-            <EditorStats
-              words={() => countWords(description())}
-              chars={() => description().length}
-              tab={descriptionTab()}
-              onToggleTab={() => setDescriptionTab(descriptionTab() === "wysiwyg" ? "source" : "wysiwyg")}
-            />
             <AttachmentBar
               store={attach}
               actions={attachActions}

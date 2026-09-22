@@ -33,8 +33,6 @@ import ComposerActionBar from "../components/ComposerActionBar";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
-import EditorStats from "../components/EditorStats";
-import { countWords } from "../lib/textStats";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
@@ -337,12 +335,6 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                 />
               </div>
 
-              <EditorStats
-                words={() => countWords(store.body())}
-                chars={() => store.body().length}
-                tab={store.tab()}
-                onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-              />
 
               {/* ── Editor area — fills the remaining modal height; the surface
                    inside RichEditor scrolls internally past long text while the

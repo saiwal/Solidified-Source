@@ -383,9 +383,13 @@ const MessageItem: Component<{
           transition-colors duration-150 relative cursor-pointer touch-pan-y
           hover:bg-overlay
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent
-          ${isAnyUnseen() ? "bg-accent-muted" : ""}
         `}
         classList={{
+          // Lives here, not in the class string above: a reactive `class`
+          // rewrites className wholesale and drops whatever classList had
+          // applied, so the cursor/selection classes below would vanish the
+          // moment a row was marked seen.
+          "bg-accent-muted": isAnyUnseen(),
           // bg-inherit on the action rail needs the row to actually paint a
           // background; HQ's rows stay transparent on their card.
           "bg-base": !!props.actions && !isAnyUnseen(),

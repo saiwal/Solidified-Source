@@ -1,6 +1,6 @@
 import { POST_PROSE } from "@/shared/lib/prose";
 import { createEffect, createSignal, onCleanup, useContext, For, Show, type JSX } from "solid-js";
-import { ZenToggleButton } from "../components/EditorStats";
+import EditorStats, { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { ComposerFrameContext } from "../store/composer-host";
@@ -8,6 +8,7 @@ import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
+import { countWords } from "../lib/textStats";
 import EditorToolbar from "./EditorToolbar";
 import { sourceToHtml, hydrateShareEmbeds, hydrateCardEmbeds, hydrateLatexEmbeds } from "./sourceToHtml";
 import { completesMarkdownBlock } from "./markdownProtect";
@@ -94,6 +95,13 @@ export default function RichEditor(props: Props) {
   const minH = () =>
     props.minHeight ??
     (props.capabilities.toolbar === "comment" ? "130px" : "150px");
+  // In fill mode the bounded ancestor (ComposerShell's floor) sets the height,
+  // so the caller's 150px floor only stops the surface shrinking — in a docked
+  // panel that pushed the stats row and the toolbar out of view. 60px instead
+  // of 0: an ancestor that is momentarily unbounded (a dock panel mid-layout)
+  // would otherwise collapse the surface to nothing, and 60 + stats + a
+  // two-row toolbar still fits the 180px docked floor.
+  const surfaceMinH = () => (props.fill ? "60px" : minH());
   // A ceiling so the surface scrolls internally instead of growing forever —
   // in px/vh (never %) so it self-caps even when nothing above it in the DOM
   // gives it a bounded height to grow against (e.g. plain page-flow composers).
@@ -464,7 +472,7 @@ export default function RichEditor(props: Props) {
           onClick={onEditorClick}
           onBlur={onEditorBlur}
           data-placeholder={props.placeholder ?? t("editor.write_placeholder")}
-          style={{ "min-height": minH(), "max-height": maxH() }}
+          style={{ "min-height": surfaceMinH(), "max-height": maxH() }}
           class={`${surfaceGrowClass()} overflow-y-auto ${surfaceSkin()} p-3 outline-none text-sm text-txt
                  ${POST_PROSE} prose-p:my-1
                  [&_img]:max-w-full [&_img]:h-auto
@@ -483,7 +491,7 @@ export default function RichEditor(props: Props) {
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onDrop={handleDrop}
-          style={{ "min-height": minH(), "max-height": maxH() }}
+          style={{ "min-height": surfaceMinH(), "max-height": maxH() }}
           class={`${surfaceGrowClass()} overflow-y-auto ${surfaceSkin()} w-full p-3 text-sm font-mono text-txt outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
           placeholder={
             mime() === "text/markdown"
@@ -499,6 +507,18 @@ export default function RichEditor(props: Props) {
             <ZenToggleButton />
           </div>
         </Show>
+      </div>
+
+      {/* Counts + source toggle, tucked between the typing surface and the
+           toolbar so every composer shows them in the same place. */}
+      <div class={`shrink-0 px-2 pb-1 ${props.capabilities.toolbar === "none" ? "" : "bg-elevated"}`}>
+        <EditorStats
+          words={() => countWords(props.body)}
+          chars={() => props.body.length}
+          tab={tab()}
+          onToggleTab={() => props.onTabChange(tab() === "wysiwyg" ? "source" : "wysiwyg")}
+          canWysiwyg={wysiwygAllowed()}
+        />
       </div>
 
       {/* ── Unified toolbar (wysiwyg + source tabs) — docked at the bottom

@@ -20,7 +20,6 @@ import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell from "../components/ComposerShell";
 import { zenMode } from "@utsukta/spa-core/store/zen";
-import EditorStats from "../components/EditorStats";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
@@ -38,7 +37,6 @@ import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import SummaryField from "../components/SummaryField";
 import ComposerActionBar from "../components/ComposerActionBar";
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { countWords } from "../lib/textStats";
 
 interface Props {
   profileUid: number;
@@ -214,8 +212,6 @@ export default function WebpageComposer(props: Props) {
     autosaveExtra: () => buildDraftExtra(),
   });
 
-  const wordCount = () => countWords(store.body());
-  const charCount = () => store.body().length;
 
   // ── Draft extra — layout template + ACL, which createComposerStore
   // doesn't know about ──
@@ -378,12 +374,6 @@ export default function WebpageComposer(props: Props) {
             </Show>
           </div>
 
-          <EditorStats
-            words={wordCount}
-            chars={charCount}
-            tab={store.tab()}
-            onToggleTab={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          />
         </>
       }
       editor={
