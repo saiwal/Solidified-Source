@@ -8,7 +8,7 @@ import { useListBehavior, setListBehavior, type ListBehavior } from "@utsukta/sp
 import { scrollStylePref, setScrollStyle, type ScrollStyle } from "@utsukta/spa-core/store/scroll-style";
 import { usePostHeight, setPostHeight } from "@utsukta/spa-core/store/post-height";
 import { useCommentOrder, setCommentOrder, type CommentOrder } from "@utsukta/spa-core/store/comment-order";
-import { defaultComposerMode, setDefaultComposerMode } from "@/shared/editor/store/composer-host";
+import { defaultComposerMode, setDefaultComposerMode } from "@/shared/views/modal-host";
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
 import { setEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";

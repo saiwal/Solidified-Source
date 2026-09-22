@@ -16,7 +16,7 @@ import {
   ComposerFrameContext,
   type ComposerKind,
   type ComposerMode,
-} from "../store/composer-host";
+} from "@/shared/views/modal-host";
 import { draftSavedAt } from "../store/createComposerStore";
 import { MdOutlineArticle, MdOutlineClose, MdOutlineDescription, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
@@ -28,7 +28,7 @@ import Modal from "@/shared/views/Modal";
 // mode always has real space to grow into; only the body region scrolls,
 // and only as a fallback once its flex children can't fit.
 //
-// When mounted by ComposerHost it also gets the dock/page/minimize modes.
+// When mounted by ModalHost it also gets the dock/page/minimize modes.
 // Those only ever swap CLASSES on the elements below — never the tree shape —
 // because remounting takes RichEditor's contenteditable, caret and undo
 // history with it (same reason ComposerShell hides its zen regions with a

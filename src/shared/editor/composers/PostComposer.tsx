@@ -25,7 +25,7 @@ import { MdOutlineClose, MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOu
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
-import { ComposerFrameContext } from "../store/composer-host";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 import ComposerShell from "../components/ComposerShell";
 import { CAPABILITIES, type MimeType } from "../types/editor.types";
 import type { EditPayload } from "@utsukta/spa-core/lib/item-api";

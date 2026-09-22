@@ -4,7 +4,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { listServerDrafts, saveServerDraft, deleteServerDraft } from "../api/drafts";
 import { isEncryptedBody } from "@utsukta/spa-core/lib/postCrypto";
-import { ComposerFrameContext } from "./composer-host";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 import type { MimeType, ComposerMeta } from "../types/editor.types";
 
 export type SubmitFn = (body: string, meta: ComposerMeta) => Promise<void>;

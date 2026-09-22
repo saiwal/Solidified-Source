@@ -5,7 +5,7 @@ import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import { resetPosts, loadArticles } from "../store";
 import { useIsArticlesList } from "../lib/isArticlesList";
 

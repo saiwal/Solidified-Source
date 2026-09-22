@@ -10,7 +10,7 @@ import { useParams, A, useNavigate } from "@solidjs/router";
 import { fetchCard, deleteCard } from "../api";
 import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
@@ -120,7 +120,7 @@ export default function CardView() {
   });
 
   // ── Editing / deleting ────────────────────────────────────────────────────
-  // The editor is handed to ComposerHost, so it can be docked or minimized
+  // The editor is handed to ModalHost, so it can be docked or minimized
   // while the card itself stays on screen. `initial` is read eagerly here, as
   // the <Show>-mounted modal used to do on open. refetch() is this route's
   // resource: saving after the reader navigated away is a harmless no-op.

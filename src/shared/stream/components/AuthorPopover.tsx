@@ -10,7 +10,7 @@ import { addConnection } from "@/modules/directory/people/api";
 import { fetchConnectionByAddress } from "@/modules/directory/connections/api";
 import type { Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import { createRoom } from "@/modules/chat/api";
 import { blockChannel, blockChannelFromSite } from "@utsukta/spa-core/lib/blocklist-api";
 import { useNavigate } from "@solidjs/router";
@@ -51,7 +51,7 @@ export default function AuthorPopover(props: Props) {
   const [open, setOpen] = createSignal(false);
   const [connState, setConnState] = createSignal<ConnState>({ tag: "idle" });
   const [editOpen, setEditOpen] = createSignal(false);
-  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // Handed to ModalHost so a half-written DM survives navigation. The scope
   // carries the recipient, so DMs to two different people are two composers
   // with two drafts rather than one that overwrites the other.
   const openDm = (r: {

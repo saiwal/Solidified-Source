@@ -3,7 +3,7 @@ import { useNavigate } from "@solidjs/router";
 import { storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import type { SavedDraft } from "@/shared/editor/store/createComposerStore";
 import { listServerDrafts, deleteServerDraft, draftsVersion } from "@/shared/editor/api/drafts";
-import { openComposer, type ComposerKind } from "@/shared/editor/store/composer-host";
+import { openComposer, type ComposerKind } from "@/shared/views/modal-host";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
@@ -120,7 +120,7 @@ export default function DraftsWidget() {
 
   onMount(loadAll);
 
-  // Composers are mounted by ComposerHost now, so one can publish a draft from
+  // Composers are mounted by ModalHost now, so one can publish a draft from
   // another page entirely — there is no per-composer callback that could refresh
   // this list. deleteServerDraft bumps draftsVersion; that is the signal.
   // (Same wiring as DraftsWidgetBase, which the per-module drafts widgets use.)

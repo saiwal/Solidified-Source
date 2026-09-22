@@ -22,7 +22,7 @@
 
 import { Show, onCleanup, createContext, useContext, type Component, type JSX } from "solid-js";
 import { zenMode, setZenMode } from "@utsukta/spa-core/store/zen";
-import { ComposerFrameContext } from "../store/composer-host";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 
 /**
  * The editor region's height floor, for the shell and for the two composers
@@ -92,7 +92,7 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
   // next composer would open straight into it.
   // ponytail: any shell's unmount clears it, not just the one in zen. While zen
   // is on, the other shells are behind an opaque overlay and unreachable — but
-  // with ComposerHost keeping several composers mounted, closing a *minimized*
+  // with ModalHost keeping several composers mounted, closing a *minimized*
   // one's pill now also drops zen in the expanded one. Rare enough to accept;
   // make zen a context keyed on the composer if it starts to bite.
   onCleanup(() => setZenMode(false));

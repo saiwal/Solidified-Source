@@ -6,7 +6,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { motion } from "solid-motionone";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import RichEditor from "@/shared/editor/core/RichEditor";
 import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
 import { bbcodeToInsert, appendInsert } from "@/shared/editor/attachments/insertHelpers";

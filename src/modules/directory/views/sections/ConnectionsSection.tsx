@@ -12,7 +12,7 @@ import ImportConnectionsModal from "../ImportConnectionsModal";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import { PlatformIcon } from "@/shared/stream/components/PlatformIcons";
 import Tooltip from "@/shared/views/Tooltip";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import { createRoom } from "@/modules/chat/api";
 import { MdOutlineChat_bubble, MdOutlineDelete, MdOutlineEdit, MdOutlineEmail, MdOutlineExpand_more } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -75,7 +75,7 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
   const [busy, setBusy] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
   const [editOpen, setEditOpen] = createSignal(false);
-  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // Handed to ModalHost so a half-written DM survives navigation. The scope
   // carries the recipient, so DMs to two different people are two composers
   // with two drafts rather than one that overwrites the other.
   const openDm = (r: {

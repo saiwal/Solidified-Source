@@ -4,7 +4,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive, isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 
 export type QuickAction = {
   key: string;

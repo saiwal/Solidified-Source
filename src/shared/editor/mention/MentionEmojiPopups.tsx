@@ -9,7 +9,7 @@ import { Show, useContext, type Component } from "solid-js";
 import MentionPopup from "./MentionPopup";
 import EmojiPopup from "../emoji/EmojiPopup";
 import TagPopup from "../tag/TagPopup";
-import { ComposerFrameContext } from "../store/composer-host";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 import type { MentionEmojiWiring } from "./useMentionEmojiWiring";
 
 export interface MentionEmojiPopupsProps {

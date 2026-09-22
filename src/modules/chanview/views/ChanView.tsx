@@ -9,7 +9,7 @@ import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { fetchConnectionByAddress } from "@/modules/directory/connections/api";
 import type { Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import { MessageList } from "@/modules/hq/widgets/MessageList";
 import { createStreamStore } from "@/shared/stream/store/createStreamStore";
 import { createActionHandlers } from "@/shared/stream/store/actions-store";
@@ -170,7 +170,7 @@ export default function ChanView() {
   const [editOpen, setEditOpen] = createSignal(false);
   const [disconnected, setDisconnected] = createSignal(false);
   const [addressCopied, setAddressCopied] = createSignal(false);
-  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // Handed to ModalHost so a half-written DM survives navigation. The scope
   // carries the recipient, so DMs to two different people are two composers
   // with two drafts rather than one that overwrites the other.
   const openDm = (r: {

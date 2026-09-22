@@ -28,7 +28,7 @@ import {
 } from "@/shared/stream/filters";
 import { MdFillSearch, MdFillClose, MdFillCreate, MdFillMail } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 
 // Toolbar/search/pagination/composer chrome shared by `channel.feed` and its
 // alternate-layout widgets (newspaper/timeline/scrapbook) — only the post
@@ -59,7 +59,7 @@ export default function ChannelFeedShell(props: {
   // post-independent viewer role instead.
   const isVisitor = () => (auth()?.uid ?? 0) > 0 && viewerRole() !== "owner";
 
-  // Mounted by ComposerHost, not here, so it can be minimized and carried to
+  // Mounted by ModalHost, not here, so it can be minimized and carried to
   // another page. Its scope doubles as the dedupe key (see openComposer).
   const openCompose = () =>
     openComposer({

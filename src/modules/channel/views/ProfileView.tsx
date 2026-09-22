@@ -5,7 +5,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { MdFillLocation_on, MdFillPublic, MdFillRss_feed, MdOutlineMail } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { addConnection } from "@/modules/directory/people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -571,7 +571,7 @@ function FollowButton(props: { p: ChannelProfile; isVisitor: boolean }) {
   const { t } = useI18n();
   const auth = useAuth();
   const [state, setState] = createSignal<"idle" | "pending" | "done">("idle");
-  // Handed to ComposerHost so a half-written DM survives navigation. The scope
+  // Handed to ModalHost so a half-written DM survives navigation. The scope
   // carries the recipient, so DMs to two different people are two composers
   // with two drafts rather than one that overwrites the other.
   const openDm = (r: {

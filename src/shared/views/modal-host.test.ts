@@ -1,10 +1,10 @@
-// node --experimental-strip-types src/shared/editor/store/composer-host.test.ts
+// node --experimental-strip-types src/shared/editor/store/modal-host.test.ts
 import assert from "node:assert/strict";
 
-const store = await import("./composer-host.ts");
+const store = await import("./modal-host.ts");
 const { findByScope, enforceModeRules, isExpanded, MAX_DOCKED } = store;
-type Mode = import("./composer-host.ts").ComposerMode;
-type Holder = import("./composer-host.ts").ModeHolder;
+type Mode = import("./modal-host.ts").ComposerMode;
+type Holder = import("./modal-host.ts").ModeHolder;
 
 function holder(id: string, scope: string, start: Mode): Holder {
   let m = start;
@@ -122,4 +122,4 @@ assert.deepEqual(store.composerEntries().map((e) => e.id), [idB]);
 assert.equal(byId(idB).mode(), "min");
 assert.equal(byId(idB).restoreTo, "dock", "…but it still remembers its mode");
 
-console.log("composer-host: ok");
+console.log("modal-host: ok");

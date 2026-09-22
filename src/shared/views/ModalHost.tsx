@@ -1,5 +1,5 @@
 /**
- * ComposerHost.tsx
+ * ModalHost.tsx
  *
  * Mounts every open composer, once, from Layout — outside the routed tree, so a
  * composer survives navigation. Same host pattern as ShareModalHost.
@@ -25,16 +25,16 @@ import {
   setComposerMode,
   type ComposerEntry,
   type ComposerKind,
-} from "../store/composer-host";
-import { ComposerKindIcon } from "./ComposerModal";
+} from "./modal-host";
+import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 import { MdOutlineClose } from "solid-icons/md";
 
 
-const PostComposer = lazy(() => import("../composers/PostComposer"));
-const DMComposer = lazy(() => import("../composers/DMComposer"));
-const ArticleComposerModal = lazy(() => import("../composers/ArticleComposerModal"));
-const CardComposerModal = lazy(() => import("../composers/CardComposerModal"));
-const NoteComposerModal = lazy(() => import("../composers/NoteComposerModal"));
+const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
+const DMComposer = lazy(() => import("@/shared/editor/composers/DMComposer"));
+const ArticleComposerModal = lazy(() => import("@/shared/editor/composers/ArticleComposerModal"));
+const CardComposerModal = lazy(() => import("@/shared/editor/composers/CardComposerModal"));
+const NoteComposerModal = lazy(() => import("@/shared/editor/composers/NoteComposerModal"));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BY_KIND: Record<ComposerKind, Component<any>> = {
@@ -108,7 +108,7 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
   );
 }
 
-export default function ComposerHost(props: {
+export default function ModalHost(props: {
   /** True while a mobile nav panel ("More" sheet, right sidebar) is open. The
    *  "More" sheet opens at bottom-16 — exactly where the pills sit — so they
    *  step aside for it rather than floating over the nav. */

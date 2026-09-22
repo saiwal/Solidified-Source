@@ -3,7 +3,7 @@ import { createEffect, createSignal, onCleanup, useContext, For, Show, type JSX 
 import EditorStats, { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
-import { ComposerFrameContext } from "../store/composer-host";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";

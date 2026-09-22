@@ -21,7 +21,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { MdOutlineEdit, MdOutlineMail, MdOutlineFilter_alt } from "solid-icons/md";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
 import { parseQuery } from "../query";

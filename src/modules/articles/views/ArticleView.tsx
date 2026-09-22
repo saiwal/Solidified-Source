@@ -10,7 +10,7 @@ import { useParams, A, useNavigate } from "@solidjs/router";
 import { fetchArticle, deleteArticle } from "../api";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import { languageLabel } from "@utsukta/spa-core/lib/languages";
 import DOMPurify from "dompurify";
@@ -119,7 +119,7 @@ export default function ArticleView() {
   const [confirmDelete, setConfirmDelete] = createSignal(false);
 
   // ── Editing / translating ─────────────────────────────────────────────────
-  // Both hand the composer to ComposerHost, so it can be docked or minimized
+  // Both hand the composer to ModalHost, so it can be docked or minimized
   // while the article itself stays on screen. `initial` is read eagerly here,
   // which is also what the two <Show>-mounted modals used to do on open.
   // refetch() is this route's resource: if the composer saves after the reader

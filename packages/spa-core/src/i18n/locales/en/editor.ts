@@ -10,7 +10,7 @@ export const editor = {
   fewer_tools:            "Fewer options",
   draft_saved:            "Draft saved",
   more_options:           "More options",
-  // Presentation modes (ComposerModal / ComposerHost)
+  // Presentation modes (ComposerModal / ModalHost)
   minimize:               "Minimize",
   restore:                "Restore",
   modal_mode:             "Centred window",

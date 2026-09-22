@@ -1,24 +1,24 @@
 /**
- * composer-host.ts
+ * modal-host.ts
  *
  * The open-composer registry. Composers used to be mounted by whichever widget
  * or view opened them, behind a local `createSignal` — so navigating away
- * unmounted the composer mid-draft. They are mounted by `ComposerHost` (in
+ * unmounted the composer mid-draft. They are mounted by `ModalHost` (in
  * Layout) instead, which lives outside the routed tree and therefore outlives
  * navigation.
  *
  * Pattern copied from `store/share.ts` + `views/ShareModalHost.tsx`.
  *
- * Imports stay node-resolvable, deliberately: node runs composer-host.test.ts
+ * Imports stay node-resolvable, deliberately: node runs modal-host.test.ts
  * against the real module, so nothing here may use the `@/` alias or a
  * relative import without a `.ts` extension. `@utsukta/spa-core/*` is fine —
  * node follows the workspace symlink and the package's exports map. That is
- * also why resetting zen lives in ComposerHost's frame wrapper rather than
+ * also why resetting zen lives in ModalHost's frame wrapper rather than
  * here.
  */
 import { createContext, createSignal, type Accessor, type Setter } from "solid-js";
 // Package import, not the "@/" alias: node resolves it through the workspace
-// symlink + exports map, so composer-host.test.ts still runs.
+// symlink + exports map, so modal-host.test.ts still runs.
 import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 
 /**
@@ -105,11 +105,11 @@ export function enforceModeRules(list: readonly ModeHolder[], id: string): void 
   }
 }
 
-/** Kinds the host knows how to mount — see ComposerHost's component map. */
+/** Kinds the host knows how to mount — see ModalHost's component map. */
 export type ComposerKind = "post" | "dm" | "article" | "card" | "note";
 
 /**
- * Provided per entry by `ComposerHost`. Absent for the callsites that still
+ * Provided per entry by `ModalHost`. Absent for the callsites that still
  * mount a composer themselves, which is what keeps `ComposerModal` backwards
  * compatible: no context means exactly the pre-existing modal behaviour, and
  * migrating an entry point to the host is opt-in.

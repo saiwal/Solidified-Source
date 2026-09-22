@@ -12,7 +12,7 @@ export const editor: RawDictionary["editor"] = {
   fewer_tools:            "कम विकल्प",
   draft_saved:            "ड्राफ़्ट सहेजा गया",
   more_options:           "अधिक विकल्प",
-  // Presentation modes (ComposerModal / ComposerHost)
+  // Presentation modes (ComposerModal / ModalHost)
   minimize:               "छोटा करें",
   restore:                "पुनर्स्थापित करें",
   modal_mode:             "केंद्रित विंडो",

@@ -20,7 +20,7 @@ import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
-import { ComposerFrameContext } from "../store/composer-host";
+import { ComposerFrameContext } from "@/shared/views/modal-host";
 import ComposerShell from "../components/ComposerShell";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { CAPABILITIES } from "../types/editor.types";

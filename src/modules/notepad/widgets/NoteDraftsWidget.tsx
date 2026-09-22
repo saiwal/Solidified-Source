@@ -1,7 +1,7 @@
 import { Show } from "solid-js";
 import { storageDel } from "@utsukta/spa-core/lib/storage";
 import DraftsWidgetBase, { type DraftEntry } from "@/shared/editor/components/DraftsWidgetBase";
-import { openComposer } from "@/shared/editor/store/composer-host";
+import { openComposer } from "@/shared/views/modal-host";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNotes } from "../store";
@@ -35,7 +35,7 @@ export default function NoteDraftsWidget() {
     };
   }
 
-  // Mounted by ComposerHost and keyed on the draft scope, so it survives
+  // Mounted by ModalHost and keyed on the draft scope, so it survives
   // navigation and reloading the same draft surfaces the live composer.
   // No reload callback: DraftsWidgetBase already refetches on draftsVersion.
   function loadDraft(entry: DraftEntry) {
