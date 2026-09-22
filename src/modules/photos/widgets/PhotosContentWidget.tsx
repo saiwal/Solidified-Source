@@ -1764,8 +1764,8 @@ function ImageView() {
             </Show>
           </div>
 
-          <Portal mount={topLayer()}>
-            <Show when={moreOpen()}>
+          <Show when={moreOpen()}>
+            <Portal mount={topLayer()}>
               <div
                 ref={setMorePanelRef}
                 class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
@@ -1822,8 +1822,8 @@ function ImageView() {
                   <span>{deleteConfirming() ? t("photos.confirm") : t("photos.delete_photo")}</span>
                 </button>
               </div>
-            </Show>
-          </Portal>
+            </Portal>
+          </Show>
 
           {/* ACL editor */}
           <Show when={aclOpen() && d()?.resource_id}>

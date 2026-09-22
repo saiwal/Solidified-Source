@@ -61,8 +61,8 @@ const LockviewPopover: Component<{
         <MdFillLock size={size()} />
       </button>
 
-      <Portal mount={topLayer()}>
-        <Show when={open()}>
+      <Show when={open()}>
+        <Portal mount={topLayer()}>
           <div
             ref={setPanelRef}
             style={floatStyle()}
@@ -121,8 +121,8 @@ const LockviewPopover: Component<{
               </Show>
             </Show>
           </div>
-        </Show>
-      </Portal>
+        </Portal>
+      </Show>
     </>
   );
 };

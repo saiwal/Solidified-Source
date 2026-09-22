@@ -317,8 +317,8 @@ export default function AuthorPopover(props: Props) {
       >
         {props.children}
       </div>
-      <Portal mount={topLayer()}>
-        <Show when={open()}>
+      <Show when={open()}>
+        <Portal mount={topLayer()}>
           <div
             ref={popoverRef}
             class="fixed z-[9999] w-80 bg-surface border border-rim rounded-xl shadow-xl overflow-hidden"
@@ -578,8 +578,8 @@ export default function AuthorPopover(props: Props) {
               </div>
             </Show>
           </div>
-        </Show>
-      </Portal>
+        </Portal>
+      </Show>
 
       {/* Connection editor modal */}
       <Show when={editOpen() && cs().tag === "connected" && (cs() as { tag: "connected"; conn: Connection | null }).conn}>

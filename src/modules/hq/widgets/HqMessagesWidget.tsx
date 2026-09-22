@@ -85,8 +85,8 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
         )}
       </Show>
 
-      <Portal mount={topLayer()}>
-        <Show when={open()}>
+      <Show when={open()}>
+        <Portal mount={topLayer()}>
           <ul
             ref={listRef}
             style={{ position: "fixed", top: `${y()}px`, left: `${x()}px`, width: `${rowRef?.offsetWidth ?? 0}px` }}
@@ -121,8 +121,8 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
               )}
             </For>
           </ul>
-        </Show>
-      </Portal>
+        </Portal>
+      </Show>
     </div>
   );
 }

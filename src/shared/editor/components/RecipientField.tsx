@@ -100,8 +100,8 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
         />
       </div>
 
-      <Portal mount={topLayer()}>
       <Show when={open()}>
+      <Portal mount={topLayer()}>
         <ul
           ref={listRef}
           style={{ position: "fixed", top: `${y()}px`, left: `${x()}px`, width: `${rowRef?.offsetWidth ?? 0}px` }}
@@ -136,8 +136,8 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
             )}
           </For>
         </ul>
-      </Show>
       </Portal>
+      </Show>
     </div>
   );
 };

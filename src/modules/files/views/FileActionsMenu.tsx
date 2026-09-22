@@ -60,8 +60,8 @@ const FileActionsMenu: Component<Props> = (props) => {
       >
         <MdFillMore_vert size={14} />
       </button>
-      <Portal mount={topLayer()}>
-        <Show when={open()}>
+      <Show when={open()}>
+        <Portal mount={topLayer()}>
           <div
             ref={setPanelRef}
             class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
@@ -99,8 +99,8 @@ const FileActionsMenu: Component<Props> = (props) => {
               />
             </Show>
           </div>
-        </Show>
-      </Portal>
+        </Portal>
+      </Show>
     </>
   );
 };

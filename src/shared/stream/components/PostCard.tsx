@@ -1507,8 +1507,8 @@ export default function PostCard(props: {
               <MdFillMore_vert size={14} />
             </button>
           </div>
-          <Portal mount={topLayer()}>
-            <Show when={moreDropdownOpen()}>
+          <Show when={moreDropdownOpen()}>
+            <Portal mount={topLayer()}>
               <div
                 ref={setMoreDropdownPanelRef}
                 class="z-[9999] min-w-[9rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
@@ -1645,8 +1645,8 @@ export default function PostCard(props: {
                   </button>
                 </Show>
               </div>
-            </Show>
-          </Portal>
+            </Portal>
+          </Show>
         </div>
 
         <Show when={replyOpen() && props.post.iid && props.post.profileUid}>
@@ -1666,8 +1666,8 @@ export default function PostCard(props: {
             }}
           />
         </Show>
-        <Portal mount={topLayer()}>
-          <Show when={repeatDropdownOpen()}>
+        <Show when={repeatDropdownOpen()}>
+          <Portal mount={topLayer()}>
             <div
               ref={setRepeatDropdownPanelRef}
               class="z-[9999] min-w-[10rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
@@ -1686,8 +1686,8 @@ export default function PostCard(props: {
                 </button>
               </div>
             </div>
-          </Show>
-        </Portal>
+          </Portal>
+        </Show>
         <Show when={reshareOpen() && props.post.iid && auth()?.uid}>
           <PostComposer
             open={true}
@@ -2262,8 +2262,8 @@ export default function PostCard(props: {
         </div>
       </div>
 
-      <Portal mount={topLayer()}>
-        <Show when={moreDropdownOpen()}>
+      <Show when={moreDropdownOpen()}>
+        <Portal mount={topLayer()}>
           <div
             ref={setMoreDropdownPanelRef}
             class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
@@ -2432,10 +2432,10 @@ export default function PostCard(props: {
               </button>
             </Show>
           </div>
-        </Show>
-      </Portal>
-      <Portal mount={topLayer()}>
-        <Show when={repeatDropdownOpen()}>
+        </Portal>
+      </Show>
+      <Show when={repeatDropdownOpen()}>
+        <Portal mount={topLayer()}>
           <div
             ref={setRepeatDropdownPanelRef}
             class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
@@ -2454,8 +2454,8 @@ export default function PostCard(props: {
               </button>
             </div>
           </div>
-        </Show>
-      </Portal>
+        </Portal>
+      </Show>
 
       <Show when={showStats()}>
         <PostStats loading={statsLoading()} data={statsData()} />

@@ -275,8 +275,8 @@ function CustomRolePill(props: {
       </Show>
 
       {/* Dropdown menu */}
-      <Portal mount={topLayer()}>
       <Show when={open()}>
+      <Portal mount={topLayer()}>
         <div
           ref={setPanelRef}
           style={floatStyle()}
@@ -338,8 +338,8 @@ function CustomRolePill(props: {
             </button>
           </Show>
         </div>
-      </Show>
       </Portal>
+      </Show>
     </div>
   );
 }
