@@ -599,7 +599,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   return (
     <>
       {nested}
-      <ComposerModal title={title()} onClose={props.onClose} widthClass="max-w-3xl">
+      <ComposerModal title={title()} onClose={props.onClose} widthClass="max-w-3xl" fitContent>
         {panel}
       </ComposerModal>
     </>

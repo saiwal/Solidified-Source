@@ -70,6 +70,10 @@ export interface ComposerModalProps {
   ariaLabel?: string;
   /** Default "max-w-2xl" (post/DM); pass "max-w-3xl" for article/note. */
   widthClass?: string;
+  /** Modal and dock modes shrink to their content (capped at the usual size) instead of
+   *  the fixed height a composer's editor needs — for the post viewer, where a
+   *  short post would otherwise sit above an empty gap. */
+  fitContent?: boolean;
   /** Extra header controls rendered before the close button. */
   headerExtra?: JSX.Element;
   /** use:helpable target for the backdrop (help-mode tutorial picker). */
@@ -182,14 +186,17 @@ export default function ComposerModal(props: ComposerModalProps) {
           // 600px, not 512: the panel has to hold header + meta + action bar
           // over the editor's docked floor (useEditorFloor in ComposerShell)
           // without the body scrolling.
-          "w-[min(26rem,calc(100vw_-_1rem))] h-[min(37.5rem,calc(100dvh_-_8rem))]"
+          "w-[min(26rem,calc(100vw_-_1rem))] " +
+          (props.fitContent
+            ? "max-h-[min(37.5rem,calc(100dvh_-_8rem))]"
+            : "h-[min(37.5rem,calc(100dvh_-_8rem))]")
         );
       case "page":
         // Same bg as the wrapper, so the column has no visible edge at all —
         // max-w-4xl still keeps the measure readable on a wide monitor.
         return base + "bg-base w-full max-w-4xl h-full";
       default:
-        return base + card + `rounded-xl w-full ${props.widthClass ?? "max-w-2xl"} h-[85dvh]`;
+        return base + card + `rounded-xl w-full ${props.widthClass ?? "max-w-2xl"} ${props.fitContent ? "max-h-[85dvh]" : "h-[85dvh]"}`;
     }
   };
 
