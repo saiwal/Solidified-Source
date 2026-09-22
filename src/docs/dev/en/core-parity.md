@@ -82,6 +82,36 @@ comment paths. Known gap, deliberate: `Zotlabs\Module\Item` is the only thing
 that fires `post_content`, so the `mdpost` addon — and any other addon on that
 hook — is skipped when posting from the SPA. See `ContentTypes.php`.
 
+## Driving core's post handler from PHP
+
+`Zotlabs\Module\Item::post()` is callable directly — this is what
+`parity.test.php` does, and what a future refactor would use to stop
+reimplementing it. The contract, verified against all 30 exit points in
+lines 79–1225:
+
+- Set `$_POST['api_source'] = 1`. It then **returns** instead of `killme()`.
+- **Never set** `dropitems`, `preview` or `return`. Those are the only guards
+  that still reach an exit with `api_source` on (lines 142, 548, 990, 1020,
+  1164). One more, line 353, fires when `post_id` names a missing item, so
+  pre-validate on the edit path.
+- Three return shapes: `$post` (the `item_store()` result) for a create at
+  1194; `$x` (the `item_store_update()` result — **different shape**) for an
+  edit at 1065; and `['success' => false, 'message' => …]` for a handled
+  failure, with eight possible messages (`no channel`, `no owner`,
+  `no content`, `invalid post id`, `permission denied`,
+  `service class exception`, `operation cancelled`, `system error`).
+- ACL arrives via `$acl->set_from_array($_POST)`: `contact_allow`,
+  `group_allow`, `contact_deny`, `group_deny` as **arrays**. Empty arrays mean
+  public; omitting them entirely means the channel's default ACL.
+- `nopush = 1` suppresses delivery. `origin`, `namespace`, `remote_id` and
+  `message_id` are honoured only under `api_source`.
+
+Unrelated but adjacent, and it costs an hour every time it bites:
+`dba_pdo::q()` decides whether a query is a SELECT with
+`stripos($sql, 'select') === 0`. A query string starting with a newline is not
+recognised and returns a raw `PDOStatement` instead of rows. Keep `SELECT` on
+the first line.
+
 ## Still unverified
 
 - The event *create* datarray: `Channel_calendar::post()` could not be driven
