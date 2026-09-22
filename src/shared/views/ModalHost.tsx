@@ -28,6 +28,7 @@ import {
 } from "./modal-host";
 import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 import { MdOutlineClose } from "solid-icons/md";
+import { createPopover } from "@/shared/stream/filters/createPopover";
 
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
@@ -114,6 +115,84 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
   );
 }
 
+/** One minimized entry: restore on the label, close on the ×. */
+function MinimizedItem(props: { entry: ComposerEntry; class: string; onRestore?: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div class={`flex items-center gap-1 ${props.class}`}>
+      <button
+        type="button"
+        class="flex items-center gap-1.5 min-w-0 flex-1 text-xs font-medium text-txt
+               hover:text-accent transition-colors"
+        title={t("editor.restore")}
+        onClick={() => {
+          restoreComposer(props.entry.id);
+          props.onRestore?.();
+        }}
+      >
+        <ComposerKindIcon kind={props.entry.kind} />
+        {/* What is being written, when it has a title — the generic
+            heading ("New Post") only until then. */}
+        <span class="truncate">{props.entry.docTitle() || props.entry.title || t("post.modal_title")}</span>
+      </button>
+      <button
+        type="button"
+        class="p-1 rounded text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
+        title={t("editor.close_esc")}
+        onClick={() => closeComposer(props.entry.id)}
+      >
+        <MdOutlineClose class="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The oldest minimized entries, folded into one "+N" pill. Its own component so
+ * createPopover's document listeners only exist while there is an overflow.
+ * The panel portals next to the strip — both live in the same top layer.
+ */
+function OverflowPill(props: { entries: ComposerEntry[]; mount: Element }) {
+  const { t } = useI18n();
+  const pop = createPopover({ placement: "top-start" });
+  return (
+    <div ref={pop.ref} class="shrink-0">
+      <button
+        type="button"
+        class="rounded-t-lg border border-rim border-b-0 bg-elevated shadow-lg px-3 py-1.5
+               text-xs font-medium text-txt hover:text-accent transition-colors"
+        aria-haspopup="true"
+        aria-expanded={pop.open()}
+        aria-label={t("editor.minimized_more", { count: String(props.entries.length) })}
+        onClick={() => pop.setOpen(!pop.open())}
+      >
+        +{props.entries.length}
+      </button>
+      <Show when={pop.open()}>
+        <Portal mount={props.mount}>
+          <div
+            ref={pop.floating}
+            style={pop.style()}
+            class="z-50 w-64 max-w-[calc(100vw-1rem)] max-h-72 overflow-y-auto rounded-lg border
+                   border-rim bg-elevated shadow-lg py-1"
+          >
+            {/* Newest first, like the strip reads from the right. */}
+            <For each={[...props.entries].reverse()}>
+              {(entry) => (
+                <MinimizedItem
+                  entry={entry}
+                  class="px-3 py-1 hover:bg-surface"
+                  onRestore={() => pop.setOpen(false)}
+                />
+              )}
+            </For>
+          </div>
+        </Portal>
+      </Show>
+    </div>
+  );
+}
+
 export default function ModalHost(props: {
   /** True while a mobile nav panel ("More" sheet, right sidebar) is open. The
    *  "More" sheet opens at bottom-16 — exactly where the pills sit — so they
@@ -144,6 +223,17 @@ export default function ModalHost(props: {
     props.navOpen || blocking()
       ? []
       : composerEntries().filter((e) => e.mode() === "min");
+
+  // Pills are in creation order and hug the right edge, so the newest sit
+  // nearest their composers; the oldest fold into the "+N" pill on the left.
+  // Folding a single pill would save nothing, hence the +1.
+  // ponytail: fixed count per breakpoint, doesn't measure the free rail width.
+  const pillLimit = () => (isWide() ? 3 : 1);
+  const overflow = () => {
+    const m = minimized();
+    return m.length > pillLimit() + 1 ? m.slice(0, m.length - pillLimit()) : [];
+  };
+  const visiblePills = () => minimized().slice(overflow().length);
 
   // Where the strip portals to — resolved a microtask after it appears, not
   // during the render that shows it. Minimizing from modal/page happens in that
@@ -197,36 +287,19 @@ export default function ModalHost(props: {
             role="group"
             aria-label={t("editor.minimized_composers")}
           >
-            <For each={minimized()}>
+            <Show when={overflow().length > 0}>
+              <OverflowPill entries={overflow()} mount={mount} />
+            </Show>
+            <For each={visiblePills()}>
               {(entry) => (
-                <div
+                <MinimizedItem
+                  entry={entry}
                   // bg-elevated, not bg-surface: the pill sits over pages and
                   // panels that are themselves bg-surface, and elevated is the
                   // lighter of the two in every theme.
-                  class="flex items-center gap-1 shrink-0 max-w-[14rem] rounded-t-lg border border-rim
-                         border-b-0 bg-elevated shadow-lg pl-3 pr-1 py-1.5"
-                >
-                  <button
-                    type="button"
-                    class="flex items-center gap-1.5 min-w-0 text-xs font-medium text-txt
-                           hover:text-accent transition-colors"
-                    title={t("editor.restore")}
-                    onClick={() => restoreComposer(entry.id)}
-                  >
-                    <ComposerKindIcon kind={entry.kind} />
-                    {/* What is being written, when it has a title — the generic
-                        heading ("New Post") only until then. */}
-                    <span class="truncate">{entry.docTitle() || entry.title || t("post.modal_title")}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 rounded text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                    title={t("editor.close_esc")}
-                    onClick={() => closeComposer(entry.id)}
-                  >
-                    <MdOutlineClose class="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                  class="shrink-0 max-w-[14rem] rounded-t-lg border border-rim border-b-0
+                         bg-elevated shadow-lg pl-3 pr-1 py-1.5"
+                />
               )}
             </For>
           </div>

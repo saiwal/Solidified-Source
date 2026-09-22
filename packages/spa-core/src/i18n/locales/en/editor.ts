@@ -17,6 +17,7 @@ export const editor = {
   dock_mode:              "Dock to corner",
   page_mode:              "Full page",
   minimized_composers:    "Minimized composers",
+  minimized_more:         "{{count}} more minimized",
   title_placeholder:      "Title (optional)",
   category_placeholder:   "Categories (optional, comma-separated)",
   drafts_btn:             "Drafts ({{count}})",

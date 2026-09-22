@@ -17,6 +17,7 @@ export const editor = {
   dock_mode:              "In die Ecke andocken",
   page_mode:              "Ganze Seite",
   minimized_composers:    "Minimierte Editoren",
+  minimized_more:         "{{count}} weitere minimiert",
   title_placeholder:      "Titel (optional)",
   category_placeholder:   "Kategorien (optional, durch Komma getrennt)",
   drafts_btn:             "Entwürfe ({{count}})",

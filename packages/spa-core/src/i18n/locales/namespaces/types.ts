@@ -895,6 +895,7 @@ export type RawDictionary = {
     dock_mode:              string;
     page_mode:              string;
     minimized_composers:    string;
+    minimized_more:         string;
     title_placeholder:      string;
     category_placeholder:   string;
     drafts_btn:             string;
