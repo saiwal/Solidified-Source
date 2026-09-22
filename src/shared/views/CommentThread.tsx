@@ -14,6 +14,10 @@ export default function CommentThread(props: {
   postAuthorAddress?: string;
   expandAll?: boolean;
   rootUuid?: string;
+  // Nesting level of these comments (1 = direct replies to the root).
+  depth?: number;
+  // Drop the indent: the parent comment is folded into a stub (see PostCard).
+  flush?: boolean;
 }) {
   const { t } = useI18n();
 
@@ -26,7 +30,7 @@ export default function CommentThread(props: {
       }}
     >
       <div style={{ overflow: "hidden" }}>
-        <div class="mt-2 ml-1 space-y-1.5">
+        <div class="mt-2 space-y-1.5" classList={{ "ml-1": !props.flush }}>
           <For each={props.comments}>
             {(comment) => (
               <Show
@@ -50,6 +54,7 @@ export default function CommentThread(props: {
                         postAuthorAddress={props.postAuthorAddress}
                         expandAll={props.expandAll}
                         rootUuid={props.rootUuid}
+                        depth={(props.depth ?? 1) + 1}
                       />
                     </Show>
                   </div>
@@ -64,6 +69,7 @@ export default function CommentThread(props: {
                   postAuthorAddress={props.postAuthorAddress}
                   expandAll={props.expandAll}
                   rootUuid={props.rootUuid}
+                  depth={props.depth ?? 1}
                 />
               </Show>
             )}
