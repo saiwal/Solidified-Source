@@ -1,5 +1,6 @@
 // src/shared/views/RemoteAuthBanner.tsx
 import { type Component, Show } from "solid-js";
+import { A, useLocation } from "@solidjs/router";
 import type { ViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlinePublic, MdOutlineVisibility } from "solid-icons/md";
@@ -12,6 +13,9 @@ interface Props {
 
 const RemoteAuthBanner: Component<Props> = (props) => {
   const { t } = useI18n();
+  const location = useLocation();
+  const loginHref = () =>
+    `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
   return (
     <Show
       when={
@@ -41,8 +45,8 @@ const RemoteAuthBanner: Component<Props> = (props) => {
             <a
               href={props.homeUrl}
               class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-full text-xs font-medium
-                     bg-amber-200 dark:bg-amber-700 hover:bg-amber-300
-                     dark:hover:bg-amber-600 transition-colors"
+                   bg-amber-200 dark:bg-amber-700 hover:bg-amber-300
+                   dark:hover:bg-amber-600 transition-colors"
             >
               {t("ui.go_home_link")}
             </a>
@@ -60,6 +64,14 @@ const RemoteAuthBanner: Component<Props> = (props) => {
               {t("ui.remote_guest", { nick: props.subjectNick })}
             </Show>
           </span>
+          <A
+            href={loginHref()}
+            class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-full text-xs font-medium
+                   bg-amber-200 dark:bg-amber-700 hover:bg-amber-300
+                   dark:hover:bg-amber-600 transition-colors"
+          >
+            {t("nav.login")}
+          </A>
         </Show>
       </div>
 
