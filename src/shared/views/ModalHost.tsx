@@ -11,7 +11,7 @@
  *  - it renders `open={true}` permanently; visibility belongs to ComposerModal's
  *    mode classes now, not to the composer's own `<Show when={props.open}>`.
  */
-import { For, Show, lazy, type Component } from "solid-js";
+import { For, Show, createEffect, createSignal, lazy, on, type Component } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
@@ -141,6 +141,22 @@ export default function ModalHost(props: {
       ? []
       : composerEntries().filter((e) => e.mode() === "min");
 
+  // Where the strip portals to — resolved a microtask after it appears, not
+  // during the render that shows it. Minimizing from modal/page happens in that
+  // same render, while the entry's <dialog> is still :modal (Modal.tsx only
+  // re-opens it non-modal in an effect), so topLayer() would pick that dialog —
+  // which then goes `hidden` and takes the pills with it.
+  const [stripMount, setStripMount] = createSignal<Element>();
+  createEffect(
+    on(
+      () => minimized().length > 0,
+      (show) => {
+        setStripMount(undefined);
+        if (show) queueMicrotask(() => setStripMount(topLayer()));
+      },
+    ),
+  );
+
   return (
     <>
       <For each={composerEntries()}>
@@ -163,8 +179,9 @@ export default function ModalHost(props: {
           hidden from lg up), which is the only reason for any offset.
           A docked panel owns that same corner, so the row is padded out of its
           way and the pills queue up to its left — one bottom-right rail. */}
-      <Show when={minimized().length > 0}>
-        <Portal mount={topLayer()}>
+      <Show when={minimized().length > 0 && stripMount()} keyed>
+        {(mount) => (
+        <Portal mount={mount}>
           <div
             class="fixed z-50 bottom-16 lg:bottom-0 left-0 right-2 sm:right-4 xl:right-[19.5rem]
                    flex items-end justify-end gap-2 pl-2 overflow-x-auto"
@@ -210,6 +227,7 @@ export default function ModalHost(props: {
             </For>
           </div>
         </Portal>
+        )}
       </Show>
     </>
   );
