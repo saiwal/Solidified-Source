@@ -1,5 +1,4 @@
-import { Show, For, createSignal } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Show, For, createSignal, createUniqueId } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchChannelSettings, saveChannelSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
@@ -8,6 +7,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import FilterRuleBuilder from "@/shared/views/FilterRuleBuilder";
 import { MdOutlineFilter_alt, MdOutlineManage_accounts, MdOutlineShield, MdOutlineTune } from "solid-icons/md";
 
+import Modal from "@/shared/views/Modal";
 interface PermRow {
   key: string;
   label: string;
@@ -59,6 +59,7 @@ export default function ChannelSection() {
     );
   };
 
+  const titleId = createUniqueId();
   return (
     <SubPageContent title={t("settings.title_channel")} description={t("settings.desc_channel")}>
       <Show when={data()} fallback={<Skeleton />}>
@@ -190,90 +191,85 @@ export default function ChannelSection() {
             <SaveBar saving={saving()} />
 
             <Show when={permOpen()}>
-              <Portal>
-                <div
-                  class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-                  onClick={(e) => { if (e.target === e.currentTarget) setPermOpen(false); }}
-                >
-                  <div class="w-full max-w-3xl rounded-2xl bg-surface border border-rim shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+              <Modal onClose={() => setPermOpen(false)} labelledBy={titleId} class="z-[60]">
+                <div class="w-full max-w-3xl rounded-2xl bg-surface border border-rim shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
 
-                    <header class="flex items-center gap-3 px-4 py-3 border-b border-rim shrink-0">
-                      <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-muted text-accent">
-                        <MdOutlineShield size={18} />
-                      </span>
-                      <span class="min-w-0">
-                        <h3 class="text-sm font-semibold text-txt">{t("settings.privacy_perm_limits")}</h3>
-                        <p class="text-xs text-muted">{t("settings.privacy_perm_limits_desc")}</p>
-                      </span>
-                    </header>
+                  <header class="flex items-center gap-3 px-4 py-3 border-b border-rim shrink-0">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-muted text-accent">
+                      <MdOutlineShield size={18} />
+                    </span>
+                    <span class="min-w-0">
+                      <h3 id={titleId} class="text-sm font-semibold text-txt">{t("settings.privacy_perm_limits")}</h3>
+                      <p class="text-xs text-muted">{t("settings.privacy_perm_limits_desc")}</p>
+                    </span>
+                  </header>
 
-                    <div class="px-4 py-1.5 overflow-y-auto">
-                      <For each={permRows()}>
-                        {(perm) => (
-                          <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 py-2.5">
-                            <span class="flex-1 min-w-0">
-                              <span class="block text-sm text-txt">{perm.label}</span>
-                              <Show when={perm.help}>
-                                <span class="block text-xs text-muted">{perm.help}</span>
-                              </Show>
-                            </span>
-                            <select
-                              class="w-full sm:w-60 shrink-0 px-2.5 py-1.5 rounded-lg border border-rim
-                                     bg-base text-txt text-sm hover:border-rim-strong focus:outline-none
-                                     focus:border-rim-strong transition-colors"
-                              onChange={(e) =>
-                                setPermOverrides({ ...permOverrides(), [perm.key]: Number(e.currentTarget.value) })
-                              }
-                            >
-                              <For each={Object.entries(perm.options)}>
-                                {([val, label]) => (
-                                  <option value={val} selected={Number(val) === perm.value}>
-                                    {label}
-                                  </option>
-                                )}
-                              </For>
-                            </select>
-                          </div>
-                        )}
-                      </For>
-                      <div class="flex items-center justify-between gap-4 py-2.5 border-t border-rim">
-                        <span class="block text-sm text-txt">{t("settings.privacy_group_actor")}</span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={!!gaVal()}
-                          onClick={() => setGaOverride(gaVal() ? 0 : 1)}
-                          class={
-                            "appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 " +
-                            "border transition-colors " +
-                            "after:absolute after:top-1/2 after:left-1 after:-translate-y-1/2 " +
-                            "after:h-4 after:w-4 after:rounded-full " +
-                            "after:transition-transform after:duration-150 motion-reduce:after:transition-none " +
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 " +
-                            "focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
-                            (gaVal()
-                              ? "bg-accent border-accent after:translate-x-5 after:bg-accent-fg"
-                              : "bg-elevated border-rim after:bg-muted")
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <footer class="flex items-center justify-between gap-4 px-4 py-3 border-t border-rim shrink-0">
-                      <p class="text-xs text-muted">{t("settings.channel_perm_limits_note")}</p>
+                  <div class="px-4 py-1.5 overflow-y-auto">
+                    <For each={permRows()}>
+                      {(perm) => (
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 py-2.5">
+                          <span class="flex-1 min-w-0">
+                            <span class="block text-sm text-txt">{perm.label}</span>
+                            <Show when={perm.help}>
+                              <span class="block text-xs text-muted">{perm.help}</span>
+                            </Show>
+                          </span>
+                          <select
+                            class="w-full sm:w-60 shrink-0 px-2.5 py-1.5 rounded-lg border border-rim
+                                   bg-base text-txt text-sm hover:border-rim-strong focus:outline-none
+                                   focus:border-rim-strong transition-colors"
+                            onChange={(e) =>
+                              setPermOverrides({ ...permOverrides(), [perm.key]: Number(e.currentTarget.value) })
+                            }
+                          >
+                            <For each={Object.entries(perm.options)}>
+                              {([val, label]) => (
+                                <option value={val} selected={Number(val) === perm.value}>
+                                  {label}
+                                </option>
+                              )}
+                            </For>
+                          </select>
+                        </div>
+                      )}
+                    </For>
+                    <div class="flex items-center justify-between gap-4 py-2.5 border-t border-rim">
+                      <span class="block text-sm text-txt">{t("settings.privacy_group_actor")}</span>
                       <button
                         type="button"
-                        onClick={() => setPermOpen(false)}
-                        class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                               hover:opacity-90 transition-opacity"
-                      >
-                        {t("settings.channel_perm_limits_done")}
-                      </button>
-                    </footer>
-
+                        role="switch"
+                        aria-checked={!!gaVal()}
+                        onClick={() => setGaOverride(gaVal() ? 0 : 1)}
+                        class={
+                          "appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 " +
+                          "border transition-colors " +
+                          "after:absolute after:top-1/2 after:left-1 after:-translate-y-1/2 " +
+                          "after:h-4 after:w-4 after:rounded-full " +
+                          "after:transition-transform after:duration-150 motion-reduce:after:transition-none " +
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 " +
+                          "focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
+                          (gaVal()
+                            ? "bg-accent border-accent after:translate-x-5 after:bg-accent-fg"
+                            : "bg-elevated border-rim after:bg-muted")
+                        }
+                      />
+                    </div>
                   </div>
+
+                  <footer class="flex items-center justify-between gap-4 px-4 py-3 border-t border-rim shrink-0">
+                    <p class="text-xs text-muted">{t("settings.channel_perm_limits_note")}</p>
+                    <button
+                      type="button"
+                      onClick={() => setPermOpen(false)}
+                      class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
+                             hover:opacity-90 transition-opacity"
+                    >
+                      {t("settings.channel_perm_limits_done")}
+                    </button>
+                  </footer>
+
                 </div>
-              </Portal>
+              </Modal>
             </Show>
 
           </form>

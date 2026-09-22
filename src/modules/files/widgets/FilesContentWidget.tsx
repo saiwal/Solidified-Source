@@ -52,6 +52,7 @@ import WopiEditorOverlay from "@/shared/views/WopiEditorOverlay";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 
+import Modal from "@/shared/views/Modal";
 type ModalKind = "rename" | "moveCopy" | "categories";
 
 type ViewMode   = "list" | "grid";
@@ -196,7 +197,7 @@ const PermissionsPanel: Component<{
         <p class="text-sm font-semibold text-txt">
           {t("files_mod.permissions")} — <span class="font-normal text-muted">{props.item.filename}</span>
         </p>
-        <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none">
+        <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none" aria-label={t("layout.close")}>
           ×
         </button>
       </div>
@@ -1109,10 +1110,7 @@ export default function FilesContentWidget() {
                   />
                   {/* Permissions panel for grid mode — centered modal */}
                   <Show when={permItem()}>
-                    <div
-                      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-                      onClick={() => setPermItem(null)}
-                    >
+                    <Modal onClose={() => setPermItem(null)} label={t("files_mod.permissions")} class="z-50">
                       <div class="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                         <PermissionsPanel
                           item={permItem()!}
@@ -1122,7 +1120,7 @@ export default function FilesContentWidget() {
                           onClose={() => setPermItem(null)}
                         />
                       </div>
-                    </div>
+                    </Modal>
                   </Show>
                 </>
               }

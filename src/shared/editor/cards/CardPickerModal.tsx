@@ -9,13 +9,13 @@
  * composing channel can't embed, so listing other people's cards here would
  * just be a way to earn a 422 on save.
  */
-import { createSignal, createMemo, onCleanup, onMount, Show, For, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createMemo, onMount, Show, For, type Component, createUniqueId } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchCardsPickerList } from "@/modules/cards/api";
 
+import Modal from "@/shared/views/Modal";
 interface Props {
   onClose: () => void;
   onInsert: (iid: number) => void;
@@ -48,109 +48,93 @@ const CardPickerModal: Component<Props> = (props) => {
 
   onMount(() => inputRef?.focus());
 
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      props.onClose();
-    }
-  };
-  document.addEventListener("keydown", onKeyDown);
-  onCleanup(() => document.removeEventListener("keydown", onKeyDown));
-
   const choose = (iid: number) => {
     props.onInsert(iid);
     props.onClose();
   };
 
+  const titleId = createUniqueId();
   return (
-    <Portal mount={document.body}>
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
       <div
-        class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60"
-        onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
+        class="w-full max-w-lg max-h-[70vh] flex flex-col rounded-xl border border-rim
+               bg-surface shadow-2xl text-txt overflow-hidden"
       >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("cards.insert_card")}
-          class="w-full max-w-lg max-h-[70vh] flex flex-col rounded-xl border border-rim
-                 bg-surface shadow-2xl text-txt overflow-hidden"
-        >
-          <div class="px-4 py-3 border-b border-rim shrink-0">
-            <h2 class="text-sm font-semibold">{t("cards.insert_card")}</h2>
-          </div>
+        <div class="px-4 py-3 border-b border-rim shrink-0">
+          <h2 id={titleId} class="text-sm font-semibold">{t("cards.insert_card")}</h2>
+        </div>
 
-          <div class="px-4 py-3 border-b border-rim shrink-0">
-            <input
-              ref={inputRef}
-              type="search"
-              value={query()}
-              onInput={(e) => setQuery(e.currentTarget.value)}
-              onKeyDown={(e) => e.stopPropagation()}
-              placeholder={t("cards.card_picker_search")}
-              class="w-full px-2 py-1.5 text-sm rounded-lg border border-rim bg-elevated
-                     text-txt outline-none focus:border-accent"
-            />
-          </div>
+        <div class="px-4 py-3 border-b border-rim shrink-0">
+          <input
+            ref={inputRef}
+            type="search"
+            value={query()}
+            onInput={(e) => setQuery(e.currentTarget.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            placeholder={t("cards.card_picker_search")}
+            class="w-full px-2 py-1.5 text-sm rounded-lg border border-rim bg-elevated
+                   text-txt outline-none focus:border-accent"
+          />
+        </div>
 
-          <div class="flex-1 overflow-y-auto min-h-0">
-            <Show when={cards.loading}>
-              <div class="p-4 space-y-2">
-                <For each={Array(4).fill(0)}>
-                  {() => <div class="h-10 rounded-lg bg-elevated animate-pulse" />}
-                </For>
-              </div>
-            </Show>
+        <div class="flex-1 overflow-y-auto min-h-0">
+          <Show when={cards.loading}>
+            <div class="p-4 space-y-2">
+              <For each={Array(4).fill(0)}>
+                {() => <div class="h-10 rounded-lg bg-elevated animate-pulse" />}
+              </For>
+            </div>
+          </Show>
 
-            <Show when={!cards.loading}>
-              <Show
-                when={filtered().length > 0}
-                fallback={<p class="p-6 text-center text-sm text-muted">{t("cards.card_picker_empty")}</p>}
-              >
-                <ul class="divide-y divide-rim">
-                  <For each={filtered()}>
-                    {(c) => (
-                      <li>
-                        <button
-                          type="button"
-                          onClick={() => choose(c.iid)}
-                          class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-elevated transition-colors"
-                        >
-                          <Show
-                            when={c.cover}
-                            fallback={<span class="w-9 h-9 shrink-0 rounded bg-elevated border border-rim" />}
-                          >
-                            <img src={c.cover} alt="" loading="lazy"
-                                 class="w-9 h-9 shrink-0 rounded object-cover border border-rim" />
-                          </Show>
-                          <span class="flex-1 min-w-0">
-                            <span class="block text-sm text-txt truncate">
-                              {c.title || t("cards.untitled")}
-                            </span>
-                            <Show when={c.deck}>
-                              <span class="block text-xs text-muted truncate">{c.deck}</span>
-                            </Show>
-                          </span>
-                        </button>
-                      </li>
-                    )}
-                  </For>
-                </ul>
-              </Show>
-            </Show>
-          </div>
-
-          <div class="px-4 py-3 border-t border-rim flex justify-end shrink-0">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-elevated transition-colors"
+          <Show when={!cards.loading}>
+            <Show
+              when={filtered().length > 0}
+              fallback={<p class="p-6 text-center text-sm text-muted">{t("cards.card_picker_empty")}</p>}
             >
-              {t("editor.cancel_btn")}
-            </button>
-          </div>
+              <ul class="divide-y divide-rim">
+                <For each={filtered()}>
+                  {(c) => (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => choose(c.iid)}
+                        class="w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-elevated transition-colors"
+                      >
+                        <Show
+                          when={c.cover}
+                          fallback={<span class="w-9 h-9 shrink-0 rounded bg-elevated border border-rim" />}
+                        >
+                          <img src={c.cover} alt="" loading="lazy"
+                               class="w-9 h-9 shrink-0 rounded object-cover border border-rim" />
+                        </Show>
+                        <span class="flex-1 min-w-0">
+                          <span class="block text-sm text-txt truncate">
+                            {c.title || t("cards.untitled")}
+                          </span>
+                          <Show when={c.deck}>
+                            <span class="block text-xs text-muted truncate">{c.deck}</span>
+                          </Show>
+                        </span>
+                      </button>
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </Show>
+          </Show>
+        </div>
+
+        <div class="px-4 py-3 border-t border-rim flex justify-end shrink-0">
+          <button
+            type="button"
+            onClick={props.onClose}
+            class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-elevated transition-colors"
+          >
+            {t("editor.cancel_btn")}
+          </button>
         </div>
       </div>
-    </Portal>
+    </Modal>
   );
 };
 

@@ -1,8 +1,8 @@
 import { onCleanup, onMount, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
 import { MdOutlineClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
+import Modal from "@/shared/views/Modal";
 interface Props {
   /** attach.id — the WOPI file id the `wopi` addon expects at /wopi/:id */
   fileId: number;
@@ -33,23 +33,17 @@ const WopiEditorOverlay: Component<Props> = (props) => {
         /* not ours */
       }
     };
-    // Escape is the escape hatch: a misconfigured client never sends UI_Close,
-    // and the frame covers every bit of SPA chrome.
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") props.onClose(); };
-
     window.addEventListener("message", onMessage);
-    window.addEventListener("keydown", onKey);
 
     onCleanup(() => {
       window.removeEventListener("message", onMessage);
-      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     });
   });
 
   return (
-    <Portal>
-      <div class="fixed inset-0 z-[1000] bg-surface">
+    <Modal onClose={props.onClose} bare label={t("files_mod.edit_in_office") as string}
+           class="fixed inset-0 w-full h-full z-[1000] bg-surface">
         <iframe
           src={`/wopi/${props.fileId}`}
           title={t("files_mod.edit_in_office") as string}
@@ -63,8 +57,7 @@ const WopiEditorOverlay: Component<Props> = (props) => {
         >
           <MdOutlineClose size={16} />
         </button>
-      </div>
-    </Portal>
+    </Modal>
   );
 };
 

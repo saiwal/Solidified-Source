@@ -1,5 +1,4 @@
-import { createSignal, createMemo, Show, For, lazy, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createMemo, Show, For, lazy, type Component, createUniqueId } from "solid-js";
 import {
   MdOutlineContent_copy,
   MdOutlineIos_share,
@@ -16,6 +15,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchLockview, grantGuest, revokeGuest } from "@utsukta/spa-core/lib/lockview-api";
 import { saveToken, newTokenValue, fetchTokens } from "@/modules/directory/tokens/api";
 
+import Modal from "@/shared/views/Modal";
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
 
 interface Props {
@@ -231,254 +231,250 @@ const ShareModal: Component<Props> = (props) => {
   const rowBtn =
     "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-txt hover:bg-elevated transition-colors";
 
+  const titleId = createUniqueId();
   return (
     <>
       {/* Hidden, not closed, while composing: ComposerModal is z-50 and this
           overlay is z-[60], so leaving both up buries the composer behind our
           backdrop. Closing the composer drops back to the share popup. */}
       <Show when={!composerOpen()}>
-        <Portal>
-          <div
-            class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-            onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
-          >
-            <div class="w-full max-w-md rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
-              <header class="flex items-center justify-between px-4 py-3 border-b border-rim">
-                <span class="text-sm font-semibold text-txt truncate">
-                  {t("share.title")} — <span class="font-normal text-muted">{props.target.title}</span>
-                </span>
-                <button
-                  onClick={props.onClose}
-                  aria-label={t("share.close") as string}
-                  class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2"
-                >
-                  ×
-                </button>
-              </header>
+        <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
+          <div class="w-full max-w-md rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
+            <header class="flex items-center justify-between px-4 py-3 border-b border-rim">
+              <span id={titleId} class="text-sm font-semibold text-txt truncate">
+                {t("share.title")} — <span class="font-normal text-muted">{props.target.title}</span>
+              </span>
+              <button
+                onClick={props.onClose}
+                aria-label={t("share.close") as string}
+                class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2"
+              >
+                ×
+              </button>
+            </header>
 
-              <div class="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
-                {/* Link */}
-                <CopyRow
-                  label={t("share.link") as string}
-                  value={shareUrl()}
-                  copyLabel={t("share.copy") as string}
-                  onCopy={copy}
-                />
+            <div class="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
+              {/* Link */}
+              <CopyRow
+                label={t("share.link") as string}
+                value={shareUrl()}
+                copyLabel={t("share.copy") as string}
+                onCopy={copy}
+              />
 
-                {/* Actions */}
-                <div class="pt-1 space-y-0.5">
-                  <Show when={canNativeShare()}>
-                    <button type="button" class={rowBtn} onClick={nativeShare}>
-                      <MdOutlineIos_share size={17} class="text-muted" />
-                      <span>{t("share.native_share")}</span>
-                    </button>
-                  </Show>
-
-                  <Show when={canPost()}>
-                    <button type="button" class={rowBtn} onClick={() => setComposerOpen(true)}>
-                      <BiRegularRepost size={17} class="text-muted" />
-                      <span>{t("share.share_as_post")}</span>
-                    </button>
-                    <Show when={props.target.restricted}>
-                      <p class="px-2 pb-1 text-[0.6875rem] text-amber-600 dark:text-amber-500">
-                        {t("share.restricted_warning")}
-                      </p>
-                    </Show>
-                  </Show>
-
-                  <a class={rowBtn} href={mailtoHref()}>
-                    <MdOutlineMail size={17} class="text-muted" />
-                    <span>{t("share.email_client")}</span>
-                  </a>
-
-                  <Show when={auth()?.isLocal}>
-                    <button type="button" class={rowBtn} onClick={() => setEmailOpen(v => !v)}>
-                      <MdOutlineSend size={17} class="text-muted" />
-                      <span>{t("share.email_site")}</span>
-                    </button>
-                  </Show>
-                </div>
-
-                {/* Server-side email form */}
-                <Show when={emailOpen()}>
-                  <form class="space-y-2 rounded-lg border border-rim p-3" onSubmit={sendFromSite}>
-                    <div class="space-y-1">
-                      <label class="block text-xs text-muted">{t("share.email_to")}</label>
-                      <input
-                        type="text"
-                        required
-                        value={to()}
-                        onInput={(e) => setTo(e.currentTarget.value)}
-                        placeholder={t("share.email_to_placeholder") as string}
-                        class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                      />
-                      <p class="text-[0.6875rem] text-muted">{t("share.email_to_hint")}</p>
-                    </div>
-                    <div class="space-y-1">
-                      <label class="block text-xs text-muted">{t("share.email_note")}</label>
-                      <textarea
-                        rows={3}
-                        maxlength={1000}
-                        value={note()}
-                        onInput={(e) => setNote(e.currentTarget.value)}
-                        class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt resize-y"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={sending()}
-                      class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
-                    >
-                      {sending() ? t("share.email_sending") : t("share.email_send")}
-                    </button>
-                  </form>
+              {/* Actions */}
+              <div class="pt-1 space-y-0.5">
+                <Show when={canNativeShare()}>
+                  <button type="button" class={rowBtn} onClick={nativeShare}>
+                    <MdOutlineIos_share size={17} class="text-muted" />
+                    <span>{t("share.native_share")}</span>
+                  </button>
                 </Show>
 
-                {/* Guest access — only guests already in this item's audience
-                    appear here; a token is not a skeleton key. */}
-                <Show when={guests().length > 0 || otherGuests().length > 0 || lockview()?.can_create_guest}>
-                  <div class="space-y-1 rounded-lg border border-rim p-3">
-                    <label class="block text-xs font-semibold text-txt">
-                      {t("share.guest_access_title")}
-                    </label>
-                    <Show when={guests().length > 0 || otherGuests().length > 0}>
-                      <select
-                        value={selectedId() ?? ""}
-                        onChange={(e) => selectGuest(e.currentTarget.value)}
-                        class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                      >
-                        <option value="">{t("share.use_plain_link")}</option>
-                        <For each={guests()}>
-                          {(g) => <option value={g.id}>{g.name}</option>}
-                        </For>
-                        <Show when={otherGuests().length > 0}>
-                          <optgroup label={t("share.guest_add_group") as string}>
-                            <For each={otherGuests()}>
-                              {(g) => <option value={g.id}>{g.name}</option>}
-                            </For>
-                          </optgroup>
-                        </Show>
-                      </select>
-                    </Show>
-                    <Show when={needsApply()}>
-                      <div class="flex justify-end">
-                        <button
-                          type="button"
-                          disabled={granting()}
-                          onClick={() => pickGuest(String(selectedId()))}
-                          class="px-2.5 py-1 rounded-md bg-accent text-accent-fg text-xs disabled:opacity-60"
-                        >
-                          {t("share.guest_add_apply")}
-                        </button>
-                      </div>
-                    </Show>
-                    <Show when={activeGuest()}>
-                      {(g) => (
-                        <>
-                          <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
-                            {t("share.guest_access_warning")}
-                          </p>
-                          <div class="flex justify-end">
-                            <button
-                              type="button"
-                              disabled={granting()}
-                              onClick={() => revoke(g().id)}
-                              class="px-2.5 py-1 rounded-md text-xs text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
-                            >
-                              {t("share.guest_remove")}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </Show>
+                <Show when={canPost()}>
+                  <button type="button" class={rowBtn} onClick={() => setComposerOpen(true)}>
+                    <BiRegularRepost size={17} class="text-muted" />
+                    <span>{t("share.share_as_post")}</span>
+                  </button>
+                  <Show when={props.target.restricted}>
+                    <p class="px-2 pb-1 text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                      {t("share.restricted_warning")}
+                    </p>
+                  </Show>
+                </Show>
 
-                    <Show when={lockview()?.can_create_guest}>
-                      <Show
-                        when={newGuestOpen()}
-                        fallback={
+                <a class={rowBtn} href={mailtoHref()}>
+                  <MdOutlineMail size={17} class="text-muted" />
+                  <span>{t("share.email_client")}</span>
+                </a>
+
+                <Show when={auth()?.isLocal}>
+                  <button type="button" class={rowBtn} onClick={() => setEmailOpen(v => !v)}>
+                    <MdOutlineSend size={17} class="text-muted" />
+                    <span>{t("share.email_site")}</span>
+                  </button>
+                </Show>
+              </div>
+
+              {/* Server-side email form */}
+              <Show when={emailOpen()}>
+                <form class="space-y-2 rounded-lg border border-rim p-3" onSubmit={sendFromSite}>
+                  <div class="space-y-1">
+                    <label class="block text-xs text-muted">{t("share.email_to")}</label>
+                    <input
+                      type="text"
+                      required
+                      value={to()}
+                      onInput={(e) => setTo(e.currentTarget.value)}
+                      placeholder={t("share.email_to_placeholder") as string}
+                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                    />
+                    <p class="text-[0.6875rem] text-muted">{t("share.email_to_hint")}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <label class="block text-xs text-muted">{t("share.email_note")}</label>
+                    <textarea
+                      rows={3}
+                      maxlength={1000}
+                      value={note()}
+                      onInput={(e) => setNote(e.currentTarget.value)}
+                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt resize-y"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={sending()}
+                    class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
+                  >
+                    {sending() ? t("share.email_sending") : t("share.email_send")}
+                  </button>
+                </form>
+              </Show>
+
+              {/* Guest access — only guests already in this item's audience
+                  appear here; a token is not a skeleton key. */}
+              <Show when={guests().length > 0 || otherGuests().length > 0 || lockview()?.can_create_guest}>
+                <div class="space-y-1 rounded-lg border border-rim p-3">
+                  <label class="block text-xs font-semibold text-txt">
+                    {t("share.guest_access_title")}
+                  </label>
+                  <Show when={guests().length > 0 || otherGuests().length > 0}>
+                    <select
+                      value={selectedId() ?? ""}
+                      onChange={(e) => selectGuest(e.currentTarget.value)}
+                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                    >
+                      <option value="">{t("share.use_plain_link")}</option>
+                      <For each={guests()}>
+                        {(g) => <option value={g.id}>{g.name}</option>}
+                      </For>
+                      <Show when={otherGuests().length > 0}>
+                        <optgroup label={t("share.guest_add_group") as string}>
+                          <For each={otherGuests()}>
+                            {(g) => <option value={g.id}>{g.name}</option>}
+                          </For>
+                        </optgroup>
+                      </Show>
+                    </select>
+                  </Show>
+                  <Show when={needsApply()}>
+                    <div class="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={granting()}
+                        onClick={() => pickGuest(String(selectedId()))}
+                        class="px-2.5 py-1 rounded-md bg-accent text-accent-fg text-xs disabled:opacity-60"
+                      >
+                        {t("share.guest_add_apply")}
+                      </button>
+                    </div>
+                  </Show>
+                  <Show when={activeGuest()}>
+                    {(g) => (
+                      <>
+                        <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                          {t("share.guest_access_warning")}
+                        </p>
+                        <div class="flex justify-end">
                           <button
                             type="button"
-                            onClick={() => setNewGuestOpen(true)}
-                            class="text-xs text-accent hover:underline"
+                            disabled={granting()}
+                            onClick={() => revoke(g().id)}
+                            class="px-2.5 py-1 rounded-md text-xs text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
                           >
-                            + {t("share.guest_new")}
+                            {t("share.guest_remove")}
                           </button>
-                        }
-                      >
-                        <form class="space-y-2 pt-1" onSubmit={createGuest}>
-                          <div class="space-y-1">
-                            <label class="block text-xs text-muted">{t("share.guest_new_name")}</label>
-                            <input
-                              type="text"
-                              required
-                              value={newGuestName()}
-                              onInput={(e) => setNewGuestName(e.currentTarget.value)}
-                              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                            />
-                          </div>
-                          <div class="space-y-1">
-                            <label class="block text-xs text-muted">{t("share.guest_new_expires")}</label>
-                            <input
-                              type="date"
-                              value={newGuestExpires()}
-                              onInput={(e) => setNewGuestExpires(e.currentTarget.value)}
-                              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                            />
-                          </div>
-                          <Show when={roles().length > 0}>
-                            <div class="space-y-1">
-                              <label class="block text-xs text-muted">{t("guest_access.role")}</label>
-                              <select
-                                value={newGuestRole()}
-                                onChange={(e) => setNewGuestRole(e.currentTarget.value)}
-                                class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                              >
-                                <option value="" />
-                                <For each={roles()}>
-                                  {(r) => <option value={r.name}>{r.label}</option>}
-                                </For>
-                              </select>
-                            </div>
-                          </Show>
-                          <p class="text-[0.6875rem] text-muted">{t("share.guest_new_hint")}</p>
-                          <div class="flex gap-2">
-                            <button
-                              type="submit"
-                              disabled={creating()}
-                              class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
-                            >
-                              {creating() ? t("share.guest_new_creating") : t("share.guest_new_create")}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setNewGuestOpen(false)}
-                              class="px-3 py-1.5 rounded-lg border border-rim text-sm text-muted"
-                            >
-                              {t("share.close")}
-                            </button>
-                          </div>
-                        </form>
-                      </Show>
-                    </Show>
-                  </div>
-                </Show>
+                        </div>
+                      </>
+                    )}
+                  </Show>
 
-                {/* BBCode embed snippets */}
-                <For each={props.target.embed}>
-                  {(row) => (
-                    <CopyRow
-                      label={t(row.labelKey) as string}
-                      value={row.code}
-                      copyLabel={t("share.copy") as string}
-                      onCopy={copy}
-                      mono
-                    />
-                  )}
-                </For>
-              </div>
+                  <Show when={lockview()?.can_create_guest}>
+                    <Show
+                      when={newGuestOpen()}
+                      fallback={
+                        <button
+                          type="button"
+                          onClick={() => setNewGuestOpen(true)}
+                          class="text-xs text-accent hover:underline"
+                        >
+                          + {t("share.guest_new")}
+                        </button>
+                      }
+                    >
+                      <form class="space-y-2 pt-1" onSubmit={createGuest}>
+                        <div class="space-y-1">
+                          <label class="block text-xs text-muted">{t("share.guest_new_name")}</label>
+                          <input
+                            type="text"
+                            required
+                            value={newGuestName()}
+                            onInput={(e) => setNewGuestName(e.currentTarget.value)}
+                            class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                          />
+                        </div>
+                        <div class="space-y-1">
+                          <label class="block text-xs text-muted">{t("share.guest_new_expires")}</label>
+                          <input
+                            type="date"
+                            value={newGuestExpires()}
+                            onInput={(e) => setNewGuestExpires(e.currentTarget.value)}
+                            class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                          />
+                        </div>
+                        <Show when={roles().length > 0}>
+                          <div class="space-y-1">
+                            <label class="block text-xs text-muted">{t("guest_access.role")}</label>
+                            <select
+                              value={newGuestRole()}
+                              onChange={(e) => setNewGuestRole(e.currentTarget.value)}
+                              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
+                            >
+                              <option value="" />
+                              <For each={roles()}>
+                                {(r) => <option value={r.name}>{r.label}</option>}
+                              </For>
+                            </select>
+                          </div>
+                        </Show>
+                        <p class="text-[0.6875rem] text-muted">{t("share.guest_new_hint")}</p>
+                        <div class="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={creating()}
+                            class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
+                          >
+                            {creating() ? t("share.guest_new_creating") : t("share.guest_new_create")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setNewGuestOpen(false)}
+                            class="px-3 py-1.5 rounded-lg border border-rim text-sm text-muted"
+                          >
+                            {t("share.close")}
+                          </button>
+                        </div>
+                      </form>
+                    </Show>
+                  </Show>
+                </div>
+              </Show>
+
+              {/* BBCode embed snippets */}
+              <For each={props.target.embed}>
+                {(row) => (
+                  <CopyRow
+                    label={t(row.labelKey) as string}
+                    value={row.code}
+                    copyLabel={t("share.copy") as string}
+                    onCopy={copy}
+                    mono
+                  />
+                )}
+              </For>
             </div>
           </div>
-        </Portal>
+        </Modal>
       </Show>
 
       <Show when={composerOpen()}>

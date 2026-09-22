@@ -1,5 +1,4 @@
-import { createSignal, Show, For, onCleanup } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, Show, For, onCleanup, createUniqueId } from "solid-js";
 import {
   MdFillClose,
   MdFillAdd,
@@ -19,6 +18,7 @@ import EventCreatorModal from "../widgets/EventCreatorModal";
 import { fmtEventRange } from "./calUtils";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 
+import Modal from "@/shared/views/Modal";
 function fmtFullDate(iso: string, locale: string) {
   return new Date(iso).toLocaleDateString(locale, {
     weekday: "long",
@@ -63,21 +63,20 @@ export default function DayDetailModal(props: Props) {
 
   const evCount = () => props.events.length;
 
+  const titleId = createUniqueId();
   return (
     <>
-      <Portal mount={document.body}>
-      <div
-        class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4"
-        style={{ background: "rgba(0,0,0,0.55)" }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) props.onClose();
-        }}
+      <Modal
+        onClose={props.onClose}
+        labelledBy={titleId}
+        bare
+        class="fixed inset-0 w-full h-full z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-black/55"
       >
         <div class="bg-surface border border-rim rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden">
           {/* Header */}
           <div class="flex items-start justify-between px-5 pt-5 pb-4 border-b border-rim shrink-0 gap-3">
             <div class="min-w-0">
-              <h2 class="text-base font-semibold text-txt leading-snug">{dateLabel()}</h2>
+              <h2 id={titleId} class="text-base font-semibold text-txt leading-snug">{dateLabel()}</h2>
               <p class="text-xs text-muted mt-0.5">
                 {evCount() === 0
                   ? t("calendar.no_events")
@@ -170,8 +169,7 @@ export default function DayDetailModal(props: Props) {
             </Show>
           </div>
         </div>
-      </div>
-      </Portal>
+      </Modal>
 
       <Show when={showCreator()}>
         <EventCreatorModal

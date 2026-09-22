@@ -1,6 +1,6 @@
 // modules/directory/views/DirectoryEntryModal.tsx
 import { Show, For, type Component, createEffect, createSignal, on } from "solid-js";
-import { Portal } from "solid-js/web";
+import Modal from "@/shared/views/Modal";
 import { chanviewHref, type DirectoryEntry } from "../people/api";
 import { connectToChannel } from "../connections/api";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -35,15 +35,6 @@ const DirectoryEntryModal: Component<Props> = (props) => {
     }
   }
 
-  const handleBackdrop = (ev: MouseEvent) => {
-    if (ev.target === ev.currentTarget) props.onClose();
-  };
-
-  let closeButtonRef: HTMLButtonElement | undefined;
-  createEffect(on(() => !!e(), (visible) => {
-    if (visible) requestAnimationFrame(() => closeButtonRef?.focus());
-  }, { defer: true }));
-
   createEffect(on(() => props.entry, () => {
     setJustConnected(false);
     setConnectError("");
@@ -51,18 +42,8 @@ const DirectoryEntryModal: Component<Props> = (props) => {
 
   return (
     <Show when={e()}>
-      <Portal>
-        <div
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={handleBackdrop}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={e()!.name}
-            tabindex="-1"
-            class="relative w-full max-w-md max-h-[90vh] flex flex-col rounded-2xl bg-surface shadow-2xl overflow-hidden focus:outline-none"
-          >
+      <Modal onClose={props.onClose} label={e()!.name} class="z-50">
+          <div class="relative w-full max-w-md max-h-[90vh] flex flex-col rounded-2xl bg-surface shadow-2xl overflow-hidden">
 
             {/* ── Cover banner ── */}
             <Show when={e()!.cover}>
@@ -94,7 +75,7 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                     </p>
                   </div>
                   <button
-                    ref={(el) => (closeButtonRef = el)}
+                    autofocus
                     onClick={props.onClose}
                     class="shrink-0 p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors"
                     aria-label={t("directory.close")}
@@ -235,8 +216,7 @@ const DirectoryEntryModal: Component<Props> = (props) => {
               </Show>
             </div>
           </div>
-        </div>
-      </Portal>
+      </Modal>
     </Show>
   );
 };

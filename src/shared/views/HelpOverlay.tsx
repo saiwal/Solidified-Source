@@ -6,6 +6,7 @@ import { useHelpMode, type DocType } from "@utsukta/spa-core/store/help-mode";
 import { useDocs } from "@utsukta/spa-core/lib/useDocs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
+import Modal from "@/shared/views/Modal";
 export default function HelpOverlay() {
   const { t } = useI18n();
   const { helpMode, helpTarget, exit } = useHelpMode();
@@ -29,22 +30,14 @@ export default function HelpOverlay() {
       </Show>
 
       <Show when={helpTarget()}>
-        <Portal>
-          <div
-            class="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center p-4"
-            onClick={exit}
-          >
-            <div
-              class="w-full max-w-2xl bg-surface rounded-xl border border-rim overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <HelpModalHeader target={helpTarget()!} onClose={exit} />
-              <div class="px-5 py-4 max-h-[60vh] overflow-y-auto">
-                <DocContent target={helpTarget()!} />
-              </div>
+        <Modal onClose={exit} labelledBy="help-modal-title" class="z-[9999]">
+          <div class="w-full max-w-2xl bg-surface rounded-xl border border-rim overflow-hidden">
+            <HelpModalHeader target={helpTarget()!} onClose={exit} />
+            <div class="px-5 py-4 max-h-[60vh] overflow-y-auto">
+              <DocContent target={helpTarget()!} />
             </div>
           </div>
-        </Portal>
+        </Modal>
       </Show>
     </>
   );
@@ -62,11 +55,12 @@ function HelpModalHeader(props: { target: string; onClose: () => void }) {
     <div class="border-b border-rim">
       {/* top row: breadcrumb + close */}
       <div class="flex items-center justify-between px-5 pt-4 pb-3">
-        <span class="text-sm font-medium text-txt">
+        <span id="help-modal-title" class="text-sm font-medium text-txt">
           {props.target.split(".").join(" › ")}
         </span>
         <button
           onClick={props.onClose}
+          aria-label={t("layout.close")}
           class="text-muted hover:text-txt transition-colors leading-none"
         >
           ✕

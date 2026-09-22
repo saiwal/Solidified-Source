@@ -1,6 +1,7 @@
-import { createSignal, For, Show, batch } from "solid-js";
+import { createSignal, createUniqueId, For, Show, batch } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
+import Modal from "@/shared/views/Modal";
 import {
   fetchAdminProfileFields,
   saveProfileFieldLayout,
@@ -231,6 +232,7 @@ function FieldModal(props: {
   onClose: () => void;
   onSave: (f: Omit<ProfdefField, "id">) => Promise<void>;
 }) {
+  const titleId = createUniqueId();
   const [form, setForm] = createSignal({ ...props.initial });
   const [saving, setSaving] = createSignal(false);
   const [error, setError] = createSignal("");
@@ -253,11 +255,12 @@ function FieldModal(props: {
   }
 
   return (
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-50">
       <div class="w-full max-w-md rounded-xl border border-rim bg-base shadow-xl">
         <div class="flex items-center justify-between px-4 py-3 border-b border-rim">
-          <h3 class="text-sm font-semibold text-txt">{props.title}</h3>
-          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none">×</button>
+          <h3 id={titleId} class="text-sm font-semibold text-txt">{props.title}</h3>
+          <button onClick={props.onClose} aria-label="Close"
+                    class="text-muted hover:text-txt text-lg leading-none">×</button>
         </div>
 
         <form onSubmit={onSubmit} class="p-4 space-y-4">
@@ -330,7 +333,7 @@ function FieldModal(props: {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -1,5 +1,4 @@
-import { createResource, createSignal, For, lazy, Show } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createResource, createSignal, For, lazy, Show, createUniqueId } from "solid-js";
 import { useParams, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -15,6 +14,7 @@ import type { EditorTab } from "@/shared/editor/types/editor.types";
 import { isAnimatedImage } from "@utsukta/spa-core/lib/isAnimatedImage";
 import { MdOutlineClose } from "solid-icons/md";
 
+import Modal from "@/shared/views/Modal";
 // Lazy-loaded so Filerobot + React don't inflate the profile chunk
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -540,56 +540,53 @@ function ProfilePhotoPickerModal(props: {
     setSelectedPhoto((prev) => prev?.resource_id === photo.resource_id ? null : photo);
   }
 
+  const titleId = createUniqueId();
   return (
-    <Portal mount={document.body}>
-      <div
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60"
-        onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
-      >
-        <div class="flex flex-col w-full max-w-3xl h-[85vh] bg-surface border border-rim rounded-xl shadow-2xl overflow-hidden">
-          <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-            <span class="text-sm font-semibold text-txt">{t("profiles.photo_picker_title")}</span>
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
+      <div class="flex flex-col w-full max-w-3xl h-[85vh] bg-surface border border-rim rounded-xl shadow-2xl overflow-hidden">
+        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
+          <span id={titleId} class="text-sm font-semibold text-txt">{t("profiles.photo_picker_title")}</span>
+          <button
+            type="button"
+            onClick={props.onClose}
+            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
+          
+          aria-label={t("layout.close")}>
+            <MdOutlineClose class="w-4 h-4" />
+          </button>
+        </header>
+
+        <div class="flex-1 overflow-hidden min-h-0 p-4">
+          <PhotosPicker nick={props.nick} selected={selectedSet} onToggle={handleToggle} />
+        </div>
+
+        <footer class="flex items-center justify-between px-4 py-3 border-t border-rim bg-elevated shrink-0">
+          <span class="text-xs text-muted truncate max-w-[50%]">
+            <Show when={selectedPhoto()} fallback={t("editor.select_to_attach")}>
+              {selectedPhoto()!.filename}
+            </Show>
+          </span>
+          <div class="flex gap-2">
             <button
               type="button"
               onClick={props.onClose}
-              class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
+              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-surface transition-colors"
             >
-              <MdOutlineClose class="w-4 h-4" />
+              {t("editor.cancel_btn")}
             </button>
-          </header>
-
-          <div class="flex-1 overflow-hidden min-h-0 p-4">
-            <PhotosPicker nick={props.nick} selected={selectedSet} onToggle={handleToggle} />
+            <button
+              type="button"
+              disabled={!selectedPhoto()}
+              onClick={() => { const p = selectedPhoto(); if (p) props.onSelect(p); }}
+              class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
+                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+            >
+              {t("profiles.use_this_photo")}
+            </button>
           </div>
-
-          <footer class="flex items-center justify-between px-4 py-3 border-t border-rim bg-elevated shrink-0">
-            <span class="text-xs text-muted truncate max-w-[50%]">
-              <Show when={selectedPhoto()} fallback={t("editor.select_to_attach")}>
-                {selectedPhoto()!.filename}
-              </Show>
-            </span>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                onClick={props.onClose}
-                class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-surface transition-colors"
-              >
-                {t("editor.cancel_btn")}
-              </button>
-              <button
-                type="button"
-                disabled={!selectedPhoto()}
-                onClick={() => { const p = selectedPhoto(); if (p) props.onSelect(p); }}
-                class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                       hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-              >
-                {t("profiles.use_this_photo")}
-              </button>
-            </div>
-          </footer>
-        </div>
+        </footer>
       </div>
-    </Portal>
+    </Modal>
   );
 }
 

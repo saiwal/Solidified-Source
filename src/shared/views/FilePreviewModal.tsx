@@ -1,5 +1,4 @@
-import { createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, type Component, createUniqueId } from "solid-js";
 import { marked } from "marked";
 import ePub, { type Rendition } from "epubjs";
 import { MdFillClose_fullscreen, MdFillOpen_in_full, MdOutlineChevron_left, MdOutlineChevron_right, MdOutlineEdit } from "solid-icons/md";
@@ -10,6 +9,7 @@ import { mountPlyr } from "@utsukta/spa-core/lib/usePlyr";
 
 import type { ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
 
+import Modal from "@/shared/views/Modal";
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 const ExcalidrawCanvas = lazy(() => import("@/modules/excalidraw/ExcalidrawCanvas"));
 const VideoEditor = lazy(() =>
@@ -189,17 +189,15 @@ const FilePreviewModal: Component<Props> = (props) => {
     downloadBlob(blob, props.filename);
   }
 
+  const titleId = createUniqueId();
   return (
-    <Portal>
-      <div
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-        onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
-      >
+    <>
+      <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
         <div class={`w-full max-h-[90vh] flex flex-col rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden transition-[max-width] ${
           wide() ? "max-w-[95vw]" : "max-w-4xl"
         }`}>
           <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-            <span class="text-sm font-semibold text-txt truncate">{props.filename}</span>
+            <span id={titleId} class="text-sm font-semibold text-txt truncate">{props.filename}</span>
             <div class="flex items-center gap-3 shrink-0 ml-2">
               <Show when={editable()}>
                 <button
@@ -227,7 +225,7 @@ const FilePreviewModal: Component<Props> = (props) => {
               >
                 Download
               </a>
-              <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none">
+              <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none" aria-label="Close">
                 ×
               </button>
             </div>
@@ -370,7 +368,7 @@ const FilePreviewModal: Component<Props> = (props) => {
             </Show>
           </div>
         </div>
-      </div>
+      </Modal>
 
       <Show when={editingImage()}>
         {(file) => (
@@ -386,7 +384,8 @@ const FilePreviewModal: Component<Props> = (props) => {
 
       <Show when={editingVideo()}>
         {(file) => (
-          <div class="fixed inset-0 z-[1000] flex flex-col bg-surface overflow-y-auto">
+          <Modal onClose={() => setEditingVideo(null)} bare label={file().name}
+                 class="fixed inset-0 w-full h-full z-[1000] flex flex-col bg-surface overflow-y-auto">
             <div class="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-rim bg-surface">
               <button
                 type="button"
@@ -402,10 +401,10 @@ const FilePreviewModal: Component<Props> = (props) => {
                 <VideoEditor initialFile={file()} />
               </Suspense>
             </div>
-          </div>
+          </Modal>
         )}
       </Show>
-    </Portal>
+    </>
   );
 };
 

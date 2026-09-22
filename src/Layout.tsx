@@ -113,7 +113,6 @@ const Layout: ParentComponent = (props) => {
     navActions,
     navData,
     navChannels,
-    isXl,
     reducedMotion,
     mainRef, setMainRef,
     setMorePanelRef,
@@ -124,6 +123,7 @@ const Layout: ParentComponent = (props) => {
     onMainScroll,
     activeModuleId,
     pageTemplateId,
+    routeTitle,
     hidesNavChrome,
     hidesRightSidebar,
     hidesWidgetSlots,
@@ -222,7 +222,7 @@ const Layout: ParentComponent = (props) => {
                 that may already be scrolled out of view. */}
             <div class="flex-1 min-h-0 flex flex-col overflow-y-auto">
               {/* Primary nav — reorderable via drag handle while in edit-layout mode */}
-              <nav aria-label="Primary" data-tour="nav.primary" tabindex="0" class="flex flex-col gap-0.5">
+              <nav aria-label="Primary" data-tour="nav.primary" class="flex flex-col gap-0.5">
                 <For each={desktopNavDrag.displayItems()}>
                   {(item) => (
                     <div
@@ -324,10 +324,16 @@ const Layout: ParentComponent = (props) => {
           <main
             id="main-content"
             ref={setMainRef}
+            tabindex="-1"
             onScroll={onMainScroll}
             class="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] p-4 lg:p-6 pb-16 lg:pb-6 relative flex flex-col"
           >
             <div class="flex flex-col flex-1">
+              {/* Route changes swap <main> silently; without this a screen
+                  reader gets no signal that the page changed. */}
+              <span class="sr-only" aria-live="polite" aria-atomic="true">
+                {routeTitle()}
+              </span>
               <span class="sr-only" aria-live="polite" aria-atomic="true">
                 {notifCount() > 0
                   ? `${formatCount(notifCount(), notifyCountLimit())} ${t("nav.notifications")}`
@@ -411,13 +417,19 @@ const Layout: ParentComponent = (props) => {
           {/* ═══════════════════════════════════════════════════════
               RIGHT SIDEBAR
           ═══════════════════════════════════════════════════════ */}
+          {/* Off-canvas drawers (this and #more-drawer) are only translated
+              off-screen, so their contents stay tabbable when closed. `inert`
+              hides them from AT *and* pulls them out of the tab order;
+              `aria-hidden` alone did only the first, so focus could land
+              inside a subtree announced as hidden. tabindex=-1 keeps
+              useLayoutChrome's focus-on-open working without adding a tab
+              stop of its own. */}
           <Show when={!hidesRightSidebar()}>
           <aside
             id="right-sidebar"
             ref={setRightPanelRef}
             aria-label="Sidebar panel"
-            aria-hidden={!isXl() && !rightOpen()}
-            tabindex="0"
+            tabindex="-1"
             class={`
               fixed inset-y-0 right-0 z-40 w-[288px] shrink-0 p-4 pb-20 lg:pb-4 overflow-y-auto
               flex flex-col gap-4
@@ -455,7 +467,6 @@ const Layout: ParentComponent = (props) => {
             id="more-drawer"
             ref={setMorePanelRef}
             aria-label={t("layout.more")}
-            aria-hidden={!moreOpen()}
             class={`
               fixed left-0 right-0 z-40 lg:hidden
               bg-surface border-t border-rim

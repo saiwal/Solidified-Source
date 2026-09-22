@@ -162,6 +162,7 @@ export type RawDictionary = {
   layout: {
     title:              string;
     skip_to_content:    string;
+    close:              string;
     offline:            string;
     panel:              string;
     navigation:         string;

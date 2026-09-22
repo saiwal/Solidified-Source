@@ -89,6 +89,19 @@ export function useLayoutChrome() {
         rightPanelRef()?.focus({ preventScroll: true }),
       );
   });
+  // `inert`, not `aria-hidden`: both drawers close by translating off-screen,
+  // so their links and widgets stay tabbable. aria-hidden alone hid them from
+  // AT while leaving them in the tab order — focus could land inside a subtree
+  // announced as hidden, which is undefined behaviour. inert does both, and is
+  // set on the element because Solid's JSX types have no `inert` attribute.
+  createEffect(() => {
+    const el = rightPanelRef();
+    if (el) el.inert = !isXl() && !rightOpen();
+  });
+  createEffect(() => {
+    const el = morePanelRef();
+    if (el) el.inert = !moreOpen();
+  });
   createEffect(
     on(
       rightOpen,
@@ -130,6 +143,13 @@ export function useLayoutChrome() {
         const el = mainRef();
         if (el) el.scrollTop = 0;
         setShowScrollTop(false);
+        // A SPA navigation swaps <main>'s contents without moving focus, so a
+        // keyboard user stays parked on the link they just followed (often in
+        // a drawer that has since closed) and tabs forward from there rather
+        // than into the new page. Sending focus to the main region is the
+        // standard fix; scrollTop is already 0 above, so preventScroll only
+        // stops the browser re-scrolling ancestors on the way.
+        el?.focus({ preventScroll: true });
       },
       { defer: true },
     ),
@@ -176,11 +196,15 @@ export function useLayoutChrome() {
     if (pageTemplateId() && editingWidgets()) void loadTemplates();
   });
 
+  // The same resolved label drives the <title> and the live region a theme
+  // renders for screen readers — moving focus alone doesn't say what changed.
+  const [routeTitle, setRouteTitle] = createSignal("");
   createEffect(() => {
     const mod = getModule(activeModuleId());
     const label = mod?.navItem?.label;
     const resolved = typeof label === "function" ? label() : label;
     document.title = resolved ? `${resolved} · Hubzilla` : "Hubzilla";
+    setRouteTitle(resolved ?? "");
   });
 
   const closeAll = () => {
@@ -258,6 +282,7 @@ export function useLayoutChrome() {
     onMainScroll,
     activeModuleId,
     pageTemplateId,
+    routeTitle,
     chromeMode,
     hidesNavChrome,
     hidesRightSidebar,

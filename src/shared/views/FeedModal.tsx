@@ -4,8 +4,7 @@
 // module; tag and articles-only feeds point at the SPA's own /spa/feed
 // (core's /feed has no tag or article-type filter — see Handlers/Feed.php).
 
-import { createSignal, createMemo, For, Show, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createMemo, For, Show, type Component, createUniqueId } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories, type CategoryItem } from "@/shared/stream/components/CategoryWidget";
@@ -14,6 +13,7 @@ import { MdOutlineContent_copy as MdOutlineContentCopy, MdOutlineCheck } from "s
 import { BiRegularLinkExternal, BiRegularRss } from "solid-icons/bi";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
+import Modal from "@/shared/views/Modal";
 
 interface Props {
   channelNick: string;
@@ -176,50 +176,46 @@ const FeedModal: Component<Props> = (props) => {
 
   const webpageRows: FeedRow[] = [feedRow(t("widgets.subscribe_all_webpages") as string, spaFeed("?type=webpages"))];
 
+  const titleId = createUniqueId();
   return (
-    <Portal>
-      <div
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-        onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
-      >
-        <div class="w-full max-w-md lg:max-w-3xl max-h-[85vh] flex flex-col rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
-          <header class="flex items-center justify-between px-5 py-3.5 border-b border-rim shrink-0">
-            <span class="text-sm font-semibold text-txt">{t("widgets.rss_feeds")}</span>
-            <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2">
-              ×
-            </button>
-          </header>
-          <div class="overflow-y-auto p-5">
-            <Show when={!loading()} fallback={<p class="py-6 text-sm text-muted text-center">…</p>}>
-              <div
-                class="grid grid-cols-1 gap-x-8 gap-y-6"
-                classList={{ "lg:grid-cols-2": articlesInstalled() }}
-              >
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
+      <div class="w-full max-w-md lg:max-w-3xl max-h-[85vh] flex flex-col rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
+        <header class="flex items-center justify-between px-5 py-3.5 border-b border-rim shrink-0">
+          <span id={titleId} class="text-sm font-semibold text-txt">{t("widgets.rss_feeds")}</span>
+          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2" aria-label={t("layout.close")}>
+            ×
+          </button>
+        </header>
+        <div class="overflow-y-auto p-5">
+          <Show when={!loading()} fallback={<p class="py-6 text-sm text-muted text-center">…</p>}>
+            <div
+              class="grid grid-cols-1 gap-x-8 gap-y-6"
+              classList={{ "lg:grid-cols-2": articlesInstalled() }}
+            >
+              <FeedTypeColumn
+                title={t("widgets.subscribe_posts") as string}
+                allRow={feedRow(t("widgets.subscribe_all_posts") as string, spaFeed(""))}
+                categories={postCatRows()}
+                tags={postTagRows()}
+              />
+              <Show when={articlesInstalled()}>
                 <FeedTypeColumn
-                  title={t("widgets.subscribe_posts") as string}
-                  allRow={feedRow(t("widgets.subscribe_all_posts") as string, spaFeed(""))}
-                  categories={postCatRows()}
-                  tags={postTagRows()}
+                  title={t("widgets.subscribe_articles") as string}
+                  allRow={feedRow(t("widgets.subscribe_all_articles") as string, spaFeed("?type=articles"))}
+                  categories={articleCatRows()}
+                  tags={articleTagRows()}
                 />
-                <Show when={articlesInstalled()}>
-                  <FeedTypeColumn
-                    title={t("widgets.subscribe_articles") as string}
-                    allRow={feedRow(t("widgets.subscribe_all_articles") as string, spaFeed("?type=articles"))}
-                    categories={articleCatRows()}
-                    tags={articleTagRows()}
-                  />
-                </Show>
-              </div>
-              <Show when={webpagesInstalled()}>
-                <div class="mt-6 pt-5 border-t border-rim">
-                  <FeedSubsection label={t("widgets.subscribe_webpages") as string} rows={webpageRows} />
-                </div>
               </Show>
+            </div>
+            <Show when={webpagesInstalled()}>
+              <div class="mt-6 pt-5 border-t border-rim">
+                <FeedSubsection label={t("widgets.subscribe_webpages") as string} rows={webpageRows} />
+              </div>
             </Show>
-          </div>
+          </Show>
         </div>
       </div>
-    </Portal>
+    </Modal>
   );
 };
 

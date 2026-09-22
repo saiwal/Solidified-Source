@@ -15,8 +15,7 @@
  *   in-app rather than federated as standalone objects, so a live KaTeX
  *   render beats a static raster image.
  */
-import { createEffect, createSignal, onCleanup, onMount, Show, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createEffect, createSignal, onCleanup, onMount, Show, type Component, createUniqueId } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -24,6 +23,7 @@ import { renderLatexPreview, renderLatexToPngFile, LatexRenderError } from "./re
 import { bbAlt } from "../attachments/insertHelpers";
 import { MdOutlineClose } from "solid-icons/md";
 
+import Modal from "@/shared/views/Modal";
 interface Props {
   mode: "image" | "live";
   onClose: () => void;
@@ -100,7 +100,6 @@ const LatexComposerModal: Component<Props> = (props) => {
   }
 
   function onKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape") { props.onClose(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); void insert(); }
   }
   document.addEventListener("keydown", onKeyDown);
@@ -112,104 +111,98 @@ const LatexComposerModal: Component<Props> = (props) => {
     return t("editor.latex_insert_btn");
   };
 
+  const titleId = createUniqueId();
   return (
-    <Portal mount={document.body}>
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
       <div
-        class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60"
-        onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
+        class="flex flex-col w-full max-w-lg rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden"
       >
-        <div
-          class="flex flex-col w-full max-w-lg rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("editor.latex_modal_title")}
-        >
-          <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-            <span class="text-sm font-semibold">{t("editor.latex_modal_title")}</span>
+        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
+          <span id={titleId} class="text-sm font-semibold">{t("editor.latex_modal_title")}</span>
+          <button
+            type="button"
+            onClick={props.onClose}
+            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
+          
+          aria-label={t("layout.close")}>
+            <MdOutlineClose class="w-4 h-4" />
+          </button>
+        </header>
+
+        <div class="flex flex-col gap-3 p-4">
+          <div class="flex items-center gap-1 self-start rounded-lg border border-rim p-0.5">
             <button
               type="button"
-              onClick={props.onClose}
-              class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
+              onClick={() => setDisplayMode(false)}
+              class={
+                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors " +
+                (!displayMode() ? "bg-accent text-accent-fg" : "text-muted hover:text-txt")
+              }
             >
-              <MdOutlineClose class="w-4 h-4" />
+              {t("editor.latex_mode_inline")}
             </button>
-          </header>
-
-          <div class="flex flex-col gap-3 p-4">
-            <div class="flex items-center gap-1 self-start rounded-lg border border-rim p-0.5">
-              <button
-                type="button"
-                onClick={() => setDisplayMode(false)}
-                class={
-                  "px-2.5 py-1 rounded-md text-xs font-medium transition-colors " +
-                  (!displayMode() ? "bg-accent text-accent-fg" : "text-muted hover:text-txt")
-                }
-              >
-                {t("editor.latex_mode_inline")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDisplayMode(true)}
-                class={
-                  "px-2.5 py-1 rounded-md text-xs font-medium transition-colors " +
-                  (displayMode() ? "bg-accent text-accent-fg" : "text-muted hover:text-txt")
-                }
-              >
-                {t("editor.latex_mode_block")}
-              </button>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-muted mb-1">
-                {t("editor.latex_source_label")}
-              </label>
-              <textarea
-                ref={textareaRef}
-                value={source()}
-                onInput={(e) => setSource(e.currentTarget.value)}
-                onKeyDown={(e) => e.stopPropagation()}
-                placeholder={t("editor.latex_source_placeholder")}
-                rows={3}
-                class="w-full resize-none rounded-lg border border-rim bg-elevated px-3 py-2 text-sm font-mono
-                       text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-muted mb-1">
-                {t("editor.latex_preview_label")}
-              </label>
-              <div class="min-h-16 rounded-lg border border-rim bg-white px-3 py-3 overflow-x-auto flex items-center justify-center">
-                <div ref={previewRef} class="text-sm text-black" />
-              </div>
-            </div>
-
-            <Show when={error()}>
-              <p class="text-xs text-red-500">{error()}</p>
-            </Show>
+            <button
+              type="button"
+              onClick={() => setDisplayMode(true)}
+              class={
+                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors " +
+                (displayMode() ? "bg-accent text-accent-fg" : "text-muted hover:text-txt")
+              }
+            >
+              {t("editor.latex_mode_block")}
+            </button>
           </div>
 
-          <footer class="flex items-center justify-end gap-2 px-4 py-3 border-t border-rim bg-elevated shrink-0">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors"
-            >
-              {t("editor.cancel_btn")}
-            </button>
-            <button
-              type="button"
-              disabled={!source().trim() || inserting()}
-              onClick={() => void insert()}
-              class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg
-                     hover:opacity-90 active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {insertLabel()}
-            </button>
-          </footer>
+          <div>
+            <label class="block text-xs font-medium text-muted mb-1">
+              {t("editor.latex_source_label")}
+            </label>
+            <textarea
+              ref={textareaRef}
+              value={source()}
+              onInput={(e) => setSource(e.currentTarget.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              placeholder={t("editor.latex_source_placeholder")}
+              rows={3}
+              class="w-full resize-none rounded-lg border border-rim bg-elevated px-3 py-2 text-sm font-mono
+                     text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-muted mb-1">
+              {t("editor.latex_preview_label")}
+            </label>
+            <div class="min-h-16 rounded-lg border border-rim bg-white px-3 py-3 overflow-x-auto flex items-center justify-center">
+              <div ref={previewRef} class="text-sm text-black" />
+            </div>
+          </div>
+
+          <Show when={error()}>
+            <p class="text-xs text-red-500">{error()}</p>
+          </Show>
         </div>
+
+        <footer class="flex items-center justify-end gap-2 px-4 py-3 border-t border-rim bg-elevated shrink-0">
+          <button
+            type="button"
+            onClick={props.onClose}
+            class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors"
+          >
+            {t("editor.cancel_btn")}
+          </button>
+          <button
+            type="button"
+            disabled={!source().trim() || inserting()}
+            onClick={() => void insert()}
+            class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg
+                   hover:opacity-90 active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {insertLabel()}
+          </button>
+        </footer>
       </div>
-    </Portal>
+    </Modal>
   );
 };
 

@@ -3,6 +3,7 @@ import type { RawDictionary } from "../namespaces/types";
 export const layout: RawDictionary["layout"] = {
   title:              "Hubzilla",
   skip_to_content:    "सामग्री पर जाएँ",
+  close:              "बंद करें",
   offline:            "ऑफ़लाइन — कैश की गई सामग्री दिखाई जा रही है",
   panel:              "पैनल",
   navigation:         "नेविगेशन",

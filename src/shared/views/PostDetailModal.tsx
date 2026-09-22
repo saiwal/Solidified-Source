@@ -1,6 +1,5 @@
 // src/shared/views/PostDetailModal.tsx
 import { type Component, createEffect, createMemo, createSignal, on, Show, onMount } from "solid-js";
-import { Portal } from "solid-js/web";
 import PostCard from "../stream/components/PostCard";
 import type { StreamHandlers, EditPayload } from "../stream/types";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
@@ -20,6 +19,7 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
 
+import Modal from "@/shared/views/Modal";
 function flatNodes(posts: Post[]): ThreadNode[] {
   return posts.map((p) => ({ ...p, children: [] }));
 }
@@ -477,9 +477,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   const panel = (
         <div
           ref={dialogRef}
-          role={props.inline ? undefined : "dialog"}
-          aria-modal={props.inline ? undefined : "true"}
-          aria-labelledby="post-modal-title"
+          aria-labelledby={props.inline ? "post-modal-title" : undefined}
           tabindex="-1"
           class={props.inline
             ? "relative w-full h-full flex flex-col bg-base overflow-clip focus:outline-none"
@@ -607,17 +605,13 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   if (props.inline) return <>{nested}{panel}</>;
 
   return (
-    <Portal>
+    <>
       {nested}
-      <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay/80"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) props.onClose();
-        }}
-      >
+      <Modal onClose={props.onClose} labelledBy="post-modal-title" bare
+             class="fixed inset-0 w-full h-full z-50 flex items-center justify-center p-4 bg-overlay/80">
         {panel}
-      </div>
-    </Portal>
+      </Modal>
+    </>
   );
 };
 

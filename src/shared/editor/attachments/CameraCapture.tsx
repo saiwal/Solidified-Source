@@ -4,12 +4,12 @@ import {
   Show,
   type Component,
 } from "solid-js";
-import { Portal } from "solid-js/web";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import SharedImageEditor from "@/shared/views/ImageEditor";
 import { VideoEditor } from "@/modules/tools/components/VideoEditor";
 import { MdOutlineChevron_left, MdOutlineClose, MdOutlineRefresh, MdOutlineVideocam } from "solid-icons/md";
 
+import Modal from "@/shared/views/Modal";
 type Mode  = "photo" | "video" | "audio";
 type Stage = "initializing" | "streaming" | "captured" | "editing" | "editing-video" | "error";
 
@@ -260,8 +260,8 @@ const CameraCapture: Component<Props> = (props) => {
 
       {/* Full-screen video editor */}
       <Show when={stage() === "editing-video" && capturedFile()}>
-        <Portal mount={document.body}>
-          <div class="fixed inset-0 z-[1000] flex flex-col bg-surface overflow-y-auto">
+        <Modal onClose={() => setStage("captured")} bare label={String(t("editor.cam_edit"))}
+               class="fixed inset-0 w-full h-full z-[1000] flex flex-col bg-surface overflow-y-auto">
             <div class="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-rim bg-surface">
               <button
                 type="button"
@@ -279,22 +279,20 @@ const CameraCapture: Component<Props> = (props) => {
                 onAttach={onVideoAttach}
               />
             </div>
-          </div>
-        </Portal>
+        </Modal>
       </Show>
 
-      <Portal mount={document.body}>
-        <Show when={stage() !== "editing" && stage() !== "editing-video"}>
-          <div class="fixed inset-0 z-[1000] overflow-y-auto bg-black/80 backdrop-blur-sm">
-            <div
-              class="flex min-h-full items-center justify-center p-4"
-              onPointerDown={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
-            >
+      <Show when={stage() !== "editing" && stage() !== "editing-video"}>
+        {/* the centering wrapper is folded into the dialog itself, so a click
+            landing on it is a backdrop click the <Modal> can see */}
+        <Modal onClose={props.onClose} bare labelledBy="camera-title"
+               class="fixed inset-0 w-full h-full z-[1000] overflow-y-auto bg-black/80 backdrop-blur-sm
+                      flex min-h-full items-center justify-center p-4">
             <div class="relative bg-surface border border-rim rounded-2xl shadow-2xl flex flex-col w-full max-w-md overflow-hidden">
 
               {/* Header */}
               <div class="flex items-center justify-between px-4 py-3 border-b border-rim">
-                <h2 class="text-sm font-semibold text-txt">{String(t("editor.cam_title"))}</h2>
+                <h2 id="camera-title" class="text-sm font-semibold text-txt">{String(t("editor.cam_title"))}</h2>
                 <button
                   type="button"
                   onClick={props.onClose}
@@ -557,10 +555,8 @@ const CameraCapture: Component<Props> = (props) => {
               </div>
 
             </div>
-            </div>
-          </div>
-        </Show>
-      </Portal>
+      </Modal>
+      </Show>
     </>
   );
 };

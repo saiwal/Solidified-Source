@@ -1,5 +1,4 @@
-import { createSignal, Show, For, onMount, onCleanup } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, Show, For, onMount, onCleanup, createUniqueId } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createEvent, editEvent } from "../api";
@@ -23,6 +22,7 @@ import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { prevDay, nextDay, zonedTimeToUtc, utcToZonedDateTime } from "../views/calUtils";
 import { MdOutlineClose, MdOutlineExpand_more } from "solid-icons/md";
 
+import Modal from "@/shared/views/Modal";
 function timezones(): string[] {
   try {
     return Intl.supportedValuesOf("timeZone");
@@ -258,18 +258,19 @@ export default function EventCreatorModal(props: Props) {
     "bg-overlay border border-rim rounded-lg px-3 py-2 text-sm text-txt " +
     "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 w-full";
 
+  const titleId = createUniqueId();
   return (
-    <Portal mount={document.body}>
-    <div
-      class="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
+    <Modal
+      onClose={props.onClose}
+      labelledBy={titleId}
+      bare
+      class="fixed inset-0 w-full h-full z-[60] flex items-center justify-center p-4 bg-black/50"
     >
       <div class="bg-surface border border-rim rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
 
         {/* Header */}
         <div class="flex items-center justify-between px-5 pt-5 pb-4 border-b border-rim shrink-0">
-          <h2 class="text-base font-semibold text-txt">
+          <h2 id={titleId} class="text-base font-semibold text-txt">
             {isEdit ? t("calendar.edit_event") : t("calendar.new_event")}
           </h2>
           <button
@@ -532,7 +533,6 @@ export default function EventCreatorModal(props: Props) {
           </div>
         </form>
       </div>
-    </div>
-    </Portal>
+    </Modal>
   );
 }

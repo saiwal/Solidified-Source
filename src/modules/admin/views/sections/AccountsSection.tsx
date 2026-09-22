@@ -1,6 +1,7 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
+import Modal from "@/shared/views/Modal";
 import {
   fetchAdminAccounts, adminAccountAction, adminPendingAction,
   fetchAdminServiceClasses, setAccountServiceClass, setAccountExpires, setAccountPassword,
@@ -262,6 +263,7 @@ function AccountEditModal(props: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const titleId = createUniqueId();
   const { t } = useI18n();
   const [classes] = createQueryResource("admin-service-classes", fetchAdminServiceClasses);
   const [serviceClass, setServiceClass] = createSignal(props.account.account_service_class || "");
@@ -311,11 +313,12 @@ function AccountEditModal(props: {
   }
 
   return (
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-50">
       <div class="w-full max-w-sm rounded-xl border border-rim bg-base shadow-xl">
         <div class="flex items-center justify-between px-4 py-3 border-b border-rim">
-          <h3 class="text-sm font-semibold text-txt">{t("admin.edit_account_title")}</h3>
-          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none">×</button>
+          <h3 id={titleId} class="text-sm font-semibold text-txt">{t("admin.edit_account_title")}</h3>
+          <button onClick={props.onClose} aria-label={t("layout.close")}
+                    class="text-muted hover:text-txt text-lg leading-none">×</button>
         </div>
 
         <form onSubmit={onSubmit} class="p-4 space-y-4">
@@ -410,7 +413,7 @@ function AccountEditModal(props: {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }
 

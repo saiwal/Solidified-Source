@@ -5,8 +5,7 @@
  * same as LatexComposerModal's "image" mode), then insert a plain [img] tag
  * pointing at the hosted URL.
  */
-import { createSignal, lazy, onCleanup, Show, Suspense, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, lazy, onCleanup, Show, Suspense, type Component, createUniqueId } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -15,6 +14,7 @@ import { bbAlt } from "../attachments/insertHelpers";
 import { defaultSceneName, openSceneFromCloud } from "@/modules/excalidraw/scene-io";
 import { MdOutlineClose } from "solid-icons/md";
 
+import Modal from "@/shared/views/Modal";
 const FilePickerModal = lazy(() => import("../attachments/picker/FilePickerModal"));
 const SaveToCloudDialog = lazy(() => import("@/modules/excalidraw/SaveToCloudDialog"));
 
@@ -77,7 +77,6 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
   }
 
   function onKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape") { props.onClose(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); void insert("image"); }
   }
   document.addEventListener("keydown", onKeyDown);
@@ -89,13 +88,10 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
     return t("editor.excalidraw_insert_btn");
   };
 
+  const titleId = createUniqueId();
   return (
-    <Portal mount={document.body}>
-      <div
-        class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60"
-        classList={{ "p-4": !maximized() }}
-        onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}
-      >
+    <>
+      <Modal onClose={props.onClose} labelledBy={titleId} class={`z-[80] ${maximized() ? "p-0!" : ""}`}>
         <div
           class="flex flex-col w-full rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden transition-all"
           classList={
@@ -103,9 +99,6 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
               ? { "max-w-none": true, "h-full": true, "rounded-none": true }
               : { "max-w-3xl": true, "h-[80vh]": true }
           }
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("editor.excalidraw_modal_title")}
         >
           <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
             <span class="text-sm font-semibold">{t("editor.excalidraw_modal_title")}</span>
@@ -133,7 +126,8 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
                 type="button"
                 onClick={props.onClose}
                 class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-              >
+              
+              aria-label={t("layout.close")}>
                 <MdOutlineClose class="w-4 h-4" />
               </button>
             </div>
@@ -194,7 +188,7 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
             </button>
           </footer>
         </div>
-      </div>
+      </Modal>
 
       <Show when={saveOpen() && exportApi()}>
         <Suspense>
@@ -227,7 +221,7 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
           />
         </Suspense>
       </Show>
-    </Portal>
+    </>
   );
 };
 

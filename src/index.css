@@ -178,6 +178,39 @@
     font-family: var(--hz-font-family, ui-sans-serif, system-ui, -apple-system, sans-serif);
   }
 
+  /* Make <dialog> behave like a plain block box, so the utilities on it are
+     the only thing deciding its geometry.
+
+     Every dialog in the app is shared/views/Modal.tsx. The UA stylesheet gives
+     <dialog> `left/right: 0`, `width/height: fit-content`, a `max-width` calc,
+     `margin: auto` and `background: Canvas` — defaults that exist so a bare
+     dialog centres itself, and that silently fight the positioning its caller
+     writes. Two ways that bit: a box with `left: 0` AND `right: 0.5rem` is
+     over-constrained so `right` loses, which put the docked composer bottom-
+     LEFT; and `inset: 0` with `width: fit-content` shrink-wraps instead of
+     stretching, which collapsed the composer's modal and full-screen modes to
+     a content-sized box at the left edge.
+
+     This belongs in @layer base, not in a utility on the element: @layer base
+     always loses to @layer utilities, so every inset/size/background utility a
+     caller passes still wins — which an `inset-auto` class competing with
+     `inset-0` on source order alone would not reliably do. */
+  dialog {
+    inset: auto;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    background: transparent;
+    color: inherit;
+  }
+  /* showModal() paints a UA ::backdrop behind the dialog. Every modal here
+     draws its own dim on the dialog itself, so leaving this on just darkens
+     each one by an extra layer. */
+  dialog::backdrop {
+    background: transparent;
+  }
+
   .post-body {
     overflow-x: hidden;
   }

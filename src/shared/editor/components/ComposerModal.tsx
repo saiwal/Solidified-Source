@@ -8,7 +8,6 @@ import {
   Show,
   type JSX,
 } from "solid-js";
-import { Portal } from "solid-js/web";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
@@ -22,6 +21,7 @@ import { draftSavedAt } from "../store/createComposerStore";
 import { MdOutlineArticle, MdOutlineClose, MdOutlineDescription, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
 
+import Modal from "@/shared/views/Modal";
 // Shared modal shell for the compose surfaces (post, DM, article, note) —
 // replaces ~5 near-duplicate Portal/backdrop/dialog implementations. Opens
 // at a fixed, generous height (not shrink-to-content) so RichEditor's `fill`
@@ -120,7 +120,10 @@ export default function ComposerModal(props: ComposerModalProps) {
       const onKey = (e: KeyboardEvent) => {
         // A minimized composer is still mounted, so every pill in the dock
         // would otherwise answer one Escape press.
-        if (e.key === "Escape" && mode() !== "min") dismiss();
+        // Modal and page modes are a real <dialog showModal()>, where the
+        // browser already closes on Escape — this listener is what covers the
+        // docked mode, which is deliberately non-modal.
+        if (e.key === "Escape" && mode() !== "min" && !isModalLike()) dismiss();
       };
       document.addEventListener("keydown", onKey);
       onCleanup(() => document.removeEventListener("keydown", onKey));
@@ -195,23 +198,17 @@ export default function ComposerModal(props: ComposerModalProps) {
     mode() === "dock" && frame ? `${frame.dockIndex() * 26.75}rem` : undefined;
 
   return (
-    <Portal mount={document.body}>
-      <div
-        class={wrapperClass()}
-        style={{ "margin-right": railOffset() }}
-        use:helpable={props.helpTarget}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) dismiss();
-        }}
-      >
-        <div
-          class={dialogClass()}
-          role="dialog"
-          // Docked, the rest of the page stays interactive — claiming modality
-          // would lie to a screen reader.
-          aria-modal={isModalLike() ? "true" : undefined}
-          aria-label={props.ariaLabel ?? props.title}
-        >
+    <Modal
+      onClose={dismiss}
+      // Docked, the rest of the page stays interactive — showModal() would
+      // make the page inert, which is exactly what dock mode exists to avoid.
+      modal={isModalLike()}
+      bare
+      class={wrapperClass()}
+      style={{ "margin-right": railOffset() }}
+      label={props.ariaLabel ?? props.title}
+    >
+        <div class={dialogClass()} use:helpable={props.helpTarget}>
           {/* ── Header ── */}
           <header
             class="flex items-center justify-between gap-2 px-3 py-2 border-b border-rim shrink-0"
@@ -283,7 +280,6 @@ export default function ComposerModal(props: ComposerModalProps) {
             </footer>
           </Show>
         </div>
-      </div>
-    </Portal>
+    </Modal>
   );
 }

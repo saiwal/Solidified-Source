@@ -10,6 +10,7 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { MdFillLock, MdFillLock_open, MdFillDelete } from "solid-icons/md";
 import { useIsWikiList } from "../lib/isWikiList";
 
+import Modal from "@/shared/views/Modal";
 type SortField = "name" | "format";
 type SortDir   = "asc"  | "desc";
 
@@ -269,9 +270,9 @@ export default function WikiContentWidget() {
 
         {/* Delete wiki confirmation modal */}
         <Show when={confirmDelete() !== null}>
-          <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Modal onClose={() => setConfirmDelete(null)} bare labelledBy="wiki-del-wiki-msg" class="fixed inset-0 w-full h-full z-50 flex items-center justify-center bg-black/50">
             <div class="bg-surface border border-rim rounded-xl p-6 space-y-4 max-w-sm w-full mx-4">
-              <p class="text-txt text-sm">
+              <p id="wiki-del-wiki-msg" class="text-txt text-sm">
                 {t("wiki.delete_wiki")} <strong>{confirmDelete()}</strong>{t("wiki.delete_wiki_confirm")}
               </p>
               <div class="flex gap-2 justify-end">
@@ -293,15 +294,15 @@ export default function WikiContentWidget() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         </Show>
 
         {/* Privacy / ACL modal */}
         <Show when={aclWikiUrl() !== null}>
-          <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
+          <Modal onClose={() => setAclWikiUrl(null)} bare labelledBy="wiki-acl-title" class="fixed inset-0 w-full h-full z-50 flex items-end sm:items-center justify-center bg-black/50">
             <div class="bg-surface border border-rim rounded-xl p-5 space-y-4 w-full max-w-sm mx-4 mb-4 sm:mb-0">
               <div class="flex items-center justify-between">
-                <h2 class="text-sm font-semibold text-txt">{t("wiki.privacy_editor_title")}</h2>
+                <h2 id="wiki-acl-title" class="text-sm font-semibold text-txt">{t("wiki.privacy_editor_title")}</h2>
                 <button
                   type="button"
                   onClick={() => setAclWikiUrl(null)}
@@ -345,7 +346,7 @@ export default function WikiContentWidget() {
                 </button>
               </div>
             </div>
-          </div>
+          </Modal>
         </Show>
       </div>
     </Show>

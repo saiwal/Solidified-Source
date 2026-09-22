@@ -1,6 +1,7 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
+import Modal from "@/shared/views/Modal";
 import {
   fetchAdminServiceClasses,
   createServiceClass,
@@ -226,6 +227,7 @@ function ServiceClassModal(props: {
   onClose: () => void;
   onSave: (name: string, properties: ServiceClassProperties) => Promise<void>;
 }) {
+  const titleId = createUniqueId();
   const { t } = useI18n();
   const [name, setName] = createSignal(props.initialName);
   const [values, setValues] = createSignal<Record<string, string>>(
@@ -278,13 +280,14 @@ function ServiceClassModal(props: {
   }
 
   return (
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <Modal onClose={props.onClose} labelledBy={titleId} class="z-50">
       <div class="w-full max-w-lg rounded-xl border border-rim bg-base shadow-xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between px-4 py-3 border-b border-rim sticky top-0 bg-base">
-          <h3 class="text-sm font-semibold text-txt">
+          <h3 id={titleId} class="text-sm font-semibold text-txt">
             {props.mode === "create" ? t("admin.new_class_title") : t("admin.edit_class_title")}
           </h3>
-          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none">×</button>
+          <button onClick={props.onClose} aria-label={t("layout.close")}
+                    class="text-muted hover:text-txt text-lg leading-none">×</button>
         </div>
 
         <form onSubmit={onSubmit} class="p-4 space-y-4">
@@ -365,7 +368,7 @@ function ServiceClassModal(props: {
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }
 
