@@ -44,6 +44,7 @@ export const post: RawDictionary["post"] = {
   comments_plural:      "टिप्पणियाँ",
   loading_comments:     "टिप्पणियाँ लोड हो रही हैं…",
   load_more_comments:   "और टिप्पणियाँ लोड करें",
+  expand_collapsed:     "यह टिप्पणी दिखाएँ",
   viewing_in_context:   "एक टिप्पणी संदर्भ में देखी जा रही है",
   show_all_comments:    "सभी टिप्पणियाँ दिखाएँ",
   fetch_more_replies:   "और उत्तर लाएँ",

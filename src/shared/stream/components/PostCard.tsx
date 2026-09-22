@@ -78,6 +78,8 @@ import { DEFAULT_TMS, osmLink, osmSearchLink, parseCoord } from "@utsukta/spa-co
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { postHeightPx } from "@utsukta/spa-core/store/post-height";
+import { createMediaQuery } from "@solid-primitives/media";
+import { excerptOf } from "../feedviews/postExcerpt";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
 
@@ -92,7 +94,23 @@ function subtreeContainsUuid(nodes: ThreadNode[], uuid: string): boolean {
 }
 
 // Persists across remounts caused by setNodeChildren updating the post reference.
+// openVersion is bumped on every change so the deep-thread collapse can react to it.
 const openedByMid = new Set<string>();
+const [openVersion, setOpenVersion] = createSignal(0);
+function setOpened(mid: string, open: boolean) {
+  if (open === openedByMid.has(mid)) return;
+  if (open) openedByMid.add(mid);
+  else openedByMid.delete(mid);
+  setOpenVersion((v) => v + 1);
+}
+
+// Longest chain of expanded replies starting at this node (0 = replies closed).
+function openDepth(node: ThreadNode): number {
+  if (!openedByMid.has(node.mid)) return 0;
+  let max = 0;
+  for (const c of node.children) max = Math.max(max, openDepth(c));
+  return 1 + max;
+}
 
 function InlineEditForm(props: {
   body: string;
@@ -177,6 +195,9 @@ export default function PostCard(props: {
   // this card is a comment, and (threaded mode only) "load more" on it pages
   // that comment's own reply branch rather than the thread's root comments.
   rootUuid?: string;
+  // Nesting level of a comment (1 = direct reply to the root). Drives the
+  // deep-thread collapse; unset on the root post.
+  depth?: number;
   // Rendered right after the comment thread (and its "load more" button, if
   // shown) — e.g. PostDetailModal's "viewing a comment in context" banner,
   // which needs to sit where the viewer's scroll position actually is (past
@@ -188,14 +209,15 @@ export default function PostCard(props: {
   const [replyOpen, setReplyOpen] = createSignal(false);
   const [replyQuote, setReplyQuote] = createSignal("");
   const [reshareOpen, setReshareOpen] = createSignal(false);
-  const [showComments, setShowComments] = createSignal(
+  const initiallyOpen =
     !!props.initiallyExpanded ||
-      openedByMid.has(props.post.mid) ||
-      (!props.compact && !!props.highlightUuid) ||
-      (!!props.compact &&
-        !!props.highlightUuid &&
-        subtreeContainsUuid(props.post.children, props.highlightUuid)),
-  );
+    openedByMid.has(props.post.mid) ||
+    (!props.compact && !!props.highlightUuid) ||
+    (!!props.compact &&
+      !!props.highlightUuid &&
+      subtreeContainsUuid(props.post.children, props.highlightUuid));
+  const [showComments, setShowComments] = createSignal(initiallyOpen);
+  if (initiallyOpen) setOpened(props.post.mid, true);
   const [commentsLoaded, setCommentsLoaded] = createSignal(
     props.post.children.length > 0,
   );
@@ -764,8 +786,7 @@ export default function PostCard(props: {
   }
 
   function persistShow(v: boolean) {
-    if (v) openedByMid.add(props.post.mid);
-    else openedByMid.delete(props.post.mid);
+    setOpened(props.post.mid, v);
     setShowComments(v);
   }
 
@@ -1062,14 +1083,54 @@ export default function PostCard(props: {
     setExpandAll(true);
   }
 
+  // ── Deep-thread collapse ─────────────────────────────────────────────────
+  // Once the chain of expanded replies below a comment runs deeper than
+  // collapseAfter() levels, the comment folds into an un-indented one-line
+  // stub and its replies take over its indent, so drilling down stops eating
+  // width. The card's content is only hidden (not unmounted) so composers
+  // and refs survive a fold/unfold.
+  const isMd = createMediaQuery("(min-width: 768px)");
+  const collapseAfter = () => (isMd() ? 6 : 3);
+  const tooDeep = () => (openVersion(), openDepth(props.post) > collapseAfter());
+  const [keepOpen, setKeepOpen] = createSignal(false);
+  const autoCollapsed = createMemo(
+    () => !!props.compact && !!props.depth && !props.highlighted && !keepOpen() && tooDeep(),
+  );
+  // An unfold holds only while the chain stays deep; once it shrinks back the
+  // card follows the rule again.
+  createEffect(() => {
+    if (keepOpen() && !tooDeep()) setKeepOpen(false);
+  });
+
   // ── Compact (comment) layout ──────────────────────────────────────────────
   if (props.compact) {
     return (
       <div
         ref={cardRef}
-        class={`relative border-l-2 pl-2 md:pl-3 py-2 md:py-2.5 mb-1 transition-colors duration-500
+        class={`relative transition-colors duration-500
+               ${autoCollapsed() ? "mb-0.5" : "border-l-2 pl-2 md:pl-3 py-2 md:py-2.5 mb-1"}
                ${props.highlighted ? "border-accent bg-accent/5" :  "border-rim/60"}`}
       >
+        <Show when={autoCollapsed()}>
+          <button
+            type="button"
+            onClick={() => setKeepOpen(true)}
+            title={t("post.expand_collapsed")}
+            class="flex items-center gap-1.5 w-full min-w-0 px-1 py-0.5 rounded text-xs text-muted
+                   hover:bg-overlay hover:text-txt transition-colors text-left"
+          >
+            <MdFillUnfold_more size={14} class="shrink-0" />
+            <Show
+              when={props.post.authorAvatar}
+              fallback={<span class="w-4 h-4 rounded-full bg-elevated shrink-0" />}
+            >
+              <img src={props.post.authorAvatar} width="16" height="16" class="rounded-full object-cover shrink-0" />
+            </Show>
+            <span class="font-medium text-txt shrink-0 max-w-[40%] truncate">{props.post.authorName}</span>
+            <span class="truncate">{excerptOf(props.post, 80)}</span>
+          </button>
+        </Show>
+        <div classList={{ hidden: autoCollapsed() }}>
         <Show when={isPinned()}>
           <span
             class="absolute top-1 right-1 z-10 flex items-center justify-center w-4 h-4 rounded-full bg-accent text-accent-fg leading-none"
@@ -1672,6 +1733,7 @@ export default function PostCard(props: {
             onReject={(iid) => resolveQueuedReaction(iid, false)}
           />
         </Show>
+        </div>
         <Show when={commentsLoading()}>
           <div class="mt-2 ml-2 text-xs text-muted animate-pulse">
             {t("post.loading_comments")}
@@ -1687,6 +1749,8 @@ export default function PostCard(props: {
           }
           expandAll={props.expandAll}
           rootUuid={props.rootUuid ?? props.post.uuid}
+          depth={(props.depth ?? 0) + 1}
+          flush={autoCollapsed()}
         />
         <Show when={showComments() && props.post.hasMoreComments && props.handlers.onLoadMoreComments}>
           <div class="flex justify-center mt-2">

@@ -48,6 +48,7 @@ export const post: RawDictionary["post"] = {
   // loading
   loading_comments:     "Loading comments…",
   load_more_comments:   "Load more comments",
+  expand_collapsed:     "Show this comment",
   viewing_in_context:   "Viewing a comment in context",
   show_all_comments:    "Show all comments",
   fetch_more_replies:   "Fetch more replies",
