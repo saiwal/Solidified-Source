@@ -13,6 +13,7 @@ import {
 } from "solid-js";
 import { A } from "@solidjs/router";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForPost } from "@/shared/lib/shareLinks";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
@@ -1448,7 +1449,7 @@ export default function PostCard(props: {
               <MdFillMore_vert size={14} />
             </button>
           </div>
-          <Portal>
+          <Portal mount={topLayer()}>
             <Show when={moreDropdownOpen()}>
               <div
                 ref={setMoreDropdownPanelRef}
@@ -1607,7 +1608,7 @@ export default function PostCard(props: {
             }}
           />
         </Show>
-        <Portal>
+        <Portal mount={topLayer()}>
           <Show when={repeatDropdownOpen()}>
             <div
               ref={setRepeatDropdownPanelRef}
@@ -2200,7 +2201,7 @@ export default function PostCard(props: {
         </div>
       </div>
 
-      <Portal>
+      <Portal mount={topLayer()}>
         <Show when={moreDropdownOpen()}>
           <div
             ref={setMoreDropdownPanelRef}
@@ -2372,7 +2373,7 @@ export default function PostCard(props: {
           </div>
         </Show>
       </Portal>
-      <Portal>
+      <Portal mount={topLayer()}>
         <Show when={repeatDropdownOpen()}>
           <div
             ref={setRepeatDropdownPanelRef}

@@ -1,5 +1,6 @@
 import { createSignal, Show, For, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdFillLock, MdOutlineContent_copy } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -60,7 +61,7 @@ const LockviewPopover: Component<{
         <MdFillLock size={size()} />
       </button>
 
-      <Portal>
+      <Portal mount={topLayer()}>
         <Show when={open()}>
           <div
             ref={setPanelRef}

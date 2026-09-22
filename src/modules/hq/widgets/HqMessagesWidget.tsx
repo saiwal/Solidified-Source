@@ -1,6 +1,7 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createEffect, createSignal, For, Show, lazy } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineClose, MdOutlineRefresh, MdOutlineSearch } from "solid-icons/md";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
 import { useConnectionSearch } from "@/shared/editor/components/useConnectionSearch";
@@ -84,7 +85,7 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
         )}
       </Show>
 
-      <Portal>
+      <Portal mount={topLayer()}>
         <Show when={open()}>
           <ul
             ref={listRef}

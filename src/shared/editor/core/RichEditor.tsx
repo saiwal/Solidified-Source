@@ -5,6 +5,7 @@ import { ZenHostContext } from "../components/ComposerShell";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { ComposerFrameContext } from "../store/composer-host";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import EditorToolbar from "./EditorToolbar";
@@ -521,7 +522,7 @@ export default function RichEditor(props: Props) {
 
       {/* ── Image resize popup ───────────────────────────── */}
       <Show when={imgSel()}>
-        <Portal>
+        <Portal mount={topLayer()}>
           <div
             ref={popupRef}
             class="fixed z-[70] flex flex-col gap-1.5 px-2 py-1.5 rounded-lg border border-rim

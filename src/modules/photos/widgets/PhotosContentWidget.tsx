@@ -4,6 +4,7 @@ import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { createEffect, createMemo, createSignal, lazy, on, onMount, onCleanup, Show, For } from "solid-js";
 import type { JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -1763,7 +1764,7 @@ function ImageView() {
             </Show>
           </div>
 
-          <Portal>
+          <Portal mount={topLayer()}>
             <Show when={moreOpen()}>
               <div
                 ref={setMorePanelRef}

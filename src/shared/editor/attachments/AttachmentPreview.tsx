@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { Attachment } from "./types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineArticle, MdOutlineClose, MdOutlineWarning_amber } from "solid-icons/md";
@@ -147,7 +148,7 @@ const AttachmentPreview: Component<Props> = (props) => {
 
       {/* Alt text popover */}
       <Show when={altOpen()}>
-        <Portal mount={document.body}>
+        <Portal mount={topLayer()}>
           <div
             ref={popoverRef}
             style={popoverStyle()}

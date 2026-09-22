@@ -1,5 +1,6 @@
 import { createSignal, Show, createEffect, type ParentComponent } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { motion } from "solid-motionone";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
 import type { Placement } from "@floating-ui/dom";
@@ -57,7 +58,7 @@ const Tooltip: ParentComponent<TooltipProps> = (props) => {
       </span>
 
       <Show when={visible()}>
-        <Portal>
+        <Portal mount={topLayer()}>
           <div
             ref={(el) => { floatEl = el; }}
             role="tooltip"

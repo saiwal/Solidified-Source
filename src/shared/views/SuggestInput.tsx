@@ -6,6 +6,7 @@
 // value that isn't in the list is valid and typing just narrows the panel.
 import { For, Show, createSignal, createMemo, onCleanup, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 
 const MAX_VISIBLE = 8;
 
@@ -92,7 +93,7 @@ export default function SuggestInput(props: {
 
       <Show when={showing() && rect()}>
         {(r) => (
-          <Portal mount={document.body}>
+          <Portal mount={topLayer()}>
             <div
               role="listbox"
               style={`position:fixed;top:${r().bottom + 4}px;left:${r().left}px;min-width:${r().width}px;max-width:min(20rem,calc(100vw - 2rem));z-index:9999`}

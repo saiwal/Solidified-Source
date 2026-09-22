@@ -1,5 +1,6 @@
 import { For, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import {
   MdFillSchedule,
@@ -104,7 +105,7 @@ export default function SortSelect(props: {
             </button>
 
             <Show when={open()}>
-              <Portal>
+              <Portal mount={topLayer()}>
                 <div
                   ref={floating}
                   style={style()}
@@ -186,7 +187,7 @@ export default function SortSelect(props: {
             inline they resized the toolbar every time a ranked order was
             picked. Anchored to the row start, since the row itself scrolls. */}
         <Show when={rangeAware() && open()}>
-          <Portal>
+          <Portal mount={topLayer()}>
             <div
               ref={floating}
               style={style()}

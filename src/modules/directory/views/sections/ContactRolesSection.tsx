@@ -24,6 +24,7 @@ import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import RolePermissionsModal from "./RolePermissionsModal";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 
 // ── API ───────────────────────────────────────────────────────────────────────
@@ -274,7 +275,7 @@ function CustomRolePill(props: {
       </Show>
 
       {/* Dropdown menu */}
-      <Portal>
+      <Portal mount={topLayer()}>
       <Show when={open()}>
         <div
           ref={setPanelRef}

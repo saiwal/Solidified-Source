@@ -9,6 +9,7 @@
 
 import { createEffect, createSignal, For, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { AclEntry } from "@/modules/network/api";
 import { entryKey } from "./AclPicker";
@@ -99,7 +100,7 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
         />
       </div>
 
-      <Portal>
+      <Portal mount={topLayer()}>
       <Show when={open()}>
         <ul
           ref={listRef}

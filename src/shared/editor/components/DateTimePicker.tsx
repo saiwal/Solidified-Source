@@ -1,5 +1,6 @@
 import { createSignal, createMemo, For, Show, onCleanup, useContext, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -270,7 +271,7 @@ export default function DateTimePicker(props: Props) {
 
       {/* Popup — body Portal so modal overflow can't crop it */}
       <Show when={open()}>
-        <Portal mount={document.body}>
+        <Portal mount={topLayer()}>
         <div
           ref={popupRef}
           data-composer-popup=""

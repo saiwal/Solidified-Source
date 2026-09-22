@@ -14,6 +14,7 @@
 import { For, Show, lazy, type Component } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
 import {
@@ -161,7 +162,7 @@ export default function ComposerHost(props: {
           A docked panel owns that same corner, so the row is padded out of its
           way and the pills queue up to its left — one bottom-right rail. */}
       <Show when={minimized().length > 0}>
-        <Portal mount={document.body}>
+        <Portal mount={topLayer()}>
           <div
             class="fixed z-50 bottom-16 lg:bottom-0 left-0 right-2 sm:right-4 xl:right-[19.5rem]
                    flex items-end justify-end gap-2 pl-2 overflow-x-auto"

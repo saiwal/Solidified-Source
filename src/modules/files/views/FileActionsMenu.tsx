@@ -1,5 +1,6 @@
 import { Show, type Component, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import {
   MdFillMore_vert,
@@ -59,7 +60,7 @@ const FileActionsMenu: Component<Props> = (props) => {
       >
         <MdFillMore_vert size={14} />
       </button>
-      <Portal>
+      <Portal mount={topLayer()}>
         <Show when={open()}>
           <div
             ref={setPanelRef}

@@ -5,14 +5,14 @@ import type { Placement } from "@floating-ui/dom";
 // Open/close state + placement for a dropdown panel. Shared by SortSelect and
 // ViewSwitcher, which both collapse into one on narrow screens.
 //
-// The panel is meant to render inside a <Portal>, so it escapes the toolbar's
+// The panel is meant to render inside a <Portal mount={topLayer()}>, so it escapes the toolbar's
 // `overflow-x-auto` and can flip/shift near the viewport edge instead of being
 // clipped — @floating-ui does the positioning, same as Tooltip.tsx.
 //
 // Usage:
 //   const pop = createPopover({ placement: "bottom-end" });
 //   <div ref={pop.ref}> <button onClick={() => pop.setOpen(!pop.open())}/> </div>
-//   <Show when={pop.open()}><Portal>
+//   <Show when={pop.open()}><Portal mount={topLayer()}>
 //     <div ref={pop.floating} style={pop.style()}>…</div>
 //   </Portal></Show>
 export function createPopover(options: { placement?: Placement } = {}) {

@@ -20,6 +20,7 @@ import {
   type Component,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineClose, MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
@@ -763,7 +764,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
         />
       </ComposerModal>
 
-      <Portal mount={document.body}>
+      <Portal mount={topLayer()}>
         <MentionEmojiPopups wiring={wiring} />
       </Portal>
     </Show>

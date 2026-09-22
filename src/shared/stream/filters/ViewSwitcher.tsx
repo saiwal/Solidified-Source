@@ -1,5 +1,6 @@
 import { For, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import {
   MdFillApps,
@@ -59,7 +60,7 @@ export default function ViewSwitcher(props: {
             </button>
 
             <Show when={open()}>
-              <Portal>
+              <Portal mount={topLayer()}>
                 <div
                   ref={floating}
                   style={style()}

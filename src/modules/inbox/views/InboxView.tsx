@@ -11,6 +11,7 @@
 import { createSignal, createMemo, onMount, onCleanup, type Component } from "solid-js";
 import { Show } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useOnlineStatus } from "@utsukta/spa-core/lib/useOnlineStatus";
@@ -284,7 +285,7 @@ export default function InboxView() {
             pointer-events-none so it never becomes the drop target itself. */}
         <Show when={dragPreview()}>
           {(d) => (
-            <Portal>
+            <Portal mount={topLayer()}>
               <div
                 class="fixed z-[60] pointer-events-none px-2.5 py-1.5 rounded-lg shadow-xl
                        bg-accent text-accent-fg text-xs font-medium max-w-[14rem] truncate"

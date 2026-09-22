@@ -1,5 +1,6 @@
 import { createSignal, createEffect, Show, onCleanup, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import { MdOutlinePerson, MdOutlinePerson_add, MdOutlineEdit, MdOutlineEmail, MdOutlineChat_bubble, MdOutlineCheck, MdOutlineBlock, MdOutlineGavel } from "solid-icons/md";
 import { useAuth, isAdmin } from "@utsukta/spa-core/store/auth-store";
@@ -316,7 +317,7 @@ export default function AuthorPopover(props: Props) {
       >
         {props.children}
       </div>
-      <Portal>
+      <Portal mount={topLayer()}>
         <Show when={open()}>
           <div
             ref={popoverRef}

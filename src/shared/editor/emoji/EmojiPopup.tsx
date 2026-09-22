@@ -5,6 +5,7 @@
 
 import { For, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { EmojiEntry } from "./useEmoji";
 
 export interface EmojiPopupProps {
@@ -25,7 +26,7 @@ const EmojiPopup: Component<EmojiPopupProps> = (props) => {
   };
 
   return (
-    <Portal mount={document.body}>
+    <Portal mount={topLayer()}>
       <div
         style={style()}
         role="listbox"

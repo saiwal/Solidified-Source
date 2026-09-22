@@ -25,7 +25,7 @@ const targets = new Map<string, HTMLElement>();
 export const [hoverFolder, setHoverFolder] = createSignal<string | null>(null);
 
 /** What to draw under the cursor while dragging, and where. Module-level
- *  because the chip is rendered by InboxView (a <Portal>, so it isn't clipped
+ *  because the chip is rendered by InboxView (a <Portal mount={topLayer()}>, so it isn't clipped
  *  by the list's own scroll container) while the drag starts in MessageList. */
 export interface DragPreview { label: string; count: number; x: number; y: number }
 export const [dragPreview, setDragPreview] = createSignal<DragPreview | null>(null);

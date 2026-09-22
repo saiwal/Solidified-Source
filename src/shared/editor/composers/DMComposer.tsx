@@ -16,6 +16,7 @@
 
 import { createSignal, createEffect, on, onCleanup, useContext, Show, For, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
@@ -432,7 +433,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
         />
       </ComposerModal>
 
-      <Portal mount={document.body}>
+      <Portal mount={topLayer()}>
         <MentionEmojiPopups wiring={wiring} />
       </Portal>
     </Show>

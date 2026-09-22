@@ -1,4 +1,5 @@
 import { createEffect, onCleanup, type JSX, type ParentComponent } from "solid-js";
+import { Portal } from "solid-js/web";
 import { createDialogMode } from "@utsukta/spa-core/lib/dialog-mode";
 
 // Native <dialog> + showModal(), which the browser gives focus trapping,
@@ -58,7 +59,15 @@ const Modal: ParentComponent<Props> = (props) => {
     if (!active || active === document.body) opener?.focus({ preventScroll: true });
   });
 
+  // Portaled to <body>, never rendered where the caller happens to sit: a
+  // transform anywhere up the tree (the right sidebar's off-canvas
+  // `translate-x-0`, Layout.tsx) becomes the containing block for every
+  // `position: fixed` descendant of the dialog, so a portaled dropdown
+  // computed in viewport coords landed inside the sidebar. The dialog is in
+  // the top layer either way; only its descendants' coordinate space was at
+  // stake.
   return (
+    <Portal mount={document.body}>
     <dialog
       ref={el}
       style={props.style}
@@ -81,6 +90,7 @@ const Modal: ParentComponent<Props> = (props) => {
     >
       {props.children}
     </dialog>
+    </Portal>
   );
 };
 

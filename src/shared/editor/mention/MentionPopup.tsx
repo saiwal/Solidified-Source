@@ -10,6 +10,7 @@
 
 import { For, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { MentionEntry } from "./useMention";
 
 export interface MentionPopupProps {
@@ -31,7 +32,7 @@ const MentionPopup: Component<MentionPopupProps> = (props) => {
   };
 
   return (
-    <Portal mount={document.body}>
+    <Portal mount={topLayer()}>
       <div
         style={style()}
         role="listbox"

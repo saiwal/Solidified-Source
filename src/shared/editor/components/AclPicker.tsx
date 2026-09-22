@@ -15,6 +15,7 @@ import {
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { fetchConnections } from "@/modules/network/api";
 import type { AclEntry } from "@/modules/network/api";
 import { useConnectionSearch } from "./useConnectionSearch";
@@ -199,7 +200,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
           today is the Excalidraw save dialog at z-90), or the panel opens
           behind the modal and reads as "the dropdown doesn't open". */}
       <Show when={open()}>
-        <Portal>
+        <Portal mount={topLayer()}>
           <div
             ref={(el) => setPanelRef(el)}
             use:motion={{

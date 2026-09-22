@@ -1,6 +1,7 @@
 // src/shared/views/HelpOverlay.tsx
 import { Show, Suspense } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { marked } from "marked";
 import { useHelpMode, type DocType } from "@utsukta/spa-core/store/help-mode";
 import { useDocs } from "@utsukta/spa-core/lib/useDocs";
@@ -14,7 +15,7 @@ export default function HelpOverlay() {
   return (
     <>
       <Show when={helpMode()}>
-        <Portal>
+        <Portal mount={topLayer()}>
           <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999]
                       flex items-center gap-3 px-4 py-2.5 rounded-xl
                       bg-accent text-accent-fg text-sm shadow-lg">

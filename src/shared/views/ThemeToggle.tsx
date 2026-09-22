@@ -1,5 +1,6 @@
 import { For, Show, createMemo } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useTheme } from "@utsukta/spa-core/lib/useTheme";
 import { THEMES } from "@utsukta/spa-core/types/theme.types";
 import { BiRegularPalette } from "solid-icons/bi";
@@ -37,7 +38,7 @@ const ThemeToggle = () => {
 
       <Presence>
         <Show when={open()}>
-          <Portal>
+          <Portal mount={topLayer()}>
           <Motion.div
             ref={(el: HTMLDivElement) => setPanelRef(el)}
             {...scalePreset}

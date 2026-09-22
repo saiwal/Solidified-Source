@@ -7,6 +7,7 @@
 
 import { For, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 
 export interface SuggestPopupProps {
   items: string[];
@@ -27,7 +28,7 @@ const SuggestPopup: Component<SuggestPopupProps> = (props) => {
   };
 
   return (
-    <Portal mount={document.body}>
+    <Portal mount={topLayer()}>
       <div
         style={style()}
         role="listbox"

@@ -8,6 +8,7 @@
 // step. query.ts parses it; php Concerns/StreamFilters turns it into SQL.
 import { For, Show, createMemo, type Component, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createPopover } from "@/shared/stream/filters/createPopover";
 import {
@@ -169,7 +170,7 @@ export const InboxSearchBar: Component<{
       </div>
 
       <Show when={pop.open()}>
-        <Portal>
+        <Portal mount={topLayer()}>
           <div
             ref={pop.floating}
             style={pop.style()}

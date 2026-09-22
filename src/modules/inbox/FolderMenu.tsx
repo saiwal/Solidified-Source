@@ -7,6 +7,7 @@
 // the bigger one.
 import { For, Show, createSignal, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createPopover } from "@/shared/stream/filters/createPopover";
 import { TRASH } from "./actions";
@@ -54,7 +55,7 @@ export const FolderMenu: Component<{
       </span>
 
       <Show when={pop.open()}>
-        <Portal>
+        <Portal mount={topLayer()}>
           <div
             ref={pop.floating}
             style={pop.style()}
