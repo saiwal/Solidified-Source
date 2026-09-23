@@ -521,12 +521,18 @@ const MessageItem: Component<{
 
         {/* Reply count when there are unseen replies; otherwise a bare "1"
             for a top-level item that's itself unseen (e.g. a fresh DM with
-            no replies yet — the backend has no reply count to give us). */}
+            no replies yet — the backend has no reply count to give us).
+            Emerald when the post itself is new, accent when only its
+            replies are. */}
         <Show when={isAnyUnseen()}>
           <span
             class="absolute bottom-1.5 right-2.5 min-w-[1.1rem] h-4 rounded-full text-[0.5625rem] font-bold
-              flex items-center justify-center px-1 tabular-nums
-              bg-accent text-surface"
+              flex items-center justify-center px-1 tabular-nums"
+            classList={{
+              "bg-emerald-500 text-white": e().unseen === true,
+              "bg-accent text-surface": e().unseen !== true,
+            }}
+            title={t(e().unseen === true ? "hq.badge_new_post" : "hq.badge_new_activity")}
           >
             {hasUnseenReplies() ? unseenReplyCount() : 1}
           </span>

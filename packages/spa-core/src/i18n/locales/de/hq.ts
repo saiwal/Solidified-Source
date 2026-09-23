@@ -48,6 +48,8 @@ export const hq: RawDictionary["hq"] = {
   move_to_folder:        "In Ordner verschieben",
   mark_read:             "Als gelesen markieren",
   mark_unread:           "Als ungelesen markieren",
+  badge_new_post:        "Neuer Beitrag",
+  badge_new_activity:    "Neue Aktivität",
   trash_action:          "In den Papierkorb",
   restore_action:        "Wiederherstellen",
   select_message:        "Nachricht auswählen",

@@ -48,6 +48,8 @@ export const hq: RawDictionary["hq"] = {
   move_to_folder:        "फ़ोल्डर में ले जाएँ",
   mark_read:             "पढ़ा हुआ चिह्नित करें",
   mark_unread:           "अपठित चिह्नित करें",
+  badge_new_post:        "नई पोस्ट",
+  badge_new_activity:    "नई गतिविधि",
   trash_action:          "कूड़ेदान में डालें",
   restore_action:        "पुनर्स्थापित करें",
   select_message:        "संदेश चुनें",

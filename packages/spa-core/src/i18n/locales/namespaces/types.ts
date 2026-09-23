@@ -1874,6 +1874,8 @@ export type RawDictionary = {
     move_to_folder:        string;
     mark_read:             string;
     mark_unread:           string;
+    badge_new_post:        string;
+    badge_new_activity:    string;
     trash_action:          string;
     restore_action:        string;
     select_message:        string;
