@@ -841,8 +841,8 @@ export type RawDictionary = {
     excalidraw_download:  string;
   };
   post: {
-    like: string; dislike: string; repeat: string; reshare_with_comment: string;
-    more_sharing: string; star: string; unstar: string; pin: string; unpin: string; pinned_indicator: string; follow: string; unfollow: string;
+    like: string; dislike: string; repeat: string;
+    star: string; unstar: string; pin: string; unpin: string; pinned_indicator: string; follow: string; unfollow: string;
     follow_for_notifs: string; unfollow_post: string; statistics: string; post_statistics: string;
     view_source: string; import_post: string; import: string; original: string; toggle_comments: string;
     flat: string; threaded: string;
@@ -859,7 +859,6 @@ export type RawDictionary = {
     parent_not_loaded: string;
     // Folder save
     save_to_folder: string; new_folder_placeholder: string; add_folder: string; no_folders_yet: string;
-    expand_all: string;
     delivery_report: string; delivery_no_data: string;
     edited: string;
     edit: string;
@@ -1908,6 +1907,7 @@ export type RawDictionary = {
     create_one:           string;
     retry:                string;
     refresh:              string;
+    syncing_offline:      string;
     server_performance:   string;
     msg_tab_all:          string;
     msg_tab_direct:       string;

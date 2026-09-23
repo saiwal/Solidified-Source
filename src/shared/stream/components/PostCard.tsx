@@ -30,7 +30,7 @@ import { scrollHighlightIntoView } from "@utsukta/spa-core/lib/scrollHighlightIn
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillKeyboard_arrow_up, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { BiRegularLinkExternal, BiSolidShareAlt } from "solid-icons/bi";
+import { BiRegularLinkExternal } from "solid-icons/bi";
 import { isDirectMessage as isDM, DmBadge, DmRecipientsPC, DmRecipients } from "./DmMeta";
 import LockviewPopover from "./LockviewPopover";
 const CommentComposer = lazy(
@@ -207,7 +207,6 @@ export default function PostCard(props: {
 }) {
   const [replyOpen, setReplyOpen] = createSignal(false);
   const [replyQuote, setReplyQuote] = createSignal("");
-  const [reshareOpen, setReshareOpen] = createSignal(false);
   const initiallyOpen =
     !!props.initiallyExpanded ||
     openedByMid.has(props.post.mid) ||
@@ -253,14 +252,6 @@ export default function PostCard(props: {
     props.post.viewerFollowing ?? false,
   );
   const [followPending, setFollowPending] = createSignal(false);
-  const {
-    open: repeatDropdownOpen,
-    setOpen: setRepeatDropdownOpen,
-    toggle: toggleRepeatDropdown,
-    floatStyle: repeatDropdownStyle,
-    setTriggerRef: setRepeatDropdownRef,
-    setPanelRef: setRepeatDropdownPanelRef,
-  } = useDropdown({ placement: "bottom-start", offset: 4 });
   const {
     open: moreDropdownOpen,
     setOpen: setMoreDropdownOpen,
@@ -526,7 +517,6 @@ export default function PostCard(props: {
   // Private posts can't be reshared at all (the server refuses to embed or
   // announce them), so their reshare controls are hidden entirely.
   const isPrivate = () => props.post.flags?.includes("private") ?? false;
-  const canReshare = () => auth()?.isLocal === true && !!props.post.iid;
 
   // Like/dislike/plain-repeat/reply all federate against the existing item
   // (backend accepts local_channel() or remote_channel()) — any logged-in
@@ -856,11 +846,6 @@ export default function PostCard(props: {
     if (deleteTimer) clearTimeout(deleteTimer);
   });
 
-  function openRepeatDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    toggleRepeatDropdown();
-  }
-
   const isRss = () =>
     props.post.authorNetwork === "rss" && !!props.post.permalink;
 
@@ -1065,18 +1050,6 @@ export default function PostCard(props: {
       toggleComments();
     }
   });
-
-  // ── Full layout expand-all state ─────────────────────────────────────────
-  // Initialised from props.expandAll so callers (e.g. PostDetailModal) can
-  // pre-expand all nested threads on mount.
-  const [expandAll, setExpandAll] = createSignal(props.expandAll ?? false);
-
-  async function handleExpandAll() {
-    if (!showComments()) {
-      await toggleComments();
-    }
-    setExpandAll(true);
-  }
 
   // ── Deep-thread collapse ─────────────────────────────────────────────────
   // Once the chain of expanded replies below a comment runs deeper than
@@ -1354,6 +1327,21 @@ export default function PostCard(props: {
               active={props.post.viewerDisliked}
             />
           </Show>
+          <Show when={!isPrivate() && canInteract()}>
+            <CompactActionBtn
+              icon={
+                props.post.viewerRepeated ? (
+                  <MdFillShare size={14} />
+                ) : (
+                  <MdOutlineShare size={14} />
+                )
+              }
+              count={props.post.repeatCount}
+              label={t("post.repeat")}
+              onClick={onRepeat}
+              active={props.post.viewerRepeated}
+            />
+          </Show>
           <Show when={canStar()}>
             <button
               onClick={onStar}
@@ -1372,69 +1360,7 @@ export default function PostCard(props: {
               </Show>
             </button>
           </Show>
-          <Show when={!isPrivate() && canInteract()}>
-          <Show
-            when={canReshare()}
-            fallback={
-              <CompactActionBtn
-                icon={
-                  props.post.viewerRepeated ? (
-                    <MdFillShare size={14} />
-                  ) : (
-                    <MdOutlineShare size={14} />
-                  )
-                }
-                count={props.post.repeatCount}
-                label={t("post.repeat")}
-                onClick={onRepeat}
-                active={props.post.viewerRepeated}
-              />
-            }
-          >
-            <div ref={setRepeatDropdownRef} class="relative flex items-center">
-              <button
-                onClick={onRepeat}
-                title={t("post.repeat")}
-                class={`flex items-center gap-1 pl-2 pr-1 py-1 rounded-l-md text-xs
-                       transition-colors select-none hover:bg-overlay
-                       ${props.post.viewerRepeated ? "text-accent" : "text-subtle"}`}
-              >
-                {props.post.viewerRepeated ? (
-                  <MdFillShare size={14} />
-                ) : (
-                  <MdOutlineShare size={14} />
-                )}
-                <span>{props.post.repeatCount}</span>
-              </button>
-              <button
-                onClick={openRepeatDropdown}
-                title={t("post.more_sharing")}
-                class={`flex items-center px-0.5 py-1 rounded-r-md text-xs border-l border-rim/50
-                       transition-colors select-none hover:bg-overlay
-                       ${repeatDropdownOpen() ? "text-accent" : "text-subtle hover:text-txt"}`}
-              >
-                <MdFillKeyboard_arrow_down size={12} />
-              </button>
-            </div>
-          </Show>
-          </Show>
 
-          <Show when={canFolder()}>
-            <button
-              onClick={toggleFolderPicker}
-              title={t("post.save_to_folder")}
-              class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
-                     transition-colors select-none hover:bg-overlay
-                     ${showFolderPicker() || hasFolders() ? "text-accent" : "text-subtle hover:text-txt"}`}
-            >
-              <Show
-                when={hasFolders()}
-                fallback={<MdFillFolder_open size={14} />}
-              >
-                <MdFillFolder size={14} />
-              </Show>
-            </button>
-          </Show>
 
           <Show when={canReactionQueue()}>
             <button
@@ -1512,7 +1438,7 @@ export default function PostCard(props: {
                 class="z-[9999] min-w-[9rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
                 style={moreDropdownStyle()}
               >
-                {/* Share — the only entry every viewer gets; reshare below is local-only */}
+                {/* Share — the only entry every viewer gets */}
                 <button
                   onClick={() => {
                     openShare(shareTargetForPost(props.post));
@@ -1523,6 +1449,21 @@ export default function PostCard(props: {
                   <MdOutlineShare size={13} />
                   <span>{t("share.action")}</span>
                 </button>
+                <Show when={canFolder()}>
+                  <button
+                    onClick={() => {
+                      toggleFolderPicker();
+                      setMoreDropdownOpen(false);
+                    }}
+                    class={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-overlay transition-colors text-left
+                           ${showFolderPicker() || hasFolders() ? "text-accent" : "text-txt"}`}
+                  >
+                    <Show when={hasFolders()} fallback={<MdFillFolder_open size={13} />}>
+                      <MdFillFolder size={13} />
+                    </Show>
+                    <span>{t("post.save_to_folder")}</span>
+                  </button>
+                </Show>
                 <Show when={canFollow()}>
                   <button
                     onClick={() => {
@@ -1662,37 +1603,6 @@ export default function PostCard(props: {
               setReplyOpen(false);
               setShowComments(true);
             }}
-          />
-        </Show>
-        <Show when={repeatDropdownOpen()}>
-          <Portal mount={topLayer()}>
-            <div
-              ref={setRepeatDropdownPanelRef}
-              class="z-[9999] min-w-[10rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
-              style={repeatDropdownStyle()}
-            >
-              <div class="w-full flex items-center gap-2 px-3 py-2 text-xs text-txt hover:bg-overlay transition-colors">
-                <button
-                  onClick={() => {
-                    setRepeatDropdownOpen(false);
-                    setReshareOpen(true);
-                  }}
-                  class="flex items-center gap-2 flex-1 text-left"
-                >
-                  <BiSolidShareAlt size={13} />
-                  <span>{t("post.reshare_with_comment")} #{props.post.iid}</span>
-                </button>
-              </div>
-            </div>
-          </Portal>
-        </Show>
-        <Show when={reshareOpen() && props.post.iid && auth()?.uid}>
-          <PostComposer
-            open={true}
-            onClose={() => setReshareOpen(false)}
-            profileUid={auth()!.uid}
-            initialBody={`\n[share=${props.post.iid}][/share]\n`}
-            scopeKey={`post:reshare:${props.post.iid}`}
           />
         </Show>
         <Show when={showStats()}>
@@ -2096,6 +2006,22 @@ export default function PostCard(props: {
             activeClass="text-accent"
           />
         </Show>
+        <Show when={!isPrivate() && canInteract()}>
+          <ActionBtn
+            icon={
+              props.post.viewerRepeated ? (
+                <MdFillShare size={17} />
+              ) : (
+                <MdOutlineShare size={17} />
+              )
+            }
+            count={props.post.repeatCount}
+            label={t("post.repeat")}
+            onClick={onRepeat}
+            active={props.post.viewerRepeated}
+            activeClass="text-accent"
+          />
+        </Show>
         <Show when={canStar()}>
           <button
             onClick={onStar}
@@ -2112,71 +2038,7 @@ export default function PostCard(props: {
             </Show>
           </button>
         </Show>
-        <Show when={!isPrivate() && canInteract()}>
-        <Show
-          when={canReshare()}
-          fallback={
-            <ActionBtn
-              icon={
-                props.post.viewerRepeated ? (
-                  <MdFillShare size={17} />
-                ) : (
-                  <MdOutlineShare size={17} />
-                )
-              }
-              count={props.post.repeatCount}
-              label={t("post.repeat")}
-              onClick={onRepeat}
-              active={props.post.viewerRepeated}
-              activeClass="text-accent"
-            />
-          }
-        >
-          <div ref={setRepeatDropdownRef} class="relative flex items-center">
-            <button
-              onClick={onRepeat}
-              title={t("post.repeat")}
-              class={`flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-l-lg text-sm font-medium
-                     transition-colors select-none hover:bg-overlay
-                     ${props.post.viewerRepeated ? "text-accent" : "text-muted"}`}
-            >
-              {props.post.viewerRepeated ? (
-                <MdFillShare size={17} />
-              ) : (
-                <MdOutlineShare size={17} />
-              )}
-              <span>{props.post.repeatCount}</span>
-            </button>
-            <button
-              onClick={openRepeatDropdown}
-              title={t("post.more_sharing")}
-              class={`flex items-center px-1.5 py-1.5 rounded-r-lg text-sm font-medium border-l border-rim/50
-                     transition-colors select-none hover:bg-overlay
-                     ${repeatDropdownOpen() ? "text-accent" : "text-muted hover:text-txt"}`}
-            >
-              <MdFillKeyboard_arrow_down size={14} />
-            </button>
-          </div>
-        </Show>
-        </Show>
 
-        {/* ── Save to folder (after repeat) ── */}
-        <Show when={canFolder()}>
-          <button
-            onClick={toggleFolderPicker}
-            title={t("post.save_to_folder")}
-            class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                   transition-colors select-none hover:bg-overlay
-                   ${showFolderPicker() || hasFolders() ? "text-accent" : "text-muted hover:text-txt"}`}
-          >
-            <Show
-              when={hasFolders()}
-              fallback={<MdFillFolder_open size={17} />}
-            >
-              <MdFillFolder size={17} />
-            </Show>
-          </button>
-        </Show>
 
         <Show when={canReactionQueue()}>
           <button
@@ -2206,16 +2068,6 @@ export default function PostCard(props: {
             </Show>
             <MdFillChat size={15} />
             <span>{totalComments()}</span>
-          </button>
-        </Show>
-        <Show when={showComments() && props.post.children.some((n) => n.children.length > 0)}>
-          <button
-            onClick={handleExpandAll}
-            class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium
-                   text-muted hover:bg-overlay hover:text-txt transition-colors"
-            title={t("post.expand_all")}
-          >
-            <MdFillUnfold_more size={17} />
           </button>
         </Show>
 
@@ -2267,7 +2119,7 @@ export default function PostCard(props: {
             class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
             style={moreDropdownStyle()}
           >
-            {/* Share — the only entry every viewer gets; reshare below is local-only */}
+            {/* Share — the only entry every viewer gets */}
             <button
               onClick={() => {
                 openShare(shareTargetForPost(props.post));
@@ -2278,6 +2130,21 @@ export default function PostCard(props: {
               <MdOutlineShare size={13} />
               <span>{t("share.action")}</span>
             </button>
+            <Show when={canFolder()}>
+              <button
+                onClick={() => {
+                  toggleFolderPicker();
+                  setMoreDropdownOpen(false);
+                }}
+                class={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-overlay transition-colors text-left
+                       ${showFolderPicker() || hasFolders() ? "text-accent" : "text-txt"}`}
+              >
+                <Show when={hasFolders()} fallback={<MdFillFolder_open size={15} />}>
+                  <MdFillFolder size={15} />
+                </Show>
+                <span>{t("post.save_to_folder")}</span>
+              </button>
+            </Show>
             <Show when={canFollow()}>
               <button
                 onClick={() => {
@@ -2432,28 +2299,6 @@ export default function PostCard(props: {
           </div>
         </Portal>
       </Show>
-      <Show when={repeatDropdownOpen()}>
-        <Portal mount={topLayer()}>
-          <div
-            ref={setRepeatDropdownPanelRef}
-            class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
-            style={repeatDropdownStyle()}
-          >
-            <div class="w-full flex items-center gap-2 px-3 py-2 text-sm text-txt hover:bg-overlay transition-colors">
-              <button
-                onClick={() => {
-                  setRepeatDropdownOpen(false);
-                  setReshareOpen(true);
-                }}
-                class="flex items-center gap-2 flex-1 text-left"
-              >
-                <BiSolidShareAlt size={15} />
-                <span>{t("post.reshare_with_comment")} #{props.post.iid}</span>
-              </button>
-            </div>
-          </div>
-        </Portal>
-      </Show>
 
       <Show when={showStats()}>
         <PostStats loading={statsLoading()} data={statsData()} />
@@ -2524,15 +2369,6 @@ export default function PostCard(props: {
           />
         )}
       </Show>
-      <Show when={reshareOpen() && props.post.iid && auth()?.uid}>
-        <PostComposer
-          open={true}
-          onClose={() => setReshareOpen(false)}
-          profileUid={auth()!.uid}
-          initialBody={`\n[share=${props.post.iid}][/share]\n`}
-          scopeKey={`post:reshare:${props.post.iid}`}
-        />
-      </Show>
       <Show when={commentsLoading()}>
         <div class="mt-3 text-sm text-muted animate-pulse">
           {t("post.loading_comments")}
@@ -2544,7 +2380,7 @@ export default function PostCard(props: {
         handlers={props.handlers}
         highlightUuid={props.highlightUuid}
         postAuthorAddress={props.post.authorAddress}
-        expandAll={expandAll()}
+        expandAll={props.expandAll}
         rootUuid={props.rootUuid ?? props.post.uuid}
       />
       <Show when={showComments() && props.post.hasMoreComments && props.handlers.onLoadMoreComments}>

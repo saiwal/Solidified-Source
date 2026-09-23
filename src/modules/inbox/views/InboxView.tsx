@@ -15,7 +15,7 @@ import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useOnlineStatus } from "@utsukta/spa-core/lib/useOnlineStatus";
-import { syncInbox, setInboxActive } from "@utsukta/spa-core/lib/message-store";
+import { syncInbox, setInboxActive, syncProgress } from "@utsukta/spa-core/lib/message-store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
@@ -83,6 +83,7 @@ export default function InboxView() {
   // below are just shortcuts for editing it.
   const [query, setQuery] = createSignal("");
   const [reloadKey, setReloadKey] = createSignal(0);
+  const [reading, setReading] = createSignal(false);
   const parsed = createMemo(() => parseQuery(query()));
   // `author` and `unread` are MessageList's own props (HQ's cards use the first
   // and the second is thread-aware); everything else rides through as filters.
@@ -224,7 +225,10 @@ export default function InboxView() {
       {/* Bounded height: MessageList scrolls its own body and paginates on
           scroll, so it needs a container that doesn't grow with its content.
           Kept as tall as the chrome allows — the reader fills this same box. */}
-      <div class="flex flex-col h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem]">
+      <div
+        class="flex flex-col"
+        classList={{ "h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem]": !reading() }}
+      >
         <InboxSearchBar
           query={query()}
           onQuery={setQuery}
@@ -251,17 +255,46 @@ export default function InboxView() {
                 </button>
               </Show>
 
+              <Show when={syncProgress()?.total}>
+                <span class="shrink-0 text-[0.625rem] text-muted tabular-nums">
+                  {syncProgress()!.done}/{syncProgress()!.total}
+                </span>
+              </Show>
               <button
                 type="button"
                 onClick={refresh}
-                title={t("hq.refresh")}
+                title={syncProgress() ? t("hq.syncing_offline") : t("hq.refresh")}
                 class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted hover:bg-overlay hover:text-txt"
               >
-                <Icon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                {/* Spins while syncInbox walks the feeds and stores bodies. */}
+                <span class="block" classList={{ "animate-spin": !!syncProgress() }}>
+                  <Icon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </span>
               </button>
             </>
           }
         />
+
+        {/* Offline sync progress: pulses while the feed indexes refresh (size
+            unknown), then fills as message bodies are stored. */}
+        <Show when={syncProgress()}>
+          {(p) => (
+            <div
+              role="progressbar"
+              aria-label={t("hq.syncing_offline")}
+              aria-valuemin={0}
+              aria-valuemax={p().total || undefined}
+              aria-valuenow={p().total ? p().done : undefined}
+              class="shrink-0 h-0.5 bg-overlay overflow-hidden"
+            >
+              <div
+                class="h-full bg-accent transition-[width] duration-300"
+                classList={{ "w-full animate-pulse": !p().total }}
+                style={p().total ? { width: `${(p().done / p().total) * 100}%` } : undefined}
+              />
+            </div>
+          )}
+        </Show>
 
         <MessageList
           type={selection().type}
@@ -271,6 +304,7 @@ export default function InboxView() {
           actions
           selectable
           reader
+          onReaderChange={setReading}
           folders={folderNames()}
           unread={parsed().params.unread === "1"}
           filters={filters()}

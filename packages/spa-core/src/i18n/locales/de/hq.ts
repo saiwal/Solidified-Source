@@ -85,6 +85,7 @@ export const hq: RawDictionary["hq"] = {
   create_one:           "Erstellen",
   retry:                "Erneut versuchen",
   refresh:              "Aktualisieren",
+  syncing_offline:      "Nachrichten werden offline gespeichert",
   // Server performance labels
   server_performance:   "Serverleistung",
   // HqMessagesWidget tab labels

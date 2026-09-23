@@ -4,8 +4,6 @@ export const post: RawDictionary["post"] = {
   like:                 "पसंद",
   dislike:              "नापसंद",
   repeat:               "दोहराएँ",
-  reshare_with_comment: "टिप्पणी के साथ साझा करें",
-  more_sharing:         "और साझाकरण विकल्प",
   star:                 "स्टार करें",
   unstar:               "स्टार हटाएँ",
   pin:                  "ऊपर पिन करें",
@@ -71,7 +69,6 @@ export const post: RawDictionary["post"] = {
   new_folder_placeholder: "नए फ़ोल्डर का नाम…",
   add_folder:            "जोड़ें",
   no_folders_yet:        "अभी कोई फ़ोल्डर नहीं — नीचे नाम टाइप करके बनाएँ",
-  expand_all:            "सभी थ्रेड विस्तृत करें",
   // Delivery report
   delivery_report:       "डिलीवरी रिपोर्ट",
   delivery_no_data:      "कोई डिलीवरी रिकॉर्ड नहीं मिला।",

@@ -16,6 +16,7 @@
 // than three stores in one.
 
 import { createStore, get, set, getMany, setMany, delMany, keys } from "idb-keyval";
+import { createSignal } from "solid-js";
 import { apiFetch, apiError } from "./fetch";
 
 const entryDb = createStore("hz-inbox-entries", "entries");
@@ -248,11 +249,12 @@ async function folderNames(): Promise<string[]> {
 // larger sync pass (or the reverse) depending on which happened to win.
 let warmChain: Promise<void> = Promise.resolve();
 
-async function runWarm(ids: string[], budget: number): Promise<void> {
+async function runWarm(ids: string[], budget: number, onStep?: () => void): Promise<void> {
   for (const id of ids) {
     // Re-checked every iteration so navigating away from the inbox stops an
     // in-flight pass instead of letting it run on in the background.
     if (budget <= 0 || !navigator.onLine || !inboxActive) return;
+    onStep?.();
     if (await getStoredPost(id)) continue;
     budget--;
     // Same store the stream fetchers write to, so a post is only ever fetched
@@ -267,8 +269,8 @@ async function runWarm(ids: string[], budget: number): Promise<void> {
   }
 }
 
-function warmBodies(ids: string[], budget: number): Promise<void> {
-  warmChain = warmChain.then(() => runWarm(ids, budget)).catch(() => {});
+function warmBodies(ids: string[], budget: number, onStep?: () => void): Promise<void> {
+  warmChain = warmChain.then(() => runWarm(ids, budget, onStep)).catch(() => {});
   return warmChain;
 }
 
@@ -279,11 +281,23 @@ async function warmAllLists(): Promise<void> {
   const ordered = [...listKeys.filter(isPinned), ...listKeys.filter((k) => !isPinned(k))];
   const ids: string[] = [];
   for (const k of ordered) ids.push(...((await get<string[]>(k, listDb)) ?? []));
-  await warmBodies([...new Set(ids)], BODY_WARM_CAP);
+  const unique = [...new Set(ids)];
+  const total = unique.length;
+  let done = 0;
+  setSyncProgress({ done, total });
+  await warmBodies(unique, BODY_WARM_CAP, () => setSyncProgress({ done: ++done, total }));
 }
 
 let syncing = false;
 let lastSync = 0;
+
+// Non-null while syncInbox runs, so the inbox can show a progress bar. total is 0
+// while the feed indexes refresh (size not known yet), then one step per stored
+// message id — already-stored bodies tick past instantly; a pass cut short by the
+// body budget or navigation just ends early.
+const [syncProgress, setSyncProgress] = createSignal<{ done: number; total: number } | null>(null);
+export { syncProgress };
+
 // Opening the inbox, or moving between its sections, remounts the view — that
 // shouldn't re-walk every feed and folder each time.
 const SYNC_INTERVAL = 5 * 60_000;
@@ -304,6 +318,7 @@ export async function syncInbox(force = false): Promise<void> {
   if (syncing || !navigator.onLine) return;
   if (!force && Date.now() - lastSync < SYNC_INTERVAL) return;
   syncing = true;
+  setSyncProgress({ done: 0, total: 0 });
   try {
     const feeds: Array<[MessageType | "filed", string]> = [
       ["", ""],
@@ -320,5 +335,6 @@ export async function syncInbox(force = false): Promise<void> {
     lastSync = Date.now();
   } finally {
     syncing = false;
+    setSyncProgress(null);
   }
 }

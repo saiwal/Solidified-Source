@@ -9,6 +9,7 @@ import {
   lazy,
   For,
   Show,
+  Suspense,
   type Component,
 } from "solid-js";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
@@ -594,6 +595,9 @@ export const MessageList: Component<{
   /** Full-width reader instead of the modal: opening a message covers the
    *  list with the thread plus back / previous / next controls. */
   reader?: boolean;
+  /** Reader opened/closed — the inbox drops its fixed height while reading so
+   *  the whole message shows and the page scrolls instead. */
+  onReaderChange?: (open: boolean) => void;
   /** Lets the inbox's "/" key focus its search box. */
   onFocusSearch?: () => void;
 }> = (props) => {
@@ -603,6 +607,14 @@ export const MessageList: Component<{
   // MessageItem) so the modal survives the background poll replacing the
   // entry objects and recreating the row components.
   const [openMid, setOpenMid] = createSignal<string | null>(null);
+  const reading = () => !!(props.reader && openMid());
+  let readerRef: HTMLDivElement | undefined;
+  createEffect(() => props.onReaderChange?.(reading()));
+  // Next/previous from the bottom of a long message: bring the new one's top
+  // back into view, since the page (not the reader) is what scrolled.
+  createEffect(() => {
+    if (openMid()) readerRef?.scrollIntoView({ block: "nearest" });
+  });
   const [offset, setOffset] = createSignal(0);
   const [loading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
@@ -894,6 +906,9 @@ export const MessageList: Component<{
     <div
       ref={scrollRef}
       class="flex-1 overflow-y-auto focus:outline-none"
+      // Collapsed rather than display:none while reading — a display:none
+      // scroll container loses scrollTop, so going back would jump to the top.
+      classList={{ "!flex-none h-0 invisible": reading() }}
       onScroll={onScroll}
       tabindex={mailable() && props.selectable ? 0 : undefined}
       onKeyDown={mailable() && props.selectable ? onKeyDown : undefined}
@@ -1017,21 +1032,20 @@ export const MessageList: Component<{
 
     </div>
 
-    {/* Reader. Laid over the list rather than replacing it, so going back
-        lands on the same scroll position — a display:none scroll container
-        loses scrollTop. */}
-    <Show when={props.reader && openMid()}>
+    {/* Reader. In normal flow at the message's full height, so the page
+        scrolls rather than a fixed-height box. */}
+    <Show when={reading()}>
       <div
-        class="absolute inset-0 z-30 flex flex-col bg-base focus:outline-none"
+        class="flex flex-col bg-base focus:outline-none"
         tabindex="-1"
-        ref={(el) => queueMicrotask(() => el.focus())}
+        ref={(el) => { readerRef = el; queueMicrotask(() => el.focus({ preventScroll: true })); }}
         onKeyDown={(ev) => {
           if (ev.key === "Escape") { setOpenMid(null); ev.preventDefault(); }
           else if (ev.key === "j" || ev.key === "ArrowDown") { step(1); ev.preventDefault(); }
           else if (ev.key === "k" || ev.key === "ArrowUp") { step(-1); ev.preventDefault(); }
         }}
       >
-        <div class="shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-rim bg-surface">
+        <div class="sticky top-0 z-10 shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-rim bg-surface">
           <button
             type="button"
             onClick={() => setOpenMid(null)}
@@ -1073,8 +1087,18 @@ export const MessageList: Component<{
           </button>
         </div>
 
+        {/* Own boundary: PostDetailModal is lazy, and without one its first
+            load suspends up to Layout's <Suspense> and blanks the whole page. */}
         <div class="flex-1 min-h-0">
-          <PostDetailModal uuid={openMid()!} inline onClose={() => setOpenMid(null)} />
+          <Suspense
+            fallback={
+              <div class="h-full flex items-center justify-center">
+                <span class="w-5 h-5 border-2 border-muted border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <PostDetailModal uuid={openMid()!} inline onClose={() => setOpenMid(null)} />
+          </Suspense>
         </div>
       </div>
     </Show>

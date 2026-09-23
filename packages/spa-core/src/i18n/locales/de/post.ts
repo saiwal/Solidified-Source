@@ -5,8 +5,6 @@ export const post: RawDictionary["post"] = {
   like:                 "Gefällt mir",
   dislike:              "Gefällt mir nicht",
   repeat:               "Wiederholen",
-  reshare_with_comment: "Mit Kommentar teilen",
-  more_sharing:         "Weitere Teilen-Optionen",
   star:                 "Markieren",
   unstar:               "Markierung entfernen",
   pin:                  "Oben anheften",
@@ -79,7 +77,6 @@ export const post: RawDictionary["post"] = {
   new_folder_placeholder: "Neuer Ordnername…",
   add_folder:            "Hinzufügen",
   no_folders_yet:        "Noch keine Ordner — gib unten einen Namen ein, um einen zu erstellen",
-  expand_all:            "Alle Threads erweitern",
   // Delivery report
   delivery_report:       "Zustellbericht",
   delivery_no_data:      "Keine Zustelldaten gefunden.",
