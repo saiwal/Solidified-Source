@@ -548,12 +548,13 @@ function InlineThread(props: {
           <CommentComposer
             parentUuid={props.thread.uuid}
             profileUid={props.profileUid}
-            onSubmitted={(body) =>
+            onSubmitted={(body, created) =>
               props.handlers.onComment(
                 props.thread.mid,
                 body,
                 props.thread.authorName,
                 props.thread.authorAvatar,
+                created,
               )
             }
           />

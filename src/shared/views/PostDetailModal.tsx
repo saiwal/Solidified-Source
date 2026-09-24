@@ -10,6 +10,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiDeleteItem, apiEditItem, apiFetchRemoteReplies, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { isDirectMessage } from "@/shared/stream/components/DmMeta";
+import type { CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE, tempCommentNode } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -269,10 +270,10 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   // refetch: the modal may have been opened on one comment (notification /
   // permalink), whose ancestor+siblings fetch would not contain the new
   // reply — it would blink out again.
-  function addLocalComment(parentMid: string, body: string) {
-    const comment = tempCommentNode(parentMid, body, navViewer());
+  function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
     setNodeData((prev) => prev && updateNodeInTree(prev, parentMid, (n) => ({
-      ...n, children: [...n.children, comment],
+      ...n,
+      children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid })],
     })));
   }
 
@@ -338,8 +339,8 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       });
     },
     // CommentComposer already POSTs the comment itself; just show it.
-    onComment(parentMid, body) {
-      addLocalComment(parentMid, body);
+    onComment(parentMid, body, _name, _avatar, created) {
+      addLocalComment(parentMid, body, created);
     },
     onLoadComments: () => Promise.resolve(),
     onLoadMoreComments: loadMoreComments,
@@ -418,9 +419,9 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
             return { ...prev, [mid]: { ...existing, viewerRepeated: true, repeatCount: currentCount + 1 } };
           });
         },
-        onComment: (parentMid, body, authorName, authorAvatar) => {
-          props.handlers!.onComment(parentMid, body, authorName, authorAvatar);
-          addLocalComment(parentMid, body);
+        onComment: (parentMid, body, authorName, authorAvatar, created) => {
+          props.handlers!.onComment(parentMid, body, authorName, authorAvatar, created);
+          addLocalComment(parentMid, body, created);
         },
         onLoadComments: (mid, uuid) => props.handlers!.onLoadComments(mid, uuid),
         // Not delegated to props.handlers: that targets the parent feed's

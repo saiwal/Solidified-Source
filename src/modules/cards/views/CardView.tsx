@@ -11,7 +11,7 @@ import { fetchCard, deleteCard } from "../api";
 import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { openComposer } from "@/shared/views/modal-host";
-import CommentComposer from "@/shared/editor/composers/CommentComposer";
+import CommentComposer, { type CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
@@ -258,7 +258,7 @@ export default function CardView() {
 
   const commentTree = createMemo(() => rawCommentTree().map(applyCommentOverrides));
 
-  function addLocalComment(parentMid: string, body: string) {
+  function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
     const art = data()?.card;
     if (!art) return;
     const a = auth();
@@ -285,6 +285,7 @@ export default function CardView() {
       likeCount: 0, dislikeCount: 0, repeatCount: 0,
       viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
       item_thread_top: 0, children: [],
+      ...created, profileUid: art.profileUid,
     } satisfies Post]);
   }
 
@@ -314,7 +315,7 @@ export default function CardView() {
     onDislike: (mid) => toggleCommentReaction(mid, "viewerDisliked", "dislikeCount",
       (uuid) => apiToggleDislike(uuid).then(r => ({ dislike_count: r.dislike_count, state: r.state }))),
     onRepeat: () => {},
-    onComment: (parentMid, body) => addLocalComment(parentMid, body),
+    onComment: (parentMid, body, _name, _avatar, created) => addLocalComment(parentMid, body, created),
     onLoadComments: async () => {},
     async onDelete(mid) {
       const node = findInTree(rawCommentTree(), mid);
@@ -511,8 +512,8 @@ export default function CardView() {
                   <CommentComposer
                     parentUuid={d().card.uuid}
                     profileUid={d().card.profileUid!}
-                    onSubmitted={(body) => {
-                      addLocalComment(d().card.mid, body);
+                    onSubmitted={(body, created) => {
+                      addLocalComment(d().card.mid, body, created);
                       setReplyOpen(false);
                     }}
                   />

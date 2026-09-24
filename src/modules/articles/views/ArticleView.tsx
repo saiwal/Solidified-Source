@@ -11,7 +11,7 @@ import { fetchArticle, deleteArticle } from "../api";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { openComposer } from "@/shared/views/modal-host";
-import CommentComposer from "@/shared/editor/composers/CommentComposer";
+import CommentComposer, { type CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import { languageLabel } from "@utsukta/spa-core/lib/languages";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
@@ -276,7 +276,7 @@ export default function ArticleView() {
 
   const commentTree = createMemo(() => rawCommentTree().map(applyCommentOverrides));
 
-  function addLocalComment(parentMid: string, body: string) {
+  function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
     const art = data()?.article;
     if (!art) return;
     const a = auth();
@@ -303,6 +303,7 @@ export default function ArticleView() {
       likeCount: 0, dislikeCount: 0, repeatCount: 0,
       viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
       item_thread_top: 0, children: [],
+      ...created, profileUid: art.profileUid,
     } satisfies Post]);
   }
 
@@ -332,7 +333,7 @@ export default function ArticleView() {
     onDislike: (mid) => toggleCommentReaction(mid, "viewerDisliked", "dislikeCount",
       (uuid) => apiToggleDislike(uuid).then(r => ({ dislike_count: r.dislike_count, state: r.state }))),
     onRepeat: () => {},
-    onComment: (parentMid, body) => addLocalComment(parentMid, body),
+    onComment: (parentMid, body, _name, _avatar, created) => addLocalComment(parentMid, body, created),
     onLoadComments: async () => {},
     async onDelete(mid) {
       const node = findInTree(rawCommentTree(), mid);
@@ -564,8 +565,8 @@ export default function ArticleView() {
                   <CommentComposer
                     parentUuid={d().article.uuid}
                     profileUid={d().article.profileUid!}
-                    onSubmitted={(body) => {
-                      addLocalComment(d().article.mid, body);
+                    onSubmitted={(body, created) => {
+                      addLocalComment(d().article.mid, body, created);
                       setReplyOpen(false);
                     }}
                   />

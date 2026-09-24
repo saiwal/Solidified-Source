@@ -14,12 +14,15 @@ import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
 
+/** Ids of the stored comment — lets the optimistic node be replied to. */
+export interface CreatedComment { iid: number; mid: string; uuid: string }
+
 interface Props {
   /** Parent item uuid — full-URL mids break the /spa/item/:id path (slashes). */
   parentUuid?: string;
   profileUid: number;
   initialBody?: string;
-  onSubmitted?: (body: string) => void;
+  onSubmitted?: (body: string, created?: CreatedComment) => void;
 }
 
 export default function CommentComposer(props: Props) {
@@ -56,11 +59,14 @@ export default function CommentComposer(props: Props) {
       const json = (await res.json().catch(() => ({}))) as {
         success?: boolean;
         error?: string;
-      };
+      } & Partial<CreatedComment>;
       if (!json.success) throw new Error(json.error ?? "Comment failed");
 
       attach.clear();
-      props.onSubmitted?.(body);
+      props.onSubmitted?.(
+        body,
+        json.iid && json.uuid ? { iid: json.iid, mid: json.mid ?? "", uuid: json.uuid } : undefined,
+      );
     },
     scope,
     {

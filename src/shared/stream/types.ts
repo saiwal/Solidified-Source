@@ -1,4 +1,5 @@
 // src/shared/stream/types.ts
+import type { CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { EditPayload } from "@utsukta/spa-core/lib/item-api";
 
@@ -13,6 +14,7 @@ export interface StreamHandlers {
     body: string,
     authorName: string,
     authorAvatar: string,
+    created?: CreatedComment,
   ) => void;
   onLoadComments: (mid: string, uuid: string) => Promise<void>;
   // Pages in the next batch of comments for an already-loaded node — either

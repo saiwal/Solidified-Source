@@ -22,6 +22,7 @@ import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import type { NavViewer } from "@utsukta/spa-core/lib/nav-api";
+import type { CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
@@ -40,7 +41,12 @@ function filterReactions(comments: any[] | undefined): any[] {
 // fetch opened the view (e.g. PostDetailModal's ancestor+siblings context
 // mode), which doesn't contain the new reply, so it would vanish instead of
 // appearing. Real mid/uuid arrive on the next real load.
-export function tempCommentNode(parentMid: string, body: string, viewer?: NavViewer): ThreadNode {
+export function tempCommentNode(
+  parentMid: string, body: string, viewer?: NavViewer,
+  // The server's ids plus the parent's profileUid — without them the node
+  // can't be replied to (the reply composer is gated on iid + profileUid).
+  real?: Partial<CreatedComment> & { profileUid?: number },
+): ThreadNode {
   const tempMid = crypto.randomUUID();
   return {
     uuid: tempMid, id: tempMid, mid: tempMid,
@@ -60,6 +66,7 @@ export function tempCommentNode(parentMid: string, body: string, viewer?: NavVie
     likeCount: 0, dislikeCount: 0, repeatCount: 0,
     viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
     item_thread_top: 0, children: [],
+    ...real,
   };
 }
 
@@ -205,12 +212,12 @@ export function createActionHandlers(store: StreamStore) {
       body: string,
       _authorName: string,
       _authorAvatar: string,
+      created?: CreatedComment,
     ): void {
-      const tempComment = tempCommentNode(parentMid, body);
-
       store.setPosts((prev) =>
         updateNode(prev, parentMid, (n) => ({
-          ...n, children: [...n.children, tempComment],
+          ...n,
+          children: [...n.children, tempCommentNode(parentMid, body, undefined, { ...created, profileUid: n.profileUid })],
         })),
       );
     },

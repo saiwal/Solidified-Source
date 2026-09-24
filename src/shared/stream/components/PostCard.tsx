@@ -1595,12 +1595,13 @@ export default function PostCard(props: {
             parentUuid={props.post.uuid}
             profileUid={props.post.profileUid!}
             initialBody={replyQuote() || undefined}
-            onSubmitted={(body) => {
+            onSubmitted={(body, created) => {
               props.handlers.onComment(
                 props.post.mid,
                 body,
                 props.post.authorName,
                 props.post.authorAvatar,
+                created,
               );
               setReplyOpen(false);
               setShowComments(true);
@@ -2341,12 +2342,13 @@ export default function PostCard(props: {
           parentUuid={props.post.uuid}
           profileUid={props.post.profileUid!}
           initialBody={replyQuote() || undefined}
-          onSubmitted={(body) => {
+          onSubmitted={(body, created) => {
             props.handlers.onComment(
               props.post.mid,
               body,
               props.post.authorName,
               props.post.authorAvatar,
+              created,
             );
             setReplyOpen(false);
             setShowComments(true);

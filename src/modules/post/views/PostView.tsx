@@ -16,6 +16,7 @@ import {
   fetchComments,
   fetchDisplayItem,
 } from "@utsukta/spa-core/lib/item-api";
+import type { CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import { toggleVerb, repeatItem, COMMENTS_PAGE_SIZE, tempCommentNode } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { CommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -105,10 +106,10 @@ export default function PostView() {
 
   // The just-posted reply is appended in place rather than refetched — a
   // refetch re-runs the paged comment fetch, which may not include it.
-  function addLocalComment(parentMid: string, body: string) {
-    const comment = tempCommentNode(parentMid, body, navViewer());
+  function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
     mutate((prev) => prev && updateNodeInTree(prev, parentMid, (n) => ({
-      ...n, children: [...n.children, comment],
+      ...n,
+      children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid })],
     })));
   }
   const [localReactions, setLocalReactions] = createSignal<Record<string, ReactionOverride>>({});
@@ -207,8 +208,8 @@ export default function PostView() {
       });
     },
     // CommentComposer already POSTs the comment itself; just show it.
-    onComment(parentMid, body) {
-      addLocalComment(parentMid, body);
+    onComment(parentMid, body, _name, _avatar, created) {
+      addLocalComment(parentMid, body, created);
     },
     onLoadComments: () => Promise.resolve(),
     onLoadMoreComments: loadMoreComments,
