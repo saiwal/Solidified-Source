@@ -4,7 +4,8 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive, isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { openComposer } from "@/shared/views/modal-host";
+import { openComposer, openEvent } from "@/shared/views/modal-host";
+import { resetPosts as resetCards } from "@/modules/cards/store";
 
 export type QuickAction = {
   key: string;
@@ -88,6 +89,29 @@ export function useQuickActions() {
             title: t("articles.new_article"),
             props: { uid: auth()?.uid ?? 0, nick: nick() },
           }),
+      });
+    }
+    if (isModuleActive("cards", apps)) {
+      list.push({
+        key: "card",
+        label: t("cards.new_card"),
+        icon: "cards",
+        onClick: () =>
+          openComposer({
+            kind: "card",
+            scope: "card:new",
+            title: t("cards.new_card"),
+            // Drop the cached card list so /cards refetches with the new one.
+            props: { uid: auth()?.uid ?? 0, nick: nick(), onSaved: resetCards },
+          }),
+      });
+    }
+    if (isModuleActive("cal", apps)) {
+      list.push({
+        key: "event",
+        label: t("calendar.new_event"),
+        icon: "calendar",
+        onClick: () => openEvent(),
       });
     }
     return list;

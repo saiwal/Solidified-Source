@@ -3,7 +3,7 @@ import assert from "node:assert";
 
 (globalThis as any).window = { location: { origin: "https://hub.example" } };
 
-const { buildShareBody, shareTargetForPost, shareTargetForPhoto } = await import("./shareLinks.ts");
+const { buildShareBody, shareTargetForPost, shareTargetForPhoto, shareTargetForCard } = await import("./shareLinks.ts");
 
 // Public items use the compact [share=] token the server expands.
 assert.equal(
@@ -60,3 +60,11 @@ const locked = shareTargetForPhoto("bob", {
 assert.equal(locked.restricted, true);
 
 console.log("shareLinks: ok");
+
+// A public card posts as its own [card=] embed, not a link + quote.
+const card = shareTargetForCard("bob", { uuid: "c1", iid: 5, title: "Card", body: "text", flags: [] } as any);
+assert.equal(card.postBody, "\n[card=5][/card]\n");
+
+// A private card falls back to link + quote (the server won't embed it for a non-owner).
+const privCard = shareTargetForCard("bob", { uuid: "c2", iid: 6, title: "Card", body: "text", flags: ["private"] } as any);
+assert(!privCard.postBody!.includes("[card="));

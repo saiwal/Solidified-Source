@@ -96,6 +96,7 @@ type ArticleLike = Linkable & {
   viewUrl?: string;
   iid?: number;
   item_private?: number;
+  flags?: string[];
 };
 
 export function shareTargetForArticle(nick: string, a: ArticleLike): ShareTarget {
@@ -117,9 +118,12 @@ export function shareTargetForCard(nick: string, c: ArticleLike): ShareTarget {
     url,
     title: c.title?.trim() || url,
     summary: quote,
-    // Cards never used [share=] — they have their own [card=] embed token,
-    // and the link + quote form is what CardView has always posted.
-    postBody: buildShareBody({ url, title: c.title, quote }),
+    // Cards embed through their own [card=] token (never [share=]). A private
+    // card falls back to link + quote: the server only embeds one for its
+    // owner, and doing so would widen its audience to the post's.
+    postBody: c.iid && !c.item_private && !c.flags?.includes("private")
+      ? `\n[card=${c.iid}][/card]\n`
+      : buildShareBody({ url, title: c.title, quote }),
     embed: c.iid ? [{ labelKey: "share.embed_bbcode", code: `[card=${c.iid}][/card]` }] : undefined,
     lockview: c.iid ? { type: "item", id: c.iid } : undefined,
   };
