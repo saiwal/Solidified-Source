@@ -250,7 +250,10 @@ export interface SplitSubmitButtonProps {
   /** Menu contents: the composer's option toggles. Omitted, this renders as a
    *  plain PrimarySubmitButton with no caret. */
   menu?: JSX.Element;
-  menuLabel: string;
+  /** Caret button's accessible name — required whenever `menu` is set. */
+  menuLabel?: string;
+  /** Round icon-only variant (chat's send button); `children` is the icon. */
+  icon?: boolean;
 }
 
 /**
@@ -282,9 +285,10 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
         disabled={props.disabled}
         onClick={props.onClick}
         class={
-          "px-5 py-1.5 text-sm font-semibold bg-accent text-accent-fg hover:opacity-90 " +
+          (props.icon ? "p-2.5 " : "px-5 py-1.5 text-sm font-semibold ") +
+          "bg-accent text-accent-fg hover:opacity-90 " +
           "active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed " +
-          (props.menu ? "rounded-l-lg" : "rounded-lg")
+          (props.icon ? (props.menu ? "rounded-l-full" : "rounded-full") : props.menu ? "rounded-l-lg" : "rounded-lg")
         }
       >
         {props.children}
@@ -297,8 +301,10 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           aria-label={props.menuLabel}
           aria-expanded={open()}
           onClick={() => setOpen(!open())}
-          class="px-2 rounded-r-lg border-l border-accent-fg/25 bg-accent text-accent-fg
-                 hover:opacity-90 active:opacity-80 transition-opacity"
+          class={
+            (props.icon ? "pl-1.5 pr-2 rounded-r-full" : "px-2 rounded-r-lg") +
+            " border-l border-accent-fg/25 bg-accent text-accent-fg hover:opacity-90 active:opacity-80 transition-opacity"
+          }
         >
           <MdOutlineExpand_less class={"w-3.5 h-3.5 transition-transform " + (open() ? "rotate-180" : "")} />
         </button>

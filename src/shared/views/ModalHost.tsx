@@ -38,6 +38,7 @@ const CardComposerModal = lazy(() => import("@/shared/editor/composers/CardCompo
 const NoteComposerModal = lazy(() => import("@/shared/editor/composers/NoteComposerModal"));
 const PostDetailModal = lazy(() => import("./PostDetailModal"));
 const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
+const ChatWindow = lazy(() => import("@/modules/chat/views/ChatWindow"));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BY_KIND: Record<ComposerKind, Component<any>> = {
@@ -48,6 +49,7 @@ const BY_KIND: Record<ComposerKind, Component<any>> = {
   note: NoteComposerModal,
   thread: PostDetailModal,
   event: EventCreatorModal,
+  chat: ChatWindow,
 };
 
 /**
@@ -90,6 +92,7 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
         kind: props.entry.kind,
         mode: props.entry.mode,
         setDocTitle: props.entry.setDocTitle,
+        setUnread: props.entry.setUnread,
         dockIndex: () => props.dockIndex(),
         setMode: (m) => {
           // Zen is a global signal (zen.ts) — a composer coming forward must
@@ -115,6 +118,21 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
   );
 }
 
+function UnreadBadge(props: { count: number }) {
+  const { t } = useI18n();
+  return (
+    <Show when={props.count > 0}>
+      <span
+        class="shrink-0 min-w-[1.125rem] rounded-full bg-accent px-1 text-center text-[0.625rem]
+               font-semibold leading-[1.125rem] text-accent-fg tabular-nums"
+        aria-label={t("editor.unread_count", { count: String(props.count) })}
+      >
+        {props.count > 99 ? "99+" : props.count}
+      </span>
+    </Show>
+  );
+}
+
 /** One minimized entry: restore on the label, close on the ×. */
 function MinimizedItem(props: { entry: ComposerEntry; class: string; onRestore?: () => void }) {
   const { t } = useI18n();
@@ -134,6 +152,7 @@ function MinimizedItem(props: { entry: ComposerEntry; class: string; onRestore?:
         {/* What is being written, when it has a title — the generic
             heading ("New Post") only until then. */}
         <span class="truncate">{props.entry.docTitle() || props.entry.title || t("post.modal_title")}</span>
+        <UnreadBadge count={props.entry.unread()} />
       </button>
       <button
         type="button"
@@ -166,7 +185,10 @@ function OverflowPill(props: { entries: ComposerEntry[]; mount: Element }) {
         aria-label={t("editor.minimized_more", { count: String(props.entries.length) })}
         onClick={() => pop.setOpen(!pop.open())}
       >
-        +{props.entries.length}
+        <span class="flex items-center gap-1.5">
+          +{props.entries.length}
+          <UnreadBadge count={props.entries.reduce((n, e) => n + e.unread(), 0)} />
+        </span>
       </button>
       <Show when={pop.open()}>
         <Portal mount={props.mount}>

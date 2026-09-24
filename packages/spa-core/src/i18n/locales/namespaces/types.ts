@@ -490,7 +490,7 @@ export type RawDictionary = {
     manage:         string;
     // Widget labels (picker / edit mode)
     notifications:      string;
-    pinned_chat:        string;
+    chatrooms_list:     string;
     stream_filters:     string;
     saved_searches:     string;
     article_drafts:     string;
@@ -895,6 +895,7 @@ export type RawDictionary = {
     page_mode:              string;
     minimized_composers:    string;
     minimized_more:         string;
+    unread_count:           string;
     title_placeholder:      string;
     category_placeholder:   string;
     drafts_btn:             string;
@@ -2391,6 +2392,7 @@ export type RawDictionary = {
     no_default_group: string;
     private_select_hint: string;
     cancel:           string;
+    save:             string;
     creating:         string;
     create:           string;
     not_installed:    string;
@@ -2405,13 +2407,15 @@ export type RawDictionary = {
     bookmarked_rooms: string;
     bookmark:         string;
     unbookmark:       string;
+    notify_sound:     string;
+    notify_push:      string;
+    notify_silent:    string;
+    session_encrypted:        string;
+    session_encrypt_disable:  string;
     no_bookmarks:     string;
     bookmarked:       string;
     privacy_public:   string;
     privacy_private:  string;
-    pinned_chats:     string;
-    pin_to_sidebar:   string;
-    unpin:            string;
     expire_never:     string;
     expire_label:     string;
   };

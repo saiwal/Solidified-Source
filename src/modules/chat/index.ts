@@ -46,14 +46,25 @@ registerModule({
       locked: true,
     },
     {
-      // Global — always mounted, every page (not just chat's own routes).
-      id: "chat.pinnedRooms",
-      label: () => useI18n().t("widgets.pinned_chat"),
-      loader: () => import("./widgets/PinnedChatWidget"),
-      slot: "right",
+      // Room list with one-click join into a chat window. Two ids for two
+      // slots (same as hq.quick_compose/_right) — a widget can't change slot.
+      id: "chat.rooms_list",
+      label: () => useI18n().t("widgets.chatrooms_list"),
+      loader: () => import("./widgets/ChatRoomsListWidget"),
+      slot: "contentTop",
+      defaultModules: [],
+      defaultSpan: 3,
       contexts: "any",
-      global: true,
-      helpTarget: "widgets.pinned_chatrooms",
+      helpTarget: "widgets.chatrooms_list",
+    },
+    {
+      id: "chat.rooms_list_right",
+      label: () => useI18n().t("widgets.chatrooms_list"),
+      loader: () => import("./widgets/ChatRoomsListWidget"),
+      slot: "right",
+      defaultModules: ["hq"],
+      contexts: "any",
+      helpTarget: "widgets.chatrooms_list",
     },
     {
       id: "chat.bookmarkedRooms",

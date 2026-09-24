@@ -23,6 +23,7 @@ export const chat: RawDictionary["chat"] = {
   no_default_group: "Keine Standard-Privatsphäre-Gruppe festgelegt — alle bestätigten Verbindungen werden zugelassen.",
   private_select_hint: "Wähle mindestens eine Verbindung oder Gruppe für einen privaten Raum aus.",
   cancel:           "Abbrechen",
+  save:             "Speichern",
   creating:         "Wird erstellt…",
   create:           "Erstellen",
   not_installed:    "Die Chatrooms-App ist für diesen Kanal nicht installiert.",
@@ -39,15 +40,17 @@ export const chat: RawDictionary["chat"] = {
   bookmarked_rooms: "Räume mit Lesezeichen",
   bookmark:         "Lesezeichen setzen",
   unbookmark:       "Lesezeichen entfernen",
+  notify_sound:     "Ton bei neuen Nachrichten — klicken für Push-Benachrichtigungen",
+  notify_push:      "Push-Benachrichtigungen bei neuen Nachrichten — klicken zum Stummschalten",
+  notify_silent:    "Hinweise auf neue Nachrichten aus — klicken für Ton",
+  session_encrypted:        "Sitzung verschlüsselt",
+  session_encrypt_disable:  "Sitzungsverschlüsselung deaktivieren",
   no_bookmarks:     "Noch keine Räume mit Lesezeichen.",
   bookmarked:       "Mit Lesezeichen versehen",
   // Privacy indicator
   privacy_public:   "Öffentlich",
   privacy_private:  "Privat",
   // Pinned rooms widget
-  pinned_chats:     "Angeheftete Chats",
-  pin_to_sidebar:   "An Seitenleiste anheften",
-  unpin:            "Lösen",
   expire_never:     "Läuft nie ab",
   expire_label:     "Läuft ab in",
 };

@@ -45,8 +45,9 @@ export const [defaultPostMode, setDefaultPostMode] = persistedSignal<
   Exclude<ComposerMode, "min">
 >("hz-post-mode", "modal", oneOf("modal", "dock", "page"));
 
-const defaultModeFor = (kind: ComposerKind) =>
-  kind === "thread" ? defaultPostMode() : defaultComposerMode();
+// A chat sits beside the page rather than taking it over, so it always docks.
+const defaultModeFor = (kind: ComposerKind): ComposerMode =>
+  kind === "chat" ? "dock" : kind === "thread" ? defaultPostMode() : defaultComposerMode();
 
 export const isExpanded = (m: ComposerMode) => m !== "min";
 
@@ -116,9 +117,11 @@ export function enforceModeRules(list: readonly ModeHolder[], id: string): void 
 /** Kinds the host knows how to mount — see ModalHost's component map. */
 /** `thread` is not a composer: an opened post (PostDetailModal), hosted here so
  *  it gets the same dock/page/min modes and survives navigation. */
+/** `chat` is a joined chatroom (ChatWindow) — each window runs its own room
+ *  session, and minimizing keeps it joined and polling. */
 /** `event` is EventCreatorModal — a form with no autosaved draft; minimizing it
  *  keeps it mounted, which is all the state it has. */
-export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread" | "event";
+export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread" | "event" | "chat";
 
 /**
  * Provided per entry by `ModalHost`. Absent for the callsites that still
@@ -135,6 +138,8 @@ export interface ComposerFrame {
   setDocTitle: (title: string) => void;
   /** Slot on the bottom-right rail, 0 = rightmost. Only meaningful docked. */
   dockIndex: Accessor<number>;
+  /** Badge count for the minimized pill (a chat's unread messages). */
+  setUnread: (n: number) => void;
 }
 
 export const ComposerFrameContext = createContext<ComposerFrame | undefined>(undefined);
@@ -146,6 +151,8 @@ export interface ComposerEntry extends ModeHolder {
   /** The composer's live title field — pushed up by createComposerStore. */
   docTitle: Accessor<string>;
   setDocTitle: Setter<string>;
+  unread: Accessor<number>;
+  setUnread: Setter<number>;
   /** Handed to the composer component as-is. */
   props: Record<string, unknown>;
   /** Per-entry signal — see the note on setComposerMode. */
@@ -193,6 +200,7 @@ export function openComposer(spec: OpenComposerSpec): string {
 
   const [mode, setMode] = createSignal<ComposerMode>(spec.mode ?? defaultModeFor(spec.kind));
   const [docTitle, setDocTitle] = createSignal("");
+  const [unread, setUnread] = createSignal(0);
   const entry: ComposerEntry = {
     id: `composer-${++seq}`,
     scope: spec.scope,
@@ -203,6 +211,8 @@ export function openComposer(spec: OpenComposerSpec): string {
     setMode,
     docTitle,
     setDocTitle,
+    unread,
+    setUnread,
   };
   // Only ever append/filter this array. Rebuilding an entry object (a
   // `prev.map(e => ({ ...e }))`) changes its identity, and <For> keys on
@@ -258,6 +268,14 @@ export function openEvent(props: Record<string, unknown> & { event?: { id: strin
     title: "",
     props,
   });
+}
+
+/**
+ * Open a chatroom window, or bring forward the one already in that room. The
+ * scope is ChatComposer's own draft scope, so the two can never disagree.
+ */
+export function openChat(nick: string, roomId: number, name = ""): string {
+  return openComposer({ kind: "chat", scope: `chat:${nick}:${roomId}`, title: name, props: { nick, roomId } });
 }
 
 export function closeComposer(id: string): void {

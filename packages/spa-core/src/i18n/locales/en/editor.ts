@@ -18,6 +18,7 @@ export const editor = {
   page_mode:              "Full page",
   minimized_composers:    "Minimized composers",
   minimized_more:         "{{count}} more minimized",
+  unread_count:           "{{count}} unread",
   title_placeholder:      "Title (optional)",
   category_placeholder:   "Categories (optional, comma-separated)",
   drafts_btn:             "Drafts ({{count}})",

@@ -61,6 +61,12 @@ interface Props {
   fill?: boolean;
   /** Extra buttons for the toolbar's right end. */
   toolbarTrailing?: JSX.Element;
+  /** Rendered beside the typing surface, bottom-aligned — chat's send button,
+   *  the way messaging apps put it next to the input rather than below it. */
+  surfaceTrailing?: JSX.Element;
+  /** Drop the counts + source-toggle row — for chat, which places its own
+   *  source toggle and has no use for a word count. */
+  hideStats?: boolean;
 }
 
 export default function RichEditor(props: Props) {
@@ -458,7 +464,7 @@ export default function RichEditor(props: Props) {
     >
       {/* The typing surface, with the zen toggle floating over its bottom-right
           corner (shell-hosted composers only — zen means nothing elsewhere). */}
-      <div class={`relative flex flex-col ${surfaceGrowClass()}`}>
+      <div class={`relative flex ${props.surfaceTrailing ? "flex-row items-end rounded-t-lg bg-elevated" : "flex-col"} ${surfaceGrowClass()}`}>
       {/* ── WYSIWYG surface ───────────────────────────────── */}
       <Show when={tab() === "wysiwyg"}>
         <div
@@ -473,7 +479,7 @@ export default function RichEditor(props: Props) {
           onBlur={onEditorBlur}
           data-placeholder={props.placeholder ?? t("editor.write_placeholder")}
           style={{ "min-height": surfaceMinH(), "max-height": maxH() }}
-          class={`${surfaceGrowClass()} overflow-y-auto ${surfaceSkin()} p-3 outline-none text-sm text-txt
+          class={`${surfaceGrowClass()} min-w-0 overflow-y-auto ${surfaceSkin()} p-3 outline-none text-sm text-txt
                  ${POST_PROSE} prose-p:my-1
                  [&_img]:max-w-full [&_img]:h-auto
                  empty:before:content-[attr(data-placeholder)]
@@ -492,7 +498,7 @@ export default function RichEditor(props: Props) {
           onPaste={handlePaste}
           onDrop={handleDrop}
           style={{ "min-height": surfaceMinH(), "max-height": maxH() }}
-          class={`${surfaceGrowClass()} overflow-y-auto ${surfaceSkin()} w-full p-3 text-sm font-mono text-txt outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
+          class={`${surfaceGrowClass()} min-w-0 overflow-y-auto ${surfaceSkin()} w-full p-3 text-sm font-mono text-txt outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
           placeholder={
             mime() === "text/markdown"
               ? t("editor.markdown_source_placeholder")
@@ -507,10 +513,14 @@ export default function RichEditor(props: Props) {
             <ZenToggleButton />
           </div>
         </Show>
+        <Show when={props.surfaceTrailing}>
+          <div class="shrink-0 p-2">{props.surfaceTrailing}</div>
+        </Show>
       </div>
 
       {/* Counts + source toggle, tucked between the typing surface and the
            toolbar so every composer shows them in the same place. */}
+      <Show when={!props.hideStats}>
       <div class={`shrink-0 px-2 pb-1 ${props.capabilities.toolbar === "none" ? "" : "bg-elevated"}`}>
         <EditorStats
           words={() => countWords(props.body)}
@@ -520,6 +530,7 @@ export default function RichEditor(props: Props) {
           canWysiwyg={wysiwygAllowed()}
         />
       </div>
+      </Show>
 
       {/* ── Unified toolbar (wysiwyg + source tabs) — docked at the bottom
            of the surface so it stays visible while the surface above it

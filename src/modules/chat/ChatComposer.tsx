@@ -1,49 +1,57 @@
 // src/modules/chat/ChatComposer.tsx
-import { createSignal, createEffect, Show, onCleanup, lazy } from "solid-js";
+import { createEffect, createSignal, Show, onCleanup, lazy } from "solid-js";
 import { createComposerStore } from "@/shared/editor/store/createComposerStore";
 import RichEditor from "@/shared/editor/core/RichEditor";
 import { CAPABILITIES } from "@/shared/editor/types/editor.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { encryptBody } from "@utsukta/spa-core/lib/postCrypto";
-import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
-import {
-  useMention,
-  getWysiwygMentionQuery,
-  getCaretRect,
-} from "@/shared/editor/mention/useMention";
-import MentionPopup from "@/shared/editor/mention/MentionPopup";
-import {
-  useEmoji,
-  getWysiwygEmojiQuery,
-  type EmojiEntry,
-} from "@/shared/editor/emoji/useEmoji";
-import EmojiPopup from "@/shared/editor/emoji/EmojiPopup";
-import EmojiPicker from "@/shared/editor/emoji/EmojiPicker";
-import { emojiEntryToImg } from "@utsukta/spa-core/lib/emojify";
-import { sendChatMessage, roomName, roomAcl } from "./store";
-import { currentNick } from "@utsukta/spa-core/store/auth-store";
+import { isFeatureEnabled, currentNick } from "@utsukta/spa-core/store/auth-store";
+import { useMentionEmojiWiring } from "@/shared/editor/mention/useMentionEmojiWiring";
+import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
+import type { AttachmentActions } from "@/shared/editor/attachments/useAttachmentActions";
+import { appendInsert, bbcodeToInsert } from "@/shared/editor/attachments/insertHelpers";
+import type { RoomSession } from "./store";
 import { uploadChatMedia } from "./chatAttach";
-import { htmlToSource } from "@/shared/editor/core/htmlToSource";
-import { MdFillSend, MdOutlineCamera_alt, MdOutlineEmoji_emotions, MdOutlineImage, MdOutlineLock, MdOutlineMic, MdOutlineVideocam } from "solid-icons/md";
+import { MdFillSend, MdOutlineAttach_file, MdOutlineLock } from "solid-icons/md";
+import EmojiPicker from "@/shared/editor/emoji/EmojiPicker";
+import SourceToggleButton from "@/shared/editor/components/SourceToggleButton";
+import { emojiEntryToImg } from "@utsukta/spa-core/lib/emojify";
+import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
+import { IconButton, SplitSubmitButton } from "@/shared/editor/components/buttons";
 
 const CameraCapture = lazy(() => import("@/shared/editor/attachments/CameraCapture"));
+import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
+import { createPopover } from "@/shared/stream/filters/createPopover";
+const FilePickerModal = lazy(() => import("@/shared/editor/attachments/picker/FilePickerModal"));
 
 interface Props {
-  nick: string;
-  roomId: number;
+  room: RoomSession;
 }
 
 export default function ChatComposer(props: Props) {
   const { t } = useI18n();
-  const [tab, setTab] = createSignal<"wysiwyg" | "source">("wysiwyg");
   const [uploading, setUploading] = createSignal(false);
   const [uploadPct, setUploadPct] = createSignal(0);
   const [cameraOpen, setCameraOpen] = createSignal(false);
+  const [pickerOpen, setPickerOpen] = createSignal(false);
+  // The full formatting toolbar, folded behind "Aa" so a chat input stays one
+  // slim row until you want it.
+  const [formatting, setFormatting] = createSignal(false);
 
   // Session encrypt: password stored here, encrypts all outgoing messages until cleared.
   const [sessionPassword, setSessionPassword] = createSignal<string | null>(null);
   const [sessionHint, setSessionHint]         = createSignal("");
-  const [sessionSetupOpen, setSessionSetupOpen] = createSignal(false);
+  // Anchored above the lock icon; floating-ui flips it if there is no room.
+  const encPop = createPopover({ placement: "top-start" });
+  const sessionSetupOpen = encPop.open;
+  const setSessionSetupOpen = encPop.setOpen;
+  let pwInput: HTMLInputElement | undefined;
+  // The panel stays visibility:hidden until floating-ui has placed it, and a
+  // hidden input can't take focus — so focus once it is actually shown.
+  createEffect(() => {
+    if (encPop.style().visibility === "visible") pwInput?.focus();
+  });
   const [sessionPwInput, setSessionPwInput]     = createSignal("");
   const [sessionHintInput, setSessionHintInput] = createSignal("");
   const [sessionError, setSessionError]         = createSignal("");
@@ -69,85 +77,42 @@ export default function ChatComposer(props: Props) {
   const store = createComposerStore(
     async (body) => {
       const pw = sessionPassword();
-      const msgBody = pw ? await encryptBody(body, pw, sessionHint()) : body;
-      await sendChatMessage(props.nick, props.roomId, msgBody);
+      // An encrypted message is a [crypt] block, i.e. bbcode, whatever it was
+      // typed in; plain ones go up in their own format and the server
+      // converts Markdown to bbcode, exactly as for posts.
+      if (pw) await props.room.send(await encryptBody(body, pw, sessionHint()), "text/bbcode");
+      else await props.room.send(body, store.mimetype());
     },
-    `chat:${props.nick}:${props.roomId}`,
+    `chat:${props.room.nick}:${props.room.roomId}`,
+    // Same "Markdown" feature toggle as PostComposer/CommentComposer.
+    { initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode" },
   );
 
-  const mention = useMention();
-  const emoji = useEmoji();
-  let wrapperRef: HTMLDivElement | undefined;
-  let imgInput: HTMLInputElement | undefined;
-  let videoInput: HTMLInputElement | undefined;
-  let audioInput: HTMLInputElement | undefined;
-
-  function getEditor(): HTMLDivElement | null {
-    return wrapperRef?.querySelector("[contenteditable]") ?? null;
-  }
-
-  // Drive mention/emoji popups from body changes
-  createEffect(() => {
-    void store.body();
-    const editor = getEditor();
-    if (!editor) return;
-    const mq = getWysiwygMentionQuery();
-    if (mq !== null) { const r = getCaretRect(); if (r) { mention.openWithQuery(mq, r); emoji.close(); return; } }
-    const eq = getWysiwygEmojiQuery();
-    if (eq !== null) { const r = getCaretRect(); if (r) { emoji.openWithQuery(eq, r); mention.close(); return; } }
-    mention.close();
-    emoji.close();
+  const wiring = useMentionEmojiWiring({
+    body: store.body,
+    setBody: store.setBody,
+    mimetype: store.mimetype,
   });
+  window.addEventListener("keydown", wiring.onKeyDown);
+  onCleanup(() => window.removeEventListener("keydown", wiring.onKeyDown));
 
-  function onKeyDown(e: KeyboardEvent) {
-    if (mention.open()) {
-      const consumed = mention.onKeyDown(e);
-      if (consumed) {
-        if (e.key === "Enter" || e.key === "Tab") {
-          const entry = mention.filtered()[mention.activeIdx()];
-          if (!entry) return;
-          const editor = getEditor();
-          if (editor) mention.insertWysiwyg(entry, () => store.setBody(htmlToSource(editor.innerHTML, store.mimetype())));
-        }
-        return;
-      }
-    }
-    if (emoji.open()) {
-      const consumed = emoji.onKeyDown(e);
-      if (consumed) {
-        if (e.key === "Enter" || e.key === "Tab") {
-          const entry = emoji.filtered()[emoji.activeIdx()];
-          if (!entry) return;
-          const editor = getEditor();
-          if (editor) emoji.insertWysiwyg(entry, () => store.setBody(htmlToSource(editor.innerHTML, store.mimetype())));
-        }
-        return;
-      }
-    }
-  }
+  const insert = (bbcode: string) =>
+    store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
 
-  window.addEventListener("keydown", onKeyDown);
-  onCleanup(() => window.removeEventListener("keydown", onKeyDown));
-
-  function insertEmoji(entry: EmojiEntry) {
-    const editor = getEditor();
-    if (!editor) return;
-    editor.focus();
-    document.execCommand("insertHTML", false, `${emojiEntryToImg(entry)} `);
-  }
-
-  async function handleMediaFile(file: File) {
+  // Uploads go into the room's own cloud folder under the room ACL
+  // (uploadChatMedia), not through the post AttachmentStore, whose files take
+  // the channel's default ACL — so the toolbar gets a chat-specific adapter.
+  async function uploadFiles(files: File[]) {
     const nick = currentNick();
-    const room = roomName();
-    if (!nick || !room) return;
-
+    const room = props.room.name();
+    if (!nick || !room || !files.length) return;
     setUploading(true);
-    setUploadPct(0);
     try {
-      const media = await uploadChatMedia(nick, room, file, setUploadPct, roomAcl());
-      // Append BBCode to the body; RichEditor effect will re-render the WYSIWYG surface
-      store.setBody(store.body() ? `${store.body()}\n${media.bbcode}` : media.bbcode);
-    } catch (e: any) {
+      for (const file of files) {
+        setUploadPct(0);
+        insert((await uploadChatMedia(nick, room, file, setUploadPct, props.room.acl())).bbcode);
+      }
+    } catch (e) {
       console.error("Chat media upload failed:", e);
     } finally {
       setUploading(false);
@@ -155,219 +120,259 @@ export default function ChatComposer(props: Props) {
     }
   }
 
-  function pickFile(input: HTMLInputElement | undefined) {
-    input?.click();
+  // The slim row's emoji picker; the toolbar's own one is hidden with it.
+  function insertEmoji(entry: EmojiEntry) {
+    if (store.tab() === "source") {
+      store.setBody(`${store.body()}${entry.shortname} `);
+      return;
+    }
+    const el = box?.querySelector<HTMLElement>("[contenteditable]");
+    if (!el) return;
+    el.focus();
+    // execCommand fires the surface's input event, which syncs the body.
+    document.execCommand("insertHTML", false, `${emojiEntryToImg(entry)} `);
   }
 
-  function onFileChange(e: Event) {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
-    if (file) void handleMediaFile(file);
-    (e.currentTarget as HTMLInputElement).value = "";
-  }
+  let fileInput: HTMLInputElement | undefined;
+  let box: HTMLDivElement | undefined;
+  const attach: AttachmentActions = {
+    openFile: () => fileInput?.click(),
+    openBrowse: () => setPickerOpen(true),
+    openCamera: () => setCameraOpen(true),
+    addFiles: (files) => void uploadFiles(Array.from(files ?? [])),
+    surfaces: () => null,
+  };
 
   return (
-    <div class="px-4 py-3 border-t border-rim bg-surface shrink-0">
-      {/* Hidden file inputs */}
-      <input ref={imgInput}   type="file" accept="image/*"   class="hidden" onChange={onFileChange} />
-      <input ref={videoInput} type="file" accept="video/*"   class="hidden" onChange={onFileChange} />
-      <input ref={audioInput} type="file" accept="audio/*"   class="hidden" onChange={onFileChange} />
+    <div class="px-3 pb-3 pt-1 shrink-0">
+      <input
+        ref={fileInput}
+        type="file"
+        multiple
+        class="hidden"
+        onChange={(e) => {
+          attach.addFiles(e.currentTarget.files);
+          e.currentTarget.value = "";
+        }}
+      />
 
-      <div ref={wrapperRef}>
+      {/* One rounded input box: typing surface with Send beside it, the full
+          formatting toolbar when "Aa" is on, then a slim action row (attach,
+          emoji, Aa, session encryption, source). */}
+      <div
+        ref={(el) => { box = el; wiring.wrapperRef(el); }}
+        class="rounded-2xl border border-rim bg-elevated focus-within:border-rim-strong transition-colors"
+      >
         <RichEditor
+          attach={attach}
           body={store.body()}
           onInput={store.setBody}
-          capabilities={CAPABILITIES.chat}
-          tab={tab()}
-          onTabChange={setTab}
+          mimetype={store.mimetype()}
+          capabilities={{ ...CAPABILITIES.chat, toolbar: formatting() ? "full" : "none" }}
+          hideStats
+          tab={store.tab()}
+          onTabChange={store.setTab}
           onEnter={() => {
-            if (mention.open() || emoji.open()) return false;
+            if (wiring.mention.open() || wiring.emoji.open()) return false;
             store.submit();
             return true;
           }}
           onCtrlEnter={() => {
-            if (!mention.open() && !emoji.open()) store.submit();
+            if (!wiring.mention.open() && !wiring.emoji.open()) store.submit();
           }}
+          onPasteFiles={(files) => void uploadFiles(files)}
           placeholder={t("chat.write_message") as string}
-          minHeight="60px"
+          minHeight="2.5rem"
+          maxHeight="10rem"
+          surfaceTrailing={
+            <SplitSubmitButton
+              icon
+              onClick={() => store.submit()}
+              disabled={store.submitting() || uploading() || !store.body().trim()}
+            >
+              {/* The lock rides on the button while a session password is set, so
+                  it's clear every message is going out encrypted. */}
+              <span class="flex items-center gap-1" title={t("editor.send_btn") as string}>
+                <Show when={sessionPassword()}>
+                  <MdOutlineLock class="w-3.5 h-3.5" />
+                </Show>
+                <MdFillSend class="w-4 h-4" />
+              </span>
+            </SplitSubmitButton>
+          }
         />
+        <div class="flex items-center gap-0.5 px-2 pb-1.5">
+          <IconButton title={t("editor.attach_file_title")} onClick={() => attach.openFile()}>
+            <MdOutlineAttach_file class="w-4 h-4" />
+          </IconButton>
+          <EmojiPicker onSelect={insertEmoji} />
+          <button
+            type="button"
+            title={t("editor.more_tools")}
+            aria-pressed={formatting()}
+            onClick={() => setFormatting(!formatting())}
+            class="px-1.5 py-1 rounded-md text-xs font-semibold transition-colors"
+            classList={{
+              "text-accent bg-accent/10": formatting(),
+              "text-muted hover:text-txt hover:bg-overlay": !formatting(),
+            }}
+          >
+            Aa
+          </button>
+          <Show when={isFeatureEnabled("content_encrypt")}>
+            <button
+              ref={encPop.ref}
+              type="button"
+              title={sessionPassword() ? t("chat.session_encrypted") : t("editor.encrypt_toggle")}
+              aria-haspopup="dialog"
+              aria-expanded={sessionSetupOpen()}
+              onClick={() => setSessionSetupOpen(!sessionSetupOpen())}
+              class="p-1.5 rounded-md transition-colors"
+              classList={{
+                "text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20": !!sessionPassword(),
+                "text-muted hover:text-txt hover:bg-elevated": !sessionPassword(),
+              }}
+            >
+              <MdOutlineLock class="w-4 h-4" />
+            </button>
+          </Show>
+          <SourceToggleButton
+            tab={store.tab()}
+            onToggle={() => store.setTab(store.tab() === "wysiwyg" ? "source" : "wysiwyg")}
+            borderless
+          />
+          <Show when={uploading()}>
+            <div class="ml-auto flex items-center gap-1.5" role="status">
+              <div class="w-16 h-1 bg-surface rounded-full overflow-hidden">
+                <div class="h-full bg-accent rounded-full transition-all duration-150" style={{ width: `${uploadPct()}%` }} />
+              </div>
+              <span class="text-[0.625rem] text-muted tabular-nums">{uploadPct()}%</span>
+            </div>
+          </Show>
+        </div>
       </div>
 
       <Show when={store.error()}>
         <p class="text-xs text-red-500 mt-1">{store.error()}</p>
       </Show>
 
-      {/* Session encrypt setup panel */}
+      {/* Session encryption — set a password once and every message you send
+          from this window goes out encrypted until you turn it off. */}
       <Show when={isFeatureEnabled("content_encrypt") && sessionSetupOpen()}>
-        <form
-          class="mt-2 p-2.5 rounded-lg border border-rim bg-elevated/60 space-y-2"
-          onSubmit={(e) => { e.preventDefault(); enableSession(); }}
-        >
-          <span class="block text-xs font-semibold text-muted uppercase tracking-wide">
-            {t("editor.encrypt_panel_title")}
-          </span>
-          <div class="flex gap-2">
-            <input
-              type="password"
-              placeholder={t("editor.encrypt_password_placeholder")}
-              value={sessionPwInput()}
-              onInput={(e) => setSessionPwInput(e.currentTarget.value)}
-              class="flex-1 bg-transparent border border-rim rounded px-2 py-1 text-xs text-txt
-                     placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
-            />
-            <input
-              type="text"
-              placeholder={t("editor.encrypt_hint_placeholder")}
-              value={sessionHintInput()}
-              onInput={(e) => setSessionHintInput(e.currentTarget.value)}
-              class="flex-1 bg-transparent border border-rim rounded px-2 py-1 text-xs text-txt
-                     placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
-            />
-          </div>
-          <Show when={sessionError()}>
-            <p class="text-red-400 text-xs">{sessionError()}</p>
-          </Show>
-          <div class="flex gap-2">
-            <button type="submit"
-              class="px-3 py-1 rounded-md text-xs font-semibold bg-accent text-accent-fg hover:opacity-90 transition-opacity">
-              {t("editor.encrypt_btn")}
-            </button>
-            <button type="button"
-              onClick={() => { setSessionSetupOpen(false); setSessionError(""); }}
-              class="px-3 py-1 rounded-md text-xs text-muted hover:text-txt hover:bg-elevated transition-colors">
-              {t("editor.encrypt_cancel")}
-            </button>
-          </div>
-        </form>
-      </Show>
-
-      <div class="flex items-center justify-between mt-2 gap-2">
-        {/* Left: media + emoji buttons */}
-        <div class="flex items-center gap-0.5">
-          <MediaBtn title="Image" onClick={() => pickFile(imgInput)} disabled={uploading()}>
-            <MdOutlineImage class="text-lg" />
-          </MediaBtn>
-          <MediaBtn title="Video" onClick={() => pickFile(videoInput)} disabled={uploading()}>
-            <MdOutlineVideocam class="text-lg" />
-          </MediaBtn>
-          <MediaBtn title="Audio" onClick={() => pickFile(audioInput)} disabled={uploading()}>
-            <MdOutlineMic class="text-lg" />
-          </MediaBtn>
-          <MediaBtn title="Camera" onClick={() => setCameraOpen(true)} disabled={uploading()}>
-            <MdOutlineCamera_alt class="text-lg" />
-          </MediaBtn>
-          <EmojiPicker
-            onSelect={insertEmoji}
-            triggerIcon={<MdOutlineEmoji_emotions class="text-lg" />}
-            triggerClass="p-1.5 rounded-lg text-muted hover:text-accent hover:bg-elevated transition-colors"
-          />
-          {/* Session encryption toggle */}
-          <Show when={isFeatureEnabled("content_encrypt")}>
+        <Portal mount={topLayer()}>
+          <div
+            ref={encPop.floating}
+            style={encPop.style()}
+            role="dialog"
+            aria-label={t("editor.encrypt_panel_title")}
+            class="z-[60] w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-rim bg-surface shadow-xl p-3 space-y-3"
+            // Handled here and stopped: the chat window minimizes on a
+            // document-level Escape when docked, and closing this popup
+            // shouldn't take the window with it.
+            onKeyDown={(e) => {
+              if (e.key !== "Escape") return;
+              e.stopPropagation();
+              setSessionSetupOpen(false);
+              setSessionError("");
+            }}
+          >
+            <h2 class="text-sm font-semibold text-txt">
+              {sessionPassword() ? t("chat.session_encrypted") : t("editor.encrypt_panel_title")}
+            </h2>
             <Show
               when={!sessionPassword()}
               fallback={
-                /* Active: clicking disables session encryption */
-                <button
-                  type="button"
-                  title="Session encrypted — click to disable"
-                  onClick={disableSession}
-                  class="p-1.5 rounded-lg text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors"
-                >
-                  <svg class="w-[1.125rem] h-[1.125rem]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </button>
+                <div class="flex justify-end gap-2">
+                  <button type="button"
+                    onClick={() => setSessionSetupOpen(false)}
+                    class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors">
+                    {t("editor.encrypt_cancel")}
+                  </button>
+                  <button type="button"
+                    onClick={disableSession}
+                    class="px-3 py-1.5 rounded-lg text-sm font-semibold text-yellow-600 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors">
+                    {t("chat.session_encrypt_disable")}
+                  </button>
+                </div>
               }
             >
-              {/* Inactive: clicking opens setup */}
-              <MediaBtn
-                title={t("editor.encrypt_toggle")}
-                onClick={() => setSessionSetupOpen((o) => !o)}
-                disabled={false}
+              <form
+                class="space-y-3"
+                onSubmit={(e) => { e.preventDefault(); enableSession(); }}
               >
-                <MdOutlineLock class="w-[1.125rem] h-[1.125rem]" />
-              </MediaBtn>
-            </Show>
-          </Show>
-
-          {/* Upload progress */}
-          <Show when={uploading()}>
-            <div class="flex items-center gap-1.5 ml-2">
-              <div class="w-20 h-1.5 bg-elevated rounded-full overflow-hidden">
-                <div
-                  class="h-full bg-accent rounded-full transition-all duration-150"
-                  style={{ width: `${uploadPct()}%` }}
+                <input
+                  ref={pwInput}
+                  type="password"
+                  placeholder={t("editor.encrypt_password_placeholder")}
+                  value={sessionPwInput()}
+                  onInput={(e) => setSessionPwInput(e.currentTarget.value)}
+                  class="w-full bg-elevated border border-rim rounded-lg px-2.5 py-1.5 text-sm text-txt
+                         placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
                 />
-              </div>
-              <span class="text-[0.625rem] text-muted tabular-nums">{uploadPct()}%</span>
-            </div>
-          </Show>
-        </div>
-
-        {/* Right: send button */}
-        <button
-          type="button"
-          onClick={() => store.submit()}
-          disabled={store.submitting() || (!store.body().trim() && !uploading())}
-          class="p-2 rounded-lg bg-accent text-accent-fg hover:opacity-90 disabled:opacity-40 transition-all shrink-0"
-        >
-          <MdFillSend class="text-base" />
-        </button>
-      </div>
-
-      <Show when={mention.open() && mention.rect() !== null}>
-        <MentionPopup
-          query={mention.query()!}
-          entries={mention.filtered()}
-          anchorRect={mention.rect()!}
-          activeIdx={mention.activeIdx()}
-          onSelect={(entry) => {
-            const editor = getEditor();
-            if (editor) mention.insertWysiwyg(entry, () => store.setBody(htmlToSource(editor.innerHTML, store.mimetype())));
-          }}
-        />
+                <input
+                  type="text"
+                  placeholder={t("editor.encrypt_hint_placeholder")}
+                  value={sessionHintInput()}
+                  onInput={(e) => setSessionHintInput(e.currentTarget.value)}
+                  class="w-full bg-elevated border border-rim rounded-lg px-2.5 py-1.5 text-sm text-txt
+                         placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
+                />
+                <Show when={sessionError()}>
+                  <p class="text-red-400 text-xs">{sessionError()}</p>
+                </Show>
+                <div class="flex justify-end gap-2">
+                  <button type="button"
+                    onClick={() => { setSessionSetupOpen(false); setSessionError(""); }}
+                    class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors">
+                    {t("editor.encrypt_cancel")}
+                  </button>
+                  <button type="submit"
+                    class="px-3 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg hover:opacity-90 transition-opacity">
+                    {t("editor.encrypt_btn")}
+                  </button>
+                </div>
+              </form>
+            </Show>
+          </div>
+        </Portal>
       </Show>
 
-      <Show when={emoji.open() && emoji.rect() !== null}>
-        <EmojiPopup
-          entries={emoji.filtered()}
-          anchorRect={emoji.rect()!}
-          activeIdx={emoji.activeIdx()}
-          onSelect={(entry) => {
-            const editor = getEditor();
-            if (editor) { emoji.insertWysiwyg(entry, () => store.setBody(htmlToSource(editor.innerHTML, store.mimetype()))); emoji.close(); }
-          }}
-        />
-      </Show>
+      <MentionEmojiPopups wiring={wiring} />
 
       <Show when={cameraOpen()}>
         <CameraCapture
           onClose={() => setCameraOpen(false)}
           onCapture={(files) => {
             setCameraOpen(false);
-            if (files[0]) void handleMediaFile(files[0]);
+            void uploadFiles(files);
+          }}
+        />
+      </Show>
+
+      {/* Existing cloud files and photos keep their own permissions — only
+          fresh uploads get the room ACL. */}
+      <Show when={pickerOpen()}>
+        <FilePickerModal
+          nick={currentNick()}
+          accept="both"
+          onClose={() => setPickerOpen(false)}
+          onSelectFiles={(files) => {
+            setPickerOpen(false);
+            for (const f of files) {
+              insert(
+                f.is_photo
+                  ? `[img]${window.location.origin}/photo/${f.hash}-1[/img]`
+                  : `[url=${window.location.origin}/cloud/${currentNick()}/${f.display_path
+                      .split("/").map(encodeURIComponent).join("/")}]${f.filename}[/url]`,
+              );
+            }
+          }}
+          onSelectPhotos={(photos) => {
+            setPickerOpen(false);
+            for (const p of photos) insert(`[zrl=${p.link}][zmg]${p.src}[/zmg][/zrl]`);
           }}
         />
       </Show>
     </div>
-  );
-}
-
-function MediaBtn(props: {
-  title: string;
-  onClick: () => void;
-  disabled: boolean;
-  children: any;
-}) {
-  return (
-    <button
-      type="button"
-      title={props.title}
-      onClick={props.onClick}
-      disabled={props.disabled}
-      class="p-1.5 rounded-lg text-muted hover:text-accent hover:bg-elevated transition-colors disabled:opacity-40"
-    >
-      {props.children}
-    </button>
   );
 }

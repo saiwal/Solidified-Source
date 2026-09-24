@@ -20,6 +20,7 @@ export const editor: RawDictionary["editor"] = {
   page_mode:              "पूरा पृष्ठ",
   minimized_composers:    "छोटे किए गए संपादक",
   minimized_more:         "{{count}} और छोटे किए गए",
+  unread_count:           "{{count}} अपठित",
   title_placeholder:      "शीर्षक (वैकल्पिक)",
   category_placeholder:   "श्रेणियाँ (वैकल्पिक, अल्पविराम से अलग करें)",
   drafts_btn:             "मसौदे ({{count}})",

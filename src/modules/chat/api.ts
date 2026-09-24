@@ -101,10 +101,11 @@ export async function sendMessage(
   nick: string,
   roomId: number,
   body: string,
+  mimetype = "text/bbcode",
 ): Promise<void> {
   const res = await apiFetch(`/spa/chat/${nick}/${roomId}/send`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, mimetype }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => null);
@@ -157,8 +158,16 @@ export async function createRoom(
 export async function updateRoom(
   nick: string,
   roomId: number,
-  opts: { expire?: number; name?: string },
-): Promise<{ id: number; name: string; expire: number }> {
+  opts: {
+    expire?: number;
+    name?: string;
+    visibility?: RoomVisibility;
+    allow_cid?: string[];
+    allow_gid?: string[];
+    deny_cid?: string[];
+    deny_gid?: string[];
+  },
+): Promise<{ id: number; name: string; expire: number; room_acl: ChatRoomAcl }> {
   const res = await apiFetch(`/spa/chat/${nick}/${roomId}/update`, {
     method: "POST",
     body: JSON.stringify(opts),

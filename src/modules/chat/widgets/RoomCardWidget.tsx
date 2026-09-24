@@ -2,7 +2,7 @@
 // multiInstance.
 
 import { Show } from "solid-js";
-import { A } from "@solidjs/router";
+import { openChat } from "@/shared/views/modal-host";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -57,13 +57,14 @@ export default function RoomCardWidget(props: WidgetProps) {
                   </p>
                 </div>
               </div>
-              <A
-                href={`/chat/${nick()}/${r().id}`}
-                class="block px-4 py-2 border-t border-rim text-center text-xs font-medium
+              <button
+                type="button"
+                onClick={() => openChat(nick(), r().id, r().name)}
+                class="block w-full px-4 py-2 border-t border-rim text-center text-xs font-medium
                        text-accent hover:bg-elevated transition-colors"
               >
                 {t("widgets.join_room")}
-              </A>
+              </button>
             </div>
           )}
         </Show>

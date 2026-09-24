@@ -1,6 +1,6 @@
 import { Show, createSignal } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { useNavigate } from "@solidjs/router";
+import { openChat } from "@/shared/views/modal-host";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { isOwner, createChatRoom } from "../store";
@@ -8,13 +8,10 @@ import {
   MdFillAdd,
 } from "solid-icons/md";
 import AclPicker, { entryKey, aclModeToScope, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
-import { useIsChatRoomsList } from "../lib/isChatRoomsList";
 
 export default function ChatHeaderWidget() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const nick = usePageNick();
-  const isList = useIsChatRoomsList();
   const auth = useAuth();
 
   const [showForm, setShowForm] = createSignal(false);
@@ -110,7 +107,7 @@ export default function ChatHeaderWidget() {
       }
       setShowForm(false);
       resetForm();
-      navigate(`/chat/${nick()}/${room.id}`);
+      openChat(nick(), room.id, room.name);
     } catch (err: any) {
       setFormError(err.message ?? "Failed to create room");
     } finally {
@@ -119,7 +116,7 @@ export default function ChatHeaderWidget() {
   }
 
   return (
-    <Show when={isList()}>
+    <>
       <div class="max-w-5xl mx-auto space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -218,6 +215,6 @@ export default function ChatHeaderWidget() {
           </form>
         </Show>
       </div>
-    </Show>
+    </>
   );
 }

@@ -23,6 +23,7 @@ export const chat: RawDictionary["chat"] = {
   no_default_group: "No default privacy group set — all approved connections will be allowed.",
   private_select_hint: "Select at least one connection or group for a private room.",
   cancel:           "Cancel",
+  save:             "Save",
   creating:         "Creating…",
   create:           "Create",
   not_installed:    "Chatrooms app is not installed for this channel.",
@@ -39,15 +40,17 @@ export const chat: RawDictionary["chat"] = {
   bookmarked_rooms: "Bookmarked Rooms",
   bookmark:         "Bookmark",
   unbookmark:       "Remove bookmark",
+  notify_sound:     "Sound on new messages — click for push notifications",
+  notify_push:      "Push notifications on new messages — click to mute",
+  notify_silent:    "New-message alerts off — click for sound",
+  session_encrypted:        "Session encrypted",
+  session_encrypt_disable:  "Disable session encryption",
   no_bookmarks:     "No bookmarked rooms yet.",
   bookmarked:       "Bookmarked",
   // Privacy indicator
   privacy_public:   "Public",
   privacy_private:  "Private",
   // Pinned rooms widget
-  pinned_chats:     "Pinned Chats",
-  pin_to_sidebar:   "Pin to sidebar",
-  unpin:            "Unpin",
   expire_never:     "Never expires",
   expire_label:     "Expires in",
 };

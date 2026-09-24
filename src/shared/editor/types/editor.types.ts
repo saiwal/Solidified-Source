@@ -266,20 +266,23 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     bbcodeFallback: true,
   },
   // Chat room message input — comment toolbar, untabbed, Ctrl+Enter sends
+  // Chat message — the post composer's full toolbar. Stored as bbcode like a
+  // post (Chat.php converts a Markdown body on send), hence nonBbcodeWysiwyg.
+  // No [card] tokens: nothing expands them in chat_text.
   chat: {
-    toolbar: "comment",
+    toolbar: "full",
     title: false,
     summary: false,
     slug: false,
     category: false,
-    attachments: "none",
+    attachments: "both",
     aclPicker: false,
     submitOnCtrlEnter: true,
     latexMode: "image",
     poll: false,
     cardPicker: false,
     format: false,
-    nonBbcodeWysiwyg: false,
+    nonBbcodeWysiwyg: true,
     bbcodeFallback: true,
   },
 };

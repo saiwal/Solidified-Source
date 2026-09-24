@@ -1,6 +1,6 @@
 import { createEffect, Show, For, on } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { useNavigate } from "@solidjs/router";
+import { openChat } from "@/shared/views/modal-host";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import {
   rooms,
@@ -18,7 +18,6 @@ import {
   MdOutlineTimer,
 } from "solid-icons/md";
 import formatPostDate from "@utsukta/spa-core/lib/date";
-import { useIsChatRoomsList } from "../lib/isChatRoomsList";
 
 function formatExpiry(minutes: number, neverLabel: string, expiresLabel: string): string {
   if (minutes === 0) return neverLabel;
@@ -29,9 +28,7 @@ function formatExpiry(minutes: number, neverLabel: string, expiresLabel: string)
 
 export default function ChatContentWidget() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const nick = usePageNick();
-  const isList = useIsChatRoomsList();
 
   createEffect(on(nick, (n) => {
     if (n) loadRooms(n);
@@ -43,7 +40,7 @@ export default function ChatContentWidget() {
   }
 
   return (
-    <Show when={isList()}>
+    <>
       <div class="max-w-3xl mx-auto px-4 pb-6 space-y-4">
         {/* App not installed */}
         <Show when={!chatroomsInstalled() && !roomsLoading()}>
@@ -82,7 +79,7 @@ export default function ChatContentWidget() {
               {(room) => (
                 <div class="bg-surface border border-rim rounded-xl p-4 flex items-center gap-3 hover:bg-elevated transition-colors group">
                   <button
-                    onClick={() => navigate(`/chat/${nick()}/${room.id}`)}
+                    onClick={() => openChat(nick(), room.id, room.name)}
                     class="flex-1 flex items-center gap-3 text-left min-w-0"
                   >
                     <div class="w-9 h-9 rounded-full bg-accent-muted flex items-center justify-center shrink-0">
@@ -123,6 +120,6 @@ export default function ChatContentWidget() {
           </div>
         </Show>
       </div>
-    </Show>
+    </>
   );
 }

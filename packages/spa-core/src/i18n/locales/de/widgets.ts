@@ -26,7 +26,7 @@ export const widgets: RawDictionary["widgets"] = {
   manage:         "Verwalten",
   // Widget labels (picker / edit mode)
   notifications:      "Benachrichtigungen",
-  pinned_chat:        "Angehefteter Chat",
+  chatrooms_list:     "Chatrooms",
   stream_filters:     "Stream-Filter",
   saved_searches:     "Gespeicherte Suchen",
   article_drafts:     "Artikelentwürfe",
