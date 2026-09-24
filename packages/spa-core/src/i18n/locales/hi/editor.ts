@@ -94,7 +94,7 @@ export const editor: RawDictionary["editor"] = {
   code_block:       "कोड ब्लॉक",
   clear_formatting: "फ़ॉर्मेटिंग हटाएँ",
   horizontal_rule:  "क्षैतिज रेखा",
-  media:            "छवि, वीडियो या ऑडियो",
+  media:            "छवि, वीडियो, ऑडियो या YouTube/Vimeo लिंक",
   media_url:        "मीडिया URL",
   table:            "तालिका",
   table_columns:    "स्तंभ",

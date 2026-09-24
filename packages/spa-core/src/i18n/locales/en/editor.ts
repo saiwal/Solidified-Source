@@ -93,7 +93,7 @@ export const editor = {
   code_block:       "Code block",
   clear_formatting: "Clear formatting",
   horizontal_rule:  "Horizontal rule",
-  media:            "Image, video or audio",
+  media:            "Image, video, audio or YouTube/Vimeo link",
   media_url:        "Media URL",
   table:            "Table",
   table_columns:    "Columns",

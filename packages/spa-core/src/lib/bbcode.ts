@@ -1316,14 +1316,16 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   // ------------------------------------------------------------------
   // [embed] (oembed tag)
   // ------------------------------------------------------------------
+  // Anything the resolver doesn't play (all of it, without one) becomes an
+  // a.oembed-embed link. useEmbeds() swaps that for the provider's player via
+  // /spa/oembed after sanitising — the same two-step as [map], for the same
+  // reason (sanitizeHtml strips iframes) — and it stays a link wherever the
+  // hub's embed policy says no.
   text = text.replace(/\[\/embed\]\r?\n/g, "[/embed]");
-  if (oembedResolver) {
-    text = text.replace(/\[embed\](.*?)\[\/embed\]/gi, (_m, url) => {
-      return oembedResolver(url) ?? `<a href="${url}" ${target} ${relAttr}>${url}</a>`;
-    });
-  } else {
-    text = text.replace(/\[embed\](.*?)\[\/embed\]/gi, `<a href="$1" ${target} ${relAttr}>$1</a>`);
-  }
+  text = text.replace(/\[embed\](.*?)\[\/embed\]/gi, (_m, url) => {
+    const u = escapeHtml(url);
+    return oembedResolver?.(url) ?? `<a class="oembed-embed" href="${u}" ${target} ${relAttr}>${u}</a>`;
+  });
 
   // ------------------------------------------------------------------
   // [summary] restore + render
