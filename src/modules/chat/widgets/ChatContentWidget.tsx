@@ -18,6 +18,7 @@ import {
   MdOutlineTimer,
 } from "solid-icons/md";
 import formatPostDate from "@utsukta/spa-core/lib/date";
+import { isChatUnread } from "../unread";
 
 function formatExpiry(minutes: number, neverLabel: string, expiresLabel: string): string {
   if (minutes === 0) return neverLabel;
@@ -86,7 +87,12 @@ export default function ChatContentWidget() {
                       <MdFillChat class="text-accent text-base" />
                     </div>
                     <div class="min-w-0 flex-1">
-                      <p class="text-sm font-medium text-txt truncate">{room.name}</p>
+                      <p class="flex items-center gap-2 text-sm font-medium text-txt min-w-0">
+                        <span class="truncate">{room.name}</span>
+                        <Show when={isChatUnread(nick(), room)}>
+                          <span class="w-2 h-2 rounded-full bg-accent shrink-0" role="img" aria-label={t("chat.unread") as string} />
+                        </Show>
+                      </p>
                       <div class="flex items-center gap-3 mt-0.5">
                         <span class="flex items-center gap-1 text-xs text-muted">
                           <MdFillPeople class="text-sm" />

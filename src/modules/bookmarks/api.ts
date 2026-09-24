@@ -69,6 +69,8 @@ export async function saveBookmarksFromItem(opts: {
   const data = await send<{ count: number }>(
     "/spa/bookmarks/item", { method: "POST", body: JSON.stringify(opts) },
     "Failed to save bookmarks");
+  // A saved chatroom link (e.g. from an invite) belongs in the Bookmarked Rooms widget too.
+  void import("@/modules/chat/bookmarks").then((m) => { m.resetChatBookmarks(); void m.loadChatBookmarks(); });
   return data.count;
 }
 

@@ -7,6 +7,8 @@ export interface ChatRoom {
   expire: number;
   in_room: number;
   last_msg: string | null;
+  /** Newest message by someone other than the viewer (unread dot). */
+  last_other: string | null;
   is_owner: boolean;
 }
 

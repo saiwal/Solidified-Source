@@ -2410,6 +2410,7 @@ export type RawDictionary = {
     notify_sound:     string;
     notify_push:      string;
     notify_silent:    string;
+    unread:           string;
     session_encrypted:        string;
     session_encrypt_disable:  string;
     no_bookmarks:     string;

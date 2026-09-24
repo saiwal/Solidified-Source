@@ -8,6 +8,8 @@ import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
 export interface ChatBookmark {
   id: number;
   url: string;
+  /** Where to open it: `url` with zid auth for a room on another hub. */
+  visit_url?: string;
   title: string;
 }
 

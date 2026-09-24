@@ -43,6 +43,7 @@ export const chat: RawDictionary["chat"] = {
   notify_sound:     "Sound on new messages — click for push notifications",
   notify_push:      "Push notifications on new messages — click to mute",
   notify_silent:    "New-message alerts off — click for sound",
+  unread:           "New messages",
   session_encrypted:        "Session encrypted",
   session_encrypt_disable:  "Disable session encryption",
   no_bookmarks:     "No bookmarked rooms yet.",

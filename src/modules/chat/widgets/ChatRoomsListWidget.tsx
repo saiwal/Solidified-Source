@@ -9,6 +9,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { openChat } from "@/shared/views/modal-host";
 import { MdFillPeople } from "solid-icons/md";
 import { fetchRooms } from "../api";
+import { isChatUnread } from "../unread";
 
 export default function ChatRoomsListWidget() {
   const { t } = useI18n();
@@ -46,6 +47,9 @@ export default function ChatRoomsListWidget() {
                 class="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-elevated transition-colors"
               >
                 <span class="flex-1 min-w-0 text-sm text-txt truncate">{room.name}</span>
+                <Show when={isChatUnread(nick(), room)}>
+                  <span class="w-2 h-2 rounded-full bg-accent shrink-0" role="img" aria-label={t("chat.unread") as string} />
+                </Show>
                 <span class="flex items-center gap-1 shrink-0 text-xs text-muted tabular-nums">
                   <MdFillPeople class="text-sm" />
                   {room.in_room}

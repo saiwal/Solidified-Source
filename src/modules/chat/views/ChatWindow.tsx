@@ -37,6 +37,7 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import ComposerModal from "@/shared/editor/components/ComposerModal";
 import { ComposerFrameContext, openChat } from "@/shared/views/modal-host";
 import { alertNewMessage, chatNotifyMode, cycleChatNotify } from "../notify";
+import { markChatSeen } from "../unread";
 
 /** Chat timestamps are UTC "YYYY-MM-DD HH:MM:SS". */
 const chatDate = (created: string) => new Date(created.replace(" ", "T") + "Z");
@@ -92,7 +93,9 @@ export default function ChatWindow(props: { nick: string; roomId: number; onClos
 	const [seenId, setSeenId] = createSignal(0);
 	createEffect(() => {
 		const m = room.messages();
-		if (frame?.mode() !== "min") setSeenId(m.length ? m[m.length - 1].id : 0);
+		if (frame?.mode() === "min") return;
+		setSeenId(m.length ? m[m.length - 1].id : 0);
+		if (m.length) markChatSeen(props.nick, props.roomId, m[m.length - 1].created);
 	});
 	createEffect(() =>
 		frame?.setUnread(

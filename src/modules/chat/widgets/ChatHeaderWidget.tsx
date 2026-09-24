@@ -93,7 +93,10 @@ export default function ChatHeaderWidget() {
           const roomUrl = `${window.location.origin}/chat/${nick()}/${room.id}`;
           for (const xchan of allowCids) {
             const fd = new FormData();
-            fd.append("body", `You've been invited to the chatroom "${name}". [url=${roomUrl}]Join here[/url]`);
+            // #^ marks it a bookmark link (the room name becomes its title), so the
+            // recipient can save it straight into Bookmarked Rooms; zrl logs a
+            // visitor from another hub in when they follow it.
+            fd.append("body", `You've been invited to the chatroom #^[zrl=${roomUrl}]${name.replace(/[[\]]/g, "")}[/zrl]`);
             fd.append("mimetype", "text/bbcode");
             fd.append("obj_type", "Note");
             fd.append("profile_uid", String(uid));

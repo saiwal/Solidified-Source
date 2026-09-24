@@ -8,8 +8,37 @@ import {
   loading,
   loadChatBookmarks,
   removeChatBookmark,
+  type ChatBookmark,
 } from "../bookmarks";
 import { MdOutlineBookmark_border, MdOutlineDelete } from "solid-icons/md";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { fetchRooms } from "../api";
+import { isChatUnread } from "../unread";
+
+/**
+ * Unread dot for a bookmark pointing at a room on this hub. Rooms on other
+ * hubs get none — the browser can't ask them. Bookmarks of the same channel
+ * share one cached room-list fetch.
+ */
+function UnreadDot(props: { url: string }) {
+  const { t } = useI18n();
+  const target = () => {
+    try {
+      const u = new URL(props.url);
+      const m = u.origin === location.origin && u.pathname.match(/^\/chat\/([^/]+)\/(\d+)$/);
+      return m ? { nick: m[1], id: Number(m[2]) } : null;
+    } catch {
+      return null;
+    }
+  };
+  const [data] = createQueryResource("chat-rooms", () => target()?.nick ?? null, fetchRooms);
+  const room = () => data.error ? undefined : data()?.rooms.find((r) => r.id === target()?.id);
+  return (
+    <Show when={room() && isChatUnread(target()!.nick, room()!)}>
+      <span class="w-2 h-2 rounded-full bg-accent shrink-0" role="img" aria-label={t("chat.unread") as string} />
+    </Show>
+  );
+}
 
 export default function BookmarkedRoomsWidget() {
   const { t } = useI18n();
@@ -17,12 +46,17 @@ export default function BookmarkedRoomsWidget() {
 
   onMount(loadChatBookmarks);
 
-  function navigateTo(url: string) {
+  // Rooms on this hub open in the SPA; rooms on another hub can't (the chat
+  // API is local), so they open on their own hub, logged in via zid.
+  function openBookmark(bm: ChatBookmark) {
+    let u: URL;
     try {
-      navigate(new URL(url).pathname);
+      u = new URL(bm.url, location.origin);
     } catch {
-      navigate(url);
+      return;
     }
+    if (u.origin === location.origin) navigate(u.pathname);
+    else window.open(bm.visit_url || bm.url, "_blank", "noopener");
   }
 
   return (
@@ -57,10 +91,11 @@ export default function BookmarkedRoomsWidget() {
               <div class="flex items-center gap-2 px-3 py-2.5 hover:bg-elevated group transition-colors">
                 <button
                   class="flex-1 text-left text-xs text-txt truncate hover:text-accent transition-colors"
-                  onClick={() => navigateTo(bm.url)}
+                  onClick={() => openBookmark(bm)}
                 >
                   {bm.title}
                 </button>
+                <UnreadDot url={bm.url} />
                 <button
                   onClick={() => void removeChatBookmark(bm.id)}
                   class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-red-500 transition-all shrink-0"

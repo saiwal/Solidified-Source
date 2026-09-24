@@ -41,6 +41,7 @@ export const chat: RawDictionary["chat"] = {
   notify_sound:     "नए संदेश पर ध्वनि — पुश सूचनाओं के लिए क्लिक करें",
   notify_push:      "नए संदेश पर पुश सूचनाएँ — म्यूट करने के लिए क्लिक करें",
   notify_silent:    "नए संदेश की सूचनाएँ बंद — ध्वनि के लिए क्लिक करें",
+  unread:           "नए संदेश",
   session_encrypted:        "सत्र एन्क्रिप्टेड",
   session_encrypt_disable:  "सत्र एन्क्रिप्शन बंद करें",
   no_bookmarks:     "अभी तक कोई बुकमार्क नहीं।",
