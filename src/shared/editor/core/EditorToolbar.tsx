@@ -481,13 +481,14 @@ export default function EditorToolbar(props: Props) {
       setLinkLoading(true);
       const meta = await fetchLinkMeta(url);
       setLinkLoading(false);
-      insertSource(linkMetaToBbcode(url, meta));
+      meta?.embed ? insertEmbed(url) : insertSource(linkMetaToBbcode(url, meta));
       return;
     }
     if (editorHasSelection()) { exec("createLink", url); return; }
     setLinkLoading(true);
     const meta = await fetchLinkMeta(url);
     setLinkLoading(false);
+    if (meta?.embed && bbTokens()) { insertEmbed(url); return; }
     // exec() puts lastRange back, so the caret returns to where the user left
     // it even though focus moved to the panel and then away during the fetch.
     exec("insertHTML", linkMetaToHtml(url, meta));
@@ -495,9 +496,12 @@ export default function EditorToolbar(props: Props) {
 
   // One button for image/video/audio: the URL's extension already says which
   // it is, so asking the user to pick first is a click they can't get wrong
-  // but still have to make. Unknown extension falls back to an image (what
-  // the plain [img] button always did).
-  const media = (u: string) => {
+  // but still have to make. A URL with no media extension may be a video
+  // *page* (YouTube, PeerTube, …): the scrape says whether it advertises
+  // oEmbed, and if so it becomes [embed]. Otherwise it falls back to an image
+  // (what the plain [img] button always did) — an extensionless image URL
+  // isn't HTML, so its scrape just fails.
+  const media = async (u: string) => {
     if (!u) return;
     const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(u)?.[1]?.toLowerCase() ?? "";
     if (/^(mp4|webm|ogv|mov|m4v)$/.test(ext)) {
@@ -512,7 +516,24 @@ export default function EditorToolbar(props: Props) {
         : insertBlock(`<audio src="${u}" controls preload="none"></audio>`);
       return;
     }
+    if (!/^(png|jpe?g|gif|webp|avif|svg|bmp)$/.test(ext)) {
+      setLinkLoading(true);
+      const meta = await fetchLinkMeta(u);
+      setLinkLoading(false);
+      if (meta?.embed) {
+        // [embed] is bbcode-only; other formats get the ordinary link.
+        bbTokens() ? insertEmbed(u) : void link(u);
+        return;
+      }
+    }
     isSource() ? applySpell("img", u) : exec("insertImage", u);
+  };
+
+  // Plain text in both tabs, like [card=…] below: htmlToSource keeps it
+  // verbatim, and the rendered post turns it into the player.
+  const insertEmbed = (u: string) => {
+    const token = `[embed]${u}[/embed]`;
+    isSource() ? insertSource(token) : exec("insertText", token);
   };
 
   // The text/bbcode is built by LatexComposerModal (it knows inline vs.

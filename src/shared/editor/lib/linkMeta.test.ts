@@ -8,7 +8,7 @@ import assert from "node:assert";
 const { linkMetaToBbcode, linkMetaToHtml } = await import("./linkMeta.ts");
 
 const URL_ = "https://example.org/a";
-const full = { title: "On Habit", text: "A short summary.", image: "https://example.org/og.png" };
+const full = { title: "On Habit", text: "A short summary.", image: "https://example.org/og.png", embed: false };
 
 // ── full preview ─────────────────────────────────────────────────────────────
 assert.equal(
@@ -30,19 +30,19 @@ assert.equal(linkMetaToBbcode(URL_, null), `[url=${URL_}]${URL_}[/url]`);
 assert.equal(linkMetaToHtml(URL_, null), `<a href="${URL_}">${URL_}</a><br>`);
 // Title only → no empty [img]/[quote] lines.
 assert.equal(
-  linkMetaToBbcode(URL_, { title: "On Habit", text: "", image: "" }),
+  linkMetaToBbcode(URL_, { title: "On Habit", text: "", image: "", embed: false }),
   `[url=${URL_}]On Habit[/url]`,
 );
 // Missing title falls back to the URL as the label, never an empty one.
 assert.equal(
-  linkMetaToBbcode(URL_, { title: "", text: "Note.", image: "" }),
+  linkMetaToBbcode(URL_, { title: "", text: "Note.", image: "", embed: false }),
   `[url=${URL_}]${URL_}[/url]\n[quote]Note.[/quote]`,
 );
 
 // ── remote text is untrusted ─────────────────────────────────────────────────
 // Brackets in a scraped title would close the [url] tag early.
 assert.equal(
-  linkMetaToBbcode(URL_, { title: "Evil[/url][b]hi", text: "", image: "" }),
+  linkMetaToBbcode(URL_, { title: "Evil[/url][b]hi", text: "", image: "", embed: false }),
   `[url=${URL_}]Evil/urlbhi[/url]`,
 );
 // ...and markup in one must not be injected into the contenteditable.
@@ -52,7 +52,7 @@ assert.equal(
 const evil = linkMetaToHtml(URL_, {
   title: '<img src=x onerror=alert(1)>',
   text: '</blockquote><script>alert(1)</script>',
-  image: "",
+  image: "", embed: false,
 });
 const stray = evil.replace(/<\/?(?:a|img|blockquote|br)\b[^>]*>/gi, "");
 assert.ok(!stray.includes("<"), `unescaped markup survived: ${stray}`);

@@ -10,6 +10,8 @@ export interface LinkMeta {
   title: string;
   text: string;
   image: string;
+  /** The page advertises oEmbed — insert [embed] rather than a preview. */
+  embed: boolean;
 }
 
 /** Returns null on any failure — callers fall back to a bare link. */
@@ -27,6 +29,7 @@ export async function fetchLinkMeta(url: string): Promise<LinkMeta | null> {
       title: String(data.title ?? ""),
       text: String(data.text ?? ""),
       image: String(data.image ?? ""),
+      embed: data.embed === true,
     };
   } catch {
     return null;

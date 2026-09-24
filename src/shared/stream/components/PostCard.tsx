@@ -71,6 +71,7 @@ import type { EventData } from "@utsukta/spa-core/types/post.types";
 import AttachmentList from "./AttachmentList";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { useEmbeds } from "@utsukta/spa-core/lib/useEmbeds";
 import { useNavData, useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useOsmMap } from "@utsukta/spa-core/lib/useOsmMap";
@@ -289,6 +290,7 @@ export default function PostCard(props: {
   const [bodyRef, setBodyRef] = createSignal<HTMLElement>();
   const navData = useNavData();
   usePlyr(bodyRef, () => props.post.body);
+  useEmbeds(bodyRef, () => props.post.body);
   useOsmMap(bodyRef, () => props.post.body, () => props.post.coord);
   const [bodyExpanded, setBodyExpanded] = createSignal(false);
   const [bodyOverflows, setBodyOverflows] = createSignal(false);

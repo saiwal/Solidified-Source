@@ -15,6 +15,7 @@ import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { useEmbeds } from "@utsukta/spa-core/lib/useEmbeds";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
@@ -345,6 +346,7 @@ export default function CardView() {
     if (rendered() && bodyRef) hydrateLatex(bodyRef);
   });
   usePlyr(() => bodyRef, rendered);
+  useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";
 
