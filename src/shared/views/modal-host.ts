@@ -140,6 +140,9 @@ export interface ComposerFrame {
   dockIndex: Accessor<number>;
   /** Badge count for the minimized pill (a chat's unread messages). */
   setUnread: (n: number) => void;
+  /** A thread view reports the root uuid it loaded, so openPost can match a
+   *  reply to it. */
+  setThreadRoot?: (uuid: string) => void;
 }
 
 export const ComposerFrameContext = createContext<ComposerFrame | undefined>(undefined);
@@ -158,6 +161,10 @@ export interface ComposerEntry extends ModeHolder {
   /** Per-entry signal — see the note on setComposerMode. */
   mode: Accessor<ComposerMode>;
   setMode: Setter<ComposerMode>;
+  /** `thread` only: the root uuid the view has loaded, and a way to point it
+   *  at another item of the same thread. */
+  threadRoot?: string;
+  retarget?: (uuid: string) => void;
 }
 
 export interface OpenComposerSpec {
@@ -252,8 +259,39 @@ export function restoreComposer(id: string): void {
  * entry leaves (see ModalHost's `after`). Feed `handlers` are deliberately not
  * accepted: they close over a feed store that dies on navigation.
  */
-export function openPost(uuid: string, props: Record<string, unknown> = {}): string {
-  return openComposer({ kind: "thread", scope: `thread:${uuid}`, title: "", props: { ...props, uuid } });
+export function openPost(uuid: string, props: Record<string, unknown> = {}): string | undefined {
+  const scope = `thread:${uuid}`;
+  const threads = entries().filter((e) => e.kind === "thread" && e.threadRoot);
+  if (findByScope(entries(), scope) || !threads.length) return openThread(uuid, props);
+
+  // A notification names the reply (or a b64 mid), not the root the open view
+  // is keyed on — resolve the root and retarget that view instead of opening a
+  // second one. Dynamic import keeps this module node-resolvable for the test.
+  void import("@utsukta/spa-core/lib/item-api")
+    .then(({ fetchDisplayItem }) => fetchDisplayItem(uuid))
+    .then((root: { uuid?: string }) => entries().find((e) => e.kind === "thread" && e.threadRoot === root?.uuid))
+    .catch(() => undefined)
+    .then((live) => {
+      if (!live?.retarget) return void openThread(uuid, props);
+      live.retarget(uuid);
+      setComposerMode(live.id, isExpanded(live.mode()) ? live.mode() : (live.restoreTo ?? defaultPostMode()));
+    });
+  return undefined;
+}
+
+function openThread(uuid: string, props: Record<string, unknown>): string {
+  // `uuid` is a getter over a signal so retarget() can move the mounted view —
+  // ModalHost's prop spread keeps getters live, and PostDetailModal reloads on it.
+  const [target, setTarget] = createSignal(uuid);
+  const id = openComposer({
+    kind: "thread",
+    scope: `thread:${uuid}`,
+    title: "",
+    props: { ...props, get uuid() { return target(); } },
+  });
+  const entry = entries().find((e) => e.id === id);
+  if (entry && !entry.retarget) entry.retarget = setTarget;
+  return id;
 }
 
 /**

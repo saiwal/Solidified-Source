@@ -93,6 +93,7 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
         mode: props.entry.mode,
         setDocTitle: props.entry.setDocTitle,
         setUnread: props.entry.setUnread,
+        setThreadRoot: (uuid) => (props.entry.threadRoot = uuid),
         dockIndex: () => props.dockIndex(),
         setMode: (m) => {
           // Zen is a global signal (zen.ts) — a composer coming forward must

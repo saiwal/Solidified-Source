@@ -482,6 +482,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   createEffect(() => {
     const n = nodeData();
     if (frame && n) frame.setDocTitle(n.title || n.authorName);
+    if (frame && n) frame.setThreadRoot?.(n.uuid);
   });
 
   // No header of its own: ComposerModal supplies it, and inline the host (the

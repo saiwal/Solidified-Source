@@ -210,7 +210,10 @@ export default function PostCard(props: {
   const [replyQuote, setReplyQuote] = createSignal("");
   const initiallyOpen =
     !!props.initiallyExpanded ||
-    openedByMid.has(props.post.mid) ||
+    // openedByMid is session-wide (the detail modal marks its root open too),
+    // so only honour it when this card actually has the comments to show —
+    // otherwise the chevron reads "open" over an empty thread.
+    (openedByMid.has(props.post.mid) && props.post.children.length > 0) ||
     (!props.compact && !!props.highlightUuid) ||
     (!!props.compact &&
       !!props.highlightUuid &&
@@ -1362,6 +1365,19 @@ export default function PostCard(props: {
               </Show>
             </button>
           </Show>
+          <Show when={canFolder()}>
+            <button
+              onClick={toggleFolderPicker}
+              title={t("post.save_to_folder")}
+              class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
+                     transition-colors select-none hover:bg-overlay
+                     ${showFolderPicker() || hasFolders() ? "text-accent" : "text-subtle hover:text-txt"}`}
+            >
+              <Show when={hasFolders()} fallback={<MdFillFolder_open size={14} />}>
+                <MdFillFolder size={14} />
+              </Show>
+            </button>
+          </Show>
 
 
           <Show when={canReactionQueue()}>
@@ -1451,21 +1467,6 @@ export default function PostCard(props: {
                   <MdOutlineShare size={13} />
                   <span>{t("share.action")}</span>
                 </button>
-                <Show when={canFolder()}>
-                  <button
-                    onClick={() => {
-                      toggleFolderPicker();
-                      setMoreDropdownOpen(false);
-                    }}
-                    class={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-overlay transition-colors text-left
-                           ${showFolderPicker() || hasFolders() ? "text-accent" : "text-txt"}`}
-                  >
-                    <Show when={hasFolders()} fallback={<MdFillFolder_open size={13} />}>
-                      <MdFillFolder size={13} />
-                    </Show>
-                    <span>{t("post.save_to_folder")}</span>
-                  </button>
-                </Show>
                 <Show when={canFollow()}>
                   <button
                     onClick={() => {
@@ -1977,7 +1978,7 @@ export default function PostCard(props: {
       </Show>
 
       {/* Action bar */}
-      <div class="mt-4 pt-3 border-t border-rim flex flex-wrap items-center gap-1">
+      <div class="mt-4 pt-3 border-t border-rim flex flex-wrap items-center gap-0.5 sm:gap-1">
         {/* ── Like / Dislike / Star / Repeat ── */}
         <Show when={canInteract()}>
           <ActionBtn
@@ -2041,6 +2042,19 @@ export default function PostCard(props: {
             </Show>
           </button>
         </Show>
+        <Show when={canFolder()}>
+          <button
+            onClick={toggleFolderPicker}
+            title={t("post.save_to_folder")}
+            class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
+                   transition-colors select-none hover:bg-overlay
+                   ${showFolderPicker() || hasFolders() ? "text-accent" : "text-muted hover:text-txt"}`}
+          >
+            <Show when={hasFolders()} fallback={<MdFillFolder_open size={17} />}>
+              <MdFillFolder size={17} />
+            </Show>
+          </button>
+        </Show>
 
 
         <Show when={canReactionQueue()}>
@@ -2059,15 +2073,15 @@ export default function PostCard(props: {
         <Show when={totalComments() > 0}>
           <button
             onClick={toggleComments}
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+            class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium
                    text-muted hover:bg-overlay hover:text-txt transition-colors"
             title={t("post.toggle_comments")}
           >
             <Show
               when={showComments()}
-              fallback={<MdFillKeyboard_arrow_down size={17} />}
+              fallback={<MdFillKeyboard_arrow_down size={17} class="hidden sm:block" />}
             >
-              <MdFillKeyboard_arrow_up size={17} />
+              <MdFillKeyboard_arrow_up size={17} class="hidden sm:block" />
             </Show>
             <MdFillChat size={15} />
             <span>{totalComments()}</span>
@@ -2133,21 +2147,6 @@ export default function PostCard(props: {
               <MdOutlineShare size={13} />
               <span>{t("share.action")}</span>
             </button>
-            <Show when={canFolder()}>
-              <button
-                onClick={() => {
-                  toggleFolderPicker();
-                  setMoreDropdownOpen(false);
-                }}
-                class={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-overlay transition-colors text-left
-                       ${showFolderPicker() || hasFolders() ? "text-accent" : "text-txt"}`}
-              >
-                <Show when={hasFolders()} fallback={<MdFillFolder_open size={15} />}>
-                  <MdFillFolder size={15} />
-                </Show>
-                <span>{t("post.save_to_folder")}</span>
-              </button>
-            </Show>
             <Show when={canFollow()}>
               <button
                 onClick={() => {
@@ -2854,12 +2853,12 @@ function ActionBtn(props: {
     <button
       onClick={props.onClick}
       title={props.label}
-      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+      class={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium
               transition-colors select-none hover:bg-overlay
               ${props.active ? props.activeClass : "text-muted"}`}
     >
       {props.icon}
-      <span>{props.count}</span>
+      <Show when={props.count > 0}><span>{props.count}</span></Show>
     </button>
   );
 }
@@ -2880,7 +2879,7 @@ function CompactActionBtn(props: {
               ${props.active ? "text-accent" : "text-subtle"}`}
     >
       {props.icon}
-      <span>{props.count}</span>
+      <Show when={props.count > 0}><span>{props.count}</span></Show>
     </button>
   );
 }
