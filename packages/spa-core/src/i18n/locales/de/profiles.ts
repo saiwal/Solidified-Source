@@ -50,7 +50,7 @@ export const profiles: RawDictionary["profiles"] = {
   about:              "Über mich",
   about_hint:         "Unterstützt BBCode.",
   keywords:           "Schlagwörter",
-  keywords_hint:      "Durch Komma getrennt. Wird für Suche und Vorschläge verwendet.",
+  keywords_hint:      "Durch Leerzeichen oder Komma getrennt. Wird für Suche und Vorschläge verwendet.",
   hide_friends:       "Meine Verbindungsliste vor anderen verbergen",
   publish_in_directory: "Mein Profil im Netzwerkverzeichnis veröffentlichen",
   marital:            "Beziehungsstatus",

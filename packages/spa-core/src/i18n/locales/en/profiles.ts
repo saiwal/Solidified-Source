@@ -50,7 +50,7 @@ export const profiles: RawDictionary["profiles"] = {
   about:              "About",
   about_hint:         "Supports BBCode.",
   keywords:           "Keywords",
-  keywords_hint:      "Comma-separated. Used for search and suggestions.",
+  keywords_hint:      "Separate with spaces or commas. Used for search and suggestions.",
   hide_friends:       "Hide my connections list from others",
   publish_in_directory: "Publish my profile in the network directory",
   marital:            "Relationship status",
