@@ -549,11 +549,31 @@ class Chat
         $observer = App::get_observer();
         $viewer_hash = $observer ? $observer['xchan_hash'] : '';
 
+        // A visitor from another hub bookmarks on *their* hub: core's
+        // get_bookmark_link() points at its /rbmark (core's form on a classic
+        // hub, the SPA's RbmarkView on ours). Same parameters Module\Chat uses.
+        $bookmark_url = null;
+        if ($observer && !local_channel()) {
+            require_once('include/bookmarks.php');
+            $link = get_bookmark_link($observer);
+            if ($link) {
+                $roomUrl = z_root() . '/chat/' . $this->nick . '/' . $this->roomId;
+                $private = ($room[0]['allow_cid'] ?? '') || ($room[0]['allow_gid'] ?? '');
+                $bookmark_url = $link
+                    . '&url=' . urlencode($roomUrl)
+                    . '&title=' . urlencode($room[0]['cr_name'])
+                    . '&ischat=1'
+                    . ($private ? '&private=1' : '')
+                    . '&remote_return=' . urlencode($roomUrl);
+            }
+        }
+
         Response::send([
             'messages'      => $messages,
             'presence'      => $present,
             'viewer_hash'   => $viewer_hash,
             'room_name'     => $room[0]['cr_name'],
+            'bookmark_url'  => $bookmark_url,
             'room_expire'   => intval($room[0]['cr_expire']),
             'is_room_owner' => (bool)(local_channel() && local_channel() == $this->subjectUid),
             'room_acl'      => [
@@ -605,6 +625,16 @@ class Chat
         // mimetype is taken as bbcode.
         [$text] = ContentTypes::toBbcode($text, (string) ($data['mimetype'] ?? 'text/bbcode'));
 
+        // Same hook, same point and same payload as core's Chatsvc::post(), so an
+        // addon listening for chat messages sees SPA sends too — and may rewrite
+        // chat_text before it is stored.
+        $arr = [
+            'chat_room'  => $this->roomId,
+            'chat_xchan' => $ob_hash,
+            'chat_text'  => $text,
+        ];
+        call_hooks('chat_post', $arr);
+
         // Hubzilla stores chat_text as str_rot47(base64url_encode($text))
         $r = q(
             "INSERT INTO chat (chat_room, chat_xchan, created, chat_text)
@@ -612,7 +642,7 @@ class Chat
             intval($this->roomId),
             dbesc($ob_hash),
             dbesc(datetime_convert()),
-            dbesc(str_rot47(base64url_encode($text)))
+            dbesc(str_rot47(base64url_encode($arr['chat_text'])))
         );
 
         if (!$r)

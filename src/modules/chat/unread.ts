@@ -8,6 +8,7 @@ import { persistedSignal } from "@utsukta/spa-core/lib/persisted";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { currentNick, isLocalUser } from "@utsukta/spa-core/store/auth-store";
 import { fetchRooms, type ChatRoom, type ChatRoomListResponse } from "./api";
+import { bookmarks, isRemoteBookmark, refreshChatBookmarks, type ChatBookmark } from "./bookmarks";
 
 // Chat timestamps are UTC "YYYY-MM-DD HH:MM:SS", so plain string comparison
 // orders them.
@@ -40,7 +41,15 @@ export function markChatSeen(nick: string, roomId: number, created: string): voi
 export const isChatUnread = (nick: string, room: Pick<ChatRoom, "id" | "last_other">): boolean =>
   !!room.last_other && room.last_other > (seen()[key(nick, room.id)] ?? since());
 
-// ── Nav badge: unread rooms on your own channel ─────────────────────────────
+// Rooms on another hub are keyed by their bookmark url; they open there, so
+// the SPA never sees their messages and "seen" is simply "clicked just now".
+export const markRemoteChatSeen = (bm: ChatBookmark): void =>
+  setSeen({ ...seen(), [bm.url]: nowUtc() });
+
+export const isRemoteChatUnread = (bm: ChatBookmark): boolean =>
+  !!bm.last_other && bm.last_other > (seen()[bm.url] ?? since());
+
+// ── Nav badge: unread rooms on your own channel + bookmarked remote rooms ──
 
 // The query cache isn't reactive; this signal re-runs the badge whenever a
 // chat-rooms list lands (from the poll below or any room-list widget).
@@ -60,6 +69,8 @@ function startPolling(nick: string): void {
     if (stopped || document.visibilityState !== "visible") return;
     try {
       // Same key as ChatRoomsListWidget, so a list fetched within the minute is reused.
+      // Remote rooms' times ride the bookmark list; only re-read it if there are any.
+      if (bookmarks().some(isRemoteBookmark)) void refreshChatBookmarks();
       await queryClient.fetchQuery({ queryKey: ["chat-rooms", nick], queryFn: () => fetchRooms(nick), staleTime: POLL_MS });
     } catch (e) {
       // 403 = app not installed / no permission: stop asking. Anything else
@@ -78,8 +89,13 @@ function startPolling(nick: string): void {
 export function chatNavBadge(): number | undefined {
   const nick = currentNick();
   if (!isLocalUser() || !nick) return undefined;
-  if (!polling) startPolling(nick);
+  if (!polling) {
+    startPolling(nick);
+    void refreshChatBookmarks(); // first load; later ticks refresh only if any are remote
+  }
   cacheTick();
   const data = queryClient.getQueryData<ChatRoomListResponse>(["chat-rooms", nick]);
-  return data?.rooms.filter((r) => isChatUnread(nick, r)).length || undefined;
+  const own = data?.rooms.filter((r) => isChatUnread(nick, r)).length ?? 0;
+  const remote = bookmarks().filter((b) => isRemoteBookmark(b) && isRemoteChatUnread(b)).length;
+  return own + remote || undefined;
 }

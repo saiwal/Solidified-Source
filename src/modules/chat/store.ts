@@ -58,6 +58,7 @@ export function createRoomSession(nick: string, roomId: number) {
   const [loading, setLoading] = createSignal(true);
   const [viewerHash, setViewerHash] = createSignal("");
   const [name, setName] = createSignal("");
+  const [bookmarkUrl, setBookmarkUrl] = createSignal<string | null>(null);
   const [expire, setExpire] = createSignal(0);
   const [isOwner, setIsOwner] = createSignal(false);
   const [acl, setAcl] = createSignal<ChatRoomAcl | null>(null);
@@ -97,6 +98,7 @@ export function createRoomSession(nick: string, roomId: number) {
         setPresence(data.presence);
         if (data.viewer_hash)           setViewerHash(data.viewer_hash);
         if (data.room_name)             setName(data.room_name);
+        if (data.bookmark_url)          setBookmarkUrl(data.bookmark_url);
         if (data.room_expire != null)   setExpire(data.room_expire);
         if (data.is_room_owner != null) setIsOwner(data.is_room_owner);
         if (data.room_acl)              setAcl(data.room_acl);
@@ -126,6 +128,7 @@ export function createRoomSession(nick: string, roomId: number) {
     loading,
     viewerHash,
     name,
+    bookmarkUrl,
     expire,
     isOwner,
     acl,

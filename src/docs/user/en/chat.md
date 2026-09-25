@@ -59,13 +59,17 @@ Navigate to `/chat/<their-nick>` to see the public chatrooms on another channel.
 
 When the owner creates a room restricted to specific people, they can tick **Notify invited members** — each invitee gets a private post with a link to the room. The link logs you in on the owner's hub when you follow it, so the room recognises you even if your channel lives elsewhere.
 
-To keep the room for later, click the bookmark icon next to the room link (**Bookmark this link**): it is saved straight into your **Bookmarked Rooms**. (On an older invite the saved bookmark is titled "Join here" — rename it from the Bookmarks page.) You can also open the room and choose **Bookmark this room** from its menu.
+To keep the room for later, click the bookmark icon next to the room link (**Bookmark this link**): it is saved straight into your **Bookmarked Rooms**. (On an older invite the saved bookmark is titled "Join here" — rename it from the Bookmarks page.) You can also open the room and click its bookmark button. When you're visiting a room on someone else's hub, that button opens **your own hub** in a new tab with a "Bookmark this chatroom" card: check the title, click **Save**, then **Back to the room**.
 
-A chat window here can only join rooms on your own hub. A bookmarked room on another hub opens on that hub in a new tab, logged in as you, and doesn't get an unread dot — your browser can't check another hub for new messages.
+A chat window here can only join rooms on your own hub. A bookmarked room on another hub opens on that hub in a new tab, logged in as you — straight into the room, full-page, if that hub also runs this interface.
+
+Bookmarked rooms on another hub get an unread dot too, and count toward the Chat badge, **if that hub also runs this interface**: bookmarking the room asks the owner's hub to tell yours when someone posts. It does so at most once every 5 minutes per room, and not while you're in the room. Clicking the bookmark clears the dot. Rooms on a hub running classic Hubzilla only never get a dot.
+
+For such a room you can also get a **push notification**: click the bell on its row in the Bookmarked Rooms widget. The first time, your browser asks for notification permission. Push is off by default, set per room, and follows the same 5-minute limit. Tapping the notification opens the room on its hub, logged in as you.
 
 ## Bookmarked Rooms Widget
 
-Lists chatrooms you've bookmarked, with a quick link to jump back into any of them. Rooms on this hub show an unread dot; rooms on other hubs open there in a new tab. Only visible to you, not visitors.
+Lists chatrooms you've bookmarked, with a quick link to jump back into any of them. Rooms show an unread dot (on another hub, only if it also runs this interface); rooms on other hubs open there in a new tab. Only visible to you, not visitors.
 
 ## Room Card Widget
 

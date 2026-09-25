@@ -188,6 +188,8 @@ export function createComposerStore(
   // snapshot has the content either way.
   const AUTOSAVE_MS = 5000;
   let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The autosave in flight, so submit() can wait for its draft to exist. */
+  let pendingAutosave: Promise<void> | undefined;
 
   createEffect(() => {
     if (!initialized()) return;
@@ -196,7 +198,7 @@ export function createComposerStore(
     clearTimeout(autosaveTimer);
     if (!body().trim() || submitting()) return;
     autosaveTimer = setTimeout(() => {
-      void saveAsDraft(options?.autosaveExtra?.() ?? undefined, undefined, true);
+      pendingAutosave = saveAsDraft(options?.autosaveExtra?.() ?? undefined, undefined, true);
     }, AUTOSAVE_MS);
     void snapshot;
   });
@@ -209,6 +211,19 @@ export function createComposerStore(
     setError(null);
     setSubmitting(true);
     try {
+      // A draft is an `item` row holding this same body, and core's "Suppress
+      // duplicates" matches any item of the uid with an identical body from the
+      // last 2 minutes — unpublished ones included. Left in place, it cancels
+      // the post it was a draft of. So drop it first; if the post then fails,
+      // loadedDraftId is null and the next autosave creates a fresh one.
+      await pendingAutosave;
+      const draftId = loadedDraftId();
+      if (draftId) {
+        setLoadedDraftId(null);
+        setLoadedDraftCreated(null);
+        setSavedDrafts(savedDrafts().filter((d) => d.id !== draftId));
+        await deleteServerDraft(draftId);
+      }
       await submitFn(submitBody, {
         title:    title(),
         summary:  summary(),
@@ -224,12 +239,6 @@ export function createComposerStore(
       setSlug("");
       setCategory("");
       storageDel(DRAFT_KEY);
-      const draftId = loadedDraftId();
-      if (draftId) {
-        setLoadedDraftId(null);
-        setLoadedDraftCreated(null);
-        void deleteSavedDraft(draftId);
-      }
     } catch (err) {
       const msg = truncateError(err instanceof Error ? err.message : "Submit failed");
       setError(msg);

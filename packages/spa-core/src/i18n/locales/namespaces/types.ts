@@ -1155,6 +1155,7 @@ export type RawDictionary = {
     send_btn:               string;
     sending_dm:              string;
     dm_scheduled:           string;
+    dm_sent:                string;
     dm_recipient_required:  string;
     dm_recipient_not_permitted: string;
   };
@@ -2411,6 +2412,10 @@ export type RawDictionary = {
     notify_push:      string;
     notify_silent:    string;
     unread:           string;
+    bookmark_on_home: string;
+    remote_push_on:   string;
+    remote_push_off:  string;
+    remote_push_failed: string;
     session_encrypted:        string;
     session_encrypt_disable:  string;
     no_bookmarks:     string;
@@ -3086,6 +3091,13 @@ export type RawDictionary = {
     title:            string;
     no_bookmarks:     string;
     no_bookmarks_desc: string;
+    rbmark_heading:      string;
+    rbmark_chat_heading: string;
+    rbmark_bad_url:      string;
+    rbmark_chat_saved:   string;
+    rbmark_back:         string;
+    rbmark_back_room:    string;
+    add_failed:          string;
     remove:           string;
     visit:            string;
     chat_badge:       string;

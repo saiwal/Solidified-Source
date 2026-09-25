@@ -204,7 +204,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
 
     // A delayed DM is stored with item_delayed = 1, so it appears nowhere until
     // the cron publishes it — say so, or sending looks like it did nothing.
-    if (publishAt()) toast.success(t("editor.dm_scheduled"));
+    toast.success(t(publishAt() ? "editor.dm_scheduled" : "editor.dm_sent"));
     props.onSent?.(iid);
     attach.clear();
     props.onClose();

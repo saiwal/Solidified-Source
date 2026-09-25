@@ -381,6 +381,19 @@ export default function ChatWindow(props: { nick: string; roomId: number; onClos
 						<MdOutlineBookmark_border class="w-4 h-4" />
 					</button>
 				</Show>
+				{/* A visitor from another hub saves the bookmark on their own hub. */}
+				<Show when={!isLocalUser() && room.bookmarkUrl()}>
+					<a
+						href={room.bookmarkUrl()!}
+						target="_blank"
+						rel="noopener"
+						title={t("chat.bookmark_on_home") as string}
+						aria-label={t("chat.bookmark_on_home") as string}
+						class="p-1.5 rounded-lg transition-colors hover:bg-elevated text-muted hover:text-txt"
+					>
+						<MdOutlineBookmark_border class="w-4 h-4" />
+					</a>
+				</Show>
 				{/* Who's here — a floating dropdown rather than a side column, which
 				    left no room for messages in a docked window or on a phone. */}
 				<div ref={presencePop.ref}>

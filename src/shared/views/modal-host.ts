@@ -274,8 +274,8 @@ export function openEvent(props: Record<string, unknown> & { event?: { id: strin
  * Open a chatroom window, or bring forward the one already in that room. The
  * scope is ChatComposer's own draft scope, so the two can never disagree.
  */
-export function openChat(nick: string, roomId: number, name = ""): string {
-  return openComposer({ kind: "chat", scope: `chat:${nick}:${roomId}`, title: name, props: { nick, roomId } });
+export function openChat(nick: string, roomId: number, name = "", mode?: ComposerMode): string {
+  return openComposer({ kind: "chat", scope: `chat:${nick}:${roomId}`, title: name, props: { nick, roomId }, mode });
 }
 
 export function closeComposer(id: string): void {

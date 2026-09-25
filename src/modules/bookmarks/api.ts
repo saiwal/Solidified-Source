@@ -51,6 +51,8 @@ export interface NewBookmark {
   menu_id?: number;
   menu_name?: string;
   private?: boolean;
+  /** A chatroom: lands in Bookmarked Rooms (MENU_ITEM_CHATROOM). */
+  ischat?: boolean;
 }
 
 export async function createBookmark(b: NewBookmark): Promise<number | null> {

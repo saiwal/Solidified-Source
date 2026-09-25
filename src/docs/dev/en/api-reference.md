@@ -78,8 +78,11 @@ All mutation endpoints (POST/DELETE) require CSRF protection (see `csrf` endpoin
 | **saved-searches** | `GET /saved-searches` | List saved search filters | list |
 | | `POST /saved-searches` | Create a saved search | new record |
 | | `DELETE /saved-searches/:tid` | Delete a saved search | `{ status }` |
-| **bookmarks** | `GET /bookmarks[/chat]` | All bookmark menus + items, or chatroom bookmarks only (each with `visit_url` — `zid()`-wrapped for zot links, what the widget opens for a room on another hub) | bookmarks |
+| **chatfed** | `POST /chatfed/subscribe` `{ room_url }` | Hub-to-hub, HTTP-signed, no session: subscribe the signer to a room on this hub | `{ success }` / 404 |
+| | `POST /chatfed/notice` `{ room_url, created, recipient }` | Hub-to-hub, signed by the room's owner: a bookmarked room has new messages (see `chat-federation.md`) | `{ success }` / 403 / 404 |
+| **bookmarks** | `GET /bookmarks[/chat]` | All bookmark menus + items, or chatroom bookmarks only (each with `visit_url` — `zid()`-wrapped for zot links, what the widget opens for a room on another hub — and, for a room on another hub, `last_other` from chat notices) | bookmarks |
 | | `POST /bookmarks` `{ url, title, ischat? }` | Add a bookmark | new bookmark |
+| | `POST /bookmarks/chat-push` `{ id, push }` | Web Push on/off for a chat bookmark on another hub (`push` is also on each `GET /bookmarks/chat` row) | `{ success }` |
 | | `POST /bookmarks/item` `{ item, urls?, menu_id?, menu_name? }` | Save links out of a post; a `/chat/<nick>/<id>` link is stored as a chatroom bookmark (`MENU_ITEM_CHATROOM`), so a saved invite lands in Bookmarked Rooms | `{ count }` |
 | | `DELETE /bookmarks/:id` | Remove a bookmark item | `{ status }` |
 | **notes** | `GET /notes` | List personal notes | list |
@@ -114,7 +117,7 @@ All mutation endpoints (POST/DELETE) require CSRF protection (see `csrf` endpoin
 | | `GET /cal/:nick?start=&end=` | Channel event feed for a date range (default: next 60 days) | event list |
 | | `POST /cal/:nick/:action/:id` (`toggle`/`edit`/`delete`/`share`/`unshare`) | Manage calendar visibility/sharing, edit or delete an event | `{ status }` |
 | **chat** | `GET /chat/:nick[/acl-options\|:room_id]` | Room list, ACL picker options, or one room's detail + presence. Each listed room carries `last_msg` and `last_other` (newest message *not* by the observer — what the SPA's unread dot compares against its per-browser `hz-chat-seen` timestamps, see `src/modules/chat/unread.ts`) | rooms / room detail |
-| | `POST /chat/:nick/:room_id/(send\|messages\|join\|leave\|drop)`, `POST /chat/:nick/new` | Send/fetch messages, join/leave presence, create/delete a room (owner) | message(s) / `{ status }` |
+| | `POST /chat/:nick/:room_id/(send\|messages\|join\|leave\|drop)`, `POST /chat/:nick/new` | Send/fetch messages, join/leave presence, create/delete a room (owner). `messages` carries `bookmark_url` for a visitor from another hub — their own hub's `/rbmark` link | message(s) / `{ status }` |
 | **cart** | `GET /cart/:nick/(catalog\|order\|payment-config\|payment-settings\|orders)` | Storefront catalog/order data; seller views for settings & orders | cart data |
 | | `POST /cart/:nick/:action` | Place order / update seller payment config | `{ status }` |
 | **portability** | `GET /portability/:datatype` | Export options / current export status | export info |

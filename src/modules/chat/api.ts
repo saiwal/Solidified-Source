@@ -58,6 +58,8 @@ export interface ChatMessagesResponse {
   presence: PresenceMember[];
   viewer_hash: string;
   room_name: string;
+  /** Visitor from another hub: their own hub's /rbmark link for this room. */
+  bookmark_url?: string | null;
   room_expire?: number;
   is_room_owner?: boolean;
   room_acl?: ChatRoomAcl;
