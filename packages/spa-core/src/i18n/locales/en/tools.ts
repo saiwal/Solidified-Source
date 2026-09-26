@@ -93,7 +93,6 @@ export const tools: RawDictionary["tools"] = {
   vid_thumbnail_recapture:"Recapture thumbnail",
   vid_thumbnail_hint:   "Scrub the video to the frame you want, then click the button to set it as the embed thumbnail.",
   vid_thumbnail_set:    "Thumbnail set — will be used as the video poster when embedded.",
-  vid_thumbnail_attach: "Embed in post",
   vid_gif_mode:         "GIF",
   vid_gif_fps:          "Frame rate",
   vid_download_gif:     "Download GIF",

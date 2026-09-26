@@ -6,6 +6,7 @@ import type { Photo } from "@/modules/photos/api/api";
 import type { Attachment, AttachmentStore } from "./types";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { bbAlt } from "./insertHelpers";
+import { autoPoster } from "./videoPoster";
 
 // ── Serialisable subset saved to IDB ─────────────────────────────────────────
 // File objects and blob: URLs are ephemeral and cannot survive a page reload,
@@ -26,6 +27,7 @@ type DraftAttachment = {
   thumbUrl?: string;   // only non-blob: URLs
   altText?: string;
   posterUrl?: string;
+  posterHash?: string;
 };
 
 function toSerializable(a: Attachment): DraftAttachment {
@@ -42,10 +44,11 @@ function toSerializable(a: Attachment): DraftAttachment {
     insertUrl: a.insertUrl,
     photoPageUrl: a.photoPageUrl,
     thumbUrl: a.thumbUrl?.startsWith("blob:")
-      ? (a.insertUrl?.startsWith("http") ? a.insertUrl : undefined)
+      ? (a.isImage && a.insertUrl?.startsWith("http") ? a.insertUrl : a.posterUrl)
       : a.thumbUrl,
     altText: a.altText,
     posterUrl: a.posterUrl?.startsWith("blob:") ? undefined : a.posterUrl,
+    posterHash: a.posterHash,
   };
 }
 
@@ -157,7 +160,32 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     setState("items", (a) => a.id === id, patch);
   }
 
-  function addUploads(files: FileList | File[]) {
+  /**
+   * Upload a poster frame for a video attachment and return the fields to
+   * patch onto it. Never rejects: a poster is optional, so a failure here
+   * (undecodable codec, upload error) must not take the video down with it.
+   * Poster photos aren't in the body as [zmg] or [attachment], so core's
+   * fix_attached_permissions() never sees them — applyAcl/setAcl are the only
+   * thing keeping their ACL in step with the post's.
+   */
+  async function uploadPoster(id: string, file: File, given?: File): Promise<Partial<Attachment>> {
+    const frame = given ?? await autoPoster(file);
+    if (!frame) return {};
+    const preview = URL.createObjectURL(frame);
+    update(id, { thumbUrl: preview });
+    try {
+      const res = await wallAttach(nick, frame);
+      if (!res.isPhoto || !res.src) return { thumbUrl: undefined };
+      applyAcl(res.hash);
+      return { posterUrl: res.src, posterHash: res.hash, thumbUrl: res.src };
+    } catch {
+      return { thumbUrl: undefined };
+    } finally {
+      URL.revokeObjectURL(preview);
+    }
+  }
+
+  function addUploads(files: FileList | File[], poster?: File) {
     const arr = Array.from(files);
     const newItems: Attachment[] = arr.map((file) => {
       const { isVideo, isAudio } = classifyMedia(file.name, file.type);
@@ -179,6 +207,11 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
 
     for (const item of newItems) {
       void (async () => {
+        // In parallel with the video itself; the chip stays "uploading" until
+        // both settle, so a submit can't race past a poster still in flight.
+        const posterP = item.isVideo
+          ? uploadPoster(item.id, item.file!, arr.length === 1 ? poster : undefined)
+          : Promise.resolve({});
         try {
           const res = await wallAttach(nick, item.file!, (pct) => update(item.id, { progress: pct }));
           if (res.isPhoto) {
@@ -208,6 +241,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
               hash: res.hash,
               revision: res.revision,
               insertUrl,
+              ...(await posterP),
             });
           }
           applyAcl(res.hash);
@@ -332,56 +366,13 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     return `[attachment]${item.insertUrl}[/attachment]`;
   }
 
-  function addVideoWithThumbnail(video: File, thumbnail: File) {
-    const id = uid();
-    const item: Attachment = {
-      id,
-      source: "upload",
-      status: "uploading",
-      progress: 0,
-      filename: video.name,
-      isImage: false,
-      isVideo: true,
-      isAudio: false,
-      file: video,
-    };
-    setState("items", (prev) => [...prev, item]);
-
-    void (async () => {
-      try {
-        // Upload thumbnail first (small file) to get its URL for the poster attribute
-        const thumbRes = await wallAttach(nick, thumbnail);
-        const posterUrl = thumbRes.isPhoto && thumbRes.src ? thumbRes.src : undefined;
-        if (thumbRes.hash) applyAcl(thumbRes.hash);
-
-        // Now upload the video, tracking progress
-        const videoRes = await wallAttach(nick, video, (pct) => update(id, { progress: pct }));
-        if (videoRes.isPhoto) {
-          update(id, {
-            status: "ready",
-            progress: 100,
-            resourceId: videoRes.hash,
-            insertUrl: videoRes.src,
-            photoPageUrl: `${window.location.origin}/photos/${nick}/image/${videoRes.hash}`,
-            posterUrl,
-          });
-        } else {
-          const insertUrl = videoRes.src ?? `${window.location.origin}/attach/${videoRes.hash}`;
-          update(id, {
-            status: "ready",
-            progress: 100,
-            hash: videoRes.hash,
-            revision: videoRes.revision,
-            insertUrl,
-            posterUrl,
-          });
-        }
-        applyAcl(videoRes.hash);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Upload failed";
-        update(id, { status: "error", error: msg });
-      }
-    })();
+  async function setPoster(id: string, frame: File): Promise<Attachment | undefined> {
+    const res = await wallAttach(nick, frame);
+    if (!res.isPhoto || !res.src) throw new Error("Poster upload failed");
+    applyAcl(res.hash);
+    // ponytail: the replaced poster photo stays in the wall album; delete it via the Photos API if the clutter matters
+    update(id, { posterUrl: res.src, posterHash: res.hash, thumbUrl: res.src });
+    return state.items.find((a) => a.id === id);
   }
 
   function setAcl(acl: FileAcl | null) {
@@ -390,6 +381,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     for (const att of state.items) {
       const hash = att.hash ?? att.resourceId;
       if (att.status === "ready" && hash) applyAcl(hash);
+      if (att.posterHash) applyAcl(att.posterHash);
     }
   }
 
@@ -403,7 +395,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     void storageDel(DRAFT_KEY);
   }
 
-  return { attachments, uploading, addUploads, addVideoWithThumbnail, addCloudFiles, addPhotos, remove, setAltText, setAltByUrl, insertBBCode, setAcl, clear };
+  return { attachments, uploading, addUploads, setPoster, addCloudFiles, addPhotos, remove, setAltText, setAltByUrl, insertBBCode, setAcl, clear };
 }
 
 // Prevent adding the same hash or resourceId twice

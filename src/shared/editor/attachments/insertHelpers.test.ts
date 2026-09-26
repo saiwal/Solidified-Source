@@ -7,7 +7,7 @@
 // round-trip here.
 import assert from "node:assert";
 
-const { bbAlt, readAlt, bbcodeToInsert, patchInsertedAlt, appendInsert } = await import("./insertHelpers.ts");
+const { bbAlt, readAlt, bbcodeToInsert, patchInsertedAlt, appendInsert, missingVideoEmbeds, patchInsertedPoster } = await import("./insertHelpers.ts");
 const { bbcodeToHtml } = await import("@utsukta/spa-core/lib/bbcode");
 
 const att = (altText: string) =>
@@ -100,6 +100,23 @@ assert.match(
 assert.doesNotMatch(
   bbcodeToHtml("[zrl=https://x/p][zmg=/photo/abc-1]cat.jpg[/zmg][/zrl]"),
   /src="\/photo\/abc-1"/,
+);
+
+// ── videos: auto-embed on submit, poster patched in place ────────────────────
+const vid = (posterUrl?: string) =>
+  ({ id: "v", source: "upload", status: "ready", progress: 100, filename: "a.mp4",
+     isImage: false, isVideo: true, isAudio: false, insertUrl: "https://x/attach/h1", posterUrl }) as never;
+const tagOf = () => "[zvideo]https://x/attach/h1[/zvideo]";
+assert.equal(missingVideoEmbeds("hi", [vid()], tagOf), tagOf());
+assert.equal(missingVideoEmbeds(`hi ${tagOf()}`, [vid()], tagOf), "");
+assert.equal(missingVideoEmbeds("hi", [{ ...(vid() as object), status: "uploading" } as never], tagOf), "");
+assert.equal(
+  patchInsertedPoster("a [zvideo poster='https://x/photo/old']https://x/attach/h1[/zvideo] b", vid("https://x/photo/new")),
+  "a [zvideo poster='https://x/photo/new']https://x/attach/h1[/zvideo] b",
+);
+assert.equal(
+  patchInsertedPoster("[zvideo]https://x/attach/h1[/zvideo]", vid("https://x/photo/$1")),
+  "[zvideo poster='https://x/photo/$1']https://x/attach/h1[/zvideo]",
 );
 
 console.log("insertHelpers: ok");

@@ -12,7 +12,7 @@ import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
-import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, missingVideoEmbeds, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
 
 /** Ids of the stored comment — lets the optimistic node be replied to. */
 export interface CreatedComment { iid: number; mid: string; uuid: string }
@@ -45,7 +45,12 @@ export default function CommentComposer(props: Props) {
         .filter((a) => a.status === "ready" && !a.isImage && (a.hash || a.resourceId))
         .map((a) => `[attachment]${a.hash ?? a.resourceId},0[/attachment]`)
         .join("\n");
-      const augmentedBody = fileTags ? `${body}\n${fileTags}` : body;
+      // Videos never Inserted still get a player (and their poster), not
+      // just a file chip. The [attachment] tag stays: it's what makes core
+      // fix the video's ACL and federate it as an AP attachment.
+      const videoTags = missingVideoEmbeds(body, attach.attachments(), attach.insertBBCode);
+      const augmentedBody = [body, videoTags && bbcodeToInsert(videoTags, store.mimetype()), fileTags]
+        .filter(Boolean).join("\n");
 
       const res = await apiFetch(
         `/spa/item/${encodeURIComponent(props.parentUuid)}/comment`,
@@ -146,6 +151,7 @@ export default function CommentComposer(props: Props) {
               onAltChange={(att) => {
                 store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
               }}
+              onPosterChange={(att) => store.setBody(patchInsertedPoster(store.body(), att))}
             />
           </Show>
         </div>

@@ -10,6 +10,8 @@ interface Props {
   onRemove: () => void;
   onInsert?: (bbcode: string) => void;
   onAltTextChange: (text: string) => void;
+  /** Opens the poster frame picker — video chips only. */
+  onPickPoster?: () => void;
   insertBBCode: (id: string) => string;
 }
 
@@ -131,6 +133,17 @@ const AttachmentPreview: Component<Props> = (props) => {
           class="text-[0.625rem] px-1.5 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 transition-colors w-full truncate"
         >
           {t("editor.insert_btn")}
+        </button>
+      </Show>
+
+      {/* Poster frame — for ready videos */}
+      <Show when={!isUploading() && !isError() && a().isVideo && props.onPickPoster}>
+        <button
+          type="button"
+          onClick={() => props.onPickPoster!()}
+          class="text-[0.625rem] px-1.5 py-0.5 rounded bg-elevated text-muted hover:text-txt hover:bg-surface border border-rim transition-colors w-full truncate"
+        >
+          {t("editor.poster_btn")}
         </button>
       </Show>
 

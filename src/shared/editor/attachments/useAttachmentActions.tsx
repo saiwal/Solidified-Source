@@ -81,13 +81,7 @@ export function useAttachmentActions(
       <Show when={cameraOpen()}>
         <CameraCapture
           onClose={() => setCameraOpen(false)}
-          onCapture={(files, thumbnail) => {
-            if (thumbnail && files.length === 1) {
-              store().addVideoWithThumbnail(files[0], thumbnail);
-            } else {
-              store().addUploads(files);
-            }
-          }}
+          onCapture={(files, thumbnail) => store().addUploads(files, thumbnail)}
         />
       </Show>
     </>

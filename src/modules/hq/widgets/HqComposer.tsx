@@ -3,7 +3,7 @@ import { MdOutlinePerson, MdOutlineCleaning_services } from "solid-icons/md";
 import { useQuickActions, type QuickAction } from "../quick-actions";
 import { getNavIcon } from "@/shared/views/NavItem";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { motion } from "solid-motionone";
 import { openComposer } from "@/shared/views/modal-host";
@@ -21,7 +21,6 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 void motion;
 
 const DRAFT_KEY = "hz_hq_draft";
-const MIME = "text/bbcode";
 // Same surface and attachment pipeline as every other composer — this bar used
 // to hand-roll its own contenteditable, which is where its base64 image paste
 // and its dead link button came from. The toolbar is off ("none"): the action
@@ -40,6 +39,9 @@ export default function HqComposerSlot() {
 function HqComposer() {
   const { t } = useI18n();
   const auth = useAuth();
+  // Same rule as PostComposer: markdown when the channel has the feature on,
+  // which is also what turns on RichEditor's live markdown rendering.
+  const MIME = isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode";
   const viewer = useNavViewer();
   const quickActions = useQuickActions();
   const [body, setBody] = createSignal("");

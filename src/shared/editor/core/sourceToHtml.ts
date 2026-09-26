@@ -326,6 +326,14 @@ function bbcodeToEditorHtml(body: string): string {
   // card embed is a [share] block, already claimed by the scan above.
   src = src.replace(/\[card=(\d+)\]\s*\[\/card\]/gi, (_m, id) => `\x01CARD:${id}\x01`);
 
+  // [zvideo]/[zaudio] render as a bare <video>/<audio>, which htmlToSource can
+  // only spell back as [video]url[/video] — dropping the z (zid auth for
+  // private media) and the poster. Keep the tag verbatim as a raw embed.
+  src = src.replace(/\[z(video|audio)[^\]]*\][\s\S]*?\[\/z\1\]/gi, (block) => {
+    raws.push(block);
+    return `\x01MEDIARAW:${raws.length - 1}\x01`;
+  });
+
   const { src: litSrc, lits } = protectLiterals(src);
   let html = bbcodeToHtml(litSrc);
   html = html.replace(/\x01LIT:(\d+)\x01/g, (_m, i) => lits[Number(i)] ?? "");
@@ -340,6 +348,10 @@ function bbcodeToEditorHtml(body: string): string {
   });
 
   html = html.replace(/\x01CARD:(\d+)\x01/g, (_m, id) => compactCardEmbed(id));
+  html = html.replace(/\x01MEDIARAW:(\d+)\x01/g, (_m, i) => {
+    const raw = raws[Number(i)] ?? "";
+    return `${ZWSP}<div class="bb-raw-embed bb-raw-block" data-bb-raw="${encodeRaw(raw)}" contenteditable="false">${renderShareHtml(raw)}</div>${ZWSP}`;
+  });
 
   return html;
 }

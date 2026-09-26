@@ -12,7 +12,7 @@ import ComposerActionBar from "../components/ComposerActionBar";
 import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
-import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
 
 // Core's wiki addon offers no HTML option (Mod_Wiki.php:221).
 const WIKI_FORMATS = ["text/bbcode", "text/markdown", "text/plain"] as const;
@@ -93,6 +93,7 @@ export default function WikiComposer(props: Props) {
             accept="both"
             onInsert={(bbcode) => setBody(appendInsert(body(), bbcodeToInsert(bbcode, mime())))}
             onAltChange={(att) => setBody(patchInsertedAlt(body(), att, mime()))}
+            onPosterChange={(att) => setBody(patchInsertedPoster(body(), att))}
           />
         </>
       }

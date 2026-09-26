@@ -34,7 +34,7 @@ export const BB_TAGS = [
   "list", "table", "tr", "th", "td", "h1", "h2", "h3", "h4", "h5", "h6",
   "center", "color", "size", "font", "spoiler", "summary", "share", "card",
   "crypt", "embed", "observer", "noparse", "nobb", "pre", "map", "video",
-  "audio", "attachment", "sub", "sup", "dl", "checklist", "hr", "footer",
+  "audio", "zvideo", "zaudio", "attachment", "sub", "sup", "dl", "checklist", "hr", "footer",
   // Resolved rather than rendered by bbcodeToHtml — see sourceToHtml's
   // LITERAL_RE. Protected for the same reason: turndown would escape them to
   // "\[sitename\]" and the save path would store the escape.
@@ -47,7 +47,7 @@ export const BB_TAGS = [
  */
 const BLOCK_TAGS = new Set([
   "quote", "list", "table", "tr", "code", "pre", "center", "share", "card",
-  "video", "audio", "map", "h1", "h2", "h3", "h4", "h5", "h6",
+  "video", "audio", "zvideo", "zaudio", "map", "h1", "h2", "h3", "h4", "h5", "h6",
   "dl", "checklist", "hr", "footer",
 ]);
 

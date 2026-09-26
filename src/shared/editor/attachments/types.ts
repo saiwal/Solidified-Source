@@ -21,6 +21,8 @@ export interface Attachment {
   resourceId?: string;
   altText?: string;
   posterUrl?: string;
+  /** Attach hash of the poster photo — tracked so ACL changes reach it too. */
+  posterHash?: string;
   file?: File;
   error?: string;
 }
@@ -28,8 +30,10 @@ export interface Attachment {
 export interface AttachmentStore {
   attachments: () => Attachment[];
   uploading: () => boolean;
-  addUploads: (files: FileList | File[]) => void;
-  addVideoWithThumbnail: (video: File, thumbnail: File) => void;
+  /** `poster` = a caller-chosen frame for a single video; otherwise one is grabbed automatically. */
+  addUploads: (files: FileList | File[], poster?: File) => void;
+  /** Upload `frame` as the video attachment's new poster. Resolves to the updated attachment. */
+  setPoster: (id: string, frame: File) => Promise<Attachment | undefined>;
   addCloudFiles: (files: FileMeta[]) => void;
   addPhotos: (photos: Photo[]) => void;
   remove: (id: string) => void;

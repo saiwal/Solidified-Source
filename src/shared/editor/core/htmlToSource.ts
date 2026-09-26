@@ -138,6 +138,9 @@ function nodeTobbcode(node: Node): string {
     if (shareId) return `[share=${shareId}][/share]`;
     const shareRaw = el.getAttribute("data-share-raw");
     if (shareRaw) return decodeURIComponent(shareRaw);
+    // Raw bbcode embeds ([zvideo]/[zaudio], see sourceToHtml) — verbatim.
+    const bbRaw = el.getAttribute("data-bb-raw");
+    if (bbRaw) return decodeURIComponent(bbRaw);
     // Compact card chips — a stored card embed is a share block, handled above.
     const cardId = el.getAttribute("data-card-id");
     if (cardId) return `[card=${cardId}][/card]`;

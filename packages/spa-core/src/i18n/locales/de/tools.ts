@@ -93,7 +93,6 @@ export const tools: RawDictionary["tools"] = {
   vid_thumbnail_recapture:"Vorschaubild neu erfassen",
   vid_thumbnail_hint:   "Spule das Video zum gewünschten Bild und klicke dann auf die Schaltfläche, um es als Einbettungs-Vorschaubild festzulegen.",
   vid_thumbnail_set:    "Vorschaubild festgelegt — wird beim Einbetten als Video-Poster verwendet.",
-  vid_thumbnail_attach: "In Beitrag einbetten",
   vid_gif_mode:         "GIF",
   vid_gif_fps:          "Bildrate",
   vid_download_gif:     "GIF herunterladen",

@@ -1,4 +1,4 @@
-import { createSignal, Show, For, type Component } from "solid-js";
+import { createSignal, Show, For, lazy, type Component } from "solid-js";
 import AttachmentPreview from "./AttachmentPreview";
 import type { Attachment, AttachmentStore } from "./types";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -9,6 +9,8 @@ import { MdOutlineAttach_file, MdOutlineImage, MdOutlinePhoto_camera } from "sol
 
 export type { AttachmentAccept } from "./useAttachmentActions";
 
+const PosterPicker = lazy(() => import("./PosterPicker"));
+
 interface Props {
   store: AttachmentStore;
   nick: string;
@@ -18,6 +20,9 @@ interface Props {
   /** Called after an attachment's alt text changes (att carries the new value) —
    *  lets the composer patch an already-inserted copy in the body. */
   onAltChange?: (att: Attachment) => void;
+  /** Called after a video's poster changes — lets the composer patch an
+   *  already-inserted [zvideo] in the body. */
+  onPosterChange?: (att: Attachment) => void;
   /** Current RichEditor tab — pass together with onToggleTab to render the
    *  wysiwyg/source toggle button at the right of this bar's action row. */
   tab?: EditorTab;
@@ -37,6 +42,7 @@ interface Props {
 const AttachmentBar: Component<Props> = (props) => {
   const { t } = useI18n();
   const [dragging, setDragging] = createSignal(false);
+  const [posterFor, setPosterFor] = createSignal<Attachment | null>(null);
 
   const accept = () => props.accept ?? "both";
 
@@ -152,6 +158,7 @@ const AttachmentBar: Component<Props> = (props) => {
                   props.store.setAltText(att.id, text);
                   props.onAltChange?.({ ...att, altText: text });
                 }}
+                onPickPoster={() => setPosterFor(att)}
                 insertBBCode={props.store.insertBBCode}
               />
             )}
@@ -162,6 +169,19 @@ const AttachmentBar: Component<Props> = (props) => {
       {/* Hidden input + picker/camera modals — mounted here even when the
           composer owns the actions, so they live in exactly one place. */}
       {act().surfaces()}
+
+      <Show when={posterFor()} keyed>
+        {(att) => (
+          <PosterPicker
+            attachment={att}
+            onClose={() => setPosterFor(null)}
+            onPick={async (frame) => {
+              const updated = await props.store.setPoster(att.id, frame);
+              if (updated) props.onPosterChange?.(updated);
+            }}
+          />
+        )}
+      </Show>
 
     </div>
   );

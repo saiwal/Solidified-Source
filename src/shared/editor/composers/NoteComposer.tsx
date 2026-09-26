@@ -13,7 +13,7 @@ import ComposerActionBar from "../components/ComposerActionBar";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
-import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useEncrypt } from "../useEncrypt";
 import { useCategoryTags } from "../components/useCategoryTags";
@@ -222,6 +222,7 @@ export default function NoteComposer(props: Props) {
             onAltChange={(att) => {
               store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
             }}
+            onPosterChange={(att) => store.setBody(patchInsertedPoster(store.body(), att))}
           />
         </>
       </Show>

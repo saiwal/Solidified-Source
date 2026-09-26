@@ -147,4 +147,12 @@ for (const src of CORPUS) {
   assert.equal(bb(bbcodeToHtml(once)), once, `not a fixed point: ${JSON.stringify(src)}`);
 }
 
+// [zvideo]/[zaudio] ride as raw embeds (sourceToHtml) — a bare <video> could
+// only come back as [video]url[/video], losing the z and the poster.
+{
+  const raw = "[zvideo poster='https://x/photo/p-1']https://x/attach/h[/zvideo]";
+  const html = `a\u200B<div class="bb-raw-embed bb-raw-block" data-bb-raw="${encodeURIComponent(raw)}" contenteditable="false"><video src="https://x/attach/h"></video></div>\u200Bb`;
+  assert.match(bb(html), new RegExp(`a\\n?${raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n?b`));
+}
+
 console.log("htmlToSource: ok");

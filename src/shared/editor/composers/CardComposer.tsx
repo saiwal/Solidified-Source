@@ -24,7 +24,7 @@ import ComposerShell, { useEditorFloor } from "../components/ComposerShell";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
-import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
 import { useAclState } from "../components/useAclState";
 import type { AclMode } from "../components/AclPicker";
 import { useCategoryTags } from "../components/useCategoryTags";
@@ -621,6 +621,7 @@ export default function CardComposer(props: Props) {
             onAltChange={(att) => {
               store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
             }}
+            onPosterChange={(att) => store.setBody(patchInsertedPoster(store.body(), att))}
           />
         </div>
         </Show>

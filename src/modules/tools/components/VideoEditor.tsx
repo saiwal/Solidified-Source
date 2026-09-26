@@ -3,6 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { davDirPath, uploadFile, listFolder, type FileMeta } from "@/modules/files/api";
 import { MdOutlineMovie, MdFillCheck, MdFillFolder } from "solid-icons/md";
+import { grabFrame } from "@/shared/editor/attachments/videoPoster";
 
 const FFMPEG_BASE = import.meta.env.BASE_URL + "ffmpeg/";
 
@@ -445,23 +446,14 @@ export function VideoEditor(props: VideoEditorProps = {}) {
   };
 
   // ── Thumbnail capture ─────────────────────────────────────────────────────────
-  const captureThumbnail = () => {
-    const vid = resultVideoEl;
-    if (!vid) return;
-    const canvas = document.createElement("canvas");
-    canvas.width  = vid.videoWidth  || 640;
-    canvas.height = vid.videoHeight || 360;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(vid, 0, 0);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const prev = thumbnailUrl(); if (prev) URL.revokeObjectURL(prev);
-      const base = file()?.name.replace(/\.[^.]+$/, "") ?? "video";
-      const thumbFile = new File([blob], `${base}-thumbnail.jpg`, { type: "image/jpeg" });
-      setThumbnailFile(thumbFile);
-      setThumbnailUrl(URL.createObjectURL(blob));
-    }, "image/jpeg", 0.92);
+  const captureThumbnail = async () => {
+    if (!resultVideoEl) return;
+    const base = file()?.name.replace(/\.[^.]+$/, "") ?? "video";
+    const thumbFile = await grabFrame(resultVideoEl, `${base}-thumbnail.jpg`);
+    if (!thumbFile) return;
+    const prev = thumbnailUrl(); if (prev) URL.revokeObjectURL(prev);
+    setThumbnailFile(thumbFile);
+    setThumbnailUrl(URL.createObjectURL(thumbFile));
   };
 
   // ── CSS shortcuts ─────────────────────────────────────────────────────────────
@@ -700,8 +692,9 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                         <img src={url()} alt="GIF" class="w-full rounded-lg" />
                       </Show>
                     </Show>
-                    {/* Thumbnail picker — video only, not for GIF */}
-                    <Show when={!resultIsAudio() && !resultIsGif()}>
+                    {/* Thumbnail picker — video only, not for GIF, and only when
+                        attaching (the standalone tool has nowhere to put it). */}
+                    <Show when={props.onAttach && !resultIsAudio() && !resultIsGif()}>
                       <div class="border border-rim rounded-xl overflow-hidden">
                         <div class="px-4 py-2.5 border-b border-rim bg-elevated flex items-center justify-between">
                           <span class="text-xs font-medium text-txt">{s("tools.vid_thumbnail")}</span>
@@ -718,18 +711,7 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                           {(url) => (
                             <div class="p-3 flex items-center gap-3">
                               <img src={url()} alt="thumbnail" class="h-16 rounded-lg object-cover shrink-0" />
-                              <div class="flex flex-col gap-2">
-                                <p class="text-xs text-muted">{s("tools.vid_thumbnail_set")}</p>
-                                <Show when={props.onAttach}>
-                                  <button
-                                    onClick={() => { const tf = thumbnailFile(); if (tf && props.onAttach) props.onAttach(tf); }}
-                                    class={btnOutline}
-                                    style="padding:0.25rem 0.75rem;font-size:0.75rem"
-                                  >
-                                    {s("tools.vid_thumbnail_attach")}
-                                  </button>
-                                </Show>
-                              </div>
+                              <p class="text-xs text-muted">{s("tools.vid_thumbnail_set")}</p>
                             </div>
                           )}
                         </Show>

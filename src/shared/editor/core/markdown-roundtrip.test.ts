@@ -80,6 +80,8 @@ const STABLE: Record<string, string> = {
   "bb img":        "[img]https://x.com/a.png[/img]",
   "bb attachment": "[attachment]abc123,0[/attachment]",
   "bb zmg/zrl":    "[zrl=https://x.com/a][zmg=https://x.com/b.png]l[/zmg][/zrl]",
+  "bb zvideo":     "[zvideo poster='https://x.com/photo/p-1']https://x.com/attach/h[/zvideo]",
+  "bb zaudio":     "[zaudio]https://x.com/attach/a[/zaudio]",
   "bb share":      "[share=42][/share]",
   "bb card":       "[card=7][/card]",
   "bb in list":    "- item with [b]bb[/b]\n- plain",

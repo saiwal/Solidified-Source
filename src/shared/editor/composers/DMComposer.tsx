@@ -34,7 +34,7 @@ import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
-import { bbcodeToInsert, patchInsertedAlt, appendInsert } from "../attachments/insertHelpers";
+import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { MdOutlineSchedule } from "solid-icons/md";
@@ -371,6 +371,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                 onAltChange={(att) => {
                   store.setBody(patchInsertedAlt(store.body(), att, store.mimetype()));
                 }}
+                onPosterChange={(att) => store.setBody(patchInsertedPoster(store.body(), att))}
               />
             </div>
 

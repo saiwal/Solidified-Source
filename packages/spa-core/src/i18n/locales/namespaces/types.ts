@@ -830,7 +830,6 @@ export type RawDictionary = {
     vid_thumbnail_recapture:string;
     vid_thumbnail_hint:   string;
     vid_thumbnail_set:    string;
-    vid_thumbnail_attach: string;
     vid_gif_mode:         string;
     vid_gif_fps:          string;
     vid_download_gif:     string;
@@ -1052,6 +1051,11 @@ export type RawDictionary = {
     cam_stop:         string;
     cam_retake:       string;
     cam_attach:       string;
+    poster_btn: string;
+    poster_title: string;
+    poster_hint: string;
+    poster_use_frame: string;
+    poster_error: string;
     cam_edit:         string;
     cam_starting:     string;
     cam_recording:    string;

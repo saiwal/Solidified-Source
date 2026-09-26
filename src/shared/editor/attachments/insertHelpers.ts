@@ -111,3 +111,34 @@ export function patchInsertedAlt(body: string, att: Attachment, mime: MimeType):
   );
   return body;
 }
+
+/**
+ * Embed tags for ready videos the user never clicked Insert on — appended on
+ * submit, since without one the video (and its poster) only ever shows as an
+ * [attachment] file chip. Classic core's wall_attach inserts [zvideo] itself;
+ * this is the same default. A video already in the body is left alone.
+ */
+export function missingVideoEmbeds(
+  body: string,
+  atts: readonly Attachment[],
+  insertBBCode: (id: string) => string,
+): string {
+  return atts
+    .filter((a) => a.status === "ready" && a.isVideo && a.insertUrl && !body.includes(a.insertUrl))
+    .map((a) => insertBBCode(a.id))
+    .join("\n");
+}
+
+/**
+ * Swaps the poster on an already-inserted [zvideo] of this attachment. Every
+ * source format carries the tag as bbcode (bbcodeToInsert passes it through),
+ * so there is one form to patch.
+ */
+export function patchInsertedPoster(body: string, att: Attachment): string {
+  const url = att.insertUrl;
+  if (!url) return body;
+  const tag = att.posterUrl
+    ? `[zvideo poster='${att.posterUrl}']${url}[/zvideo]`
+    : `[zvideo]${url}[/zvideo]`;
+  return body.replace(new RegExp(`\\[zvideo[^\\]]*\\]${escapeRe(url)}\\[/zvideo\\]`, "gi"), () => tag);
+}
