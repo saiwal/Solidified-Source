@@ -130,6 +130,7 @@ export async function leaveRoom(nick: string, roomId: number): Promise<void> {
   await apiFetch(`/spa/chat/${nick}/${roomId}/leave`, {
     method: "POST",
     body: JSON.stringify({}),
+    keepalive: true, // also sent from pagehide, where a plain fetch is dropped
   });
 }
 

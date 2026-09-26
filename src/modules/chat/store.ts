@@ -114,9 +114,21 @@ export function createRoomSession(nick: string, roomId: number) {
     if (!disposed) timer = setInterval(poll, 3000);
   })();
 
+  // Closing the tab never runs onCleanup, and a stale presence row makes the
+  // owner's hub skip this viewer's ChatFed notices until Cron clears it.
+  // pagehide also fires on entering the bfcache, so rejoin if we come back.
+  const onPageHide = () => void apiLeave(nick, roomId).catch(() => {});
+  const onPageShow = (e: PageTransitionEvent) => {
+    if (e.persisted && !disposed) void apiJoin(nick, roomId).catch(() => {});
+  };
+  window.addEventListener("pagehide", onPageHide);
+  window.addEventListener("pageshow", onPageShow);
+
   onCleanup(() => {
     disposed = true;
     clearInterval(timer);
+    window.removeEventListener("pagehide", onPageHide);
+    window.removeEventListener("pageshow", onPageShow);
     apiLeave(nick, roomId).catch(() => {}); // best-effort
   });
 

@@ -2413,6 +2413,7 @@ export type RawDictionary = {
     notify_silent:    string;
     unread:           string;
     bookmark_on_home: string;
+    leave:            string;
     remote_push_on:   string;
     remote_push_off:  string;
     remote_push_failed: string;

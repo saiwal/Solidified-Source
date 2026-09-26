@@ -23,7 +23,7 @@ import {
 	removeChatBookmark,
 } from "../bookmarks";
 import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
-import { MdFillChat, MdFillLock, MdFillLock_open, MdFillPeople, MdOutlineBookmark_border, MdOutlineNotifications_active, MdOutlineNotifications_off, MdOutlineTimer, MdOutlineVolume_up } from "solid-icons/md";
+import { MdFillChat, MdFillLock, MdFillLock_open, MdFillPeople, MdOutlineBookmark_border, MdOutlineLogout, MdOutlineNotifications_active, MdOutlineNotifications_off, MdOutlineTimer, MdOutlineVolume_up } from "solid-icons/md";
 import ChatComposer from "../ChatComposer";
 import DOMPurify from "dompurify";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
@@ -394,6 +394,16 @@ export default function ChatWindow(props: { nick: string; roomId: number; onClos
 						<MdOutlineBookmark_border class="w-4 h-4" />
 					</a>
 				</Show>
+				{/* Esc/backdrop only minimize (still joined); this closes the window,
+				    and the session's cleanup leaves the room. */}
+				<button
+					onClick={props.onClose}
+					title={t("chat.leave") as string}
+					aria-label={t("chat.leave") as string}
+					class="p-1.5 rounded-lg transition-colors hover:bg-elevated text-muted hover:text-txt"
+				>
+					<MdOutlineLogout class="w-4 h-4" />
+				</button>
 				{/* Who's here — a floating dropdown rather than a side column, which
 				    left no room for messages in a docked window or on a phone. */}
 				<div ref={presencePop.ref}>

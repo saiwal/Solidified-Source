@@ -45,6 +45,7 @@ export const chat: RawDictionary["chat"] = {
   notify_silent:    "Hinweise auf neue Nachrichten aus — klicken für Ton",
   unread:           "Neue Nachrichten",
   bookmark_on_home: "Diesen Raum auf deinem eigenen Hub merken",
+  leave:            "Raum verlassen",
   remote_push_on:   "Push-Benachrichtigungen für diesen Raum an — klicken zum Ausschalten",
   remote_push_off:  "Push-Benachrichtigungen für diesen Raum aus — klicken zum Einschalten",
   remote_push_failed: "Push-Benachrichtigungen konnten nicht aktiviert werden — prüfe die Benachrichtigungsberechtigung deines Browsers.",
