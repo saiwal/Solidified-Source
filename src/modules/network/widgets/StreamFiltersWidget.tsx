@@ -78,7 +78,9 @@ function ForumPostMenu(props: { forum: ForumConnection }) {
   const compose = (membersOnly: boolean) => {
     setOpen(false);
     const f = props.forum;
-    const scope = `post:forum:${f.id}`;
+    // One scope per audience: openComposer focuses an open composer with the
+    // same scope, so a shared one made "Public" resurface a members-only draft.
+    const scope = `post:forum:${f.id}:${membersOnly ? "members" : "public"}`;
     openComposer({
       kind: "post",
       scope,
@@ -87,6 +89,8 @@ function ForumPostMenu(props: { forum: ForumConnection }) {
         profileUid: auth()?.uid ?? 0,
         scopeKey: scope,
         initialBody: `@{${f.address}} `,
+        // Explicit, or PostComposer falls back to its "connections" default.
+        initialAclMode: "public",
         ...(membersOnly && {
           initialAclMode: "custom",
           initialAllowEntries: new Set([`c:${f.xid}`]),
