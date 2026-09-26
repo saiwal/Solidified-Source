@@ -47,6 +47,7 @@ export const photos: RawDictionary["photos"] = {
   selected:             "चुनी गई",
   select_all:           "सभी चुनें",
   delete_selected:      "चुनी हुई हटाएं",
+  download_selected:    "डाउनलोड करें",
   download:             "डाउनलोड",
   download_album:       "एल्बम डाउनलोड करें",
   move_selected:        "यहाँ ले जाएँ…",

@@ -2058,6 +2058,7 @@ export type RawDictionary = {
     selected:             string;
     select_all:           string;
     delete_selected:      string;
+    download_selected:    string;
     download:             string;
     download_album:       string;
     move_selected:        string;

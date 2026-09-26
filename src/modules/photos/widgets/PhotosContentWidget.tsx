@@ -46,7 +46,7 @@ import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
 import type { PhotoComment, Album, Photo, SortDir } from "../api/api";
-import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, fetchAlbums, variantSrc, saveAcl } from "../api/api";
+import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetchAlbums, variantSrc, saveAcl } from "../api/api";
 import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
@@ -240,7 +240,7 @@ function createPhotoSelection(nick: () => string, items: () => Photo[]) {
 
   function enterSelectMode() {
     setSelectMode(true);
-    if (moveTargets().length === 0)
+    if (canWrite() && moveTargets().length === 0)
       fetchAlbums(nick()).then(setMoveTargets).catch(() => {});
   }
 
@@ -327,6 +327,14 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
             {sel.selected().size} {t("photos.selected")}
           </span>
           <div class="flex items-center gap-2 flex-wrap ml-auto">
+            <button
+              onClick={() => downloadPhotos(sel.nick(), Array.from(sel.selected()))}
+              class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-txt
+                     hover:bg-overlay transition-colors"
+            >
+              <MdOutlineDownload size={14} />
+              {t("photos.download_selected")}
+            </button>
             <Show when={canWrite()}>
               <select
                 disabled={sel.moving()}
@@ -346,6 +354,7 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
                 </For>
               </select>
             </Show>
+            <Show when={canWrite()}>
             <Show when={sel.confirmBatch()} fallback={
               <button onClick={sel.handleBatchDelete}
                 class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-500
@@ -363,6 +372,7 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
                 class="px-2 py-1 rounded-md text-xs text-muted hover:text-txt transition-colors">
                 {t("photos.cancel")}
               </button>
+            </Show>
             </Show>
           </div>
         </div>
@@ -512,9 +522,7 @@ function AllPhotosView() {
         view={viewMode()}
         onView={setViewMode}
       >
-        <Show when={canWrite()}>
-          <SelectToggle sel={sel} />
-        </Show>
+        <SelectToggle sel={sel} />
       </SortToolbar>
 
       <SelectionBar sel={sel} />
@@ -984,12 +992,14 @@ function AlbumGrid() {
           )}
         </For>
 
+        {/* Spacer pushes the actions right when the (write-only) upload button is absent */}
+        <span class="ml-auto" />
         <Show when={canWrite()}>
           {/* Upload */}
           <button
             onClick={() => fileInputRef?.click()}
             disabled={!!uploadProgress()}
-            class="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
                    bg-accent/10 text-accent hover:bg-accent/20 transition-colors
                    disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -998,6 +1008,7 @@ function AlbumGrid() {
               ? `${uploadProgress()!.done}/${uploadProgress()!.total}`
               : t("photos.upload")}
           </button>
+        </Show>
 
           {/* Select / Cancel */}
           <SelectToggle sel={sel} />
@@ -1016,6 +1027,7 @@ function AlbumGrid() {
             </a>
           </Show>
 
+        <Show when={canWrite()}>
           {/* Delete album — bulk-destructive, stays owner-only regardless of write_storage */}
           <Show when={!sel.selectMode() && isOwner()}>
             <Show when={confirmAlbum()} fallback={

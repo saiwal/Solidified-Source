@@ -239,6 +239,30 @@ export function photoDownloadUrl(nick: string, hash: string): string {
   return `/spa/files/${nick}/download/${encodeURIComponent(hash)}`;
 }
 
+/** Download the given photos: one → its own file, several → a zip. The zip is a
+ *  native form POST so the hash list has no URL-length ceiling and the browser
+ *  streams the archive to disk instead of holding it in memory. */
+export function downloadPhotos(nick: string, hashes: string[]): void {
+  if (hashes.length === 1) {
+    const a = document.createElement('a');
+    a.href = photoDownloadUrl(nick, hashes[0]);
+    a.download = '';
+    a.click();
+    return;
+  }
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = `/spa/files/${nick}/download`;
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'hashes';
+  input.value = hashes.join(',');
+  form.append(input);
+  document.body.append(form);
+  form.submit();
+  form.remove();
+}
+
 export async function batchMovePhotos(nick: string, resourceIds: string[], folder: string): Promise<void> {
   const { getCsrfToken } = await import('@utsukta/spa-core/lib/csrf');
   const token = await getCsrfToken().catch(() => '');

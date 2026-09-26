@@ -51,6 +51,7 @@ export const photos: RawDictionary["photos"] = {
   selected:             "ausgewählt",
   select_all:           "Alle auswählen",
   delete_selected:      "Auswahl löschen",
+  download_selected:    "Herunterladen",
   download:             "Herunterladen",
   download_album:       "Album herunterladen",
   move_selected:        "Verschieben nach…",
