@@ -72,4 +72,7 @@ export const network: RawDictionary["network"] = {
   privacy_groups:          "Privacy Groups",
   // Forum filter
   forums:                  "Forums",
+  post_to_forum:           "Post to {{name}}",
+  forum_post_public:       "Public post",
+  forum_post_members:      "Members only",
 };

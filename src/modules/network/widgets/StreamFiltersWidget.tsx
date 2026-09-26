@@ -18,17 +18,24 @@ import {
   MdFillSearch,
   MdFillRefresh,
   MdFillBookmark_add,
+  MdFillEdit,
+  MdFillPublic,
+  MdFillLock,
 } from "solid-icons/md";
 import { createSignal, createEffect, on, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts, saveSortPref } from "../store";
-import { fetchFolders, fetchForums, fetchConnections, parseNetworkParams, type AclConnection } from "../api";
+import { fetchFolders, fetchForums, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
+import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
+import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { createPopover } from "@/shared/stream/filters/createPopover";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { addSavedSearch } from "../saved-searches";
 
-import { openPost } from "@/shared/views/modal-host";
+import { openPost, openComposer } from "@/shared/views/modal-host";
 
 // Minimum characters before the connection typeahead searches the server.
 const CONN_SEARCH_MIN_CHARS = 3;
@@ -55,6 +62,79 @@ const INPUT_CLS =
   "h-8 w-full text-sm border border-rim rounded-lg bg-surface text-txt " +
   "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent " +
   "py-1.5 px-2.5";
+
+// ── Post to forum ─────────────────────────────────────────────────────────────
+
+// Core can't tell a public forum from a private one (xchan_pubforum just means
+// "is a group"), so the user picks. Public = a plain mention, which the forum
+// redelivers via tag_deliver. Members only = ACL restricted to the forum
+// itself, which is what classic core presets when a forum is selected
+// (Module/Network.php def_acl); the mention stays so the body still links it.
+function ForumPostMenu(props: { forum: ForumConnection }) {
+  const { t } = useI18n();
+  const auth = useAuth();
+  const { open, setOpen, ref, floating, style } = createPopover({ placement: "bottom-end" });
+
+  const compose = (membersOnly: boolean) => {
+    setOpen(false);
+    const f = props.forum;
+    const scope = `post:forum:${f.id}`;
+    openComposer({
+      kind: "post",
+      scope,
+      title: t("network.post_to_forum", { name: f.name }),
+      props: {
+        profileUid: auth()?.uid ?? 0,
+        scopeKey: scope,
+        initialBody: `@{${f.address}} `,
+        ...(membersOnly && {
+          initialAclMode: "custom",
+          initialAllowEntries: new Set([`c:${f.xid}`]),
+          initialResolvedEntries: [{
+            type: "c", xid: f.xid, id: f.xid, name: f.name,
+            nick: f.address, link: f.address, photo: f.photo,
+          }],
+        }),
+      },
+    });
+  };
+
+  const ITEM_CLS = "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left text-txt hover:bg-elevated transition-colors";
+
+  return (
+    <div class="shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen(!open())}
+        aria-label={t("network.post_to_forum", { name: props.forum.name })}
+        title={t("network.post_to_forum", { name: props.forum.name })}
+        aria-haspopup="menu"
+        aria-expanded={open()}
+        class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
+      >
+        <MdFillEdit size={13} />
+      </button>
+      <Show when={open()}>
+        <Portal mount={topLayer()}>
+          <div
+            ref={floating}
+            style={style()}
+            role="menu"
+            class="z-50 w-44 p-1 rounded-lg border border-rim bg-surface shadow-lg"
+          >
+            <button role="menuitem" class={ITEM_CLS} onClick={() => compose(false)}>
+              <MdFillPublic size={14} class="shrink-0" />
+              <span>{t("network.forum_post_public")}</span>
+            </button>
+            <button role="menuitem" class={ITEM_CLS} onClick={() => compose(true)}>
+              <MdFillLock size={14} class="shrink-0" />
+              <span>{t("network.forum_post_members")}</span>
+            </button>
+          </div>
+        </Portal>
+      </Show>
+    </div>
+  );
+}
 
 // ── Affinity slider ───────────────────────────────────────────────────────────
 
@@ -590,20 +670,23 @@ export default function StreamFiltersWidget() {
                   {(forum) => {
                     const active = () => str(searchParams.cid) === String(forum.id);
                     return (
-                      <button
-                        onClick={() => {
-                          sp({ cid: String(forum.id), xchan_label: forum.name, gid: undefined });
-                          setTimeout(applyNow, 0);
-                        }}
-                        class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                        classList={{
-                          "bg-accent-muted text-accent font-medium": active(),
-                          "text-muted hover:bg-elevated hover:text-txt": !active(),
-                        }}
-                      >
-                        <MdFillForum size={13} class="shrink-0" />
-                        <span class="truncate">{forum.name}</span>
-                      </button>
+                      <div class="flex items-center gap-0.5">
+                        <button
+                          onClick={() => {
+                            sp({ cid: String(forum.id), xchan_label: forum.name, gid: undefined });
+                            setTimeout(applyNow, 0);
+                          }}
+                          class="flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
+                          classList={{
+                            "bg-accent-muted text-accent font-medium": active(),
+                            "text-muted hover:bg-elevated hover:text-txt": !active(),
+                          }}
+                        >
+                          <MdFillForum size={13} class="shrink-0" />
+                          <span class="truncate">{forum.name}</span>
+                        </button>
+                        <ForumPostMenu forum={forum} />
+                      </div>
                     );
                   }}
                 </For>

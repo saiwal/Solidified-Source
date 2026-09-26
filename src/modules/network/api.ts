@@ -188,6 +188,8 @@ export type ForumConnection = {
   id: number;
   name: string;
   photo: string;
+  address: string;
+  xid: string;
 };
 
 export async function fetchForums(): Promise<ForumConnection[]> {
@@ -195,7 +197,7 @@ export async function fetchForums(): Promise<ForumConnection[]> {
   if (!res.ok) return [];
   const { data } = await res.json();
   return Array.isArray(data)
-    ? data.map((c: any) => ({ id: c.id, name: c.name, photo: c.photo }))
+    ? data.map((c: any) => ({ id: c.id, name: c.name, photo: c.photo, address: c.address, xid: c.xchan_hash }))
     : [];
 }
 

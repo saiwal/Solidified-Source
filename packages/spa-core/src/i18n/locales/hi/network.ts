@@ -62,4 +62,7 @@ export const network: RawDictionary["network"] = {
   polls:                   "Polls",
   // Forum filter
   forums:                  "फ़ोरम",
+  post_to_forum:           "{{name}} में पोस्ट करें",
+  forum_post_public:       "सार्वजनिक पोस्ट",
+  forum_post_members:      "केवल सदस्य",
 };

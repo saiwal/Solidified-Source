@@ -1654,6 +1654,9 @@ export type RawDictionary = {
     privacy_groups:            string;
     // Forum filter
     forums:                    string;
+    post_to_forum:             string;
+    forum_post_public:         string;
+    forum_post_members:        string;
   };
   directory: {
     connections:          string;
