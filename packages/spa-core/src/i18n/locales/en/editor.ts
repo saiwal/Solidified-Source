@@ -177,7 +177,6 @@ export const editor = {
   no_album_photos:    "No photos in this album",
   photo_count:        "{{count}} photos",
 
-  open_full_composer: "Open full composer",
 
   // CameraCapture
   cam_title:        "Camera",

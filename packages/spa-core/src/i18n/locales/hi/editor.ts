@@ -168,7 +168,6 @@ export const editor: RawDictionary["editor"] = {
   no_albums:          "कोई एल्बम नहीं मिला",
   no_album_photos:    "इस एल्बम में कोई फ़ोटो नहीं",
   photo_count:        "{{count}} फ़ोटो",
-  open_full_composer: "पूरा कंपोज़र खोलें",
 
   // CameraCapture
   cam_audio:        "ऑडियो",

@@ -806,6 +806,11 @@ export const MessageList: Component<{
 
   // ── fetching ────────────────────────────────────────────────────────────
 
+  let lastFeedKey: string | undefined;
+  // Height of the list being replaced — the skeleton fills it so the card
+  // doesn't collapse and re-expand on every tab switch.
+  const [holdHeight, setHoldHeight] = createSignal(0);
+
   async function loadPage(reset = false) {
     if (!reset && loadMoreActive) return;
 
@@ -867,13 +872,23 @@ export const MessageList: Component<{
     // file — triggers a reset the same way switching feed type does),
     // reloadKey (bumped by the parent's refresh button), and authorFilter
     // (the search box — filtering is done server-side, see fetchMessages).
-    props.type;
-    props.file;
     props.reloadKey;
     props.authorFilter;
     props.xchan;
     props.unread;
     props.filters;
+    // Switching feed must not keep showing the old feed's rows while the new
+    // one loads. Refreshes, polls and filter edits (the inbox search fires per
+    // keystroke) keep them, so they don't flash.
+    const feedKey = `${props.type}\0${props.file ?? ""}`;
+    if (feedKey !== lastFeedKey) {
+      if (lastFeedKey !== undefined) {
+        setHoldHeight(scrollRef?.clientHeight ?? 0);
+        setError(null);
+        setEntries([]);
+      }
+      lastFeedKey = feedKey;
+    }
     setOffset(0);
     clearSelection();
     setCursor(-1);
@@ -992,7 +1007,9 @@ export const MessageList: Component<{
       </Show>
 
       <Show when={loading() && entries().length === 0}>
-        <For each={Array(5)}>{() => <SkeletonRow />}</For>
+        <div class="overflow-hidden" style={{ height: holdHeight() ? `${holdHeight()}px` : undefined }}>
+          <For each={Array(Math.max(5, Math.ceil(holdHeight() / 44)))}>{() => <SkeletonRow />}</For>
+        </div>
       </Show>
 
       {/* Grouped timeline */}

@@ -76,12 +76,5 @@ registerTour({
       text: (t) => t("tour.dm_quick_acl_text"),
       on: "top",
     },
-    {
-      selector: '[data-tour="post.composer.acl"]',
-      before: click("hq.composer.full"),
-      title: (t) => t("tour.dm_post_acl_title"),
-      text: (t) => t("tour.dm_post_acl_text"),
-      on: "top",
-    },
   ],
 });

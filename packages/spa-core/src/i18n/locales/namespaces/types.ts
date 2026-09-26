@@ -289,8 +289,6 @@ export type RawDictionary = {
     dm_quick_text:          string;
     dm_quick_acl_title:     string;
     dm_quick_acl_text:      string;
-    dm_post_acl_title:      string;
-    dm_post_acl_text:       string;
     ui_label:               string;
     ui_desc:                string;
     ui_nav_title:           string;
@@ -1043,7 +1041,6 @@ export type RawDictionary = {
     no_albums:          string;
     no_album_photos:    string;
     photo_count:        string;
-    open_full_composer: string;
     // CameraCapture
     cam_title:        string;
     cam_photo:        string;

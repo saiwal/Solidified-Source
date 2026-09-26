@@ -1,5 +1,5 @@
 import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
-import { MdOutlineOpen_in_full, MdOutlinePerson, MdOutlineCleaning_services } from "solid-icons/md";
+import { MdOutlinePerson, MdOutlineCleaning_services } from "solid-icons/md";
 import { useQuickActions, type QuickAction } from "../quick-actions";
 import { getNavIcon } from "@/shared/views/NavItem";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -47,7 +47,20 @@ function HqComposer() {
   const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys] = createSignal<Set<string>>(new Set<string>());
   const [submitting, setSubmitting] = createSignal(false);
-  const [expanded, setExpanded] = createSignal(false);
+  const [expanded, setExpandedRaw] = createSignal(false);
+  // Swapping placeholder ↔ editor changes the card's height in one frame; glide
+  // it instead. Solid patches the DOM synchronously on set, so measuring either
+  // side of the setter gives the before/after heights.
+  function setExpanded(v: boolean) {
+    if (v === expanded()) return;
+    const from = rootEl?.offsetHeight;
+    setExpandedRaw(v);
+    if (!rootEl || !from || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    rootEl.animate(
+      [{ height: `${from}px`, overflow: "hidden" }, { height: `${rootEl.offsetHeight}px`, overflow: "hidden" }],
+      { duration: 200, easing: "ease-out" },
+    );
+  }
   const [tab, setTab] = createSignal<EditorTab>("wysiwyg");
 
   const attach = createAttachmentStore(currentNick(), "hq:quick");
@@ -227,25 +240,6 @@ function HqComposer() {
     setExpanded(false);
   }
 
-  // Hands the inline draft to the hosted full composer, which can then be
-  // minimized and carried to another page. Read eagerly (not in a closure) so
-  // it captures what the inline composer holds at click time.
-  function openFullComposer() {
-    setExpanded(false);
-    openComposer({
-      kind: "post",
-      scope: "post:new",
-      title: t("editor.new_post"),
-      props: {
-        profileUid: auth()!.uid,
-        initialBody: body(),
-        initialAclMode: aclMode(),
-        initialAllowEntries: allowKeys(),
-        onPosted: () => resetComposer(),
-      },
-    });
-  }
-
   // Same list as the quick-compose widget, plus a poll — which has no inline
   // UI here, so it hands off to the full composer with the panel already open.
   const actions = (): QuickAction[] => [
@@ -309,7 +303,7 @@ function HqComposer() {
             </button>
           }
         >
-          <div ref={bodyEl} class="flex-1 min-w-0">
+          <div ref={bodyEl} class="flex-1 min-w-0" use:motion={{ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }}>
             <RichEditor
               body={body()}
               onInput={setBody}
@@ -323,6 +317,7 @@ function HqComposer() {
               placeholder={t("editor.write_placeholder")}
               minHeight="3.5rem"
               maxHeight="480px"
+              hideStats
             />
           </div>
         </Show>
@@ -345,35 +340,11 @@ function HqComposer() {
             </button>
           )}
         </For>
-
-        <div class="ml-auto flex items-center gap-1">
-          <Show when={expanded()}>
-            <button
-              type="button"
-              title={t("editor.clear_composer")}
-              onClick={resetComposer}
-              class="flex h-9 w-9 items-center justify-center rounded-full text-muted
-                     hover:bg-elevated hover:text-red-500 transition-colors"
-            >
-              <MdOutlineCleaning_services class="w-4 h-4" />
-            </button>
-          </Show>
-          <button
-            type="button"
-            title={t("editor.open_full_composer")}
-            data-tour="hq.composer.full"
-            onClick={openFullComposer}
-            class="flex h-9 w-9 items-center justify-center rounded-full text-muted
-                   hover:bg-elevated hover:text-txt transition-colors"
-          >
-            <MdOutlineOpen_in_full class="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* ACL + submit row */}
       <Show when={expanded()}>
-        <div class="flex items-center gap-1 flex-wrap">
+        <div class="flex items-center gap-1 flex-wrap" use:motion={{ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }}>
           <AclPicker
             dataTour="hq.composer.acl"
             mode={aclMode()}
@@ -386,9 +357,20 @@ function HqComposer() {
 
           <button
             type="button"
+            title={t("editor.clear_composer")}
+            aria-label={t("editor.clear_composer")}
+            onClick={resetComposer}
+            class="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-muted
+                   hover:bg-elevated hover:text-red-500 transition-colors"
+          >
+            <MdOutlineCleaning_services class="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
             onClick={handleSubmit}
             disabled={submitting() || attach.uploading() || !body().trim()}
-            class="ml-auto px-4 py-1 rounded-lg text-xs font-semibold bg-accent text-accent-fg
+            class="px-4 py-1 rounded-lg text-xs font-semibold bg-accent text-accent-fg
                    hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
             {submitting() ? t("editor.posting") : t("editor.post_btn")}

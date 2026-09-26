@@ -31,8 +31,6 @@ export const tour: RawDictionary["tour"] = {
   dm_quick_text:      "A normal post starts here. It becomes a private message the moment you narrow down who can see it.",
   dm_quick_acl_title: "Mention, then restrict the audience",
   dm_quick_acl_text:  "Type @ and their name in the post to mention them, then set the audience to Custom and select just that person. The post is delivered privately — a private mention.",
-  dm_post_acl_title:  "Same thing in the full composer",
-  dm_post_acl_text:   "The full composer has the same audience control, for longer private posts with a title, attachments or formatting.",
   ui_label:             "Getting Around",
   ui_desc:              "The nav, the sidebar and the content area — what everything is.",
   ui_nav_title:         "Main navigation",

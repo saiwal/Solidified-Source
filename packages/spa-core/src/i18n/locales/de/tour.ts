@@ -31,8 +31,6 @@ export const tour: RawDictionary["tour"] = {
   dm_quick_text:      "Hier beginnt ein normaler Beitrag. Er wird zur privaten Nachricht, sobald du eingrenzt, wer ihn sehen darf.",
   dm_quick_acl_title: "Erwähnen, dann Zielgruppe einschränken",
   dm_quick_acl_text:  "Tippe @ und den Namen, um die Person im Beitrag zu erwähnen, setze dann die Zielgruppe auf Benutzerdefiniert und wähle nur diese Person aus. Der Beitrag wird privat zugestellt — eine private Erwähnung.",
-  dm_post_acl_title:  "Dasselbe im vollständigen Editor",
-  dm_post_acl_text:   "Der vollständige Editor hat dieselbe Zielgruppen-Auswahl — für längere private Beiträge mit Titel, Anhängen oder Formatierung.",
   ui_label:             "Zurechtfinden",
   ui_desc:              "Navigation, Seitenleiste und Inhaltsbereich — was was ist.",
   ui_nav_title:         "Hauptnavigation",
