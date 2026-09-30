@@ -46,7 +46,7 @@ import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
 import type { PhotoComment, Album, Photo, SortDir } from "../api/api";
-import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetchAlbums, variantSrc, saveAcl } from "../api/api";
+import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetchAlbums, fetchPhotoAlbum, variantSrc, saveAcl } from "../api/api";
 import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
@@ -79,13 +79,16 @@ export default function PhotosContentWidget() {
     return 'summary';
   };
 
+  // Albums load on every photos route, not just the summary: the header's
+  // tab switcher stays visible inside an album, and it needs the list to
+  // know whether this channel has automatic upload folders. Keyed on nick
+  // alone — refetching per photo flipped albumsLoading and blanked the
+  // sidebar album list on every prev/next.
+  createEffect(on(() => nick() ?? '', loadAlbums));
+
   createEffect(() => {
     const n = nick() ?? '';
     const d = datum() ?? '';
-    // Albums load on every photos route, not just the summary: the header's
-    // tab switcher stays visible inside an album, and it needs the list to
-    // know whether this channel has automatic upload folders.
-    loadAlbums(n);
     if (datatype() === 'album') loadAlbum(n, d);
     else if (datatype() === 'image' && d) loadImage(n, d);
     else loadSummary(n);
@@ -98,11 +101,15 @@ export default function PhotosContentWidget() {
           behind the photo-grid skeleton while photos refetch. */}
       <Show when={datatype() === 'summary'} fallback={
         <>
-          <Show when={loading()}>
+          {/* Skeleton only on a cold load: on prev/next the current photo
+              stays up until its sibling's detail lands (loadImage doesn't
+              clear detail), instead of blinking through the skeleton. Keyed
+              so per-photo UI state (edit forms, menus) resets on the swap. */}
+          <Show when={loading() && !detail()}>
             <PhotoGridSkeleton />
           </Show>
-          <Show when={!loading() && detail()}>
-            <ImageView />
+          <Show when={detail()?.resource_id} keyed>
+            {(_id: string) => <ImageView />}
           </Show>
           <Show when={!loading() && !detail() && datatype() === 'album'}>
             <AlbumGrid />
@@ -1184,24 +1191,40 @@ function ImageView() {
   createEffect(on(() => d()?.resource_id, () => setNsfwRevealed(false)));
   const nsfwBlurred = () => !!d()?.is_nsfw && !nsfwRevealed();
 
-  function openLightbox() {
+  async function openLightbox() {
     const photo = d();
     if (!photo) return;
     pswpRef?.close();
 
     let currentSize = 0; // open at original (-0); the page shows medium (-2)
 
-    const item = {
-      src:    variantSrc(photo.src, currentSize),
-      msrc:   variantSrc(photo.src, 2), // medium is already loaded on the page
-      alt:    photo.filename,
-      width:  photo.width  || 0, // original dimensions; reset on size switch
-      height: photo.height || 0,
-    };
+    // Page through the grid the user came from (All Photos or an album, as
+    // sorted there — loadImage leaves photos() alone). Direct link → fetch
+    // the album instead; a root photo with neither → just this one.
+    const has = (l: Photo[]) => l.some(p => p.resource_id === photo.resource_id);
+    const folder = photo.album_link?.split('/album/')[1];
+    const siblings = has(photos())
+      ? photos()
+      : folder
+        ? await fetchPhotoAlbum(nick(), folder).then(r => r.photos, () => [] as Photo[])
+        : [];
+    if (d()?.resource_id !== photo.resource_id) return; // navigated while fetching
+    const list: Pick<Photo, 'resource_id' | 'src' | 'filename' | 'title' | 'description' | 'is_nsfw'>[] =
+      has(siblings) ? siblings : [photo];
+    const startIndex = list.findIndex(p => p.resource_id === photo.resource_id);
+
+    const items = list.map((p, i) => ({
+      src:    variantSrc(p.src, currentSize),
+      msrc:   variantSrc(p.src, i === startIndex ? 2 : 3), // medium is already loaded on the page
+      alt:    p.filename,
+      // original dimensions for the photo on the page; siblings get theirs on load
+      width:  i === startIndex ? photo.width  || 0 : 0,
+      height: i === startIndex ? photo.height || 0 : 0,
+    }));
 
     const pswp = new PhotoSwipe({
-      dataSource: [item],
-      index: 0,
+      dataSource: items,
+      index: startIndex,
       bgOpacity: 0.95,
       wheelToZoom: true,
     });
@@ -1218,6 +1241,7 @@ function ImageView() {
       const w = img.naturalWidth;
       const h = img.naturalHeight;
       if (!w || !h) return;
+      const item = items[content.index];
       item.width  = w;   // fresh Content construction path
       item.height = h;
       (content as any).width   = w;   // cached Content reuse path
@@ -1231,7 +1255,7 @@ function ImageView() {
     });
 
     pswp.on('uiRegister', () => {
-      // Size selector
+      // Size selector — applies to the slide being viewed
       pswp.ui?.registerElement({
         name: 'size-selector',
         order: 8,
@@ -1269,10 +1293,17 @@ function ImageView() {
             btn.addEventListener('click', () => {
               if (size === currentSize) return;
               currentSize = size;
-              item.src    = variantSrc(photo.src, size);
-              item.width  = 0;
-              item.height = 0;
-              pswp.refreshSlideContent(0);
+              // Re-point every slide so the chosen size sticks while paging;
+              // only the visible one is reloaded now, the rest on demand.
+              items.forEach((item, i) => {
+                const next = variantSrc(list[i].src, size);
+                if (item.src === next) return;
+                item.src = next;
+                item.width = 0;
+                item.height = 0;
+                if (i !== pswp.currIndex) pswp.refreshSlideContent(i);
+              });
+              pswp.refreshSlideContent(pswp.currIndex);
               refresh(size);
             });
             btns.push(btn);
@@ -1288,45 +1319,60 @@ function ImageView() {
             isButton: false,
             appendTo: 'root',
             onInit: (cap: HTMLElement) => {
-              const title = photo.title ?? '';
-              const desc  = photo.description ?? '';
-              const nsfw  = photo.is_nsfw ?? false;
-              if (!title && !desc && !nsfw) { cap.style.display = 'none'; return; }
               cap.style.cssText =
                 'position:absolute;bottom:0;left:0;right:0;' +
                 'padding:40px 56px 18px;' +
                 'background:linear-gradient(transparent,rgba(0,0,0,0.6));' +
                 'color:rgba(255,255,255,0.92);font-size:14px;line-height:1.5;' +
                 'text-align:center;pointer-events:none;';
-              if (nsfw) {
-                const badge = document.createElement('span');
-                badge.textContent = 'NSFW';
-                badge.style.cssText =
-                  'display:inline-block;margin-bottom:6px;padding:1px 7px;' +
-                  'background:rgba(239,68,68,0.25);color:#fca5a5;' +
-                  'border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;';
-                cap.appendChild(badge);
-                cap.appendChild(document.createElement('br'));
-              }
-              if (title) {
-                const el = document.createElement('strong');
-                el.textContent = title;
-                el.style.cssText = 'display:block;font-size:15px;';
-                cap.appendChild(el);
-              }
-              if (desc) {
-                const el = document.createElement('span');
-                el.textContent = desc;
-                el.style.cssText = 'display:block;font-size:13px;opacity:0.8;margin-top:2px;';
-                cap.appendChild(el);
-              }
+              const render = () => {
+                const p = list[pswp.currIndex];
+                // The page's own photo may have unsaved-to-list edits; prefer detail.
+                const src   = p.resource_id === photo.resource_id ? photo : p;
+                const title = src.title ?? '';
+                const desc  = src.description ?? '';
+                const nsfw  = src.is_nsfw ?? false;
+                cap.replaceChildren();
+                cap.style.display = (!title && !desc && !nsfw) ? 'none' : '';
+                if (nsfw) {
+                  const badge = document.createElement('span');
+                  badge.textContent = 'NSFW';
+                  badge.style.cssText =
+                    'display:inline-block;margin-bottom:6px;padding:1px 7px;' +
+                    'background:rgba(239,68,68,0.25);color:#fca5a5;' +
+                    'border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.05em;';
+                  cap.appendChild(badge);
+                  cap.appendChild(document.createElement('br'));
+                }
+                if (title) {
+                  const el = document.createElement('strong');
+                  el.textContent = title;
+                  el.style.cssText = 'display:block;font-size:15px;';
+                  cap.appendChild(el);
+                }
+                if (desc) {
+                  const el = document.createElement('span');
+                  el.textContent = desc;
+                  el.style.cssText = 'display:block;font-size:13px;opacity:0.8;margin-top:2px;';
+                  cap.appendChild(el);
+                }
+              };
+              render();
+              pswp.on('change', render);
             },
           });
         },
       });
     });
 
-    pswp.on('close', () => { pswpRef = null; });
+    pswp.on('close', () => {
+      pswpRef = null;
+      // Land the detail page on whichever photo the lightbox ended on.
+      const last = list[pswp.currIndex];
+      if (last && last.resource_id !== photo.resource_id) {
+        navigate(`/photos/${nick()}/image/${last.resource_id}`);
+      }
+    });
     pswpRef = pswp;
     pswp.init();
   }

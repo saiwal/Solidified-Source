@@ -85,6 +85,18 @@ export interface ComposerProps {
   /** Hide the ACL picker and lock scope to "connections" (channel owner's default).
    *  Use when the poster is a visitor — they don't control the wall's privacy. */
   hideAcl?: boolean;
+  /** Set when posting to someone else's wall: core's status_editor() gates
+   *  features and location on the *owner*, uploads into the owner's storage
+   *  (wall_attach/<owner>, which checks write_storage), and turns a post to a
+   *  group actor into a DM to the forum. */
+  wallOwner?: {
+    nick: string;
+    name: string;
+    isGroup: boolean;
+    allowLocation: boolean;
+    writeStorage: boolean;
+    features: Record<string, boolean>;
+  };
   /** Override the draft/attachment scope key (default "post:new" /
    *  "post:reply:<parentId>"). Pass a distinct key for special flows like
    *  reshares so their autosave never clobbers the regular composer draft. */
@@ -124,8 +136,11 @@ const PostComposer: Component<ComposerProps> = (props) => {
   // (ContentTypes::recallMarkdown); this is only the fallback for when that
   // seed is missing, where bbcode is the safe assumption since the stored body
   // always is bbcode.
+  const feature = (name: string) =>
+    props.wallOwner ? props.wallOwner.features[name] === true : isFeatureEnabled(name);
+
   const postMimetype = (): MimeType =>
-    !isEdit() && isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode";
+    !isEdit() && feature("markdown") ? "text/markdown" : "text/bbcode";
 
   // ── Scope (shared by both stores for matching IDB keys) ───────────────────
   const scope =
@@ -133,10 +148,15 @@ const PostComposer: Component<ComposerProps> = (props) => {
     (props.parentId ? `post:reply:${props.parentId}` : "post:new");
 
   // ── Attachment store ───────────────────────────────────────────────────────
-  const attach = createAttachmentStore(currentNick(), scope);
+  // A visitor uploads into the wall owner's storage, as core's jot does —
+  // core's fix_attached_permissions() only finds files with uid = owner.
+  // Browsing is off for them: it would pick the visitor's own files.
+  const attachNick = props.wallOwner?.nick ?? currentNick();
+  const canAttach = !props.wallOwner || props.wallOwner.writeStorage;
+  const attach = createAttachmentStore(attachNick, scope);
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
-  const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
+  const attachActions = useAttachmentActions(() => attach, () => attachNick, () => "both", !props.wallOwner);
 
   // ── ACL state ───────────────────────────────────────────────────────────────
   const acl = useAclState({
@@ -469,7 +489,9 @@ const PostComposer: Component<ComposerProps> = (props) => {
             ? t("editor.edit_post")
             : props.parentId
               ? t("editor.reply_header")
-              : t("editor.new_post")
+              : props.wallOwner
+                ? t(props.wallOwner.isGroup ? "editor.post_to_forum" : "editor.post_to_wall", { name: props.wallOwner.name })
+                : t("editor.new_post")
         }
         ariaLabel={t("editor.composer_label")}
         onClose={props.onClose}
@@ -503,7 +525,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 />
               </Show>
 
-              <Show when={caps.category && !props.parentId}>
+              <Show when={caps.category && !props.parentId && (!props.wallOwner || feature("categories"))}>
                 <CategoryTagsField
                   tags={categoryTags.categoryTags}
                   pending={categoryTags.pendingCategory}
@@ -529,7 +551,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
           editor={
           <div ref={wiring.wrapperRef} class="flex flex-col flex-1 min-h-0">
             <RichEditor
-              attach={attachActions}
+              attach={canAttach ? attachActions : undefined}
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               body={store.body()}
               onInput={store.setBody}
@@ -538,7 +560,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               onTabChange={store.setTab}
               mimetype={store.mimetype()}
               onCtrlEnter={() => { if (!wiring.mention.open()) void store.submit(); }}
-              onPasteFiles={(files) => attach.addUploads(files)}
+              onPasteFiles={(files) => { if (canAttach) attach.addUploads(files); }}
               placeholder={props.parentId ? t("editor.write_reply_placeholder") : t("editor.write_placeholder")}
               minHeight="150px"
               fill
@@ -549,10 +571,11 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 still isn't possible — the edit seed only carries the body.
                 ponytail: add-only attachments on edit; seed the bar from
                 item.attach if removing files matters. */}
+            <Show when={canAttach}>
             <AttachmentBar
               store={attach}
               actions={attachActions}
-              nick={currentNick()}
+              nick={attachNick}
               accept="both"
               onInsert={(bbcode) => {
                 store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
@@ -562,6 +585,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               }}
               onPosterChange={(att) => store.setBody(patchInsertedPoster(store.body(), att))}
             />
+            </Show>
           </div>
 
           }
@@ -591,7 +615,9 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 <Show
                   when={!props.hideAcl}
                   fallback={
-                    <span class="text-xs text-muted px-1">{t("editor.posting_to_wall")}</span>
+                    <span class="text-xs text-muted px-1">
+                      {t(props.wallOwner?.isGroup ? "editor.posting_to_forum" : "editor.posting_to_wall")}
+                    </span>
                   }
                 >
                   <AclPicker
@@ -611,7 +637,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               menu={
                 <>
               {/* Expiry — gated behind Settings → Features → Content Expiration */}
-              <Show when={isFeatureEnabled("content_expire") && !props.parentId && !isEdit()}>
+              <Show when={feature("content_expire") && !props.parentId && !isEdit()}>
                 <DateTimePicker
                   value={expiry()}
                   onChange={setExpiry}
@@ -624,6 +650,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
 
               {/* Location — a popover rather than a band in the body, like the
                   toolbar's link button; it is set once and rarely revisited. */}
+              <Show when={!props.wallOwner || props.wallOwner.allowLocation}>
               <PopoverButton
                 title={t("editor.location_toggle")}
                 open={locationOpen}
@@ -689,9 +716,10 @@ const PostComposer: Component<ComposerProps> = (props) => {
                   </Show>
                 </div>
               </PopoverButton>
+              </Show>
 
               {/* Delayed publish — gated behind Settings → Features → Delayed Posting */}
-              <Show when={isFeatureEnabled("delayed_posting") && !props.parentId && !isEdit()}>
+              <Show when={feature("delayed_posting") && !props.parentId && !isEdit()}>
                 <DateTimePicker
                   value={publishAt()}
                   onChange={setPublishAt}
@@ -703,7 +731,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               </Show>
 
               {/* Disable comments — gated behind Settings → Features → Disable Comments */}
-              <Show when={isFeatureEnabled("disable_comments") && !props.parentId && !isEdit()}>
+              <Show when={feature("disable_comments") && !props.parentId && !isEdit()}>
                 <ToggleButton
                   active={noComment()}
                   onClick={() => setNoComment((v) => !v)}
@@ -739,7 +767,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
               </Show>
 
               {/* Encrypt toggle — gated behind Settings → Features → Content Encryption */}
-              <Show when={isFeatureEnabled("content_encrypt") && !props.parentId}>
+              <Show when={feature("content_encrypt") && !props.parentId}>
                 <EncryptToggle enc={enc} body={store.body} />
               </Show>
                 </>

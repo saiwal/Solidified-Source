@@ -15,7 +15,7 @@
 // idb-keyval gives one object store per database, hence three databases rather
 // than three stores in one.
 
-import { createStore, get, set, getMany, setMany, delMany, keys } from "idb-keyval";
+import { createStore, get, set, getMany, setMany, delMany, keys, clear } from "idb-keyval";
 import { createSignal } from "solid-js";
 import { apiFetch, apiError } from "./fetch";
 
@@ -111,6 +111,11 @@ async function readList(key: string): Promise<MessageEntry[]> {
 // Optimistic local edits. The inbox flips star/read/folder state in its own
 // signal for instant feedback; mirroring it into the store is what keeps an
 // offline reload from showing the pre-action state again.
+/** Logout: the mailbox belongs to the channel that just signed out. */
+export async function clearMessageStore(): Promise<void> {
+  await Promise.all([entryDb, listDb, postDb].map((db) => clear(db)));
+}
+
 export async function patchEntry(b64mid: string, partial: Partial<MessageEntry>): Promise<void> {
   const cur = await get<MessageEntry>(b64mid, entryDb);
   if (cur) await set(b64mid, { ...cur, ...partial }, entryDb);

@@ -16,10 +16,18 @@ export type ChannelParams = {
   dend?:    string;
   dbegin?:  string;
   nouveau?: 1;
-  dm?:      1;
 };
 
-export type ChannelStreamResult = StreamResult & { canPostWall: boolean };
+/** What the jot offers a visitor on someone else's wall — set only then. */
+export type WallCompose = {
+  name:          string;
+  isGroup:       boolean;
+  allowLocation: boolean;
+  writeStorage:  boolean;
+  features:      Record<string, boolean>;
+};
+
+export type ChannelStreamResult = StreamResult & { canPostWall: boolean; wallCompose: WallCompose | null };
 
 export async function fetchChannelPosts(
   nickname: string,
@@ -55,6 +63,15 @@ export async function fetchChannelPosts(
     limit:        meta?.limit ?? 10,
     nouveau:      meta?.nouveau ?? false,
     canPostWall:  meta?.can_post_wall ?? false,
+    wallCompose:  meta?.wall_compose
+      ? {
+          name:          meta.wall_compose.name,
+          isGroup:       meta.wall_compose.is_group,
+          allowLocation: meta.wall_compose.allow_location,
+          writeStorage:  meta.wall_compose.write_storage,
+          features:      { ...meta.wall_compose.features },
+        }
+      : null,
   };
 }
 

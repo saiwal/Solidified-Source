@@ -16,6 +16,11 @@ export const queryClient = new QueryClient({
       retry: 2,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
+      // Default "online" never calls the fetcher while the browser reports
+      // offline, so a query mounted offline sat in "pending" forever instead
+      // of reaching the SW cache / offline-fallback.ts. This runs it once and
+      // only pauses the retries.
+      networkMode: "offlineFirst",
     },
   },
 });

@@ -1,5 +1,7 @@
 import { onMount } from "solid-js";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
+import { clearOfflineData } from "@utsukta/spa-core/lib/offline-fallback";
+import { clearMessageStore } from "@utsukta/spa-core/lib/message-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 export default function LogoutView() {
@@ -19,6 +21,8 @@ export default function LogoutView() {
     } catch {
       // ignore — redirect regardless
     }
+    // Even if the POST failed: the user asked to leave this device.
+    await Promise.all([clearOfflineData(), clearMessageStore()]).catch(() => {});
     window.location.href = "/login";
   });
 

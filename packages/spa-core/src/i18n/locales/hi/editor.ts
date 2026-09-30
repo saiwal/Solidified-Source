@@ -27,6 +27,7 @@ export const editor: RawDictionary["editor"] = {
   saved_drafts:           "सहेजे गए मसौदे",
   save_draft:             "मसौदे के रूप में सहेजें",
   clear_composer:         "कंपोज़र साफ़ करें",
+  open_full_composer:     "पूरा कंपोज़र खोलें",
   posting:                "पोस्ट हो रहा है…",
   post_btn:               "पोस्ट करें",
   post_published:         "पोस्ट प्रकाशित हुई",
@@ -202,6 +203,9 @@ export const editor: RawDictionary["editor"] = {
   poll_remove_answer:       "हटाएँ",
   poll_expires_label:       "समाप्ति",
   posting_to_wall:          "वॉल पर पोस्ट हो रही है",
+  posting_to_forum:         "फ़ोरम को भेजा जा रहा है — फ़ोरम के साझा करने पर सदस्यों तक पहुँचेगा",
+  post_to_wall:             "{{name}} की वॉल पर पोस्ट करें",
+  post_to_forum:            "फ़ोरम {{name}} में पोस्ट करें",
 
   // Location / delayed publish / comment lock
   location_toggle:          "स्थान",

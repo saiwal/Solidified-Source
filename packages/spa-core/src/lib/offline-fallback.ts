@@ -1,5 +1,5 @@
 // Extension is explicit so offline-fallback.test.ts can run under plain node.
-import { storageGet, storageSet } from "./storage.ts";
+import { storageDel, storageGet, storageKeys, storageSet } from "./storage.ts";
 
 // Last-resort offline cache sitting under every /spa/ GET in the app.
 //
@@ -30,6 +30,18 @@ function requestUrl(input: RequestInfo | URL): string {
 // what's already on disk.
 export async function hasOfflineCopy(url: string): Promise<boolean> {
   return (await storageGet<string | undefined>(key(url), undefined)) !== undefined;
+}
+
+// Logout: without this, the next offline launch answers /spa/pconfig from the
+// recording and boots as the previous user, private streams included. Also
+// empties the service worker's API caches, which hold the same responses.
+// Drafts share this database and are deliberately kept.
+export async function clearOfflineData(): Promise<void> {
+  const ks = await storageKeys();
+  await Promise.all(ks.filter((k) => k.startsWith("offline:")).map(storageDel));
+  if ("caches" in globalThis) {
+    await Promise.all(["theme-api", "api-config", "api-json"].map((n) => caches.delete(n)));
+  }
 }
 
 export function isCacheableGet(method: string, url: string): boolean {

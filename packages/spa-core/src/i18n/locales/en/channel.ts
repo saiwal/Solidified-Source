@@ -11,7 +11,7 @@ export const channel: RawDictionary["channel"] = {
   search:             "Search",
   search_placeholder: "Search posts…",
   compose:            "New post",
-  direct_messages:    "Direct messages",
+  forum_posted:       "Sent to the forum — it appears on the wall once the forum shares it.",
   edit_profile:     "Edit profile",
   connections:      "connections",
   more_details:     "More details",

@@ -11,7 +11,7 @@ export const channel: RawDictionary["channel"] = {
   search:             "खोजें",
   search_placeholder: "पोस्ट खोजें…",
   compose:            "नई पोस्ट",
-  direct_messages:    "सीधे संदेश",
+  forum_posted:       "फ़ोरम को भेजा गया — फ़ोरम के साझा करने पर यह वॉल पर दिखेगा।",
   edit_profile:     "प्रोफ़ाइल संपादित करें",
   connections:      "कनेक्शन",
   more_details:     "और विवरण",

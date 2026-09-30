@@ -25,6 +25,7 @@ export const editor = {
   saved_drafts:           "Saved drafts",
   save_draft:             "Save as draft",
   clear_composer:         "Clear composer",
+  open_full_composer:     "Open full composer",
   posting:                "Posting…",
   post_btn:               "Post",
   post_published:         "Post published",
@@ -211,6 +212,9 @@ export const editor = {
   poll_remove_answer:       "Remove option",
   poll_expires_label:       "Expires in",
   posting_to_wall:          "Posting to wall",
+  posting_to_forum:         "Posting to the forum — delivered to its members once the forum shares it",
+  post_to_wall:             "Post to {{name}}'s wall",
+  post_to_forum:            "Post to forum {{name}}",
 
   // Location / delayed publish / comment lock
   location_toggle:          "Location",

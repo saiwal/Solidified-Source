@@ -636,9 +636,11 @@ export default function EditorToolbar(props: Props) {
           <Btn title={t("editor.attach_file_title")} onPress={() => a().openFile()}>
             <MdOutlineAttach_file class="w-4 h-4" />
           </Btn>
-          <Btn title={t("editor.attach_browse_title")} onPress={() => a().openBrowse()}>
-            <MdOutlineImage class="w-4 h-4" />
-          </Btn>
+          <Show when={a().canBrowse}>
+            <Btn title={t("editor.attach_browse_title")} onPress={() => a().openBrowse()}>
+              <MdOutlineImage class="w-4 h-4" />
+            </Btn>
+          </Show>
           <Btn title={t("editor.cam_btn_title")} onPress={() => a().openCamera()}>
             <MdOutlinePhoto_camera class="w-4 h-4" />
           </Btn>

@@ -24,6 +24,8 @@ export type AttachmentAccept = "files" | "photos" | "both";
 export interface AttachmentActions {
   openFile: () => void;
   openBrowse: () => void;
+  /** False hides the Browse button — see the `browse` param. */
+  canBrowse: boolean;
   openCamera: () => void;
   /** Adds a FileList/array, filtered by `accept`. Shared by the input and drops. */
   addFiles: (files: FileList | File[] | null) => void;
@@ -35,6 +37,10 @@ export function useAttachmentActions(
   store: () => AttachmentStore,
   nick: () => string,
   accept: () => AttachmentAccept,
+  /** Off when the store's nick isn't the viewer's own (a visitor posting to
+   *  someone's wall): the picker lists the viewer's files, which the post's
+   *  owner-side ACL fix never reaches. */
+  browse = true,
 ): AttachmentActions {
   const [pickerOpen, setPickerOpen] = createSignal(false);
   const [cameraOpen, setCameraOpen] = createSignal(false);
@@ -90,6 +96,7 @@ export function useAttachmentActions(
   return {
     openFile: () => fileInputRef?.click(),
     openBrowse: () => setPickerOpen(true),
+    canBrowse: browse,
     openCamera: () => setCameraOpen(true),
     addFiles,
     surfaces,

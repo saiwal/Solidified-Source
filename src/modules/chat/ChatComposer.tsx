@@ -138,6 +138,7 @@ export default function ChatComposer(props: Props) {
   const attach: AttachmentActions = {
     openFile: () => fileInput?.click(),
     openBrowse: () => setPickerOpen(true),
+    canBrowse: true,
     openCamera: () => setCameraOpen(true),
     addFiles: (files) => void uploadFiles(Array.from(files ?? [])),
     surfaces: () => null,

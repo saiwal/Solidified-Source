@@ -3,7 +3,7 @@ import { createSignal } from "solid-js";
 import { storageGet, storageSet } from "@utsukta/spa-core/lib/storage";
 import { createStreamStore } from "@/shared/stream/store/createStreamStore";
 import { fetchChannelPosts } from "./api";
-import type { ChannelParams, ChannelStreamResult } from "./api";
+import type { ChannelParams, ChannelStreamResult, WallCompose } from "./api";
 import { createActionHandlers, findNode } from "@/shared/stream/store/actions-store";
 import { apiTogglePin } from "@utsukta/spa-core/lib/item-api";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -16,6 +16,8 @@ export { nick };
 // ── can_post_wall signal ──────────────────────────────────────────────────────
 const [canPostWall, setCanPostWall] = createSignal(false);
 export { canPostWall };
+const [wallCompose, setWallCompose] = createSignal<WallCompose | null>(null);
+export { wallCompose };
 
 const [pinPending, setPinPending] = createSignal(false);
 export { pinPending };
@@ -24,6 +26,7 @@ export { pinPending };
 async function channelFetcher(params: ChannelParams): Promise<ChannelStreamResult> {
   const result = await fetchChannelPosts(nick(), params);
   setCanPostWall(result.canPostWall);
+  setWallCompose(result.wallCompose);
   return result;
 }
 

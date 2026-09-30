@@ -257,25 +257,27 @@ export default function IntegrationsSection() {
           <div class="divide-y divide-rim">
             <For each={filtered()}>
               {(row) => (
-                <div class="flex items-center gap-3 py-3">
-                  {row.icon}
+                // Grid, not flex: below sm the description drops to its own
+                // row spanning under the controls — beside ~200px of fixed
+                // controls it got ~130px at 360px. From sm up it sits under
+                // the label as before, icon and controls centred across both.
+                <div class="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 py-3">
+                  <div class="col-start-1 row-start-1 sm:row-end-3">{row.icon}</div>
 
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-txt leading-snug">
-                      {row.label}
-                      <Show when={row.frontend}>
-                        <span class="ml-2 align-middle rounded px-1.5 py-0.5 text-[10px] font-normal
-                                     uppercase tracking-wide bg-elevated text-muted">
-                          {t("settings.integ_frontend_badge")}
-                        </span>
-                      </Show>
-                    </p>
-                    <Show when={row.description}>
-                      <p class="text-xs text-muted mt-0.5 leading-relaxed">{row.description}</p>
+                  <p class="col-start-2 row-start-1 min-w-0 text-sm font-medium text-txt leading-snug">
+                    {row.label}
+                    <Show when={row.frontend}>
+                      <span class="ml-2 align-middle rounded px-1.5 py-0.5 text-[10px] font-normal
+                                   uppercase tracking-wide bg-elevated text-muted">
+                        {t("settings.integ_frontend_badge")}
+                      </span>
                     </Show>
-                  </div>
+                  </p>
+                  <Show when={row.description}>
+                    <p class="col-start-2 col-end-6 sm:col-end-3 row-start-2 min-w-0 text-xs text-muted mt-0.5 leading-relaxed">{row.description}</p>
+                  </Show>
 
-                  <div class="w-11 flex justify-center shrink-0">
+                  <div class="col-start-3 row-start-1 sm:row-end-3 w-11 flex justify-center">
                     {/* No toggle for an app the nav can never show (NSFW, Invite) */}
                     <Show when={row.app?.installed && appNavigable(row.app.url)}>
                       <input
@@ -294,7 +296,7 @@ export default function IntegrationsSection() {
                     </Show>
                   </div>
 
-                  <div class="w-11 flex justify-center shrink-0">
+                  <div class="col-start-4 row-start-1 sm:row-end-3 w-11 flex justify-center">
                     <Toggle
                       on={row.enabled}
                       disabled={!!row.app && isBusy(row.app.name)}
@@ -304,7 +306,7 @@ export default function IntegrationsSection() {
                   </div>
 
                   {/* Config lives after the toggles, not between them */}
-                  <div class="w-7 shrink-0">
+                  <div class="col-start-5 row-start-1 sm:row-end-3 w-7">
                     <Show when={row.app?.installed && CONFIGURABLE_APPS.has(row.app.name.toLowerCase())}>
                       <button
                         type="button"

@@ -899,6 +899,7 @@ export type RawDictionary = {
     saved_drafts:           string;
     save_draft:             string;
     clear_composer:         string;
+    open_full_composer:     string;
     posting:                string;
     post_btn:               string;
     post_published:         string;
@@ -1073,6 +1074,9 @@ export type RawDictionary = {
     poll_remove_answer:       string;
     poll_expires_label:       string;
     posting_to_wall:          string;
+    posting_to_forum:         string;
+    post_to_wall:             string;
+    post_to_forum:            string;
     location_toggle:          string;
     location_placeholder:     string;
     location_use_browser:     string;
@@ -1982,7 +1986,7 @@ export type RawDictionary = {
     search:             string;
     search_placeholder: string;
     compose:            string;
-    direct_messages:    string;
+    forum_posted:       string;
     group_personal:   string;
     group_beliefs:    string;
     group_interests:  string;

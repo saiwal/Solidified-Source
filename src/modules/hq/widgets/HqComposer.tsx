@@ -1,5 +1,5 @@
 import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
-import { MdOutlinePerson, MdOutlineCleaning_services } from "solid-icons/md";
+import { MdOutlinePerson, MdOutlineCleaning_services, MdOutlineOpen_in_full } from "solid-icons/md";
 import { useQuickActions, type QuickAction } from "../quick-actions";
 import { getNavIcon } from "@/shared/views/NavItem";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -242,6 +242,25 @@ function HqComposer() {
     setExpanded(false);
   }
 
+  // Hand the draft (body + audience) to the full composer. Deny entries don't
+  // carry — PostComposer has no initialDenyEntries.
+  function openFull(extra: { initialPoll?: boolean } = {}) {
+    setExpanded(false);
+    openComposer({
+      kind: "post",
+      scope: "post:new",
+      title: t("editor.new_post"),
+      props: {
+        profileUid: auth()!.uid,
+        initialBody: body(),
+        initialAclMode: aclMode(),
+        initialAllowEntries: allowKeys(),
+        onPosted: () => resetComposer(),
+        ...extra,
+      },
+    });
+  }
+
   // Same list as the quick-compose widget, plus a poll — which has no inline
   // UI here, so it hands off to the full composer with the panel already open.
   const actions = (): QuickAction[] => [
@@ -250,20 +269,7 @@ function HqComposer() {
       key: "poll",
       label: t("editor.poll_toggle"),
       icon: "poll",
-      onClick: () => {
-        setExpanded(false);
-        openComposer({
-          kind: "post",
-          scope: "post:new",
-          title: t("editor.new_post"),
-          props: {
-            profileUid: auth()!.uid,
-            initialBody: body(),
-            initialPoll: true,
-            onPosted: () => resetComposer(),
-          },
-        });
-      },
+      onClick: () => openFull({ initialPoll: true }),
     },
   ];
 
@@ -298,7 +304,9 @@ function HqComposer() {
               type="button"
               data-tour="hq.composer.placeholder"
               onClick={expandAndFocus}
-              class="flex-1 text-left bg-transparent text-base text-muted py-2
+              // Same padding and line-height as RichEditor's surface (p-3 +
+              // prose-sm's 24/14), so the placeholder doesn't jump on expand.
+              class="flex-1 text-left bg-transparent text-sm leading-[1.7142857] text-muted p-3
                      focus:outline-none truncate"
             >
               {t("editor.write_placeholder")}
@@ -325,24 +333,29 @@ function HqComposer() {
         </Show>
       </div>
 
-      {/* Action row — the quick-compose actions, always visible */}
-      <div class="flex items-center gap-2 flex-wrap">
-        <For each={actions()}>
-          {(action) => (
-            <button
-              type="button"
-              data-tour={`hq.composer.${action.key}`}
-              onClick={action.onClick}
-              title={action.label}
-              aria-label={action.label}
-              class="flex h-9 w-9 items-center justify-center rounded-full text-accent
-                     hover:bg-elevated transition-colors"
-            >
-              {getNavIcon(action.icon, 17)}
-            </button>
-          )}
-        </For>
-      </div>
+      {/* Action row — the quick-compose actions, shown only while collapsed:
+          once writing, the expand button in the submit row replaces them.
+          Scrolls rather than wraps: up to 8 icons overflow a 360px card, and
+          wrapping left one orphan icon on a second row. */}
+      <Show when={!expanded()}>
+        <div class="flex items-center gap-2 overflow-x-auto snap-x">
+          <For each={actions()}>
+            {(action) => (
+              <button
+                type="button"
+                data-tour={`hq.composer.${action.key}`}
+                onClick={action.onClick}
+                title={action.label}
+                aria-label={action.label}
+                class="flex h-9 w-9 shrink-0 snap-start items-center justify-center rounded-full text-accent
+                       hover:bg-elevated transition-colors"
+              >
+                {getNavIcon(action.icon, 17)}
+              </button>
+            )}
+          </For>
+        </div>
+      </Show>
 
       {/* ACL + submit row */}
       <Show when={expanded()}>
@@ -366,6 +379,17 @@ function HqComposer() {
                    hover:bg-elevated hover:text-red-500 transition-colors"
           >
             <MdOutlineCleaning_services class="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            title={t("editor.open_full_composer")}
+            aria-label={t("editor.open_full_composer")}
+            onClick={() => openFull()}
+            class="flex h-8 w-8 items-center justify-center rounded-full text-muted
+                   hover:bg-elevated hover:text-txt transition-colors"
+          >
+            <MdOutlineOpen_in_full class="w-4 h-4" />
           </button>
 
           <button

@@ -103,6 +103,7 @@ const AttachmentBar: Component<Props> = (props) => {
           </button>
 
           {/* Browse existing */}
+          <Show when={act().canBrowse}>
           <button
             type="button"
             title={t("editor.attach_browse_title")}
@@ -113,6 +114,7 @@ const AttachmentBar: Component<Props> = (props) => {
             <MdOutlineImage class="w-3.5 h-3.5" />
             <span class="hidden sm:inline">{t("editor.attach_browse")}</span>
           </button>
+          </Show>
 
           {/* Camera capture */}
           <button

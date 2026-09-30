@@ -25,6 +25,7 @@ export const editor = {
   saved_drafts:           "Gespeicherte Entwürfe",
   save_draft:             "Als Entwurf speichern",
   clear_composer:         "Editor leeren",
+  open_full_composer:     "Vollständigen Editor öffnen",
   posting:                "Wird veröffentlicht…",
   post_btn:               "Veröffentlichen",
   post_published:         "Beitrag veröffentlicht",
@@ -211,6 +212,9 @@ export const editor = {
   poll_remove_answer:       "Option entfernen",
   poll_expires_label:       "Läuft ab in",
   posting_to_wall:          "Wird an Pinnwand veröffentlicht",
+  posting_to_forum:         "Wird ans Forum gesendet — erscheint, sobald das Forum den Beitrag teilt",
+  post_to_wall:             "Auf die Pinnwand von {{name}} schreiben",
+  post_to_forum:            "Im Forum {{name}} posten",
 
   // Location / delayed publish / comment lock
   location_toggle:          "Standort",

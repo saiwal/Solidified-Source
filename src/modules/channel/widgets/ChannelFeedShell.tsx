@@ -12,6 +12,7 @@ import {
   posts,
   profileUid,
   canPostWall,
+  wallCompose,
   loadChannel,
   loadMore,
   flushNewPosts,
@@ -26,9 +27,10 @@ import {
   type SortOrder,
   type SortRange,
 } from "@/shared/stream/filters";
-import { MdFillSearch, MdFillClose, MdFillCreate, MdFillMail } from "solid-icons/md";
+import { MdFillSearch, MdFillClose, MdFillCreate } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { openComposer } from "@/shared/views/modal-host";
+import { toast } from "@utsukta/spa-core/store/toast";
 
 // Toolbar/search/pagination/composer chrome shared by `channel.feed` and its
 // alternate-layout widgets (newspaper/timeline/scrapbook) — only the post
@@ -61,17 +63,31 @@ export default function ChannelFeedShell(props: {
 
   // Mounted by ModalHost, not here, so it can be minimized and carried to
   // another page. Its scope doubles as the dedupe key (see openComposer).
-  const openCompose = () =>
+  // A visitor posts to the *owner's* wall, as with core's jot — per-wall
+  // scope so that draft never leaks into the viewer's own composer.
+  const openCompose = () => {
+    const wall = isVisitor() ? wallCompose() : null;
+    const title = wall
+      ? t(wall.isGroup ? "editor.post_to_forum" : "editor.post_to_wall", { name: wall.name })
+      : t("editor.new_post");
     openComposer({
       kind: "post",
-      scope: "post:new",
-      title: t("editor.new_post"),
+      scope: wall ? `post:wall:${nick()}` : "post:new",
+      title,
       props: {
         profileUid: profileUid(),
         hideAcl: isVisitor(),
-        onPosted: () => loadChannel(nick()),
+        scopeKey: wall ? `post:wall:${nick()}` : undefined,
+        wallOwner: wall ? { ...wall, nick: nick() } : undefined,
+        onPosted: () => {
+          // A wall-to-wall post to a forum is stored as a DM to the group, so
+          // it only reaches the wall once the forum reshares it.
+          if (wall?.isGroup) toast.success(t("channel.forum_posted"));
+          loadChannel(nick());
+        },
       },
     });
+  };
 
   const submitSearch = (e?: Event) => {
     e?.preventDefault();
@@ -90,9 +106,6 @@ export default function ChannelFeedShell(props: {
     const v = searchParams.mid;
     return v ? (Array.isArray(v) ? v[0] : v) : null;
   };
-
-  const dmActive = () => searchParams.dm === "1";
-  const toggleDm = () => setSearchParams({ dm: dmActive() ? undefined : "1" });
 
   // A wall is one person's posts, so the network's discovery-oriented orders
   // don't all carry over: `hot` degenerates to `created` without a firehose to
@@ -127,7 +140,6 @@ export default function ChannelFeedShell(props: {
       ...(str("mid") && { mid: str("mid") }),
       ...(str("dend") && { dend: str("dend") }),
       ...(dbegin && { dbegin }),
-      ...(dmActive() && { dm: 1 as const }),
     };
     loadChannel(nick(), p);
   });
@@ -163,7 +175,7 @@ export default function ChannelFeedShell(props: {
 
         <div class="flex items-center justify-end gap-1.5 shrink-0">
           {props.viewSwitcher}
-          <Show when={canPostWall()}>
+          <Show when={canPostWall() && auth()?.isLocal}>
             <button
               title={t("channel.compose")}
               onClick={openCompose}
@@ -172,16 +184,6 @@ export default function ChannelFeedShell(props: {
               <MdFillCreate size={15} />
             </button>
           </Show>
-          <button
-            title={t("channel.direct_messages")}
-            onClick={toggleDm}
-            class={`p-1.5 rounded-lg border transition-colors
-              ${dmActive()
-                ? "bg-accent text-accent-fg border-accent"
-                : "border-rim bg-surface text-muted hover:bg-elevated hover:text-txt"}`}
-          >
-            <MdFillMail size={15} />
-          </button>
           <Show
             when={searchOpen()}
             fallback={
@@ -225,7 +227,7 @@ export default function ChannelFeedShell(props: {
         </div>
       </div>
 
-      <Show when={searchParams.cat || searchParams.tag || searchParams.dbegin || searchParams.search || dmActive()}>
+      <Show when={searchParams.cat || searchParams.tag || searchParams.dbegin || searchParams.search}>
         <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 border border-accent/25 text-sm mb-3">
           <span class="text-muted">{t("channel.filtered_by")}</span>
           <Show when={searchParams.search}>
@@ -242,12 +244,9 @@ export default function ChannelFeedShell(props: {
               {new Date(String(searchParams.dbegin) + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" })}
             </span>
           </Show>
-          <Show when={dmActive()}>
-            <span class="font-medium text-accent">{t("channel.direct_messages")}</span>
-          </Show>
           <button
             type="button"
-            onClick={() => setSearchParams({ cat: undefined, tag: undefined, dbegin: undefined, dend: undefined, search: undefined, dm: undefined })}
+            onClick={() => setSearchParams({ cat: undefined, tag: undefined, dbegin: undefined, dend: undefined, search: undefined })}
             class="ml-auto text-xs text-muted hover:text-txt transition-colors"
           >
             {t("channel.clear")}

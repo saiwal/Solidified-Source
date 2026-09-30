@@ -25,13 +25,20 @@ export function ChannelFeedBody(props: { mode: ViewMode }) {
   const [searchParams] = useSearchParams();
 
   const hasFilters = () =>
-    !!(searchParams.search || searchParams.tag || searchParams.cat || searchParams.mid || searchParams.dm === "1");
+    !!(searchParams.search || searchParams.tag || searchParams.cat || searchParams.mid);
   // Pinned posts render in their own section above the stream, and are
   // filtered out of the main list to avoid showing twice — but only when no
   // filter is active, so a pinned post that matches a search still shows up
   // in the results like any other post.
-  const mainPosts = () => (hasFilters() ? posts() : posts().filter((p) => !p.pinned));
-  const showPinnedSection = () => !hasFilters() && pinnedPosts().length > 0;
+  // Masonry folds pinned posts into the head of the main grid instead — a
+  // separate grid of one pinned card would leave the rest of its row empty.
+  const mergePinned = () => !hasFilters() && props.mode === "masonry";
+  const mainPosts = () => {
+    if (hasFilters()) return posts();
+    const rest = posts().filter((p) => !p.pinned);
+    return mergePinned() ? [...pinnedPosts(), ...rest] : rest;
+  };
+  const showPinnedSection = () => !hasFilters() && !mergePinned() && pinnedPosts().length > 0;
 
   return (
     <Show
