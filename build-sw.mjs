@@ -80,6 +80,12 @@ const { count, size } = await generateSW({
 
   navigateFallback: null,
 
+  // sw.js is served from /spa/sw (Handlers/Sw.php), so the default
+  // `define(["./workbox-<hash>"])` resolved to /spa/workbox-<hash>.js — a 404.
+  // importScripts threw, registration failed, and there was no service worker
+  // at all: an offline PWA launch got the browser's "address not found".
+  inlineWorkboxRuntime: true,
+
   skipWaiting: true,
   clientsClaim: true,
 
@@ -266,6 +272,22 @@ self.addEventListener('install', function (event) {
       // A failed warm must never fail the install — no SW at all is far worse
       // than a cold cache.
     })).catch(function () {})
+  );
+});
+
+// Navigation entries name the content-hashed chunks of the build that served
+// them; once this SW's precache replaces those chunks, an old entry boots
+// nothing offline. Keep only the /hq shell warmed above — the navigation
+// route's handlerDidError serves it for every other URL.
+self.addEventListener('activate', function (event) {
+  event.waitUntil(
+    caches.open('app-shell').then(function (cache) {
+      return cache.keys().then(function (reqs) {
+        return Promise.all(reqs.map(function (req) {
+          return new URL(req.url).pathname === '/hq' ? null : cache.delete(req);
+        }));
+      });
+    })
   );
 });
 
