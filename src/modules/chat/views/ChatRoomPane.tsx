@@ -23,7 +23,7 @@ import {
 	removeChatBookmark,
 } from "../bookmarks";
 import { currentNick, isLocalUser } from "@utsukta/spa-core/store/auth-store";
-import { MdFillChat, MdFillLock, MdFillLock_open, MdFillPeople, MdOutlineBookmark_border, MdOutlineLogout, MdOutlineNotifications_active, MdOutlineNotifications_off, MdOutlineTimer, MdOutlineVolume_up } from "solid-icons/md";
+import { MdFillBookmark, MdFillChat, MdFillLock, MdFillLock_open, MdFillPeople, MdOutlineBookmark_border, MdOutlineLogout, MdOutlineNotifications_active, MdOutlineNotifications_off, MdOutlineTimer, MdOutlineVolume_up } from "solid-icons/md";
 import ChatComposer from "../ChatComposer";
 import { uploadChatMedia } from "../chatAttach";
 import DOMPurify from "dompurify";
@@ -376,7 +376,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 							"text-muted hover:text-txt": !isBookmarked(),
 						}}
 					>
-						<MdOutlineBookmark_border class="w-4 h-4" />
+						<Show when={isBookmarked()} fallback={<MdOutlineBookmark_border class="w-4 h-4" />}><MdFillBookmark class="w-4 h-4" /></Show>
 					</button>
 				</Show>
 				{/* A visitor from another hub saves the bookmark on their own hub. */}
