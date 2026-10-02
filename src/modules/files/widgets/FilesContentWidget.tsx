@@ -2,32 +2,45 @@ import {
   createSignal,
   createMemo,
   createEffect,
+  untrack,
+  on,
   For,
   Show,
   type Component,
+  type JSX,
 } from "solid-js";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { useQueryClient } from "@tanstack/solid-query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import {
-  MdFillFolder,
   MdFillAdd,
   MdFillLock,
   MdFillLock_open,
-  MdOutlineImage,
-  MdOutlineMovie,
-  MdOutlineMusic_note,
-  MdOutlineDescription,
-  MdOutlineArchive,
-  MdOutlineEdit_note,
-  MdOutlineAttach_file,
+  MdOutlineArrow_back,
+  MdOutlineArrow_forward,
+  MdOutlineRefresh,
+  MdOutlineFilter_list,
+  MdOutlineClose,
+  MdOutlineCreate_new_folder,
+  MdOutlineUpload_file,
+  MdOutlineSort_by_alpha,
+  MdOutlineStorage,
+  MdOutlineSchedule,
+  MdOutlineGrid_view,
+  MdOutlineView_list,
+  MdOutlineCheck_box,
+  MdOutlineIndeterminate_check_box,
 } from "solid-icons/md";
 import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclIsRestricted, fetchAclNames, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import {
   listFolderMeta,
+  fetchFileMeta,
+  downloadItems,
+  parentPath,
   updatePermissions,
   aclFromPickerKeys,
   uploadFile,
@@ -38,10 +51,14 @@ import {
   cloudPath,
   cloudPathSegments,
   resolveFolderPath,
-  downloadUrl,
 } from "../api";
-import type { FileMeta, FileAcl, WopiConfig, FolderFrame } from "../api";
-import FileActionsMenu, { type FileAction } from "../views/FileActionsMenu";
+import type { FileMeta, FileAcl, FolderFrame } from "../api";
+import { ACTION_UI, BOOKMARKED_UI } from "../views/actionIcons";
+import { FILE_ACTIONS, actionShown, actionEnabled, type FileAction } from "../fileActions";
+import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
+import FileIcon from "../views/FileIcon";
+import FolderTree from "../views/FolderTree";
+import { useCloudBookmarks } from "../bookmarks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForFile } from "@/shared/lib/shareLinks";
 import RenameModal from "../views/RenameModal";
@@ -76,19 +93,6 @@ function formatDate(s: string): string {
       year: "numeric", month: "short", day: "numeric",
     });
   } catch { return s; }
-}
-
-function FileIcon(props: { item: FileMeta; class?: string }) {
-  const cls = () => props.class ?? "w-5 h-5";
-  if (props.item.is_dir) return <MdFillFolder class={cls()} />;
-  const ct = props.item.filetype;
-  if (ct.startsWith("image/")) return <MdOutlineImage class={cls()} />;
-  if (ct.startsWith("video/")) return <MdOutlineMovie class={cls()} />;
-  if (ct.startsWith("audio/")) return <MdOutlineMusic_note class={cls()} />;
-  if (ct === "application/pdf") return <MdOutlineDescription class={cls()} />;
-  if (ct.includes("zip") || ct.includes("tar")) return <MdOutlineArchive class={cls()} />;
-  if (ct.startsWith("text/")) return <MdOutlineEdit_note class={cls()} />;
-  return <MdOutlineAttach_file class={cls()} />;
 }
 
 // The i18n key naming what an ACL actually grants, rather than a flat
@@ -132,19 +136,31 @@ const AclBadge: Component<{
 // ── Permissions panel ─────────────────────────────────────────────────────────
 
 const PermissionsPanel: Component<{
-  item: FileMeta;
+  /** One item, or a selection — saved item by item. */
+  items: FileMeta[];
   nick: string;
   defaultAcl: FileAcl;
-  onSaved: (updated: FileMeta) => void;
+  /** Called once anything saved; `failed` are the items the server refused. */
+  onSaved: (updated: FileMeta[], failed: FileMeta[]) => void;
   onClose: () => void;
 }> = (props) => {
   const { t } = useI18n();
 
+  // A selection whose ACLs differ starts from "Only me", not from whichever
+  // item happens to be first — saving by accident then narrows, never widens.
+  const sameAcl = (a: FileAcl, b: FileAcl) =>
+    (["allow_cid", "allow_gid", "deny_cid", "deny_gid"] as const)
+      .every((k) => [...a[k]].sort().join() === [...b[k]].sort().join());
+  const mixed = props.items.some((f) => !sameAcl(f.acl, props.items[0].acl));
+  const first = props.items[0];
+
   // "Only me" is stored as allow_cid = [the owner's own hash], so the viewer's
   // hash is what separates it from a one-contact custom ACL.
   const selfHash = useNavViewer();
-  const initialMode = aclModeFrom(props.item.acl, selfHash()?.hash, props.defaultAcl);
-  const initialKeys = aclEntryKeys(props.item.acl, initialMode);
+  const initialMode: AclMode = mixed ? "me" : aclModeFrom(first.acl, selfHash()?.hash, props.defaultAcl);
+  const initialKeys = mixed
+    ? { allow: new Set<string>(), deny: new Set<string>() }
+    : aclEntryKeys(first.acl, initialMode);
   const [mode, setMode] = createSignal<AclMode>(initialMode);
   const [allowKeys, setAllowKeys] = createSignal<Set<string>>(initialKeys.allow);
   const [denyKeys, setDenyKeys] = createSignal<Set<string>>(initialKeys.deny);
@@ -154,7 +170,7 @@ const PermissionsPanel: Component<{
   // like the same entry twice.
   const [seed] = createQueryResource(
     "acl-names",
-    () => [...props.item.acl.allow_cid, ...props.item.acl.deny_cid].join(",") || null,
+    () => (mixed ? "" : [...first.acl.allow_cid, ...first.acl.deny_cid].join(",")) || null,
     (csv: string) => fetchAclNames(csv.split(",")),
   );
   const [recurse, setRecurse] = createSignal(false);
@@ -176,31 +192,43 @@ const PermissionsPanel: Component<{
     e.preventDefault();
     setBusy(true);
     setErr("");
-    try {
-      const updated = await updatePermissions(
-        props.nick,
-        props.item.hash,
-        aclFromPickerKeys(mode(), allowKeys(), denyKeys()),
-        recurse()
-      );
-      props.onSaved(updated);
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
+    const acl = aclFromPickerKeys(mode(), allowKeys(), denyKeys());
+    const updated: FileMeta[] = [];
+    const failed: FileMeta[] = [];
+    let lastErr = "";
+    for (const item of props.items) {
+      try {
+        // Recursion only means something on a folder.
+        updated.push(await updatePermissions(props.nick, item.hash, acl, recurse() && item.is_dir));
+      } catch (e) {
+        failed.push(item);
+        lastErr = (e as Error).message;
+      }
     }
+    setBusy(false);
+    // Nothing saved: stay open with the error, as a single item always did.
+    if (!updated.length) { setErr(lastErr); return; }
+    props.onSaved(updated, failed);
   }
 
   return (
     <div class="mt-1 mb-2 mx-1 rounded-xl border border-rim bg-elevated px-4 py-4 space-y-4">
       <div class="flex items-center justify-between">
         <p class="text-sm font-semibold text-txt">
-          {t("files_mod.permissions")} — <span class="font-normal text-muted">{props.item.filename}</span>
+          {t("files_mod.permissions")} — <span class="font-normal text-muted">{
+            props.items.length > 1
+              ? t("files_mod.selected_count", { count: props.items.length })
+              : first.filename
+          }</span>
         </p>
         <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none" aria-label={t("layout.close")}>
           ×
         </button>
       </div>
+
+      <Show when={mixed}>
+        <p class="text-xs text-muted">{t("files_mod.perm_mixed")}</p>
+      </Show>
 
       <AclPicker
         mode={mode()}
@@ -212,7 +240,7 @@ const PermissionsPanel: Component<{
         onClear={() => { setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>()); }}
       />
 
-      <Show when={props.item.is_dir}>
+      <Show when={props.items.some((f) => f.is_dir)}>
         <label class="flex items-center gap-2 text-sm text-muted cursor-pointer select-none">
           <input
             type="checkbox"
@@ -280,13 +308,7 @@ const FileRow: Component<{
   nick: string;
   defaultAcl: FileAcl;
   selfHash: string | undefined;
-  canWrite: boolean;
-  isOwner: boolean;
-  wopi: WopiConfig | null;
   onOpen: (item: FileMeta) => void;
-  onAction: (action: FileAction, item: FileMeta) => void;
-  deleting: boolean;
-  permOpen: boolean;
   selectable: boolean;
   selected: boolean;
   onSelect: () => void;
@@ -294,7 +316,7 @@ const FileRow: Component<{
   const { t } = useI18n();
   return (
   <div class={`flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors ${
-    props.selected ? "bg-accent/10" : props.permOpen ? "bg-elevated" : "hover:bg-elevated"
+    props.selected ? "bg-accent/10" : "hover:bg-elevated"
   }`}>
     <Show when={props.selectable} fallback={<span class="w-4 shrink-0" />}>
       <SelectBox
@@ -328,17 +350,6 @@ const FileRow: Component<{
       {formatDate(props.item.created)}
     </span>
 
-    <div class="flex items-center gap-1 shrink-0">
-      <FileActionsMenu
-        item={props.item}
-        nick={props.nick}
-        canWrite={props.canWrite}
-        isOwner={props.isOwner}
-        wopi={props.wopi}
-        onAction={props.onAction}
-        deleting={props.deleting}
-      />
-    </div>
   </div>
   );
 };
@@ -400,13 +411,7 @@ const ThumbnailGrid: Component<{
   nick: string;
   defaultAcl: FileAcl;
   selfHash: string | undefined;
-  canWrite: boolean;
-  isOwner: boolean;
-  wopi: WopiConfig | null;
-  deleting: string | null;
-  permItem: FileMeta | null;
   onOpen: (item: FileMeta) => void;
-  onAction: (action: FileAction, item: FileMeta) => void;
   selectable: boolean;
   selected: Set<string>;
   onSelect: (hash: string) => void;
@@ -417,7 +422,6 @@ const ThumbnailGrid: Component<{
     <For each={props.files}>
       {(item) => {
         const isImage = () => item.filetype.startsWith("image/");
-        const isActive = () => props.permItem?.hash === item.hash;
         const isSelected = () => props.selected.has(item.hash);
         return (
           <div
@@ -425,7 +429,7 @@ const ThumbnailGrid: Component<{
                     transition-colors bg-elevated ${
               isSelected()
                 ? "border-accent ring-2 ring-accent/40"
-                : isActive() ? "border-accent" : "border-rim hover:border-accent/50"
+                : "border-rim hover:border-accent/50"
             }`}
             onClick={() => props.onOpen(item)}
           >
@@ -476,26 +480,6 @@ const ThumbnailGrid: Component<{
               </Show>
             </div>
 
-            {/* Hover action overlay — pointer-events-none so clicks pass through to card */}
-            <div
-              class="absolute inset-0 flex items-start justify-end p-1.5 gap-1
-                     opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <FileActionsMenu
-                item={item}
-                nick={props.nick}
-                canWrite={props.canWrite}
-                isOwner={props.isOwner}
-                wopi={props.wopi}
-                onAction={props.onAction}
-                deleting={props.deleting === item.hash}
-                triggerClass={`p-1 rounded-md backdrop-blur-sm text-xs transition-colors pointer-events-auto ${
-                  isActive() ? "bg-accent text-accent-fg" : "bg-surface/80 text-muted hover:text-txt"
-                }`}
-              />
-            </div>
-
             {/* Private badge — only for restricted files; public needs no mark */}
             <Show when={aclIsRestricted(item.acl)}>
               <div class="absolute bottom-8 left-1.5 flex items-center gap-0.5
@@ -513,23 +497,29 @@ const ThumbnailGrid: Component<{
   );
 };
 
-// ── View mode icons ───────────────────────────────────────────────────────────
+// ── Toolbar ───────────────────────────────────────────────────────────────────
 
-function ListIcon() {
-  return (
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-    </svg>
-  );
-}
+// Buttons are never boxed in groups: a group can't wrap, so on a narrow
+// screen it clipped its own buttons. Each one stands alone and the row wraps.
+const GROUP = "contents";
 
-function GridIcon() {
+/** Every toolbar control: icon only, label as tooltip + accessible name. */
+function ToolButton(props: { label: string; active?: boolean; danger?: boolean; disabled?: boolean; onClick: () => void; children: JSX.Element }) {
   return (
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-    </svg>
+    <button
+      type="button"
+      title={props.label}
+      aria-label={props.label}
+      aria-pressed={props.active}
+      disabled={props.disabled}
+      onClick={props.onClick}
+      class={`p-1.5 rounded-lg transition-colors disabled:opacity-40
+              ${props.active ? "bg-accent text-accent-fg"
+                : props.danger ? "bg-elevated text-muted hover:bg-red-500/15 hover:text-red-500"
+                : "bg-elevated text-muted hover:bg-accent/15 hover:text-txt"}`}
+    >
+      {props.children}
+    </button>
   );
 }
 
@@ -554,21 +544,44 @@ export default function FilesContentWidget() {
 
   const current = createMemo(() => navStack()[navStack().length - 1]);
 
+  // Tracks the URL only: if it also tracked current(), an in-app stack change
+  // would re-run this against the not-yet-updated URL and resolve the *old*
+  // folder back in. `resolveSeq` drops resolves overtaken by a newer URL.
+  let resolveSeq = 0;
   createEffect(() => {
     const segs = cloudPathSegments(location.pathname, nick());
-    if (segs.join("/") === current().displayPath) return; // our own navigate()
+    const seq = ++resolveSeq;
+    if (segs.join("/") === untrack(current).displayPath) return; // our own navigate()
     if (!segs.length) { setNavStack([rootFrame()]); return; }
-    resolveFolderPath(nick(), segs).then((frames) =>
-      setNavStack([rootFrame(), ...frames])
-    );
+    resolveFolderPath(nick(), segs).then(({ frames, file }) => {
+      if (seq !== resolveSeq) return;
+      setNavStack([rootFrame(), ...frames]);
+      // A file URL (e.g. a bookmark) previews it. Never window.open() here —
+      // outside a click it is popup-blocked, so other files just show in place.
+      if (file && classifyPreview(file.filetype, file.filename) !== "none") setPreviewItem(file);
+    });
   });
 
   // File listing — refetches whenever current folder hash changes
-  const [files, { refetch }] = createQueryResource(
+  const [files] = createQueryResource(
     "files-folder",
     () => ({ nick: nick(), hash: current().hash }),
     ({ nick: n, hash }) => listFolderMeta(n, hash)
   );
+
+  // View filter: narrows the open folder by name. Cleared on folder change.
+  const [query, setQuery] = createSignal("");
+  const [filterOpen, setFilterOpen] = createSignal(false);
+  createEffect(on(() => current().hash, () => setQuery(""), { defer: true }));
+
+  // Mutations call this. Every cached listing, not just this folder's: the
+  // tree shows other folders (a rename/move changes the parent's listing),
+  // and the open folder's own row and the tree search go stale the same way.
+  const queryClient = useQueryClient();
+  const refetch = () => {
+    for (const key of ["files-folder", "files-meta", "files-search"])
+      queryClient.invalidateQueries({ queryKey: [key] });
+  };
 
   // write_storage on the channel being viewed — any observer (local or
   // remote) with the ACL grant, not just the owner.
@@ -604,7 +617,10 @@ export default function FilesContentWidget() {
   const sortedFiles = createMemo(() => {
     const field = sortField();
     const dir   = sortDir();
-    return displayFiles().slice().sort((a, b) => {
+    const q = query().trim().toLocaleLowerCase();
+    return displayFiles()
+      .filter((f) => !q || f.filename.toLocaleLowerCase().includes(q))
+      .sort((a, b) => {
       if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
       let cmp = 0;
       if (field === "name") cmp = a.filename.localeCompare(b.filename);
@@ -615,20 +631,96 @@ export default function FilesContentWidget() {
   });
 
   function navigateInto(item: FileMeta) {
+    if (item.folder !== current().hash) {
+      navigate(cloudPath(nick(), item.display_path));
+      return;
+    }
     setNavStack((prev) => [
       ...prev,
       { hash: item.hash, displayPath: item.display_path, label: item.filename },
     ]);
     navigate(cloudPath(nick(), item.display_path));
-    setPermItem(null);
+    setPermItems(null);
     clearSelection();
   }
 
   function navigateTo(idx: number) {
     setNavStack((prev) => prev.slice(0, idx + 1));
     navigate(cloudPath(nick(), current().displayPath));
-    setPermItem(null);
+    setPermItems(null);
     clearSelection();
+  }
+
+  // Folder tree: jump straight to any folder (frames come pre-resolved).
+  function selectFrames(frames: FolderFrame[]) {
+    setNavStack([rootFrame(), ...frames]);
+    navigate(cloudPath(nick(), current().displayPath));
+    setPermItems(null);
+    clearSelection();
+  }
+
+  let uploadInput!: HTMLInputElement;
+
+  const bookmarks = useCloudBookmarks();
+
+  // ── Toolbar actions: the selection, or the open folder when none ──────────
+  // The open folder isn't in any listing, so its row is fetched on its own.
+  // Matched against current() so a still-loading fetch can't stand in for the
+  // previous folder; the root has no row and gets a stand-in (bookmark only).
+  const [folderMetaRes] = createQueryResource(
+    "files-meta",
+    () => (current().hash ? { nick: nick(), hash: current().hash } : null),
+    ({ nick: n, hash }) => fetchFileMeta(n, hash)
+  );
+  const folderTarget = (): FileMeta | null => {
+    if (!current().hash) return { hash: "", display_path: "", filename: nick(), is_dir: true } as FileMeta;
+    const m = folderMetaRes();
+    return m?.hash === current().hash ? m : null;
+  };
+  const actingOnFolder = () => selectedItems().length === 0;
+  const targets = (): FileMeta[] =>
+    actingOnFolder() ? (folderTarget() ? [folderTarget()!] : []) : selectedItems();
+  const viewer = () => ({ canWrite: canWrite(), isOwner: isOwner(), isLocal: isLocalUser() });
+  // Only what can act on the current target — the row reshapes as the
+  // selection changes, which on a phone beats a strip of greyed-out icons.
+  const toolbarActions = () => FILE_ACTIONS.filter((a) =>
+    actionShown(a, viewer()) && actionEnabled(a, targets(), actingOnFolder(), wopi()));
+
+  function actionUi(id: FileAction) {
+    const items = targets();
+    return id === "bookmark" && items.length === 1 && bookmarks.find(nick(), items[0].display_path)
+      ? BOOKMARKED_UI : ACTION_UI[id];
+  }
+  function actionLabel(id: FileAction): string {
+    const items = targets();
+    const label = t(actionUi(id).label as "files_mod.delete") as string;
+    if (!items.length) return label;
+    return `${label}: ${items.length > 1
+      ? t("files_mod.selected_count", { count: items.length })
+      : items[0].filename}`;
+  }
+
+  function runToolbarAction(id: FileAction) {
+    const items = targets();
+    if (id === "permissions") { setPermItems(items); return; }
+    if (items.length > 1) {
+      if (id === "download") downloadItems(nick(), items);
+      else if (id === "moveCopy") setActiveModal({ kind: "moveCopy", item: items[0], items });
+      else if (id === "delete") void handleBulkDelete();
+      return;
+    }
+    if (!items.length) return;
+
+    handleMenuAction(id, items[0]);
+  }
+
+  // Renaming or moving the open folder changes its URL — follow it there.
+  async function followOpenFolder(hash: string) {
+    if (!hash || hash !== current().hash) return;
+    try {
+      const m = await fetchFileMeta(nick(), hash);
+      if (m.display_path !== current().displayPath) navigate(cloudPath(nick(), m.display_path));
+    } catch { /* moved out of view — stay put */ }
   }
 
   // DAV base path for the current folder (upload / mkdir)
@@ -644,7 +736,6 @@ export default function FilesContentWidget() {
   const [uploadErr, setUploadErr] = createSignal("");
 
   // Delete
-  const [deleting, setDeleting] = createSignal<string | null>(null);
 
   // ── Bulk selection ──────────────────────────────────────────────────────────
   // Keyed by hash, not index: sorting and refetches reorder the list freely.
@@ -679,38 +770,21 @@ export default function FilesContentWidget() {
   }
 
   // Permissions
-  const [permItem, setPermItem] = createSignal<FileMeta | null>(null);
+  // One item or a whole selection.
+  const [permItems, setPermItems] = createSignal<FileMeta[] | null>(null);
 
   async function handleDelete(item: FileMeta) {
     const label = item.is_dir ? `folder "${item.filename}"` : `"${item.filename}"`;
     if (!confirm(`Delete ${label}?`)) return;
-    setDeleting(item.hash);
+    setBulkBusy(true);
     try {
       await deleteItem(nick(), item.display_path);
       refetch();
     } catch (e) {
       toast.error(`Delete failed: ${(e as Error).message}`);
     } finally {
-      setDeleting(null);
+      setBulkBusy(false);
     }
-  }
-
-  // Bulk download. One request per item rather than a server-side archive of
-  // the whole selection: the zip route buffers the entire archive to disk
-  // before streaming, so a big selection burns disk and can hit the PHP
-  // timeout. A selected folder still arrives as its own zip, tree intact.
-  // Staggered because browsers drop programmatic downloads fired in one tick.
-  function handleBulkDownload() {
-    selectedItems().forEach((item, i) => {
-      setTimeout(() => {
-        const a = document.createElement("a");
-        a.href = downloadUrl(nick(), item.hash);
-        a.download = item.is_dir ? `${item.filename}.zip` : item.filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }, i * 300);
-    });
   }
 
   // Bulk delete. Sequential for the same reason as move/copy: no batch
@@ -788,13 +862,26 @@ export default function FilesContentWidget() {
     (e.currentTarget as HTMLInputElement).value = "";
   }
 
-  function handlePermSaved(updated: FileMeta) {
-    setOverrides((prev) => new Map(prev).set(updated.hash, updated));
-    setPermItem(null);
+  function handlePermSaved(updated: FileMeta[], failed: FileMeta[]) {
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      for (const f of updated) next.set(f.hash, f);
+      return next;
+    });
+    setPermItems(null);
+    // As bulk move/delete: only the failures stay selected, ready to retry.
+    if (failed.length) {
+      setSelected(new Set(failed.map((f) => f.hash)));
+      toast.error(t("files_mod.bulk_partial_fail", {
+        count: failed.length,
+        names: failed.map((f) => f.filename).join(", "),
+      }) as string);
+    }
+    queryClient.invalidateQueries({ queryKey: ["files-meta"] });
   }
 
-  // Kebab menu actions
-  // `items` is only set by the bulk bar; the kebab menu opens a modal for the
+  // Single-item actions (the toolbar's runToolbarAction routes here)
+  // `items` is only set for a multi-selection; otherwise the modal is for the
   // one row it belongs to. Rename/categories are single-item by nature.
   const [activeModal, setActiveModal] =
     createSignal<{ kind: ModalKind; item: FileMeta; items?: FileMeta[] } | null>(null);
@@ -809,7 +896,7 @@ export default function FilesContentWidget() {
 
   function handleMenuAction(action: FileAction, item: FileMeta) {
     if (action === "permissions") {
-      setPermItem((prev) => (prev?.hash === item.hash ? null : item));
+      setPermItems([item]);
       return;
     }
     if (action === "delete") {
@@ -824,17 +911,29 @@ export default function FilesContentWidget() {
       setWopiItem(item);
       return;
     }
+    if (action === "download") {
+      downloadItems(nick(), [item]);
+      return;
+    }
+    if (action === "bookmark") {
+      void bookmarks.toggle(nick(), item.display_path, item.filename);
+      return;
+    }
     setActiveModal({ kind: action, item });
   }
 
   function handleRenamed() {
+    const hash = activeModal()?.item.hash ?? "";
     setActiveModal(null);
     refetch();
+    void followOpenFolder(hash);
   }
 
   function handleMoved(_failed: FileMeta[]) {
+    const hash = activeModal()?.item.hash ?? "";
     setActiveModal(null);
     refetch();
+    void followOpenFolder(hash);
   }
 
   function handleCategoriesSaved() {
@@ -842,79 +941,158 @@ export default function FilesContentWidget() {
   }
 
   return (
-    <div class="max-w-3xl mx-auto px-4 md:px-6 pb-6 space-y-4">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 pb-6 flex gap-6">
 
-      {/* ── Header ── */}
-      <div class="flex items-center justify-between gap-4 flex-wrap">
-        <Breadcrumb stack={navStack()} onNavigate={navigateTo} />
+      {/* ── Folder tree (desktop only) ── */}
+      <aside class="hidden md:block w-56 lg:w-64 shrink-0 self-start sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <FolderTree
+          nick={nick()}
+          stack={navStack()}
+          onSelect={selectFrames}
+          onOpenPath={(path) => navigate(cloudPath(nick(), path))}
+          onOpenFile={(f) => { navigate(cloudPath(nick(), parentPath(f.display_path))); openItem(f); }}
+        />
+      </aside>
 
-        <div class="flex items-center gap-2 shrink-0">
-          {/* View mode toggle */}
-          <button
-            onClick={toggleViewMode}
-            class="p-1.5 rounded-lg border border-rim text-muted hover:bg-elevated
-                   transition-colors"
-            title={viewMode() === "list" ? t("files_mod.switch_grid") as string : t("files_mod.switch_list") as string}
-          >
-            <Show when={viewMode() === "list"} fallback={<ListIcon />}>
-              <GridIcon />
-            </Show>
-          </button>
+    <div class="flex-1 min-w-0 space-y-4">
 
-          {/* Sort control — grid/thumbnail mode */}
-          <Show when={viewMode() === "grid"}>
-            <div class="flex items-center border border-rim rounded-lg overflow-hidden text-xs">
-              {(["name", "size", "date"] as SortField[]).map((field, i) => {
-                const label = field === "name"
-                  ? t("files_mod.name_col") as string
-                  : field === "size"
-                    ? t("files_mod.size_col") as string
-                    : t("files_mod.created_col") as string;
-                return (
-                  <button
-                    onClick={() => toggleSort(field)}
-                    class={`px-2.5 py-1.5 flex items-center gap-0.5 transition-colors ${
-                      i > 0 ? "border-l border-rim" : ""
-                    } ${
-                      sortField() === field
-                        ? "bg-accent text-accent-fg"
-                        : "text-muted hover:bg-elevated hover:text-txt"
-                    }`}
-                  >
-                    {label}
-                    <Show when={sortField() === field}>
-                      <span class="text-[0.625rem] leading-none">
-                        {sortDir() === "asc" ? "↑" : "↓"}
-                      </span>
-                    </Show>
-                  </button>
-                );
-              })}
-            </div>
-          </Show>
-
-          <Show when={canWrite()}>
-            <button
-              onClick={() => setShowNewFolder((v) => !v)}
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rim
-                     text-sm text-muted hover:bg-elevated transition-colors"
-            >
-              <MdFillFolder size={14} />
-              {t("files_mod.new_folder")}
-            </button>
-
-            <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent
-                          text-accent-fg text-sm cursor-pointer hover:opacity-90 transition-opacity">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              {t("files_mod.upload")}
-              <input type="file" multiple class="sr-only" onChange={handleUpload} />
-            </label>
-          </Show>
+      {/* ── Header: where you are, then history + refresh ── */}
+      <div class="flex items-center gap-1.5 min-w-0">
+        <div class="min-w-0 flex-1">
+          <Breadcrumb stack={navStack()} onNavigate={navigateTo} />
+        </div>
+        <div class={GROUP}>
+          <ToolButton label={t("files_mod.nav_back") as string} onClick={() => history.back()}>
+            <MdOutlineArrow_back size={16} />
+          </ToolButton>
+          <ToolButton label={t("files_mod.nav_forward") as string} onClick={() => history.forward()}>
+            <MdOutlineArrow_forward size={16} />
+          </ToolButton>
+          <ToolButton label={t("files_mod.refresh") as string} onClick={() => refetch()}>
+            <MdOutlineRefresh size={16} />
+          </ToolButton>
         </div>
       </div>
+
+      {/* ── Toolbar (sticky): selection + what acts on it + view + create ──
+          Sticky so a selection deep in a long folder stays actionable. */}
+      <div class="sticky top-0 z-20 -mx-1 px-1 py-1.5 bg-base flex items-center gap-1.5 flex-wrap">
+        <div class={GROUP}>
+          <Show when={sortedFiles().length}>
+            <ToolButton
+              label={(allSelected() ? t("files_mod.unselect_all") : t("files_mod.select_all")) as string}
+              onClick={toggleSelectAll}
+            >
+              <Show when={allSelected()} fallback={<MdOutlineCheck_box size={16} />}>
+                <MdOutlineIndeterminate_check_box size={16} />
+              </Show>
+            </ToolButton>
+          </Show>
+        </div>
+
+        {/* Selection chip — while it shows, the actions act on the selection */}
+        <Show when={selectedItems().length > 0}>
+          <div class="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-lg border border-accent/40 bg-accent/10 text-xs text-txt">
+            <span class="font-medium tabular-nums">{t("files_mod.selected_count", { count: selectedItems().length })}</span>
+            <button
+              type="button"
+              onClick={clearSelection}
+              title={t("files_mod.clear_selection") as string}
+              aria-label={t("files_mod.clear_selection") as string}
+              class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
+            >
+              <MdOutlineClose size={14} />
+            </button>
+          </div>
+        </Show>
+
+        {/* Actions — on the selection, else on the open folder */}
+        <div class={GROUP}>
+          <For each={toolbarActions()}>
+            {(a) => (
+              <ToolButton
+                label={actionLabel(a.id)}
+                disabled={a.id === "delete" && bulkBusy()}
+                active={a.id === "bookmark" && actionUi(a.id) === BOOKMARKED_UI}
+                danger={a.danger}
+                onClick={() => runToolbarAction(a.id)}
+              >
+                {actionUi(a.id).icon({ size: 16 })}
+              </ToolButton>
+            )}
+          </For>
+        </div>
+
+        <div class={GROUP}>
+          <ToolButton
+            label={t("files_mod.filter_view") as string}
+            active={filterOpen()}
+            onClick={() => { if (filterOpen()) setQuery(""); setFilterOpen((v) => !v); }}
+          >
+            <MdOutlineFilter_list size={16} />
+          </ToolButton>
+          <ToolButton
+            label={(viewMode() === "list" ? t("files_mod.switch_grid") : t("files_mod.switch_list")) as string}
+            onClick={toggleViewMode}
+          >
+            <Show when={viewMode() === "list"} fallback={<MdOutlineView_list size={16} />}>
+              <MdOutlineGrid_view size={16} />
+            </Show>
+          </ToolButton>
+        </div>
+
+        {/* Sort — grid mode only; list mode sorts from the column headers */}
+        <Show when={viewMode() === "grid"}>
+          <div class={GROUP}>
+            <For each={[
+              { field: "name" as SortField, key: "files_mod.name_col" as const,    icon: MdOutlineSort_by_alpha },
+              { field: "size" as SortField, key: "files_mod.size_col" as const,    icon: MdOutlineStorage },
+              { field: "date" as SortField, key: "files_mod.created_col" as const, icon: MdOutlineSchedule },
+            ]}>
+              {(o) => (
+                <ToolButton
+                  label={`${t(o.key)}${sortField() === o.field ? (sortDir() === "asc" ? " ↑" : " ↓") : ""}`}
+                  active={sortField() === o.field}
+                  onClick={() => toggleSort(o.field)}
+                >
+                  <o.icon size={16} />
+                </ToolButton>
+              )}
+            </For>
+          </div>
+        </Show>
+
+        <Show when={canWrite()}>
+          <div class={GROUP}>
+            <ToolButton
+              label={t("files_mod.new_folder") as string}
+              active={showNewFolder()}
+              onClick={() => setShowNewFolder((v) => !v)}
+            >
+              <MdOutlineCreate_new_folder size={16} />
+            </ToolButton>
+            <ToolButton label={t("files_mod.upload") as string} onClick={() => uploadInput.click()}>
+              <MdOutlineUpload_file size={16} />
+            </ToolButton>
+            <input ref={uploadInput} type="file" multiple class="sr-only" onChange={handleUpload} />
+          </div>
+        </Show>
+      </div>
+
+      {/* ── View filter ── */}
+      <Show when={filterOpen()}>
+        <input
+          type="search"
+          autofocus
+          value={query()}
+          onInput={(e) => setQuery(e.currentTarget.value)}
+          onKeyDown={(e) => { if (e.key === "Escape") { setQuery(""); setFilterOpen(false); } }}
+          placeholder={t("files_mod.filter_view") as string}
+          aria-label={t("files_mod.filter_view") as string}
+          class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-sm text-txt
+                 placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
+        />
+      </Show>
 
       {/* ── Upload progress ── */}
       <Show when={canWrite() && uploadPct() !== null}>
@@ -961,73 +1139,12 @@ export default function FilesContentWidget() {
         </form>
       </Show>
 
-      {/* ── Bulk selection bar ── */}
-      {/* Driven by selectedItems(), not the raw hash set: a hash whose file has
-          left the folder (refetch, deleted elsewhere) must not be counted or
-          acted on — the bar's buttons index into exactly this list. */}
-      <Show when={selectedItems().length > 0}>
-        <div class="flex items-center gap-x-2 gap-y-2 flex-wrap px-3 py-2 rounded-lg
-                    border border-accent/40 bg-accent/10">
-          <span class="text-sm font-medium text-txt">
-            {t("files_mod.selected_count", { count: selectedItems().length })}
-          </span>
-
-          <div class="flex items-center gap-2 flex-wrap ml-auto">
-            <button
-              type="button"
-              disabled={bulkBusy()}
-              onClick={handleBulkDownload}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
-                     hover:bg-elevated disabled:opacity-40 transition-colors"
-            >
-              {t("files_mod.download")}
-            </button>
-            {/* Visitors may select and download; mutating actions stay behind
-                the same write grant as the per-row menu. */}
-            <Show when={canWrite()}>
-              <button
-                type="button"
-                disabled={bulkBusy()}
-                onClick={() => setActiveModal({
-                  kind: "moveCopy",
-                  item: selectedItems()[0],
-                  items: selectedItems(),
-                })}
-                class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
-                       hover:bg-elevated disabled:opacity-40 transition-colors"
-              >
-                {t("files_mod.move_or_copy")}
-              </button>
-              <button
-                type="button"
-                disabled={bulkBusy()}
-                onClick={handleBulkDelete}
-                class="px-3 py-1.5 text-sm rounded-lg border border-red-500/40 text-red-500
-                       hover:bg-red-500/10 disabled:opacity-40 transition-colors"
-              >
-                {bulkBusy() ? t("files_mod.saving") : t("files_mod.delete_selected")}
-              </button>
-            </Show>
-            <button
-              type="button"
-              onClick={clearSelection}
-              class="px-3 py-1.5 text-sm rounded-lg text-muted hover:text-txt transition-colors"
-            >
-              {t("files_mod.clear_selection")}
-            </button>
-          </div>
-        </div>
-      </Show>
-
       {/* ── Column labels (list mode only) ── */}
       <Show when={viewMode() === "list"}>
         <div class="border-t border-rim" />
         <div class="flex items-center gap-3 px-3 text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
-          <SelectBox
-            checked={allSelected()}
-            onToggle={toggleSelectAll}
-            label={t("files_mod.select_all") as string}
-          />
+          {/* Checkbox column — select-all lives in the toolbar (works in grid view too) */}
+          <span class="w-4 shrink-0" />
           <span class="w-5 shrink-0" />
           {/* Sortable: Name */}
           <button
@@ -1066,7 +1183,6 @@ export default function FilesContentWidget() {
             </Show>
             {t("files_mod.created_col")}
           </button>
-          <span class="w-20 shrink-0" />
         </div>
       </Show>
 
@@ -1086,7 +1202,9 @@ export default function FilesContentWidget() {
         >
           <Show
             when={sortedFiles().length > 0}
-            fallback={<p class="py-12 text-center text-sm text-muted">{t("files_mod.folder_empty")}</p>}
+            fallback={<p class="py-12 text-center text-sm text-muted">
+              {query().trim() ? t("files_mod.no_matches") : t("files_mod.folder_empty")}
+            </p>}
           >
             <Show
               when={viewMode() === "list"}
@@ -1097,64 +1215,27 @@ export default function FilesContentWidget() {
                     nick={nick()}
                     defaultAcl={defaultAcl()}
                     selfHash={selfHash()?.hash}
-                    canWrite={canWrite()}
-                    isOwner={isOwner()}
-                    wopi={wopi()}
-                    deleting={deleting()}
-                    permItem={permItem()}
                     onOpen={openItem}
-                    onAction={handleMenuAction}
                     selectable={true}
                     selected={selected()}
                     onSelect={toggleSelected}
                   />
-                  {/* Permissions panel for grid mode — centered modal */}
-                  <Show when={permItem()}>
-                    <Modal onClose={() => setPermItem(null)} label={t("files_mod.permissions")} class="z-50">
-                      <div class="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                        <PermissionsPanel
-                          item={permItem()!}
-                          nick={nick()}
-                          defaultAcl={defaultAcl()}
-                          onSaved={handlePermSaved}
-                          onClose={() => setPermItem(null)}
-                        />
-                      </div>
-                    </Modal>
-                  </Show>
                 </>
               }
             >
               <div class="space-y-0.5">
                 <For each={sortedFiles()}>
                   {(item) => (
-                    <>
                       <FileRow
                         item={item}
                         nick={nick()}
                         defaultAcl={defaultAcl()}
                         selfHash={selfHash()?.hash}
-                        canWrite={canWrite()}
-                        isOwner={isOwner()}
-                        wopi={wopi()}
                         onOpen={openItem}
-                        onAction={handleMenuAction}
-                        deleting={deleting() === item.hash}
-                        permOpen={permItem()?.hash === item.hash}
                         selectable={true}
                         selected={selected().has(item.hash)}
                         onSelect={() => toggleSelected(item.hash)}
                       />
-                      <Show when={permItem()?.hash === item.hash}>
-                        <PermissionsPanel
-                          item={item}
-                          nick={nick()}
-                          defaultAcl={defaultAcl()}
-                          onSaved={handlePermSaved}
-                          onClose={() => setPermItem(null)}
-                        />
-                      </Show>
-                    </>
                   )}
                 </For>
               </div>
@@ -1163,7 +1244,22 @@ export default function FilesContentWidget() {
         </Show>
       </Show>
 
-      {/* ── Kebab menu modals ── */}
+      {/* Permissions — one item or a whole selection */}
+      <Show when={permItems()}>
+        <Modal onClose={() => setPermItems(null)} label={t("files_mod.permissions")} class="z-50">
+          <div class="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <PermissionsPanel
+              items={permItems()!}
+              nick={nick()}
+              defaultAcl={defaultAcl()}
+              onSaved={handlePermSaved}
+              onClose={() => setPermItems(null)}
+            />
+          </div>
+        </Modal>
+      </Show>
+
+      {/* ── Action modals ── */}
       <Show when={activeModal()?.kind === "rename"}>
         <RenameModal
           item={activeModal()!.item}
@@ -1196,10 +1292,15 @@ export default function FilesContentWidget() {
             filename={item().filename}
             mimetype={item().filetype}
             sizeBytes={item().filesize}
-            onClose={() => setPreviewItem(null)}
+            onClose={() => {
+              setPreviewItem(null);
+              // Opened from a file URL: drop back to the folder's own URL.
+              if (cloudPathSegments(location.pathname, nick()).join("/") !== current().displayPath)
+                navigate(cloudPath(nick(), current().displayPath), { replace: true });
+            }}
             onEditSaved={canWrite() ? async (blob) => {
               const edited = new File([blob], item().filename, { type: blob.type });
-              await uploadFile(davBase(), edited);
+              await uploadFile(davDirPath(nick(), parentPath(item().display_path)), edited);
               refetch();
             } : undefined}
           />
@@ -1216,6 +1317,7 @@ export default function FilesContentWidget() {
         )}
       </Show>
 
+    </div>
     </div>
   );
 }

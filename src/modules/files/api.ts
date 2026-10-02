@@ -84,6 +84,56 @@ export async function listFolderMeta(
   };
 }
 
+/** Name search across a folder's whole subtree ('' = entire cloud); needs ≥2 chars. */
+export async function searchFiles(nick: string, q: string, folderHash: string): Promise<FileMeta[]> {
+  const qs = new URLSearchParams({ q, folder: folderHash });
+  const res = await apiFetch(`/spa/files/${nick}/search?${qs}`);
+  if (!res.ok) throw new Error(`searchFiles ${res.status}`);
+  return (await res.json()).data ?? [];
+}
+
+/** Decoded pathname of a same-origin /cloud/ URL, else null. */
+export function cloudKey(url: string, origin = location.origin): string | null {
+  try {
+    const u = new URL(url, origin);
+    if (u.origin !== origin) return null;
+    const path = u.pathname.split("/").map(decodeURIComponent).join("/").replace(/\/+$/, "");
+    return path === "/cloud" || path.startsWith("/cloud/") ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Parent folder of an item's display path ("a/b/c.txt" → "a/b"). */
+export const parentPath = (displayPath: string) => displayPath.split("/").slice(0, -1).join("/");
+
+// A search hit plus the folders above it, rebuilt from display paths. Only
+// hits carry `file`; intermediate folders are known by path alone.
+export interface PNode { name: string; path: string; file?: FileMeta; children: PNode[] }
+
+export function pruneTree(hits: FileMeta[]): PNode[] {
+  const root: PNode = { name: "", path: "", children: [] };
+  const byPath = new Map<string, PNode>([["", root]]);
+  const nodeAt = (path: string): PNode => {
+    let n = byPath.get(path);
+    if (!n) {
+      const cut = path.lastIndexOf("/");
+      n = { name: path.slice(cut + 1), path, children: [] };
+      nodeAt(cut < 0 ? "" : path.slice(0, cut)).children.push(n);
+      byPath.set(path, n);
+    }
+    return n;
+  };
+  for (const f of hits) nodeAt(f.display_path).file = f;
+  const sort = (n: PNode) => {
+    const isDir = (x: PNode) => !x.file || x.file.is_dir;
+    n.children.sort((a, b) => isDir(a) !== isDir(b) ? (isDir(a) ? -1 : 1) : a.name.localeCompare(b.name));
+    n.children.forEach(sort);
+  };
+  sort(root);
+  return root.children;
+}
+
 /**
  * Map an <AclPicker> selection ("{type}:{xid}" keys) onto the FileAcl shape the
  * permissions endpoint expects. Shared by the files permissions panel and the
@@ -139,6 +189,32 @@ export async function updatePermissions(
   if (!res.ok) throw new Error(`updatePermissions ${res.status}`);
   const json = await res.json();
   return json.data;
+}
+
+/** One item's metadata — used for the open folder, which no listing contains. */
+export async function fetchFileMeta(nick: string, hash: string): Promise<FileMeta> {
+  const res = await apiFetch(`/spa/files/${nick}/meta/${encodeURIComponent(hash)}`);
+  if (!res.ok) throw new Error(`fileMeta ${res.status}`);
+  return (await res.json()).data;
+}
+
+/**
+ * Download items, one request each — deliberately not the selection-zip route,
+ * which builds the whole archive on disk before streaming, so a big selection
+ * burns disk and can hit the PHP timeout. A folder arrives as its own zip, tree
+ * intact. Staggered because browsers drop programmatic downloads fired in one tick.
+ */
+export function downloadItems(nick: string, items: FileMeta[]): void {
+  items.forEach((item, i) => {
+    setTimeout(() => {
+      const a = document.createElement("a");
+      a.href = downloadUrl(nick, item.hash);
+      a.download = item.is_dir ? `${item.filename}.zip` : item.filename;
+      document.body.append(a);
+      a.click();
+      a.remove();
+    }, i * 300);
+  });
 }
 
 /** URL that streams a file, or zips-and-streams a folder. Use as an <a href download>. */
@@ -397,16 +473,24 @@ export function cloudPath(nick: string, displayPath: string): string {
  * list keys off folder *hashes*, which only a listing can supply).
  *
  * Stops at the first segment that isn't a folder, so a URL naming a file opens
- * its containing folder rather than dead-ending.
+ * its containing folder rather than dead-ending — and when that last segment
+ * *is* a file there, it comes back as `file` so the caller can preview it.
  */
-export async function resolveFolderPath(nick: string, segs: string[]): Promise<FolderFrame[]> {
+export async function resolveFolderPath(
+  nick: string,
+  segs: string[],
+): Promise<{ frames: FolderFrame[]; file?: FileMeta }> {
   const frames: FolderFrame[] = [];
   let hash = "";
-  for (const seg of segs) {
-    const dir = (await listFolder(nick, hash)).find((f) => f.is_dir && f.filename === seg);
-    if (!dir) break;
+  for (const [i, seg] of segs.entries()) {
+    const items = await listFolder(nick, hash);
+    const dir = items.find((f) => f.is_dir && f.filename === seg);
+    if (!dir) {
+      const file = i === segs.length - 1 ? items.find((f) => !f.is_dir && f.filename === seg) : undefined;
+      return { frames, file };
+    }
     hash = dir.hash;
     frames.push({ hash, displayPath: dir.display_path, label: dir.filename });
   }
-  return frames;
+  return { frames };
 }

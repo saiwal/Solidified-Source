@@ -36,6 +36,16 @@ registerModule({
       contexts: ["cloud"],
       locked: true,
     },
+    {
+      // Bookmarks whose URL is a /cloud/ path — viewer-private, so local users only
+      id: "cloud.bookmarks",
+      label: () => useI18n().t("widgets.cloud_bookmarks"),
+      loader: () => import("./widgets/CloudBookmarksWidget"),
+      slot: "right",
+      defaultModules: ["cloud"],
+      contexts: "any",
+      visitorVisible: false,
+    },
   ],
   permissions: [],
   appUrlSlug: "/cloud/",

@@ -158,6 +158,21 @@ export async function handleLike() {
   }
 }
 
+/** Like toggle from an All Photos grid tile (no detail loaded). */
+export async function togglePhotoLike(resourceId: string) {
+  const p = photos().find(x => x.resource_id === resourceId);
+  if (!p?.item_id) return;
+  const patch = (liked: boolean) => setPhotos(prev => prev.map(x => x.resource_id !== resourceId ? x
+    : { ...x, viewer_liked: liked, like_count: (x.like_count ?? 0) + (liked ? 1 : -1) }));
+  const liked = !p.viewer_liked;
+  patch(liked);
+  try {
+    await togglePhotoReaction(p.item_id, 'like');
+  } catch {
+    patch(!liked);
+  }
+}
+
 export async function handleDislike() {
   const d = detail();
   if (!d?.item_id) return;

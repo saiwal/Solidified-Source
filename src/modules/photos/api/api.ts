@@ -31,6 +31,11 @@ export interface Photo {
   filesize:    number;
   src:         string;
   link:        string;
+  /** Grid-tile stats — only the /spa/photos/:nick summary fills these. */
+  item_id?:       number | null;
+  like_count?:    number;
+  comment_count?: number;
+  viewer_liked?:  boolean;
 }
 
 // fetchPhotoSummary — recent photos
@@ -56,7 +61,7 @@ export async function fetchPhotoSummaryMeta(
   dir: SortDir = 'desc',
   limit = 30,
 ): Promise<{ photos: Photo[]; canWrite: boolean; hasMore: boolean }> {
-  const res = await apiFetch(`/spa/photos/${nick}?start=${start}&limit=${limit}&sort=${sort}&dir=${dir}`);
+  const res = await apiFetch(`/spa/photos/${nick}?start=${start}&limit=${limit}&sort=${sort}&dir=${dir}&albums=1`);
   if (!res.ok) throw await res.json();
   const { data, meta } = await res.json();
   return { photos: data as Photo[], canWrite: !!meta?.can_write, hasMore: !!meta?.has_more };

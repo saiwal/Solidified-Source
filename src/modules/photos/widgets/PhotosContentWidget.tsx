@@ -15,7 +15,7 @@ import {
   photos, albums, albumName, detail, loading, albumsLoading, albumsError, canWrite,
   tab, photoSort, photoDir, loadingMore, setPhotoSorting, loadMorePhotos,
   loadSummary, loadAlbum, loadImage, loadAlbums,
-  handleLike, handleDislike, addComment, handleCommentReaction,
+  handleLike, handleDislike, togglePhotoLike, addComment, handleCommentReaction,
   createNewAlbum, deletePhotoAction, batchDeleteAction, batchMoveAction, deleteAlbumAction, renamePhotoAction,
   updateTitleAction, updateDescriptionAction, toggleNsfwAction,
 } from "../store/store";
@@ -29,7 +29,7 @@ import {
   MdOutlineLock, MdOutlineShare, MdOutlineDownload,
   MdFillApps, MdFillCollections,
   MdFillAdd, MdFillClose,
-  MdFillCloud_upload, MdFillDelete_forever,
+  MdFillCloud_upload,
   MdFillCheck_box, MdFillCheck_box_outline_blank,
   MdFillArrow_upward, MdFillArrow_downward,
 } from "solid-icons/md";
@@ -50,7 +50,6 @@ import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetc
 import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
-import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -190,26 +189,6 @@ function SortToolbar(props: {
         </button>
         {props.children}
       </div>
-    </div>
-  );
-}
-
-// Masonry: explicit columns fed round-robin (splitIntoColumns' `i % n`), so
-// reading order runs left-to-right across the row — CSS `columns` would fill
-// each column top-to-bottom instead. Photos keep their own aspect ratio;
-// nothing is measured up front, the columns just grow.
-function PhotoMasonry<T>(props: { items: T[]; children: (item: T) => JSX.Element }) {
-  const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
-  const columns = useColumnCount(gridEl, 9, 4);
-  return (
-    <div ref={setGridEl} class="flex gap-2 items-start">
-      <For each={splitIntoColumns(props.items, columns())}>
-        {(col) => (
-          <div class="flex-1 min-w-0 flex flex-col gap-2">
-            <For each={col}>{(item) => props.children(item)}</For>
-          </div>
-        )}
-      </For>
     </div>
   );
 }
@@ -400,34 +379,33 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
   );
 }
 
-/** One photo tile: opens the photo, or toggles its checkbox in select mode. */
-function PhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
+/** Instagram-style square tile for the All Photos and album grids: like / comment / share /
+ *  delete on hover (md+); on touch a tap just opens the photo, which has them all. */
+function SquarePhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
   const { t }    = useI18n();
+  const auth     = useAuth();
   const navigate = useNavigate();
   const sel      = props.sel;
-  const photo    = props.photo;
-  const isSelected = () => sel.selected().has(photo.resource_id);
-  const isPending  = () => sel.pendingDelete() === photo.resource_id;
+  const p        = () => props.photo;
+  const open     = () => navigate(`/photos/${sel.nick()}/image/${p().resource_id}`);
+  const isSelected = () => sel.selected().has(p().resource_id);
+  const btn = "flex items-center gap-1 p-1.5 rounded-lg text-white text-sm font-semibold hover:bg-white/20 transition-colors";
 
   return (
-    <div class="group relative overflow-hidden rounded-xl bg-surface">
+    <div class="group relative aspect-square overflow-hidden bg-surface">
       <button
-        onClick={() => sel.selectMode()
-          ? sel.toggleOne(photo.resource_id)
-          : navigate(`/photos/${sel.nick()}/image/${photo.resource_id}`)}
-        class="block w-full cursor-pointer"
+        onClick={() => sel.selectMode() ? sel.toggleOne(p().resource_id) : open()}
+        class="block w-full h-full cursor-pointer"
       >
         <img
-          src={variantSrc(photo.src, 3)}
-          alt={photo.filename}
+          src={p().src}
+          alt={p().title || p().filename}
           loading="lazy"
-          class={`w-full h-auto block ${photo.is_nsfw
-            ? 'blur-xl scale-110'
-            : 'transition-transform duration-300 group-hover:scale-105'}`}
+          class={`w-full h-full object-cover ${p().is_nsfw ? 'blur-xl scale-110' : ''}`}
         />
       </button>
 
-      <Show when={photo.is_nsfw}>
+      <Show when={p().is_nsfw}>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span class="px-2 py-0.5 rounded-md bg-black/60 text-red-400 text-xs font-bold tracking-wide">
             {t("photos.nsfw")}
@@ -443,56 +421,49 @@ function PhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
           </Show>
         </div>
         <Show when={isSelected()}>
-          <div class="absolute inset-0 ring-2 ring-accent ring-inset rounded-xl pointer-events-none" />
+          <div class="absolute inset-0 ring-2 ring-accent ring-inset pointer-events-none" />
         </Show>
       </Show>
 
       <Show when={!sel.selectMode()}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            openShare(shareTargetForPhoto(sel.nick(), photo));
-          }}
-          title={t("share.action")}
-          class="absolute bottom-1.5 left-1.5 p-1 rounded-lg bg-black/50 text-white
-                 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-        >
-          <MdOutlineShare size={16} />
-        </button>
-
-        <a
-          href={photoDownloadUrl(sel.nick(), photo.resource_id)}
-          download={photo.filename}
-          title={t("photos.download")}
-          onClick={(e) => e.stopPropagation()}
-          class="absolute bottom-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
-                 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-        >
-          <MdOutlineDownload size={16} />
-        </a>
-      </Show>
-
-      <Show when={canWrite() && !sel.selectMode()}>
-        <Show when={isPending()} fallback={
-          <button
-            onClick={() => sel.handleDeletePhoto(photo.resource_id)}
-            class="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white
-                   opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-          >
-            <MdFillDelete_forever size={16} />
+        {/* Overlay is click-through; only its buttons take pointer events. */}
+        <div class="absolute inset-0 hidden md:flex flex-wrap items-center justify-center gap-x-2 gap-y-1 p-1
+                    bg-black/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
+                    transition-opacity pointer-events-none [&>*]:pointer-events-auto">
+          <Show when={p().item_id}>
+            <button
+              onClick={() => auth()?.isLoggedIn ? togglePhotoLike(p().resource_id) : open()}
+              title={t("post.like")} class={btn}
+            >
+              <Show when={p().viewer_liked} fallback={<MdOutlineThumb_up size={18} />}>
+                <MdFillThumb_up size={18} />
+              </Show>
+              {p().like_count ?? 0}
+            </button>
+            <button onClick={open} title={t("photos.comment")} class={btn}>
+              <MdFillChat size={18} />
+              {p().comment_count ?? 0}
+            </button>
+          </Show>
+          <button onClick={() => openShare(shareTargetForPhoto(sel.nick(), p()))} title={t("share.action")} class={btn}>
+            <MdOutlineShare size={18} />
           </button>
-        }>
-          <div class="absolute top-1.5 right-1.5 flex items-center gap-1">
-            <button onClick={() => sel.handleDeletePhoto(photo.resource_id)}
-              class="px-2 py-0.5 rounded-md bg-red-500 text-white text-xs font-medium">
-              {t("photos.confirm")}
-            </button>
-            <button onClick={() => sel.setPendingDelete(null)}
-              class="p-1 rounded-md bg-black/50 text-white">
-              <MdFillClose size={14} />
-            </button>
-          </div>
-        </Show>
+          <Show when={canWrite()}>
+            <Show when={sel.pendingDelete() === p().resource_id} fallback={
+              <button onClick={() => sel.handleDeletePhoto(p().resource_id)} title={t("photos.delete_photo")} class={btn}>
+                <MdOutlineDelete size={18} />
+              </button>
+            }>
+              <button onClick={() => sel.handleDeletePhoto(p().resource_id)}
+                class="px-2 py-0.5 rounded-md bg-red-500 text-white text-xs font-medium">
+                {t("photos.confirm")}
+              </button>
+              <button onClick={() => sel.setPendingDelete(null)} class={btn}>
+                <MdFillClose size={16} />
+              </button>
+            </Show>
+          </Show>
+        </div>
       </Show>
     </div>
   );
@@ -543,9 +514,9 @@ function AllPhotosView() {
       </Show>
 
       <Show when={!loading() && viewMode() === 'grid'}>
-        <PhotoMasonry items={photos()}>
-          {(photo) => <PhotoTile photo={photo} sel={sel} />}
-        </PhotoMasonry>
+        <div class="grid grid-cols-3 gap-1">
+          <For each={photos()}>{(photo) => <SquarePhotoTile photo={photo} sel={sel} />}</For>
+        </div>
       </Show>
 
       <Show when={!loading() && viewMode() === 'list'}>
@@ -1096,9 +1067,9 @@ function AlbumGrid() {
       {/* Share composer — Show forces remount so initialBody is captured correctly */}
 
       {/* Photo grid */}
-      <PhotoMasonry items={sortedPhotos()}>
-        {(photo) => <PhotoTile photo={photo} sel={sel} />}
-      </PhotoMasonry>
+      <div class="grid grid-cols-3 gap-1">
+        <For each={sortedPhotos()}>{(photo) => <SquarePhotoTile photo={photo} sel={sel} />}</For>
+      </div>
     </div>
   );
 }
@@ -1970,10 +1941,10 @@ function ImageView() {
 
 function PhotoGridSkeleton() {
   return (
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-      <For each={Array(8).fill(0)}>
+    <div class="grid grid-cols-3 gap-1">
+      <For each={Array(9).fill(0)}>
         {() => (
-          <div class="aspect-square rounded-xl bg-surface animate-pulse" />
+          <div class="aspect-square bg-surface animate-pulse" />
         )}
       </For>
     </div>

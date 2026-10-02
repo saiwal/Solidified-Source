@@ -695,6 +695,7 @@ export type RawDictionary = {
     // Files header (cloud.header) / breadcrumb+toolbar+list+modals (cloud.content)
     cloud_header:  string;
     cloud_content: string;
+    cloud_bookmarks: string;
     // Photos header (photos.header) / album+image browser (photos.content)
     photos_header:  string;
     photos_content: string;
@@ -2477,6 +2478,22 @@ export type RawDictionary = {
     copy_action:      string;
     choose_destination: string;
     root_folder:      string;
+    folder_tree:      string;
+    search_files: string;
+    filter_view: string;
+    perm_mixed: string;
+    bookmark: string;
+    unbookmark: string;
+    bookmarked: string;
+    unbookmarked: string;
+    bookmark_failed: string;
+    bookmarked_files: string;
+    no_bookmarked_files: string;
+    no_matches: string;
+    nav_back: string;
+    nav_forward: string;
+    refresh: string;
+    unselect_all: string;
     move_here:        string;
     copy_here:        string;
     categories_placeholder: string;

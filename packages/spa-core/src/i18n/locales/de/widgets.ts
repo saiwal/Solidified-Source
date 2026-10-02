@@ -232,6 +232,7 @@ export const widgets: RawDictionary["widgets"] = {
   // Files header (cloud.header) / breadcrumb+toolbar+list+modals (cloud.content)
   cloud_header:  "Dateien-Kopfzeile",
   cloud_content: "Dateien",
+  cloud_bookmarks: "Dateien mit Lesezeichen",
   // Photos header (photos.header) / album+image browser (photos.content)
   photos_header:  "Fotos-Kopfzeile",
   photos_content: "Fotos",
