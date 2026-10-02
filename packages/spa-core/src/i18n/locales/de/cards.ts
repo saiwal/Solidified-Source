@@ -1,6 +1,8 @@
 import type { RawDictionary } from "../namespaces/types";
 
 export const cards: RawDictionary["cards"] = {
+  title_mine: "Meine Karten",
+  title_of: "Karten von {{name}}",
   title:            "Karten",
   new_card:         "Neue Karte",
   no_cards:         "Noch keine Karten.",

@@ -4,12 +4,14 @@ import { canCreate, loadWikis, resetWikis } from "../store";
 import { createWiki, WIKI_MIME_TYPES, WIKI_MIME_LABEL, type WikiMimeType } from "../api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
 import { useIsWikiList } from "../lib/isWikiList";
 
 export default function WikiHeaderWidget() {
   const nick = usePageNick();
   const { t } = useI18n();
+  const owner = usePageOwnerName();
   const isList = useIsWikiList();
 
   const [creating, setCreating] = createSignal(false);
@@ -97,7 +99,7 @@ export default function WikiHeaderWidget() {
     <Show when={isList()}>
       <div class="space-y-4 max-w-5xl mx-auto p-4 pb-0">
         <div class="flex items-center justify-between">
-          <h1 class="text-xl font-semibold text-txt">{t("wiki.wikis")}</h1>
+          <h1 class="text-xl font-semibold text-txt">{owner() === null ? t("wiki.title_mine") : t("wiki.title_of", { name: owner()! })}</h1>
           <Show when={canCreate()}>
             <button
               type="button"

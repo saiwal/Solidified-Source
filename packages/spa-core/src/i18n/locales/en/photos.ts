@@ -2,6 +2,8 @@ import type { RawDictionary } from "../namespaces/types";
 
 export const photos: RawDictionary["photos"] = {
   no_photos:        "No photos yet.",
+  title_mine: "My photos",
+  title_of: "{{name}}'s photos",
   all_photos:       "All photos",
   back:             "Back",
   comment:          "Comment",

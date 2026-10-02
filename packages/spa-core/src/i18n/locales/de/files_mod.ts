@@ -47,6 +47,8 @@ export const files_mod: RawDictionary["files_mod"] = {
   folder_tree:      "Ordner",
   search_files: "Alle Dateien durchsuchen…",
   filter_view: "Diesen Ordner filtern",
+  title_mine: "Meine Dateien",
+  title_of: "Dateien von {{name}}",
   perm_mixed: "Diese Elemente haben unterschiedliche Berechtigungen. Beim Speichern gilt diese Einstellung für alle.",
   bookmark: "Lesezeichen setzen",
   unbookmark: "Lesezeichen entfernen",

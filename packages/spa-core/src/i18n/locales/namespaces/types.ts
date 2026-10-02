@@ -2017,6 +2017,8 @@ export type RawDictionary = {
     group_profile_fields: string;
   };
   photos: {
+    title_mine: string;
+    title_of: string;
     no_photos:        string;
     all_photos:       string;
     back:             string;
@@ -2111,6 +2113,8 @@ export type RawDictionary = {
     nsfw_show:            string;
   };
   articles: {
+    title_mine: string;
+    title_of: string;
     title:            string;
     new_article:      string;
     no_articles:      string;
@@ -2160,6 +2164,8 @@ export type RawDictionary = {
     back_to_series_index:  string;
   };
   cards: {
+    title_mine: string;
+    title_of: string;
     title:                string;
     new_card:             string;
     no_cards:             string;
@@ -2305,6 +2311,8 @@ export type RawDictionary = {
   };
 
   calendar: {
+    title_mine: string;
+    title_of: string;
     loading:          string;
     no_events:        string;
     all_day_event:    string;
@@ -2381,6 +2389,8 @@ export type RawDictionary = {
     upcoming_events:        string;
   };
   chat: {
+    title_mine: string;
+    title_of: string;
     chatrooms:        string;
     new_room:         string;
     new_chatroom:     string;
@@ -2481,6 +2491,8 @@ export type RawDictionary = {
     folder_tree:      string;
     search_files: string;
     filter_view: string;
+    title_mine: string;
+    title_of: string;
     perm_mixed: string;
     bookmark: string;
     unbookmark: string;
@@ -2509,6 +2521,8 @@ export type RawDictionary = {
     already_here:     string;
   };
   wiki: {
+    title_mine: string;
+    title_of: string;
     wikis:            string;
     new_wiki:         string;
     cancel:           string;
@@ -2582,6 +2596,8 @@ export type RawDictionary = {
     draft_label:      string;
   };
   webpages: {
+    title_mine: string;
+    title_of: string;
     title:            string;
     new_page:         string;
     col_title:        string;

@@ -1,6 +1,8 @@
 import type { RawDictionary } from "../namespaces/types";
 
 export const calendar: RawDictionary["calendar"] = {
+  title_mine: "My calendar",
+  title_of: "{{name}}'s calendar",
   loading:          "Loading…",
   no_events:        "No events on this day.",
   all_day_event:    "All-day event",

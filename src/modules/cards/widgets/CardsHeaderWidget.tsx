@@ -3,6 +3,7 @@ import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { openComposer } from "@/shared/views/modal-host";
@@ -18,6 +19,7 @@ import { fetchKanban } from "../api";
 
 export default function CardsHeaderWidget() {
   const { t, locale } = useI18n();
+  const owner = usePageOwnerName();
   const auth = useAuth();
   const role = useViewerRole();
   const nick = usePageNick();
@@ -71,7 +73,7 @@ export default function CardsHeaderWidget() {
           whichever board is showing. */}
       <div class="space-y-4 max-w-5xl mx-auto">
         <div class="flex items-center justify-between gap-2 flex-wrap">
-          <h1 class="text-xl font-bold text-txt">{t("cards.title")}</h1>
+          <h1 class="text-xl font-bold text-txt">{owner() === null ? t("cards.title_mine") : t("cards.title_of", { name: owner()! })}</h1>
 
           <Show when={kanban()?.enabled}>
             <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">

@@ -1,6 +1,8 @@
 import type { RawDictionary } from "../namespaces/types";
 
 export const wiki: RawDictionary["wiki"] = {
+  title_mine: "मेरी विकी",
+  title_of: "{{name}} की विकी",
   wikis:            "विकी",
   new_wiki:         "नई विकी",
   cancel:           "रद्द करें",

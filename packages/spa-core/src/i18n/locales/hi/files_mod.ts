@@ -44,6 +44,8 @@ export const files_mod: RawDictionary["files_mod"] = {
   folder_tree:      "फ़ोल्डर",
   search_files: "सभी फ़ाइलें खोजें…",
   filter_view: "इस फ़ोल्डर को फ़िल्टर करें",
+  title_mine: "मेरी फ़ाइलें",
+  title_of: "{{name}} की फ़ाइलें",
   perm_mixed: "इन आइटम की अनुमतियाँ अलग-अलग हैं। सहेजने पर यह सेटिंग सभी पर लागू होगी।",
   bookmark: "बुकमार्क करें",
   unbookmark: "बुकमार्क हटाएँ",

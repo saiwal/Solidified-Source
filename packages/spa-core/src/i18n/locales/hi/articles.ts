@@ -1,6 +1,8 @@
 import type { RawDictionary } from "../namespaces/types";
 
 export const articles: RawDictionary["articles"] = {
+  title_mine: "मेरे लेख",
+  title_of: "{{name}} के लेख",
   title:            "लेख",
   new_article:      "नया लेख",
   no_articles:      "अभी तक कोई लेख नहीं।",

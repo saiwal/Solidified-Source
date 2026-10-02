@@ -2,10 +2,12 @@ import { Show } from 'solid-js';
 import { A } from '@solidjs/router';
 import { usePageNick, useViewerRole } from '@utsukta/spa-core/store/site-config';
 import { useI18n } from '@utsukta/spa-core/i18n';
+import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { useIsWebpagesList } from '../lib/isWebpagesList';
 
 export default function WebpagesHeaderWidget() {
   const { t } = useI18n();
+  const owner = usePageOwnerName();
   const nick = usePageNick();
   const isList = useIsWebpagesList();
   const viewerRole = useViewerRole();
@@ -15,7 +17,7 @@ export default function WebpagesHeaderWidget() {
     <Show when={isList()}>
       <div class="max-w-5xl mx-auto px-4 md:px-6 pt-6">
         <div class="flex items-center justify-between gap-4">
-          <h1 class="text-lg font-semibold text-txt">{t('webpages.title')}</h1>
+          <h1 class="text-lg font-semibold text-txt">{owner() === null ? t("webpages.title_mine") : t("webpages.title_of", { name: owner()! })}</h1>
           <Show when={isOwner()}>
             <div class="flex items-center gap-2">
               <A

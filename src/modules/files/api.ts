@@ -32,6 +32,8 @@ export interface FileMeta {
   edited:       string;
   revision:     number;
   acl:          FileAcl;
+  /** Downscaled /photo URL for photos, in folder listings only. */
+  thumb?:       string | null;
 }
 
 /** Site config for the `wopi` addon (Collabora office editing). */

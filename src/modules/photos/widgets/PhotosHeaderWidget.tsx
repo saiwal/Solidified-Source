@@ -3,12 +3,14 @@ import { useLocation, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { albums, tab, switchTab } from "../store/store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
+import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 
 export default function PhotosHeaderWidget() {
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const nick     = usePageNick();
+  const owner    = usePageOwnerName();
 
   // The tabs stay visible inside an album or a single image (those are their
   // own routes, see PhotosContentWidget's datatype()) — picking one there
@@ -32,7 +34,9 @@ export default function PhotosHeaderWidget() {
 
   return (
     <div class="max-w-5xl mx-auto flex items-center gap-3 flex-wrap">
-      <h1 class="text-lg font-semibold text-txt">{t("nav.photos")}</h1>
+      <h1 class="text-lg font-semibold text-txt">
+        {owner() === null ? t("photos.title_mine") : t("photos.title_of", { name: owner()! })}
+      </h1>
 
       <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
         <For each={tabs()}>{(s) => (

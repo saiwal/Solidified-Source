@@ -458,7 +458,7 @@ const ThumbnailGrid: Component<{
                 }
               >
                 <img
-                  src={davPath(props.nick, item.display_path)}
+                  src={item.thumb ?? davPath(props.nick, item.display_path)}
                   alt={item.filename}
                   loading="lazy"
                   class="w-full h-full object-cover"
@@ -1043,7 +1043,8 @@ export default function FilesContentWidget() {
 
         {/* Sort — grid mode only; list mode sorts from the column headers */}
         <Show when={viewMode() === "grid"}>
-          <div class={GROUP}>
+          {/* One bordered unit: three small buttons, never worth wrapping apart */}
+          <div class="inline-flex items-center gap-0.5 p-0.5 rounded-lg border border-rim">
             <For each={[
               { field: "name" as SortField, key: "files_mod.name_col" as const,    icon: MdOutlineSort_by_alpha },
               { field: "size" as SortField, key: "files_mod.size_col" as const,    icon: MdOutlineStorage },

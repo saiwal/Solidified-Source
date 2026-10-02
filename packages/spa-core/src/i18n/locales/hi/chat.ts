@@ -1,6 +1,8 @@
 import type { RawDictionary } from "../namespaces/types";
 
 export const chat: RawDictionary["chat"] = {
+  title_mine: "मेरे चैट रूम",
+  title_of: "{{name}} के चैट रूम",
   chatrooms:        "चैटरूम",
   new_room:         "नया कक्ष",
   new_chatroom:     "नया चैटरूम",
