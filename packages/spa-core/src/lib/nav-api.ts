@@ -72,8 +72,8 @@ export interface NavApp {
 }
 
 export interface NavChannelTab {
+  /** Labelled client-side from the `nav` locale namespace (see useNav.ts). */
   id: string;
-  label: string;
   url: string;
   icon: string;
 }

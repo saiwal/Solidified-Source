@@ -25,6 +25,8 @@ export interface NavItemDef {
    * `navItemHelpTarget()` in `useNav.ts`.
    */
   helpTarget?: string;
+  /** Draw a divider above this item (visitor nav: channel tabs | site apps). */
+  separatorBefore?: boolean;
 }
 
 type SlotLoader = () => Promise<{ default: Component }>;

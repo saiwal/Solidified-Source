@@ -154,6 +154,8 @@ export type RawDictionary = {
     pubsites:      string;
     pubstream:     string;
     bookmarks:     string;
+    about:         string;
+    shop:          string;
     inbox:         string;
     profiles:      string;
     drag_reorder:  string;

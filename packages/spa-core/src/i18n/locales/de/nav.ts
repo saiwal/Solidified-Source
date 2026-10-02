@@ -45,6 +45,8 @@ export const nav: RawDictionary["nav"] = {
   pubsites:      "Öffentliche Seiten",
   pubstream:     "Öffentlicher Stream",
   bookmarks:     "Lesezeichen",
+  about:         "Über",
+  shop:          "Shop",
   profiles:      "Profile",
   drag_reorder:  "Ziehen zum Neuanordnen",
   new_channel:     "Neuer Kanal",

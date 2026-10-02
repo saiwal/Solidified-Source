@@ -233,6 +233,9 @@ const Layout: ParentComponent = (props) => {
                       }}
                       use:helpable={navItemHelpTarget(item)}
                     >
+                      <Show when={item.separatorBefore}>
+                        <hr class="my-1.5 mx-2 border-rim" />
+                      </Show>
                       <NavItem
                         href={item.href}
                         label={item.label}
@@ -491,6 +494,10 @@ const Layout: ParentComponent = (props) => {
               <div class="grid grid-cols-4 md:grid-cols-10 gap-1.5 px-2.5 pb-4">
                 <For each={moreDrawerDrag.displayItems()}>
                   {(item) => (
+                    <>
+                    <Show when={item.separatorBefore}>
+                      <hr class="col-span-full my-1 border-rim" />
+                    </Show>
                     <div
                       ref={moreDrawerDrag.registerRef(item.path)}
                       onPointerDown={
@@ -528,6 +535,7 @@ const Layout: ParentComponent = (props) => {
                         </span>
                       </A>
                     </div>
+                    </>
                   )}
                 </For>
               </div>

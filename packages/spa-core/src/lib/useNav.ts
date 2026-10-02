@@ -59,10 +59,27 @@ function toSpaHref(url: string): string {
   return url;
 }
 
-function tabToNavItem(tab: NavChannelTab): NavItemDef {
+// Channel tab id (Nav.php) → `nav` locale key.
+const TAB_LABEL_KEYS: Record<string, string> = {
+  stream: "nav.channel",
+  profile: "nav.about",
+  "articles-tab": "nav.articles",
+  "cards-tab": "nav.cards",
+  photos: "nav.photos",
+  files: "nav.files",
+  calendar: "nav.calendar",
+  chat: "nav.chat",
+  messenger: "nav.messenger",
+  bookmarks: "nav.bookmarks",
+  webpages: "nav.webpages",
+  wiki: "nav.wiki",
+  shop: "nav.shop",
+};
+
+function tabToNavItem(tab: NavChannelTab, t: (key: string) => string): NavItemDef {
   const href = toSpaHref(tab.url);
   return {
-    label: tab.label,
+    label: TAB_LABEL_KEYS[tab.id] ? t(TAB_LABEL_KEYS[tab.id]) : tab.id,
     icon: tab.icon,
     href,
     path: urlToPath(href),
@@ -189,6 +206,8 @@ export function useNav(subjectNick: () => string): () => NavItemDef[] {
   const systemApps = useSystemApps();
   const installedApps = useInstalledApps();
   const viewerRole = useViewerRole();
+  const { t } = useI18n();
+  const tabT = t as (key: string) => string;
 
   return createMemo((): NavItemDef[] => {
     const role = viewerRole();
@@ -200,16 +219,20 @@ export function useNav(subjectNick: () => string): () => NavItemDef[] {
     // their URLs and are visually indistinguishable from personal pinned apps.
     if (nick && role === "local") {
       if (channelNav.loading) return [];
-      return (channelNav()?.channel_tabs ?? []).map(tabToNavItem);
+      return (channelNav()?.channel_tabs ?? []).map((tab) => tabToNavItem(tab, tabT));
     }
 
     // Anonymous or remote visitor on a channel → channel tabs + system apps.
     if (nick && (role === "anonymous" || role === "remote")) {
       if (channelNav.loading) return [];
-      const tabs = (channelNav()?.channel_tabs ?? []).map(tabToNavItem);
+      const tabs = (channelNav()?.channel_tabs ?? []).map((tab) => tabToNavItem(tab, tabT));
+      const tabHrefs = new Set(tabs.map((i) => i.href));
       const sysApps = systemApps()
         .filter((a) => isSpaApp(a, spaRoots))
-        .map((a) => appToNavItem(a));
+        .map((a) => appToNavItem(a))
+        .filter((i) => !tabHrefs.has(i.href));
+      // Divider between the channel's own tabs and the site-wide apps.
+      if (tabs.length && sysApps.length) sysApps[0] = { ...sysApps[0], separatorBefore: true };
       return dedupByHref([...tabs, ...sysApps]);
     }
 
