@@ -88,7 +88,8 @@ export async function listFolderMeta(
 
 /** Name search across a folder's whole subtree ('' = entire cloud); needs ≥2 chars. */
 export async function searchFiles(nick: string, q: string, folderHash: string): Promise<FileMeta[]> {
-  const qs = new URLSearchParams({ q, folder: folderHash });
+  // `term`, never `q`: Hubzilla routes on ?q=<path>, so a `q` param hijacks the request.
+  const qs = new URLSearchParams({ term: q, folder: folderHash });
   const res = await apiFetch(`/spa/files/${nick}/search?${qs}`);
   if (!res.ok) throw new Error(`searchFiles ${res.status}`);
   return (await res.json()).data ?? [];
