@@ -37,6 +37,7 @@ import { invite }     from "./invite";
 import { bookmarks }  from "./bookmarks";
 import { profiles }   from "./profiles";
 import { notepad }    from "./notepad";
+import { messenger }  from "./messenger";
 import { channel_create } from "./channel_create";
 import { blocklist }  from "./blocklist";
 import { notify }     from "./notify";
@@ -82,6 +83,7 @@ export const dict: RawDictionary = {
   bookmarks,
   profiles,
   notepad,
+  messenger,
   channel_create,
   blocklist,
   notify,

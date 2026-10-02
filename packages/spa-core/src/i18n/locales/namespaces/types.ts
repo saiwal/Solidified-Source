@@ -135,6 +135,8 @@ export type RawDictionary = {
     excalidraw:    string;
     openstreetmap: string;
     inbox_desc: string;
+    messenger:  string;
+    messenger_desc: string;
     tools_desc: string;
     games_desc: string;
     excalidraw_desc: string;
@@ -2686,6 +2688,36 @@ export type RawDictionary = {
     block_name_label:         string;
     block_name_placeholder:   string;
     col_name:                 string;
+  };
+  /** Messenger: DMs grouped by person + chatrooms in one split view. */
+  messenger: {
+    title: string;
+    search: string;
+    tab_dms: string;
+    tab_rooms: string;
+    new_dm: string;
+    new_room: string;
+    no_dms: string;
+    no_rooms: string;
+    no_match: string;
+    select: string;
+    conversations: string;
+    back: string;
+    reply_placeholder: string;
+    send: string;
+    load_failed: string;
+    no_subject: string;
+    my_rooms: string;
+    you: string;
+    load_more: string;
+    reply: string;
+    replying_to: string;
+    cancel_reply: string;
+    view_thread: string;
+    pin: string;
+    unpin: string;
+    pinned: string;
+    jump_to_message: string;
   };
   notepad: {
     notebook_placeholder: string;

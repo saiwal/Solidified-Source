@@ -1,17 +1,19 @@
 // src/modules/chat/ChatComposer.tsx
+// The chat input: rich editor, "Aa" formatting toolbar, emoji, mentions.
+// Shared by chatrooms and Messenger's DMs, so what it sends to, and whether
+// it uploads or encrypts, comes from the caller.
 import { createEffect, createSignal, Show, onCleanup, lazy } from "solid-js";
 import { createComposerStore } from "@/shared/editor/store/createComposerStore";
 import RichEditor from "@/shared/editor/core/RichEditor";
 import { CAPABILITIES } from "@/shared/editor/types/editor.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import type { MimeType } from "@utsukta/spa-core/lib/mimetypes";
 import { encryptBody } from "@utsukta/spa-core/lib/postCrypto";
 import { isFeatureEnabled, currentNick } from "@utsukta/spa-core/store/auth-store";
 import { useMentionEmojiWiring } from "@/shared/editor/mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import type { AttachmentActions } from "@/shared/editor/attachments/useAttachmentActions";
 import { appendInsert, bbcodeToInsert } from "@/shared/editor/attachments/insertHelpers";
-import type { RoomSession } from "./store";
-import { uploadChatMedia } from "./chatAttach";
 import { MdFillSend, MdOutlineAttach_file, MdOutlineLock } from "solid-icons/md";
 import EmojiPicker from "@/shared/editor/emoji/EmojiPicker";
 import SourceToggleButton from "@/shared/editor/components/SourceToggleButton";
@@ -26,7 +28,16 @@ import { createPopover } from "@/shared/stream/filters/createPopover";
 const FilePickerModal = lazy(() => import("@/shared/editor/attachments/picker/FilePickerModal"));
 
 interface Props {
-  room: RoomSession;
+  /** Send one message; throw to keep the text and show the error. */
+  send: (body: string, mimetype: MimeType) => Promise<void>;
+  /** Draft scope key. */
+  scope: string;
+  placeholder?: string;
+  /** Upload one file, returning the bbcode to insert. Omit for no attachments
+   *  (a chat upload takes the room's ACL; nothing comparable exists for a DM). */
+  upload?: (file: File, onPct: (pct: number) => void) => Promise<string>;
+  /** Offer session encryption — only where the reader can decrypt (rooms). */
+  encrypt?: boolean;
 }
 
 export default function ChatComposer(props: Props) {
@@ -80,10 +91,10 @@ export default function ChatComposer(props: Props) {
       // An encrypted message is a [crypt] block, i.e. bbcode, whatever it was
       // typed in; plain ones go up in their own format and the server
       // converts Markdown to bbcode, exactly as for posts.
-      if (pw) await props.room.send(await encryptBody(body, pw, sessionHint()), "text/bbcode");
-      else await props.room.send(body, store.mimetype());
+      if (pw) await props.send(await encryptBody(body, pw, sessionHint()), "text/bbcode");
+      else await props.send(body, store.mimetype());
     },
-    `chat:${props.room.nick}:${props.room.roomId}`,
+    props.scope,
     // Same "Markdown" feature toggle as PostComposer/CommentComposer.
     { initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode" },
   );
@@ -99,18 +110,16 @@ export default function ChatComposer(props: Props) {
   const insert = (bbcode: string) =>
     store.setBody(appendInsert(store.body(), bbcodeToInsert(bbcode, store.mimetype())));
 
-  // Uploads go into the room's own cloud folder under the room ACL
-  // (uploadChatMedia), not through the post AttachmentStore, whose files take
-  // the channel's default ACL — so the toolbar gets a chat-specific adapter.
+  // Uploads go through the caller (a room's own folder and ACL), not the post
+  // AttachmentStore, whose files take the channel's default ACL.
   async function uploadFiles(files: File[]) {
-    const nick = currentNick();
-    const room = props.room.name();
-    if (!nick || !room || !files.length) return;
+    const upload = props.upload;
+    if (!upload || !files.length) return;
     setUploading(true);
     try {
       for (const file of files) {
         setUploadPct(0);
-        insert((await uploadChatMedia(nick, room, file, setUploadPct, props.room.acl())).bbcode);
+        insert(await upload(file, setUploadPct));
       }
     } catch (e) {
       console.error("Chat media upload failed:", e);
@@ -165,7 +174,7 @@ export default function ChatComposer(props: Props) {
         class="rounded-2xl border border-rim bg-elevated focus-within:border-rim-strong transition-colors"
       >
         <RichEditor
-          attach={attach}
+          attach={props.upload ? attach : undefined}
           body={store.body()}
           onInput={store.setBody}
           mimetype={store.mimetype()}
@@ -182,7 +191,7 @@ export default function ChatComposer(props: Props) {
             if (!wiring.mention.open() && !wiring.emoji.open()) store.submit();
           }}
           onPasteFiles={(files) => void uploadFiles(files)}
-          placeholder={t("chat.write_message") as string}
+          placeholder={props.placeholder ?? (t("chat.write_message") as string)}
           minHeight="2.5rem"
           maxHeight="10rem"
           surfaceTrailing={
@@ -203,9 +212,11 @@ export default function ChatComposer(props: Props) {
           }
         />
         <div class="flex items-center gap-0.5 px-2 pb-1.5">
-          <IconButton title={t("editor.attach_file_title")} onClick={() => attach.openFile()}>
-            <MdOutlineAttach_file class="w-4 h-4" />
-          </IconButton>
+          <Show when={props.upload}>
+            <IconButton title={t("editor.attach_file_title")} onClick={() => attach.openFile()}>
+              <MdOutlineAttach_file class="w-4 h-4" />
+            </IconButton>
+          </Show>
           <EmojiPicker onSelect={insertEmoji} />
           <button
             type="button"
@@ -220,7 +231,7 @@ export default function ChatComposer(props: Props) {
           >
             Aa
           </button>
-          <Show when={isFeatureEnabled("content_encrypt")}>
+          <Show when={props.encrypt && isFeatureEnabled("content_encrypt")}>
             <button
               ref={encPop.ref}
               type="button"

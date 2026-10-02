@@ -1,5 +1,5 @@
 // src/modules/chat/widgets/BookmarkedRoomsWidget.tsx
-import { For, Show, onMount } from "solid-js";
+import { For, Show, onMount, type JSX } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { openChat } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -31,15 +31,7 @@ import { isChatUnread, isRemoteChatUnread, markRemoteChatSeen } from "../unread"
  */
 function UnreadDot(props: { bm: ChatBookmark }) {
   const { t } = useI18n();
-  const target = () => {
-    try {
-      const u = new URL(props.bm.url);
-      const m = u.origin === location.origin && u.pathname.match(/^\/chat\/([^/]+)\/(\d+)\/?$/);
-      return m ? { nick: m[1], id: Number(m[2]) } : null;
-    } catch {
-      return null;
-    }
-  };
+  const target = () => localRoomOf(props.bm);
   const [data] = createQueryResource("chat-rooms", () => target()?.nick ?? null, fetchRooms);
   const room = () => data.error ? undefined : data()?.rooms.find((r) => r.id === target()?.id);
   return (
@@ -51,7 +43,41 @@ function UnreadDot(props: { bm: ChatBookmark }) {
   );
 }
 
-export default function BookmarkedRoomsWidget() {
+/** A bookmark of a room on this hub, as nick + id; null for anything else. */
+export function localRoomOf(bm: ChatBookmark): { nick: string; id: number } | null {
+  try {
+    const u = new URL(bm.url, location.origin);
+    const m = u.origin === location.origin && u.pathname.match(/^\/chat\/([^/]+)\/(\d+)\/?$/);
+    return m ? { nick: decodeURIComponent(m[1]), id: Number(m[2]) } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** What a custom row gets: the behaviour, with the layout left to the host. */
+export interface BookmarkRowParts {
+  open: () => void;
+  remove: () => void;
+  /** Unread dot (renders nothing when read). */
+  unread: JSX.Element;
+  /** Web Push toggle (renders nothing for a room on this hub). */
+  push: JSX.Element;
+  /** This hub's room behind the bookmark, or null for another hub's. */
+  room: { nick: string; id: number } | null;
+}
+
+/**
+ * The bookmark rows: open, unread dot, remote push toggle, unbookmark. The
+ * widget frames them in a card; Messenger draws its own rows (`row`) as its
+ * pinned rooms, opening this hub's rooms inline via `onOpenLocal`.
+ */
+export function BookmarkedRoomsList(props: {
+  onOpenLocal?: (nick: string, roomId: number, title: string) => void;
+  /** Which bookmarks to show — the host's search box. */
+  filter?: (bm: ChatBookmark) => boolean;
+  /** Custom row layout; omitted, the widget's compact row. */
+  row?: (bm: ChatBookmark, parts: BookmarkRowParts) => JSX.Element;
+}) {
   const { t } = useI18n();
   const navigate = useNavigate();
 
@@ -70,7 +96,8 @@ export default function BookmarkedRoomsWidget() {
       return;
     }
     const room = u.pathname.match(/^\/chat\/([^/]+)\/(\d+)\/?$/);
-    if (u.origin === location.origin && room) openChat(decodeURIComponent(room[1]), Number(room[2]), bm.title);
+    if (u.origin === location.origin && room)
+      (props.onOpenLocal ?? openChat)(decodeURIComponent(room[1]), Number(room[2]), bm.title);
     else if (u.origin === location.origin) navigate(u.pathname);
     else {
       markRemoteChatSeen(bm);
@@ -79,6 +106,66 @@ export default function BookmarkedRoomsWidget() {
     }
   }
 
+  return (
+    <div class="divide-y divide-rim">
+      <For each={props.filter ? bookmarks().filter(props.filter) : bookmarks()}>
+        {(bm) => {
+          const push = (
+            <Show when={isRemoteBookmark(bm)}>
+              <button
+                onClick={async () => {
+                  if (!(await setChatPush(bm.id, !bm.push))) toast.error(t("chat.remote_push_failed"));
+                }}
+                class="p-1 rounded shrink-0 transition-colors"
+                classList={{
+                  "text-accent": !!bm.push,
+                  "text-muted hover:text-txt": !bm.push,
+                }}
+                title={t(bm.push ? "chat.remote_push_on" : "chat.remote_push_off") as string}
+                aria-label={t(bm.push ? "chat.remote_push_on" : "chat.remote_push_off") as string}
+                aria-pressed={!!bm.push}
+              >
+                {bm.push
+                  ? <MdOutlineNotifications_active class="w-3.5 h-3.5" />
+                  : <MdOutlineNotifications_off class="w-3.5 h-3.5" />}
+              </button>
+            </Show>
+          );
+          const parts: BookmarkRowParts = {
+            open: () => openBookmark(bm),
+            remove: () => void removeChatBookmark(bm.id),
+            unread: <UnreadDot bm={bm} />,
+            push,
+            room: localRoomOf(bm),
+          };
+          if (props.row) return props.row(bm, parts);
+          return (
+            <div class="flex items-center gap-2 px-3 py-2.5 hover:bg-elevated group transition-colors">
+              <button
+                class="flex-1 text-left text-xs text-txt truncate hover:text-accent transition-colors"
+                onClick={parts.open}
+              >
+                {bm.title}
+              </button>
+              {parts.unread}
+              {parts.push}
+              <button
+                onClick={parts.remove}
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-red-500 transition-all shrink-0"
+                title={t("chat.unbookmark") as string}
+              >
+                <MdOutlineDelete class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          );
+        }}
+      </For>
+    </div>
+  );
+}
+
+export default function BookmarkedRoomsWidget() {
+  const { t } = useI18n();
   return (
     <Show when={isLocalUser()}>
       <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
@@ -104,48 +191,7 @@ export default function BookmarkedRoomsWidget() {
           <p class="px-4 py-6 text-xs text-muted text-center">{t("chat.no_bookmarks")}</p>
         </Show>
 
-        {/* List */}
-        <div class="divide-y divide-rim">
-          <For each={bookmarks()}>
-            {(bm) => (
-              <div class="flex items-center gap-2 px-3 py-2.5 hover:bg-elevated group transition-colors">
-                <button
-                  class="flex-1 text-left text-xs text-txt truncate hover:text-accent transition-colors"
-                  onClick={() => openBookmark(bm)}
-                >
-                  {bm.title}
-                </button>
-                <UnreadDot bm={bm} />
-                <Show when={isRemoteBookmark(bm)}>
-                  <button
-                    onClick={async () => {
-                      if (!(await setChatPush(bm.id, !bm.push))) toast.error(t("chat.remote_push_failed"));
-                    }}
-                    class="p-1 rounded shrink-0 transition-colors"
-                    classList={{
-                      "text-accent": !!bm.push,
-                      "text-muted hover:text-txt": !bm.push,
-                    }}
-                    title={t(bm.push ? "chat.remote_push_on" : "chat.remote_push_off") as string}
-                    aria-label={t(bm.push ? "chat.remote_push_on" : "chat.remote_push_off") as string}
-                    aria-pressed={!!bm.push}
-                  >
-                    {bm.push
-                      ? <MdOutlineNotifications_active class="w-3.5 h-3.5" />
-                      : <MdOutlineNotifications_off class="w-3.5 h-3.5" />}
-                  </button>
-                </Show>
-                <button
-                  onClick={() => void removeChatBookmark(bm.id)}
-                  class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-red-500 transition-all shrink-0"
-                  title={t("chat.unbookmark") as string}
-                >
-                  <MdOutlineDelete class="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </For>
-        </div>
+        <BookmarkedRoomsList />
       </div>
     </Show>
   );

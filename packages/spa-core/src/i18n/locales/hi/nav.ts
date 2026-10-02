@@ -26,6 +26,8 @@ export const nav: RawDictionary["nav"] = {
   excalidraw:    "Excalidraw",
   openstreetmap: "OpenStreetMap",
   inbox_desc: "फ़ोल्डर, फ़िल्टर और ऑफ़लाइन पठन के साथ एकीकृत संदेश इनबॉक्स।",
+  messenger: "मैसेंजर",
+  messenger_desc: "सीधे संदेश और चैट रूम एक ही चैट दृश्य में।",
   tools_desc: "छोटे उपकरण: कन्वर्टर, जनरेटर और डायग्राम एडिटर।",
   games_desc: "ब्राउज़र में खेले जाने वाले आकस्मिक गेम।",
   excalidraw_desc: "व्हाइटबोर्ड ड्रॉइंग, /tools में और एडिटर बटन के रूप में।",

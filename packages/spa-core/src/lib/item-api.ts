@@ -208,8 +208,8 @@ export const apiAddToCalendar = (uuid: string) =>
 export const apiCreatePost = (body: Record<string, unknown>) =>
   post<{ success: boolean; iid: number; mid: string; uuid: string }>(BASE, body);
 
-export const apiCreateComment = (parentUuid: string, content: string, title = '') =>
-  post<CommentResult>(`${BASE}/${encodeId(parentUuid)}/comment`, { body: content, title });
+export const apiCreateComment = (parentUuid: string, content: string, title = '', mimetype?: string) =>
+  post<CommentResult>(`${BASE}/${encodeId(parentUuid)}/comment`, { body: content, title, ...(mimetype && { mimetype }) });
 
 /** Fields an edit may change. Omitted keys are left untouched server-side —
  *  notably `category`, whose absence means "keep the item's categories" (the

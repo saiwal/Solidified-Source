@@ -49,6 +49,8 @@ export interface MessageEntry {
   info: string;
   author_name: string;
   author_addr: string;
+  /** Absent on entries cached before it was added. */
+  author_hash?: string;
   href: string;
   icon: string;
   // The backend sends a real count when there are unseen replies, but falls
@@ -66,6 +68,17 @@ export interface MessageEntry {
   /** Name of whoever put this in the stream when that isn't the author — the
    *  resharer, or the group it came through. Absent on older cached entries. */
   via?: string;
+  /** Direct messages only: everyone on the thread except the viewer (author +
+   *  ACL). Messenger groups threads by this. Absent on older cached entries. */
+  participants?: DmParticipant[];
+}
+
+export interface DmParticipant {
+  hash: string;
+  name: string;
+  addr: string;
+  url: string;
+  photo: string;
 }
 
 export interface MessagesPage {
@@ -82,6 +95,8 @@ export interface FetchMessagesParams {
   search: string;
   /** Restrict to threads involving this xchan hash (ChanView's DM history). */
   xchan?: string;
+  /** Messenger on someone else's channel: that channel's DMs with the viewer. */
+  channel?: string;
   /** Inbox filter chip: the thread has an unseen message anywhere in it. */
   unread?: boolean;
   /** The shared stream filters, straight from the URL — the same params the
@@ -200,12 +215,13 @@ export async function fetchMessages(params: FetchMessagesParams): Promise<Messag
     file: params.file,
     author: params.search,
     ...(params.xchan ? { xchan: params.xchan } : {}),
+    ...(params.channel ? { channel: params.channel } : {}),
     ...(params.unread ? { unread: "1" } : {}),
     ...(params.filters ?? {}),
   });
   // A filtered slice must never be written under the unfiltered list key.
   const cacheable =
-    params.offset === 0 && !params.search.trim() && !params.xchan
+    params.offset === 0 && !params.search.trim() && !params.xchan && !params.channel
     && !params.unread && !Object.keys(params.filters ?? {}).length;
   const key = listKey(params.type, params.file);
 
