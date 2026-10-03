@@ -1,9 +1,10 @@
-import { For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { isDeletedStub, isConfirmedDeleted } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../stream/types";
 import PostCard from "../stream/components/PostCard";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
 
 export default function CommentThread(props: {
   comments: ThreadNode[];
@@ -20,6 +21,15 @@ export default function CommentThread(props: {
   flush?: boolean;
 }) {
   const { t } = useI18n();
+  const threadMode = useThreadMode();
+  // List mode loses the reply structure, so a comment answering another
+  // comment quotes it instead. thr_parent === parent_mid means it answers the
+  // root; a parent on a page not loaded yet just gets no quote.
+  const byMid = createMemo(() =>
+    threadMode() ? new Map<string, ThreadNode>() : new Map(props.comments.map((c) => [c.mid, c])),
+  );
+  const quotedOf = (c: ThreadNode) =>
+    c.thr_parent && c.thr_parent !== c.parent_mid ? byMid().get(c.thr_parent) : undefined;
 
   return (
     <div
@@ -30,7 +40,7 @@ export default function CommentThread(props: {
       }}
     >
       <div style={{ overflow: "hidden" }}>
-        <div class="mt-2 space-y-1.5" classList={{ "ml-1": !props.flush }}>
+        <div data-comments class="mt-2 space-y-1.5" classList={{ "ml-1": !props.flush }}>
           <For each={props.comments}>
             {(comment) => (
               <Show
@@ -70,6 +80,7 @@ export default function CommentThread(props: {
                   expandAll={props.expandAll}
                   rootUuid={props.rootUuid}
                   depth={props.depth ?? 1}
+                  quoted={quotedOf(comment)}
                 />
               </Show>
             )}

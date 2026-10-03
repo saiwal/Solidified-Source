@@ -39,11 +39,8 @@ function updateNodeInTree(node: ThreadNode, mid: string, updater: (n: ThreadNode
 // this route has no target-comment param today; see PostDetailModal for the
 // sibling-window fetch used when opening a permalink to a specific nested
 // comment instead of the thread root).
-async function fetchPost(uuid: string): Promise<ThreadNode> {
+async function fetchPost([uuid, threaded, order]: readonly [string, boolean, CommentOrder]): Promise<ThreadNode> {
   const rawRoot = await fetchDisplayItem(uuid);
-
-  const order = useCommentOrder()();
-  const threaded = useThreadMode()();
   // Comments are a second request — see PostDetailModal: offline the root can
   // come from the local store while the comments have no copy, and a post
   // without its replies beats an error page.
@@ -102,14 +99,21 @@ export default function PostView() {
   const { t } = useI18n();
   const navViewer = useNavViewer();
 
-  const [node, { refetch, mutate }] = createQueryResource("post", () => params.uuid, fetchPost);
+  const [node, { refetch, mutate }] = createQueryResource(
+    "post",
+    // Comment style and order are part of the key, so changing either in
+    // Settings refetches instead of serving the cached shape.
+    () => (params.uuid ? ([params.uuid, useThreadMode()(), useCommentOrder()()] as const) : undefined),
+    fetchPost,
+  );
 
   // The just-posted reply is appended in place rather than refetched — a
   // refetch re-runs the paged comment fetch, which may not include it.
   function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
-    mutate((prev) => prev && updateNodeInTree(prev, parentMid, (n) => ({
+    // List mode: every comment hangs off the root (see PostDetailModal).
+    mutate((prev) => prev && updateNodeInTree(prev, useThreadMode()() ? parentMid : prev.mid, (n) => ({
       ...n,
-      children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid })],
+      children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid, parent_mid: prev.mid })],
     })));
   }
   const [localReactions, setLocalReactions] = createSignal<Record<string, ReactionOverride>>({});

@@ -45,7 +45,7 @@ export function tempCommentNode(
   parentMid: string, body: string, viewer?: NavViewer,
   // The server's ids plus the parent's profileUid — without them the node
   // can't be replied to (the reply composer is gated on iid + profileUid).
-  real?: Partial<CreatedComment> & { profileUid?: number },
+  real?: Partial<CreatedComment> & { profileUid?: number; parent_mid?: string },
 ): ThreadNode {
   const tempMid = crypto.randomUUID();
   return {
@@ -214,10 +214,13 @@ export function createActionHandlers(store: StreamStore) {
       _authorAvatar: string,
       created?: CreatedComment,
     ): void {
+      // List mode keeps every comment a direct child of the thread root; the
+      // reply's thr_parent still names what it answers (CommentThread quotes it).
+      const rootMid = store.posts().find((p) => findNode([p], parentMid))?.mid ?? parentMid;
       store.setPosts((prev) =>
-        updateNode(prev, parentMid, (n) => ({
+        updateNode(prev, useThreadMode()() ? parentMid : rootMid, (n) => ({
           ...n,
-          children: [...n.children, tempCommentNode(parentMid, body, undefined, { ...created, profileUid: n.profileUid })],
+          children: [...n.children, tempCommentNode(parentMid, body, undefined, { ...created, profileUid: n.profileUid, parent_mid: rootMid })],
         })),
       );
     },

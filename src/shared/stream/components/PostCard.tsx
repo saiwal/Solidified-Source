@@ -205,6 +205,9 @@ export default function PostCard(props: {
   // they've scrolled down to the highlighted comment. Only meaningful on the
   // root (full, non-compact) layout.
   contextBanner?: JSX.Element;
+  // List (flat) comment mode only: the comment this one answers, when it
+  // isn't the root — shown as a quote that jumps to it, like DmPane does.
+  quoted?: ThreadNode;
 }) {
   const [replyOpen, setReplyOpen] = createSignal(false);
   const [replyQuote, setReplyQuote] = createSignal("");
@@ -1080,6 +1083,7 @@ export default function PostCard(props: {
     return (
       <div
         ref={cardRef}
+        data-mid={props.post.mid}
         class={`relative transition-colors duration-500
                ${autoCollapsed() ? "mb-0.5" : "border-l-2 pl-2 md:pl-3 py-2 md:py-2.5 mb-1"}
                ${props.highlighted ? "border-accent bg-accent/5" :  "border-rim/60"}`}
@@ -1131,6 +1135,26 @@ export default function PostCard(props: {
               <MdOutlineClose size={10} />
             </button>
           </div>
+        </Show>
+        <Show when={props.quoted}>
+          {(q) => (
+            <button
+              type="button"
+              onClick={() => {
+                const el = cardRef.closest("[data-comments]")
+                  ?.querySelector<HTMLElement>(`[data-mid="${CSS.escape(q().mid)}"]`);
+                if (!el) return;
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                el.classList.add("bg-accent/10");
+                setTimeout(() => el.classList.remove("bg-accent/10"), 1500);
+              }}
+              title={t("messenger.jump_to_message")}
+              class="block w-full min-w-0 text-left mb-1.5 pl-2 border-l-2 border-accent/50 text-xs text-muted hover:text-txt transition-colors"
+            >
+              <span class="block font-semibold truncate">{q().authorName}</span>
+              <span class="block truncate">{excerptOf(q(), 120)}</span>
+            </button>
+          )}
         </Show>
         {/* Compact author header */}
         <div class="flex items-start gap-2 min-w-0">

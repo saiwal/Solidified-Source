@@ -82,8 +82,12 @@ async function fetchPostDetail(uuid: string, order: CommentOrder, threaded: bool
 
   const rootPost: Post = mapActivityToPost(rawRoot);
   const posts = (commentsResult.comments ?? []).map(mapActivityToPost);
+  // The comment-context fetch follows the comment style too; its window
+  // isn't ordered by the server, so sort it the way the flat fetch is.
+  const byCreated = (a: Post, b: Post) =>
+    order === "newest_first" ? b.created.localeCompare(a.created) : a.created.localeCompare(b.created);
   const children = isHighlight
-    ? buildThreadTree(posts)
+    ? (threaded ? buildThreadTree(posts) : flatNodes([...posts].sort(byCreated)))
     : threaded
       ? applyBranchMeta(buildThreadTree(posts, order), commentsResult.branches)
       : flatNodes(posts);
@@ -270,10 +274,12 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   // refetch: the modal may have been opened on one comment (notification /
   // permalink), whose ancestor+siblings fetch would not contain the new
   // reply — it would blink out again.
+  // List mode keeps every comment a direct child of the root; the reply's
+  // thr_parent still names what it answers, which CommentThread quotes.
   function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
-    setNodeData((prev) => prev && updateNodeInTree(prev, parentMid, (n) => ({
+    setNodeData((prev) => prev && updateNodeInTree(prev, threadMode() ? parentMid : prev.mid, (n) => ({
       ...n,
-      children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid })],
+      children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid, parent_mid: prev.mid })],
     })));
   }
 
