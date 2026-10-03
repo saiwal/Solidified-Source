@@ -60,5 +60,5 @@ export function useCloudBookmarks() {
     await queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
   }
 
-  return { enabled: isLocalUser, loading: () => query.isLoading, list, find, toggle, remove };
+  return { enabled: isLocalUser, list, find, toggle, remove };
 }

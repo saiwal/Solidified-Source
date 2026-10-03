@@ -1078,22 +1078,36 @@ export default function FilesContentWidget() {
             <input ref={uploadInput} type="file" multiple class="sr-only" onChange={handleUpload} />
           </div>
         </Show>
-      </div>
 
-      {/* ── View filter ── */}
-      <Show when={filterOpen()}>
-        <input
-          type="search"
-          autofocus
-          value={query()}
-          onInput={(e) => setQuery(e.currentTarget.value)}
-          onKeyDown={(e) => { if (e.key === "Escape") { setQuery(""); setFilterOpen(false); } }}
-          placeholder={t("files_mod.filter_view") as string}
-          aria-label={t("files_mod.filter_view") as string}
-          class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-sm text-txt
-                 placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
-        />
-      </Show>
+        {/* View filter — inside the sticky bar so it stays pinned while scrolling */}
+        <Show when={filterOpen()}>
+          <label class="basis-full flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rim bg-surface
+                        text-sm focus-within:border-accent transition-colors">
+            <MdOutlineFilter_list size={16} class="text-muted shrink-0" />
+            <input
+              type="text"
+              autofocus
+              value={query()}
+              onInput={(e) => setQuery(e.currentTarget.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setQuery(""); setFilterOpen(false); } }}
+              placeholder={t("files_mod.filter_view") as string}
+              aria-label={t("files_mod.filter_view") as string}
+              class="flex-1 min-w-0 bg-transparent text-txt placeholder:text-muted focus:outline-none"
+            />
+            <Show when={query()}>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                title={t("files_mod.clear_filter") as string}
+                aria-label={t("files_mod.clear_filter") as string}
+                class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
+              >
+                <MdOutlineClose size={14} />
+              </button>
+            </Show>
+          </label>
+        </Show>
+      </div>
 
       {/* ── Upload progress ── */}
       <Show when={canWrite() && uploadPct() !== null}>

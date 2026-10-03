@@ -6,13 +6,16 @@ import { A, useNavigate } from "@solidjs/router";
 import { useQuery } from "@tanstack/solid-query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMessages } from "@utsukta/spa-core/lib/message-store";
-import { fetchDisplayItem, fetchComments, apiCreateComment, apiSetSeen } from "@utsukta/spa-core/lib/item-api";
+import {
+  fetchDisplayItem, fetchComments, apiCreateComment, apiSetSeen,
+  apiToggleLike, apiEditItem, apiDeleteItem, apiFetchComposeSource,
+} from "@utsukta/spa-core/lib/item-api";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-import { MdFillPush_pin, MdOutlinePush_pin, MdOutlineArrow_back, MdOutlineClose, MdOutlineEdit, MdOutlineForum, MdOutlineReply } from "solid-icons/md";
+import { MdFillPush_pin, MdOutlinePush_pin, MdOutlineArrow_back, MdOutlineClose, MdOutlineEdit, MdOutlineForum, MdOutlineFavorite_border, MdFillFavorite, MdOutlineReply, MdOutlineDelete } from "solid-icons/md";
 import ChatComposer from "@/modules/chat/ChatComposer";
 import { openPost } from "@/shared/views/modal-host";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -206,13 +209,16 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
         return (
           <div class="flex flex-col flex-1 min-h-0">
             {header(th()?.title || undefined)}
-            <DmThread uuid={uuid} unseen={!!th()?.unseen || !!th()?.unseen_count} />
+            <DmThread uuid={uuid} unseen={!!th()?.unseen || !!th()?.unseen_count} onGone={() => navigate(base(), { replace: true })} />
           </div>
         );
       }}
     </Show>
   );
 }
+
+/** The author's channel page, as the stream links it. */
+const channelHref = (m: any) => `/chanview?f=&hash=${encodeURIComponent(m.author?.hash || m.author?.url || "")}`;
 
 /** Item timestamps are UTC "YYYY-MM-DD HH:MM:SS". */
 const itemDate = (created: string) => new Date(created.replace(" ", "T") + "Z");
@@ -224,13 +230,18 @@ function snippet(m: any): string {
   return (div.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
 }
 
-function DmThread(props: { uuid: string; unseen: boolean }) {
+/** `onGone`: the opening message was deleted, which takes the thread with it. */
+function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) {
   const { t, locale } = useI18n();
   const viewer = useNavViewer();
+  const auth = useAuth();
   let scroller: HTMLDivElement | undefined;
   // The message a reply answers, when it isn't the thread's opening post.
   const [replyTo, setReplyTo] = createSignal<any>(null);
   const [flash, setFlash] = createSignal("");
+  // Inline edit: the message being edited and its source text.
+  const [editing, setEditing] = createSignal<{ uuid: string; body: string; title: string; mimetype: string } | null>(null);
+  const [busy, setBusy] = createSignal(false);
 
   // Root + replies, flattened oldest-first: a DM reads as a chat, not a tree.
   // Replies to something other than the root carry a quote of it instead.
@@ -285,14 +296,60 @@ function DmThread(props: { uuid: string; unseen: boolean }) {
     invalidateDms();
   }
 
+  // Each action refetches the thread rather than patching it: likes, edits
+  // and deletes are rare enough that one round-trip is the simpler truth.
+  async function act(fn: () => Promise<unknown>) {
+    if (busy()) return;
+    setBusy(true);
+    try {
+      await fn();
+      await thread.refetch();
+      invalidateDms();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // The stored source, not the rendered body: markdown and [share] embeds
+  // need the compose form to round-trip.
+  async function startEdit(m: any) {
+    const src = await apiFetchComposeSource(m.uuid);
+    if (!src) return toast.error(t("messenger.load_failed") as string);
+    setEditing({ uuid: m.uuid, body: src.body, title: src.title, mimetype: src.mimetype });
+  }
+
+  const saveEdit = () => {
+    const e = editing();
+    if (!e || !e.body.trim()) return;
+    // No `category` key: the server keeps the item's categories as they are.
+    void act(() => apiEditItem(e.uuid, { body: e.body, title: e.title, mimetype: e.mimetype })).then(() => setEditing(null));
+  };
+
+  async function remove(m: any, isRoot: boolean) {
+    if (!confirm(t(isRoot ? "messenger.delete_thread_confirm" : "messenger.delete_confirm") as string)) return;
+    if (!isRoot) return act(() => apiDeleteItem(m.uuid));
+    try {
+      await apiDeleteItem(m.uuid);
+      invalidateDms();
+      props.onGone();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  const ACTION = "p-0.5 rounded hover:text-txt hover:bg-elevated disabled:opacity-50";
   // Shown on hover/focus with a mouse; always (faintly) on touch screens.
+  const REVEAL = "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-60";
+
   const replyButton = (m: any) => (
     <button
       type="button"
       onClick={() => setReplyTo(m)}
       aria-label={t("messenger.reply") as string}
       title={t("messenger.reply") as string}
-      class="p-1 rounded-full text-muted hover:text-txt hover:bg-elevated shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-60"
+      class={`p-1 mt-0.5 rounded-full text-muted hover:text-txt hover:bg-elevated shrink-0 ${REVEAL}`}
     >
       <MdOutlineReply size={16} />
     </button>
@@ -310,7 +367,7 @@ function DmThread(props: { uuid: string; unseen: boolean }) {
           <p class="text-sm text-red-500">{t("messenger.load_failed")}</p>
         </Show>
         <For each={messages()}>
-          {({ m, quoted, self, day, first }) => (
+          {({ m, quoted, self, day, first }, i) => (
             <>
               <Show when={day}>
                 <div class="flex items-center gap-3 pt-4 pb-1" role="separator">
@@ -319,20 +376,26 @@ function DmThread(props: { uuid: string; unseen: boolean }) {
                   <div class="flex-1 h-px bg-rim" />
                 </div>
               </Show>
-              <div class="group flex items-center gap-2 py-px" classList={{ "justify-end": self, "mt-2.5": first }}>
-                <Show when={self}>{replyButton(m)}</Show>
+              <div class="group flex items-start gap-2 py-px" classList={{ "justify-end": self, "mt-2.5": first }}>
                 <Show when={!self}>
-                  <Show when={first} fallback={<div class="w-7 shrink-0" />}>
-                    <Avatar src={m.author?.photo?.src} name={m.author?.name ?? "?"} class="w-7 h-7 mt-0.5" />
+                  {/* Avatar with the name under it, in a fixed-width column so
+                      a run's later messages stay aligned beneath it. */}
+                  <Show when={first} fallback={<div class="w-12 shrink-0" />}>
+                    <A href={channelHref(m)} title={m.author?.name} class="w-12 shrink-0 flex flex-col items-center gap-0.5 group/author">
+                      <Avatar src={m.author?.photo?.src} name={m.author?.name ?? "?"} class="w-7 h-7" />
+                      <span class="w-full text-center text-[0.625rem] leading-tight text-muted truncate group-hover/author:text-txt group-hover/author:underline">
+                        {m.author?.name}
+                      </span>
+                    </A>
                   </Show>
                 </Show>
-                <div class="max-w-[80%] min-w-0 flex flex-col" classList={{ "items-end": self }}>
-                  <Show when={!self && first}>
-                    <p class="text-[0.6875rem] font-medium text-muted px-1">{m.author?.name}</p>
-                  </Show>
+                <div class="max-w-[85%] min-w-0 flex flex-col" classList={{ "items-end": self }}>
+                  {/* Bubble and its reply button share a row, so the button
+                      lines up with the message's first line. */}
+                  <div class="flex items-start gap-1 max-w-full" classList={{ "flex-row-reverse": self }}>
                   <div
                     data-mid={m.mid}
-                    class="px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words transition-shadow"
+                    class="min-w-0 px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words transition-shadow"
                     classList={{
                       "bg-accent text-accent-fg": self,
                       "bg-elevated text-txt": !self,
@@ -352,13 +415,83 @@ function DmThread(props: { uuid: string; unseen: boolean }) {
                         </button>
                       )}
                     </Show>
-                    <div class="[&_img]:max-w-full" innerHTML={renderBody(m.body, m.mimetype, undefined, sanitizeHtml)} />
+                    <Show
+                      when={editing()?.uuid === m.uuid}
+                      fallback={<div class="[&_img]:max-w-full" innerHTML={renderBody(m.body, m.mimetype, undefined, sanitizeHtml)} />}
+                    >
+                      <textarea
+                        value={editing()!.body}
+                        onInput={(e) => setEditing({ ...editing()!, body: e.currentTarget.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setEditing(null);
+                          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) saveEdit();
+                        }}
+                        ref={(el) => requestAnimationFrame(() => el.focus())}
+                        rows={3}
+                        class="w-64 max-w-full field-sizing-content min-h-16 max-h-60 bg-surface text-txt border border-rim rounded-lg px-2 py-1 text-sm outline-none focus:border-accent"
+                      />
+                      <div class="flex justify-end gap-2 mt-1 text-xs">
+                        <button type="button" onClick={() => setEditing(null)} class="px-2 py-0.5 rounded hover:underline">
+                          {t("messenger.cancel")}
+                        </button>
+                        <button type="button" onClick={saveEdit} disabled={busy()} class="px-2 py-0.5 rounded bg-surface text-txt font-medium disabled:opacity-50">
+                          {t("messenger.save")}
+                        </button>
+                      </div>
+                    </Show>
                   </div>
-                  <p class="text-[0.625rem] text-muted px-1 tabular-nums">
-                    {itemDate(m.created).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" })}
-                  </p>
+                  {replyButton(m)}
+                  </div>
+                  {/* Time, likes, then edit/delete — small icons under the bubble,
+                      so the row beside it holds only the reply button. */}
+                  <div class="flex flex-wrap items-center gap-x-2 text-[0.625rem] text-muted px-1" classList={{ "justify-end": self }}>
+                    <span class="tabular-nums" title={itemDate(m.created).toLocaleString(locale())}>
+                      {itemDate(m.created).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" })}
+                    </span>
+                    <Show when={m.edited && m.edited !== m.created}>
+                      <span title={itemDate(m.edited).toLocaleString(locale())}>· {t("messenger.edited")}</span>
+                    </Show>
+                    <button
+                      type="button"
+                      disabled={busy()}
+                      onClick={() => void act(() => apiToggleLike(m.uuid))}
+                      aria-pressed={!!m.viewer_liked}
+                      title={t(m.viewer_liked ? "messenger.unlike" : "messenger.like") as string}
+                      aria-label={t(m.viewer_liked ? "messenger.unlike" : "messenger.like") as string}
+                      class={`flex items-center gap-0.5 ${ACTION}`}
+                      classList={{ "text-accent": !!m.viewer_liked }}
+                    >
+                      <Show when={m.viewer_liked} fallback={<MdOutlineFavorite_border size={12} />}>
+                        <MdFillFavorite size={12} />
+                      </Show>
+                      <Show when={m.like_count > 0}>
+                        <span class="tabular-nums" aria-label={t("messenger.likes", { n: String(m.like_count) }) as string}>{m.like_count}</span>
+                      </Show>
+                    </button>
+                    {/* Edit and delete are local-channel endpoints; remote visitors do that on their own hub. */}
+                    <Show when={self && auth()?.isLocal && editing()?.uuid !== m.uuid}>
+                      <button
+                        type="button"
+                        onClick={() => void startEdit(m)}
+                        title={t("messenger.edit") as string}
+                        aria-label={t("messenger.edit") as string}
+                        class={`${ACTION} ${REVEAL}`}
+                      >
+                        <MdOutlineEdit size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy()}
+                        onClick={() => void remove(m, i() === 0)}
+                        title={t("messenger.delete") as string}
+                        aria-label={t("messenger.delete") as string}
+                        class={`p-0.5 rounded hover:text-red-500 hover:bg-elevated disabled:opacity-50 ${REVEAL}`}
+                      >
+                        <MdOutlineDelete size={12} />
+                      </button>
+                    </Show>
+                  </div>
                 </div>
-                <Show when={!self}>{replyButton(m)}</Show>
               </div>
             </>
           )}

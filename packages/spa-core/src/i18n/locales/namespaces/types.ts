@@ -2495,6 +2495,7 @@ export type RawDictionary = {
     folder_tree:      string;
     search_files: string;
     filter_view: string;
+    clear_filter: string;
     title_mine: string;
     title_of: string;
     perm_mixed: string;
@@ -2504,7 +2505,6 @@ export type RawDictionary = {
     unbookmarked: string;
     bookmark_failed: string;
     bookmarked_files: string;
-    no_bookmarked_files: string;
     no_matches: string;
     nav_back: string;
     nav_forward: string;
@@ -2720,6 +2720,16 @@ export type RawDictionary = {
     unpin: string;
     pinned: string;
     jump_to_message: string;
+    like: string;
+    unlike: string;
+    likes: string;
+    edit: string;
+    delete: string;
+    delete_confirm: string;
+    delete_thread_confirm: string;
+    edited: string;
+    save: string;
+    cancel: string;
   };
   notepad: {
     notebook_placeholder: string;

@@ -1,5 +1,5 @@
 import { createSignal, createEffect, createMemo, onCleanup, For, Show } from "solid-js";
-import { MdFillFolder, MdOutlineSearch } from "solid-icons/md";
+import { MdFillFolder, MdOutlineSearch, MdOutlineClose } from "solid-icons/md";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { listFolderMeta, searchFiles, pruneTree, type PNode, type FileMeta, type FolderFrame } from "../api";
@@ -159,13 +159,24 @@ export default function FolderTree(props: Props) {
                     text-sm focus-within:border-accent transition-colors">
         <MdOutlineSearch size={16} class="text-muted shrink-0" />
         <input
-          type="search"
+          type="text"
           value={query()}
           onInput={(e) => setQuery(e.currentTarget.value)}
           placeholder={t("files_mod.search_files") as string}
           aria-label={t("files_mod.search_files") as string}
           class="flex-1 min-w-0 bg-transparent text-txt placeholder:text-muted focus:outline-none"
         />
+        <Show when={query()}>
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            title={t("files_mod.clear_filter") as string}
+            aria-label={t("files_mod.clear_filter") as string}
+            class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
+          >
+            <MdOutlineClose size={14} />
+          </button>
+        </Show>
       </label>
 
       <Show

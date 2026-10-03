@@ -5,7 +5,9 @@ import { MdOutlineBookmark_border, MdOutlineDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useCloudBookmarks } from "../bookmarks";
 
-/** Bookmarks pointing into a /cloud/ — folders open in the file view, files preview. */
+/** Bookmarks pointing into a /cloud/ — folders open in the file view, files preview.
+ *  Renders nothing until there is at least one, so an empty sidebar slot (or one
+ *  still loading) takes no space. */
 export default function CloudBookmarksWidget() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -15,25 +17,13 @@ export default function CloudBookmarksWidget() {
   const where = (path: string) => path.replace(/^\/cloud\//, "");
 
   return (
-    <Show when={bm.enabled()}>
+    <Show when={bm.enabled() && bm.list().length > 0}>
       <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
         <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
           <MdOutlineBookmark_border class="w-4 h-4 text-accent shrink-0" />
           <h3 class="text-sm font-semibold text-txt flex-1">{t("files_mod.bookmarked_files")}</h3>
-          <Show when={bm.list().length > 0}>
-            <span class="text-xs text-muted tabular-nums">{bm.list().length}</span>
-          </Show>
+          <span class="text-xs text-muted tabular-nums">{bm.list().length}</span>
         </div>
-
-        <Show when={bm.loading()}>
-          <div class="px-4 py-3 space-y-2 animate-pulse">
-            <For each={[1, 2, 3]}>{() => <div class="h-3 bg-elevated rounded w-4/5" />}</For>
-          </div>
-        </Show>
-
-        <Show when={!bm.loading() && bm.list().length === 0}>
-          <p class="px-4 py-6 text-xs text-muted text-center">{t("files_mod.no_bookmarked_files")}</p>
-        </Show>
 
         <div class="divide-y divide-rim">
           <For each={bm.list()}>

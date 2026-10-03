@@ -113,7 +113,7 @@ export default function MessengerView() {
   const isOwner = () => !!auth()?.isLocal && nick() === currentNick();
   const urlTab = () => (segs()[0] === "rooms" ? "rooms" : "dms");
   // Local, so flipping tabs keeps the open conversation; follows the url.
-  const [tab, setTab] = createSignal<"dms" | "rooms">(urlTab());
+  const [pickedTab, setTab] = createSignal<"dms" | "rooms">(urlTab());
   createEffect(on(urlTab, setTab, { defer: true }));
   const selected = () => segs().length > 1;
   const [query, setQuery] = createSignal("");
@@ -160,6 +160,17 @@ export default function MessengerView() {
     if (id) await removeChatBookmark(id);
     else await addChatBookmark(nick(), roomId, name);
   }
+  // Rooms (tab + switcher) only when this channel has the Chatrooms app — the
+  // same gate core's /chat uses. Unknown (loading) or an error counts as off,
+  // so the switcher never flashes in and out. `tab()` folds the gate in, so
+  // every caller below stays DMs-only while rooms are off.
+  const roomsOn = () => !own.error && own()?.chatrooms_installed === true;
+  const tab = () => (roomsOn() ? pickedTab() : "dms");
+  // A /rooms url on a channel without the app: back to its DMs. Waits for this
+  // nick's own answer (`loading` covers a previous channel's placeholder data).
+  createEffect(() => {
+    if (!own.loading && !roomsOn() && segs()[0] === "rooms") navigate(base(), { replace: true });
+  });
   const canCreateRoom = () => isOwner() && !own.error && own()?.is_owner && own()?.chatrooms_installed !== false;
   // A local visitor can start a DM from their own channel; a remote one sends from their hub.
   const canNewDm = () => !!auth()?.isLocal;
@@ -236,6 +247,7 @@ export default function MessengerView() {
               class="flex-1 min-w-0 bg-transparent text-sm text-txt outline-none"
             />
           </label>
+          <Show when={roomsOn()}>
           <div role="tablist" class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-elevated text-sm">
             <For each={["dms", "rooms"] as const}>
               {(k) => (
@@ -255,6 +267,7 @@ export default function MessengerView() {
               )}
             </For>
           </div>
+          </Show>
         </div>
 
         <div class="flex-1 overflow-y-auto min-h-0">
