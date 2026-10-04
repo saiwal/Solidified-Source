@@ -5,6 +5,7 @@ import type { StreamHandlers } from "../types";
 import PostCard from "../components/PostCard";
 import { openPost } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import CardShell from "../CardShell";
 
 export function FeedPlaceholder() {
   return (
@@ -42,11 +43,13 @@ export default function FeedView(props: { posts: ThreadNode[]; handlers: StreamH
         fallback={<p class="text-center py-16 text-muted text-sm">{t("network.all_caught_up")}</p>}
       >
         {(post) => (
-          <PostCard
-            post={post}
-            handlers={props.handlers}
-            onViewContext={() => openPost(post.uuid)}
-          />
+          <CardShell uuid={post.uuid}>
+            <PostCard
+              post={post}
+              handlers={props.handlers}
+              onViewContext={() => openPost(post.uuid)}
+            />
+          </CardShell>
         )}
       </For>
     </div>

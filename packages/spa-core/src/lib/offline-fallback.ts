@@ -16,7 +16,7 @@ import { storageDel, storageGet, storageKeys, storageSet } from "./storage.ts";
 
 // The stream poll mints a unique ?dbegin=<now> URL every tick; caching those
 // would write an IndexedDB entry per poll forever.
-const SKIP = /[?&]dbegin=/;
+const SKIP = /[?&]dbegin=|\/spa\/item\/counts\b/; // + the live-count poll (createStreamStore.refreshCounts)
 const MAX_BODY = 512 * 1024;
 const key = (url: string) => `offline:${url}`;
 

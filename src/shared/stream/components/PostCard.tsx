@@ -409,7 +409,9 @@ export default function PostCard(props: {
     props.post.hasMoreComments
       ? (props.post.commentsTotal ?? props.post.commentCount ?? 0)
       : props.post.children.length > 0
-        ? countAllComments(props.post.children)
+        // max(): the live-count poll raises commentCount when replies land
+        // that this card hasn't fetched (0 on a nested comment — harmless).
+        ? Math.max(countAllComments(props.post.children), props.post.commentCount ?? 0)
         : (props.post.commentsTotal ?? props.post.commentCount ?? 0);
 
   // Folder: local users only, post must be in their stream (iid present)
@@ -1746,6 +1748,8 @@ export default function PostCard(props: {
         (props.seamless
           ? "relative bg-surface p-3 md:p-5"
           : "relative bg-surface border border-rim rounded-2xl p-3 md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
+        // Flat (unthreaded) reply: same card, with an accent rail down its left edge.
+        (isFlatReply() && !props.seamless && !props.split ? " border-l-4 border-l-accent/50" : "") +
         (props.split ? " grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] h-full !p-0" : "")
       }
     >
@@ -1768,18 +1772,20 @@ export default function PostCard(props: {
             when={props.post.authorAvatar}
             fallback={
               <div
-                class="w-11 h-11 rounded-full bg-gradient-to-br from-accent to-accent-txt
-                          shrink-0 flex items-center justify-center text-accent-fg text-sm font-bold ring-1 ring-rim
+                class="rounded-full bg-gradient-to-br from-accent to-accent-txt
+                          shrink-0 flex items-center justify-center text-accent-fg font-bold ring-1 ring-rim
                           cursor-pointer"
+                classList={{ "w-11 h-11 text-sm": !isFlatReply(), "w-6 h-6 text-[0.625rem]": isFlatReply() }}
               >
                 {props.post.authorName?.[0]?.toUpperCase() ?? "?"}
               </div>
             }
           >
+            {/* A flat (unthreaded) reply takes the comment avatar size. */}
             <img
               src={props.post.authorAvatar}
-              width="44"
-              height="44"
+              width={isFlatReply() ? 24 : 44}
+              height={isFlatReply() ? 24 : 44}
               class="rounded-full object-cover ring-1 ring-rim cursor-pointer"
             />
           </Show>

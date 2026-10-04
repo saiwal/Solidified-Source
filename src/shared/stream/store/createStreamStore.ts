@@ -1,11 +1,26 @@
 // src/shared/stream/store/createStreamStore.ts
 import { createSignal } from "solid-js";
+import { createStore, reconcile, unwrap } from "solid-js/store";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { updateInterval } from "@utsukta/spa-core/store/auth-store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { RANKED_ORDERS } from "@/shared/stream/filters/ranked";
+import { apiFetch } from "@utsukta/spa-core/lib/fetch";
+import { visibleUuids, prependWithMotion, resetReveal } from "@/shared/stream/reveal";
+
+interface LiveCounts {
+  like_count: number;
+  dislike_count: number;
+  announce_count: number;
+  comment_count: number;
+  viewer_liked: boolean;
+  viewer_disliked: boolean;
+  viewer_repeated: boolean;
+}
+
+const COUNTS_MAX = 50; // matches Item::COUNTS_MAX
 
 export interface StreamResult {
   items: Post[];
@@ -47,12 +62,26 @@ export function updateNode(
   });
 }
 
+function countsKey(n: ThreadNode): string {
+  return [n.likeCount, n.dislikeCount, n.repeatCount, n.commentCount, n.viewerLiked, n.viewerDisliked, n.viewerRepeated].join();
+}
+
 // ── factory ───────────────────────────────────────────────────────────────────
 
 export function createStreamStore<P extends StreamParams>(
   fetcher: (params: P) => Promise<StreamResult>,
 ) {
-  const [posts, setPosts] = createSignal<ThreadNode[]>([]);
+  // A store reconciled by mid, not a signal: updateNode() returns a fresh
+  // object for the node it touches, and <For> keys by reference — as a plain
+  // signal every like/edit (and every live-count poll) remounted that card,
+  // dropping its open reply box, expanded body and playing media. Reconciling
+  // patches the existing node in place, so only the changed text re-renders.
+  const [state, setState] = createStore<{ posts: ThreadNode[] }>({ posts: [] });
+  const posts = () => state.posts;
+  function setPosts(next: ThreadNode[] | ((prev: ThreadNode[]) => ThreadNode[])) {
+    const value = typeof next === "function" ? next(unwrap(state.posts)) : next;
+    setState("posts", reconcile(value, { key: "mid", merge: true }));
+  }
   const [loading, setLoading] = createSignal(false);
   const [loadingMore, setLoadingMore] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
@@ -107,13 +136,76 @@ export function createStreamStore<P extends StreamParams>(
     }
   }
 
+  // Mids with a reaction request still in flight. The poll skips them, or a
+  // tick landing before the server stores the like would undo it on screen.
+  const inflight = new Map<string, number>();
+  function track<T>(mid: string, p: Promise<T>): Promise<T> {
+    inflight.set(mid, (inflight.get(mid) ?? 0) + 1);
+    const done = () => {
+      const n = (inflight.get(mid) ?? 1) - 1;
+      n ? inflight.set(mid, n) : inflight.delete(mid);
+    };
+    p.then(done, done);
+    return p;
+  }
+
+  // checkForNew() only asks for posts newer than the top one, so this keeps
+  // the counts on already-loaded posts live. On-screen posts first; with
+  // none tracked (a view without use:reveal) the newest loaded ones.
+  async function refreshCounts() {
+    const uid = profileUid();
+    const loaded = posts();
+    if (!uid || !loaded.length) return;
+    const onScreen = loaded.filter((p) => visibleUuids.has(p.uuid));
+    const uuids = (onScreen.length ? onScreen : loaded).slice(0, COUNTS_MAX).map((p) => p.uuid);
+    const qs = new URLSearchParams({ uid: String(uid) });
+    uuids.forEach((u) => qs.append("uuids[]", u));
+    // Snapshot to compare against: a toggle that starts *and* finishes
+    // while this request is out isn't in `inflight` by the time it lands.
+    const before = new Map(loaded.map((p) => [p.uuid, countsKey(p)]));
+    try {
+      const res = await apiFetch(`/spa/item/counts?${qs}`);
+      if (!res.ok) return;
+      const counts: Record<string, LiveCounts> = (await res.json()).data ?? {};
+      setPosts((prev) =>
+        prev.map((n) => {
+          const c = counts[n.uuid];
+          if (!c || inflight.has(n.mid) || before.get(n.uuid) !== countsKey(n)) return n;
+          const next = {
+            ...n,
+            likeCount: c.like_count,
+            dislikeCount: c.dislike_count,
+            repeatCount: c.announce_count,
+            commentCount: c.comment_count,
+            viewerLiked: c.viewer_liked,
+            viewerDisliked: c.viewer_disliked,
+            viewerRepeated: c.viewer_repeated,
+          };
+          return countsKey(next) === countsKey(n) ? n : next;
+        }),
+      );
+      // Keep the undo bookkeeping in step with what the server now reports.
+      for (const [uuid, c] of Object.entries(counts)) {
+        const mid = loaded.find((p) => p.uuid === uuid)?.mid;
+        if (!mid || inflight.has(mid)) continue;
+        for (const [verb, on] of [["like", c.viewer_liked], ["dislike", c.viewer_disliked], ["announce", c.viewer_repeated]] as const)
+          on ? activated.add(`${mid}:${verb}`) : activated.delete(`${mid}:${verb}`);
+      }
+    } catch (err) {
+      console.error("Count refresh failed", err);
+    }
+  }
+
   function startPolling() {
     stopPolling();
     const generation = pollGeneration;
     const schedule = () => {
       pollTimer = setTimeout(async () => {
         if (generation !== pollGeneration) return;
-        if (document.visibilityState === "visible") await checkForNew();
+        if (document.visibilityState === "visible") {
+          await checkForNew();
+          await refreshCounts();
+        }
         if (generation !== pollGeneration) return;
         schedule();
       }, updateInterval());
@@ -161,6 +253,7 @@ export function createStreamStore<P extends StreamParams>(
     setHasMore(true);
     currentOffset = 0;
     stopPolling();
+    resetReveal();
     try {
       const { threads, offset, more, result } = await fetchDisplayablePage(0);
       setPosts(threads);
@@ -222,7 +315,7 @@ export function createStreamStore<P extends StreamParams>(
     setPosts((prev) =>
       updateNode(prev, mid, (n) => ({ ...n, [field]: n[field] + delta, [viewerField]: !n[viewerField] })),
     );
-    apiFn().catch(() => {
+    track(mid, apiFn()).catch(() => {
       isUndo ? activated.add(key) : activated.delete(key);
       setPosts((prev) =>
         updateNode(prev, mid, (n) => ({ ...n, [field]: n[field] - delta, [viewerField]: !n[viewerField] })),
@@ -248,8 +341,12 @@ export function createStreamStore<P extends StreamParams>(
   }
 
   function flushNewPosts() {
-    setPosts((prev) => [...newPosts(), ...prev]);
-    setNewPosts([]);
+    const fresh = newPosts();
+    if (!fresh.length) return;
+    prependWithMotion(() => {
+      setPosts((prev) => [...fresh, ...prev]);
+      setNewPosts([]);
+    }, posts()[0]?.uuid, fresh[0].uuid);
   }
 
   async function softRefresh() {
@@ -267,7 +364,7 @@ export function createStreamStore<P extends StreamParams>(
       ]);
       const fresh = threads.filter((t) => !existingMids.has(t.mid));
       if (fresh.length) {
-        setPosts((prev) => [...fresh, ...prev]);
+        prependWithMotion(() => setPosts((prev) => [...fresh, ...prev]), posts()[0]?.uuid, fresh[0].uuid);
         registerActivated(activated, result.items);
       }
     } catch (err) {
@@ -303,5 +400,6 @@ export function createStreamStore<P extends StreamParams>(
     optimisticToggle,
     setPosts,
     patchNodeChildren,
+    track,
   };
 }

@@ -1,6 +1,7 @@
 // src/shared/stream/feedviews/MasonryView.tsx
 import {
   For,
+  Index,
   Show,
   createSignal,
   createMemo,
@@ -12,6 +13,7 @@ import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
+import CardShell from "../CardShell";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
@@ -37,7 +39,7 @@ function MasonryCard(props: {
   const canInteract = () => auth()?.isLoggedIn === true;
   const replyCount = () =>
     p.children.length > 0
-      ? countAllComments(p.children)
+      ? Math.max(countAllComments(p.children), p.commentCount ?? 0)
       : (p.commentCount ?? 0);
   const [expanded, setExpanded] = createSignal(false);
   let cardRef!: HTMLDivElement;
@@ -104,8 +106,9 @@ function MasonryCard(props: {
         ref={cardRef}
         onClick={() => props.onOpenModal()}
         class={
-          "relative mb-3 bg-surface border border-rim rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer" 
+          "relative mb-3 bg-surface border border-rim rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         }
+        classList={{ "border-l-4 border-l-accent/50": isFlatReply() }}
       >
         <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
           <Show when={isPinned()}>
@@ -136,7 +139,7 @@ function MasonryCard(props: {
           <Show
             when={p.authorAvatar}
             fallback={
-              <div class="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-txt flex items-center justify-center text-accent-fg text-xs font-bold shrink-0">
+              <div class={`${isFlatReply() ? "w-5 h-5 text-[0.625rem]" : "w-7 h-7 text-xs"} rounded-full bg-gradient-to-br from-accent to-accent-txt flex items-center justify-center text-accent-fg font-bold shrink-0`}>
                 {p.authorName?.[0]?.toUpperCase() ?? "?"}
               </div>
             }
@@ -144,7 +147,7 @@ function MasonryCard(props: {
             <img
               src={p.authorAvatar}
               alt={p.authorName}
-              class="w-7 h-7 rounded-full object-cover shrink-0"
+              class={`${isFlatReply() ? "w-5 h-5" : "w-7 h-7"} rounded-full object-cover shrink-0`}
             />
           </Show>
           <div class="min-w-0">
@@ -360,6 +363,15 @@ type MasonryItem =
   | { kind: "post"; post: ThreadNode }
   | { kind: "skeleton"; index: number };
 
+// One wrapper per post, reused across rebuilds — <For> keys by reference, so
+// a fresh wrapper on every append remounted every card in the grid.
+const postItems = new WeakMap<ThreadNode, MasonryItem>();
+function postItem(post: ThreadNode): MasonryItem {
+  let item = postItems.get(post);
+  if (!item) postItems.set(post, (item = { kind: "post", post }));
+  return item;
+}
+
 export default function MasonryView(props: {
   posts: ThreadNode[];
   handlers: StreamHandlers;
@@ -371,7 +383,7 @@ export default function MasonryView(props: {
   const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
   const colCount = useColumnCount(gridEl);
   const items = createMemo<MasonryItem[]>(() => [
-    ...props.posts.map((post): MasonryItem => ({ kind: "post", post })),
+    ...props.posts.map(postItem),
     ...Array.from(
       { length: props.appendingCount ?? 0 },
       (_, index): MasonryItem => ({ kind: "skeleton", index }),
@@ -388,10 +400,13 @@ export default function MasonryView(props: {
         }
       >
         <div class="flex gap-3 items-start" ref={setGridEl}>
-          <For each={columns()}>
+          {/* Index, not For: splitIntoColumns builds new column arrays on
+              every append, which <For> would treat as new columns and
+              remount wholesale. */}
+          <Index each={columns()}>
             {(col) => (
               <div class="flex-1 flex flex-col min-w-0">
-                <For each={col}>
+                <For each={col()}>
                   {(item) => (
                     <Show
                       when={item.kind === "post" ? item.post : null}
@@ -402,18 +417,20 @@ export default function MasonryView(props: {
                       }
                     >
                       {(post) => (
+                        <CardShell uuid={post().uuid}>
                         <MasonryCard
                           post={post()}
                           handlers={props.handlers}
                           onOpenModal={() => openPost(post().uuid)}
                         />
+                        </CardShell>
                       )}
                     </Show>
                   )}
                 </For>
               </div>
             )}
-          </For>
+          </Index>
         </div>
       </Show>
     </>

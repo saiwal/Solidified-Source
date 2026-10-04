@@ -20,6 +20,7 @@ import { MasonryPlaceholder } from "@/shared/stream/feedviews/MasonryView";
 import { ListPlaceholder } from "@/shared/stream/feedviews/ListView";
 import { FeedPlaceholder } from "@/shared/stream/feedviews/FeedView";
 import { TimelinePlaceholder } from "@/shared/stream/feedviews/TimelineView";
+import { exitCard } from "@/shared/stream/reveal";
 import StreamList from "@/shared/stream/feedviews/StreamList";
 import { ViewSwitcher } from "@/shared/stream/filters";
 import type { StreamHandlers } from "@/shared/stream/types";
@@ -56,7 +57,7 @@ function usePubstreamHandlers(tag: () => string): StreamHandlers {
     onDelete(mid: string) {
       const node = posts().find((p) => p.mid === mid || p.uuid === mid);
       if (!node) return Promise.resolve();
-      return apiDeleteItem(node.uuid).then(() => removePost(mid));
+      return apiDeleteItem(node.uuid).then(() => exitCard(node.uuid, () => removePost(mid)));
     },
   };
 }

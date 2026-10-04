@@ -18,6 +18,7 @@ import type { createStreamStore } from "./createStreamStore";
 import { updateNode } from "./createStreamStore";
 import { fetchComments, fetchItemDetail, apiDeleteItem, apiEditItem, apiToggleStar, type EditPayload } from "@utsukta/spa-core/lib/item-api";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
+import { exitCard } from "@/shared/stream/reveal";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -153,7 +154,7 @@ export function createActionHandlers(store: StreamStore) {
           repeatCount: n.repeatCount + 1,
         })),
       );
-      repeatItem(iid).catch(() => {
+      store.track(mid, repeatItem(iid)).catch(() => {
         store.setPosts((prev) =>
           updateNode(prev, mid, (n) => ({
             ...n,
@@ -184,7 +185,7 @@ export function createActionHandlers(store: StreamStore) {
       const node = findNode(store.posts(), mid);
       if (!node) return;
       await apiDeleteItem(node.uuid);
-      store.setPosts((prev) => prev.filter((p) => p.mid !== mid));
+      exitCard(node.uuid, () => store.setPosts((prev) => prev.filter((p) => p.mid !== mid)));
     },
 
     async handleEdit(mid: string, payload: EditPayload): Promise<void> {

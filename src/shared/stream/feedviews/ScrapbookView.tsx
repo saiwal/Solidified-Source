@@ -1,8 +1,9 @@
 // src/shared/stream/feedviews/ScrapbookView.tsx
-import { For, Show, createSignal, createMemo } from "solid-js";
+import { For, Index, Show, createSignal, createMemo } from "solid-js";
+import CardShell from "../CardShell";
 import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
-import { countAllComments } from "@utsukta/spa-core/lib/thread";
+import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
@@ -29,7 +30,7 @@ function pickFor<T>(seed: string, options: T[]): T {
 }
 
 function replyCountOf(post: ThreadNode): number {
-  return post.children.length > 0 ? countAllComments(post.children) : (post.commentCount ?? 0);
+  return post.children.length > 0 ? Math.max(countAllComments(post.children), post.commentCount ?? 0) : (post.commentCount ?? 0);
 }
 
 // Small ink-stamp footer shared by both card styles — always dark-on-light,
@@ -62,10 +63,15 @@ function Stamp(props: { post: ThreadNode; handlers: StreamHandlers }) {
   );
 }
 
+// Flat (unthreaded) reply: same note, with the accent rail the other views use.
+function replyClass(post: ThreadNode): string {
+  return isRootPost(post) ? "" : "border-l-4 border-accent/50";
+}
+
 function PhotoCard(props: { post: ThreadNode; src: string; rotate: string; handlers: StreamHandlers; onOpen: () => void }) {
   return (
     <div class={`${props.rotate} hover:rotate-0 hover:scale-[1.02] transition-transform duration-200
-                  mb-5 bg-white p-3 pb-3 shadow-[0_4px_10px_rgba(0,0,0,0.25)] cursor-pointer relative`}
+                  mb-5 bg-white p-3 pb-3 shadow-[0_4px_10px_rgba(0,0,0,0.25)] cursor-pointer relative ${replyClass(props.post)}`}
       onClick={props.onOpen}
     >
       {/* pushpin */}
@@ -90,7 +96,7 @@ function StickyNote(props: { post: ThreadNode; rotate: string; color: string; ha
   return (
     <div
       class={`${props.rotate} ${props.color} hover:rotate-0 hover:scale-[1.02] transition-transform duration-200
-              mb-5 p-4 shadow-[0_4px_10px_rgba(0,0,0,0.2)] cursor-pointer relative`}
+              mb-5 p-4 shadow-[0_4px_10px_rgba(0,0,0,0.2)] cursor-pointer relative ${replyClass(props.post)}`}
       onClick={props.onOpen}
     >
       {/* tape */}
@@ -158,24 +164,30 @@ export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: St
         fallback={<p class="text-center py-16 text-muted text-sm">{t("network.all_caught_up")}</p>}
       >
         <div class="flex gap-5 items-start" ref={setGridEl}>
-          <For each={columns()}>
+          {/* Index, not For: splitIntoColumns builds new column arrays on
+              every append, which <For> would remount wholesale. */}
+          <Index each={columns()}>
             {(col) => (
               <div class="flex-1 flex flex-col min-w-0">
-                <For each={col}>
+                <For each={col()}>
                   {(post) => {
                     const src = firstImageSrc(post.body);
                     const rotate = pickFor(post.uuid, ROTATIONS);
                     const onOpen = () => openPost(post.uuid);
-                    return src ? (
-                      <PhotoCard post={post} src={src} rotate={rotate} handlers={props.handlers} onOpen={onOpen} />
-                    ) : (
-                      <StickyNote post={post} rotate={rotate} color={pickFor(post.uuid + ":c", NOTE_COLORS)} handlers={props.handlers} onOpen={onOpen} />
+                    return (
+                      <CardShell uuid={post.uuid}>
+                        {src ? (
+                          <PhotoCard post={post} src={src} rotate={rotate} handlers={props.handlers} onOpen={onOpen} />
+                        ) : (
+                          <StickyNote post={post} rotate={rotate} color={pickFor(post.uuid + ":c", NOTE_COLORS)} handlers={props.handlers} onOpen={onOpen} />
+                        )}
+                      </CardShell>
                     );
                   }}
                 </For>
               </div>
             )}
-          </For>
+          </Index>
         </div>
       </Show>
 

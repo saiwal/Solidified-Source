@@ -19,6 +19,7 @@ import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
 import { openPost } from "@/shared/views/modal-host";
+import CardShell from "../CardShell";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -208,7 +209,7 @@ function ListRow(props: {
   const preview = () => rowPreview(p);
   const replyCount = () =>
     p.children.length > 0
-      ? countAllComments(p.children)
+      ? Math.max(countAllComments(p.children), p.commentCount ?? 0)
       : (p.commentCount ?? 0);
   const { locale, t } = useI18n();
   let rowRef!: HTMLDivElement;
@@ -251,6 +252,7 @@ function ListRow(props: {
       class={
         "group flex items-stretch border-b border-rim last:border-0 hover:bg-overlay transition-colors" 
 			}
+      classList={{ "border-l-2 border-l-accent/40": isFlatReply() }}
     >
       <VoteGutter post={p} handlers={props.handlers} />
 
@@ -606,8 +608,10 @@ function InboxRow(props: {
   // soon as the first page loads.
   const replyCount = () =>
     !p.hasMoreComments && p.children.length > 0
-      ? flattenThread(p).filter((n) => !REACTION_VERBS.has(n.verb ?? ""))
-          .length - 1
+      ? Math.max(
+          flattenThread(p).filter((n) => !REACTION_VERBS.has(n.verb ?? "")).length - 1,
+          p.commentCount ?? 0,
+        )
       : (p.commentCount ?? 0);
   const participants = () => getParticipants(p);
 
@@ -656,7 +660,7 @@ function InboxRow(props: {
       classList={{
         "bg-accent-muted/10": expanded(),
         "border-l-2 border-l-violet-500/60 bg-violet-500/[0.04]": isDirectMessage(),
-        "border-l-2 border-l-accent/50": !isDirectMessage() && isFlatReply(),
+        "border-l-2 border-l-accent/40": !isDirectMessage() && isFlatReply(),
       }}
     >
       <VoteGutter post={p} handlers={props.handlers} />
@@ -882,22 +886,24 @@ export default function ListView(props: {
             </div>
           }
         >
-          {(post, i) =>
-            listBehavior() === "inbox" ? (
-              <InboxRow
-                thread={post}
-                handlers={props.handlers}
-                profileUid={profileUid()}
-              />
-            ) : (
-              <ListRow
-                post={post}
-                handlers={props.handlers}
-                index={i()}
-                onOpenModal={() => openPost(post.uuid)}
-              />
-            )
-          }
+          {(post, i) => (
+            <CardShell uuid={post.uuid}>
+              {listBehavior() === "inbox" ? (
+                <InboxRow
+                  thread={post}
+                  handlers={props.handlers}
+                  profileUid={profileUid()}
+                />
+              ) : (
+                <ListRow
+                  post={post}
+                  handlers={props.handlers}
+                  index={i()}
+                  onOpenModal={() => openPost(post.uuid)}
+                />
+              )}
+            </CardShell>
+          )}
         </For>
       </div>
     </>

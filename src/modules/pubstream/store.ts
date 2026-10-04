@@ -1,5 +1,7 @@
 // src/modules/pubstream/store.ts
 import { createSignal, batch } from "solid-js";
+import { createStore, reconcile } from "solid-js/store";
+import { resetReveal } from "@/shared/stream/reveal";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { fetchPubstream, type PubstreamMeta } from "./api";
 import type { Post } from "@utsukta/spa-core/types/post.types";
@@ -16,7 +18,13 @@ const MAX_POSTS  = 200;
 
 // ── Module-level singleton state ───────────────────────────────────────────
 const [posts,    setPosts]    = createSignal<Post[]>([]);
-const [threads,  setThreads]  = createSignal<ThreadNode[]>([]);
+// Reconciled by mid, not a signal — see createStreamStore: rebuildThreads()
+// makes every node a fresh object, and <For> keys by reference, so as a
+// signal each like remounted every card on the page.
+const [threadState, setThreadState] = createStore<{ list: ThreadNode[] }>({ list: [] });
+const threads = () => threadState.list;
+const setThreads = (next: ThreadNode[]) =>
+  setThreadState("list", reconcile(next, { key: "mid", merge: true }));
 const [loading,  setLoading]  = createSignal(false);
 const [hasMore,  setHasMore]  = createSignal(true);
 const [page,     setPage]     = createSignal(1);
@@ -41,9 +49,13 @@ function processBody(raw: string, mimetype?: string): string {
   return renderBody(raw, mimetype, undefined, sanitizeHtml);
 }
 
+// Rendered once on arrival, so a like doesn't re-render every body on the page.
+function processPosts(raw: Post[]): Post[] {
+  return raw.map((p) => ({ ...p, body: processBody(p.body, p.mimetype) }));
+}
+
 function rebuildThreads(allPosts: Post[]): void {
-  const processed = allPosts.map((p) => ({ ...p, body: processBody(p.body, p.mimetype) }));
-  setThreads(buildThreadTree(processed));
+  setThreads(buildThreadTree(allPosts));
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────
@@ -67,13 +79,15 @@ export async function loadPubstream(tag?: string, net?: string): Promise<void> {
       return;
     }
 
+    const fresh = processPosts(data.posts.slice(0, MAX_POSTS));
+    resetReveal();
     batch(() => {
       setDisabled(false);
       setMeta(data.meta);
       setPage(1);
       setHasMore(data.has_more);
-      setPosts(data.posts.slice(0, MAX_POSTS));
-      rebuildThreads(data.posts.slice(0, MAX_POSTS));
+      setPosts(fresh);
+      rebuildThreads(fresh);
       setLoading(false);
     });
   } catch (e) {
@@ -96,7 +110,7 @@ export async function loadMore(tag?: string, net?: string): Promise<void> {
     batch(() => {
       setPage(nextPage);
       setHasMore(data.has_more);
-      const combined = [...posts(), ...data.posts].slice(-MAX_POSTS);
+      const combined = [...posts(), ...processPosts(data.posts)].slice(-MAX_POSTS);
       setPosts(combined);
       rebuildThreads(combined);
       setLoading(false);

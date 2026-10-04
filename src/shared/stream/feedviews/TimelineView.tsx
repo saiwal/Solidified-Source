@@ -1,7 +1,7 @@
 // src/shared/stream/feedviews/TimelineView.tsx
 import { For, Show, createMemo } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
-import { countAllComments } from "@utsukta/spa-core/lib/thread";
+import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
@@ -9,10 +9,15 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
+import CardShell from "../CardShell";
 
 type Entry =
   | { kind: "day"; key: string; label: string }
   | { kind: "post"; post: ThreadNode };
+
+// One wrapper object per post, reused across rebuilds: <For> keys by
+// reference, so a fresh { kind, post } on every append remounted every card.
+const postEntries = new WeakMap<ThreadNode, Entry>();
 
 function buildEntries(posts: ThreadNode[], locale: string): Entry[] {
   const out: Entry[] = [];
@@ -28,13 +33,15 @@ function buildEntries(posts: ThreadNode[], locale: string): Entry[] {
       });
       lastKey = key;
     }
-    out.push({ kind: "post", post });
+    let entry = postEntries.get(post);
+    if (!entry) postEntries.set(post, (entry = { kind: "post", post }));
+    out.push(entry);
   }
   return out;
 }
 
 function replyCountOf(post: ThreadNode): number {
-  return post.children.length > 0 ? countAllComments(post.children) : (post.commentCount ?? 0);
+  return post.children.length > 0 ? Math.max(countAllComments(post.children), post.commentCount ?? 0) : (post.commentCount ?? 0);
 }
 
 function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpen: () => void }) {
@@ -49,6 +56,8 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
       onClick={props.onOpen}
       class="relative bg-surface border border-rim rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg
              hover:-translate-y-0.5 transition-all cursor-pointer"
+      // Flat (unthreaded) reply: same card, with an accent rail down its left edge.
+      classList={{ "border-l-4 border-l-accent/50": !isRootPost(p) }}
     >
       <Show when={p.pinned}>
         <span
@@ -76,12 +85,12 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
           <Show
             when={p.authorAvatar}
             fallback={
-              <div class="w-8 h-8 rounded-full bg-accent-muted text-accent flex items-center justify-center text-xs font-bold shrink-0 uppercase">
+              <div class={`${isRootPost(p) ? "w-8 h-8 text-xs" : "w-5 h-5 text-[0.625rem]"} rounded-full bg-accent-muted text-accent flex items-center justify-center font-bold shrink-0 uppercase`}>
                 {p.authorName?.[0] ?? "?"}
               </div>
             }
           >
-            <img src={p.authorAvatar} alt={p.authorName} class="w-8 h-8 rounded-full object-cover shrink-0" />
+            <img src={p.authorAvatar} alt={p.authorName} class={`${isRootPost(p) ? "w-8 h-8" : "w-5 h-5"} rounded-full object-cover shrink-0`} />
           </Show>
           <div class="min-w-0 leading-tight">
             <p class="text-sm font-semibold text-txt truncate">{p.authorName}</p>
@@ -189,12 +198,12 @@ export default function TimelineView(props: { posts: ThreadNode[]; handlers: Str
                     </span>
                   </div>
                 ) : (
-                  <div class="relative">
+                  <CardShell uuid={entry.post.uuid} class="relative">
                     <div class="absolute left-4 sm:left-6 top-7 w-3 h-3 -translate-x-1/2 rounded-full bg-accent ring-4 ring-base z-10" />
                     <div class="ml-9 sm:ml-14">
                       <TimelineCard post={entry.post} handlers={props.handlers} onOpen={() => openPost(entry.post.uuid)} />
                     </div>
-                  </div>
+                  </CardShell>
                 )
               }
             </For>

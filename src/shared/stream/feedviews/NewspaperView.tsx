@@ -1,7 +1,7 @@
 // src/shared/stream/feedviews/NewspaperView.tsx
 import { For, Show, createMemo } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
-import { countAllComments } from "@utsukta/spa-core/lib/thread";
+import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
 import EventCard from "../components/EventCard";
@@ -27,7 +27,7 @@ function headlineOf(post: Pick<Post, "title" | "body" | "bodyNsfw" | "eventData"
 }
 
 function replyCountOf(post: ThreadNode): number {
-  return post.children.length > 0 ? countAllComments(post.children) : (post.commentCount ?? 0);
+  return post.children.length > 0 ? Math.max(countAllComments(post.children), post.commentCount ?? 0) : (post.commentCount ?? 0);
 }
 
 // ── byline / stats footer, shared by every headline size ────────────────────
@@ -77,6 +77,9 @@ function PinRibbon(props: { post: ThreadNode }) {
 }
 
 // ── lead story — the big headline at the top of the paper ───────────────────
+// Flat (unthreaded) reply: on the same accent rail the other views use.
+const REPLY_RAIL = "border-l-2 border-accent/40 pl-3";
+
 function LeadStory(props: { post: ThreadNode; onOpen: () => void; handlers: StreamHandlers }) {
   const image = () => firstImageSrc(props.post.body);
   const excerpt = () => excerptOf(props.post, 320);
@@ -89,7 +92,7 @@ function LeadStory(props: { post: ThreadNode; onOpen: () => void; handlers: Stre
     <article
       onClick={props.onOpen}
       class="relative cursor-pointer group"
-      classList={{ "grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6": hasText() }}
+      classList={{ "grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6": hasText(), [REPLY_RAIL]: !isRootPost(props.post) }}
     >
       <PinRibbon post={props.post} />
       <Show when={image()}>
@@ -134,7 +137,7 @@ function SecondaryStory(props: { post: ThreadNode; onOpen: () => void; handlers:
   const image = () => firstImageSrc(props.post.body);
   const excerpt = () => excerptOf(props.post, props.post.title ? 120 : 140);
   return (
-    <article onClick={props.onOpen} class="relative flex gap-3 cursor-pointer group">
+    <article onClick={props.onOpen} class="relative flex gap-3 cursor-pointer group" classList={{ [REPLY_RAIL]: !isRootPost(props.post) }}>
       <PinRibbon post={props.post} />
       <Show
         when={image()}
@@ -170,7 +173,7 @@ function SecondaryStory(props: { post: ThreadNode; onOpen: () => void; handlers:
 function WireItem(props: { post: ThreadNode; onOpen: () => void; handlers: StreamHandlers }) {
   const { locale } = useI18n();
   return (
-    <article onClick={props.onOpen} class="relative break-inside-avoid mb-5 cursor-pointer group">
+    <article onClick={props.onOpen} class="relative break-inside-avoid mb-5 cursor-pointer group" classList={{ [REPLY_RAIL]: !isRootPost(props.post) }}>
       <PinRibbon post={props.post} />
       <p class="font-mono text-[0.625rem] tracking-widest uppercase text-subtle">
         {props.post.authorName} — {new Date(props.post.created + "Z").toLocaleDateString(locale(), { month: "short", day: "numeric" })}
