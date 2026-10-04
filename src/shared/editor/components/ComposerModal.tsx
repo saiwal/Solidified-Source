@@ -80,6 +80,8 @@ export interface ComposerModalProps {
    *  the fixed height a composer's editor needs — for the post viewer, where a
    *  short post would otherwise sit above an empty gap. */
   fitContent?: boolean;
+  /** Page-mode column width. Default "max-w-4xl". */
+  pageWidthClass?: string;
   /** Extra header controls rendered before the close button. */
   headerExtra?: JSX.Element;
   /** use:helpable target for the backdrop (help-mode tutorial picker). */
@@ -202,7 +204,7 @@ export default function ComposerModal(props: ComposerModalProps) {
       case "page":
         // Same bg as the wrapper, so the column has no visible edge at all —
         // max-w-4xl still keeps the measure readable on a wide monitor.
-        return base + "bg-base w-full max-w-4xl h-full";
+        return base + `bg-base w-full ${props.pageWidthClass ?? "max-w-4xl"} h-full`;
       default:
         return base + card + `rounded-xl w-full ${props.widthClass ?? "max-w-2xl"} ${props.fitContent ? "max-h-[85dvh]" : "h-[85dvh]"}`;
     }

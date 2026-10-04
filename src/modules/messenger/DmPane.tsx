@@ -14,7 +14,8 @@ import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
+import { wallAttach } from "@/modules/files/api";
 import { MdFillPush_pin, MdOutlinePush_pin, MdOutlineArrow_back, MdOutlineClose, MdOutlineEdit, MdOutlineForum, MdOutlineFavorite_border, MdFillFavorite, MdOutlineReply, MdOutlineDelete } from "solid-icons/md";
 import ChatComposer from "@/modules/chat/ChatComposer";
 import { openPost } from "@/shared/views/modal-host";
@@ -516,7 +517,15 @@ function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) 
           </div>
         )}
       </Show>
-      <ChatComposer send={send} scope={`dm:reply:${props.uuid}`} placeholder={t("messenger.reply_placeholder") as string} />
+      <ChatComposer
+        send={send}
+        scope={`dm:reply:${props.uuid}`}
+        placeholder={t("messenger.reply_placeholder") as string}
+        // Uploads take the channel default ACL; core's fix_attached_permissions
+        // narrows them to the DM's on send, as for DMComposer. Local only —
+        // a remote visitor has no nick to wall_attach against.
+        upload={auth()?.isLocal ? async (file, onPct) => (await wallAttach(currentNick(), file, onPct)).message : undefined}
+      />
     </>
   );
 }

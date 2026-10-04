@@ -34,7 +34,7 @@ interface Props {
   scope: string;
   placeholder?: string;
   /** Upload one file, returning the bbcode to insert. Omit for no attachments
-   *  (a chat upload takes the room's ACL; nothing comparable exists for a DM). */
+   *  (a room upload takes its ACL; a DM relies on core narrowing it on send). */
   upload?: (file: File, onPct: (pct: number) => void) => Promise<string>;
   /** Offer session encryption — only where the reader can decrypt (rooms). */
   encrypt?: boolean;

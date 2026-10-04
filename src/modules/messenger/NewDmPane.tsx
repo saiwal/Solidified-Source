@@ -8,7 +8,8 @@ import { useLocation, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiFetch, apiError } from "@utsukta/spa-core/lib/fetch";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, currentNick } from "@utsukta/spa-core/store/auth-store";
+import { wallAttach } from "@/modules/files/api";
 import RecipientField from "@/shared/editor/components/RecipientField";
 import { entryKey } from "@/shared/editor/components/AclPicker";
 import { fetchConnections, type AclEntry } from "@/modules/network/api";
@@ -87,7 +88,13 @@ export default function NewDmPane(props: { base: string }) {
         />
       </div>
       <div class="flex-1" />
-      <ChatComposer send={send} scope="dm:messenger:new" placeholder={t("messenger.reply_placeholder") as string} />
+      <ChatComposer
+        send={send}
+        scope="dm:messenger:new"
+        placeholder={t("messenger.reply_placeholder") as string}
+        // See DmPane: core narrows the upload's ACL to the DM's on send.
+        upload={async (file, onPct) => (await wallAttach(currentNick(), file, onPct)).message}
+      />
     </div>
   );
 }

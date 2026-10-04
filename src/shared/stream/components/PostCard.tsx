@@ -205,6 +205,10 @@ export default function PostCard(props: {
   // they've scrolled down to the highlighted comment. Only meaningful on the
   // root (full, non-compact) layout.
   contextBanner?: JSX.Element;
+  // Root layout only: post left, comments right, each scrolling on its own,
+  // reply box opening atop the comments. The parent must give the card a
+  // definite height and decide the breakpoint. PostDetailModal's page mode.
+  split?: boolean;
   // List (flat) comment mode only: the comment this one answers, when it
   // isn't the root — shown as a quote that jumps to it, like DmPane does.
   quoted?: ThreadNode;
@@ -319,6 +323,9 @@ export default function PostCard(props: {
     const text = window.getSelection()?.toString().trim();
     if (text) lastSelectedText = text;
   }
+  // Split layout: the composer opens atop the comments column, which may be
+  // scrolled away from it.
+  let replyBoxRef: HTMLDivElement | undefined;
   function openReply() {
     const opening = !replyOpen();
     if (opening) {
@@ -330,6 +337,7 @@ export default function PostCard(props: {
       lastSelectedText = "";
     }
     setReplyOpen(opening);
+    if (opening && props.split) requestAnimationFrame(() => replyBoxRef?.scrollIntoView({ block: "nearest" }));
   }
 
   // Detect event posts: prefer pre-parsed eventData from mapper, fall back to
@@ -812,6 +820,20 @@ export default function PostCard(props: {
     }
   }
 
+  // Post view (expandAll) has no "load more" button: a sentinel after the
+  // comments loads the next page as it nears the viewport. Re-observing after
+  // each page re-runs the check, since a sentinel still on screen after a
+  // short page fires no new intersection. A failed load doesn't re-observe,
+  // so errors can't loop; scrolling away and back retries.
+  function autoLoadMore(el: HTMLElement) {
+    const io = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting || loadingMoreComments()) return;
+      loadMoreComments().then(() => { io.unobserve(el); io.observe(el); }, () => {});
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    onCleanup(() => io.disconnect());
+  }
+
   function handleBodyClick(e: MouseEvent) {
     if (handleBookmarkClick(e)) return;
     if (handleNsfwToggleClick(e)) return;
@@ -1085,7 +1107,7 @@ export default function PostCard(props: {
         ref={cardRef}
         data-mid={props.post.mid}
         class={`relative transition-colors duration-500
-               ${autoCollapsed() ? "mb-0.5" : "border-l-2 pl-2 md:pl-3 py-2 md:py-2.5 mb-1"}
+               ${autoCollapsed() ? "mb-0.5" : `${(props.depth ?? 1) > 1 ? "border-l-2 " : ""}pl-2 md:pl-3 py-2 md:py-2.5 mb-1`}
                ${props.highlighted ? "border-accent bg-accent/5" :  "border-rim/60"}`}
       >
         <Show when={autoCollapsed()}>
@@ -1686,22 +1708,31 @@ export default function PostCard(props: {
           flush={autoCollapsed()}
         />
         <Show when={showComments() && props.post.hasMoreComments && props.handlers.onLoadMoreComments}>
-          <div class="flex justify-center mt-2">
-            <button
-              type="button"
-              onClick={loadMoreComments}
-              disabled={loadingMoreComments()}
-              class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium
-                     rounded-full border border-rim bg-surface text-muted
-                     hover:bg-overlay hover:text-txt transition-colors
-                     disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <Show when={!loadingMoreComments()} fallback={<MdOutlineRefresh size={13} class="animate-spin" />}>
-                <MdFillKeyboard_arrow_down size={13} />
-              </Show>
-              {loadingMoreComments() ? t("post.loading") : t("post.load_more_comments")}
-            </button>
-          </div>
+          <Show
+            when={!props.expandAll}
+            fallback={
+              <div ref={autoLoadMore} class="flex justify-center py-2 text-muted">
+                <Show when={loadingMoreComments()}><MdOutlineRefresh size={13} class="animate-spin" /></Show>
+              </div>
+            }
+          >
+            <div class="flex justify-center mt-2">
+              <button
+                type="button"
+                onClick={loadMoreComments}
+                disabled={loadingMoreComments()}
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium
+                       rounded-full border border-rim bg-surface text-muted
+                       hover:bg-overlay hover:text-txt transition-colors
+                       disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Show when={!loadingMoreComments()} fallback={<MdOutlineRefresh size={13} class="animate-spin" />}>
+                  <MdFillKeyboard_arrow_down size={13} />
+                </Show>
+                {loadingMoreComments() ? t("post.loading") : t("post.load_more_comments")}
+              </button>
+            </div>
+          </Show>
         </Show>
       </div>
     );
@@ -1714,9 +1745,16 @@ export default function PostCard(props: {
       class={
         (props.seamless
           ? "relative bg-surface p-3 md:p-5"
-          : "relative bg-surface border border-rim rounded-2xl p-3 md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200")
+          : "relative bg-surface border border-rim rounded-2xl p-3 md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
+        (props.split ? " grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] h-full !p-0" : "")
       }
     >
+      {/* Post column — with `split`, the post and its comments scroll independently. */}
+      <div
+        data-col="post"
+        tabindex={props.split ? -1 : undefined}
+        class={props.split ? "min-h-0 overflow-y-auto p-5 focus:outline-none" : undefined}
+      >
       {/* Header */}
       <div class="flex items-start gap-3">
         <AuthorPopover
@@ -2099,13 +2137,15 @@ export default function PostCard(props: {
             onClick={toggleComments}
             class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium
                    text-muted hover:bg-overlay hover:text-txt transition-colors"
+            // Split layout pins comments in their own column from lg up: count only, no toggle.
+            disabled={props.split}
             title={t("post.toggle_comments")}
           >
             <Show
               when={showComments()}
-              fallback={<MdFillKeyboard_arrow_down size={17} class="hidden sm:block" />}
+              fallback={<MdFillKeyboard_arrow_down size={17} class="hidden sm:block" classList={{ "!hidden": props.split }} />}
             >
-              <MdFillKeyboard_arrow_up size={17} class="hidden sm:block" />
+              <MdFillKeyboard_arrow_up size={17} class="hidden sm:block" classList={{ "!hidden": props.split }} />
             </Show>
             <MdFillChat size={15} />
             <span>{totalComments()}</span>
@@ -2360,7 +2400,15 @@ export default function PostCard(props: {
         />
       </Show>
 
+      </div>
+      <div class={props.split ? "flex flex-col min-h-0 border-l border-rim" : undefined}>
+      <div
+        data-col="comments"
+        tabindex={props.split ? -1 : undefined}
+        class={props.split ? "flex-1 min-h-0 overflow-y-auto p-5 focus:outline-none" : undefined}
+      >
       <Show when={replyOpen() && props.post.iid && props.post.profileUid}>
+        <div ref={replyBoxRef}>
         <CommentComposer
           parentUuid={props.post.uuid}
           profileUid={props.post.profileUid!}
@@ -2377,7 +2425,10 @@ export default function PostCard(props: {
             setShowComments(true);
           }}
         />
+        </div>
       </Show>
+      {/* Its own short column now, so the banner reads best at the top. */}
+      <Show when={props.split}>{props.contextBanner}</Show>
       <Show when={editSeed()}>
         {(seed) => (
           <PostComposer
@@ -2401,6 +2452,9 @@ export default function PostCard(props: {
           {t("post.loading_comments")}
         </div>
       </Show>
+      <Show when={props.split && totalComments() === 0 && !commentsLoading()}>
+        <p class="py-8 text-center text-sm text-muted">{t("post.no_comments")}</p>
+      </Show>
       <CommentThread
         comments={visibleComments()}
         show={showComments() && !commentsLoading()}
@@ -2411,24 +2465,35 @@ export default function PostCard(props: {
         rootUuid={props.rootUuid ?? props.post.uuid}
       />
       <Show when={showComments() && props.post.hasMoreComments && props.handlers.onLoadMoreComments}>
-        <div class="flex justify-center mt-2">
-          <button
-            type="button"
-            onClick={loadMoreComments}
-            disabled={loadingMoreComments()}
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-                   rounded-full border border-rim bg-surface text-muted
-                   hover:bg-overlay hover:text-txt transition-colors
-                   disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <Show when={!loadingMoreComments()} fallback={<MdOutlineRefresh size={14} class="animate-spin" />}>
-              <MdFillKeyboard_arrow_down size={14} />
-            </Show>
-            {loadingMoreComments() ? t("post.loading") : t("post.load_more_comments")}
-          </button>
-        </div>
+        <Show
+          when={!props.expandAll}
+          fallback={
+            <div ref={autoLoadMore} class="flex justify-center py-2 text-muted">
+              <Show when={loadingMoreComments()}><MdOutlineRefresh size={14} class="animate-spin" /></Show>
+            </div>
+          }
+        >
+          <div class="flex justify-center mt-2">
+            <button
+              type="button"
+              onClick={loadMoreComments}
+              disabled={loadingMoreComments()}
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
+                     rounded-full border border-rim bg-surface text-muted
+                     hover:bg-overlay hover:text-txt transition-colors
+                     disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Show when={!loadingMoreComments()} fallback={<MdOutlineRefresh size={14} class="animate-spin" />}>
+                <MdFillKeyboard_arrow_down size={14} />
+              </Show>
+              {loadingMoreComments() ? t("post.loading") : t("post.load_more_comments")}
+            </button>
+          </div>
+        </Show>
       </Show>
-      {props.contextBanner}
+      <Show when={!props.split}>{props.contextBanner}</Show>
+      </div>
+      </div>
     </div>
   );
 }

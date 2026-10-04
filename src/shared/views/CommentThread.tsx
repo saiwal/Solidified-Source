@@ -47,7 +47,7 @@ export default function CommentThread(props: {
                 when={!isDeletedStub(comment)}
                 fallback={
                   <div>
-                    <div class="border-l-2 border-dashed border-rim/40 pl-2 md:pl-3 py-2">
+                    <div class="border-dashed border-rim/40 pl-2 md:pl-3 py-2" classList={{ "border-l-2": (props.depth ?? 1) > 1 }}>
                       <div class="flex items-center gap-2">
                         <div class="w-6 h-6 rounded-full bg-elevated shrink-0" />
                         <span class="text-xs text-muted italic">

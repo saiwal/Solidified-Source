@@ -20,6 +20,7 @@ import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
 
 import ComposerModal from "@/shared/editor/components/ComposerModal";
+import { createMediaQuery } from "@solid-primitives/media";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
 function flatNodes(posts: Post[]): ThreadNode[] {
   return posts.map((p) => ({ ...p, children: [] }));
@@ -491,6 +492,18 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
     if (frame && n) frame.setThreadRoot?.(n.uuid);
   });
 
+  // Full view (page mode) splits post and comments into two columns, on screens wide enough for both.
+  const isLg = createMediaQuery("(min-width: 1024px)");
+  const split = () => frame?.mode() === "page" && isLg();
+  // The outer body doesn't scroll when split, so hand keyboard focus to a column.
+  createEffect(on([split, () => !!displayNode()], ([s, loaded]) => {
+    if (!s || !loaded) return;
+    requestAnimationFrame(() => {
+      const col = displayNode()?.children.length ? "comments" : "post";
+      scrollRef?.querySelector<HTMLElement>(`[data-col=${col}]`)?.focus({ preventScroll: true });
+    });
+  }));
+
   // No header of its own: ComposerModal supplies it, and inline the host (the
   // inbox reader) has its own toolbar with a Back button.
   const panel = (
@@ -505,7 +518,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
           <div
             ref={scrollRef}
             tabindex="-1"
-            class="flex-1 overflow-y-auto focus:outline-none"
+            class={`flex-1 focus:outline-none ${split() ? "overflow-hidden" : "overflow-y-auto"}`}
             style={{ "-webkit-overflow-scrolling": "touch" }}
             onClick={(e) => { e.stopPropagation(); handleBodyClick(e); }}
           >
@@ -544,6 +557,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
                   initiallyExpanded
                   seamless
                   expandAll
+                  split={split()}
                   handlers={wrappedHandlers ?? selfHandlers}
                   contextBanner={
                     <>
@@ -607,7 +621,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   return (
     <>
       {nested}
-      <ComposerModal title={title()} onClose={props.onClose} widthClass="max-w-3xl" fitContent>
+      <ComposerModal title={title()} onClose={props.onClose} widthClass="max-w-3xl" pageWidthClass="max-w-7xl" fitContent>
         {panel}
       </ComposerModal>
     </>

@@ -45,6 +45,7 @@ export const post: RawDictionary["post"] = {
   comments_plural:      "Kommentare",
   // loading
   loading_comments:     "Kommentare werden geladen…",
+  no_comments:          "Noch keine Kommentare.",
   load_more_comments:   "Weitere Kommentare laden",
   expand_collapsed:     "Diesen Kommentar anzeigen",
   viewing_in_context:   "Kommentar im Kontext ansehen",
