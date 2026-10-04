@@ -11,11 +11,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // The stream poll tick (createStreamStore.checkForNew) requests
 // /spa/network?...&dbegin=<now> — a brand-new URL every ~30s. Caching those
 // would churn the whole offline archive out of the LRU within an hour, so
-// they're routed NetworkOnly.
-const POLL_URL = /\/spa\/.*[?&]dbegin=/;
+// they're routed NetworkOnly. Same for the live-count poll
+// (refreshCounts), whose URL changes with whatever posts are on screen.
+const POLL_URL = /\/spa\/(.*[?&]dbegin=|item\/counts\b)/;
 assert(POLL_URL.test('https://h/spa/network?order=created&dbegin=2026-08-16%2010%3A00%3A00'));
 assert(POLL_URL.test('https://h/spa/channel/bob?dbegin=x'));
 assert(!POLL_URL.test('https://h/spa/network?star=1'));
+assert(POLL_URL.test('https://h/spa/item/counts?uid=2&uuids%5B%5D=x'));
 
 // The "remote-avatars" rule below must never match the hub's own images: a
 // same-origin /cloud/ hit lands in SabreDAV, and /photo/ has its own rule.
