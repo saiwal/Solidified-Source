@@ -471,7 +471,7 @@ const MessageItem: Component<{
                 isAnyUnseen() ? "font-semibold text-txt" : "text-txt"
               }`}
             >
-              {decodeHtmlEntities(e().title!)}
+              {e().title}
             </p>
           </Show>
 

@@ -246,5 +246,6 @@ const DetailRow: Component<{ icon: IconKey; children: any }> = (props) => (
 export default DirectoryEntryModal;
 
 function stripTags(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  // DOMParser documents are inert (no scripts, no image loads); textContent also decodes &amp; etc.
+  return (new DOMParser().parseFromString(html.replace(/<[^>]+>/g, " $& "), "text/html").body.textContent ?? "").replace(/\s+/g, " ").trim();
 }
