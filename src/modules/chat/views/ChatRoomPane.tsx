@@ -663,7 +663,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 													</p>
 												</Show>
 												<div
-													class="px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words"
+													class="px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words max-w-full"
 													title={chatDate(msg.created).toLocaleString(locale())}
 													classList={{
 														"bg-accent text-accent-fg rounded-tr-sm": isSelf(),
@@ -674,7 +674,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 													data-msg-id={String(msg.id)}
 													onClick={handleBubbleClick}
 												>
-													<span innerHTML={sanitizeHtml(bbcodeDisplay(msg.body))} />
+													<div class="post-body" innerHTML={sanitizeHtml(bbcodeDisplay(msg.body))} />
 												</div>
 												<Show when={msg.isLast}>
 													<p class="text-[0.625rem] text-muted px-1 tabular-nums">

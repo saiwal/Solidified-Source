@@ -418,7 +418,7 @@ function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) 
                     </Show>
                     <Show
                       when={editing()?.uuid === m.uuid}
-                      fallback={<div class="[&_img]:max-w-full" innerHTML={renderBody(m.body, m.mimetype, undefined, sanitizeHtml)} />}
+                      fallback={<div class="post-body [&_img]:max-w-full" innerHTML={renderBody(m.body, m.mimetype, undefined, sanitizeHtml)} />}
                     >
                       <textarea
                         value={editing()!.body}
