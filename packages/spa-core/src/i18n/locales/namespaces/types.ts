@@ -136,7 +136,6 @@ export type RawDictionary = {
     openstreetmap: string;
     inbox_desc: string;
     messenger:  string;
-    messenger_desc: string;
     tools_desc: string;
     games_desc: string;
     excalidraw_desc: string;
@@ -685,8 +684,6 @@ export type RawDictionary = {
     articles_content: string;
     cards_content:    string;
     // Chat header (chat.header) / room list (chat.content)
-    chat_header:  string;
-    chat_content: string;
     // Webpages header (webpages.header) / page list (webpages.content)
     webpages_header:  string;
     webpages_content: string;

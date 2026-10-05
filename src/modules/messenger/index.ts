@@ -2,6 +2,7 @@
 import { registerModule } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
+import { chatNavBadge } from "@/modules/chat/unread";
 
 const messengerView = () => import("./views/MessengerView");
 
@@ -14,6 +15,8 @@ registerModule({
   routes: [
     { path: "/messenger", component: messengerView },
     { path: "/messenger/*rest", component: messengerView },
+    // Chatrooms live here too, at core's /chat/:nick[/:roomId] urls.
+    { path: "/chat/*rest", component: messengerView },
   ],
   requiresAuth: true,
   navItem: {
@@ -22,13 +25,8 @@ registerModule({
     path: "/messenger",
     href: () => `/messenger/${usePageNick()()}`,
     context: "local",
+    badge: chatNavBadge, // unread rooms on your own channel
     hidden: false, // SPA-exclusive item: owner nav needs the explicit false (see inbox)
-  },
-  frontendFeature: {
-    label: () => useI18n().t("nav.messenger"),
-    description: () => useI18n().t("nav.messenger_desc"),
-    // On: a remote visitor has no toggle of their own to turn it on with.
-    defaultEnabled: true,
   },
   permissions: [],
 });

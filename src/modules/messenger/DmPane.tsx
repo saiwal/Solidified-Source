@@ -95,7 +95,7 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
   const { t, locale } = useI18n();
   const navigate = useNavigate();
   const auth = useAuth();
-  const base = () => `${props.base}/dms/${encodeURIComponent(props.groupKey)}`;
+  const base = () => `${props.base}/dm/${encodeURIComponent(props.groupKey)}`;
 
   // The `xchan` filter returns every thread involving any of these people;
   // grouping keeps only the ones with exactly this set. A visitor's list is
@@ -125,12 +125,12 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
   // A new thread with the same people, composed in Messenger's own pane.
   const newThread = () => {
     const g = group();
-    if (g) navigate(`${props.base}/dms/new`, { state: { to: g.people.map(toRecipient) } });
+    if (g) navigate(`${props.base}/dm/new`, { state: { to: g.people.map(toRecipient) } });
   };
 
   const header = (subtitle?: string) => (
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-rim shrink-0">
-      <BackButton href={props.uuid && (group()?.threads.length ?? 0) > 1 ? base() : `${props.base}/dms`} />
+      <BackButton href={props.uuid && (group()?.threads.length ?? 0) > 1 ? base() : `${props.base}/dm`} />
       <Avatar src={group()?.people[0]?.photo} name={group() ? groupName(group()!) : "?"} class="w-9 h-9" />
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium text-txt truncate">{group() ? groupName(group()!) : "…"}</p>

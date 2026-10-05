@@ -1,11 +1,13 @@
 // src/modules/messenger/views/MessengerView.tsx
 //
 // DMs and chatrooms in one split view, for one channel. The url is the selection:
-//   /messenger/:nick[/dms]                  DM list
-//   /messenger/:nick/dms/:people[/:uuid]    a person's threads / one thread
-//   /messenger/:nick/rooms                  room list
-//   /messenger/:nick/rooms/new              create a room (owner)
-//   /messenger/:nick/rooms/:room/:roomId    a room
+//   /messenger/:nick[/dm]                   DM list
+//   /messenger/:nick/dm/:people[/:uuid]     a person's threads / one thread
+//   /chat/:nick                             room list
+//   /chat/:nick/new                         create a room (owner)
+//   /chat/:nick/:roomId                     a room (core's room url, so
+//                                           invites and bookmarks land here)
+// The old /messenger/:nick/dms/… and /messenger/:nick/rooms/… urls redirect.
 // On your own nick it's your mailbox, rooms and bookmarks. On another channel
 // (local or remote visitor) it's your DMs with that channel and the rooms it
 // lets you into. Desktop shows list + pane side by side; below md, one at a time.
@@ -17,13 +19,14 @@ import { fetchMessages } from "@utsukta/spa-core/lib/message-store";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { currentNick, useAuth } from "@utsukta/spa-core/store/auth-store";
-import { MdFillChat, MdFillPeople, MdOutlineAdd, MdOutlineOpen_in_new, MdOutlineSearch } from "solid-icons/md";
+import { MdFillChat, MdFillPeople, MdOutlineAdd, MdOutlineDelete, MdOutlineOpen_in_new, MdOutlineSearch } from "solid-icons/md";
 import { fetchRooms } from "@/modules/chat/api";
 import { addChatBookmark, bookmarkIdForRoom, bookmarks, isRoomBookmarked, loadChatBookmarks, removeChatBookmark } from "@/modules/chat/bookmarks";
 import { isChatUnread, isRemoteChatUnread } from "@/modules/chat/unread";
 import { BookmarkedRoomsList, type BookmarkRowParts } from "@/modules/chat/widgets/BookmarkedRoomsWidget";
 import type { ChatBookmark } from "@/modules/chat/bookmarks";
 import NewRoomForm from "@/modules/chat/NewRoomForm";
+import { deleteChatRoom } from "@/modules/chat/store";
 import { groupThreads, groupName, groupMatches, shortTime, type DmGroup } from "../dms";
 import DmPane, { Avatar, PinButton, decodeHtmlEntities, toRecipient } from "../DmPane";
 import { usePins, setPinned } from "../pins";
@@ -104,12 +107,23 @@ export default function MessengerView() {
   const navigate = useNavigate();
   const auth = useAuth();
 
-  const path = createMemo(() => location.pathname.split("/").slice(2).filter(Boolean).map(decodeURIComponent));
-  const nick = () => path()[0] ?? "";
+  const path = createMemo(() => location.pathname.split("/").filter(Boolean).map(decodeURIComponent));
+  const nick = () => path()[1] ?? "";
   // Bare /messenger: your own.
   createEffect(() => { if (!nick() && currentNick()) navigate(`/messenger/${currentNick()}`, { replace: true }); });
   const base = () => `/messenger/${encodeURIComponent(nick())}`;
-  const segs = () => path().slice(1);
+  const chatBase = () => `/chat/${encodeURIComponent(nick())}`;
+  // Normalised selection: ["dm", …] or ["rooms"[, "new" | roomId]].
+  const segs = () => (path()[0] === "chat" ? ["rooms", ...path().slice(2)] : path().slice(2));
+  // Old urls (pins, history): /dms/… → /dm/…, /rooms[/new] → /chat/:nick[/new],
+  // /rooms/:room/:roomId → /chat/:room/:roomId.
+  createEffect(() => {
+    const p = path();
+    if (p[0] !== "messenger") return;
+    const rest = p.slice(3).map(encodeURIComponent).join("/");
+    if (p[2] === "dms") navigate(`${base()}/dm${rest ? `/${rest}` : ""}`, { replace: true });
+    else if (p[2] === "rooms") navigate(p.length > 4 ? `/chat/${rest}` : `${chatBase()}${rest ? `/${rest}` : ""}`, { replace: true });
+  });
   const isOwner = () => !!auth()?.isLocal && nick() === currentNick();
   const urlTab = () => (segs()[0] === "rooms" ? "rooms" : "dms");
   // Local, so flipping tabs keeps the open conversation; follows the url.
@@ -172,20 +186,29 @@ export default function MessengerView() {
     if (!own.loading && !roomsOn() && segs()[0] === "rooms") navigate(base(), { replace: true });
   });
   const canCreateRoom = () => isOwner() && !own.error && own()?.is_owner && own()?.chatrooms_installed !== false;
+  async function dropRoom(roomId: number, name: string) {
+    if (!confirm(`${t("chat.delete_room")}: ${name}?`)) return;
+    try {
+      await deleteChatRoom(nick(), roomId);
+      if (segs()[1] === String(roomId)) navigate(chatBase(), { replace: true });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
   // A local visitor can start a DM from their own channel; a remote one sends from their hub.
   const canNewDm = () => !!auth()?.isLocal;
 
   async function newItem() {
-    if (tab() === "rooms") return navigate(`${base()}/rooms/new`);
+    if (tab() === "rooms") return navigate(`${chatBase()}/new`);
     // Visiting: the DM goes to this channel.
     const ch = isOwner() ? null : await apiFetch(`/spa/profile/${nick()}`).then((r) => r.json()).then((j) => j.data).catch(() => null);
     const to = ch?.channel_hash
       ? [toRecipient({ hash: ch.channel_hash, name: ch.channel_name, addr: ch.xchan_addr || nick(), photo: ch.channel_photo_l })]
       : [];
-    navigate(`${base()}/dms/new`, { state: { to } });
+    navigate(`${base()}/dm/new`, { state: { to } });
   }
 
-  const roomActive = (nick: string, id: number) => segs()[1] === nick && segs()[2] === String(id);
+  const roomActive = (n: string, id: number) => path()[0] === "chat" && n === nick() && segs()[1] === String(id);
   const empty = (text: string) => <p class="px-4 py-8 text-sm text-muted text-center">{text}</p>;
   const section = (text: string) => (
     <p class="px-3 pt-2 pb-1 text-[0.6875rem] font-medium uppercase tracking-wider text-muted">{text}</p>
@@ -194,8 +217,8 @@ export default function MessengerView() {
 
   // One conversation row. The pin sits beside the link, not inside it.
   const dmRow = (g: DmGroup | undefined, key: string, title: string) => (
-    <div class={pinRowClass(segs()[0] === "dms" && segs()[1] === key)}>
-      <A href={`${base()}/dms/${encodeURIComponent(key)}`} class="flex-1 min-w-0 flex items-center gap-3 py-2.5">
+    <div class={pinRowClass(segs()[0] === "dm" && segs()[1] === key)}>
+      <A href={`${base()}/dm/${encodeURIComponent(key)}`} class="flex-1 min-w-0 flex items-center gap-3 py-2.5">
         <Avatar src={g?.people[0]?.photo} name={g ? groupName(g) : title} />
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2">
@@ -305,7 +328,6 @@ export default function MessengerView() {
               {section(t("messenger.pinned") as string)}
               <BookmarkedRoomsList
                 filter={(bm) => matches(bm.title)}
-                onOpenLocal={(n, id) => navigate(`${base()}/rooms/${encodeURIComponent(n)}/${id}`)}
                 row={(bm, parts) => (
                   <PinnedRoomRow bm={bm} parts={parts} active={!!parts.room && roomActive(parts.room.nick, parts.room.id)} />
                 )}
@@ -320,7 +342,18 @@ export default function MessengerView() {
                     name={r.name}
                     unread={isChatUnread(nick(), r)}
                     count={r.in_room}
-                    onOpen={() => navigate(`${base()}/rooms/${encodeURIComponent(nick())}/${r.id}`)}
+                    onOpen={() => navigate(`${chatBase()}/${r.id}`)}
+                    extra={isOwner() ? (
+                      <button
+                        type="button"
+                        onClick={() => void dropRoom(r.id, r.name)}
+                        class="p-1.5 rounded text-muted hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all shrink-0"
+                        title={t("chat.delete_room") as string}
+                        aria-label={t("chat.delete_room") as string}
+                      >
+                        <MdOutlineDelete size={16} />
+                      </button>
+                    ) : undefined}
                     pin={canPin() ? { pinned: isRoomBookmarked(nick(), r.id), onClick: () => void toggleRoomPin(r.id, r.name) } : undefined}
                   />
                 )}
@@ -354,25 +387,25 @@ export default function MessengerView() {
             <p class="text-sm">{t("messenger.select")}</p>
           </div>
         }>
-          <Match when={segs()[0] === "dms" && segs()[1] === "new" && auth()?.isLocal}>
+          <Match when={segs()[0] === "dm" && segs()[1] === "new" && auth()?.isLocal}>
             {/* Keyed on the navigation's state: each "new message" starts fresh. */}
             <Show when={location.state || "blank"} keyed>{(_s) => <NewDmPane base={base()} />}</Show>
           </Match>
-          <Match when={segs()[0] === "dms" && segs()[1]}>
+          <Match when={segs()[0] === "dm" && segs()[1]}>
             <DmPane base={base()} channel={isOwner() ? undefined : nick()} groupKey={segs()[1]} uuid={segs()[2]} />
           </Match>
           <Match when={segs()[0] === "rooms" && segs()[1] === "new" && isOwner()}>
             <div class="flex-1 overflow-y-auto p-4">
               <NewRoomForm
                 nick={nick()}
-                onCreated={(room) => navigate(`${base()}/rooms/${encodeURIComponent(nick())}/${room.id}`)}
-                onCancel={() => navigate(`${base()}/rooms`)}
+                onCreated={(room) => navigate(`${chatBase()}/${room.id}`)}
+                onCancel={() => navigate(chatBase())}
               />
             </div>
           </Match>
-          <Match when={segs()[0] === "rooms" && segs()[2] && `${segs()[1]}/${segs()[2]}`} keyed>
+          <Match when={segs()[0] === "rooms" && Number(segs()[1]) && `${nick()}/${segs()[1]}`} keyed>
             {/* Keyed: a different room is a new session (leave old, join new). */}
-            {(_key) => <RoomPane base={base()} nick={segs()[1]} roomId={Number(segs()[2])} />}
+            {(_key) => <RoomPane back={chatBase()} nick={nick()} roomId={Number(segs()[1])} />}
           </Match>
         </Switch>
       </main>

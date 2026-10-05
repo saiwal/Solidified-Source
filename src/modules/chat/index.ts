@@ -1,52 +1,11 @@
 // src/modules/chat/index.ts
 import { registerModule } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { chatNavBadge } from "./unread";
 
 registerModule({
   id: "chat",
-  routes: [
-    // Room list: /chat/:nick
-    {
-      path: "/chat/:nick",
-      component: () => import("./views/ChatRoomsView"),
-    },
-    // Individual room: /chat/:nick/:roomId
-    {
-      path: "/chat/:nick/:roomId",
-      component: () => import("./views/ChatRoomView"),
-    },
-  ],
-  navItem: {
-    label: () => useI18n().t("nav.chat"),
-    icon: "chat",
-    path: "/chat",
-    // nav link always targets the subject nick's chat
-    href: () => `/chat/${usePageNick()()}`,
-    context: "all", // only shown in channel context
-    badge: chatNavBadge, // unread rooms on your own channel
-    // hidden: true,       // excluded from main nav; shown via channel_tabs
-  },
+  routes: [], // /chat/* is served by the messenger module
   widgets: [
-    {
-      id: "chat.header",
-      label: () => useI18n().t("widgets.chat_header"),
-      loader: () => import("./widgets/ChatHeaderWidget"),
-      slot: "header",
-      defaultModules: ["chat"],
-      contexts: ["chat"],
-      locked: true,
-    },
-    {
-      id: "chat.content",
-      label: () => useI18n().t("widgets.chat_content"),
-      loader: () => import("./widgets/ChatContentWidget"),
-      slot: "contentTop",
-      defaultModules: ["chat"],
-      contexts: ["chat"],
-      locked: true,
-    },
     {
       // Room list with one-click join into a chat window. Two ids for two
       // slots (same as hq.quick_compose/_right) — a widget can't change slot.
@@ -83,7 +42,7 @@ registerModule({
       loader: () => import("./widgets/RoomCardWidget"),
       slot: "right",
       defaultModules: [],
-      contexts: ["channel", "profile", "chat"],
+      contexts: ["channel", "profile", "messenger"],
       multiInstance: true,
       configComponent: () => import("./widgets/RoomCardConfig"),
       helpTarget: "widgets.chat_room_card",

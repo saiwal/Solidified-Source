@@ -278,7 +278,7 @@ export default function IntegrationsSection() {
                   </Show>
 
                   <div class="col-start-3 row-start-1 sm:row-end-3 w-11 flex justify-center">
-                    {/* No toggle for an app the nav can never show (NSFW, Invite) */}
+                    {/* No toggle for an app the nav can never show (NSFW, Invite, Chatrooms) */}
                     <Show when={row.app?.installed && appNavigable(row.app.url)}>
                       <input
                         type="checkbox"

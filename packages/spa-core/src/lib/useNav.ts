@@ -125,7 +125,8 @@ function isSpaApp(app: NavApp, spaRoots: Set<string>): boolean {
   const href = toSpaHref(app.url);
   if (!href.startsWith("/")) return false;
   const root = href.split("/").filter(Boolean)[0] ?? "";
-  return spaRoots.has(root);
+  // Chatrooms: Messenger serves /chat and has its own nav item / channel tab.
+  return root !== "chat" && spaRoots.has(root);
 }
 
 /**
@@ -143,7 +144,9 @@ export function appNavigable(url: string): boolean {
   const href = toSpaHref(url);
   if (!href.startsWith("/")) return false;
   const path = urlToPath(href);
-  if (!buildSpaRoots().has(path.split("/").filter(Boolean)[0] ?? "")) return false;
+  const root = path.split("/").filter(Boolean)[0] ?? "";
+  // Chatrooms: Nav.php drops /chat from pinned/featured (Messenger serves it).
+  if (root === "chat" || !buildSpaRoots().has(root)) return false;
   return !!getModule(moduleIdForPath(path))?.navItem;
 }
 

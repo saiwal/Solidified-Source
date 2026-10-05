@@ -1,7 +1,6 @@
 // src/modules/chat/widgets/BookmarkedRoomsWidget.tsx
 import { For, Show, onMount, type JSX } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { openChat } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
 import {
@@ -69,10 +68,9 @@ export interface BookmarkRowParts {
 /**
  * The bookmark rows: open, unread dot, remote push toggle, unbookmark. The
  * widget frames them in a card; Messenger draws its own rows (`row`) as its
- * pinned rooms, opening this hub's rooms inline via `onOpenLocal`.
+ * pinned rooms.
  */
 export function BookmarkedRoomsList(props: {
-  onOpenLocal?: (nick: string, roomId: number, title: string) => void;
   /** Which bookmarks to show — the host's search box. */
   filter?: (bm: ChatBookmark) => boolean;
   /** Custom row layout; omitted, the widget's compact row. */
@@ -83,9 +81,7 @@ export function BookmarkedRoomsList(props: {
 
   onMount(loadChatBookmarks);
 
-  // A room on this hub opens straight into a chat window over the current page,
-  // as ChatRoomsListWidget does. (Navigating to /chat/:nick/:id would too, but
-  // ChatRoomView then swaps the page for that channel's room list.) Rooms on
+  // A room on this hub opens in Messenger (/chat/:nick/:id). Rooms on
   // another hub can't (the chat API is local), so they open on their own hub,
   // logged in via zid.
   function openBookmark(bm: ChatBookmark) {
@@ -96,12 +92,11 @@ export function BookmarkedRoomsList(props: {
       return;
     }
     const room = u.pathname.match(/^\/chat\/([^/]+)\/(\d+)\/?$/);
-    if (u.origin === location.origin && room)
-      (props.onOpenLocal ?? openChat)(decodeURIComponent(room[1]), Number(room[2]), bm.title);
+    if (u.origin === location.origin && room) navigate(`/chat/${room[1]}/${room[2]}`);
     else if (u.origin === location.origin) navigate(u.pathname);
     else {
       markRemoteChatSeen(bm);
-      // #room: an SPA hub keeps that tab on the room (see ChatRoomView).
+      // #room: legacy hint for SPA hubs that predate Messenger serving /chat.
       window.open((bm.visit_url || bm.url).split("#")[0] + "#room", "_blank", "noopener");
     }
   }

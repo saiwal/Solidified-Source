@@ -9,14 +9,14 @@ import { createRoomSession } from "@/modules/chat/store";
 import ChatRoomPane from "@/modules/chat/views/ChatRoomPane";
 import { BackButton } from "./DmPane";
 
-export default function RoomPane(props: { base: string; nick: string; roomId: number }) {
+export default function RoomPane(props: { back: string; nick: string; roomId: number }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const room = createRoomSession(props.nick, props.roomId);
   return (
     <div class="flex flex-col flex-1 min-h-0">
       <div class="flex items-center gap-3 px-3 py-2.5 border-b border-rim shrink-0">
-        <BackButton href={`${props.base}/rooms`} />
+        <BackButton href={props.back} />
         <div class="w-9 h-9 rounded-full bg-accent-muted text-accent flex items-center justify-center shrink-0">
           <MdFillChat size={18} />
         </div>
@@ -27,7 +27,7 @@ export default function RoomPane(props: { base: string; nick: string; roomId: nu
           </Show>
         </div>
       </div>
-      <ChatRoomPane nick={props.nick} roomId={props.roomId} room={room} onClose={() => navigate(`${props.base}/rooms`)} />
+      <ChatRoomPane nick={props.nick} roomId={props.roomId} room={room} onClose={() => navigate(props.back)} />
     </div>
   );
 }

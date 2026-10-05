@@ -218,8 +218,6 @@ export const widgets: RawDictionary["widgets"] = {
   articles_content: "लेख सूची",
   cards_content:    "कार्ड बोर्ड",
   // Chat header (chat.header) / room list (chat.content)
-  chat_header:  "चैट हेडर",
-  chat_content: "चैटरूम सूची",
   // Webpages header (webpages.header) / page list (webpages.content)
   webpages_header:  "वेबपेज हेडर",
   webpages_content: "वेबपेज सूची",

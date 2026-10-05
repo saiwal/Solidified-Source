@@ -16,18 +16,21 @@ export interface DmPin {
 
 const KEY = ["messenger-pins"];
 
-/** `/messenger/<nick>/dms/<key>` as stored: absolute, on this hub. */
+/** `/messenger/<nick>/dm/<key>` as stored: absolute, on this hub. */
 export const pinUrl = (base: string, key: string) =>
-  `${location.origin}${base}/dms/${encodeURIComponent(key)}`;
+  `${location.origin}${base}/dm/${encodeURIComponent(key)}`;
 
 async function fetchPins(base: string): Promise<DmPin[]> {
   const res = await apiFetch("/spa/bookmarks");
   if (!res.ok) return [];
   const menus: { items: { id: number; url: string; title: string }[] }[] = (await res.json()).data?.menus ?? [];
-  const prefix = `${location.origin}${base}/dms/`;
-  return menus.flatMap((m) => m.items)
-    .filter((i) => i.url.startsWith(prefix) && !i.url.slice(prefix.length).includes("/"))
-    .map((i) => ({ id: i.id, title: i.title, key: decodeURIComponent(i.url.slice(prefix.length)) }));
+  // `/dms/`: pins saved before the url became `/dm/`.
+  const prefixes = ["/dm/", "/dms/"].map((seg) => `${location.origin}${base}${seg}`);
+  return menus.flatMap((m) => m.items).flatMap((i) => {
+    const p = prefixes.find((x) => i.url.startsWith(x));
+    const key = p && i.url.slice(p.length);
+    return key && !key.includes("/") ? [{ id: i.id, title: i.title, key: decodeURIComponent(key) }] : [];
+  });
 }
 
 /** This Messenger's pinned conversations (local users only — bookmarks are theirs). */

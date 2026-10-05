@@ -59,13 +59,13 @@ export default function NewDmPane(props: { base: string }) {
     void queryClient.invalidateQueries({ queryKey: ["messenger-dms"] });
     // Same key Messenger groups by (see dms.ts): the sorted recipient hashes.
     const key = [...hashes].sort((a, b) => a.localeCompare(b)).join(",");
-    navigate(uuid ? `${props.base}/dms/${encodeURIComponent(key)}/${uuid}` : `${props.base}/dms`, { replace: true });
+    navigate(uuid ? `${props.base}/dm/${encodeURIComponent(key)}/${uuid}` : `${props.base}/dm`, { replace: true });
   }
 
   return (
     <div class="flex flex-col flex-1 min-h-0">
       <div class="flex items-center gap-3 px-3 py-2.5 border-b border-rim shrink-0">
-        <BackButton href={`${props.base}/dms`} />
+        <BackButton href={`${props.base}/dm`} />
         <p class="flex-1 text-sm font-medium text-txt">{t("messenger.new_dm")}</p>
       </div>
       <div class="px-4 py-2 border-b border-rim space-y-1 shrink-0">
