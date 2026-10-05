@@ -239,7 +239,8 @@ class StreamFilters
             $sql_extra .= " AND $a.parent IN (
                 SELECT f.parent
                 FROM item f
-                WHERE f.author_xchan = '$obs'
+                WHERE f.uid = $uid
+                  AND f.author_xchan = '$obs'
                   AND f.verb = 'Follow'
                   AND f.item_deleted = 0
                   AND NOT EXISTS (
