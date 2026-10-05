@@ -105,7 +105,7 @@ class StreamFilters
             $item_thread_top = '';
             $sql_extra .= " AND $a.parent IN (
                 SELECT DISTINCT parent FROM item
-                WHERE true $sql_options
+                WHERE uid = " . intval($uid) . " $sql_options
                 AND (( author_xchan IN ($contact_str) OR owner_xchan IN ($contact_str))
                      OR allow_gid LIKE '" . protect_sprintf('%<' . dbesc($group_hash) . '>%') . "')
                 AND id = parent $item_normal
