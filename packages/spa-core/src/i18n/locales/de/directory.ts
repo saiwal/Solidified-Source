@@ -27,7 +27,6 @@ export const directory: RawDictionary["directory"] = {
   load_more:            "Mehr laden",
   end_of_results:       "Ende der Ergebnisse",
   no_channels:          "Keine Kanäle gefunden.",
-  channels_found:       "Kanäle gefunden",
   no_suggestions:       "Keine Vorschläge verfügbar.",
   suggestions_count:    "Vorschläge",
   // ConnectionsSection

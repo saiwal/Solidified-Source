@@ -1687,7 +1687,6 @@ export type RawDictionary = {
     load_more:            string;
     end_of_results:       string;
     no_channels:          string;
-    channels_found:       string;
     no_suggestions:       string;
     suggestions_count:    string;
     add_connection_placeholder: string;

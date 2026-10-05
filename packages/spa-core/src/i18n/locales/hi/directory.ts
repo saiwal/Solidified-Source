@@ -23,7 +23,6 @@ export const directory: RawDictionary["directory"] = {
   load_more:            "और लोड करें",
   end_of_results:       "परिणामों का अंत",
   no_channels:          "कोई चैनल नहीं मिला।",
-  channels_found:       "चैनल मिले",
   no_suggestions:       "कोई सुझाव उपलब्ध नहीं।",
   suggestions_count:    "सुझाव",
   add_connection_placeholder: "चैनल पता या URL…",

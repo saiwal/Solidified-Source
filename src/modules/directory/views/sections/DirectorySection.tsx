@@ -1,6 +1,6 @@
 import { createEffect, createSignal, Show, For } from "solid-js";
 import {
-  entries, loading, loadingMore, hasMore, total,
+  entries, loading, loadingMore, hasMore,
   loadDirectory, loadMoreDirectory,
 } from "../../people/store";
 import {
@@ -131,13 +131,6 @@ export default function DirectorySection() {
           {t("directory.filter_safe_mode")}
         </button>
       </div>
-
-      {/* ── Count ── */}
-      <Show when={!loading() && total() > 0}>
-        <p class="text-sm text-muted">
-          {total().toLocaleString()} {t("directory.channels_found")}
-        </p>
-      </Show>
 
       {/* ── Skeleton ── */}
       <Show when={loading()}>
