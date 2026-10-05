@@ -11,6 +11,7 @@ import { MdFillLock, MdFillLock_open, MdFillDelete } from "solid-icons/md";
 import { useIsWikiList } from "../lib/isWikiList";
 
 import Modal from "@/shared/views/Modal";
+import CardShell from "@/shared/stream/CardShell";
 type SortField = "name" | "format";
 type SortDir   = "asc"  | "desc";
 
@@ -213,7 +214,7 @@ export default function WikiContentWidget() {
 
           <div class="space-y-0.5">
             <For each={sortedWikis()}>
-              {(wiki) => (
+              {(wiki) => (<CardShell uuid={`wiki:${wiki.url_name}`}>
                 <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors hover:bg-elevated">
                   <A
                     href={`/wiki/${nick()}/${wiki.url_name}`}
@@ -262,7 +263,7 @@ export default function WikiContentWidget() {
                       </button>
                     </div>
                   </Show>
-                </div>
+                </div></CardShell>
               )}
             </For>
           </div>

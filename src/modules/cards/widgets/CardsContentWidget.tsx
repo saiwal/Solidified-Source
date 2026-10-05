@@ -28,6 +28,7 @@ import KanbanBoard from "../components/KanbanBoard";
 import { useIsCardsList } from "../lib/isCardsList";
 import { boardView } from "../lib/kanban";
 import { fetchKanban } from "../api";
+import CardShell from "@/shared/stream/CardShell";
 
 // 20rem minimum column with a ceiling of 3 reproduces the density the old
 // `columns-1 sm:columns-2 lg:columns-3` gave: 3 columns across the full
@@ -104,7 +105,9 @@ export default function CardsContentWidget() {
                   <div class="flex-1 flex flex-col gap-4 min-w-0">
                     <For each={col}>
                       {(post) => (
-                        <CardFace card={post} nick={nick()} />
+                        <CardShell uuid={post.uuid}>
+                          <CardFace card={post} nick={nick()} />
+                        </CardShell>
                       )}
                     </For>
                   </div>

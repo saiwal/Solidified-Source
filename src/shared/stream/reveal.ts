@@ -24,6 +24,7 @@ export const visibleUuids = new Set<string>();
 
 const STAGGER_MS = 50;
 const STAGGER_MAX = 8;
+const IMG_WAIT_MAX_MS = 1500;
 
 const uuidOf = new WeakMap<Element, string>();
 
@@ -40,10 +41,24 @@ function getObserver() {
       }
       visibleUuids.add(uuid);
       const el = e.target as HTMLElement;
-      if (!el.classList.contains("hz-reveal")) continue;
+      if (!el.hasAttribute("data-hz-reveal")) continue;
       shown.add(uuid);
+      const play = () => {
+        el.removeAttribute("data-hz-reveal");
+        el.classList.add("animate-hz-reveal");
+      };
+      // data-reveal-wait (CardShell waitForImage): photo tiles are blank boxes
+      // until their lazy image lands, so sliding them in early shows nothing.
+      // Hold until it loads, capped so a slow/broken image can't hide a tile.
+      const img = el.dataset.revealWait !== undefined ? el.querySelector("img") : null;
+      if (img && !img.complete) {
+        img.addEventListener("load", play, { once: true });
+        img.addEventListener("error", play, { once: true });
+        setTimeout(play, IMG_WAIT_MAX_MS);
+        continue;
+      }
       el.style.animationDelay = `${Math.min(batch++, STAGGER_MAX) * STAGGER_MS}ms`;
-      el.classList.replace("hz-reveal", "animate-hz-reveal");
+      play();
     }
   }));
 }
@@ -62,8 +77,10 @@ export function reveal(el: HTMLElement, uuid: () => string) {
   uuidOf.set(el, id);
   els.set(id, el);
   // Hidden synchronously: the observer's first callback is async, so adding
-  // the class there would paint the card once before hiding it.
-  if (!shown.has(id)) el.classList.add("hz-reveal");
+  // it there would paint the card once before hiding it. An attribute, not a
+  // class: a ref runs before Solid's spread assigns props, so CardShell's
+  // `class` prop would overwrite className and silently drop a class here.
+  if (!shown.has(id)) el.setAttribute("data-hz-reveal", "");
   // Masonry/Scrapbook re-deal columns on a prepend, remounting a moved card
   // as a new element; it inherits the name so the transition still pairs it
   // with its old position instead of cross-fading.

@@ -268,7 +268,8 @@ export const apiSaveToFolder = (uuid: string, name: string, remove = false): Pro
     .then(d => d.data.folders);
 
 export const apiVotePoll = (uuid: string, answer: string | string[]) =>
-  post<{ success: boolean }>(`${BASE}/${encodeId(uuid)}/vote`, { answer });
+  post<{ success?: boolean; error?: string }>(`${BASE}/${encodeId(uuid)}/vote`, { answer })
+    .then(r => { if (!r.success) throw new Error(r.error || 'Vote failed'); });
 
 export const apiFollowPost = (uuid: string): Promise<void> =>
   post<{ success?: boolean; error?: string }>(`${BASE}/${encodeId(uuid)}/follow`)

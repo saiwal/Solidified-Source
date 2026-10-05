@@ -26,6 +26,8 @@ import SubPageContent from "@/shared/views/SubPageContent";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
+import CardShell from "@/shared/stream/CardShell";
+import { resetReveal } from "@/shared/stream/reveal";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
@@ -478,6 +480,8 @@ export default function ContactRolesSection() {
   const [connections, { mutate: mutateConns, refetch: refetchConns }] = createQueryResource("connections-all", fetchAllConnections);
   const [permcats, { mutate: mutatePermcats, refetch: refetchPermcats }] = createQueryResource("permcats", fetchPermcats);
   const [activeRole, setActiveRole] = createSignal<string | null>(null);
+  // Each visit / role-filter pick replays the card entrance, as streams do.
+  resetReveal();
   const [showCreate, setShowCreate] = createSignal(false);
   const [editingPerms, setEditingPerms] = createSignal<{ name: string; label: string } | null>(null);
 
@@ -603,7 +607,7 @@ export default function ContactRolesSection() {
                     when={!pill.system && pill.name !== null && pill.name !== ""}
                     fallback={
                       <button
-                        onClick={() => setActiveRole(pill.name)}
+                        onClick={() => { resetReveal(); setActiveRole(pill.name); }}
                         class={`px-3 py-1 rounded-full text-sm transition-colors flex items-center gap-1.5 ${
                           selected() === pill.name
                             ? "bg-accent text-accent-fg"
@@ -624,7 +628,7 @@ export default function ContactRolesSection() {
                       label={pill.label}
                       count={pill.count}
                       active={selected() === pill.name}
-                      onSelect={() => setActiveRole(pill.name)}
+                      onSelect={() => { resetReveal(); setActiveRole(pill.name); }}
                       onDeleted={handlePermcatDeleted}
                       onRenamed={handlePermcatRenamed}
                       onEditPerms={(name, label) => setEditingPerms({ name, label })}
@@ -656,13 +660,13 @@ export default function ContactRolesSection() {
 
           <div class="space-y-2">
             <For each={filtered()}>
-              {(conn) => (
+              {(conn) => (<CardShell uuid={conn.xchan_hash}>
                 <RoleCard
                   conn={conn}
                   roleOptions={roleOptions()}
                   onRoleChanged={(newRole) => handleRoleChanged(conn, newRole)}
                   onDeleted={() => refetchConns()}
-                />
+                /></CardShell>
               )}
             </For>
           </div>

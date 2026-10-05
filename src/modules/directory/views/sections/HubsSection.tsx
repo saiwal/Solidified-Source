@@ -3,6 +3,8 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPubsites, type PubSite } from '../../hubs/api';
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineOpen_in_new } from "solid-icons/md";
+import CardShell from "@/shared/stream/CardShell";
+import { resetReveal } from "@/shared/stream/reveal";
 
 const ACCESS_STYLES: Record<string, string> = {
   free:   'bg-accent-muted text-accent',
@@ -99,6 +101,9 @@ export default function PubsitesView() {
   const [filter, setFilter] = createSignal('');
   const [accessFilter, setAccessFilter] = createSignal('all');
   const [registerFilter, setRegisterFilter] = createSignal('all');
+  // Each visit / dropdown change is a new list: let cards enter again, as
+  // streams do. Not on keystrokes — the search box would replay constantly.
+  resetReveal();
 
   const filtered = createMemo(() => {
     const q = filter().toLowerCase();
@@ -134,7 +139,7 @@ export default function PubsitesView() {
         />
         <select
           value={accessFilter()}
-          onChange={(e) => setAccessFilter(e.currentTarget.value)}
+          onChange={(e) => { resetReveal(); setAccessFilter(e.currentTarget.value); }}
           class="px-3 py-2 text-sm rounded-lg border border-rim
                  bg-surface text-txt
                  focus:outline-none focus:ring-2 focus:ring-accent/40 transition"
@@ -146,7 +151,7 @@ export default function PubsitesView() {
         </select>
         <select
           value={registerFilter()}
-          onChange={(e) => setRegisterFilter(e.currentTarget.value)}
+          onChange={(e) => { resetReveal(); setRegisterFilter(e.currentTarget.value); }}
           class="px-3 py-2 text-sm rounded-lg border border-rim
                  bg-surface text-txt
                  focus:outline-none focus:ring-2 focus:ring-accent/40 transition"
@@ -187,7 +192,7 @@ export default function PubsitesView() {
       {/* Grid */}
       <Show when={!sites.loading && filtered().length > 0}>
         <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
-          <For each={filtered()}>{(site) => <HubCard site={site} />}</For>
+          <For each={filtered()}>{(site) => <CardShell uuid={site.url} class="grid"><HubCard site={site} /></CardShell>}</For>
         </div>
       </Show>
     </div>

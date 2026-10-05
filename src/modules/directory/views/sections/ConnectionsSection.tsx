@@ -21,6 +21,8 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import CardShell from "@/shared/stream/CardShell";
+import { resetReveal } from "@/shared/stream/reveal";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -422,6 +424,10 @@ export default function ConnectionsSection() {
 
   let sentinelRef!: HTMLDivElement;
 
+  // Runs before the cached list renders (onMount would be too late), so a
+  // revisit replays the card entrance.
+  resetReveal();
+
   onMount(() => {
     // The list and its offset both live in the store, so a remount renders what
     // is already loaded instead of resetting to page 1.
@@ -596,7 +602,7 @@ export default function ConnectionsSection() {
           </p>
           <div class="space-y-2">
             <For each={connections()}>
-              {(conn) => <ConnectionCard conn={conn} onDeleted={onDeleted} />}
+              {(conn) => <CardShell uuid={conn.xchan_hash}><ConnectionCard conn={conn} onDeleted={onDeleted} /></CardShell>}
             </For>
           </div>
           <Show when={loadingMore()}>

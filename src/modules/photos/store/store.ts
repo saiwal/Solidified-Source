@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { resetReveal } from "@/shared/stream/reveal";
 import type { Photo, PhotoDetail, PhotoComment, Album, PhotoSort, SortDir } from "../api/api";
 import {
   fetchPhotoSummary, fetchPhotoSummaryMeta, fetchAlbumsMeta,
@@ -42,7 +43,8 @@ const [loadingMore, setLoadingMore] = createSignal(false);
 // a page after LIMIT/OFFSET, so a page can be short without being the last one.
 let nextStart = 0;
 
-export function switchTab(next: PhotoTab) { setTab(next); }
+// The tab's list remounts from cached data, so let its cards enter again.
+export function switchTab(next: PhotoTab) { resetReveal(); setTab(next); }
 
 export function setPhotoSorting(sort: PhotoSort, dir: SortDir) {
   setPhotoSort(sort);
@@ -78,6 +80,8 @@ export async function loadSummary(nickname: string) {
   try {
     const { photos: items, canWrite: cw, hasMore: more } =
       await fetchPhotoSummaryMeta(nickname, 0, photoSort(), photoDir(), PAGE);
+    // A freshly loaded list replays the card entrance, as streams do.
+    resetReveal();
     setPhotos(items);
     setCanWrite(cw);
     setHasMore(more);
@@ -94,6 +98,7 @@ export async function loadAlbums(nickname: string) {
   setAlbumsError(null);
   try {
     const { albums: items, canWrite: cw } = await fetchAlbumsMeta(nickname);
+    resetReveal();
     setAlbums(items);
     setCanWrite(cw);
   } catch (err: unknown) {
@@ -120,6 +125,7 @@ export async function loadAlbum(nickname: string, albumHash: string, start = 0) 
   setDetail(null);
   try {
     const { photos: items, album_name, canWrite: cw } = await fetchPhotoAlbum(nickname, albumHash, start);
+    resetReveal();
     setPhotos(items);
     setAlbumName(album_name);
     setCanWrite(cw);

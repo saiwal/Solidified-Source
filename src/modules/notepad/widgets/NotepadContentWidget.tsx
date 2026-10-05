@@ -12,6 +12,7 @@ import AttachmentList from "@/shared/stream/components/AttachmentList";
 import NoteComposer from "@/shared/editor/composers/NoteComposer";
 import { notes, loading, hasMore, loadNotes, removeNote } from "../store";
 import type { Note } from "../api";
+import CardShell from "@/shared/stream/CardShell";
 
 function fmtDate(iso: string, locale: string): string {
   return new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(locale, {
@@ -235,7 +236,7 @@ export default function NotepadContentWidget() {
       <Show when={notes().length > 0}>
         <div class="space-y-3">
           <For each={notes()}>
-            {(note) => (
+            {(note) => (<CardShell uuid={note.uuid}>
               <NoteCard
                 note={note}
                 onEdit={() => {
@@ -254,7 +255,7 @@ export default function NotepadContentWidget() {
                 }}
                 confirmingDelete={confirmMid() === note.mid}
                 onCancelDelete={() => setConfirmMid(null)}
-              />
+              /></CardShell>
             )}
           </For>
         </div>

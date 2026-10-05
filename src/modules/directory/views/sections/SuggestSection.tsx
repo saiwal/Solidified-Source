@@ -7,6 +7,7 @@ import DirectoryCard from "../DirectoryCard";
 import DirectoryEntryModal from "../DirectoryEntryModal";
 import type { DirectoryEntry } from "../../people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import CardShell from "@/shared/stream/CardShell";
 
 export default function SuggestSection() {
   const { t } = useI18n();
@@ -36,7 +37,7 @@ export default function SuggestSection() {
         >
           <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
             <For each={entries()}>
-              {(entry) => <DirectoryCard entry={entry} onSelect={setSelected} />}
+              {(entry) => <CardShell uuid={entry.hash} class="grid"><DirectoryCard entry={entry} onSelect={setSelected} /></CardShell>}
             </For>
           </div>
         </Show>

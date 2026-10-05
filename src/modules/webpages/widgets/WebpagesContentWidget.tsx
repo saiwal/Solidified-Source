@@ -17,6 +17,7 @@ import {
 } from 'solid-icons/md';
 import { useIsWebpagesList } from '../lib/isWebpagesList';
 import { MdOutlineOpen_in_new } from "solid-icons/md";
+import CardShell from "@/shared/stream/CardShell";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -204,13 +205,13 @@ export default function WebpagesContentWidget() {
           >
             <div class="space-y-0.5">
               <For each={pages()}>
-                {(page) => (
+                {(page) => (<CardShell uuid={page.mid}>
                   <PageRow
                     page={page}
                     nick={nick()}
                     isOwner={isOwner()}
                     onDelete={handleDelete}
-                  />
+                  /></CardShell>
                 )}
               </For>
             </div>

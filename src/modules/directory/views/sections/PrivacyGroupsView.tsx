@@ -35,6 +35,7 @@ import {
 } from "../../groups/store";
 import { fetchGroup } from "../../groups/api";
 import type { PrivacyGroup, GroupContact } from "../../groups/api";
+import CardShell from "@/shared/stream/CardShell";
 
 // ── Inline create form ────────────────────────────────────────────────────────
 
@@ -285,7 +286,7 @@ const PrivacyGroupsView: Component = () => {
           }
         >
           <div class="space-y-2">
-            <For each={groups()}>{(g) => <GroupRow group={g} />}</For>
+            <For each={groups()}>{(g) => <CardShell uuid={`group:${g.hash}`}><GroupRow group={g} /></CardShell>}</For>
           </div>
         </Show>
       </Show>

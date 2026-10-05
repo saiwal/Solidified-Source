@@ -2,6 +2,7 @@
 import { createSignal, For, Show } from "solid-js";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiVotePoll } from "@utsukta/spa-core/lib/item-api";
+import { toast } from "@utsukta/spa-core/store/toast";
 import type { PollData } from "@utsukta/spa-core/types/post.types";
 
 function formatEndTime(iso: string): string {
@@ -42,10 +43,6 @@ export default function PollCard(props: {
 
   const closed   = () => isPollClosed(props.poll);
   const hasVoted = () => props.poll.viewer_votes.length > 0;
-  const showResults = () => hasVoted() || closed();
-
-  const totalVotes = () =>
-    props.poll.options.reduce((sum, o) => sum + o.votes, 0);
 
   const [selected, setSelected] = createSignal<string[]>(
     props.poll.viewer_votes.length > 0 ? [...props.poll.viewer_votes] : []
@@ -53,6 +50,8 @@ export default function PollCard(props: {
   const [submitting, setSubmitting] = createSignal(false);
   const [voted, setVoted] = createSignal(hasVoted());
   const [error, setError] = createSignal<string | null>(null);
+  // Local vote state, not props: the poll prop isn't refetched after voting.
+  const showResults = () => voted() || closed();
 
   function toggleOption(name: string) {
     if (voted() || closed()) return;
@@ -73,6 +72,7 @@ export default function PollCard(props: {
     try {
       await apiVotePoll(props.uuid, props.poll.multiple ? sel : sel[0]);
       setVoted(true);
+      toast.success("Your vote has been submitted. Updates may not appear instantly.");
       props.onVoted?.(sel);
     } catch (e: any) {
       setError(e?.message ?? "Vote failed");
@@ -100,7 +100,7 @@ export default function PollCard(props: {
       <For each={props.poll.options}>
         {(option) => {
           const isSelected  = () => selected().includes(option.name);
-          const isVotedFor  = () => props.poll.viewer_votes.includes(option.name);
+          const isVotedFor  = () => voted() && isSelected();
           const votes       = () => showResults()
             ? (currentVotes().find(o => o.name === option.name)?.votes ?? option.votes)
             : 0;
@@ -144,7 +144,7 @@ export default function PollCard(props: {
 
       <div class="flex items-center justify-between gap-3 pt-1">
         <span class="text-xs text-muted">
-          {totalVotes()} {totalVotes() === 1 ? "vote" : "votes"}
+          {currentTotal()} {currentTotal() === 1 ? "vote" : "votes"}
           <Show when={closed()}>
             <span class="ml-1">· closed</span>
           </Show>

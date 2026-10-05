@@ -3,6 +3,7 @@
 import { createSignal } from "solid-js";
 import { fetchDirectory } from "./api";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { resetReveal } from "@/shared/stream/reveal";
 import type { DirectoryEntry, DirectoryParams } from "./api";
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -28,6 +29,8 @@ export async function loadDirectory(params: DirectoryParams = {}) {
   setHasMore(false);
   try {
     const data = await fetchDirectory({ ...params, start: 0 });
+    // New filter/sort = new list: let every card enter again, as streams do.
+    resetReveal();
     setEntries(data.entries);
     setTotal(data.meta.total);
     setIsDirectoryAdmin(data.meta.is_directory_admin);

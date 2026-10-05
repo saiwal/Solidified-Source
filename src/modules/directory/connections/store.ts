@@ -6,6 +6,7 @@
 // while the offset marches on.
 
 import { createSignal } from 'solid-js';
+import { resetReveal } from "@/shared/stream/reveal";
 import { toast } from '@utsukta/spa-core/store/toast';
 import type { Connection, ConnectionFilter, ConnectionOrder } from './api';
 import { fetchConnections } from './api';
@@ -38,6 +39,8 @@ export async function loadConnections() {
     const data = await fetchConnections({
       filter: filter(), order: order(), search: search(), start: 0, limit: LIMIT,
     });
+    // A freshly loaded list replays the card entrance, as streams do.
+    resetReveal();
     setConnections(data.connections);
     setTotal(data.meta.total);
     currentStart = data.connections.length;

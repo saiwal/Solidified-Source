@@ -50,6 +50,7 @@ import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetc
 import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
+import CardShell from "@/shared/stream/CardShell";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -515,14 +516,14 @@ function AllPhotosView() {
 
       <Show when={!loading() && viewMode() === 'grid'}>
         <div class="grid grid-cols-3 gap-1">
-          <For each={photos()}>{(photo) => <SquarePhotoTile photo={photo} sel={sel} />}</For>
+          <For each={photos()}>{(photo) => <CardShell uuid={photo.resource_id} class="grid" waitForImage><SquarePhotoTile photo={photo} sel={sel} /></CardShell>}</For>
         </div>
       </Show>
 
       <Show when={!loading() && viewMode() === 'list'}>
         <div class="flex flex-col divide-y divide-rim">
           <For each={photos()}>
-            {(photo) => (
+            {(photo) => (<CardShell uuid={photo.resource_id}>
               <button
                 onClick={() => sel.selectMode()
                   ? sel.toggleOne(photo.resource_id)
@@ -555,7 +556,7 @@ function AllPhotosView() {
                   </p>
                 </div>
                 <MdFillChevron_right size={18} class="text-subtle flex-shrink-0" />
-              </button>
+              </button></CardShell>
             )}
           </For>
         </div>
@@ -715,7 +716,7 @@ function AlbumsView(props: { auto: boolean }) {
       <Show when={!albumsLoading() && viewMode() === 'grid'}>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <For each={sortedAlbums()}>
-            {(album) => (
+            {(album) => (<CardShell uuid={`album:${album.folder}`} class="grid" waitForImage>
               <A
                 href={`/photos/${nick()}/album/${album.folder}`}
                 class="group block rounded-xl overflow-hidden bg-surface
@@ -743,7 +744,7 @@ function AlbumsView(props: { auto: boolean }) {
                   <p class="text-sm font-medium text-txt truncate">{album.album}</p>
                   <p class="text-xs text-muted">{album.total} {t("photos.photos_count")}</p>
                 </div>
-              </A>
+              </A></CardShell>
             )}
           </For>
         </div>
@@ -753,7 +754,7 @@ function AlbumsView(props: { auto: boolean }) {
       <Show when={!albumsLoading() && viewMode() === 'list'}>
         <div class="flex flex-col divide-y divide-rim">
           <For each={sortedAlbums()}>
-            {(album) => (
+            {(album) => (<CardShell uuid={`album:${album.folder}`}>
               <A
                 href={`/photos/${nick()}/album/${album.folder}`}
                 class="flex items-center gap-3 py-2.5 px-2 hover:bg-surface
@@ -781,7 +782,7 @@ function AlbumsView(props: { auto: boolean }) {
                   <p class="text-xs text-muted">{album.total} {t("photos.photos_count")}</p>
                 </div>
                 <MdFillChevron_right size={18} class="text-subtle flex-shrink-0" />
-              </A>
+              </A></CardShell>
             )}
           </For>
         </div>
@@ -1068,7 +1069,7 @@ function AlbumGrid() {
 
       {/* Photo grid */}
       <div class="grid grid-cols-3 gap-1">
-        <For each={sortedPhotos()}>{(photo) => <SquarePhotoTile photo={photo} sel={sel} />}</For>
+        <For each={sortedPhotos()}>{(photo) => <CardShell uuid={photo.resource_id} class="grid" waitForImage><SquarePhotoTile photo={photo} sel={sel} /></CardShell>}</For>
       </div>
     </div>
   );

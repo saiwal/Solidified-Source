@@ -10,6 +10,7 @@ import type { Post } from "@utsukta/spa-core/types/post.types";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { useIsArticlesList } from "../lib/isArticlesList";
+import CardShell from "@/shared/stream/CardShell";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -179,11 +180,13 @@ export default function ArticlesContentWidget() {
             <div class="space-y-4">
               <For each={posts()}>
                 {(post) => (
-                  <ArticleCard
-                    post={post}
-                    nick={nick()}
-                    onOpen={() => goToArticle(post)}
-                  />
+                  <CardShell uuid={post.uuid}>
+                    <ArticleCard
+                      post={post}
+                      nick={nick()}
+                      onOpen={() => goToArticle(post)}
+                    />
+                  </CardShell>
                 )}
               </For>
             </div>

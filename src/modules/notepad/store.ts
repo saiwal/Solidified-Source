@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { fetchNotes, deleteNote, type Note, type NoteFilters } from "./api";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { resetReveal, exitCard } from "@/shared/stream/reveal";
 
 const PAGE_SIZE = 20;
 
@@ -22,6 +23,8 @@ export async function loadNotes(reset = false, nextFilters?: NoteFilters) {
   try {
     const res = await fetchNotes(reset ? 0 : offset(), PAGE_SIZE, filters());
     const items = res.data ?? [];
+    // A fresh list (new filter) replays the card entrance, as streams do.
+    if (reset) resetReveal();
     setNotes(reset ? items : [...notes(), ...items]);
     setHasMore(res.meta?.has_more ?? false);
     setOffset((reset ? 0 : offset()) + items.length);
@@ -34,7 +37,8 @@ export async function loadNotes(reset = false, nextFilters?: NoteFilters) {
 
 export async function removeNote(note: { mid: string; uuid: string }) {
   const prev = notes();
-  setNotes(prev.filter((n) => n.mid !== note.mid));
+  // Same fade-and-collapse as a deleted stream post (CardShell's exit).
+  exitCard(note.uuid, () => setNotes((cur) => cur.filter((n) => n.mid !== note.mid)));
   try {
     await deleteNote(note.uuid);
   } catch (e: any) {
