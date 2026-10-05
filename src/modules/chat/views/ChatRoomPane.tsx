@@ -135,9 +135,15 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 	});
 
 	// Stick to the bottom on new messages, and on restore: a minimized window
-	// is display:none, so scrolling it while hidden does nothing.
+	// is display:none, so scrolling it while hidden does nothing. Only while
+	// the reader is already at the bottom: a poll must not yank them out of
+	// history.
+	let pinned = true;
+	const onScroll = () => {
+		if (messagesEl) pinned = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
+	};
 	createEffect(on([room.messages, () => frame?.mode()], () => {
-		requestAnimationFrame(() => { if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight; });
+		requestAnimationFrame(() => { if (messagesEl && pinned) messagesEl.scrollTop = messagesEl.scrollHeight; });
 	}));
 
 	// Inline decrypt form for one-off clicks (when no session password is active).
@@ -604,6 +610,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 					<Show when={!room.loading() && room.messages().length > 0}>
 						<div
 							ref={messagesEl}
+							onScroll={onScroll}
 							class="flex-1 overflow-y-auto px-4 py-3 space-y-0.5 scroll-smooth"
 						>
 							<For each={groupedMessages()}>
@@ -691,7 +698,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 					</Show>
 
 					<ChatComposer
-						send={(body, mimetype) => room.send(body, mimetype)}
+						send={(body, mimetype) => { pinned = true; return room.send(body, mimetype); }}
 						scope={`chat:${room.nick}:${room.roomId}`}
 						encrypt
 						// Into the viewer's own cloud, in a folder for the room, under the room's ACL.

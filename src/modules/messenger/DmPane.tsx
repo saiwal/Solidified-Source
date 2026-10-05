@@ -237,6 +237,12 @@ function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) 
   const viewer = useNavViewer();
   const auth = useAuth();
   let scroller: HTMLDivElement | undefined;
+  // Follow new messages only while the reader sits at the bottom; a poll
+  // must not yank someone reading history back down.
+  let pinned = true;
+  const onScroll = () => {
+    if (scroller) pinned = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+  };
   // The message a reply answers, when it isn't the thread's opening post.
   const [replyTo, setReplyTo] = createSignal<any>(null);
   const [flash, setFlash] = createSignal("");
@@ -263,7 +269,7 @@ function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) 
   });
 
   createEffect(on(() => thread.data?.length, () =>
-    requestAnimationFrame(() => { if (scroller) scroller.scrollTop = scroller.scrollHeight; }),
+    requestAnimationFrame(() => { if (scroller && pinned) scroller.scrollTop = scroller.scrollHeight; }),
   ));
 
   const messages = createMemo(() => {
@@ -293,6 +299,7 @@ function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) 
     // thr_parent on the message answered.
     await apiCreateComment(replyTo()?.uuid ?? props.uuid, body, "", mimetype);
     setReplyTo(null);
+    pinned = true;
     await thread.refetch();
     invalidateDms();
   }
@@ -358,7 +365,7 @@ function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) 
 
   return (
     <>
-      <div ref={scroller} class="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
+      <div ref={scroller} onScroll={onScroll} class="flex-1 overflow-y-auto px-4 py-3 space-y-0.5">
         <Show when={thread.isLoading}>
           <div class="space-y-3 animate-pulse">
             <For each={[0, 1, 2]}>{() => <div class="h-8 bg-elevated rounded-xl w-2/3" />}</For>
