@@ -3,7 +3,7 @@ import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import { MdOutlinePerson, MdOutlinePerson_add, MdOutlineEdit, MdOutlineEmail, MdOutlineChat_bubble, MdOutlineCheck, MdOutlineBlock, MdOutlineGavel } from "solid-icons/md";
-import { useAuth, isAdmin } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, isAdmin, isSelf as isViewer } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer, useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { addConnection } from "@/modules/directory/people/api";
@@ -99,8 +99,8 @@ export default function AuthorPopover(props: Props) {
 
   const isSelf = () => {
     const a = auth();
-    if (!a?.isLocal || !a.nick || !props.address) return true;
-    return props.address === `${a.nick}@${window.location.hostname}`;
+    if (!a?.isLocal || (!props.hash && !props.address)) return true;
+    return isViewer(props.hash, props.address);
   };
 
   const isLocal = () => auth()?.isLocal ?? false;

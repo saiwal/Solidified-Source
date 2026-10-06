@@ -21,7 +21,7 @@ import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { exitCard } from "@/shared/stream/reveal";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import { currentNick } from "@utsukta/spa-core/store/auth-store";
+import { currentNick, currentHash } from "@utsukta/spa-core/store/auth-store";
 import type { NavViewer } from "@utsukta/spa-core/lib/nav-api";
 import type { CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
@@ -61,6 +61,7 @@ export function tempCommentNode(
     authorName: viewer?.name || currentNick(),
     authorAvatar: viewer?.avatar ?? "",
     authorUrl: viewer?.url ?? "",
+    authorHash: currentHash(),
     authorAddress: viewer?.addr ?? "",
     created: new Date().toISOString().replace("T", " ").slice(0, 19),
     verb: "Create", obj_type: "Note", flags: [], permalink: "",

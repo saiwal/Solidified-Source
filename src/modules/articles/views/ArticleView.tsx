@@ -297,6 +297,7 @@ export default function ArticleView() {
       authorName: viewer?.name || a?.nick || "You",
       authorAvatar: viewer?.avatar ?? "",
       authorUrl: viewer?.url ?? "",
+      authorHash: a?.hash,
       authorAddress: viewer?.addr || (a?.nick ? `${a.nick}@${window.location.hostname}` : ""),
       created: new Date().toISOString().replace("T", " ").slice(0, 19),
       verb: "Create", obj_type: "Note", flags: [], permalink: "",

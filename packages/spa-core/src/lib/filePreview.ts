@@ -1,6 +1,10 @@
-export type PreviewKind = "pdf" | "epub" | "video" | "audio" | "image" | "excalidraw" | "markdown" | "text" | "none";
+export type PreviewKind = "pdf" | "epub" | "video" | "audio" | "image" | "excalidraw" | "markdown" | "html" | "csv" | "json" | "bbcode" | "text" | "none";
 
-const TEXT_EXT = /\.(txt|md|markdown|json|ya?ml|xml|csv|log|ini|conf|sh|bash|js|ts|tsx|jsx|py|php|java|c|cpp|h|hpp|cs|go|rs|rb|css|scss|html?)$/i;
+const TEXT_EXT = /\.(txt|md|markdown|json|ya?ml|xml|csv|log|ini|conf|sh|bash|js|ts|tsx|jsx|py|php|java|c|cpp|h|hpp|cs|go|rs|rb|css|scss|toml|sql|diff|patch|srt|vtt|tex|lua|kt|swift|env|gitignore|dockerfile|makefile|vue|svelte|ics|vcf|pl|r|dart|scala|ex|exs|hs|clj|zig|nim|proto|graphql|gql)$/i;
+const CSV_EXT = /\.(csv|tsv)$/i;
+const JSON_EXT = /\.json$/i;
+const BBCODE_EXT = /\.(bb|bbcode)$/i;
+const HTML_EXT = /\.html?$/i;
 const MD_EXT = /\.(md|markdown)$/i;
 const PDF_EXT = /\.pdf$/i;
 const EPUB_EXT = /\.epub$/i;
@@ -25,6 +29,10 @@ export function classifyPreview(mimetype: string, filename: string): PreviewKind
   if (mime.startsWith("audio/") || AUDIO_EXT.test(filename)) return "audio";
   if (mime.startsWith("image/") || IMAGE_EXT.test(filename)) return "image";
   if (mime === "text/markdown" || MD_EXT.test(filename)) return "markdown";
+  if (mime === "text/html" || HTML_EXT.test(filename)) return "html";
+  if (mime === "text/csv" || mime === "text/tab-separated-values" || CSV_EXT.test(filename)) return "csv";
+  if (mime === "application/json" || JSON_EXT.test(filename)) return "json";
+  if (BBCODE_EXT.test(filename)) return "bbcode";
   if (mime.startsWith("text/") || TEXT_EXT.test(filename)) return "text";
   return "none";
 }
@@ -33,3 +41,29 @@ export function classifyPreview(mimetype: string, filename: string): PreviewKind
 // string and freeze the tab; raise or make configurable if a real case needs
 // bigger inline previews.
 export const TEXT_PREVIEW_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Minimal RFC 4180 parser: quoted fields, "" escapes, newlines inside quotes.
+ * Tab-separated when the file is a .tsv (or the mimetype says so).
+ */
+export function parseCsv(src: string, delimiter = ","): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (quoted) {
+      if (c === '"' && src[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else field += c;
+    } else if (c === '"' && field === "") quoted = true;
+    else if (c === delimiter) { row.push(field); field = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && src[i + 1] === "\n") i++;
+      row.push(field); rows.push(row); row = []; field = "";
+    } else field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}

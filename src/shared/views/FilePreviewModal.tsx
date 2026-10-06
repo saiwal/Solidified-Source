@@ -1,8 +1,9 @@
-import { createEffect, createResource, createSignal, For, lazy, onCleanup, Show, Suspense, type Component, createUniqueId } from "solid-js";
+import { createEffect, createResource, createSignal, For, lazy, Match, onCleanup, Show, Suspense, Switch, type Component, createUniqueId } from "solid-js";
 import { marked } from "marked";
 import ePub, { type Rendition } from "epubjs";
 import { MdFillClose_fullscreen, MdFillOpen_in_full, MdOutlineChevron_left, MdOutlineChevron_right, MdOutlineEdit } from "solid-icons/md";
-import { classifyPreview, TEXT_PREVIEW_MAX_BYTES } from "@utsukta/spa-core/lib/filePreview";
+import { classifyPreview, parseCsv, TEXT_PREVIEW_MAX_BYTES } from "@utsukta/spa-core/lib/filePreview";
+import { bbcode } from "@utsukta/spa-core/lib/bbcode";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { mountPlyr } from "@utsukta/spa-core/lib/usePlyr";
@@ -83,6 +84,43 @@ async function fetchArrayBuffer(url: string, expectedMimePrefix: string): Promis
   return res.arrayBuffer();
 }
 
+function prettyJson(src: string): string {
+  try { return JSON.stringify(JSON.parse(src), null, 2); } catch { return src; }
+}
+
+const isTsv = (mimetype: string, filename: string) =>
+  mimetype === "text/tab-separated-values" || /\.tsv$/i.test(filename);
+
+const LineList: Component<{ text: string }> = (p) => (
+  <ol class="text-xs font-mono overflow-auto max-h-[80vh] text-txt list-decimal marker:text-muted/50 pl-8">
+    <For each={p.text.split("\n")}>
+      {(line) => <li class="whitespace-pre-wrap break-all pl-2">{line || " "}</li>}
+    </For>
+  </ol>
+);
+
+// First row is treated as the header — true of nearly every CSV in practice.
+const CsvTable: Component<{ rows: string[][] }> = (p) => (
+  <div class="overflow-auto max-h-[80vh] rounded-lg border border-rim">
+    <table class="text-xs text-txt border-collapse">
+      <thead class="sticky top-0 bg-surface">
+        <tr>
+          <For each={p.rows[0] ?? []}>{(cell) => <th class="px-2 py-1 text-left font-semibold border-b border-rim whitespace-nowrap">{cell}</th>}</For>
+        </tr>
+      </thead>
+      <tbody>
+        <For each={p.rows.slice(1)}>
+          {(row) => (
+            <tr class="odd:bg-txt/5">
+              <For each={row}>{(cell) => <td class="px-2 py-1 align-top whitespace-pre-wrap">{cell}</td>}</For>
+            </tr>
+          )}
+        </For>
+      </tbody>
+    </table>
+  </div>
+);
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -97,7 +135,7 @@ function downloadBlob(blob: Blob, filename: string) {
 const FilePreviewModal: Component<Props> = (props) => {
   const kind = () => classifyPreview(props.mimetype, props.filename);
   const tooLarge = () => (props.sizeBytes ?? 0) > TEXT_PREVIEW_MAX_BYTES;
-  const isText = () => kind() === "text" || kind() === "markdown";
+  const isText = () => ["text", "markdown", "html", "csv", "json", "bbcode"].includes(kind());
   const editable = () => kind() === "image" || kind() === "video";
   const [wide, setWide] = createSignal(false);
   const [imgFailed, setImgFailed] = createSignal(false);
@@ -347,21 +385,37 @@ const FilePreviewModal: Component<Props> = (props) => {
                   }
                 >
                   <Show when={text.state === "ready"} fallback={<p class="text-sm text-muted">Loading…</p>}>
-                    <Show
-                      when={kind() === "markdown"}
-                      fallback={
-                        <ol class="text-xs font-mono overflow-auto max-h-[80vh] text-txt list-decimal marker:text-muted/50 pl-8">
-                          <For each={text()!.split("\n")}>
-                            {(line) => <li class="whitespace-pre-wrap break-all pl-2">{line || " "}</li>}
-                          </For>
-                        </ol>
-                      }
-                    >
-                      <div
-                        class="prose prose-sm dark:prose-invert max-w-none text-txt"
-                        innerHTML={sanitizeHtml(marked.parse(text()!) as string)}
-                      />
-                    </Show>
+                    <Switch fallback={<LineList text={text()!} />}>
+                      <Match when={kind() === "html"}>
+                        {/* Uploaded HTML is untrusted: sandbox without allow-scripts /
+                            allow-same-origin, so it can't run JS or touch the session.
+                            Links open in a new tab instead of navigating the frame. */}
+                        <iframe
+                          srcdoc={`<base target="_blank">${text()!}`}
+                          sandbox="allow-popups allow-popups-to-escape-sandbox"
+                          title={props.filename}
+                          class="w-full h-[80vh] rounded-lg border border-rim bg-white"
+                        />
+                      </Match>
+                      <Match when={kind() === "markdown"}>
+                        <div
+                          class="prose prose-sm dark:prose-invert max-w-none text-txt"
+                          innerHTML={sanitizeHtml(marked.parse(text()!) as string)}
+                        />
+                      </Match>
+                      <Match when={kind() === "bbcode"}>
+                        <div
+                          class="prose prose-sm dark:prose-invert max-w-none text-txt"
+                          innerHTML={sanitizeHtml(bbcode(text()!))}
+                        />
+                      </Match>
+                      <Match when={kind() === "json"}>
+                        <LineList text={prettyJson(text()!)} />
+                      </Match>
+                      <Match when={kind() === "csv"}>
+                        <CsvTable rows={parseCsv(text()!, isTsv(props.mimetype, props.filename) ? "\t" : ",")} />
+                      </Match>
+                    </Switch>
                   </Show>
                 </Show>
               </Show>

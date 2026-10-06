@@ -2,7 +2,7 @@ import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, isSelf as isViewer } from "@utsukta/spa-core/store/auth-store";
 import { addConnection } from "@/modules/directory/people/api";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
@@ -205,13 +205,7 @@ export default function ChanView() {
   const x = () => xchan() ?? fallback();
   const isConnected = () => !disconnected() && (x()?.is_connected ?? false);
 
-  const isSelf = () => {
-    const a = auth();
-    if (!a?.isLocal || !a.nick) return false;
-    const xdata = x();
-    if (!xdata?.address) return false;
-    return xdata.address === `${a.nick}@${window.location.hostname}`;
-  };
+  const isSelf = () => isViewer(x()?.xchan_hash, x()?.address);
 
   const canConnect = () =>
     auth()?.isLocal === true &&

@@ -18,6 +18,7 @@ export type AuthState = {
   isLoggedIn: boolean; // true = any authenticated user (local or remote)
   isAdmin: boolean; // true = is administrator
   nick: string; // channel nick, "" if anonymous
+  hash: string; // channel_hash — shared by all clones, "" if not local
   uid: number; // local channel id, 0 for visitors/anonymous
   pageSize: number;
 	updateInterval: number;
@@ -53,6 +54,7 @@ const ANONYMOUS: AuthState = {
   isLoggedIn: false,
   isAdmin: false,
   nick: "",
+  hash: "",
   uid: 0,
   pageSize: 10,
 	updateInterval: 60,
@@ -161,6 +163,7 @@ async function fetchAuthState(): Promise<AuthState> {
     isLoggedIn: isLocal || isRemote,
     isAdmin,
     nick,
+    hash: isLocal ? String(data.hash ?? "") : "",
     uid,
     pageSize: parseInt(data.system?.itemspage ?? "10", 10),
     updateInterval: parseInt(data.system?.update_interval ?? "60000", 10),
@@ -208,6 +211,20 @@ export function isAdmin() {
 }
 export function isLoggedIn() {
   return authState()?.isLoggedIn ?? false;
+}
+
+/** Is this xchan the local viewer's own channel? Compare by hash: a cloned
+ *  channel's address names its primary hub, so `nick@thishost` misses it on
+ *  every clone. The address is only a fallback for callers without a hash. */
+export function isSelf(hash?: string, address?: string): boolean {
+  const a = authState();
+  if (!a?.isLocal) return false;
+  if (hash && a.hash) return hash === a.hash;
+  return !!address && !!a.nick && address === `${a.nick}@${window.location.hostname}`;
+}
+
+export function currentHash() {
+  return authState()?.hash ?? "";
 }
 
 export function currentNick() {

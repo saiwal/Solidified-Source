@@ -52,7 +52,7 @@ import {
   pendingReactionMids,
   refreshPendingModeration,
 } from "@/modules/moderate/store";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, isSelf } from "@utsukta/spa-core/store/auth-store";
 import {
   apiFollowPost,
   apiUnfollowPost,
@@ -344,11 +344,7 @@ export default function PostCard(props: {
   // parsing the body directly (handles cases where obj_type wasn't "Event").
   const isUnseen = () => props.post.flags.includes("unseen");
   // Scheduling and expiry are the author's own housekeeping — nobody else's business.
-  const isOwn = () => {
-    const a = auth();
-    if (!a?.isLocal || !a.nick) return false;
-    return props.post.authorAddress === `${a.nick}@${window.location.hostname}`;
-  };
+  const isOwn = () => isSelf(props.post.authorHash, props.post.authorAddress);
   const isExpired = () => isOwn() && props.post.flags.includes("expired");
   // Category chips link to the owner's channel filtered by that category —
   // only when the owner lives here, since /channel/:nick is a local route.
@@ -543,24 +539,10 @@ export default function PostCard(props: {
 
   const canViewSource = () => auth()?.isLocal === true && !!props.post.iid;
 
-  const canDeliveryReport = () => {
-    const a = auth();
-    if (!a?.isLocal || !a.nick) return false;
-    const viewerAddr = `${a.nick}@${window.location.hostname}`;
-    return (
-      !!props.post.authorAddress && props.post.authorAddress === viewerAddr
-    );
-  };
+  const canDeliveryReport = isOwn;
 
   // True authorship: viewer's own channel address matches the post's author.
-  const isTrueAuthor = () => {
-    const a = auth();
-    if (!a?.isLocal || !a.nick) return false;
-    const viewerAddr = `${a.nick}@${window.location.hostname}`;
-    return (
-      !!props.post.authorAddress && props.post.authorAddress === viewerAddr
-    );
-  };
+  const isTrueAuthor = isOwn;
 
   // Own stream copy: this row lives under the viewer's own uid (their own
   // Network stream or wall), even if they didn't author it. The backend
@@ -1765,6 +1747,7 @@ export default function PostCard(props: {
           name={props.post.authorName}
           avatar={props.post.authorAvatar}
           url={props.post.authorUrl}
+          hash={props.post.authorHash}
           address={props.post.authorAddress}
           network={props.post.authorNetwork}
         >
