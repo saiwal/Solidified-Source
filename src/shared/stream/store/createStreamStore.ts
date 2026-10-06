@@ -243,11 +243,12 @@ export function createStreamStore<P extends StreamParams>(
     return { threads: [], offset, more, result };
   }
 
-  let loadInFlight = false;
+  // Latest load wins: a sort/filter change while a load is still out must
+  // not be dropped, and the earlier response must not land over it.
+  let loadGen = 0;
 
   async function load(newParams?: P) {
-    if (loadInFlight) return;
-    loadInFlight = true;
+    const gen = ++loadGen;
     if (newParams !== undefined) setParams(() => newParams);
     setLoading(true);
     setHasMore(true);
@@ -256,6 +257,7 @@ export function createStreamStore<P extends StreamParams>(
     resetReveal();
     try {
       const { threads, offset, more, result } = await fetchDisplayablePage(0);
+      if (gen !== loadGen) return;
       setPosts(threads);
       setNewPosts([]);
       currentOffset = offset;
@@ -266,19 +268,21 @@ export function createStreamStore<P extends StreamParams>(
       registerActivated(activated, result.items);
       startPolling();
     } catch (err) {
+      if (gen !== loadGen) return;
       console.error(err);
       toast.error("Failed to load posts. Check your connection and try again.");
     } finally {
-      setLoading(false);
-      loadInFlight = false;
+      if (gen === loadGen) setLoading(false);
     }
   }
 
   async function loadMore() {
     if (loadingMore() || !hasMore()) return;
     setLoadingMore(true);
+    const gen = loadGen;
     try {
       const { threads, offset, more, result } = await fetchDisplayablePage(currentOffset);
+      if (gen !== loadGen) return; // a fresh load replaced the list meanwhile
       const existingMids = new Set(posts().map((t) => t.mid));
       const fresh = threads.filter((t) => !existingMids.has(t.mid));
       if (fresh.length) setPosts((prev) => [...prev, ...fresh]);
