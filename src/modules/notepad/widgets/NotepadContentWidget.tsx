@@ -7,6 +7,7 @@ import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
+import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import NoteComposer from "@/shared/editor/composers/NoteComposer";
@@ -56,7 +57,7 @@ function NoteCard(props: {
 
   createEffect(() => {
     props.note.body;
-    if (bodyRef) hydrateLatex(bodyRef);
+    if (bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
 
   return (

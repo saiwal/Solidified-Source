@@ -5,6 +5,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
+import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { posts, loading, hasMore, loadArticles, resetPosts, loadMore } from "../store";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
@@ -63,7 +64,7 @@ function ArticleCard(props: { post: Post; nick: string; onOpen: () => void }) {
       <Show when={ex().text}>
         <p
           class={`text-sm leading-relaxed ${ex().fromSummary ? "text-txt" : "text-muted"}`}
-          ref={(el) => createEffect(() => { ex(); hydrateLatex(el); })}
+          ref={(el) => createEffect(() => { ex(); hydrateLatex(el); hydrateMermaid(el); })}
         >
           {ex().text}
         </p>

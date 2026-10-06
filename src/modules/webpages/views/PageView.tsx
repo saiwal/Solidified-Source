@@ -6,6 +6,7 @@ import { renderBody, needsServerRender } from "@utsukta/spa-core/lib/renderBody"
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
+import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { useToc } from "@utsukta/spa-core/lib/useToc";
 import ArticleToc from "@/shared/views/ArticleToc";
 import { fetchWebPageByPagelink } from "../api";
@@ -60,7 +61,7 @@ export default function PageView() {
   let bodyRef: HTMLDivElement | undefined;
   createEffect(() => {
     rendered();
-    if (bodyRef) hydrateLatex(bodyRef);
+    if (bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   const { toc, activeId } = useToc(rendered, () => bodyRef);
 

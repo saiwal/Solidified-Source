@@ -14,6 +14,7 @@ import { openComposer } from "@/shared/views/modal-host";
 import CommentComposer, { type CreatedComment } from "@/shared/editor/composers/CommentComposer";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
+import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
 import { useEmbeds } from "@utsukta/spa-core/lib/useEmbeds";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
@@ -345,7 +346,7 @@ export default function CardView() {
   // TOC
   let bodyRef: HTMLDivElement | undefined;
   createEffect(() => {
-    if (rendered() && bodyRef) hydrateLatex(bodyRef);
+    if (rendered() && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   usePlyr(() => bodyRef, rendered);
   useEmbeds(() => bodyRef, rendered);

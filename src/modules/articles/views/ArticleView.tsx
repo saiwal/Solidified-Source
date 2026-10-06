@@ -15,6 +15,7 @@ import CommentComposer, { type CreatedComment } from "@/shared/editor/composers/
 import { languageLabel } from "@utsukta/spa-core/lib/languages";
 import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
+import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { useToc } from "@utsukta/spa-core/lib/useToc";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
 import { useEmbeds } from "@utsukta/spa-core/lib/useEmbeds";
@@ -363,7 +364,7 @@ export default function ArticleView() {
   // TOC
   let bodyRef: HTMLDivElement | undefined;
   createEffect(() => {
-    if (rendered() && bodyRef) hydrateLatex(bodyRef);
+    if (rendered() && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   const { toc, activeId } = useToc(rendered, () => bodyRef);
   usePlyr(() => bodyRef, rendered);
