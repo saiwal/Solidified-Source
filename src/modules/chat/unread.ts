@@ -6,7 +6,7 @@
 import { createSignal } from "solid-js";
 import { persistedSignal } from "@utsukta/spa-core/lib/persisted";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
-import { currentNick, isLocalUser } from "@utsukta/spa-core/store/auth-store";
+import { channelKey, currentNick, isLocalUser } from "@utsukta/spa-core/store/auth-store";
 import { fetchRooms, type ChatRoom, type ChatRoomListResponse } from "./api";
 import { bookmarks, isRemoteBookmark, refreshChatBookmarks, type ChatBookmark } from "./bookmarks";
 
@@ -31,7 +31,9 @@ const [seen, setSeen] = persistedSignal<Record<string, string>>(
 const [since] = persistedSignal("hz-chat-seen-since", nowUtc());
 try { localStorage.setItem("hz-chat-seen-since", since()); } catch { /* best-effort */ }
 
-const key = (nick: string, roomId: number) => `${nick}:${roomId}`;
+// Prefixed with the viewing channel: switching channels in one browser must
+// not carry one channel's read state into another.
+const key = (nick: string, roomId: number) => channelKey(`${nick}:${roomId}`);
 
 export function markChatSeen(nick: string, roomId: number, created: string): void {
   const k = key(nick, roomId);
@@ -44,10 +46,10 @@ export const isChatUnread = (nick: string, room: Pick<ChatRoom, "id" | "last_oth
 // Rooms on another hub are keyed by their bookmark url; they open there, so
 // the SPA never sees their messages and "seen" is simply "clicked just now".
 export const markRemoteChatSeen = (bm: ChatBookmark): void =>
-  setSeen({ ...seen(), [bm.url]: nowUtc() });
+  setSeen({ ...seen(), [channelKey(bm.url)]: nowUtc() });
 
 export const isRemoteChatUnread = (bm: ChatBookmark): boolean =>
-  !!bm.last_other && bm.last_other > (seen()[bm.url] ?? since());
+  !!bm.last_other && bm.last_other > (seen()[channelKey(bm.url)] ?? since());
 
 // ── Nav badge: unread rooms on your own channel + bookmarked remote rooms ──
 

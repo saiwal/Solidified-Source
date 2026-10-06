@@ -14,6 +14,7 @@ import {
   useAuth,
   updateInterval,
   notifyCountLimit,
+  channelKey,
 } from "@utsukta/spa-core/store/auth-store";
 import { useIsAdmin } from "@utsukta/spa-core/store/site-config";
 import { MdFillApp_registration, MdFillCircle, MdFillClose, MdFillDone_all, MdFillEvent, MdFillForum, MdFillHome, MdFillInsert_drive_file, MdFillMail, MdFillNotifications, MdFillOpen_in_new, MdFillPeople, MdFillPublic, MdFillRefresh, MdFillWifi, MdFillWifi_off, MdOutlineAnnouncement, MdOutlineCampaign, MdOutlineExpand_more } from "solid-icons/md";
@@ -173,7 +174,7 @@ const ANNOUNCEMENTS_SEEN_KEY = "hz-announcements-seen";
 
 function getLastSeenAnnouncementId(): string | null {
   try {
-    return localStorage.getItem(ANNOUNCEMENTS_SEEN_KEY);
+    return localStorage.getItem(channelKey(ANNOUNCEMENTS_SEEN_KEY));
   } catch {
     return null;
   }
@@ -181,7 +182,7 @@ function getLastSeenAnnouncementId(): string | null {
 
 function setLastSeenAnnouncementId(id: string): void {
   try {
-    localStorage.setItem(ANNOUNCEMENTS_SEEN_KEY, id);
+    localStorage.setItem(channelKey(ANNOUNCEMENTS_SEEN_KEY), id);
   } catch {
     /* ignore */
   }
