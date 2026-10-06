@@ -1,5 +1,6 @@
 import { createSignal, createEffect, on, For, Show, onMount } from "solid-js";
 import { storageSet } from "@utsukta/spa-core/lib/storage";
+import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import type { SavedDraft } from "../store/createComposerStore";
 import { listServerDrafts, deleteServerDraft, draftsVersion } from "../api/drafts";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
@@ -98,7 +99,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
   }
 
   async function handleLoad(entry: DraftEntry) {
-    await storageSet(`pending-draft:${entry.scope}`, entry.draft);
+    await storageSet(channelKey(`pending-draft:${entry.scope}`), entry.draft);
     await props.onLoad(entry);
   }
 

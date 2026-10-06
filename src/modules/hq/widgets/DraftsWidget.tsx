@@ -4,7 +4,7 @@ import { storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import type { SavedDraft } from "@/shared/editor/store/createComposerStore";
 import { listServerDrafts, deleteServerDraft, draftsVersion } from "@/shared/editor/api/drafts";
 import { openComposer, type ComposerKind } from "@/shared/views/modal-host";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, channelKey } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
 
@@ -146,7 +146,7 @@ export default function DraftsWidget() {
 
     // Always write a pending-draft so the target composer restores ALL fields
     // (and sets loadedDraftId, which auto-deletes the draft on publish)
-    await storageSet(`pending-draft:${entry.scope}`, entry.draft);
+    await storageSet(channelKey(`pending-draft:${entry.scope}`), entry.draft);
 
     // Webpage/wiki composers live on their own routed pages, not modals —
     // the pending-draft written above is picked up automatically once that
@@ -176,7 +176,7 @@ export default function DraftsWidget() {
         // DM recipients ride in the draft's `extra`, restored by DMComposer
         // from the pending-draft written above.
         onPosted: () => void deleteDraft(entry.scope, entry.draft.id),
-        onClose: () => void storageDel(`pending-draft:${entry.scope}`),
+        onClose: () => void storageDel(channelKey(`pending-draft:${entry.scope}`)),
       },
     });
   }

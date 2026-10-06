@@ -2,6 +2,7 @@ import { truncateError } from "@utsukta/spa-core/lib/fetch";
 import { createSignal, createEffect, onCleanup, useContext } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
+import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import { listServerDrafts, saveServerDraft, deleteServerDraft } from "../api/drafts";
 import { isEncryptedBody } from "@utsukta/spa-core/lib/postCrypto";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
@@ -78,7 +79,7 @@ export function createComposerStore(
     autosaveExtra?: () => Record<string, unknown> | null;
   },
 ) {
-  const DRAFT_KEY = `draft:${scope}`;
+  const DRAFT_KEY = channelKey(`draft:${scope}`);
 
   const [body, setBody]         = createSignal(options?.initialBody ?? "");
   const [title, setTitle]       = createSignal(options?.initialTitle ?? "");
@@ -126,7 +127,7 @@ export function createComposerStore(
 
   // On init, a pending-draft (written cross-navigation by the HQ DraftsWidget) takes
   // priority over the regular auto-save; fall back to auto-save if none present.
-  const PENDING_KEY = `pending-draft:${scope}`;
+  const PENDING_KEY = channelKey(`pending-draft:${scope}`);
   storageGet<SavedDraft | null>(PENDING_KEY, null).then(async (pending) => {
     if (pending && !options?.initialBody) {
       setBody(pending.body);

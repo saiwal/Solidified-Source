@@ -213,6 +213,12 @@ export function isLoggedIn() {
 export function currentNick() {
   return authState()?.nick ?? "";
 }
+
+/** Prefix a browser-storage key with the current channel, so one browser
+ *  switching between channels doesn't show one channel's drafts in another. */
+export function channelKey(key: string) {
+  return `${currentNick()}:${key}`;
+}
 export function pageSize(): number {
   return authState()?.pageSize ?? 10;
 }

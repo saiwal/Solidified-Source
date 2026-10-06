@@ -2,7 +2,7 @@ import { Show } from "solid-js";
 import { storageDel } from "@utsukta/spa-core/lib/storage";
 import DraftsWidgetBase, { type DraftEntry } from "@/shared/editor/components/DraftsWidgetBase";
 import { openComposer } from "@/shared/views/modal-host";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, channelKey } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNotes } from "../store";
 
@@ -47,7 +47,7 @@ export default function NoteDraftsWidget() {
       props: {
         nick: auth()?.nick ?? "",
         initial,
-        onClose: () => void storageDel(`pending-draft:${entry.scope}`),
+        onClose: () => void storageDel(channelKey(`pending-draft:${entry.scope}`)),
         onSaved: () => void loadNotes(true),
       },
     });

@@ -5,6 +5,7 @@ import type { FileMeta, FileAcl } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
 import type { Attachment, AttachmentStore } from "./types";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
+import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import { bbAlt } from "./insertHelpers";
 import { autoPoster } from "./videoPoster";
 
@@ -123,7 +124,7 @@ function uid(): string {
 // ── Store factory ─────────────────────────────────────────────────────────────
 
 export function createAttachmentStore(nick: string, scope: string): AttachmentStore {
-  const DRAFT_KEY = `draft-att:${scope}`;
+  const DRAFT_KEY = channelKey(`draft-att:${scope}`);
 
   const [state, setState] = createStore<{ items: Attachment[] }>({ items: [] });
 

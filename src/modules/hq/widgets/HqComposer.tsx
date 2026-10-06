@@ -3,7 +3,7 @@ import { MdOutlinePerson, MdOutlineCleaning_services, MdOutlineOpen_in_full } fr
 import { useQuickActions, type QuickAction } from "../quick-actions";
 import { getNavIcon } from "@/shared/views/NavItem";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { useAuth, currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, currentNick, channelKey, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { motion } from "solid-motionone";
 import { openComposer } from "@/shared/views/modal-host";
@@ -20,7 +20,7 @@ import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import { useI18n } from "@utsukta/spa-core/i18n";
 void motion;
 
-const DRAFT_KEY = "hz_hq_draft";
+const DRAFT_KEY = () => channelKey("hz_hq_draft");
 // Same surface and attachment pipeline as every other composer — this bar used
 // to hand-roll its own contenteditable, which is where its base64 image paste
 // and its dead link button came from. The toolbar is off ("none"): the action
@@ -81,7 +81,7 @@ function HqComposer() {
   });
 
   // Load draft on mount
-  storageGet<{ body?: string; aclMode?: string }>(DRAFT_KEY, {}).then((d) => {
+  storageGet<{ body?: string; aclMode?: string }>(DRAFT_KEY(), {}).then((d) => {
     if (d.body && !body()) {
       setBody(d.body);
       setExpanded(true);
@@ -94,7 +94,7 @@ function HqComposer() {
   createEffect(() => {
     const snap = { body: body(), aclMode: aclMode() };
     clearTimeout(draftTimer);
-    draftTimer = setTimeout(() => storageSet(DRAFT_KEY, snap), 800);
+    draftTimer = setTimeout(() => storageSet(DRAFT_KEY(), snap), 800);
   });
   onCleanup(() => clearTimeout(draftTimer));
 
@@ -238,7 +238,7 @@ function HqComposer() {
     setAllowKeys(new Set<string>());
     setDenyKeys(new Set<string>());
     setAclMode("connections");
-    storageDel(DRAFT_KEY);
+    storageDel(DRAFT_KEY());
     setExpanded(false);
   }
 

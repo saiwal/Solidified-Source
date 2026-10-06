@@ -10,6 +10,7 @@ import DOMPurify from "dompurify";
 import { MdOutlineList } from "solid-icons/md";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { storageGet, storageDel } from "@utsukta/spa-core/lib/storage";
+import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import { saveServerDraft, deleteServerDraft } from "@/shared/editor/api/drafts";
 import type { SavedDraft } from "@/shared/editor/store/createComposerStore";
 import {
@@ -217,9 +218,9 @@ export default function WikiPageView() {
     const { nick, wikiName, pageName } = params;
     if (pageLoading() || !nick || !wikiName || !pageName) return;
     const scope = `wiki:${wikiName}:${pageName}`;
-    void storageGet<SavedDraft | null>(`pending-draft:${scope}`, null).then(async (pending) => {
+    void storageGet<SavedDraft | null>(channelKey(`pending-draft:${scope}`), null).then(async (pending) => {
       if (!pending) return;
-      await storageDel(`pending-draft:${scope}`);
+      await storageDel(channelKey(`pending-draft:${scope}`));
       setLoadedDraftId(pending.id);
       setLoadedDraftCreated(pending.created);
       const commitMsg = (pending.extra as { commitMsg?: string } | null | undefined)?.commitMsg ?? "";
