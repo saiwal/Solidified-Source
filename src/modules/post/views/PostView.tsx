@@ -105,6 +105,9 @@ export default function PostView() {
     // Settings refetches instead of serving the cached shape.
     () => (params.uuid ? ([params.uuid, useThreadMode()(), useCommentOrder()()] as const) : undefined),
     fetchPost,
+    // loadMoreComments/addLocalComment grow the cached tree; a background
+    // refetch would cut it back to the first comment page and jump the page.
+    { refetchOnWindowFocus: false, refetchOnReconnect: false },
   );
 
   // The just-posted reply is appended in place rather than refetched — a

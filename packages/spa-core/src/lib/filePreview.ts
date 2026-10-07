@@ -67,3 +67,7 @@ export function parseCsv(src: string, delimiter = ","): string[][] {
   if (field !== "" || row.length) { row.push(field); rows.push(row); }
   return rows;
 }
+
+// HTML renders natively in an iframe rather than as one DOM node per line,
+// so it tolerates a much bigger file than the text views.
+export const HTML_PREVIEW_MAX_BYTES = 50 * 1024 * 1024;

@@ -811,8 +811,13 @@ export const MessageList: Component<{
   // doesn't collapse and re-expand on every tab switch.
   const [holdHeight, setHoldHeight] = createSignal(0);
 
-  async function loadPage(reset = false) {
+  // poll: refresh page 0 in place instead of replacing the list — a reset
+  // drops every paged-in row, so a reader scrolled past page 1 would have the
+  // list shrink under them and land back at the top every 30s.
+  async function loadPage(reset = false, poll = false) {
     if (!reset && loadMoreActive) return;
+    // Never cut in on a tab switch or page load — skip this tick instead.
+    if (poll && loading()) return;
 
     let signal: AbortSignal | undefined;
 
@@ -846,10 +851,25 @@ export const MessageList: Component<{
         signal,
       });
 
+      if (poll) {
+        const fresh = new Map(data.entries.map((e) => [e.b64mid, e]));
+        setEntries((prev) => {
+          const have = new Set(prev.map((e) => e.b64mid));
+          return [...data.entries.filter((e) => !have.has(e.b64mid)), ...prev.map((e) => fresh.get(e.b64mid) ?? e)];
+        });
+        setEmpty(entries().length === 0);
+        setError(null);
+        return;
+      }
       if (reset) {
         setEntries(data.entries);
       } else {
-        setEntries((prev) => [...prev, ...data.entries]);
+        // New rows prepended by a poll shift the server's offsets, so the next
+        // page can repeat rows we already hold.
+        setEntries((prev) => {
+          const have = new Set(prev.map((e) => e.b64mid));
+          return [...prev, ...data.entries.filter((e) => !have.has(e.b64mid))];
+        });
       }
 
       setOffset(data.offset);
@@ -909,7 +929,7 @@ export const MessageList: Component<{
   // the entry objects wholesale, so every row — and every <img> in it — is
   // recreated and refetched each time.
   const pollTimer = setInterval(() => {
-    if (document.visibilityState === "visible") loadPage(true);
+    if (document.visibilityState === "visible") loadPage(true, true);
   }, POLL_INTERVAL);
   onCleanup(() => {
     clearInterval(pollTimer);

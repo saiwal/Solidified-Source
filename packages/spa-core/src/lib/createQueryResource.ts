@@ -37,7 +37,13 @@ export type QueryResourceActions<T> = {
   mutate: (value: T | undefined | ((prev: T | undefined) => T | undefined)) => void;
 };
 
-type InitOpts<T> = { initialValue?: T };
+type InitOpts<T> = {
+  initialValue?: T;
+  /** false for data the view grows in place (paged-in comments, local
+   *  replies) — a focus/reconnect refetch would replace it with page one. */
+  refetchOnWindowFocus?: boolean;
+  refetchOnReconnect?: boolean;
+};
 
 export function createQueryResource<T>(
   name: string,
@@ -73,6 +79,9 @@ export function createQueryResource<T, S>(
       queryKey: source ? [name, src] : [name],
       queryFn: () => (source ? fetcher(src as S) : (fetcher as () => Promise<T>)()),
       enabled,
+      // Only when set — an explicit undefined would override the client defaults.
+      ...(options.refetchOnWindowFocus !== undefined && { refetchOnWindowFocus: options.refetchOnWindowFocus }),
+      ...(options.refetchOnReconnect !== undefined && { refetchOnReconnect: options.refetchOnReconnect }),
       // Cast: TanStack's NonFunctionGuard<T> rejects generic T even though
       // the runtime shape is exactly what placeholderData expects.
       placeholderData: (options.initialValue !== undefined

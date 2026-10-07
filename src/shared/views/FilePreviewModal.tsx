@@ -2,7 +2,7 @@ import { createEffect, createResource, createSignal, For, lazy, Match, onCleanup
 import { marked } from "marked";
 import ePub, { type Rendition } from "epubjs";
 import { MdFillClose_fullscreen, MdFillOpen_in_full, MdOutlineChevron_left, MdOutlineChevron_right, MdOutlineEdit } from "solid-icons/md";
-import { classifyPreview, parseCsv, TEXT_PREVIEW_MAX_BYTES } from "@utsukta/spa-core/lib/filePreview";
+import { classifyPreview, HTML_PREVIEW_MAX_BYTES, parseCsv, TEXT_PREVIEW_MAX_BYTES } from "@utsukta/spa-core/lib/filePreview";
 import { bbcode } from "@utsukta/spa-core/lib/bbcode";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -134,7 +134,8 @@ function downloadBlob(blob: Blob, filename: string) {
 
 const FilePreviewModal: Component<Props> = (props) => {
   const kind = () => classifyPreview(props.mimetype, props.filename);
-  const tooLarge = () => (props.sizeBytes ?? 0) > TEXT_PREVIEW_MAX_BYTES;
+  const tooLarge = () =>
+    (props.sizeBytes ?? 0) > (kind() === "html" ? HTML_PREVIEW_MAX_BYTES : TEXT_PREVIEW_MAX_BYTES);
   const isText = () => ["text", "markdown", "html", "csv", "json", "bbcode"].includes(kind());
   const editable = () => kind() === "image" || kind() === "video";
   const [wide, setWide] = createSignal(false);
@@ -143,6 +144,7 @@ const FilePreviewModal: Component<Props> = (props) => {
   const [editingVideo, setEditingVideo] = createSignal<File | null>(null);
   const [savingEdit, setSavingEdit] = createSignal(false);
   const [sceneError, setSceneError] = createSignal("");
+  const [runScripts, setRunScripts] = createSignal(false);
 
   // .excalidraw scenes (and scene-embedded PNGs) render in a read-only canvas
   // rather than downloading as raw JSON.
@@ -387,15 +389,46 @@ const FilePreviewModal: Component<Props> = (props) => {
                   <Show when={text.state === "ready"} fallback={<p class="text-sm text-muted">Loading…</p>}>
                     <Switch fallback={<LineList text={text()!} />}>
                       <Match when={kind() === "html"}>
-                        {/* Uploaded HTML is untrusted: sandbox without allow-scripts /
-                            allow-same-origin, so it can't run JS or touch the session.
-                            Links open in a new tab instead of navigating the frame. */}
-                        <iframe
-                          srcdoc={`<base target="_blank">${text()!}`}
-                          sandbox="allow-popups allow-popups-to-escape-sandbox"
-                          title={props.filename}
-                          class="w-full h-[80vh] rounded-lg border border-rim bg-white"
-                        />
+                        <Show when={!runScripts()}>
+                          <div class="flex flex-wrap items-center gap-2 mb-2 text-xs text-muted">
+                            <span>
+                              {/TiddlyWiki/i.test(text()!.slice(0, 4096))
+                                ? "This is a TiddlyWiki — it needs scripts to display."
+                                : "Scripts are disabled."}{" "}
+                              Only run scripts from files you trust.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setRunScripts(true)}
+                              class="px-2 py-1 rounded border border-rim hover:text-txt"
+                            >
+                              Run scripts
+                            </button>
+                          </div>
+                        </Show>
+                        {/* Uploaded HTML is untrusted. Never allow-same-origin: the frame
+                            keeps an opaque origin, so even with scripts on it can't read
+                            the SPA, its storage, or response bodies from the hub. Changing
+                            `sandbox` only applies on the next load, so each mode is its
+                            own iframe. Links open in a new tab instead of the frame. */}
+                        <Show
+                          when={runScripts()}
+                          fallback={
+                            <iframe
+                              srcdoc={`<base target="_blank">${text()!}`}
+                              sandbox="allow-popups allow-popups-to-escape-sandbox"
+                              title={props.filename}
+                              class="w-full h-[80vh] rounded-lg border border-rim bg-white"
+                            />
+                          }
+                        >
+                          <iframe
+                            srcdoc={`<base target="_blank">${text()!}`}
+                            sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                            title={props.filename}
+                            class="w-full h-[80vh] rounded-lg border border-rim bg-white"
+                          />
+                        </Show>
                       </Match>
                       <Match when={kind() === "markdown"}>
                         <div
