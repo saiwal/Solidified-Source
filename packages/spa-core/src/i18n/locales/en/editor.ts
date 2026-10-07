@@ -270,6 +270,16 @@ export const editor = {
   latex_rendering:      "Rendering…",
   latex_uploading:      "Uploading…",
   latex_insert_btn:     "Insert",
+  diagram_toolbar_title: "Insert diagram",
+  diagram_modal_title: "Insert diagram",
+  diagram_source_label: "Mermaid",
+  diagram_syntax_help: "Syntax help",
+  diagram_preview_label: "Preview",
+  diagram_preview_empty: "Type a Mermaid diagram to preview it here.",
+  diagram_rendering: "Rendering…",
+  diagram_uploading: "Uploading…",
+  diagram_insert_btn: "Insert",
+  diagram_source_summary: "Diagram source",
 
   // ExcalidrawComposerModal
   excalidraw_toolbar_title: "Insert drawing",

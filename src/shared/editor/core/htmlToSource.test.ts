@@ -100,6 +100,11 @@ const CORPUS = [
   "[list]\n[*]one\n[*]two\n[/list]",
   "[list=a]\n[*]one\n[*]two\n[/list]",
   "[code]x = 1[/code]",
+  // The language used to be dropped (a [code=mermaid] diagram became plain
+  // code on the first blur) and indentation came back as U+00A0.
+  "[code=mermaid]graph TD\n    A-->B[/code]",
+  // The diagram toolbar's image-mode insert: image + collapsed source.
+  "[img width='640' alt=&quot;Mermaid flowchart diagram&quot;]https://x/d.png[/img]\n[open=Diagram source][code]flowchart LR\n    A --> B[/code][/open]",
   "[img]https://x/1.jpg[/img]",
   "[url=https://x/]link[/url]",
   "para one\n\n[quote]q[/quote]\n\npara two",

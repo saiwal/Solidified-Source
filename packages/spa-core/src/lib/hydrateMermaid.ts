@@ -12,7 +12,9 @@
 
 let mermaidPromise: Promise<typeof import("mermaid").default> | null = null;
 
-function loadMermaid() {
+// Exported for the composer's diagram modal (renderMermaidImage.ts), so it
+// shares this one import and its initialize() config.
+export function loadMermaid() {
   mermaidPromise ??= import("mermaid").then(({ default: mermaid }) => {
     mermaid.initialize({
       startOnLoad: false,

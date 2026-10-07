@@ -169,7 +169,15 @@ function nodeTobbcode(node: Node): string {
     case "strike":
     case "del":         return `[s]${children()}[/s]`;
     case "code":        return `[code]${children()}[/code]`;
-    case "pre":         return `[code]${el.textContent ?? ""}[/code]`;
+    case "pre": {
+      // Keep [code=lang] (bbcode.ts emits class="language-lang"): dropping it
+      // turned a [code=mermaid] diagram back into plain code on the first
+      // WYSIWYG edit. And bbcode.ts renders indentation as &nbsp; even inside
+      // code, so map U+00A0 back or the stored source carries it.
+      const lang = el.querySelector("code")?.className.match(/language-(\S+)/)?.[1];
+      const body = (el.textContent ?? "").replace(/ /g, " ");
+      return `[code${lang ? `=${lang}` : ""}]${body}[/code]`;
+    }
     case "blockquote": {
       // A named quote is "<span class="bb-quote">X wrote:</span><blockquote>" —
       // the attribution can't live on the element itself.

@@ -1126,6 +1126,16 @@ export type RawDictionary = {
     latex_rendering:      string;
     latex_uploading:      string;
     latex_insert_btn:     string;
+    diagram_toolbar_title: string;
+    diagram_modal_title: string;
+    diagram_source_label: string;
+    diagram_syntax_help: string;
+    diagram_preview_label: string;
+    diagram_preview_empty: string;
+    diagram_rendering: string;
+    diagram_uploading: string;
+    diagram_insert_btn: string;
+    diagram_source_summary: string;
     excalidraw_toolbar_title: string;
     excalidraw_modal_title:   string;
     excalidraw_insert_btn:    string;

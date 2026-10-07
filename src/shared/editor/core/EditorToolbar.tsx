@@ -3,7 +3,7 @@ import type { LatexInsertMode, MimeType, ToolbarLevel } from "../types/editor.ty
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { persistedSignal, boolFlag } from "@utsukta/spa-core/lib/persisted";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineAttach_file, MdOutlineBrush, MdOutlineChevron_right, MdOutlineCode, MdOutlineFont_download, MdOutlineFormat_bold, MdOutlineFormat_clear, MdOutlineFormat_color_text, MdOutlineFormat_italic, MdOutlineFormat_quote, MdOutlineFormat_size, MdOutlineFormat_strikethrough, MdOutlineFormat_underlined, MdOutlineFunctions, MdOutlineHighlight, MdOutlineHorizontal_rule, MdOutlineImage, MdOutlineLink, MdOutlineMap, MdOutlinePhoto_camera, MdOutlineStyle, MdOutlineTable_chart, MdOutlineVisibility_off } from "solid-icons/md";
+import { MdOutlineAccount_tree, MdOutlineAttach_file, MdOutlineBrush, MdOutlineChevron_right, MdOutlineCode, MdOutlineFont_download, MdOutlineFormat_bold, MdOutlineFormat_clear, MdOutlineFormat_color_text, MdOutlineFormat_italic, MdOutlineFormat_quote, MdOutlineFormat_size, MdOutlineFormat_strikethrough, MdOutlineFormat_underlined, MdOutlineFunctions, MdOutlineHighlight, MdOutlineHorizontal_rule, MdOutlineImage, MdOutlineLink, MdOutlineMap, MdOutlinePhoto_camera, MdOutlineStyle, MdOutlineTable_chart, MdOutlineVisibility_off } from "solid-icons/md";
 import EmojiPicker from "../emoji/EmojiPicker";
 import { ColorPicker, OptionMenu, PromptPanel, SIZE_OPTIONS, FONT_OPTIONS } from "./ToolbarPickers";
 import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
@@ -14,10 +14,16 @@ import { useInstalledApps, useNavData } from "@utsukta/spa-core/store/nav-store"
 import { isAppInstalled, isModuleActive } from "@utsukta/spa-core/module-registry";
 import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
 import { fetchLinkMeta, linkMetaToBbcode, linkMetaToHtml } from "../lib/linkMeta";
-import { readAlt } from "../attachments/insertHelpers";
+import { bbAlt, readAlt } from "../attachments/insertHelpers";
+import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
+import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
+import { normalizeMime } from "@utsukta/spa-core/lib/mimetypes";
+import type { DiagramInsert } from "../diagram/DiagramComposerModal";
+import { diagramKind } from "../diagram/renderMermaidImage";
 import { spell, bbcodeTokensWork, linkText, type Kind } from "./markup";
 
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
+const DiagramComposerModal = lazy(() => import("../diagram/DiagramComposerModal"));
 const CardPickerModal = lazy(() => import("../cards/CardPickerModal"));
 const ExcalidrawComposerModal = lazy(() => import("../excalidraw/ExcalidrawComposerModal"));
 const MapPickerModal = lazy(() => import("../map/MapPickerModal"));
@@ -64,11 +70,21 @@ export default function EditorToolbar(props: Props) {
   const [linkLoading, setLinkLoading] = createSignal(false);
   const [cardPickerOpen, setCardPickerOpen] = createSignal(false);
   const [excalidrawOpen, setExcalidrawOpen] = createSignal(false);
+  const [diagramOpen, setDiagramOpen] = createSignal(false);
   const [mapOpen, setMapOpen] = createSignal(false);
   const installedApps = useInstalledApps();
   const navData = useNavData();
   const showCardPicker = () => props.cardPicker && bbTokens() && isAppInstalled(installedApps(), "/cards/");
   const showExcalidraw = () => bbTokens() && isModuleActive("excalidraw", installedApps(), disabledFrontendModules());
+  // Both are Settings → Features → Editor toggles (SpaFeatures.php).
+  // LaTeX "image" mode inserts an [img] block — bbcode, so it shows only
+  // where bbcode is still expanded; "live" mode is plain $…$ text.
+  const showLatex = () => isFeatureEnabled("spa_latex") && (props.latexMode === "live" || bbTokens());
+  // Image mode inserts bbcode ([img] + [open]); live mode a code block,
+  // which text/plain can't spell.
+  const showDiagram = () =>
+    isFeatureEnabled("spa_diagrams") &&
+    (props.latexMode === "live" ? can("codeblock") : bbTokens());
   // navData().osm is null unless the core openstreetmap addon is enabled
   // site-wide; without it the tile server isn't in the page's frame-src.
   const showMap = () =>
@@ -578,6 +594,33 @@ export default function EditorToolbar(props: Props) {
     isBlock ? insertBlock(`<div style="text-align:center">${html}</div>`) : exec("insertHTML", html);
   };
 
+  // Image mode (federated bodies): the uploaded PNG, then the source in a
+  // collapsed [open] block so it can be copied back into the modal — plain
+  // [code], not [code=mermaid], or an in-app reader would draw it twice.
+  // Live mode: a mermaid code block for hydrateMermaid(), spelled for the
+  // body's format. WYSIWYG gets bbcodeToHtml()'s own markup in both cases,
+  // which is what htmlToSource() round-trips on blur.
+  const insertDiagram = (d: DiagramInsert) => {
+    const src = d.source.trim();
+    const esc = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    if (d.img) {
+      const alt = `Mermaid ${diagramKind(src)} diagram`.replace(/\s+/g, " ");
+      const bb =
+        `[img width='${d.img.width}' ${bbAlt(alt)}]${d.img.url}[/img]\n` +
+        `[open=${t("editor.diagram_source_summary")}][code]${src}[/code][/open]`;
+      isSource() ? insertSource(`\n${bb}\n`) : insertBlock(bbcodeToHtml(bb));
+      return;
+    }
+    const block = `<pre><code class="language-mermaid">${esc}</code></pre>`;
+    if (!isSource()) { insertBlock(block); return; }
+    const mime = normalizeMime(props.mimetype);
+    insertSource(
+      mime === "text/markdown" ? `\n\`\`\`mermaid\n${src}\n\`\`\`\n`
+      : mime === "text/html" ? block
+      : `\n[code=mermaid]\n${src}\n[/code]\n`,
+    );
+  };
+
   // Either a flat [img] tag (drawing inserted as an image) or an
   // [attachment] tag (the .excalidraw scene inserted as a file). Only the
   // former has a live preview; the attachment goes in as literal bbcode.
@@ -841,12 +884,17 @@ export default function EditorToolbar(props: Props) {
             onSubmit={(v) => media(v.url)}
           />
           </Show>
-          {/* LaTeX "image" mode inserts an [img] block and the card/draw/map
-              buttons insert raw tokens — all bbcode, so they only show where
-              bbcode is still expanded. "live" mode is plain $…$ text. */}
-          <Show when={props.latexMode === "live" || bbTokens()}>
+          {/* The card/draw/map buttons insert raw bbcode tokens, so they only
+              show where bbcode is still expanded; LaTeX and diagrams: see
+              showLatex/showDiagram. */}
+          <Show when={showLatex()}>
           <Btn title={t("editor.latex_toolbar_title")} onPress={() => setLatexOpen(true)}>
             <MdOutlineFunctions class="w-4 h-4" />
+          </Btn>
+          </Show>
+          <Show when={showDiagram()}>
+          <Btn title={t("editor.diagram_toolbar_title")} onPress={() => setDiagramOpen(true)}>
+            <MdOutlineAccount_tree class="w-4 h-4" />
           </Btn>
           </Show>
           <Show when={showCardPicker()}>
@@ -945,6 +993,16 @@ export default function EditorToolbar(props: Props) {
     <Show when={mapOpen()}>
       <Suspense>
         <MapPickerModal onClose={() => setMapOpen(false)} onInsert={insertMap} />
+      </Suspense>
+    </Show>
+
+    <Show when={diagramOpen()}>
+      <Suspense>
+        <DiagramComposerModal
+          mode={props.latexMode}
+          onClose={() => setDiagramOpen(false)}
+          onInsert={insertDiagram}
+        />
       </Suspense>
     </Show>
 

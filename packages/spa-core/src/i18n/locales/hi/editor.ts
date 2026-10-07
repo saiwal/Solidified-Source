@@ -261,6 +261,16 @@ export const editor: RawDictionary["editor"] = {
   latex_rendering:      "रेंडर हो रहा है…",
   latex_uploading:      "अपलोड हो रहा है…",
   latex_insert_btn:     "डालें",
+  diagram_toolbar_title: "आरेख डालें",
+  diagram_modal_title: "आरेख डालें",
+  diagram_source_label: "Mermaid",
+  diagram_syntax_help: "सिंटैक्स सहायता",
+  diagram_preview_label: "पूर्वावलोकन",
+  diagram_preview_empty: "पूर्वावलोकन के लिए यहाँ Mermaid आरेख लिखें।",
+  diagram_rendering: "रेंडर हो रहा है…",
+  diagram_uploading: "अपलोड हो रहा है…",
+  diagram_insert_btn: "डालें",
+  diagram_source_summary: "आरेख स्रोत",
 
   // ExcalidrawComposerModal
   excalidraw_toolbar_title: "ड्रॉइंग जोड़ें",
