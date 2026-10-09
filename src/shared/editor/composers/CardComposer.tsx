@@ -299,6 +299,7 @@ export default function CardComposer(props: Props) {
   }, scope, {
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
+    autosaveBody: () => composedBody(),
   });
 
   const enc = useEncrypt(() => store.body(), store.setBody);

@@ -86,7 +86,7 @@ const AttachmentBar: Component<Props> = (props) => {
           (props.tab && props.onToggleTab)
         }
       >
-      <div class="flex items-center gap-1.5 sm:gap-2 px-3 py-2">
+      <div class="flex items-center gap-1.5 wide:gap-2 px-3 py-2">
         {/* Only when the editor toolbar is not already showing them. */}
         <Show when={!props.actions}>
           <>
@@ -95,11 +95,11 @@ const AttachmentBar: Component<Props> = (props) => {
             type="button"
             title={t("editor.attach_file_title")}
             onClick={act().openFile}
-            class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs text-muted shrink-0
+            class="flex items-center gap-1.5 px-2 wide:px-2.5 py-1 rounded-md text-xs text-muted shrink-0
                    hover:text-txt hover:bg-elevated border border-rim transition-colors"
           >
             <MdOutlineAttach_file class="w-3.5 h-3.5" />
-            <span class="hidden sm:inline">{t("editor.attach_upload")}</span>
+            <span class="hidden wide:inline">{t("editor.attach_upload")}</span>
           </button>
 
           {/* Browse existing */}
@@ -108,11 +108,11 @@ const AttachmentBar: Component<Props> = (props) => {
             type="button"
             title={t("editor.attach_browse_title")}
             onClick={act().openBrowse}
-            class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs text-muted shrink-0
+            class="flex items-center gap-1.5 px-2 wide:px-2.5 py-1 rounded-md text-xs text-muted shrink-0
                    hover:text-txt hover:bg-elevated border border-rim transition-colors"
           >
             <MdOutlineImage class="w-3.5 h-3.5" />
-            <span class="hidden sm:inline">{t("editor.attach_browse")}</span>
+            <span class="hidden wide:inline">{t("editor.attach_browse")}</span>
           </button>
           </Show>
 
@@ -121,11 +121,11 @@ const AttachmentBar: Component<Props> = (props) => {
             type="button"
             title={t("editor.cam_btn_title")}
             onClick={act().openCamera}
-            class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md text-xs text-muted shrink-0
+            class="flex items-center gap-1.5 px-2 wide:px-2.5 py-1 rounded-md text-xs text-muted shrink-0
                    hover:text-txt hover:bg-elevated border border-rim transition-colors"
           >
             <MdOutlinePhoto_camera class="w-3.5 h-3.5" />
-            <span class="hidden sm:inline">{t("editor.cam_title")}</span>
+            <span class="hidden wide:inline">{t("editor.cam_title")}</span>
           </button>
           </>
         </Show>

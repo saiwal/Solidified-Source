@@ -23,6 +23,24 @@
    to a control without overlap — independent of viewport width. */
 @custom-variant font-scaled (&:where([data-font-size="large"] *, [data-font-size="xl"] *));
 
+/* `sm:`/`md:` for editor and post parts that also render inside a docked composer: the dock
+   is a 26rem panel on a wide screen, so the viewport says "wide" while the
+   room says phone. ComposerModal marks the docked dialog with data-docked. */
+@custom-variant wide {
+  @media (width >= 40rem) {
+    &:where(:not([data-docked] *)) {
+      @slot;
+    }
+  }
+}
+@custom-variant wide-md {
+  @media (width >= 48rem) {
+    &:where(:not([data-docked] *)) {
+      @slot;
+    }
+  }
+}
+
 /* ── Plyr theme integration ─────────────────────────────────────── */
 :root {
   --plyr-color-main: var(--color-accent);

@@ -76,7 +76,7 @@ export default function AttachmentList(props: { attachments: StreamAttachment[];
             <div
               class={
                 "grid gap-2 " +
-                (images().length === 1 ? "grid-cols-1" : "grid-cols-2 sm:grid-cols-3")
+                (images().length === 1 ? "grid-cols-1" : "grid-cols-2 wide:grid-cols-3")
               }
             >
               <For each={images()}>

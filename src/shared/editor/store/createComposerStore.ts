@@ -77,6 +77,12 @@ export function createComposerStore(
      * Omitted, the composer autosaves only the fields this store owns.
      */
     autosaveExtra?: () => Record<string, unknown> | null;
+    /**
+     * The body autosave stores, when it isn't body() — CardComposer's
+     * quote/link/definition templates assemble theirs from sub-form fields,
+     * leaving body() empty, so without this they never autosaved at all.
+     */
+    autosaveBody?: () => string;
   },
 ) {
   const DRAFT_KEY = channelKey(`draft:${scope}`);
@@ -195,11 +201,12 @@ export function createComposerStore(
   createEffect(() => {
     if (!initialized()) return;
     // Track what a draft is made of, so any of them restarts the countdown.
-    const snapshot = [body(), title(), summary(), slug(), category()].join("\u0000");
+    const draftBody = options?.autosaveBody?.() ?? body();
+    const snapshot = [draftBody, title(), summary(), slug(), category()].join("\u0000");
     clearTimeout(autosaveTimer);
-    if (!body().trim() || submitting()) return;
+    if (!draftBody.trim() || submitting()) return;
     autosaveTimer = setTimeout(() => {
-      pendingAutosave = saveAsDraft(options?.autosaveExtra?.() ?? undefined, undefined, true);
+      pendingAutosave = saveAsDraft(options?.autosaveExtra?.() ?? undefined, options?.autosaveBody?.(), true);
     }, AUTOSAVE_MS);
     void snapshot;
   });

@@ -9,6 +9,7 @@ import {
   lazy,
   Show,
   For,
+  useContext,
   type JSX,
 } from "solid-js";
 import { A } from "@solidjs/router";
@@ -79,7 +80,7 @@ import { DEFAULT_TMS, osmLink, osmSearchLink, parseCoord } from "@utsukta/spa-co
 import { fetchEvents } from "@/modules/calendar/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { postHeightPx } from "@utsukta/spa-core/store/post-height";
-import { openEvent, openPost } from "@/shared/views/modal-host";
+import { ComposerFrameContext, openEvent, openPost } from "@/shared/views/modal-host";
 import { createMediaQuery } from "@solid-primitives/media";
 import { excerptOf } from "../feedviews/postExcerpt";
 
@@ -1072,7 +1073,10 @@ export default function PostCard(props: {
   // stub and its replies take over its indent, so drilling down stops eating
   // width. The card's content is only hidden (not unmounted) so composers
   // and refs survive a fold/unfold.
-  const isMd = createMediaQuery("(min-width: 768px)");
+  // A docked thread is a 26rem panel whatever the viewport says.
+  const frame = useContext(ComposerFrameContext);
+  const isWideMd = createMediaQuery("(min-width: 768px)");
+  const isMd = () => isWideMd() && frame?.mode() !== "dock";
   const collapseAfter = () => (isMd() ? 6 : 3);
   const tooDeep = () => (openVersion(), openDepth(props.post) > collapseAfter());
   const [keepOpen, setKeepOpen] = createSignal(false);
@@ -1092,7 +1096,7 @@ export default function PostCard(props: {
         ref={cardRef}
         data-mid={props.post.mid}
         class={`relative transition-colors duration-500
-               ${autoCollapsed() ? "mb-0.5" : `${(props.depth ?? 1) > 1 ? "border-l-2 " : ""}pl-2 md:pl-3 py-2 md:py-2.5 mb-1`}
+               ${autoCollapsed() ? "mb-0.5" : `${(props.depth ?? 1) > 1 ? "border-l-2 " : ""}pl-2 wide-md:pl-3 py-2 wide-md:py-2.5 mb-1`}
                ${props.highlighted ? "border-accent bg-accent/5" :  "border-rim/60"}`}
       >
         <Show when={autoCollapsed()}>
@@ -1236,7 +1240,7 @@ export default function PostCard(props: {
                   title={expiresTitle()}
                 >
                   <MdOutlineTimer size={10} />
-                  <span class="hidden sm:inline">{formatPostDate(props.post.expires!, locale(), "narrow")}</span>
+                  <span class="hidden wide:inline">{formatPostDate(props.post.expires!, locale(), "narrow")}</span>
                 </span>
               </Show>
               <Show when={isScheduled()}>
@@ -1245,7 +1249,7 @@ export default function PostCard(props: {
                   title={scheduledTitle()}
                 >
                   <MdOutlineSchedule size={10} />
-                  <span class="hidden sm:inline">{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale(), "narrow")}</span>
+                  <span class="hidden wide:inline">{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale(), "narrow")}</span>
                 </span>
               </Show>
               <Show when={isDirectMessage()}>
@@ -1277,8 +1281,8 @@ export default function PostCard(props: {
                   class="text-xs text-muted whitespace-nowrap"
                   title={new Date(props.post.created + "Z").toLocaleString(locale())}
                 >
-                  <span class="sm:hidden">{formatPostDate(props.post.created, locale(), "narrow")}</span>
-                  <span class="hidden sm:inline">{formatPostDate(props.post.created, locale())}</span>
+                  <span class="wide:hidden">{formatPostDate(props.post.created, locale(), "narrow")}</span>
+                  <span class="hidden wide:inline">{formatPostDate(props.post.created, locale())}</span>
                 </span>
               </span>
             </div>
@@ -1729,8 +1733,8 @@ export default function PostCard(props: {
       ref={cardRef}
       class={
         (props.seamless
-          ? "relative bg-surface p-3 md:p-5"
-          : "relative bg-surface border border-rim rounded-2xl p-3 md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
+          ? "relative bg-surface p-3 wide-md:p-5"
+          : "relative bg-surface border border-rim rounded-2xl p-3 wide-md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
         // Flat (unthreaded) reply: same card, with an accent rail down its left edge.
         (isFlatReply() && !props.seamless && !props.split ? " border-l-4 border-l-accent/50" : "") +
         (props.split ? " grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] h-full !p-0" : "")
@@ -1847,7 +1851,7 @@ export default function PostCard(props: {
               title={t("post.reply_indicator")}
             >
               <MdOutlineReply size={11} />
-              <span class="hidden sm:inline">{t("post.reply_badge")}</span>
+              <span class="hidden wide:inline">{t("post.reply_badge")}</span>
             </span>
           </Show>
           <Show when={isExpired()}>
@@ -1864,7 +1868,7 @@ export default function PostCard(props: {
               title={expiresTitle()}
             >
               <MdOutlineTimer size={11} />
-              <span class="hidden sm:inline">{formatPostDate(props.post.expires!, locale(), "narrow")}</span>
+              <span class="hidden wide:inline">{formatPostDate(props.post.expires!, locale(), "narrow")}</span>
             </span>
           </Show>
           <Show when={isScheduled()}>
@@ -1873,7 +1877,7 @@ export default function PostCard(props: {
               title={scheduledTitle()}
             >
               <MdOutlineSchedule size={11} />
-              <span class="hidden sm:inline">{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale(), "narrow")}</span>
+              <span class="hidden wide:inline">{t("post.scheduled_badge")} · {formatPostDate(props.post.created, locale(), "narrow")}</span>
             </span>
           </Show>
           <Show when={isDirectMessage()}>
@@ -1882,8 +1886,8 @@ export default function PostCard(props: {
           <Show when={isUnseen()}>
             <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none"
               title={t("post.new_badge")}>
-              <span class="hidden sm:inline">{t("post.new_badge")}</span>
-              <span class="sm:hidden block w-1.5 h-1.5 rounded-full bg-accent-fg" />
+              <span class="hidden wide:inline">{t("post.new_badge")}</span>
+              <span class="wide:hidden block w-1.5 h-1.5 rounded-full bg-accent-fg" />
             </span>
           </Show>
           <span class="flex items-center gap-1">
@@ -1902,8 +1906,8 @@ export default function PostCard(props: {
               class="text-sm text-muted whitespace-nowrap"
               title={new Date(props.post.created + "Z").toLocaleString(locale())}
             >
-              <span class="sm:hidden">{formatPostDate(props.post.created, locale(), "narrow")}</span>
-              <span class="hidden sm:inline">{formatPostDate(props.post.created, locale())}</span>
+              <span class="wide:hidden">{formatPostDate(props.post.created, locale(), "narrow")}</span>
+              <span class="hidden wide:inline">{formatPostDate(props.post.created, locale())}</span>
             </span>
           </span>
         </div>
@@ -2030,7 +2034,7 @@ export default function PostCard(props: {
       </Show>
 
       {/* Action bar */}
-      <div class="mt-4 pt-3 border-t border-rim flex flex-wrap items-center gap-0.5 sm:gap-1">
+      <div class="mt-4 pt-3 border-t border-rim flex flex-wrap items-center gap-0.5 wide:gap-1">
         {/* ── Like / Dislike / Star / Repeat ── */}
         <Show when={canInteract()}>
           <ActionBtn
@@ -2125,7 +2129,7 @@ export default function PostCard(props: {
         <Show when={totalComments() > 0}>
           <button
             onClick={toggleComments}
-            class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium
+            class="flex items-center gap-1 wide:gap-1.5 px-2 wide:px-3 py-1.5 rounded-lg text-sm font-medium
                    text-muted hover:bg-overlay hover:text-txt transition-colors"
             // Split layout pins comments in their own column from lg up: count only, no toggle.
             disabled={props.split}
@@ -2133,9 +2137,9 @@ export default function PostCard(props: {
           >
             <Show
               when={showComments()}
-              fallback={<MdFillKeyboard_arrow_down size={17} class="hidden sm:block" classList={{ "!hidden": props.split }} />}
+              fallback={<MdFillKeyboard_arrow_down size={17} class="hidden wide:block" classList={{ "!hidden": props.split }} />}
             >
-              <MdFillKeyboard_arrow_up size={17} class="hidden sm:block" classList={{ "!hidden": props.split }} />
+              <MdFillKeyboard_arrow_up size={17} class="hidden wide:block" classList={{ "!hidden": props.split }} />
             </Show>
             <MdFillChat size={15} />
             <span>{totalComments()}</span>
@@ -2932,7 +2936,7 @@ function ActionBtn(props: {
     <button
       onClick={props.onClick}
       title={props.label}
-      class={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-sm font-medium
+      class={`flex items-center gap-1 wide:gap-1.5 px-2 wide:px-3 py-1.5 rounded-lg text-sm font-medium
               transition-colors select-none hover:bg-overlay
               ${props.active ? props.activeClass : "text-muted"}`}
     >

@@ -106,6 +106,7 @@ export const hq: RawDictionary["hq"] = {
   draft_reply:          "Reply",
   draft_comment:        "Comment",
   draft_article:        "Article",
+  draft_card:           "Card",
   draft_webpage:        "Webpage",
   draft_wiki:           "Wiki Page",
   draft_event:          "Event",

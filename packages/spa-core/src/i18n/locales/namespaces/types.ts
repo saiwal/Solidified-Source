@@ -1948,6 +1948,7 @@ export type RawDictionary = {
     draft_reply:          string;
     draft_comment:        string;
     draft_article:        string;
+    draft_card:           string;
     draft_webpage:        string;
     draft_wiki:           string;
     draft_event:          string;

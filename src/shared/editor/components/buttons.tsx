@@ -66,7 +66,7 @@ export function composerTriggerClass(active: boolean, inMenu: boolean): string {
     );
   }
   return (
-    "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-2 sm:py-1 rounded-md text-xs border transition-colors " +
+    "flex items-center gap-1.5 px-2.5 py-1.5 wide:px-2 wide:py-1 rounded-md text-xs border transition-colors " +
     (active
       ? "bg-accent/10 text-accent border-accent/30"
       : "text-muted hover:text-txt hover:bg-elevated border-rim")
@@ -131,7 +131,7 @@ export const ToggleButton: Component<ToggleButtonProps> = (props) => {
       class={composerTriggerClass(props.active, inMenu)}
     >
       {props.children}
-      <span class={inMenu ? "" : "hidden sm:inline"}>{props.title}</span>
+      <span class={inMenu ? "" : "hidden wide:inline"}>{props.title}</span>
     </button>
   );
 };
@@ -214,7 +214,7 @@ export const PopoverButton: Component<PopoverButtonProps> = (props) => {
         class={composerTriggerClass(props.active ?? props.open(), inMenu)}
       >
         {props.icon}
-        <span class={inMenu ? "" : "hidden sm:inline"}>{props.title}</span>
+        <span class={inMenu ? "" : "hidden wide:inline"}>{props.title}</span>
       </button>
 
       <Show when={props.open()}>

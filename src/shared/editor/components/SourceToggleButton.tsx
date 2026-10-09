@@ -38,14 +38,14 @@ const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
         "flex items-center gap-1.5 rounded-md text-xs transition-colors shrink-0 " +
         (props.borderless
           ? "px-1 py-0.5 " + (isSource() ? "text-accent" : "text-muted hover:text-txt")
-          : "px-2 sm:px-2.5 py-1 border " +
+          : "px-2 wide:px-2.5 py-1 border " +
             (isSource()
               ? "bg-accent/10 text-accent border-accent/30"
               : "text-muted hover:text-txt hover:bg-elevated border-rim"))
       }
     >
       <MdOutlineCode class="w-3.5 h-3.5" />
-      <span class="hidden sm:inline">{isSource() ? t("editor.write_tab") : t("editor.source_tab")}</span>
+      <span class="hidden wide:inline">{isSource() ? t("editor.write_tab") : t("editor.source_tab")}</span>
     </button>
     </Show>
   );

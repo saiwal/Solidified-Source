@@ -8,8 +8,8 @@ import { useAuth, channelKey } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
 
-const DRAFT_TYPES = "post,article,webpage,wiki,note,dm";
-const SHOWN_TYPES = ["post", "article", "webpage", "wiki", "note", "dm"];
+const DRAFT_TYPES = "post,article,card,webpage,wiki,note,dm";
+const SHOWN_TYPES = ["post", "article", "card", "webpage", "wiki", "note", "dm"];
 
 // ── Scope helpers ─────────────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ function scopeParts(scope: string): { type: string; action: string; id: string }
 function isLoadable(scope: string): boolean {
   const { type, action, id } = scopeParts(scope);
   if (type === "post" && action === "new") return true;
-  if (type === "article" && (action === "new" || action === "edit")) return true;
+  if ((type === "article" || type === "card") && (action === "new" || action === "edit")) return true;
   if (type === "note" && (action === "new" || action === "edit")) return true;
   if (type === "dm" && action === "new") return true;
   // webpage:edit needs the page's numeric iid (not in scope) to load the
@@ -37,6 +37,7 @@ function isLoadable(scope: string): boolean {
 const TYPE_BADGE: Record<string, string> = {
   post:    "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
   article: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+  card:    "bg-lime-500/10 text-lime-600 dark:text-lime-400 border-lime-500/25",
   comment: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
   webpage: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25",
   wiki:    "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/25",
@@ -91,6 +92,7 @@ export default function DraftsWidget() {
     if (type === "post")    return t("hq.draft_post");
     if (type === "comment") return t("hq.draft_comment");
     if (type === "article") return t("hq.draft_article");
+    if (type === "card")    return t("hq.draft_card");
     if (type === "webpage") return t("hq.draft_webpage");
     if (type === "wiki")    return t("hq.draft_wiki");
     if (type === "event")   return t("hq.draft_event");

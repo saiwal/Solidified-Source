@@ -350,7 +350,7 @@ export default function ArticleComposer(props: Props) {
               off, Language takes the full width on its own. They stack below
               `sm`: two <select>s sharing a phone-width row squeeze past their
               option text and overflow the composer. */}
-          <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+          <div class="flex flex-col wide:flex-row wide:items-end gap-4">
             {/* Content format — core's mimetype_select() */}
             <Show when={caps.format}>
               <FormatSelect value={store.mimetype} onChange={store.setMimetype} body={store.body} hideLabel />

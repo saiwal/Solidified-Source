@@ -231,7 +231,7 @@ export default function ComposerModal(props: ComposerModalProps) {
       style={{ "margin-right": railOffset() }}
       label={props.ariaLabel ?? props.title}
     >
-        <div class={dialogClass()} use:helpable={props.helpTarget}>
+        <div class={dialogClass()} data-docked={mode() === "dock" ? "" : undefined} use:helpable={props.helpTarget}>
           {/* ── Header ── */}
           <header
             class="flex items-center justify-between gap-2 px-3 py-2 border-b border-rim shrink-0"

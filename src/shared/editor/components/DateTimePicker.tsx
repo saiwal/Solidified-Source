@@ -205,7 +205,7 @@ export default function DateTimePicker(props: Props) {
         <Show
           when={selected()}
           fallback={
-            <span class={inMenu ? "" : "hidden sm:inline"}>{props.placeholder ?? props.title}</span>
+            <span class={inMenu ? "" : "hidden wide:inline"}>{props.placeholder ?? props.title}</span>
           }
         >
           <Show when={inMenu}>
@@ -255,7 +255,7 @@ export default function DateTimePicker(props: Props) {
         <Show
           when={selected()}
           fallback={
-            <span class={inMenu ? "" : "hidden sm:inline"}>{props.placeholder ?? props.title}</span>
+            <span class={inMenu ? "" : "hidden wide:inline"}>{props.placeholder ?? props.title}</span>
           }
         >
           {/* In a menu the label stays, so the row still says what the date is

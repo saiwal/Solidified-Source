@@ -182,15 +182,15 @@ const AclPicker: Component<AclPickerProps> = (props) => {
         data-tour={props.dataTour}
         onClick={toggle}
         title={current().label()}
-        class="flex items-center gap-1 px-2.5 py-1.5 sm:py-1 rounded-md text-xs border border-rim
+        class="flex items-center gap-1 px-2.5 py-1.5 wide:py-1 rounded-md text-xs border border-rim
                text-muted hover:border-rim-strong hover:text-txt transition-all"
       >
         {current().icon()}
-        <span class="hidden sm:inline">{current().label()}</span>
+        <span class="hidden wide:inline">{current().label()}</span>
         {/* The selection count is the one thing the "custom" icon can't
             convey on its own, so it survives the mobile label collapse. */}
         <Show when={props.mode === "custom" && totalSelected() > 0}>
-          <span class="tabular-nums sm:hidden">{totalSelected()}</span>
+          <span class="tabular-nums wide:hidden">{totalSelected()}</span>
         </Show>
         <MdOutlineExpand_more class={`w-3 h-3 transition-transform ${open() ? "rotate-180" : "rotate-0"}`} />
       </button>
