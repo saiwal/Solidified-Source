@@ -28,7 +28,7 @@ import {
   type SortRange,
 } from "@/shared/stream/filters";
 import { MdFillSearch, MdFillClose, MdFillCreate } from "solid-icons/md";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { openComposer } from "@/shared/views/modal-host";
 import { toast } from "@utsukta/spa-core/store/toast";
 
@@ -111,7 +111,12 @@ export default function ChannelFeedShell(props: {
   // don't all carry over: `hot` degenerates to `created` without a firehose to
   // rank against, and `controversial` needs a dislike volume a personal wall
   // rarely sees.
-  const CHANNEL_ORDERS: SortOrder[] = ["created", "commented", "top", "discussed", "unthreaded"];
+  // The ranked two are behind the viewer's Settings → Features → Network →
+  // Advanced Sorting, same as on /network.
+  const channelOrders = (): SortOrder[] =>
+    isFeatureEnabled("spa_advanced_sort")
+      ? ["created", "commented", "top", "discussed", "unthreaded"]
+      : ["created", "commented", "unthreaded"];
 
   const order = () => (str("order") as SortOrder) ?? "created";
   const range = () => str("range") as SortRange | undefined;
@@ -168,7 +173,7 @@ export default function ChannelFeedShell(props: {
             order={order()}
             range={range()}
             onChange={setOrder}
-            available={CHANNEL_ORDERS}
+            available={channelOrders()}
             help="channel.sort_order"
           />
         </div>
