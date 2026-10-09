@@ -22,11 +22,12 @@ import {
   MdFillPublic,
   MdFillLock,
 } from "solid-icons/md";
-import { createSignal, createEffect, on, For, Show } from "solid-js";
+import { createSignal, createEffect, createMemo, on, For, Show, type JSX } from "solid-js";
+import { useInfiniteQuery, useQuery } from "@tanstack/solid-query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts, saveSortPref } from "../store";
-import { fetchFolders, fetchForums, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
+import { fetchFolders, fetchConnectionPage, CONN_PAGE_SIZE, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -62,6 +63,80 @@ const INPUT_CLS =
   "h-8 w-full text-sm border border-rim rounded-lg bg-surface text-txt " +
   "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent " +
   "py-1.5 px-2.5";
+
+// ── Forum / connection list with unread badges ───────────────────────────────
+// People: name-ordered pages of CONN_PAGE_SIZE, "Load more" fetches the next.
+// Fetched only once the section is opened.
+function usePeoplePages(enabled: () => boolean) {
+  return useInfiniteQuery(() => ({
+    queryKey: ["network-conns", "person"],
+    queryFn: ({ pageParam }) => fetchConnectionPage("person", pageParam),
+    enabled: enabled(),
+    initialPageParam: 0,
+    getNextPageParam: (last, pages) => {
+      const loaded = pages.reduce((n, p) => n + p.items.length, 0);
+      return last.items.length && loaded < last.total ? loaded : undefined;
+    },
+  }));
+}
+
+// ponytail: one request of up to 200 (the API's cap) — a user's forum list is
+// small. Sorted unread-first here: unread counts change between requests, so
+// paging the server over that order repeated and skipped forums.
+const FORUM_LIMIT = 200;
+const byUnseen = (a: ForumConnection, b: ForumConnection) =>
+  b.unseen - a.unseen || a.name.localeCompare(b.name);
+
+function ConnFilterList(props: {
+  items: ForumConnection[];
+  more?: ReturnType<typeof usePeoplePages>;
+  cid: string;
+  Icon: typeof MdFillForum;
+  onSelect: (c: ForumConnection) => void;
+  extra?: (c: ForumConnection) => JSX.Element;
+}) {
+  const { t } = useI18n();
+  return (
+    <>
+      <For each={props.items}>
+        {(c) => {
+          const active = () => props.cid === String(c.id);
+          return (
+            <div class="flex items-center gap-0.5">
+              <button
+                onClick={() => props.onSelect(c)}
+                title={c.address}
+                class="flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
+                classList={{
+                  "bg-accent-muted text-accent font-medium": active(),
+                  "text-muted hover:bg-elevated hover:text-txt": !active(),
+                }}
+              >
+                <props.Icon size={13} class="shrink-0" />
+                <span class="flex-1 truncate">{c.name}</span>
+                <Show when={c.unseen > 0}>
+                  <span class="shrink-0 min-w-[1.25rem] px-1.5 rounded-full bg-accent text-accent-fg text-[10px] leading-4 text-center font-medium">
+                    {c.unseen > 99 ? "99+" : c.unseen}
+                  </span>
+                </Show>
+              </button>
+              {props.extra?.(c)}
+            </div>
+          );
+        }}
+      </For>
+      <Show when={props.more?.hasNextPage}>
+        <button
+          onClick={() => props.more!.fetchNextPage()}
+          disabled={props.more!.isFetchingNextPage}
+          class="w-full px-2.5 py-1.5 rounded-lg text-xs text-left text-accent hover:bg-elevated transition-colors disabled:opacity-50"
+        >
+          {t("network.load_more")}
+        </button>
+      </Show>
+    </>
+  );
+}
 
 // ── Post to forum ─────────────────────────────────────────────────────────────
 
@@ -229,7 +304,23 @@ export default function StreamFiltersWidget() {
     () => privacyGroupsInstalled() || null,
     (): Promise<PrivacyGroup[]> => fetchGroups(),
   );
-  const [forums] = createQueryResource("network-forums", fetchForums);
+  const [forumInput, setForumInput] = createSignal("");
+  const forums = useQuery(() => ({
+    queryKey: ["network-conns", "forum"],
+    queryFn: () => fetchConnectionPage("forum", 0, FORUM_LIMIT),
+  }));
+  const forumTotal = () => forums.data?.items.length ?? 0;
+  const forumList = createMemo(() => {
+    const q = forumInput().trim().toLowerCase();
+    const all = forums.data?.items ?? [];
+    return (q ? all.filter((f) => f.name.toLowerCase().includes(q) || f.address?.toLowerCase().includes(q)) : [...all]).sort(byUnseen);
+  });
+  // Clicking the active forum/connection again clears the filter.
+  const selectListed = (c: ForumConnection) => {
+    const off = str(searchParams.cid) === String(c.id);
+    sp({ cid: off ? undefined : String(c.id), xchan_label: off ? undefined : c.name, gid: undefined });
+    setTimeout(applyNow, 0);
+  };
 
   const tag    = () => str(searchParams.tag);
   const file   = () => str(searchParams.file);
@@ -258,6 +349,7 @@ export default function StreamFiltersWidget() {
   const xchanLabel = () => str(searchParams.xchan_label);
 
   const [connOpen, setConnOpen] = createSignal(!!(str(searchParams.cid) || str(searchParams.gid)));
+  const people = usePeoplePages(connOpen);
   const [connInput, setConnInput] = createSignal("");
   const [debouncedConnQuery, setDebouncedConnQuery] = createSignal("");
   let connDebounceTimer: number | undefined;
@@ -527,6 +619,11 @@ export default function StreamFiltersWidget() {
                   </ul>
                 </Show>
               </Show>
+              <Show when={!connInput().trim()}>
+                <div class="mt-1 space-y-0.5">
+                  <ConnFilterList items={people.data?.pages.flatMap((p) => p.items) ?? []} more={people} cid={cid()} Icon={MdFillPerson} onSelect={selectListed} />
+                </div>
+              </Show>
             </div>
           </Show>
         </div>
@@ -639,7 +736,7 @@ export default function StreamFiltersWidget() {
           </div>
         </Show>
 
-        <Show when={!forums.loading && (forums() ?? []).length > 0}>
+        <Show when={forumTotal() > 0}>
           <div>
             <button
               onClick={() => setForumsOpen((o) => !o)}
@@ -660,40 +757,33 @@ export default function StreamFiltersWidget() {
             </button>
             <Show when={forumsOpen()}>
               <div class="pl-6 pt-1 pb-0.5 space-y-0.5">
-                <button
-                  onClick={() => { sp({ cid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
-                  class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                  classList={{
-                    "bg-accent text-accent-fg font-medium": !str(searchParams.cid),
-                    "text-muted hover:bg-elevated hover:text-txt": !!str(searchParams.cid),
-                  }}
-                >
-                  {t("network.folder_all")}
-                </button>
-                <For each={forums() ?? []}>
-                  {(forum) => {
-                    const active = () => str(searchParams.cid) === String(forum.id);
-                    return (
-                      <div class="flex items-center gap-0.5">
-                        <button
-                          onClick={() => {
-                            sp({ cid: String(forum.id), xchan_label: forum.name, gid: undefined });
-                            setTimeout(applyNow, 0);
-                          }}
-                          class="flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                          classList={{
-                            "bg-accent-muted text-accent font-medium": active(),
-                            "text-muted hover:bg-elevated hover:text-txt": !active(),
-                          }}
-                        >
-                          <MdFillForum size={13} class="shrink-0" />
-                          <span class="truncate">{forum.name}</span>
-                        </button>
-                        <ForumPostMenu forum={forum} />
-                      </div>
-                    );
-                  }}
-                </For>
+                <Show when={forumTotal() > CONN_PAGE_SIZE}>
+                  <div class="pr-2 pb-1">
+                    <input
+                      type="text"
+                      placeholder={t("network.forum_placeholder")}
+                      value={forumInput()}
+                      onInput={(e) => setForumInput(e.currentTarget.value)}
+                      class={INPUT_CLS}
+                    />
+                  </div>
+                </Show>
+                {/* Clears a forum filter even when its entry isn't listed (URL cid, search). */}
+                <Show when={!!cid()}>
+                  <button
+                    onClick={() => { sp({ cid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
+                    class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left text-muted hover:bg-elevated hover:text-txt"
+                  >
+                    {t("network.folder_all")}
+                  </button>
+                </Show>
+                <ConnFilterList
+                  items={forumList()}
+                  cid={cid()}
+                  Icon={MdFillForum}
+                  onSelect={selectListed}
+                  extra={(f) => <ForumPostMenu forum={f} />}
+                />
               </div>
             </Show>
           </div>

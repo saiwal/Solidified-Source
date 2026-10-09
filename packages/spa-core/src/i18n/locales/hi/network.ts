@@ -27,6 +27,7 @@ export const network: RawDictionary["network"] = {
   events:               "कार्यक्रम",
   filter_by_connection: "कनेक्शन से फ़िल्टर करें",
   connection_placeholder: "कनेक्शन…",
+  forum_placeholder: "फ़ोरम…",
   remove:               "हटाएँ",
   search:               "खोजें",
   search_placeholder:   "खोजें या URL पेस्ट करें…",

@@ -1636,6 +1636,7 @@ export type RawDictionary = {
     polls:                string;
     filter_by_connection: string;
     connection_placeholder: string;
+    forum_placeholder: string;
     remove:               string;
     search:               string;
     search_placeholder:   string;

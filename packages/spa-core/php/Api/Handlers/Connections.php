@@ -104,7 +104,11 @@ class Connections
         $offset     = max(0, intval($_GET['start'] ?? 0));
 
         $sql_filter = $this->filterClause($filter);
-        $sql_filter .= $type === 'forum' ? ' AND xchan.xchan_pubforum = 1 ' : '';
+        $sql_filter .= match ($type) {
+            'forum'  => ' AND xchan.xchan_pubforum = 1 ',
+            'person' => ' AND xchan.xchan_pubforum = 0 ',
+            default  => '',
+        };
 
         $sql_search = '';
         if ($search !== '') {
@@ -121,6 +125,23 @@ class Connections
             'recent'         => 'xchan.xchan_updated DESC',
             default          => 'xchan.xchan_name ASC',
         };
+
+        // ?unseen=1: unread top-level posts per connection, counted by
+        // owner_xchan like core's Forums widget. Its own query on purpose:
+        // alone it rides the (uid, item_unseen) index and touches only unread
+        // rows; as a derived-table join MySQL planned it badly enough to time
+        // out on a large hub. Not a sort key: counts change between page
+        // fetches, so offset paging over them repeats/skips rows — the client
+        // sorts the (small) forum list itself.
+        $with_unseen = !empty($_GET['unseen']);
+        $unseen = [];
+        if ($with_unseen) {
+            $counts = q("SELECT owner_xchan, COUNT(*) AS n FROM item
+                         WHERE uid = %d AND item_unseen = 1 AND item_thread_top = 1 "
+                         . item_normal($uid) . " GROUP BY owner_xchan",
+                intval($uid));
+            $unseen = array_map('intval', array_column($counts ?: [], 'n', 'owner_xchan'));
+        }
 
         $base_where = "WHERE abook.abook_channel = %d
                          AND abook.abook_self    = 0
@@ -161,6 +182,11 @@ class Connections
             fn($row) => $this->formatRow($row, $theirPerms[$row['xchan_hash']] ?? []),
             $rows ?: []
         );
+
+        if ($with_unseen) {
+            foreach ($connections as &$c) $c['unseen'] = $unseen[$c['xchan_hash']] ?? 0;
+            unset($c);
+        }
 
         Response::send($connections, [
             'total'  => $total,

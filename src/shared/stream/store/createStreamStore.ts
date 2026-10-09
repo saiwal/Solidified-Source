@@ -1,5 +1,5 @@
 // src/shared/stream/store/createStreamStore.ts
-import { createSignal } from "solid-js";
+import { createSignal, untrack } from "solid-js";
 import { createStore, reconcile, unwrap } from "solid-js/store";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
@@ -256,7 +256,10 @@ export function createStreamStore<P extends StreamParams>(
     stopPolling();
     resetReveal();
     try {
-      const { threads, offset, more, result } = await fetchDisplayablePage(0);
+      // Untracked: callers fire load() from effects, and the fetcher reads
+      // params()/nick() synchronously — tracked, the effect re-runs on the
+      // setParams above and refetches page one forever.
+      const { threads, offset, more, result } = await untrack(() => fetchDisplayablePage(0));
       if (gen !== loadGen) return;
       setPosts(threads);
       setNewPosts([]);

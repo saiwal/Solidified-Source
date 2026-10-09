@@ -32,6 +32,7 @@ export const network: RawDictionary["network"] = {
   // Connection filter
   filter_by_connection: "Nach Verbindung filtern",
   connection_placeholder: "Verbindung…",
+  forum_placeholder: "Forum…",
   remove:               "Entfernen",
   // Search
   search:               "Suche",

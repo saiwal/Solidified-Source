@@ -184,9 +184,16 @@ export function createActionHandlers(store: StreamStore) {
 
     async handleDelete(mid: string): Promise<void> {
       const node = findNode(store.posts(), mid);
+      // Not in the feed (an older comment only the detail modal loaded):
+      // still delete it — the API resolves a mid as well as a uuid.
+      await apiDeleteItem(node?.uuid ?? mid);
       if (!node) return;
-      await apiDeleteItem(node.uuid);
-      exitCard(node.uuid, () => store.setPosts((prev) => prev.filter((p) => p.mid !== mid)));
+      // Match the node's own mid (callers may pass a uuid) and drop it at any
+      // depth — a deleted comment lives in its root's children, not posts().
+      const prune = (nodes: ThreadNode[]): ThreadNode[] =>
+        nodes.filter((n) => n.mid !== node.mid)
+          .map((n) => (n.children.length ? { ...n, children: prune(n.children) } : n));
+      exitCard(node.uuid, () => store.setPosts(prune));
     },
 
     async handleEdit(mid: string, payload: EditPayload): Promise<void> {

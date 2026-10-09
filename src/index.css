@@ -661,7 +661,10 @@
 img.emoji {
   height: 1.2em !important;
   width: auto !important;
-  vertical-align: text-bottom;
+  /* Centre on the text regardless of font descent; margin: 0 beats prose's
+     img { margin-block: 2em }, which lifted the emoji and loosened the line. */
+  vertical-align: -0.25em;
+  margin: 0;
   display: inline-block;
   transition: transform 0.15s ease;
 }

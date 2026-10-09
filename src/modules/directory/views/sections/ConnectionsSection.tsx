@@ -1,4 +1,4 @@
-import { For, Show, Switch, Match, createSignal, onMount, onCleanup } from "solid-js";
+import { For, Show, Switch, Match, createSignal, createMemo, onMount, onCleanup } from "solid-js";
 import {
   connections, loading, loadingMore, total,
   loadConnections, loadMoreConnections,
@@ -76,6 +76,8 @@ function PermissionDot(props: { granted: string[] }) {
 function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
   const [busy, setBusy] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
+  // Details render on first expand, then stay mounted so collapsing can animate.
+  const detailsMounted = createMemo((was: boolean) => was || expanded(), false);
   const [editOpen, setEditOpen] = createSignal(false);
   // Handed to ModalHost so a half-written DM survives navigation. The scope
   // carries the recipient, so DMs to two different people are two composers
@@ -355,17 +357,25 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
         </div>
       </Show>
 
-      <Show when={expanded()}>
-        <div class="px-3 pb-3 pt-0 border-t border-rim grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
-          <DetailField label={t("directory.field_connected")} value={formatDate(props.conn.connected)} />
-          <DetailField label={t("directory.field_closeness")} value={String(props.conn.closeness)} />
-          <DetailField label={t("directory.field_role")}      value={props.conn.role} />
-          <DetailField label={t("directory.field_network")}   value={props.conn.network} />
-          <Show when={props.conn.address}>
-            <DetailField label={t("directory.field_address")} value={props.conn.address} />
+      <div
+        class="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ "grid-template-rows": expanded() ? "1fr" : "0fr" }}
+        aria-hidden={!expanded()}
+      >
+        <div class="overflow-hidden">
+          <Show when={detailsMounted()}>
+          <div class="px-3 pb-3 pt-0 border-t border-rim grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+            <DetailField label={t("directory.field_connected")} value={formatDate(props.conn.connected)} />
+            <DetailField label={t("directory.field_closeness")} value={String(props.conn.closeness)} />
+            <DetailField label={t("directory.field_role")}      value={props.conn.role} />
+            <DetailField label={t("directory.field_network")}   value={props.conn.network} />
+            <Show when={props.conn.address}>
+              <DetailField label={t("directory.field_address")} value={props.conn.address} />
+            </Show>
+          </div>
           </Show>
         </div>
-      </Show>
+      </div>
 
       <Show when={editOpen()}>
         <ConnectionEditorModal

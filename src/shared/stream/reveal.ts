@@ -34,7 +34,7 @@ function getObserver() {
     let batch = 0;
     for (const e of entries) {
       const uuid = uuidOf.get(e.target);
-      if (!uuid) continue;
+      if (uuid === undefined) continue; // "" is a real (if broken) key
       if (!e.isIntersecting) {
         visibleUuids.delete(uuid);
         continue;
@@ -44,8 +44,20 @@ function getObserver() {
       if (!el.hasAttribute("data-hz-reveal")) continue;
       shown.add(uuid);
       const play = () => {
+        // Image tiles can call this twice (load + timeout cap); the second
+        // must not re-add the class after animationend removed it.
+        if (!el.hasAttribute("data-hz-reveal")) return;
         el.removeAttribute("data-hz-reveal");
         el.classList.add("animate-hz-reveal");
+        // Drop the class once played: a CSS animation restarts whenever its
+        // element is re-inserted (Suspense swapping children out on a focus
+        // refetch), which replayed the entrance on returning to the tab.
+        const done = (e: AnimationEvent) => {
+          if (e.target !== el) return; // a child's animation bubbling up
+          el.classList.remove("animate-hz-reveal");
+          el.removeEventListener("animationend", done);
+        };
+        el.addEventListener("animationend", done);
       };
       // data-reveal-wait (CardShell waitForImage): photo tiles are blank boxes
       // until their lazy image lands, so sliding them in early shows nothing.

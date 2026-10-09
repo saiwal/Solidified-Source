@@ -470,9 +470,9 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
           : undefined,
         onDelete: props.handlers!.onDelete
           ? async (mid: string) => {
-              const found = findInTree(nodeData(), mid);
-              if (found?.uuid) await apiDeleteItem(found.uuid);
-              props.handlers!.onDelete!(mid);
+              // The feed handler does the delete — deleting here first made its
+              // own call 404 and throw before it removed the card.
+              await props.handlers!.onDelete!(mid);
               props.onClose();
             }
           : undefined,

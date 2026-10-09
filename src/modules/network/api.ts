@@ -190,15 +190,23 @@ export type ForumConnection = {
   photo: string;
   address: string;
   xid: string;
+  unseen: number;
 };
 
-export async function fetchForums(): Promise<ForumConnection[]> {
-  const res = await apiFetch('/spa/connections?filter=active&type=forum&order=name&limit=200');
-  if (!res.ok) return [];
-  const { data } = await res.json();
-  return Array.isArray(data)
-    ? data.map((c: any) => ({ id: c.id, name: c.name, photo: c.photo, address: c.address, xid: c.xchan_hash }))
+export const CONN_PAGE_SIZE = 20;
+
+/** A name-ordered page of active forums or non-forum connections, with unread top-level counts. */
+export async function fetchConnectionPage(
+  type: 'forum' | 'person', start: number, limit = CONN_PAGE_SIZE,
+): Promise<{ items: ForumConnection[]; total: number }> {
+  const qs = new URLSearchParams({ filter: 'active', type, unseen: '1', limit: String(limit), start: String(start) });
+  const res = await apiFetch(`/spa/connections?${qs}`);
+  if (!res.ok) return { items: [], total: 0 };
+  const { data, meta } = await res.json();
+  const items = Array.isArray(data)
+    ? data.map((c: any) => ({ id: c.id, name: c.name, photo: c.photo, address: c.address, xid: c.xchan_hash, unseen: c.unseen ?? 0 }))
     : [];
+  return { items, total: meta?.total ?? items.length };
 }
 
 export type NetworkStreamResult = {
