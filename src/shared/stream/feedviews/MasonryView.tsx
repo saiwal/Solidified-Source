@@ -15,6 +15,7 @@ import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
 import CardShell from "../CardShell";
 import formatPostDate from "@utsukta/spa-core/lib/date";
+import { UnseenBadge } from "../components/UnseenBadge";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
 import EventCard from "@/shared/stream/components/EventCard";
@@ -128,11 +129,7 @@ function MasonryCard(props: {
               <span>{t("post.reply_badge")}</span>
             </span>
           </Show>
-          <Show when={p.flags.includes("unseen")}>
-            <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none">
-              New
-            </span>
-          </Show>
+          <UnseenBadge post={p} size={14} />
         </div>{" "}
         {/* Author */}
         <div class="flex items-center gap-2 mb-3">

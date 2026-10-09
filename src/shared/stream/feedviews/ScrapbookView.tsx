@@ -8,6 +8,7 @@ import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { UnseenBadge } from "../components/UnseenBadge";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
@@ -42,6 +43,7 @@ function Stamp(props: { post: ThreadNode; handlers: StreamHandlers }) {
   const { locale } = useI18n();
   return (
     <div class="flex items-center gap-2 mt-2 text-[0.6875rem] text-neutral-500" onClick={(e) => e.stopPropagation()}>
+      <UnseenBadge post={p} size={13} />
       <span class="font-semibold text-neutral-700 truncate">{p.authorName}</span>
       <span class="shrink-0">· {formatPostDate(p.created, locale())}</span>
       <span class="ml-auto flex items-center gap-2 shrink-0">

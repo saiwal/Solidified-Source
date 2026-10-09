@@ -10,6 +10,7 @@ import { excerptOf, firstImageSrc } from "./postExcerpt";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { UnseenBadge } from "../components/UnseenBadge";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
@@ -64,7 +65,8 @@ function Byline(props: { post: ThreadNode; onOpen: () => void; handlers: StreamH
 
 function PinRibbon(props: { post: ThreadNode }) {
   const { t } = useI18n();
-  return (
+  return (<>
+    <UnseenBadge post={props.post} class="absolute top-2 left-2 z-10" />
     <Show when={props.post.pinned}>
       <span
         class="absolute top-2 right-2 flex items-center justify-center w-5 h-5 rounded-full bg-accent text-accent-fg leading-none z-10"
@@ -73,7 +75,7 @@ function PinRibbon(props: { post: ThreadNode }) {
         <MdFillPush_pin size={11} />
       </span>
     </Show>
-  );
+  </>);
 }
 
 // ── lead story — the big headline at the top of the paper ───────────────────

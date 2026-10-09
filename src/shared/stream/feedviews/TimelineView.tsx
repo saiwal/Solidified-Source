@@ -6,6 +6,7 @@ import type { StreamHandlers } from "../types";
 import { openPost } from "@/shared/views/modal-host";
 import { excerptOf, firstImageSrc } from "./postExcerpt";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { UnseenBadge } from "../components/UnseenBadge";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
@@ -93,7 +94,10 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
             <img src={p.authorAvatar} alt={p.authorName} class={`${isRootPost(p) ? "w-8 h-8" : "w-5 h-5"} rounded-full object-cover shrink-0`} />
           </Show>
           <div class="min-w-0 leading-tight">
-            <p class="text-sm font-semibold text-txt truncate">{p.authorName}</p>
+            <p class="flex items-center gap-1 text-sm font-semibold text-txt min-w-0">
+              <span class="truncate">{p.authorName}</span>
+              <UnseenBadge post={p} size={14} />
+            </p>
             <p
               class="text-[0.6875rem] text-muted"
               title={new Date(p.created + "Z").toLocaleString(locale())}

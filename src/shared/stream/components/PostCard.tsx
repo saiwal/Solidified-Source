@@ -32,6 +32,7 @@ import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillKeyboard_arrow_up, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { BiRegularLinkExternal } from "solid-icons/bi";
+import { UnseenBadge } from "./UnseenBadge";
 import { isDirectMessage as isDM, DmBadge, DmRecipientsPC, DmRecipients } from "./DmMeta";
 import LockviewPopover from "./LockviewPopover";
 const CommentComposer = lazy(
@@ -343,7 +344,6 @@ export default function PostCard(props: {
 
   // Detect event posts: prefer pre-parsed eventData from mapper, fall back to
   // parsing the body directly (handles cases where obj_type wasn't "Event").
-  const isUnseen = () => props.post.flags.includes("unseen");
   // Scheduling and expiry are the author's own housekeeping — nobody else's business.
   const isOwn = () => isSelf(props.post.authorHash, props.post.authorAddress);
   const isExpired = () => isOwn() && props.post.flags.includes("expired");
@@ -1883,13 +1883,7 @@ export default function PostCard(props: {
           <Show when={isDirectMessage()}>
             <DmBadge size="md" />
           </Show>
-          <Show when={isUnseen()}>
-            <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none"
-              title={t("post.new_badge")}>
-              <span class="hidden wide:inline">{t("post.new_badge")}</span>
-              <span class="wide:hidden block w-1.5 h-1.5 rounded-full bg-accent-fg" />
-            </span>
-          </Show>
+          <UnseenBadge post={props.post} />
           <span class="flex items-center gap-1">
             <Show when={editedAt()}>
               {(edited) => (

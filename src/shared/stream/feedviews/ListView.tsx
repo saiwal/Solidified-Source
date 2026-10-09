@@ -7,6 +7,7 @@ import { REACTION_VERBS } from "@/shared/stream/store/actions-store";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
 import type { StreamHandlers } from "../types";
 import formatPostDate from "@utsukta/spa-core/lib/date";
+import { UnseenBadge } from "../components/UnseenBadge";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
@@ -646,7 +647,6 @@ function InboxRow(props: {
 
   const preview = () => rowPreview(p);
   const isUnread = () => !p.viewerLiked && replyCount() === 0;
-  const isUnseen = () => p.flags.includes("unseen");
   const isPinned = () => p.pinned ?? false;
   // A non-root item can only reach the top-level posts array in a flat
   // (nouveau/unthreaded) listing — real comments are nested as .children elsewhere.
@@ -674,11 +674,7 @@ function InboxRow(props: {
           onKeyDown={(e) => e.key === "Enter" && toggleExpand()}
         >
           <div class="flex items-center gap-1.5">
-            <Show when={isUnseen()}>
-              <span class="px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-accent text-accent-fg leading-none shrink-0">
-                New
-              </span>
-            </Show>
+            <UnseenBadge post={p} size={14} />
             <Show
               when={p.title}
               fallback={
