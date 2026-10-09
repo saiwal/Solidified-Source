@@ -1,4 +1,8 @@
 import { editingWidgets } from "../store/widget-layout";
+import { queryClient } from "./query-client";
+
+// Network filters' per-forum/connection unread badges count item_unseen.
+const refreshUnreadBadges = () => queryClient.invalidateQueries({ queryKey: ["network-conns"] });
 
 /**
  * Mark a Hubzilla notification (notify table) as seen.
@@ -28,6 +32,7 @@ export async function markAllSeen(key: string): Promise<void> {
     credentials: "include",
   });
   if (!res.ok) throw new Error("Failed to mark read");
+  void refreshUnreadBadges();
 }
 
 // Accumulate UUIDs and flush as one batched request after a 1s idle.
@@ -44,7 +49,7 @@ function flush() {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ sse_rmids: uuids }).toString(),
     credentials: "include",
-  }).catch(() => {});
+  }).then(refreshUnreadBadges, () => {});
 }
 
 /**

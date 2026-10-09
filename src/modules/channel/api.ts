@@ -75,3 +75,56 @@ export async function fetchChannelPosts(
   };
 }
 
+
+export interface ChannelConn {
+  name: string;
+  address: string;
+  photo: string;
+  url: string;
+  local_nick: string | null;
+  network: string;
+  description: string;
+  location: string;
+  /** null when the viewer can't connect from here (anonymous / remote). */
+  viewer_connected: boolean | null;
+}
+
+export interface ConnectionsData {
+  connections: ChannelConn[];
+  total: number;
+  hidden: boolean;
+}
+
+export async function fetchConnections(nick: string, start = 0, limit = 24): Promise<ConnectionsData | null> {
+  if (!nick) return null;
+  const res = await apiFetch(`/spa/profile/${nick}/connections?limit=${limit}&start=${start}`);
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.data as ConnectionsData;
+}
+
+// GET /spa/profile/:nick — cached under "contact-card" by its callers.
+export interface ProfileData {
+  channel_name: string;
+  channel_address: string;
+  xchan_addr: string;
+  channel_photo_l: string;
+  channel_cover: string;
+  pdesc: string;
+  location: string;
+  homepage: string;
+  gender: string;
+  marital: string;
+  keywords: string[];
+  is_connected: boolean;
+  connect_url: string;
+  is_remote?: boolean;
+}
+
+export async function fetchProfile(nick: string): Promise<ProfileData | null> {
+  if (!nick) return null;
+  const res = await apiFetch(`/spa/profile/${nick}`);
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.data as ProfileData;
+}

@@ -56,7 +56,7 @@ function usePubstreamHandlers(tag: () => string): StreamHandlers {
     onLoadComments: (_mid, _uuid) => Promise.resolve(),
     onDelete(mid: string) {
       const node = posts().find((p) => p.mid === mid || p.uuid === mid);
-      // Comments aren't in posts(); delete them by mid (the modal drops them).
+      // Comments aren't in posts(); delete them by mid.
       return apiDeleteItem(node?.uuid ?? mid).then(() => {
         if (node) exitCard(node.uuid, () => removePost(mid));
       });

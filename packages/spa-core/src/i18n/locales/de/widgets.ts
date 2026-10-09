@@ -201,6 +201,7 @@ export const widgets: RawDictionary["widgets"] = {
   manage_content: "Verwaltung-Inhalt",
   // Profile page card (profile.content)
   profile_content: "Profilkarte",
+  viewconnections_content: "Verbindungsliste",
   // Notepad header (notepad.header) / composer+list (notepad.content)
   notepad_header:  "Notizen-Kopfzeile",
   notepad_content: "Notizen-Inhalt",

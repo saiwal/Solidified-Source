@@ -1,7 +1,7 @@
 // src/shared/views/PostDetailModal.tsx
 import { type Component, createEffect, createMemo, createSignal, on, Show, onMount, useContext } from "solid-js";
 import PostCard from "../stream/components/PostCard";
-import type { StreamHandlers, EditPayload } from "../stream/types";
+import type { StreamHandlers } from "../stream/types";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { buildThreadTree, appendNewBranches, mergeReplies, applyBranchMeta } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
@@ -134,7 +134,6 @@ function applyOverrides(n: ThreadNode, overrides: Record<string, ReactionOverrid
 interface PostDetailModalProps {
   uuid: string;
   onClose: () => void;
-  handlers?: StreamHandlers;
   /** Render as a plain in-page panel (the inbox's reading pane) instead of a
    *  portalled modal: no overlay, no dialog role, fills its container. */
   inline?: boolean;
@@ -369,8 +368,12 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
     },
     async onDelete(mid) {
       const found = findInTree(nodeData(), mid);
-      if (found?.uuid) await apiDeleteItem(found.uuid);
-      props.onClose();
+      if (!found?.uuid) return;
+      await apiDeleteItem(found.uuid);
+      if (found.mid === nodeData()?.mid) return props.onClose();
+      // A comment: drop it from the tree and keep the thread open.
+      const prune = (n: ThreadNode): ThreadNode => ({ ...n, children: n.children.filter((c) => c.mid !== mid).map(prune) });
+      setNodeData((prev) => prev && { ...prune(prev), commentCount: prev.commentCount && prev.commentCount - 1 });
     },
     async onApprove(iid) {
       await approveModerationItem(iid);
@@ -403,86 +406,6 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       }
     } catch { /* ignore */ }
   }
-
-  const wrappedHandlers: StreamHandlers | undefined = props.handlers
-    ? {
-        onLike: (mid: string) => {
-          props.handlers!.onLike(mid);
-          toggleReaction(mid, "viewerLiked", "likeCount");
-        },
-        onDislike: (mid: string) => {
-          props.handlers!.onDislike(mid);
-          toggleReaction(mid, "viewerDisliked", "dislikeCount");
-        },
-        onRepeat: (mid: string) => {
-          const o = localReactions()[mid];
-          const treeNode = findInTree(nodeData(), mid);
-          const alreadyRepeated = o?.viewerRepeated ?? treeNode?.viewerRepeated ?? false;
-          if (alreadyRepeated) return;
-          props.handlers!.onRepeat(mid);
-          setLocalReactions(prev => {
-            const existing = prev[mid] ?? {};
-            const currentCount = existing.repeatCount ?? treeNode?.repeatCount ?? 0;
-            return { ...prev, [mid]: { ...existing, viewerRepeated: true, repeatCount: currentCount + 1 } };
-          });
-        },
-        onComment: (parentMid, body, authorName, authorAvatar, created) => {
-          props.handlers!.onComment(parentMid, body, authorName, authorAvatar, created);
-          addLocalComment(parentMid, body, created);
-        },
-        onLoadComments: (mid, uuid) => props.handlers!.onLoadComments(mid, uuid),
-        // Not delegated to props.handlers: that targets the parent feed's
-        // stream store, not this modal's own local nodeData tree.
-        onLoadMoreComments: loadMoreComments,
-        // Root edits go through the parent feed handler so its copy stays in
-        // sync; comments usually aren't in the feed store, so edit directly.
-        onEdit: async (mid: string, payload: EditPayload) => {
-          if (nodeData()?.mid === mid && props.handlers!.onEdit) {
-            await props.handlers!.onEdit(mid, payload);
-          } else {
-            const found = findInTree(nodeData(), mid);
-            if (!found?.uuid) throw new Error("Item not found");
-            await apiEditItem(found.uuid, payload);
-          }
-          await loadNode(props.uuid);
-        },
-        onStar: props.handlers!.onStar
-          ? (mid: string) => {
-              props.handlers!.onStar!(mid);
-              setLocalReactions(prev => {
-                const o = prev[mid] ?? {};
-                const treeNode = findInTree(nodeData(), mid);
-                const current = o.viewerStarred ?? treeNode?.viewerStarred ?? false;
-                return { ...prev, [mid]: { ...o, viewerStarred: !current } };
-              });
-            }
-          : undefined,
-        onPin: props.handlers!.onPin
-          ? (mid: string) => {
-              props.handlers!.onPin!(mid);
-              setLocalReactions(prev => {
-                const o = prev[mid] ?? {};
-                const treeNode = findInTree(nodeData(), mid);
-                const current = o.pinned ?? treeNode?.pinned ?? false;
-                return { ...prev, [mid]: { ...o, pinned: !current } };
-              });
-            }
-          : undefined,
-        onDelete: props.handlers!.onDelete
-          ? async (mid: string) => {
-              // The feed handler does the delete — deleting here first made its
-              // own call 404 and throw before it removed the card.
-              await props.handlers!.onDelete!(mid);
-              props.onClose();
-            }
-          : undefined,
-        onRefresh: async () => { refetch(); },
-        // Moderation isn't a feed concern — no feed handler set supplies these,
-        // and they act on this modal's own tree — so reuse selfHandlers'.
-        onApprove: selfHandlers.onApprove,
-        onReject: selfHandlers.onReject,
-      }
-    : undefined;
 
   const title = () =>
     nodeData() && isDirectMessage(nodeData()!) ? t("post.dm_title") : t("post.modal_title");
@@ -558,7 +481,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
                   seamless
                   expandAll
                   split={split()}
-                  handlers={wrappedHandlers ?? selfHandlers}
+                  handlers={selfHandlers}
                   contextBanner={
                     <>
                     <Show when={canFetchReplies()}>
@@ -610,7 +533,6 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       <PostDetailModal
         uuid={nestedUuid()!}
         onClose={() => setNestedUuid(null)}
-        handlers={props.handlers}
       />
       </ComposerFrameContext.Provider>
     </Show>

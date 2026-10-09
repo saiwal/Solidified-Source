@@ -33,6 +33,7 @@ export function useSubjectNick(): () => string {
       "cal",
       "page",
       "messenger",
+    "viewconnections",
     ];
     if (parts[1] && modulesWithNick.includes(parts[0])) return parts[1];
     return "";

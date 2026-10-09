@@ -667,6 +667,7 @@ export type RawDictionary = {
     manage_content: string;
     // Profile page card (profile.content)
     profile_content: string;
+    viewconnections_content: string;
     // Notepad header (notepad.header) / composer+list (notepad.content)
     notepad_header:  string;
     notepad_content: string;

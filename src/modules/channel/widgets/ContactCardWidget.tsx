@@ -5,37 +5,13 @@
 import { Show, For, createSignal } from "solid-js";
 import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { connectToChannel } from "@/modules/directory/connections/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillLocation_on, MdFillPublic } from "solid-icons/md";
+import { fetchProfile } from "../api";
 
-interface ProfileData {
-  channel_name: string;
-  channel_address: string;
-  xchan_addr: string;
-  channel_photo_l: string;
-  channel_cover: string;
-  pdesc: string;
-  location: string;
-  homepage: string;
-  gender: string;
-  marital: string;
-  keywords: string[];
-  is_connected: boolean;
-  connect_url: string;
-  is_remote?: boolean;
-}
-
-async function fetchProfile(nick: string): Promise<ProfileData | null> {
-  if (!nick) return null;
-  const res = await apiFetch(`/spa/profile/${nick}`);
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.data as ProfileData;
-}
 
 export default function ContactCardWidget() {
   const nick = usePageNick();

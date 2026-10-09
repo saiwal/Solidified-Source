@@ -122,11 +122,11 @@ const AclBadge: Component<{
 }> = (props) => {
   const restricted = () => aclIsRestricted(props.acl);
   return (
-    <span class={`hidden sm:flex items-center gap-1 text-xs shrink-0 ${
+    <span class={`hidden @lg:flex w-20 items-center justify-end gap-1 text-xs shrink-0 ${
       restricted() ? "text-accent" : "text-muted"
     }`}>
-      {restricted() ? <MdFillLock size={11} /> : <MdFillLock_open size={11} />}
-      <AclLabel acl={props.acl} defaultAcl={props.defaultAcl} selfHash={props.selfHash} />
+      {restricted() ? <MdFillLock size={11} class="shrink-0" /> : <MdFillLock_open size={11} class="shrink-0" />}
+      <span class="truncate"><AclLabel acl={props.acl} defaultAcl={props.defaultAcl} selfHash={props.selfHash} /></span>
     </span>
   );
 };
@@ -342,11 +342,11 @@ const FileRow: Component<{
     {/* ACL badge — names the actual audience, not just "restricted or not" */}
     <AclBadge acl={props.item.acl} defaultAcl={props.defaultAcl} selfHash={props.selfHash} />
 
-    <span class="hidden sm:block text-xs text-muted w-20 text-right shrink-0">
+    <span class="hidden @lg:block text-xs text-muted w-20 text-right shrink-0">
       {props.item.is_dir ? "—" : formatSize(props.item.filesize)}
     </span>
 
-    <span class="hidden md:block text-xs text-muted w-28 text-right shrink-0">
+    <span class="hidden @2xl:block text-xs text-muted w-28 text-right shrink-0">
       {formatDate(props.item.created)}
     </span>
 
@@ -394,9 +394,9 @@ function Skeleton() {
           <div class="flex items-center gap-3 px-3 py-2.5">
             <div class="w-6 h-6 rounded bg-overlay shrink-0" />
             <div class="flex-1 h-3.5 bg-overlay rounded" />
-            <div class="hidden sm:block w-16 h-3 bg-overlay rounded" />
-            <div class="hidden sm:block w-20 h-3 bg-overlay rounded" />
-            <div class="hidden md:block w-24 h-3 bg-overlay rounded" />
+            <div class="hidden @lg:block w-16 h-3 bg-overlay rounded" />
+            <div class="hidden @lg:block w-20 h-3 bg-overlay rounded" />
+            <div class="hidden @2xl:block w-24 h-3 bg-overlay rounded" />
           </div>
         )}
       </For>
@@ -941,10 +941,10 @@ export default function FilesContentWidget() {
   }
 
   return (
-    <div class="max-w-6xl mx-auto px-4 md:px-6 pb-6 flex gap-6">
+    <div class="@container max-w-6xl mx-auto px-4 md:px-6 pb-6 flex gap-6">
 
-      {/* ── Folder tree (desktop only) ── */}
-      <aside class="hidden md:block w-56 lg:w-64 shrink-0 self-start sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+      {/* ── Folder tree: shown only while the list beside it still fits every column (64 + gap + @2xl ≈ 60rem) ── */}
+      <aside class="hidden @min-[60rem]:block w-64 shrink-0 self-start sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <FolderTree
           nick={nick()}
           stack={navStack()}
@@ -954,7 +954,7 @@ export default function FilesContentWidget() {
         />
       </aside>
 
-    <div class="flex-1 min-w-0 space-y-4">
+    <div class="@container flex-1 min-w-0 space-y-4">
 
       {/* ── Header: where you are, then history + refresh ── */}
       <div class="flex items-center gap-1.5 min-w-0">
@@ -1173,11 +1173,11 @@ export default function FilesContentWidget() {
               <span class="ml-0.5 text-accent">{sortDir() === "asc" ? "↑" : "↓"}</span>
             </Show>
           </button>
-          <span class="hidden sm:block w-20 shrink-0 text-right">{t("files_mod.access_col")}</span>
+          <span class="hidden @lg:block w-20 shrink-0 text-right">{t("files_mod.access_col")}</span>
           {/* Sortable: Size */}
           <button
             onClick={() => toggleSort("size")}
-            class={`hidden sm:flex w-20 shrink-0 items-center justify-end gap-0.5 transition-colors hover:text-txt ${
+            class={`hidden @lg:flex w-20 shrink-0 items-center justify-end gap-0.5 transition-colors hover:text-txt ${
               sortField() === "size" ? "text-txt" : ""
             }`}
           >
@@ -1189,7 +1189,7 @@ export default function FilesContentWidget() {
           {/* Sortable: Created */}
           <button
             onClick={() => toggleSort("date")}
-            class={`hidden md:flex w-28 shrink-0 items-center justify-end gap-0.5 transition-colors hover:text-txt ${
+            class={`hidden @2xl:flex w-28 shrink-0 items-center justify-end gap-0.5 transition-colors hover:text-txt ${
               sortField() === "date" ? "text-txt" : ""
             }`}
           >

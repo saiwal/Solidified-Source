@@ -1,32 +1,9 @@
-import { Show, For, createSignal } from "solid-js";
+import { Show, For } from "solid-js";
+import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
-import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
-
-interface ChannelConn {
-  name: string;
-  address: string;
-  photo: string;
-  url: string;
-  local_nick: string | null;
-}
-
-interface ConnectionsData {
-  connections: ChannelConn[];
-  total: number;
-  hidden: boolean;
-}
-
-const PAGE = 24;
-
-async function fetchConnections(nick: string, start = 0): Promise<ConnectionsData | null> {
-  if (!nick) return null;
-  const res = await apiFetch(`/spa/profile/${nick}/connections?limit=${PAGE}&start=${start}`);
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.data as ConnectionsData;
-}
+import { fetchConnections } from "../api";
 
 export default function ChannelConnectionsWidget() {
   const nick = usePageNick();
@@ -37,20 +14,8 @@ export default function ChannelConnectionsWidget() {
     fetchConnections(n),
   );
 
-  // Pages past the first, loaded on demand by "View all".
-  const [more, setMore] = createSignal<ChannelConn[]>([]);
-  const [loadingMore, setLoadingMore] = createSignal(false);
-
-  const conns = () => [...(data()?.connections ?? []), ...more()];
+  const conns = () => data()?.connections ?? [];
   const total = () => data()?.total ?? 0;
-
-  async function loadMore() {
-    if (loadingMore()) return;
-    setLoadingMore(true);
-    const page = await fetchConnections(nick(), conns().length);
-    setMore((prev) => [...prev, ...(page?.connections ?? [])]);
-    setLoadingMore(false);
-  }
 
   return (
     <Show when={!data.loading && !data()?.hidden && conns().length > 0}>
@@ -64,10 +29,7 @@ export default function ChannelConnectionsWidget() {
           </Show>
         </div>
 
-        <div
-          class="grid grid-cols-4 gap-1.5"
-          classList={{ "max-h-80 overflow-y-auto": more().length > 0 }}
-        >
+        <div class="grid grid-cols-4 gap-1.5">
           <For each={conns()}>
             {(conn) => {
               const href = conn.local_nick
@@ -91,14 +53,9 @@ export default function ChannelConnectionsWidget() {
 
         <Show when={total() > conns().length}>
           <div class="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-            <button
-              type="button"
-              onClick={loadMore}
-              disabled={loadingMore()}
-              class="text-xs text-accent hover:underline disabled:opacity-50"
-            >
+            <A href={`/viewconnections/${nick()}`} class="text-xs text-accent hover:underline">
               {t("widgets.view_all")} ({total()})
-            </button>
+            </A>
             <Show when={viewerRole() === "owner"}>
               <a href="/directory/connections" class="text-xs text-muted hover:underline">
                 {t("widgets.manage")}

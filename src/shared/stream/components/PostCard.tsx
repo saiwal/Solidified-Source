@@ -1048,7 +1048,8 @@ export default function PostCard(props: {
     } else {
       if (deleteTimer) clearTimeout(deleteTimer);
       setDeleteConfirming(false);
-      props.handlers.onDelete?.(props.post.mid);
+      Promise.resolve(props.handlers.onDelete?.(props.post.mid))
+        .catch((e) => toast.error(e instanceof Error ? e.message : String(e)));
     }
   }
 

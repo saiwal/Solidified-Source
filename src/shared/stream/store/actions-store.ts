@@ -190,9 +190,18 @@ export function createActionHandlers(store: StreamStore) {
       if (!node) return;
       // Match the node's own mid (callers may pass a uuid) and drop it at any
       // depth — a deleted comment lives in its root's children, not posts().
+      // Every ancestor drops one from its count — PostCard shows
+      // max(children, commentCount), so the root would otherwise stay put.
       const prune = (nodes: ThreadNode[]): ThreadNode[] =>
         nodes.filter((n) => n.mid !== node.mid)
-          .map((n) => (n.children.length ? { ...n, children: prune(n.children) } : n));
+          .map((n) => (findNode(n.children, node.mid)
+            ? {
+                ...n,
+                children: prune(n.children),
+                commentCount: n.commentCount && n.commentCount - 1,
+                commentsTotal: n.commentsTotal && n.commentsTotal - 1,
+              }
+            : n));
       exitCard(node.uuid, () => store.setPosts(prune));
     },
 
