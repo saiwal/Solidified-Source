@@ -31,6 +31,7 @@ registerModule({
       slot: "right",
       visitorVisible: false,
       helpTarget: "widgets.filters",
+      locked: true,
     },
     {
       id: "network.savedSearch",

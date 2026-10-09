@@ -6,6 +6,7 @@ import {
   MdFillMail,
   MdFillEvent,
   MdFillClose,
+  MdFillFilter_alt_off,
   MdFillFolder,
   MdFillGroup,
   MdFillForum,
@@ -481,11 +482,10 @@ export default function StreamFiltersWidget() {
       <div class="px-4 py-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold text-txt">{t("network.filters")}</h2>
         <Show when={hasAnyFilter()}>
-          <button onClick={clearAll} title={t("network.clear_filters")}
+          <button onClick={clearAll} title={t("network.clear_filters")} aria-label={t("network.clear_filters")}
             class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
                    hover:text-accent hover:bg-elevated transition-colors">
-            <MdFillClose size={12} />
-            <span>{t("network.clear_filters")}</span>
+            <MdFillFilter_alt_off size={12} />
           </button>
         </Show>
       </div>

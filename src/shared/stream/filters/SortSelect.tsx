@@ -1,4 +1,4 @@
-import { For, Show, type Component } from "solid-js";
+import { For, Show, createSignal, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
@@ -53,19 +53,37 @@ export default function SortSelect(props: {
   const current = () => ALL_ORDERS.find((o) => o.id === props.order) ?? ALL_ORDERS[0];
   const CurrentIcon = () => { const I = current().icon; return <I size={14} />; };
   const range = () => resolveRange(props.order, props.range) ?? DEFAULT_RANGE;
-  const rangeAware = () => RANGE_AWARE.includes(props.order);
+
+  // Range-aware orders are split buttons: the label picks the order, the
+  // caret opens the range picker for that order without reloading first.
+  // `rangeFor` is the order the range panel is currently aimed at.
+  const [rangeFor, setRangeFor] = createSignal<SortOrder | null>(null);
+  // Only the active order has a range in force; another order's panel starts unselected.
+  const panelRange = () => (rangeFor() === props.order ? range() : null);
 
   const pickOrder = (id: SortOrder) => {
     // Dropping a range on an order that can't use one would leave a stale
     // ?range= in the URL that nothing reads.
-    props.onChange(id, RANGE_AWARE.includes(id) ? range() : undefined);
-    // Range-aware orders leave the panel open so the range can be picked next;
-    // re-clicking the active one is how you reopen it to change the range.
-    setOpen(RANGE_AWARE.includes(id) && !(open() && props.order === id));
+    if (id !== props.order) props.onChange(id, RANGE_AWARE.includes(id) ? range() : undefined);
+    setOpen(false);
+  };
+
+  // Wide: the range panel anchors under the split button that opened it.
+  // Narrow: it anchors to the whole control, and the chips sit under their row.
+  let root!: HTMLDivElement;
+  const groupEls: Partial<Record<SortOrder, HTMLElement>> = {};
+  const toggleRanges = (id: SortOrder, anchor?: HTMLElement) => {
+    const same = open() && rangeFor() === id;
+    if (anchor) ref(anchor);
+    setRangeFor(same ? null : id);
+    // The narrow dropdown stays open; the caret just folds its chips away.
+    setOpen(!same || !wide());
   };
 
   const pickRange = (r: SortRange) => {
-    props.onChange(props.order, r);
+    const o = rangeFor();
+    if (o) props.onChange(o, r);
+    setRangeFor(null);
     setOpen(false);
   };
 
@@ -84,7 +102,7 @@ export default function SortSelect(props: {
      ${active ? "bg-accent text-accent-fg" : "bg-surface text-muted hover:bg-elevated"}`;
 
   return (
-    <div class="min-w-0" ref={ref} use:helpable={props.help ?? "network.sort_order"}>
+    <div class="min-w-0" ref={(el) => { root = el; ref(el); }} use:helpable={props.help ?? "network.sort_order"}>
       <Show
         when={wide()}
         fallback={
@@ -93,7 +111,7 @@ export default function SortSelect(props: {
               title={t("network.sort_by")}
               aria-expanded={open()}
               aria-haspopup="listbox"
-              onClick={() => setOpen(!open())}
+              onClick={() => { ref(root); setRangeFor(null); setOpen(!open()); }}
               class="flex items-center gap-1 px-2 py-1.5 rounded-lg border border-rim
                      bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors"
             >
@@ -114,35 +132,51 @@ export default function SortSelect(props: {
                 >
                 <For each={orders()}>
                   {(o) => (
-                    <button
-                      role="option"
-                      aria-selected={props.order === o.id}
-                      onClick={() => pickOrder(o.id)}
-                      class={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left
-                        transition-colors
+                    <>
+                    <div
+                      class={`flex items-center rounded-md transition-colors
                         ${props.order === o.id
                           ? "bg-accent text-accent-fg"
                           : "text-txt hover:bg-elevated"}`}
                     >
-                      <o.icon size={14} />
-                      <span>{labelFor(o.id, o.key)}</span>
-                    </button>
-                  )}
-                </For>
-
-                  <Show when={rangeAware()}>
-                    <div class="mt-1 pt-2 border-t border-rim flex flex-wrap gap-1 px-1 pb-1">
+                      <button
+                        role="option"
+                        aria-selected={props.order === o.id}
+                        onClick={() => pickOrder(o.id)}
+                        class="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 text-sm text-left"
+                      >
+                        <o.icon size={14} />
+                        <span>{labelFor(o.id, o.key)}</span>
+                      </button>
+                      <Show when={RANGE_AWARE.includes(o.id)}>
+                        <button
+                          title={t("network.date_range")}
+                          aria-label={t("network.date_range")}
+                          aria-expanded={rangeFor() === o.id}
+                          onClick={() => toggleRanges(o.id)}
+                          class="px-2 py-1.5 self-stretch flex items-center rounded-r-md hover:bg-black/10"
+                        >
+                          <MdFillKeyboard_arrow_down size={14}
+                            class={rangeFor() === o.id ? "rotate-180" : ""} />
+                        </button>
+                      </Show>
+                    </div>
+                    <Show when={rangeFor() === o.id}>
+                    <div class="flex flex-wrap gap-1 pl-7 pr-1 py-1.5">
                       <For each={RANGES}>
                         {(r) => (
                           <FilterChip
-                            active={range() === r.id}
+                            active={panelRange() === r.id}
                             onClick={() => pickRange(r.id)}
                             label={<span class="text-xs">{t(`network.${r.key}` as any)}</span>}
                           />
                         )}
                       </For>
                     </div>
-                  </Show>
+                    </Show>
+                    </>
+                  )}
+                </For>
                 </div>
               </Portal>
             </Show>
@@ -153,31 +187,39 @@ export default function SortSelect(props: {
             keeps its height whatever the caller's `available` list is. */}
         <div class="flex items-center gap-1.5 min-w-0 overflow-x-auto">
           <div
-            class="flex rounded-lg border border-rim overflow-hidden shrink-0"
+            class="flex rounded-lg border border-rim overflow-hidden shrink-0 divide-x divide-rim"
             role="tablist"
             aria-label={t("network.sort_by")}
           >
             <For each={orders()}>
               {(o) => (
-                <button
-                  role="tab"
-                  title={labelFor(o.id, o.key)}
-                  aria-selected={props.order === o.id}
-                  aria-haspopup={RANGE_AWARE.includes(o.id) ? "listbox" : undefined}
-                  aria-expanded={
-                    RANGE_AWARE.includes(o.id) ? open() && props.order === o.id : undefined
-                  }
-                  onClick={() => pickOrder(o.id)}
-                  class={segCls(props.order === o.id)}
-                >
-                  <o.icon size={14} />
-                  <span class="hidden lg:inline text-xs font-medium">
-                    {labelFor(o.id, o.key)}
-                  </span>
-                  <Show when={RANGE_AWARE.includes(o.id) && props.order === o.id}>
-                    <MdFillKeyboard_arrow_down size={14} />
+                <div class="flex" ref={(el) => (groupEls[o.id] = el)}>
+                  <button
+                    role="tab"
+                    title={labelFor(o.id, o.key)}
+                    aria-selected={props.order === o.id}
+                    onClick={() => pickOrder(o.id)}
+                    class={segCls(props.order === o.id)}
+                  >
+                    <o.icon size={14} />
+                    <span class="hidden lg:inline text-xs font-medium">
+                      {labelFor(o.id, o.key)}
+                    </span>
+                  </button>
+                  <Show when={RANGE_AWARE.includes(o.id)}>
+                    <button
+                      title={t("network.date_range")}
+                      aria-label={t("network.date_range")}
+                      aria-haspopup="listbox"
+                      aria-expanded={open() && rangeFor() === o.id}
+                      onClick={() => toggleRanges(o.id, groupEls[o.id])}
+                      class={`${segCls(props.order === o.id)} pl-0! pr-1!`}
+                    >
+                      <MdFillKeyboard_arrow_down size={14}
+                        class={open() && rangeFor() === o.id ? "rotate-180" : ""} />
+                    </button>
                   </Show>
-                </button>
+                </div>
               )}
             </For>
           </div>
@@ -185,8 +227,8 @@ export default function SortSelect(props: {
 
         {/* Ranges float above the toolbar instead of sitting in the row —
             inline they resized the toolbar every time a ranked order was
-            picked. Anchored to the row start, since the row itself scrolls. */}
-        <Show when={rangeAware() && open()}>
+            picked. Anchored under the split button whose caret opened it. */}
+        <Show when={rangeFor() && open()}>
           <Portal mount={topLayer()}>
             <div
               ref={floating}
@@ -199,11 +241,11 @@ export default function SortSelect(props: {
                 {(r) => (
                   <button
                     role="option"
-                    aria-selected={range() === r.id}
+                    aria-selected={panelRange() === r.id}
                     onClick={() => pickRange(r.id)}
                     class={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap
                       transition-colors
-                      ${range() === r.id
+                      ${panelRange() === r.id
                         ? "bg-accent text-accent-fg"
                         : "text-txt hover:bg-elevated"}`}
                   >

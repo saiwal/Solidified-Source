@@ -6,6 +6,8 @@ import { fetchNetworkStream } from "./api";
 import type { NetworkParams } from "./api";
 import { createActionHandlers } from "@/shared/stream/store/actions-store";
 import type { ViewMode } from "@/shared/stream/types";
+import { RANKED_ORDERS } from "@/shared/stream/filters/ranked";
+import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 
 // ── viewMode ──────────────────────────────────────────────────────────────────
 export type { ViewMode };
@@ -23,7 +25,8 @@ export { viewMode };
 // needs it synchronously.
 export function sortPref(): { order?: string; range?: string } {
   const order = localStorage.getItem("hz-network-order") || undefined;
-  if (!order) return {};
+  // A ranked order remembered from before Advanced Sorting was turned off.
+  if (!order || (RANKED_ORDERS.includes(order) && !isFeatureEnabled("spa_advanced_sort"))) return {};
   return { order, range: localStorage.getItem("hz-network-range") || undefined };
 }
 
