@@ -4,10 +4,11 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import type { WidgetDef } from "@utsukta/spa-core/types/module.types";
 
 // These widgets read the current page channel, so they also work on /profile
+// and /viewconnections
 const channelWidgetPlacement: Pick<WidgetDef, "slot" | "defaultModules" | "contexts"> = {
   slot: "right",
-  defaultModules: ["channel", "profile"],
-  contexts: ["channel", "profile"],
+  defaultModules: ["channel", "profile", "viewconnections"],
+  contexts: ["channel", "profile", "viewconnections"],
 };
 
 registerModule({
@@ -117,6 +118,8 @@ registerModule({
       label: () => useI18n().t("widgets.connections"),
       loader: () => import("./widgets/ChannelConnectionsWidget"),
       ...channelWidgetPlacement,
+      // Redundant beside the full list; still placeable there via the picker.
+      defaultModules: ["channel", "profile"],
       helpTarget: "widgets.connections",
     },
     {
@@ -168,7 +171,7 @@ registerModule({
       loader: () => import("./widgets/ActivityHeatmapWidget"),
       slot: ["right", "contentTop"],
       defaultModules: [],
-      contexts: ["channel", "profile", "hq"],
+      contexts: ["channel", "profile", "viewconnections", "hq"],
       helpTarget: "widgets.activity_heatmap",
     },
   ],
