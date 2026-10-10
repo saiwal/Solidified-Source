@@ -1,3 +1,4 @@
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createSignal, createMemo, For, Show, createUniqueId } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPermcatDetail, updatePermcatPerms } from "../../connections/api";
@@ -12,7 +13,7 @@ interface Props {
   onSaved: () => void;
 }
 
-export default function RolePermissionsModal(props: Props) {
+function RolePermissionsModal(props: Props) {
   const { t } = useI18n();
   const [detail, { mutate }] = createQueryResource(
     "permcat-detail",
@@ -152,3 +153,6 @@ export default function RolePermissionsModal(props: Props) {
     </Modal>
   );
 }
+
+// Own boundary: its data reads would otherwise suspend the page it opens over.
+export default isolate(RolePermissionsModal);

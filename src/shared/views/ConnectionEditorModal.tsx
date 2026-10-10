@@ -1,3 +1,4 @@
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createSignal, createResource, createEffect, For, Show, createUniqueId } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { Connection } from "@/modules/directory/connections/api";
@@ -59,7 +60,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function ConnectionEditorModal(props: Props) {
+function ConnectionEditorModal(props: Props) {
   const { t } = useI18n();
   const [tab, setTab] = createSignal<Tab>(props.initialTab ?? "settings");
   const [role, setRole] = createSignal(props.connection.role ?? "");
@@ -588,3 +589,6 @@ export default function ConnectionEditorModal(props: Props) {
     </Modal>
   );
 }
+
+// Own boundary: its data reads would otherwise suspend the page it opens over.
+export default isolate(ConnectionEditorModal);

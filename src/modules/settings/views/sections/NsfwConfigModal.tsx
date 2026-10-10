@@ -1,3 +1,4 @@
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createSignal, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -27,7 +28,7 @@ async function saveNsfwWords(words: string): Promise<void> {
   }
 }
 
-export default function NsfwConfigModal(props: { onClose: () => void }) {
+function NsfwConfigModal(props: { onClose: () => void }) {
   const { t } = useI18n();
   const [data] = createQueryResource("nsfw-config", fetchNsfwSettings);
   const [words, setWords] = createSignal<string | null>(null);
@@ -91,3 +92,6 @@ export default function NsfwConfigModal(props: { onClose: () => void }) {
     </ConfigModal>
   );
 }
+
+// Own boundary: its data reads would otherwise suspend the page it opens over.
+export default isolate(NsfwConfigModal);

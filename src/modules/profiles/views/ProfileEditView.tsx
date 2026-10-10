@@ -1,3 +1,4 @@
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createResource, createSignal, For, lazy, Show, createUniqueId } from "solid-js";
 import { useParams, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -16,7 +17,7 @@ import { MdOutlineClose } from "solid-icons/md";
 
 import Modal from "@/shared/views/Modal";
 // Lazy-loaded so Filerobot + React don't inflate the profile chunk
-const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
+const ImageEditor = isolate(lazy(() => import("@/shared/views/ImageEditor")));
 
 // <input type="date"> can't represent year "0000" (Hubzilla's "year not
 // disclosed" convention), so a placeholder year keeps the picker populated;

@@ -10,14 +10,15 @@
  * two components now trigger the same three actions, so the state behind them
  * can no longer live inside either one.
  */
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createSignal, Show, lazy, type JSX } from "solid-js";
 import type { AttachmentStore } from "./types";
 import type { FileMeta } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
 
 // Lazy — only fetched when the user actually opens one.
-const FilePickerModal = lazy(() => import("./picker/FilePickerModal"));
-const CameraCapture = lazy(() => import("./CameraCapture"));
+const FilePickerModal = isolate(lazy(() => import("./picker/FilePickerModal")));
+const CameraCapture = isolate(lazy(() => import("./CameraCapture")));
 
 export type AttachmentAccept = "files" | "photos" | "both";
 

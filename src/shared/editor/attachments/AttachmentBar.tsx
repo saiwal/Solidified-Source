@@ -1,3 +1,4 @@
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createSignal, Show, For, lazy, type Component } from "solid-js";
 import AttachmentPreview from "./AttachmentPreview";
 import type { Attachment, AttachmentStore } from "./types";
@@ -9,7 +10,7 @@ import { MdOutlineAttach_file, MdOutlineImage, MdOutlinePhoto_camera } from "sol
 
 export type { AttachmentAccept } from "./useAttachmentActions";
 
-const PosterPicker = lazy(() => import("./PosterPicker"));
+const PosterPicker = isolate(lazy(() => import("./PosterPicker")));
 
 interface Props {
   store: AttachmentStore;

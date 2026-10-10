@@ -1,11 +1,12 @@
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { Show, lazy, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isEncryptedBody } from "@utsukta/spa-core/lib/postCrypto";
 import type { useEncrypt } from "../useEncrypt";
 import { PopoverButton } from "./buttons";
 
-const EncryptPanel = lazy(() => import("./EncryptPanel"));
-const DecryptPanel = lazy(() => import("./DecryptPanel"));
+const EncryptPanel = isolate(lazy(() => import("./EncryptPanel")));
+const DecryptPanel = isolate(lazy(() => import("./DecryptPanel")));
 
 type EncryptState = ReturnType<typeof useEncrypt>;
 

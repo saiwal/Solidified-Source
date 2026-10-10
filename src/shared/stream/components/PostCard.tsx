@@ -1,4 +1,5 @@
 // src/shared/stream/components/PostCard.tsx
+import { isolate } from "@utsukta/spa-core/lib/isolate";
 import {
   createSignal,
   createMemo,
@@ -35,16 +36,16 @@ import { BiRegularLinkExternal } from "solid-icons/bi";
 import { UnseenBadge } from "./UnseenBadge";
 import { isDirectMessage as isDM, DmBadge, DmRecipientsPC, DmRecipients } from "./DmMeta";
 import LockviewPopover from "./LockviewPopover";
-const CommentComposer = lazy(
+const CommentComposer = isolate(lazy(
   () => import("@/shared/editor/composers/CommentComposer"),
-);
+));
 import RichEditor from "@/shared/editor/core/RichEditor";
 import SourceToggleButton from "@/shared/editor/components/SourceToggleButton";
 import { CAPABILITIES } from "@/shared/editor/types/editor.types";
 import type { EditorTab, MimeType } from "@/shared/editor/types/editor.types";
-const PostComposer = lazy(
+const PostComposer = isolate(lazy(
   () => import("@/shared/editor/composers/PostComposer"),
-);
+));
 import DOMPurify from "dompurify";
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
