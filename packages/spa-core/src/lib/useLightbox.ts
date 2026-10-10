@@ -49,8 +49,10 @@ export function useLightbox(ref: () => HTMLElement | undefined) {
       ]);
       // Inside a modal <dialog> (top layer, rest of the page inert) the
       // lightbox must live in the dialog, and its Escape must not also fire
-      // the dialog's `cancel` and close the modal underneath.
-      const dialog = el.closest('dialog') ?? undefined;
+      // the dialog's `cancel` and close the modal underneath. A non-modal one
+      // (a docked post) is just a small box on the page — stay on <body>.
+      const host = el.closest('dialog');
+      const dialog = host?.matches(':modal') ? host : undefined;
       const keepDialog = (ev: Event) => ev.preventDefault();
       const pswp = new PhotoSwipe({
         dataSource: items,
@@ -58,6 +60,13 @@ export function useLightbox(ref: () => HTMLElement | undefined) {
         bgOpacity: 0.95,
         wheelToZoom: true,
         appendToEl: dialog,
+      });
+      // A mouse click on the background already closes (bgClickAction); a
+      // touch tap only toggles the controls. Make a tap off the image close too.
+      pswp.on('tapAction', (e) => {
+        if ((e.originalEvent.target as Element).classList.contains('pswp__img')) return;
+        e.preventDefault();
+        pswp.close();
       });
       if (dialog) {
         dialog.addEventListener('cancel', keepDialog);

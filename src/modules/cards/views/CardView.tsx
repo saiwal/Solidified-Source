@@ -350,7 +350,7 @@ export default function CardView() {
     if (rendered() && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   usePlyr(() => bodyRef, rendered);
-  useLightbox(() => bodyRef);
+  useLightbox(() => (rendered(), bodyRef));
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";

@@ -369,7 +369,7 @@ export default function ArticleView() {
   });
   const { toc, activeId } = useToc(rendered, () => bodyRef);
   usePlyr(() => bodyRef, rendered);
-  useLightbox(() => bodyRef);
+  useLightbox(() => (rendered(), bodyRef));
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";

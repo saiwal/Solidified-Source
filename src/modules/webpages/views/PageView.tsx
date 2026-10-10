@@ -7,6 +7,7 @@ import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
+import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 import { useToc } from "@utsukta/spa-core/lib/useToc";
 import ArticleToc from "@/shared/views/ArticleToc";
 import { fetchWebPageByPagelink } from "../api";
@@ -64,6 +65,7 @@ export default function PageView() {
     if (bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   const { toc, activeId } = useToc(rendered, () => bodyRef);
+  useLightbox(() => (rendered(), bodyRef));
 
   // Wires up the interactive elements bbcodeToHtml() can embed in rendered()
   // (NSFW reveal toggle, encrypted-content decrypt button) — both are inert

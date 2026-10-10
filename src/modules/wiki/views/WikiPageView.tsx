@@ -10,6 +10,7 @@ import DOMPurify from "dompurify";
 import { MdOutlineList } from "solid-icons/md";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
+import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 import { storageGet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import { saveServerDraft, deleteServerDraft } from "@/shared/editor/api/drafts";
@@ -654,7 +655,7 @@ export default function WikiPageView() {
           {/* Rendered view */}
           <Show when={!editMode()}>
             <article
-              ref={(el) => createEffect(() => { safeHtml(); hydrateLatex(el); hydrateMermaid(el); })}
+              ref={(el) => { useLightbox(() => el); createEffect(() => { safeHtml(); hydrateLatex(el); hydrateMermaid(el); }); }}
               class="prose prose-neutral dark:prose-invert max-w-none
                      [&_a]:text-accent [&_a]:no-underline [&_a:hover]:underline
                      [&_pre]:bg-elevated [&_pre]:border [&_pre]:border-rim [&_pre]:rounded-xl
@@ -693,7 +694,7 @@ export default function WikiPageView() {
                 </Show>
                 <Show when={!previewLoading()}>
                   <article
-                    ref={(el) => createEffect(() => { previewHtml(); hydrateLatex(el); hydrateMermaid(el); })}
+                    ref={(el) => { useLightbox(() => el); createEffect(() => { previewHtml(); hydrateLatex(el); hydrateMermaid(el); }); }}
                     class="prose prose-neutral dark:prose-invert max-w-none
                            [&_a]:text-accent [&_a]:no-underline [&_a:hover]:underline
                            [&_pre]:bg-elevated [&_pre]:border [&_pre]:border-rim [&_pre]:rounded-xl
