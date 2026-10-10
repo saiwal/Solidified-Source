@@ -112,6 +112,7 @@
   width: 100% !important;
   height: 100% !important;
   max-width: none !important;
+  max-height: none !important; /* e.g. FilePreviewModal's max-h-[80vh] */
   object-fit: contain;
 }
 .plyr:fullscreen .plyr-embed-wrap,
