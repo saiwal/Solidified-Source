@@ -197,7 +197,14 @@ const FilePreviewModal: Component<Props> = (props) => {
       body: { background: `${cssVar("--color-surface")} !important`, color: `${cssVar("--color-txt")} !important` },
       a: { color: `${cssVar("--color-accent")} !important` },
     });
-    rendition.display();
+    // Remember reading position per file. ponytail: localStorage, per-device only; pconfig if it should sync.
+    const posKey = `hz-epub-pos:${props.url}`;
+    let saved: string | undefined;
+    try { saved = localStorage.getItem(posKey) ?? undefined; } catch {}
+    rendition.display(saved).catch(() => rendition?.display());
+    rendition.on("relocated", (loc: { start: { cfi: string } }) => {
+      try { localStorage.setItem(posKey, loc.start.cfi); } catch {}
+    });
     onCleanup(() => { rendition?.destroy(); book.destroy(); rendition = undefined; });
   });
 
