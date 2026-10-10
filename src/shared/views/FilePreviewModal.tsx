@@ -7,6 +7,7 @@ import { bbcode } from "@utsukta/spa-core/lib/bbcode";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { mountPlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 
 import type { ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
 
@@ -140,6 +141,8 @@ const FilePreviewModal: Component<Props> = (props) => {
   const editable = () => kind() === "image" || kind() === "video";
   const [wide, setWide] = createSignal(false);
   const [imgFailed, setImgFailed] = createSignal(false);
+  const [imgWrap, setImgWrap] = createSignal<HTMLElement>();
+  useLightbox(imgWrap);
   const [editingImage, setEditingImage] = createSignal<File | null>(null);
   const [editingVideo, setEditingVideo] = createSignal<File | null>(null);
   const [savingEdit, setSavingEdit] = createSignal(false);
@@ -277,12 +280,14 @@ const FilePreviewModal: Component<Props> = (props) => {
                 when={!imgFailed()}
                 fallback={<p class="text-sm text-muted">Image failed to load. Use Download instead.</p>}
               >
-                <img
-                  src={props.url}
-                  alt={props.filename}
-                  onError={() => setImgFailed(true)}
-                  class="max-h-[80vh] w-full object-contain rounded-lg"
-                />
+                <div ref={setImgWrap}>
+                  <img
+                    src={props.url}
+                    alt={props.filename}
+                    onError={() => setImgFailed(true)}
+                    class="max-h-[80vh] w-full object-contain rounded-lg"
+                  />
+                </div>
               </Show>
             </Show>
 

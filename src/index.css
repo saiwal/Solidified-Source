@@ -127,6 +127,11 @@
   aspect-ratio: auto !important;
 }
 
+/* useLightbox: images in post/article/card bodies open a zoomable viewer. */
+.hz-lightbox img:not(.share-avatar) {
+  cursor: zoom-in;
+}
+
 /* ── Shepherd.js guided-tour theme integration ─────────────────── */
 /* Shepherd's overlay path sets `pointer-events: all` everywhere outside the
    spotlight cutout, so it swallows clicks meant for anything a step portals to

@@ -16,6 +16,7 @@ import DOMPurify from "dompurify";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 import { useEmbeds } from "@utsukta/spa-core/lib/useEmbeds";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -349,6 +350,7 @@ export default function CardView() {
     if (rendered() && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   usePlyr(() => bodyRef, rendered);
+  useLightbox(() => bodyRef);
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";

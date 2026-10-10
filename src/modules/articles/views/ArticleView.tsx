@@ -18,6 +18,7 @@ import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { useToc } from "@utsukta/spa-core/lib/useToc";
 import { usePlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 import { useEmbeds } from "@utsukta/spa-core/lib/useEmbeds";
 import ArticleToc from "@/shared/views/ArticleToc";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
@@ -368,6 +369,7 @@ export default function ArticleView() {
   });
   const { toc, activeId } = useToc(rendered, () => bodyRef);
   usePlyr(() => bodyRef, rendered);
+  useLightbox(() => bodyRef);
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";
