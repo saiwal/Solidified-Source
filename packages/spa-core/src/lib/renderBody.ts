@@ -84,12 +84,27 @@ export function setBbcodeContext(
   context = next;
 }
 
+// Classic themes emit <base href="{baseurl}/"> (view/tpl/head.tpl), so a
+// relative link an author wrote — <a href="cards/nick/slug"> on a webpage —
+// resolves against the hub root. The SPA has no <base> (it would break its
+// own #anchor links), so the same link resolved against /page/nick/… instead.
+// Root it here. Runs on sanitized output, whose attributes are always
+// double-quoted and whose text nodes can't hold a raw "<", so the tag-scoped
+// match can't hit prose. Leaves schemes, "/", "//", "#" and "?" alone.
+export function rootRelativeLinks(html: string): string {
+  return html.replace(
+    /(<[a-z][^<>]*?\s(?:href|src)=")(?![a-z][a-z0-9+.-]*:|[/#?])(?=[^"])/gi,
+    "$1/",
+  );
+}
+
 export function renderBody(
   body: string,
   mimetype?: string | null,
   opts?: BbcodeOptions,
-  sanitize: (html: string) => string = (html) => DOMPurify.sanitize(html),
+  purify: (html: string) => string = (html) => DOMPurify.sanitize(html),
 ): string {
+  const sanitize = (html: string) => rootRelativeLinks(purify(html));
   switch (normalizeMime(mimetype)) {
     case "text/html":
       return sanitize(body);

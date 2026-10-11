@@ -13,7 +13,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchBlockByName } from "@/modules/webpages/api";
-import { renderBody } from "@utsukta/spa-core/lib/renderBody";
+import { renderBody, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 
@@ -31,7 +31,7 @@ export default function HtmlBlockWidget(props: WidgetProps) {
   );
 
   const customClean = createMemo(() =>
-    DOMPurify.sanitize(html(), { USE_PROFILES: { html: true } }),
+    rootRelativeLinks(DOMPurify.sanitize(html(), { USE_PROFILES: { html: true } })),
   );
   const blockClean = createMemo(() => {
     const b = block();

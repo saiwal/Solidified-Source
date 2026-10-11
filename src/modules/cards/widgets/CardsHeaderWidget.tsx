@@ -7,11 +7,7 @@ import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { openComposer } from "@/shared/views/modal-host";
-import {
-  activeCategory, activeTag, activeDbegin, activeSearch,
-  setCardSearch, clearCardFilter,
-  resetPosts, loadCards,
-} from "../store";
+import { resetPosts, loadCards } from "../store";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useIsCardsList } from "../lib/isCardsList";
 import { boardView, setBoardView } from "../lib/kanban";
@@ -24,7 +20,12 @@ export default function CardsHeaderWidget() {
   const role = useViewerRole();
   const nick = usePageNick();
   const isList = useIsCardsList();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const p = (k: string) => String(searchParams[k] ?? "");
+  const activeCategory = () => p("cat");
+  const activeTag = () => p("tag");
+  const activeDbegin = () => p("dbegin");
+  const activeSearch = () => p("search");
   // Same query key as CardsContentWidget and the board — one request.
   const [kanban] = createQueryResource("kanban-config", nick, fetchKanban);
   // resetPosts/loadCards are module-level (../store), so they still work when
@@ -49,14 +50,14 @@ export default function CardsHeaderWidget() {
   const submitSearch = (e?: Event) => {
     e?.preventDefault();
     const q = searchInput().trim();
-    setCardSearch(q);
+    setSearchParams({ search: q || undefined, cat: undefined, tag: undefined, dbegin: undefined, dend: undefined });
     if (!q) setSearchOpen(false);
   };
 
   const clearAllFilters = () => {
     setSearchInput("");
     setSearchOpen(false);
-    clearCardFilter();
+    setSearchParams({ search: undefined, cat: undefined, tag: undefined, dbegin: undefined, dend: undefined });
   };
 
   let initialized = false;

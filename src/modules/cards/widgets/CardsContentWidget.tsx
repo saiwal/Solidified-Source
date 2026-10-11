@@ -17,6 +17,7 @@
 
 import { createEffect, createMemo, createSignal, onCleanup, Show, For } from "solid-js";
 import { MdOutlineStyle } from "solid-icons/md";
+import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -69,15 +70,25 @@ export default function CardsContentWidget() {
   const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
   const colCount = useColumnCount(gridEl, MIN_COLUMN_REM, MAX_COLUMNS);
   const columns = createMemo(() => splitIntoColumns(posts(), colCount()));
-  let initialized = false;
+  const [searchParams] = useSearchParams();
+  const str = (k: string) => {
+    const v = searchParams[k];
+    return (Array.isArray(v) ? v[0] : v) || undefined;
+  };
 
+  // Classic Hubzilla filter params (?cat=, ?tag=, ?dbegin=/?dend=, ?search=)
+  // are the source of truth, so those URLs keep working when pasted or linked.
   createEffect(() => {
     if (auth.loading) return;
     if (showKanban()) return; // the board runs its own query
-    if (initialized) return;
-    initialized = true;
     resetPosts();
-    loadCards(nick());
+    loadCards(nick(), {
+      ...(str("cat") && { cat: str("cat") }),
+      ...(str("tag") && { tag: str("tag") }),
+      ...(str("dbegin") && { dbegin: str("dbegin") }),
+      ...(str("dend") && { dend: str("dend") }),
+      ...(str("search") && { search: str("search") }),
+    });
   });
 
   onCleanup(() => resetPosts());

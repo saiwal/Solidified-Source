@@ -7,6 +7,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useParams, A, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
+import { rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { MdOutlineList } from "solid-icons/md";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
@@ -346,7 +347,7 @@ export default function WikiPageView() {
   }
 
   const safeHtml = () =>
-    DOMPurify.sanitize(pageData()?.html ?? "", { USE_PROFILES: { html: true } });
+    rootRelativeLinks(DOMPurify.sanitize(pageData()?.html ?? "", { USE_PROFILES: { html: true } }));
 
   const isHome = () => params.pageName === "Home";
 

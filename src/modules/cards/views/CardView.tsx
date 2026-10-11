@@ -37,7 +37,7 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
+import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -108,7 +108,7 @@ export default function CardView() {
   );
 
   const rendered = () =>
-    data()?.card ? DOMPurify.sanitize(data()!.card.body ?? "") : "";
+    data()?.card ? rootRelativeLinks(DOMPurify.sanitize(data()!.card.body ?? "")) : "";
 
   // Canonicalize the URL to the slug once the card's loaded — covers both
   // a bookmarked uuid link on an card that's since gained a slug, and a

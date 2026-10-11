@@ -111,3 +111,15 @@ assert(!needsServerRender(""));
 assert(!needsServerRender("text/markdown"));
 
 console.log("renderBody: ok");
+
+// Relative links resolve against the hub root, as classic's <base href> makes them.
+assert.equal(
+  renderBody('<a href="cards/trensemble/wadaiko" class="card-link">Kultur</a>', "text/html"),
+  '<a href="/cards/trensemble/wadaiko" class="card-link">Kultur</a>',
+);
+assert.equal(renderBody('<img src="photo/x.jpg">', "text/html"), '<img src="/photo/x.jpg">');
+for (const h of [
+  '<a href="https://x.org/a">a</a>', '<a href="/a">a</a>', '<a href="//x.org">a</a>',
+  '<a href="#top">a</a>', '<a href="?q=1">a</a>', '<a href="mailto:a@b">a</a>', '<a href="">a</a>',
+  '<p>text href="cards/x" stays</p>',
+]) assert.equal(renderBody(h, "text/html"), h);

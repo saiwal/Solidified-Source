@@ -41,7 +41,7 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
+import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -104,7 +104,7 @@ export default function ArticleView() {
   );
 
   const rendered = () =>
-    data()?.article ? DOMPurify.sanitize(data()!.article.body ?? "") : "";
+    data()?.article ? rootRelativeLinks(DOMPurify.sanitize(data()!.article.body ?? "")) : "";
 
   // Canonicalize the URL to the slug once the article's loaded — covers both
   // a bookmarked uuid link on an article that's since gained a slug, and a
