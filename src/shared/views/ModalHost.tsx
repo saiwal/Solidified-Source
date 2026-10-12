@@ -17,12 +17,15 @@ import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
+import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import {
   ComposerFrameContext,
   closeComposer,
   composerEntries,
   restoreComposer,
   setComposerMode,
+  setDefaultComposerMode,
+  setDefaultPostMode,
   type ComposerEntry,
   type ComposerKind,
 } from "./modal-host";
@@ -223,6 +226,14 @@ export default function ModalHost(props: {
   navOpen?: boolean;
 }) {
   const { t } = useI18n();
+  // Boot sync: the user's own composer/post mode, else the hub default.
+  const auth = useAuth();
+  const isMode = (m: string): m is "modal" | "dock" | "page" => m === "modal" || m === "dock" || m === "page";
+  createEffect(() => {
+    const a = auth();
+    if (a && isMode(a.composerMode)) setDefaultComposerMode(a.composerMode);
+    if (a && isMode(a.postMode)) setDefaultPostMode(a.postMode);
+  });
   // Same breakpoint ComposerModal uses to decide that "dock" is too narrow to
   // be a panel and should render full-bleed instead.
   const isWide = createMediaQuery("(min-width: 640px)");

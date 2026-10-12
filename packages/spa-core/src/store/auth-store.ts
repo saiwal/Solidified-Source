@@ -11,6 +11,10 @@ import { initDisabledFrontendModules } from "./disabled-frontend-modules";
 import { THEMES, type ThemeId } from "../types/theme.types";
 import { setMyAddress } from "../lib/zid";
 import { setBbcodeContext } from "../lib/renderBody";
+import { setScrollStyle } from "./scroll-style";
+import { setPostHeight } from "./post-height";
+import { setCommentOrder } from "./comment-order";
+import { setThreadMode } from "./thread-mode";
 
 export type AuthState = {
   isLocal: boolean; // true = native logged-in user
@@ -37,6 +41,9 @@ export type AuthState = {
   /** pconfig spa/inbox_rules — auto-filing rules for the inbox. Rides the boot
    *  payload like widget_layout does; see Concerns/FilesByRules.php. */
   inboxRules: InboxRule[];
+  // spa/composer_mode, spa/post_mode — own pref, else hub default; "" = neither.
+  composerMode: string;
+  postMode: string;
 };
 
 export type InboxRule = {
@@ -64,6 +71,8 @@ const ANONYMOUS: AuthState = {
   localOnlyPostsEnabled: false,
   pageMimetype: "",
   inboxRules: [],
+  composerMode: "",
+  postMode: "",
 };
 
 /** Stored as a JSON string in pconfig; a malformed blob must not break boot. */
@@ -146,6 +155,14 @@ async function fetchAuthState(): Promise<AuthState> {
     if (validRadii.has(serverRadius)) {
       applyCornerRadius(serverRadius as CornerRadius);
     }
+
+    // Reading prefs: the user's own, else the hub default (admin → themes).
+    // Absent = neither set, so keep whatever is cached locally.
+    const sp = data.spa;
+    if (sp.scroll_style === "endless" || sp.scroll_style === "load_more") setScrollStyle(sp.scroll_style);
+    if (sp.post_height !== undefined && Number.isFinite(Number(sp.post_height))) setPostHeight(Number(sp.post_height));
+    if (sp.comment_order === "oldest_first" || sp.comment_order === "newest_first") setCommentOrder(sp.comment_order);
+    if (sp.thread_mode === "threaded" || sp.thread_mode === "flat") setThreadMode(sp.thread_mode === "threaded");
   }
 
   // For visitors data.spa holds the visited channel's display prefs, not a
@@ -173,6 +190,9 @@ async function fetchAuthState(): Promise<AuthState> {
     localOnlyPostsEnabled: isLocal && data.spa?.local_only_posts === "1",
     pageMimetype: String(data.system?.page_mimetype ?? ""),
     inboxRules: parseInboxRules(isLocal ? data.spa?.inbox_rules : undefined),
+    // Theme-side stores (modal-host) read their prefs from here.
+    composerMode: String(data.spa?.composer_mode ?? ""),
+    postMode: String(data.spa?.post_mode ?? ""),
   };
 }
 // Singleton resource — fetched once at boot, shared across the app
