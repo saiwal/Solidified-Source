@@ -106,7 +106,10 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
     const members = activeGroup()?.members ?? [];
     const av = available();
     const seen = new Set(members.map((m) => m.xchan_hash));
-    return [...members, ...av.filter((c) => !seen.has(c.xchan_hash))];
+    // Sorted by name so a contact doesn't jump when it's added to or removed from the group.
+    return [...members, ...av.filter((c) => !seen.has(c.xchan_hash))].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
   };
 
   const filtered = () => {
@@ -165,11 +168,11 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
         </div>
       }
     >
-      <Show when={activeGroup()} keyed>
+      <Show when={activeGroup()}>
         {(detail) => (
           <>
             <SubPageContent
-              title={detail.group.name}
+              title={detail().group.name}
               description={t("directory.group_edit_desc")}
               action={
                 <button
@@ -209,22 +212,22 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
                   <button
                     onClick={toggleDefaultAcl}
                     class={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors
-                      ${detail.group.is_default_acl
+                      ${detail().group.is_default_acl
                         ? "border-accent bg-accent-muted text-accent"
                         : "border-rim text-muted hover:bg-elevated"}`}
                   >
-                    {detail.group.is_default_acl ? <MdFillStar size={14} /> : <MdFillStar_border size={14} />}
+                    {detail().group.is_default_acl ? <MdFillStar size={14} /> : <MdFillStar_border size={14} />}
                     {t("directory.post_to_group_default")}
                   </button>
 
                   <button
                     onClick={toggleDefaultGroup}
                     class={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors
-                      ${detail.group.is_default_group
+                      ${detail().group.is_default_group
                         ? "border-accent bg-accent-muted text-accent"
                         : "border-rim text-muted hover:bg-elevated"}`}
                   >
-                    {detail.group.is_default_group ? <MdFillStar size={14} /> : <MdFillStar_border size={14} />}
+                    {detail().group.is_default_group ? <MdFillStar size={14} /> : <MdFillStar_border size={14} />}
                     {t("directory.add_connections_default")}
                   </button>
                 </div>
@@ -244,7 +247,7 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
             </SubPageContent>
 
             <SubPageContent
-              title={`${t("directory.members_title")} (${detail.members.length})`}
+              title={`${t("directory.members_title")} (${detail().members.length})`}
               description={t("directory.members_desc")}
               action={
                 <input

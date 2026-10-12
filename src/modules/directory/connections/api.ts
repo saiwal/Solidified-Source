@@ -66,6 +66,8 @@ export async function fetchConnections(params: {
   // Handlers/Connections.php adds `AND xchan.xchan_pubforum = 1` for this.
   type?: "forum";
   search?: string;
+  // their_perms keys the contact must all have granted, or ["none"].
+  perms?: string[];
   order?: ConnectionOrder;
   start?: number;
   limit?: number;
@@ -74,6 +76,7 @@ export async function fetchConnections(params: {
   if (params.filter) q.set("filter", params.filter);
   if (params.type)   q.set("type",   params.type);
   if (params.search) q.set("search", params.search);
+  if (params.perms?.length) q.set("perms", params.perms.join(","));
   if (params.order)  q.set("order",  params.order);
   if (params.start)  q.set("start",  String(params.start));
   if (params.limit)  q.set("limit",  String(params.limit));

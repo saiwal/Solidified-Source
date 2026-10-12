@@ -2,7 +2,7 @@ import { For, Show, Switch, Match, createSignal, createMemo, onMount, onCleanup 
 import {
   connections, loading, loadingMore, total,
   loadConnections, loadMoreConnections,
-  setFilter, setOrder, setSearch, filter, order, search,
+  setFilter, setOrder, setSearch, filter, order, search, perms, setPerms,
 } from "../../connections/store";
 import type { ConnectionFilter, ConnectionOrder, Connection } from "../../connections/api";
 import { deleteConnection, approveConnection, fetchConnectionByAddress, fetchConnectionById } from "../../connections/api";
@@ -14,7 +14,7 @@ import { PlatformIcon } from "@/shared/stream/components/PlatformIcons";
 import Tooltip from "@/shared/views/Tooltip";
 import { openComposer } from "@/shared/views/modal-host";
 import { createRoom } from "@/modules/chat/api";
-import { MdOutlineChat_bubble, MdOutlineDelete, MdOutlineEdit, MdOutlineEmail, MdOutlineExpand_more } from "solid-icons/md";
+import { MdOutlineChat_bubble, MdOutlineDelete, MdOutlineEdit, MdOutlineEmail, MdOutlineExpand_more, MdOutlineSearch, MdOutlineUpload_file } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer, useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -41,9 +41,9 @@ function formatDate(iso: string): string {
   });
 }
 
-// ── PermissionDot ─────────────────────────────────────────────────────────────
-// Mirrors classic Hubzilla's connections "traffic light": red/yellow/green dot
-// based on how many of these 3 their_perms keys the contact has granted us.
+// ── Permission filter ─────────────────────────────────────────────────────────
+// Chips in the toolbar filter the list (server-side ?perms=) by what contacts
+// have granted us — the three keys the traffic-light dot summarises.
 
 const PERM_ORDER: { key: string; labelKey: string }[] = [
   { key: "post_comments", labelKey: "directory.perm_comments" },
@@ -51,19 +51,45 @@ const PERM_ORDER: { key: string; labelKey: string }[] = [
   { key: "post_wall",     labelKey: "directory.perm_wall_posts" },
 ];
 
+// "none" is exclusive: it means "granted none of the three".
+function togglePerm(key: string) {
+  const cur = perms().filter((k) => k !== "none");
+  setPerms(
+    key === "none"
+      ? (perms().includes("none") ? [] : ["none"])
+      : cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key],
+  );
+  loadConnections();
+}
+
+function PermChip(props: { key: string; label: string; class?: string }) {
+  const active = () => perms().includes(props.key);
+  return (
+    <button
+      type="button"
+      onClick={() => togglePerm(props.key)}
+      aria-pressed={active()}
+      class={`shrink-0 text-[0.6875rem] leading-none px-2 py-1 rounded-full border transition-colors ${
+        active()
+          ? "border-accent bg-accent-muted text-accent"
+          : "border-rim text-muted hover:border-rim-strong hover:text-txt"
+      } ${props.class ?? ""}`}
+    >
+      {props.label}
+    </button>
+  );
+}
+
+// Classic Hubzilla's "traffic light": green = all 3 granted, yellow = some, red = none.
 function PermissionDot(props: { granted: string[] }) {
   const { t } = useI18n();
-  const grantedSet = () => new Set(props.granted);
   const count = () => props.granted.length;
   const color = () =>
     count() === 3 ? "bg-green-500" : count() > 0 ? "bg-yellow-500" : "bg-red-500";
   const tooltip = () => {
-    const labels = PERM_ORDER
-      .filter((p) => grantedSet().has(p.key))
-      .map((p) => t(p.labelKey as any));
+    const labels = PERM_ORDER.filter((p) => props.granted.includes(p.key)).map((p) => t(p.labelKey as any));
     return `${t("directory.perm_accepts")}: ${labels.length ? labels.join(", ") : t("directory.perm_nothing")}`;
   };
-
   return (
     <Tooltip content={tooltip()}>
       <span class={`w-2.5 h-2.5 rounded-full shrink-0 ${color()}`} />
@@ -178,39 +204,41 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
   }
 
   return (
-    <div class="rounded-lg border border-rim bg-surface overflow-hidden">
-      <div class="flex items-center gap-3 p-3">
-        <a href={`/chanview?f=&hash=${encodeURIComponent(props.conn.xchan_hash)}`} class="shrink-0">
+    <div class="group rounded-xl border border-rim bg-surface overflow-hidden hover:border-rim-strong transition-colors">
+      {/* Phone: actions sit on their own row under the address, so the name gets
+          the whole line. sm+: they take a right-hand column. */}
+      <div class="grid grid-cols-[auto_minmax(0,1fr)] sm:grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 items-start p-3 sm:p-4">
+        <a href={`/chanview?f=&hash=${encodeURIComponent(props.conn.xchan_hash)}`} class="row-span-2 sm:row-span-1">
           <img
             src={props.conn.photo}
             alt={props.conn.name}
-            class="w-11 h-11 rounded-full object-cover ring-1 ring-rim bg-overlay"
+            class="w-10 h-10 rounded-full object-cover ring-1 ring-rim bg-overlay"
           />
         </a>
 
-        <div class="flex-1 min-w-0">
+        <div class="min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap">
             <a
               href={`/chanview?f=&hash=${encodeURIComponent(props.conn.xchan_hash)}`}
-              class="font-medium text-sm text-txt truncate hover:underline"
+              class="min-w-0 font-medium text-sm text-txt truncate hover:underline"
             >
               {props.conn.name}
             </a>
             <PermissionDot granted={props.conn.granted_perms} />
             <PlatformIcon url={props.conn.url} network={props.conn.network} size={14} />
             <Show when={props.conn.is_forum}>
-              <span class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium bg-accent-muted text-accent">
+              <span class="shrink-0 text-[0.625rem] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold bg-accent-muted text-accent">
                 {t("directory.forum")}
               </span>
             </Show>
             <Show when={props.conn.pending}>
-              <span class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium bg-accent-muted text-accent">
+              <span class="shrink-0 text-[0.625rem] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold bg-accent-muted text-accent">
                 {t("directory.pending")}
               </span>
             </Show>
             <For each={props.conn.status.filter((s) => s !== "pending")}>
               {(s) => (
-                <span class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium bg-accent-muted text-accent">
+                <span class="shrink-0 text-[0.625rem] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold bg-accent-muted text-accent">
                   {s}
                 </span>
               )}
@@ -221,7 +249,8 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
           </p>
         </div>
 
-        <div class="flex items-center gap-1.5 shrink-0">
+        {/* Quiet until hovered/focused on pointer devices; always shown on touch. */}
+        <div class="col-start-2 flex flex-wrap items-center gap-0.5 mt-1 -ml-1.5 sm:ml-0 sm:mt-0 sm:col-start-3 sm:row-start-1 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
           <Show when={props.conn.pending}>
             <button
               onClick={handleApprove}
@@ -285,7 +314,7 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
       </div>
 
       <Show when={chatPanelOpen()}>
-        <div class="px-3 pb-3 pt-2 border-t border-rim/50 space-y-2">
+        <div class="px-3 sm:px-4 pb-3 pt-2 border-t border-rim/50 space-y-2">
           <p class="text-[0.6875rem] text-muted">{t("chat.expire_after")}</p>
           <div class="flex gap-1.5 flex-wrap items-center">
             {([
@@ -364,7 +393,7 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
       >
         <div class="overflow-hidden">
           <Show when={detailsMounted()}>
-          <div class="px-3 pb-3 pt-0 border-t border-rim grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
+          <div class="px-3 sm:px-4 pb-3 pt-0 border-t border-rim/50 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-xs">
             <DetailField label={t("directory.field_connected")} value={formatDate(props.conn.connected)} />
             <DetailField label={t("directory.field_closeness")} value={String(props.conn.closeness)} />
             <DetailField label={t("directory.field_role")}      value={props.conn.role} />
@@ -408,8 +437,8 @@ function ConnectionsSkeleton() {
     <div class="space-y-2">
       <For each={Array(8).fill(0)}>
         {() => (
-          <div class="rounded-lg border border-rim bg-surface p-3 flex items-center gap-3 animate-pulse">
-            <div class="w-11 h-11 rounded-full bg-overlay shrink-0" />
+          <div class="rounded-xl border border-rim bg-surface p-3 sm:p-4 flex items-center gap-3 animate-pulse">
+            <div class="w-10 h-10 rounded-full bg-overlay shrink-0" />
             <div class="flex-1 space-y-2">
               <div class="h-3.5 bg-overlay rounded w-1/3" />
               <div class="h-3 bg-overlay rounded w-1/2" />
@@ -510,52 +539,75 @@ export default function ConnectionsSection() {
   }
 
   return (
-    <div class="px-4 md:px-6 py-6 space-y-3">
+    <div class="px-4 md:px-6 py-6 space-y-4">
 
-      {/* ── Row 1: shared input + search + connect + sort ── */}
-      <div class="flex gap-2">
-        <input
-          type="text"
-          placeholder={t("directory.search_connections")}
-          value={input()}
-          onInput={(e) => { setInput(e.currentTarget.value); setAddError(null); }}
-          onKeyDown={(e) => e.key === "Enter" && applySearch()}
-          class="flex-1 px-3 py-2 rounded-lg border border-rim bg-surface text-sm text-txt
-                 placeholder:text-muted focus:outline-none hover:border-rim-strong
-                 focus:border-rim-strong transition-colors"
-        />
-        <button
-          onClick={applySearch}
-          class="px-4 py-2 rounded-lg bg-accent text-accent-fg text-sm font-medium
-                 hover:opacity-80 transition-opacity shrink-0"
-        >
-          {t("directory.search")}
-        </button>
-        <button
-          onClick={handleAdd}
-          disabled={addBusy() || !input().trim()}
-          class="shrink-0 px-3 py-2 rounded-lg border border-rim bg-surface text-muted text-sm
-                 font-medium hover:bg-overlay disabled:opacity-40 transition-colors
-                 flex items-center gap-1.5"
-        >
-          <Show when={addBusy()}>
-            <span class="w-3 h-3 border-2 border-muted/40 border-t-muted rounded-full animate-spin" />
-          </Show>
-          {addBusy() ? t("directory.add_connection_connecting") : "+ " + t("directory.connect")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setImportOpen(true)}
-          class="shrink-0 hidden sm:flex items-center px-3 py-2 rounded-lg border border-rim
-                 bg-surface text-muted text-sm font-medium hover:bg-overlay transition-colors"
-        >
-          {t("directory.import_connections")}
-        </button>
+      {/* ── Search / connect ── */}
+      <div class="flex flex-wrap gap-2">
+        <label class="relative flex-1 min-w-[12rem]">
+          <MdOutlineSearch size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+          <input
+            type="search"
+            placeholder={t("directory.search_connections")}
+            value={input()}
+            onInput={(e) => { setInput(e.currentTarget.value); setAddError(null); }}
+            onKeyDown={(e) => e.key === "Enter" && applySearch()}
+            class="w-full pl-9 pr-3 py-2 rounded-lg border border-rim bg-surface text-sm text-txt
+                   placeholder:text-muted focus:outline-none hover:border-rim-strong
+                   focus:border-accent transition-colors"
+          />
+        </label>
+        <div class="flex gap-2">
+          <button
+            onClick={handleAdd}
+            disabled={addBusy() || !input().trim()}
+            title={t("directory.connect")}
+            class="shrink-0 px-3 py-2 rounded-lg bg-accent text-accent-fg text-sm font-medium
+                   hover:opacity-90 disabled:opacity-40 transition-opacity flex items-center gap-1.5"
+          >
+            <Show when={addBusy()}>
+              <span class="w-3 h-3 border-2 border-accent-fg/40 border-t-accent-fg rounded-full animate-spin" />
+            </Show>
+            {addBusy() ? t("directory.add_connection_connecting") : "+ " + t("directory.connect")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            title={t("directory.import_connections")}
+            aria-label={t("directory.import_connections")}
+            class="shrink-0 px-2.5 py-2 rounded-lg border border-rim bg-surface text-muted
+                   hover:text-txt hover:bg-overlay transition-colors"
+          >
+            <MdOutlineUpload_file size={18} />
+          </button>
+        </div>
+      </div>
+
+      <Show when={addError()}>
+        <p class="text-xs text-red-500">{addError()}</p>
+      </Show>
+
+      {/* ── Status tabs + sort ── */}
+      <div class="flex items-end gap-3 border-b border-rim">
+        <div class="flex-1 min-w-0 flex gap-4 overflow-x-auto [scrollbar-width:none]">
+          <For each={FILTER_IDS}>
+            {(id) => (
+              <button
+                onClick={() => handleFilterChange(id)}
+                class={`shrink-0 -mb-px pb-2 text-sm border-b-2 transition-colors ${
+                  filter() === id
+                    ? "border-accent text-txt font-medium"
+                    : "border-transparent text-muted hover:text-txt"
+                }`}
+              >
+                {t(`directory.filter_${id}` as any)}
+              </button>
+            )}
+          </For>
+        </div>
         <select
           value={order()}
           onChange={(e) => handleOrderChange(e.currentTarget.value as ConnectionOrder)}
-          class="hidden sm:block px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-                 focus:outline-none hover:border-rim-strong transition-colors"
+          class="shrink-0 mb-1.5 bg-transparent text-muted text-sm focus:outline-none hover:text-txt cursor-pointer"
         >
           <For each={ORDER_IDS}>
             {(o) => <option value={o.id}>{t(`directory.${o.key}` as any)}</option>}
@@ -563,37 +615,20 @@ export default function ConnectionsSection() {
         </select>
       </div>
 
-      <Show when={addError()}>
-        <p class="text-xs text-red-500">{addError()}</p>
-      </Show>
-
-      {/* ── Row 2: status filter tabs ── */}
-      <div class="flex flex-wrap gap-1.5">
-        <For each={FILTER_IDS}>
-          {(id) => (
-            <button
-              onClick={() => handleFilterChange(id)}
-              class={`px-3 py-1 rounded-full text-sm transition-colors ${
-                filter() === id
-                  ? "bg-accent text-accent-fg"
-                  : "bg-overlay text-muted hover:bg-surface"
-              }`}
-            >
-              {t(`directory.filter_${id}` as any)}
-            </button>
-          )}
+      {/* ── Accepts filter + count ── */}
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs text-muted mr-0.5">{t("directory.perm_accepts")}</span>
+        <For each={PERM_ORDER}>
+          {(p) => <PermChip key={p.key} label={t(p.labelKey as any)} />}
         </For>
-        {/* Sort on mobile */}
-        <select
-          value={order()}
-          onChange={(e) => handleOrderChange(e.currentTarget.value as ConnectionOrder)}
-          class="sm:hidden ml-auto px-2 py-1 rounded-full border border-rim bg-surface
-                 text-txt text-sm focus:outline-none"
-        >
-          <For each={ORDER_IDS}>
-            {(o) => <option value={o.id}>{t(`directory.${o.key}` as any)}</option>}
-          </For>
-        </select>
+        <PermChip key="none" label={t("directory.perm_nothing")} />
+        <Show when={connections().length > 0}>
+          <span class="ml-auto text-xs text-muted">
+            {total()}{" "}
+            {total() !== 1 ? t("directory.connections_plural") : t("directory.connection_singular")}
+            {search() ? ` ${t("directory.matching")} "${search()}"` : ""}
+          </span>
+        </Show>
       </div>
 
       {/* ── Results ── */}
@@ -605,11 +640,6 @@ export default function ConnectionsSection() {
           <p class="py-8 text-center text-sm text-muted">{t("directory.no_connections")}</p>
         </Match>
         <Match when={true}>
-          <p class="text-sm text-muted">
-            {total()}{" "}
-            {total() !== 1 ? t("directory.connections_plural") : t("directory.connection_singular")}
-            {search() ? ` ${t("directory.matching")} "${search()}"` : ""}
-          </p>
           <div class="space-y-2">
             <For each={connections()}>
               {(conn) => <CardShell uuid={conn.xchan_hash}><ConnectionCard conn={conn} onDeleted={onDeleted} /></CardShell>}

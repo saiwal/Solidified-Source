@@ -18,6 +18,7 @@ export const LIMIT = 20;
 export const [filter, setFilter] = createSignal<ConnectionFilter>('active');
 export const [order,  setOrder]  = createSignal<ConnectionOrder>('name');
 export const [search, setSearch] = createSignal('');
+export const [perms,  setPerms]  = createSignal<string[]>([]);
 
 const [connections, setConnections] = createSignal<Connection[]>([]);
 const [loading,     setLoading]     = createSignal(false);
@@ -37,7 +38,7 @@ export async function loadConnections() {
   setHasMore(false);
   try {
     const data = await fetchConnections({
-      filter: filter(), order: order(), search: search(), start: 0, limit: LIMIT,
+      filter: filter(), order: order(), search: search(), perms: perms(), start: 0, limit: LIMIT,
     });
     // A freshly loaded list replays the card entrance, as streams do.
     resetReveal();
@@ -60,7 +61,7 @@ export async function loadMoreConnections() {
   setLoadingMore(true);
   try {
     const data = await fetchConnections({
-      filter: filter(), order: order(), search: search(),
+      filter: filter(), order: order(), search: search(), perms: perms(),
       start: currentStart, limit: LIMIT,
     });
     // /spa/connections orders by name with no guaranteed tiebreaker, so a page
