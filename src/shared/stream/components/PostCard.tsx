@@ -30,7 +30,7 @@ import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { scrollHighlightIntoView } from "@utsukta/spa-core/lib/scrollHighlightIntoView";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
-import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillKeyboard_arrow_up, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
+import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { BiRegularLinkExternal } from "solid-icons/bi";
 import { UnseenBadge } from "./UnseenBadge";
@@ -99,6 +99,22 @@ function subtreeContainsUuid(nodes: ThreadNode[], uuid: string): boolean {
 
 // Persists across remounts caused by setNodeChildren updating the post reference.
 // openVersion is bumped on every change so the deep-thread collapse can react to it.
+// Click feedback on a reaction icon. WAAPI rather than a CSS class so it
+// replays on every click; callers pass a stable wrapper, since the icon inside
+// swaps outline → filled and a replaced node would drop the animation.
+function pop(el: Element | null | undefined, spin = false) {
+  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  // 72deg = one star point, so the spin lands on an identical-looking star.
+  el.animate(
+    [
+      { transform: "scale(1) rotate(0)" },
+      { transform: `scale(1.4) rotate(${spin ? 36 : 0}deg)` },
+      { transform: `scale(1) rotate(${spin ? 72 : 0}deg)` },
+    ],
+    { duration: 350, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+  );
+}
+
 const openedByMid = new Set<string>();
 const [openVersion, setOpenVersion] = createSignal(0);
 function setOpened(mid: string, open: boolean) {
@@ -1387,7 +1403,7 @@ export default function PostCard(props: {
           </Show>
           <Show when={canStar()}>
             <button
-              onClick={onStar}
+              onClick={(e) => { pop(e.currentTarget.firstElementChild, true); onStar(); }}
               title={
                 props.post.viewerStarred ? t("post.unstar") : t("post.star")
               }
@@ -1395,12 +1411,14 @@ export default function PostCard(props: {
                      transition-colors select-none hover:bg-overlay
                      ${props.post.viewerStarred ? "text-yellow-500" : "text-subtle hover:text-txt"}`}
             >
-              <Show
-                when={props.post.viewerStarred}
-                fallback={<MdFillStar_border size={14} />}
-              >
-                <MdFillStar size={14} />
-              </Show>
+              <span class="inline-flex">
+                <Show
+                  when={props.post.viewerStarred}
+                  fallback={<MdFillStar_border size={14} />}
+                >
+                  <MdFillStar size={14} />
+                </Show>
+              </span>
             </button>
           </Show>
           <Show when={canFolder()}>
@@ -1452,12 +1470,7 @@ export default function PostCard(props: {
               class="flex items-center gap-1 px-2 py-1 rounded-md text-xs
                      text-subtle hover:bg-overlay hover:text-txt transition-colors"
             >
-              <Show
-                when={showComments()}
-                fallback={<MdFillKeyboard_arrow_down size={14} />}
-              >
-                <MdFillKeyboard_arrow_up size={14} />
-              </Show>
+              <MdFillKeyboard_arrow_down size={14} class="transition-transform duration-300" classList={{ "rotate-180": showComments() }} />
               <span>{totalComments()}</span>
             </button>
           </Show>
@@ -1469,7 +1482,7 @@ export default function PostCard(props: {
             <button
               onClick={openReply}
               class="flex items-center gap-1 px-2 py-1 rounded-md text-xs
-                     text-subtle hover:bg-overlay hover:text-txt transition-colors"
+                     text-subtle hover:bg-overlay hover:text-txt transition active:scale-90"
               title={t("post.reply")}
             >
               <MdOutlineReply size={14} />
@@ -1630,6 +1643,7 @@ export default function PostCard(props: {
         </div>
 
         <Show when={replyOpen() && props.post.iid && props.post.profileUid}>
+          <div class="animate-hz-reveal">
           <CommentComposer
             parentUuid={props.post.uuid}
             profileUid={props.post.profileUid!}
@@ -1646,6 +1660,7 @@ export default function PostCard(props: {
               setShowComments(true);
             }}
           />
+          </div>
         </Show>
         <Show when={showStats()}>
           <PostStats loading={statsLoading()} data={statsData()} />
@@ -2081,18 +2096,20 @@ export default function PostCard(props: {
         </Show>
         <Show when={canStar()}>
           <button
-            onClick={onStar}
+            onClick={(e) => { pop(e.currentTarget.firstElementChild, true); onStar(); }}
             title={props.post.viewerStarred ? t("post.unstar") : t("post.star")}
             class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
                    transition-colors select-none hover:bg-overlay
                    ${props.post.viewerStarred ? "text-yellow-500" : "text-muted hover:text-txt"}`}
           >
-            <Show
-              when={props.post.viewerStarred}
-              fallback={<MdFillStar_border size={17} />}
-            >
-              <MdFillStar size={17} />
-            </Show>
+            <span class="inline-flex">
+              <Show
+                when={props.post.viewerStarred}
+                fallback={<MdFillStar_border size={17} />}
+              >
+                <MdFillStar size={17} />
+              </Show>
+            </span>
           </button>
         </Show>
         <Show when={canFolder()}>
@@ -2132,12 +2149,7 @@ export default function PostCard(props: {
             disabled={props.split}
             title={t("post.toggle_comments")}
           >
-            <Show
-              when={showComments()}
-              fallback={<MdFillKeyboard_arrow_down size={17} class="hidden wide:block" classList={{ "!hidden": props.split }} />}
-            >
-              <MdFillKeyboard_arrow_up size={17} class="hidden wide:block" classList={{ "!hidden": props.split }} />
-            </Show>
+            <MdFillKeyboard_arrow_down size={17} class="hidden wide:block transition-transform duration-300" classList={{ "!hidden": props.split, "rotate-180": showComments() }} />
             <MdFillChat size={15} />
             <span>{totalComments()}</span>
           </button>
@@ -2152,7 +2164,7 @@ export default function PostCard(props: {
               <button
                 onClick={openReply}
                 class="flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                       text-muted hover:bg-overlay hover:text-txt transition-colors"
+                       text-muted hover:bg-overlay hover:text-txt transition active:scale-90"
                 title={t("post.reply")}
               >
                 <MdOutlineReply size={17} />
@@ -2399,7 +2411,7 @@ export default function PostCard(props: {
         class={props.split ? "flex-1 min-h-0 overflow-y-auto p-5 focus:outline-none" : undefined}
       >
       <Show when={replyOpen() && props.post.iid && props.post.profileUid}>
-        <div ref={replyBoxRef}>
+        <div ref={replyBoxRef} class="animate-hz-reveal">
         <CommentComposer
           parentUuid={props.post.uuid}
           profileUid={props.post.profileUid!}
@@ -2563,7 +2575,7 @@ function PostStats(props: {
   };
 
   return (
-    <div class="mt-3 pt-3 border-t border-rim text-sm">
+    <div class="animate-hz-reveal mt-3 pt-3 border-t border-rim text-sm">
       <Show when={props.loading}>
         <div class="text-xs text-muted animate-pulse">{t("post.loading")}</div>
       </Show>
@@ -2621,7 +2633,7 @@ function PostSource(props: { loading: boolean; data: unknown }) {
   const { t } = useI18n();
   const typed = () => props.data as ItemSourceResponse | null;
   return (
-    <div class="mt-3 pt-3 border-t border-rim text-xs">
+    <div class="animate-hz-reveal mt-3 pt-3 border-t border-rim text-xs">
       <Show when={props.loading}>
         <div class="text-muted animate-pulse">{t("post.loading_source")}</div>
       </Show>
@@ -2682,7 +2694,7 @@ function PendingReactionsPanel(props: {
   const { t } = useI18n();
 
   return (
-    <div class="mt-3 pt-3 border-t border-rim">
+    <div class="animate-hz-reveal mt-3 pt-3 border-t border-rim">
       <Show when={props.loading}>
         <div class="space-y-2">
           <For each={Array(2)}>
@@ -2758,7 +2770,7 @@ function FolderPicker(props: {
   };
 
   return (
-    <div class="mt-3 pt-3 border-t border-rim">
+    <div class="animate-hz-reveal mt-3 pt-3 border-t border-rim">
       <Show when={props.loading}>
         <div class="flex gap-1.5 flex-wrap">
           <For each={Array(3)}>
@@ -2878,7 +2890,7 @@ function DeliveryReport(props: {
   };
 
   return (
-    <div class="mt-3 pt-3 border-t border-rim text-xs">
+    <div class="animate-hz-reveal mt-3 pt-3 border-t border-rim text-xs">
       <Show when={props.loading}>
         <div class="text-muted animate-pulse">{t("post.loading")}</div>
       </Show>
@@ -2931,13 +2943,13 @@ function ActionBtn(props: {
 }) {
   return (
     <button
-      onClick={props.onClick}
+      onClick={(e) => { pop(e.currentTarget.firstElementChild); props.onClick(); }}
       title={props.label}
       class={`flex items-center gap-1 wide:gap-1.5 px-2 wide:px-3 py-1.5 rounded-lg text-sm font-medium
               transition-colors select-none hover:bg-overlay
               ${props.active ? props.activeClass : "text-muted"}`}
     >
-      {props.icon}
+      <span class="inline-flex">{props.icon}</span>
       <Show when={props.count > 0}><span>{props.count}</span></Show>
     </button>
   );
@@ -2952,13 +2964,13 @@ function CompactActionBtn(props: {
 }) {
   return (
     <button
-      onClick={props.onClick}
+      onClick={(e) => { pop(e.currentTarget.firstElementChild); props.onClick(); }}
       title={props.label}
       class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
               transition-colors select-none hover:bg-overlay
               ${props.active ? "text-accent" : "text-subtle"}`}
     >
-      {props.icon}
+      <span class="inline-flex">{props.icon}</span>
       <Show when={props.count > 0}><span>{props.count}</span></Show>
     </button>
   );
