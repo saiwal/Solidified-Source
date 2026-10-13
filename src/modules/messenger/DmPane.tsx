@@ -232,7 +232,7 @@ function snippet(m: any): string {
 }
 
 /** `onGone`: the opening message was deleted, which takes the thread with it. */
-function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) {
+export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => void }) {
   const { t, locale } = useI18n();
   const viewer = useNavViewer();
   const auth = useAuth();

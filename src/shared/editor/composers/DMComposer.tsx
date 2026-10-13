@@ -54,7 +54,11 @@ export interface DMComposerProps {
   onClose: () => void;
   /** Hubzilla channel_id of the sender (the local viewer's own channel). */
   profileUid: number;
-  onSent?: (itemId: number) => void;
+  /** `uuid` is the new thread's (the first copy's, when sent as Bcc). */
+  onSent?: (itemId: number, uuid?: string) => void;
+  /** Pre-filled message and subject — e.g. a watch-party invite. */
+  initialBody?: string;
+  initialTitle?: string;
   /** Pre-seeded recipient(s) — e.g. the one contact known from a "Send DM" button. */
   initialRecipients?: AclEntry[];
   /** Override the draft/attachment scope key (default "dm:new"). */
@@ -146,6 +150,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     const augmentedBody = fileTags ? `${body}\n${fileTags}` : body;
 
     const csrf = await getCsrfToken();
+    let sentUuid: string | undefined;
     const send = async (contactAllow: string[]): Promise<number> => {
       const res = await fetch("/spa/item", {
         method: "POST",
@@ -170,11 +175,12 @@ const DMComposer: Component<DMComposerProps> = (props) => {
 
       if (!res.ok) throw await apiError(res);
       const json = (await res.json().catch(() => ({}))) as {
-        data?: { post?: { iid?: number } };
+        data?: { post?: { iid?: number; uuid?: string } };
       };
       if (!json.data?.post) {
         throw new Error("Server reported failure. Check Hubzilla logs.");
       }
+      if (!sentUuid) sentUuid = json.data.post.uuid;
       return json.data.post.iid ?? 0;
     };
 
@@ -205,7 +211,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     // A delayed DM is stored with item_delayed = 1, so it appears nowhere until
     // the cron publishes it — say so, or sending looks like it did nothing.
     toast.success(t(publishAt() ? "editor.dm_scheduled" : "editor.dm_sent"));
-    props.onSent?.(iid);
+    props.onSent?.(iid, sentUuid);
     attach.clear();
     props.onClose();
   }, scope, {
@@ -217,6 +223,8 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     // it to bbcode on save. Missing here, a DM was always text/bbcode, so
     // ==highlight==, **bold** and the rest were stored literally.
     initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
+    initialBody: props.initialBody,
+    initialTitle: props.initialTitle,
   });
 
   // Recipients are the one part of a DM draft the composer store knows
