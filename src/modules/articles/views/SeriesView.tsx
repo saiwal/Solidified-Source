@@ -1,14 +1,52 @@
 // src/modules/articles/views/SeriesView.tsx
-import { createSignal, createEffect, Show, For } from "solid-js";
-import { useParams, A } from "@solidjs/router";
-import { BiRegularChevronUp, BiRegularChevronDown, BiRegularEdit } from "solid-icons/bi";
+import { createSignal, createEffect, createUniqueId, Show, For } from "solid-js";
+import { useParams, useNavigate, A } from "@solidjs/router";
+import { MdOutlineEdit, MdFillKeyboard_arrow_up, MdFillKeyboard_arrow_down } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import Modal from "@/shared/views/Modal";
+import { iconBtn, primaryPill, ghostPill, SkeletonRows, BackLink } from "@/shared/views/ui";
+import { Motion, pop } from "@/shared/views/anim";
 import { fetchSeriesDetail, renameSeries, reorderSeries } from "../api";
 import { articlePath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
+
+function RenameDialog(props: { name: string; onClose: () => void; onRename: (to: string) => Promise<void> }) {
+  const { t } = useI18n();
+  const id = createUniqueId();
+  const [to, setTo] = createSignal(props.name);
+  const [busy, setBusy] = createSignal(false);
+
+  async function submit(e: SubmitEvent) {
+    e.preventDefault();
+    const v = to().trim();
+    if (!v || v === props.name) return props.onClose();
+    setBusy(true);
+    try {
+      await props.onRename(v);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Rename failed");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal onClose={props.onClose} labelledBy={id}>
+      <Motion.form {...pop} onSubmit={submit} class="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl space-y-5">
+        <h2 id={id} class="text-lg font-semibold text-txt">{t("articles.series_rename")}</h2>
+        <input type="text" required autofocus value={to()} onInput={(e) => setTo(e.currentTarget.value)}
+          aria-label={t("articles.series_rename_prompt")}
+          class="w-full bg-transparent border-0 border-b border-rim px-0 py-1.5 text-sm text-txt focus:outline-none focus:border-accent transition-colors" />
+        <div class="flex justify-end gap-2">
+          <button type="button" onClick={props.onClose} class={ghostPill}>{t("articles.cancel")}</button>
+          <button type="submit" disabled={busy()} class={primaryPill}>{t("articles.rename")}</button>
+        </div>
+      </Motion.form>
+    </Modal>
+  );
+}
 
 export default function SeriesView() {
   const params = useParams<{ nick: string; name: string }>();
@@ -16,8 +54,10 @@ export default function SeriesView() {
   const nick = () => params.nick || pageNick();
   const name = () => decodeURIComponent(params.name);
   const role = useViewerRole();
+  const navigate = useNavigate();
   const { t } = useI18n();
   const isOwner = () => role() === "owner";
+  const [renaming, setRenaming] = createSignal(false);
 
   const [data, { refetch }] = createQueryResource(
     "series-detail",
@@ -46,86 +86,70 @@ export default function SeriesView() {
     void persistOrder(next);
   }
 
-  async function doRename() {
-    const to = window.prompt(t("articles.series_rename_prompt"), name());
-    if (!to || to.trim() === name()) return;
-    try {
-      await renameSeries(nick(), name(), to.trim());
-      window.location.href = `/articles/${nick()}/series/${encodeURIComponent(to.trim())}`;
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Rename failed");
-    }
+  async function rename(to: string) {
+    await renameSeries(nick(), name(), to);
+    setRenaming(false);
+    navigate(`/articles/${nick()}/series/${encodeURIComponent(to)}`, { replace: true });
   }
 
   return (
-    <div class="space-y-6 max-w-3xl mx-auto">
-      <A
-        href={`/articles/${nick()}/series`}
-        class="inline-flex items-center gap-1 text-sm text-muted hover:text-txt transition-colors"
-      >
-        {t("articles.back_to_series_index")}
-      </A>
+    <div class="max-w-5xl mx-auto">
+      <div class="max-w-3xl space-y-6">
+        <BackLink fallback={`/articles/${nick()}/series`} label={t("articles.back")} />
 
-      <div class="flex items-center justify-between gap-3">
-        <h1 class="text-xl font-bold text-txt">{name()}</h1>
-        <Show when={isOwner()}>
-          <button
-            type="button"
-            onClick={doRename}
-            class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-rim
-                   text-muted hover:text-txt hover:bg-elevated transition-colors"
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-txt">{name()}</h1>
+            <Show when={!data.loading}>
+              <p class="text-sm text-muted mt-1 tabular-nums">{t("articles.series_articles_count", { count: order().length })}</p>
+            </Show>
+          </div>
+          <Show when={isOwner()}>
+            <button type="button" onClick={() => setRenaming(true)} class={iconBtn}
+              title={t("articles.series_rename")} aria-label={t("articles.series_rename")}>
+              <MdOutlineEdit size={18} />
+            </button>
+          </Show>
+        </div>
+
+        <Show when={!data.loading} fallback={<SkeletonRows count={5} />}>
+          <Show
+            when={order().length > 0}
+            fallback={<p class="text-sm text-muted py-8 text-center">{t("articles.series_no_series")}</p>}
           >
-            <BiRegularEdit class="w-4 h-4" />
-            {t("articles.series_rename")}
-          </button>
+            <ol class="space-y-0.5 -mx-3">
+              <For each={order()}>
+                {(article, i) => (
+                  <li class="group flex items-center gap-3 rounded-xl px-3 py-1.5 hover:bg-elevated/40 transition-colors">
+                    <span class="text-sm text-muted w-6 shrink-0 tabular-nums">{i() + 1}</span>
+                    <A
+                      href={articlePath(nick(), article)}
+                      class="flex-1 min-w-0 truncate py-1 text-sm font-medium text-txt hover:text-accent-txt transition-colors"
+                    >
+                      {article.title || t("articles.untitled")}
+                    </A>
+                    <Show when={isOwner()}>
+                      <div class="flex items-center shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
+                        <button type="button" disabled={i() === 0} onClick={() => move(i(), -1)} class={iconBtn}
+                          title={t("articles.move_up")} aria-label={t("articles.move_up")}>
+                          <MdFillKeyboard_arrow_up size={18} />
+                        </button>
+                        <button type="button" disabled={i() === order().length - 1} onClick={() => move(i(), 1)} class={iconBtn}
+                          title={t("articles.move_down")} aria-label={t("articles.move_down")}>
+                          <MdFillKeyboard_arrow_down size={18} />
+                        </button>
+                      </div>
+                    </Show>
+                  </li>
+                )}
+              </For>
+            </ol>
+          </Show>
         </Show>
       </div>
 
-      <Show when={isOwner()}>
-        <p class="text-xs text-muted">{t("articles.series_reorder_hint")}</p>
-      </Show>
-
-      <Show when={!data.loading} fallback={<p class="text-sm text-muted">…</p>}>
-        <Show
-          when={order().length > 0}
-          fallback={<p class="text-sm text-muted py-8 text-center">{t("articles.series_no_series")}</p>}
-        >
-          <ol class="space-y-2">
-            <For each={order()}>
-              {(article, i) => (
-                <li class="flex items-center gap-3 bg-surface border border-rim rounded-xl px-4 py-3">
-                  <span class="text-sm text-muted w-6 shrink-0">{i() + 1}.</span>
-                  <A
-                    href={articlePath(nick(), article)}
-                    class="flex-1 min-w-0 truncate text-sm font-medium text-txt hover:text-accent transition-colors"
-                  >
-                    {article.title || t("articles.untitled")}
-                  </A>
-                  <Show when={isOwner()}>
-                    <div class="flex items-center gap-0.5 shrink-0">
-                      <button
-                        type="button"
-                        disabled={i() === 0}
-                        onClick={() => move(i(), -1)}
-                        class="p-1 rounded text-muted hover:text-txt hover:bg-elevated disabled:opacity-30 transition-colors"
-                      >
-                        <BiRegularChevronUp class="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled={i() === order().length - 1}
-                        onClick={() => move(i(), 1)}
-                        class="p-1 rounded text-muted hover:text-txt hover:bg-elevated disabled:opacity-30 transition-colors"
-                      >
-                        <BiRegularChevronDown class="w-4 h-4" />
-                      </button>
-                    </div>
-                  </Show>
-                </li>
-              )}
-            </For>
-          </ol>
-        </Show>
+      <Show when={renaming()}>
+        <RenameDialog name={name()} onClose={() => setRenaming(false)} onRename={rename} />
       </Show>
     </div>
   );

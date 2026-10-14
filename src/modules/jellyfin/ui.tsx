@@ -1,18 +1,9 @@
 import { For, Show, createSignal, createEffect, on, type JSX } from "solid-js";
 import { MdFillMusic_note } from "solid-icons/md";
 
-// ── The module's quiet control vocabulary ─────────────────────────────────────
-// Secondary actions are bare icons; the one primary action on a screen is a
-// filled pill. No outlined boxes — space and tone do the grouping.
-export const iconBtn =
-  "inline-flex items-center justify-center p-2 rounded-full text-muted hover:text-txt hover:bg-elevated/70 " +
-  "transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-accent";
-export const primaryPill =
-  "inline-flex items-center gap-2 h-10 px-5 rounded-full bg-accent text-accent-fg text-sm font-medium " +
-  "hover:brightness-110 transition disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-export const ghostPill =
-  "inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm text-muted hover:text-txt hover:bg-elevated/70 " +
-  "transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-accent";
+// The control vocabulary and row skeleton moved to shared/views/ui.tsx once
+// the calendar adopted the design guideline too.
+export { iconBtn, primaryPill, ghostPill, SkeletonRows } from "@/shared/views/ui";
 
 /** m:ss, or h:mm:ss from an hour up. */
 export function fmtTime(sec: number): string {
@@ -119,21 +110,3 @@ export function SkeletonShelf(props: { landscape?: boolean }) {
   );
 }
 
-export function SkeletonRows(props: { count?: number }) {
-  return (
-    <div class="space-y-0.5">
-      <For each={Array.from({ length: props.count ?? 8 })}>
-        {(_, i) => (
-          <div class="flex items-center gap-3 px-3 py-2.5">
-            <div class={`h-3 w-5 ${bar}`} />
-            <div class="flex-1 space-y-1.5">
-              <div class={`h-3 ${bar}`} style={{ width: `${55 + ((i() * 17) % 35)}%` }} />
-              <div class={`h-2.5 w-1/3 ${bar}`} />
-            </div>
-            <div class={`h-3 w-8 ${bar}`} />
-          </div>
-        )}
-      </For>
-    </div>
-  );
-}

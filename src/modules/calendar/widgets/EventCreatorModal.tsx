@@ -20,6 +20,7 @@ import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { prevDay, nextDay, zonedTimeToUtc, utcToZonedDateTime } from "../views/calUtils";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import ComposerModal from "@/shared/editor/components/ComposerModal";
+import { primaryPill, ghostPill } from "@/shared/views/ui";
 
 function timezones(): string[] {
   try {
@@ -246,9 +247,10 @@ export default function EventCreatorModal(props: Props) {
     }
   }
 
+  // Underlined fields, per the design guidelines
   const inputClass =
-    "bg-overlay border border-rim rounded-lg px-3 py-2 text-sm text-txt " +
-    "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 w-full";
+    "w-full bg-transparent border-0 border-b border-rim px-0 py-1.5 text-sm text-txt " +
+    "placeholder:text-muted focus:outline-none focus:border-accent transition-colors";
 
   // ComposerModal supplies the header, close button, Escape handling and — when
   // opened through openEvent() — the dock/page/minimize modes.
@@ -260,17 +262,17 @@ export default function EventCreatorModal(props: Props) {
       fitContent
     >
       {/* Form */}
-      <form onSubmit={handleSubmit} class="flex-1 p-5 flex flex-col gap-4 overflow-y-auto min-h-0">
+      <form onSubmit={handleSubmit} class="flex-1 p-6 flex flex-col gap-5 overflow-y-auto min-h-0">
 
         {/* Calendar picker — only shown when creating and multiple options exist */}
         <Show when={!isEdit && calendarOptions().length > 1}>
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.calendar_label")}</label>
+            <label class="text-xs text-muted">{t("calendar.calendar_label")}</label>
             <div class="relative">
               <select
                 value={selectedCalIdx()}
                 onChange={(e) => setSelectedCalIdx(parseInt(e.currentTarget.value))}
-                class={inputClass + " appearance-none pr-8 cursor-pointer"}
+                class={inputClass + " appearance-none pl-5 pr-8 cursor-pointer"}
               >
                 <For each={calendarOptions()}>
                   {(opt, i) => (
@@ -280,10 +282,10 @@ export default function EventCreatorModal(props: Props) {
               </select>
               {/* Color dot overlay */}
               <span
-                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                class="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
                 style={{ background: calendarOptions()[selectedCalIdx()]?.color ?? "#3a87ad" }}
               />
-              <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted">
+              <span class="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-muted">
                 <MdOutlineExpand_more class="w-3.5 h-3.5" />
               </span>
             </div>
@@ -292,7 +294,7 @@ export default function EventCreatorModal(props: Props) {
 
         {/* Title */}
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-muted">{t("calendar.title_label")}</label>
+          <label class="text-xs text-muted">{t("calendar.title_label")}</label>
           <input
             ref={titleRef!}
             type="text"
@@ -316,9 +318,9 @@ export default function EventCreatorModal(props: Props) {
         </label>
 
         {/* Start */}
-        <div class="flex gap-2">
+        <div class="flex gap-4">
           <div class="flex flex-col gap-1 flex-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.start_label")}</label>
+            <label class="text-xs text-muted">{t("calendar.start_label")}</label>
             <input
               type="date"
               required
@@ -336,7 +338,7 @@ export default function EventCreatorModal(props: Props) {
           </div>
           <Show when={!allDay()}>
             <div class="flex flex-col gap-1 w-28">
-              <label class="text-xs font-medium text-muted">{t("calendar.time_label")}</label>
+              <label class="text-xs text-muted">{t("calendar.time_label")}</label>
               <input
                 type="time"
                 value={startTime()}
@@ -350,7 +352,7 @@ export default function EventCreatorModal(props: Props) {
         {/* Timezone — only when "Event Timezone Selection" is enabled and the event has a time */}
         <Show when={tzSelectable && !allDay()}>
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.timezone_label")}</label>
+            <label class="text-xs text-muted">{t("calendar.timezone_label")}</label>
             <select
               value={timezone()}
               onChange={(e) => setTimezone(e.currentTarget.value)}
@@ -376,9 +378,9 @@ export default function EventCreatorModal(props: Props) {
 
         {/* End */}
         <Show when={!nofinish()}>
-          <div class="flex gap-2">
+          <div class="flex gap-4">
             <div class="flex flex-col gap-1 flex-1">
-              <label class="text-xs font-medium text-muted">{t("calendar.end_label")}</label>
+              <label class="text-xs text-muted">{t("calendar.end_label")}</label>
               <input
                 type="date"
                 value={endDate()}
@@ -388,7 +390,7 @@ export default function EventCreatorModal(props: Props) {
             </div>
             <Show when={!allDay()}>
               <div class="flex flex-col gap-1 w-28">
-                <label class="text-xs font-medium text-muted">{t("calendar.time_label")}</label>
+                <label class="text-xs text-muted">{t("calendar.time_label")}</label>
                 <input
                   type="time"
                   value={endTime()}
@@ -402,7 +404,7 @@ export default function EventCreatorModal(props: Props) {
 
         {/* Location */}
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-muted">{t("calendar.location_label")}</label>
+          <label class="text-xs text-muted">{t("calendar.location_label")}</label>
           <input
             type="text"
             placeholder={t("calendar.optional") as string}
@@ -416,7 +418,7 @@ export default function EventCreatorModal(props: Props) {
             category field unless the target is the channel calendar. */}
         <Show when={isNativeTarget()}>
           <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-muted">{t("calendar.categories_label")}</label>
+            <label class="text-xs text-muted">{t("calendar.categories_label")}</label>
             <CategoryTagsField
               showLabel
               hideLabel
@@ -440,7 +442,7 @@ export default function EventCreatorModal(props: Props) {
 
         {/* Description */}
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-muted">{t("calendar.description_label")}</label>
+          <label class="text-xs text-muted">{t("calendar.description_label")}</label>
           <RichEditor
             attach={attachActions}
             body={description()}
@@ -467,7 +469,7 @@ export default function EventCreatorModal(props: Props) {
         </div>
 
         {/* Actions */}
-        <div class="flex items-center gap-2 pt-1">
+        <div class="flex items-center gap-2 pt-1 flex-wrap">
           {/* Audience — channel calendar (native events) only; CalDAV
               calendars have no ACL concept in this app. */}
           <Show when={isNativeTarget()}>
@@ -485,15 +487,14 @@ export default function EventCreatorModal(props: Props) {
             <button
               type="button"
               onClick={props.onClose}
-              class="px-4 py-1.5 rounded-lg text-xs font-medium text-muted hover:bg-elevated hover:text-txt transition-colors"
+              class={ghostPill}
             >
               {t("calendar.cancel")}
             </button>
             <button
               type="submit"
               disabled={submitting()}
-              class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              class={primaryPill}
             >
               {submitting()
                 ? (isEdit ? t("calendar.saving") : t("calendar.creating"))

@@ -1,8 +1,9 @@
 // src/modules/articles/views/ArticleView.tsx
 import {
-  createSignal, createEffect, createMemo,
+  createSignal, createEffect, createMemo, createUniqueId,
   Show, For
 } from "solid-js";
+import { Portal } from "solid-js/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -28,10 +29,18 @@ import { BiRegularEdit, BiRegularTrash } from "solid-icons/bi";
 import {
   MdOutlineThumb_up,
   MdOutlineThumb_down,
-  MdFillChat,
+  MdFillThumb_up,
+  MdFillThumb_down,
+  MdOutlineReply,
   MdOutlineShare,
   MdOutlineTranslate,
+  MdOutlineMore_horiz,
 } from "solid-icons/md";
+import Modal from "@/shared/views/Modal";
+import { iconBtn, ghostPill, BackLink } from "@/shared/views/ui";
+import { Motion, pop, slideDown } from "@/shared/views/anim";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
+import { createPopover } from "@/shared/stream/filters/createPopover";
 import { apiToggleLike, apiToggleDislike, apiDeleteItem, apiEditItem } from "@utsukta/spa-core/lib/item-api";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
@@ -40,13 +49,15 @@ import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
 import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
+import ActionBtn from "@/shared/stream/components/ActionBtn";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
-function DeleteConfirm(props: { uuid: string; onDeleted: () => void; onCancel: () => void }) {
+function DeleteDialog(props: { uuid: string; onDeleted: () => void; onCancel: () => void }) {
   const { t } = useI18n();
+  const id = createUniqueId();
   const [deleting, setDeleting] = createSignal(false);
 
   const confirm = async () => {
@@ -61,27 +72,19 @@ function DeleteConfirm(props: { uuid: string; onDeleted: () => void; onCancel: (
   };
 
   return (
-    <div class="flex items-center gap-3 px-4 py-3 bg-surface border border-rim rounded-xl">
-      <p class="text-sm text-txt flex-1">
-        {t("articles.delete_confirm")}
-      </p>
-      <button
-        type="button"
-        onClick={props.onCancel}
-        class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-elevated transition-colors"
-      >
-        {t("articles.cancel")}
-      </button>
-      <button
-        type="button"
-        onClick={confirm}
-        disabled={deleting()}
-        class="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-500 text-white
-               hover:opacity-90 disabled:opacity-40 transition-opacity"
-      >
-        {deleting() ? t("articles.deleting") : t("articles.delete")}
-      </button>
-    </div>
+    <Modal onClose={props.onCancel} labelledBy={id}>
+      <Motion.div {...pop} class="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl space-y-5">
+        <h2 id={id} class="text-lg font-semibold text-txt">{t("articles.delete_article")}</h2>
+        <p class="text-sm text-muted">{t("articles.delete_confirm")}</p>
+        <div class="flex justify-end gap-2">
+          <button type="button" onClick={props.onCancel} class={ghostPill}>{t("articles.cancel")}</button>
+          <button type="button" onClick={confirm} disabled={deleting()}
+            class="inline-flex items-center h-10 px-5 rounded-full bg-red-500 text-white text-sm font-medium hover:brightness-110 transition disabled:opacity-60">
+            {deleting() ? t("articles.deleting") : t("articles.delete")}
+          </button>
+        </div>
+      </Motion.div>
+    </Modal>
   );
 }
 
@@ -373,9 +376,13 @@ export default function ArticleView() {
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";
+  const more = createPopover({ placement: "bottom-end" });
+  const menuItem = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-txt hover:bg-elevated/70 text-left";
+  const fmtDate = (iso: string) =>
+    new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(locale(), { year: "numeric", month: "long", day: "numeric" });
 
   return (
-    <div class="relative max-w-5xl mx-auto py-4">
+    <div class="relative max-w-5xl mx-auto">
       <Show when={!data.loading && data()} fallback={<ArticleViewSkeleton />}>
         {(d) => (
           <div class="xl:flex xl:gap-8">
@@ -383,83 +390,107 @@ export default function ArticleView() {
             <ArticleToc entries={toc()} activeId={activeId()} label={t("articles.on_this_page")} />
 
             {/* ── Article ── */}
-            <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl space-y-6">
-              {/* Back link */}
-              <A
-                href={`/articles/${nick()}`}
-                class="inline-flex items-center gap-1 text-sm text-muted hover:text-txt transition-colors"
-              >
-                {t("articles.all_articles")}
-              </A>
+            <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl">
+              <div class="space-y-8">
+                <BackLink fallback={`/articles/${nick()}`} label={t("articles.back")} />
 
-              {/* Delete confirm banner */}
-              <Show when={confirmDelete()}>
-                <DeleteConfirm
-                  uuid={d().article.uuid}
-                  onDeleted={() => navigate(`/articles/${nick()}`)}
-                  onCancel={() => setConfirmDelete(false)}
-                />
-              </Show>
-
-                {/* Header */}
-                <header class="space-y-2 border-b border-rim pb-4">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <h1 class="text-3xl font-bold leading-tight text-txt">
-                      {d().article.title || t("articles.untitled")}
-                    </h1>
-                    <Show when={d().article.lang}>
-                      <span class="px-1.5 py-0.5 rounded text-xs font-medium bg-elevated text-muted uppercase">
-                        {languageLabel(d().article.lang!)}
-                      </span>
-                    </Show>
-                  </div>
+                {/* Header — title, summary, byline row */}
+                <header class="space-y-3">
+                  <h1 class="text-2xl font-bold leading-tight text-txt">
+                    {d().article.title || t("articles.untitled")}
+                  </h1>
 
                   <Show when={d().article.summary}>
-                    <p class="text-lg text-muted italic leading-snug">
+                    <p class="text-base text-muted leading-relaxed max-w-prose">
                       {d().article.summary}
                     </p>
                   </Show>
-                  <p class="text-sm text-muted">
-                    {new Date(
-                      d().article.created.replace(" ", "T") + "Z",
-                    ).toLocaleDateString(locale(), {
-                      year: "numeric", month: "long", day: "numeric",
-                    })}
-                    {" "}{t("articles.by")}{" "}
-                    <a href={d().article.authorUrl} class="hover:underline text-txt">
-                      {d().article.authorName}
+
+                  {/* Byline row: who + when on the left, actions on the right */}
+                  <div class="flex items-center gap-x-3 gap-y-3 flex-wrap pt-1">
+                    <a href={d().article.authorUrl} class="shrink-0" tabindex="-1" aria-hidden="true">
+                      <Show when={d().article.authorAvatar}
+                        fallback={<span class="block w-10 h-10 rounded-full bg-elevated" />}>
+                        <img src={d().article.authorAvatar} alt="" loading="lazy"
+                          onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+                          class="w-10 h-10 rounded-full object-cover bg-elevated" />
+                      </Show>
                     </a>
-                  </p>
+                    <div class="min-w-0 mr-auto">
+                      <a href={d().article.authorUrl}
+                        class="block text-sm font-medium text-txt hover:text-accent-txt transition-colors truncate">
+                        {d().article.authorName}
+                      </a>
+                      <p class="flex flex-wrap gap-x-3 text-xs text-muted">
+                        <span class="tabular-nums">{fmtDate(d().article.created)}</span>
+                        <Show when={d().article.lang}>
+                          <span>{languageLabel(d().article.lang!)}</span>
+                        </Show>
+                      </p>
+                    </div>
 
-                  {/* Series membership */}
-                  <Show when={d().article.series}>
-                    <p class="text-sm text-muted">
-                      {t("articles.part_of_series", {
-                        order: String(d().article.series!.order ?? "?"),
-                        name: d().article.series!.name,
-                      })}
-                      {" — "}
-                      <A
-                        href={`/articles/${nick()}/series/${encodeURIComponent(d().article.series!.name)}`}
-                        class="hover:underline text-txt"
-                      >
-                        {t("articles.view_full_series")}
-                      </A>
-                    </p>
-                  </Show>
+                  {/* Share + owner actions; reactions and Comment live with the comments below */}
+                  <div class="flex items-center gap-1 -mr-2">
+                    <button type="button" onClick={shareArticle} class={iconBtn}
+                      title={t("share.action")} aria-label={t("share.action")}>
+                      <MdOutlineShare size={18} />
+                    </button>
 
-                  {/* Translations switcher */}
-                  <Show when={(d().article.translations ?? []).length > 0}>
-                    <p class="text-sm text-muted flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span>{t("articles.translations_label")}</span>
-                      <For each={d().article.translations ?? []}>
-                        {(tr) => (
-                          <a href={tr.viewUrl} class="px-1.5 py-0.5 rounded bg-elevated text-txt hover:underline text-xs uppercase">
-                            {languageLabel(tr.lang)}
-                          </a>
-                        )}
-                      </For>
-                    </p>
+                    <Show when={isOwner()}>
+                      <span ref={more.ref}>
+                        <button type="button" class={iconBtn} aria-expanded={more.open()}
+                          title={t("articles.more")} aria-label={t("articles.more")}
+                          onClick={() => more.setOpen(!more.open())}>
+                          <MdOutlineMore_horiz size={18} />
+                        </button>
+                      </span>
+                      <Show when={more.open()}>
+                        <Portal mount={topLayer()}>
+                          <div ref={more.floating} style={more.style()}
+                            class="z-50 w-56 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2">
+                            <button type="button" class={menuItem} onClick={() => { more.setOpen(false); openEditor(d().article); }}>
+                              <BiRegularEdit size={16} class="text-muted shrink-0" /> {t("articles.edit_article")}
+                            </button>
+                            <button type="button" class={menuItem} onClick={() => { more.setOpen(false); openTranslation(d().article); }}>
+                              <MdOutlineTranslate size={16} class="text-muted shrink-0" /> {t("articles.add_translation")}
+                            </button>
+                            <div class="my-1.5 h-px bg-rim/60" />
+                            <button type="button" class={`${menuItem} hover:text-red-500`} onClick={() => { more.setOpen(false); setConfirmDelete(true); }}>
+                              <BiRegularTrash size={16} class="shrink-0" /> {t("articles.delete_article")}
+                            </button>
+                          </div>
+                        </Portal>
+                      </Show>
+                    </Show>
+                  </div>
+                  </div>
+
+                  <Show when={d().article.series || (d().article.translations ?? []).length > 0}>
+                    <div class="space-y-0.5 text-sm text-muted">
+                      <Show when={d().article.series}>
+                        <p>
+                          <A
+                            href={`/articles/${nick()}/series/${encodeURIComponent(d().article.series!.name)}`}
+                            class="hover:text-accent-txt transition-colors"
+                          >
+                            {t("articles.part_of_series", {
+                              order: String(d().article.series!.order ?? "?"),
+                              name: d().article.series!.name,
+                            })}
+                          </A>
+                        </p>
+                      </Show>
+                      <Show when={(d().article.translations ?? []).length > 0}>
+                        <p class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span>{t("articles.translations_label")}</span>
+                          <For each={d().article.translations ?? []}>
+                            {(tr) => (
+                              <a href={tr.viewUrl} class="text-accent-txt hover:underline">{languageLabel(tr.lang)}</a>
+                            )}
+                          </For>
+                        </p>
+                      </Show>
+                    </div>
                   </Show>
                 </header>
 
@@ -476,111 +507,62 @@ export default function ArticleView() {
                   <AttachmentList attachments={d().article.attachments!} />
                 </Show>
 
-                {/* Reactions / action bar */}
-                <div class="flex items-center gap-1 pt-4 border-t border-rim flex-wrap">
-                  <Show when={auth()?.isLoggedIn}>
-                    <button
-                      onClick={handleLike}
-                      title="Like"
-                      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors select-none hover:bg-overlay
-                             ${reactions().viewerLiked ? "text-accent" : "text-muted"}`}
-                    >
-                      <MdOutlineThumb_up size={17} />
-                      <Show when={reactions().likeCount > 0}>
-                        <span>{reactions().likeCount}</span>
-                      </Show>
-                    </button>
-
-                    <button
-                      onClick={handleDislike}
-                      title="Dislike"
-                      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors select-none hover:bg-overlay
-                             ${reactions().viewerDisliked ? "text-accent" : "text-muted"}`}
-                    >
-                      <MdOutlineThumb_down size={17} />
-                      <Show when={reactions().dislikeCount > 0}>
-                        <span>{reactions().dislikeCount}</span>
-                      </Show>
-                    </button>
-                  </Show>
-
-                  <button
-                    type="button"
-                    onClick={shareArticle}
-                    title={t("share.action")}
-                    class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                           transition-colors hover:bg-overlay text-muted hover:text-txt"
-                  >
-                    <MdOutlineShare size={17} />
-                  </button>
-
-                  {/* canComment comes from core's can_comment_on_post() — it
-                      honours the article's comment policy, comments_closed and
-                      item_nocomment, so a comments-disabled article offers no
-                      Comment button rather than one whose submit is rejected. */}
-                  <Show when={auth()?.isLoggedIn && data()?.article.canComment}>
-                    <button
-                      onClick={() => setReplyOpen(v => !v)}
-                      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay
-                             ${replyOpen() ? "text-accent" : "text-muted hover:text-txt"}`}
-                    >
-                      <MdFillChat size={17} />
-                      <span>{t("articles.comment")}</span>
-                    </button>
-                  </Show>
-
-                  {/* Owner actions */}
-                  <Show when={isOwner()}>
-                    <button
-                      type="button"
-                      onClick={() => { setConfirmDelete(false); openTranslation(d().article); }}
-                      title={t("articles.add_translation")}
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay text-muted hover:text-txt"
-                    >
-                      <MdOutlineTranslate size={17} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setConfirmDelete(false); openEditor(d().article); }}
-                      title="Edit article"
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay text-muted hover:text-txt"
-                    >
-                      <BiRegularEdit size={17} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDelete(true)}
-                      title="Delete article"
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay text-muted hover:text-red-500"
-                    >
-                      <BiRegularTrash size={17} />
-                    </button>
-                  </Show>
-                </div>
-
-                {/* Comment composer */}
-                <Show when={replyOpen() && d().article.iid && d().article.profileUid}>
-                  <CommentComposer
-                    parentUuid={d().article.uuid}
-                    profileUid={d().article.profileUid!}
-                    onSubmitted={(body, created) => {
-                      addLocalComment(d().article.mid, body, created);
-                      setReplyOpen(false);
-                    }}
-                  />
-                </Show>
-
                 {/* Comments */}
-                <section class="space-y-4">
-                  <h2 class="text-base font-semibold text-txt">
-                    {t("articles.comments")} ({countAllComments(commentTree())})
-                  </h2>
+                <section class="space-y-4 pt-4">
+                  <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <h2 class="text-sm font-semibold text-txt tabular-nums">
+                      {t("articles.comments")} ({countAllComments(commentTree())})
+                    </h2>
+                    <div class="flex items-center gap-0.5 -mr-2">
+                      <Show when={auth()?.isLoggedIn}>
+                        {/* Same reaction buttons as a post's action bar */}
+                        <ActionBtn
+                          icon={reactions().viewerLiked ? <MdFillThumb_up size={17} /> : <MdOutlineThumb_up size={17} />}
+                          count={reactions().likeCount}
+                          label={t("articles.like")}
+                          onClick={handleLike}
+                          active={reactions().viewerLiked}
+                          activeClass="text-accent-txt"
+                        />
+                        <ActionBtn
+                          icon={reactions().viewerDisliked ? <MdFillThumb_down size={17} /> : <MdOutlineThumb_down size={17} />}
+                          count={reactions().dislikeCount}
+                          label={t("articles.dislike")}
+                          onClick={handleDislike}
+                          active={reactions().viewerDisliked}
+                          activeClass="text-accent-txt"
+                        />
+                      </Show>
+                      <Show when={auth()?.isLoggedIn && d().article.canComment}>
+                        {/* Same reply button as a post's action bar. canComment comes
+                            from core's can_comment_on_post() — it honours the comment
+                            policy, comments_closed and item_nocomment, so a
+                            comments-disabled article offers no reply button rather
+                            than one whose submit is rejected. */}
+                        <button type="button" aria-expanded={replyOpen()} onClick={() => setReplyOpen(v => !v)}
+                          title={t("articles.comment")} aria-label={t("articles.comment")}
+                          class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium hover:bg-overlay transition active:scale-90
+                                 ${replyOpen() ? "text-accent-txt" : "text-muted hover:text-txt"}`}>
+                          <MdOutlineReply size={17} />
+                        </button>
+                      </Show>
+                    </div>
+                  </div>
+
+                  {/* Comment composer */}
+                  <Show when={replyOpen() && d().article.iid && d().article.profileUid}>
+                    <Motion.div {...slideDown}>
+                      <CommentComposer
+                        parentUuid={d().article.uuid}
+                        profileUid={d().article.profileUid!}
+                        onSubmitted={(body, created) => {
+                          addLocalComment(d().article.mid, body, created);
+                          setReplyOpen(false);
+                        }}
+                      />
+                    </Motion.div>
+                  </Show>
+
                   <Show
                     when={commentTree().length > 0}
                     fallback={<p class="text-sm text-muted">{t("articles.no_comments")}</p>}
@@ -593,6 +575,15 @@ export default function ArticleView() {
                     />
                   </Show>
                 </section>
+              </div>
+
+              <Show when={confirmDelete()}>
+                <DeleteDialog
+                  uuid={d().article.uuid}
+                  onDeleted={() => navigate(`/articles/${nick()}`)}
+                  onCancel={() => setConfirmDelete(false)}
+                />
+              </Show>
             </article>
           </div>
         )}
@@ -601,17 +592,22 @@ export default function ArticleView() {
   );
 }
 
+const bar = "rounded bg-elevated animate-pulse motion-reduce:animate-none";
+
 function ArticleViewSkeleton() {
   return (
-    <div class="space-y-6 animate-pulse">
-      <div class="h-4 bg-elevated rounded w-20" />
-      <div class="space-y-3 border-b border-rim pb-4">
-        <div class="h-8 bg-elevated rounded w-3/4" />
-        <div class="h-3 bg-elevated rounded w-1/3" />
+    <div class="max-w-3xl space-y-8">
+      <div class={`h-4 w-16 ${bar}`} />
+      <div class="space-y-3">
+        <div class={`h-7 w-3/4 ${bar}`} />
+        <div class={`h-4 w-2/3 ${bar}`} />
+        <div class={`h-3 w-32 ${bar}`} />
+        <div class={`h-3 w-24 ${bar}`} />
+        <div class={`h-10 w-36 rounded-full ${bar}`} />
       </div>
-      <div class="space-y-2">
+      <div class="space-y-2.5">
         <For each={Array(8).fill(0)}>
-          {() => <div class="h-3 bg-elevated rounded w-full" />}
+          {(_, i) => <div class={`h-3 ${bar}`} style={{ width: `${80 + ((i() * 7) % 20)}%` }} />}
         </For>
       </div>
     </div>

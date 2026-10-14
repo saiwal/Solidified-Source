@@ -58,7 +58,7 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
               <A
                 href={articlePath(nick(), a())}
                 class="block px-4 py-2 border-t border-rim text-center text-xs font-medium
-                       text-accent hover:bg-elevated transition-colors"
+                       text-accent-txt hover:bg-elevated transition-colors"
               >
                 {t("widgets.read_article")}
               </A>

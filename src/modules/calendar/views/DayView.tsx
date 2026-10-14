@@ -1,9 +1,10 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createMemo, onMount } from "solid-js";
 import type { CalEvent } from "../api";
 import {
-  HOUR_H, isoDateStr, todayKey,
-  columnLayout, eventTopPx, eventHeightPx,
+  HOUR_H, isoDateStr, todayKey, prevDay,
+  columnLayout, eventTopPx, eventHeightPx, eventChip,
 } from "./calUtils";
+import NowLine from "./NowLine";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 interface Props {
@@ -15,18 +16,7 @@ interface Props {
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const TIME_W = 44;
 
-/** Subtract one UTC day from a YYYY-MM-DD string (for CalDAV exclusive end-date normalization). */
-function prevDay(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
-function nowY() {
-  const n = new Date();
-  return (n.getHours() + n.getMinutes() / 60) * HOUR_H;
-}
-
+// The date itself is the toolbar's period label above, so no header here.
 export default function DayView(props: Props) {
   const { t, locale } = useI18n();
   const todayK = todayKey();
@@ -63,35 +53,21 @@ export default function DayView(props: Props) {
 
   const colItems = createMemo(() => columnLayout(timedEvs()));
 
-  const [curY, setCurY] = createSignal(nowY());
-  const timer = setInterval(() => setCurY(nowY()), 60_000);
-  onCleanup(() => clearInterval(timer));
-
   let scrollRef!: HTMLDivElement;
   onMount(() => scrollRef?.scrollTo({ top: 7 * HOUR_H - 16 }));
 
-  const dayLabel = createMemo(() =>
-    props.date.toLocaleDateString(locale(), { weekday: "long", month: "long", day: "numeric" })
-  );
-
   return (
-    <div class="flex flex-col h-full border border-rim rounded-xl overflow-hidden">
-      {/* Day header */}
-      <div class={`px-4 py-3 border-b border-rim shrink-0 ${isToday() ? "bg-accent-muted/30" : "bg-surface"}`}>
-        <span class="text-sm font-semibold text-txt">{dayLabel()}</span>
-      </div>
-
+    <div class="flex flex-col h-full">
       {/* All-day events */}
       <Show when={allDayEvs().length > 0}>
-        <div class="border-b border-rim px-3 py-2 flex flex-col gap-1 shrink-0">
+        <div class="pb-2 flex flex-col gap-1 shrink-0" style={{ "padding-left": `${TIME_W}px` }}>
           <For each={allDayEvs()}>
             {(ev) => {
-              const color = ev.calendarColor;
+              const chip = eventChip(ev);
               return (
                 <div
-                  class="text-xs font-medium rounded px-2 py-0.5 truncate cursor-pointer"
-                  style={color ? { background: color + "33", color } : undefined}
-                  classList={{ "bg-accent-muted text-accent": !color }}
+                  class={`text-xs font-medium rounded-md px-2 py-1 truncate cursor-pointer ${chip.class}`}
+                  style={chip.style}
                   onClick={() => props.onDayClick(dateStr())}
                 >
                   {ev.title || t("calendar.no_title")}
@@ -103,22 +79,15 @@ export default function DayView(props: Props) {
       </Show>
 
       {/* Time grid */}
-      <div class="flex-1 overflow-y-auto" ref={scrollRef!}>
-        <div
-          class="relative"
-          style={{
-            display: "grid",
-            "grid-template-columns": `${TIME_W}px 1fr`,
-            height: `${24 * HOUR_H}px`,
-          }}
-        >
+      <div class="flex-1 min-h-0 overflow-y-auto border-t border-rim/40" ref={scrollRef!}>
+        <div class="relative grid" style={{ "grid-template-columns": `${TIME_W}px 1fr`, height: `${24 * HOUR_H}px` }}>
           {/* Time labels */}
-          <div class="relative border-r border-rim">
+          <div class="relative">
             <For each={HOURS}>
               {(h) => (
                 <div
-                  class="absolute right-2 text-[0.625rem] text-muted leading-none"
-                  style={{ top: `${h * HOUR_H - 6}px` }}
+                  class="absolute right-2 text-[0.625rem] text-muted leading-none tabular-nums"
+                  style={{ top: `${h * HOUR_H - 5}px` }}
                 >
                   {h > 0 ? `${h}:00` : ""}
                 </div>
@@ -128,7 +97,7 @@ export default function DayView(props: Props) {
 
           {/* Event column */}
           <div
-            class={`relative overflow-hidden ${isToday() ? "bg-accent-muted/10" : ""}`}
+            class={`relative ${isToday() ? "bg-accent-muted/20" : ""}`}
             onClick={(e) => {
               if ((e.target as HTMLElement).closest("[data-ev]")) return;
               props.onDayClick(dateStr());
@@ -137,30 +106,18 @@ export default function DayView(props: Props) {
             {/* Hour lines */}
             <For each={HOURS}>
               {(h) => (
-                <div
-                  class="absolute left-0 right-0 border-t border-rim"
-                  style={{ top: `${h * HOUR_H}px` }}
-                />
+                <div class="absolute left-0 right-0 border-t border-rim/30" style={{ top: `${h * HOUR_H}px` }} />
               )}
             </For>
 
-            {/* Current time */}
             <Show when={isToday()}>
-              <div
-                class="absolute left-0 right-0 z-10 pointer-events-none"
-                style={{ top: `${curY()}px` }}
-              >
-                <div class="relative">
-                  <div class="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-red-500" />
-                  <div class="border-t border-red-500 w-full" />
-                </div>
-              </div>
+              <NowLine />
             </Show>
 
             {/* Timed events */}
             <For each={colItems()}>
               {(item) => {
-                const color = item.event.calendarColor;
+                const chip = eventChip(item.event, true);
                 const top = eventTopPx(item.event.start);
                 const rawH = eventHeightPx(item.event.start, item.event.end);
                 // Cap at midnight so multi-day events don't overflow the 24-hour grid
@@ -174,22 +131,19 @@ export default function DayView(props: Props) {
                 return (
                   <div
                     data-ev
-                    class="absolute rounded overflow-hidden px-2 py-1 text-xs font-medium
-                      cursor-pointer leading-snug"
+                    class={`absolute rounded-md overflow-hidden px-2 py-1 text-xs font-medium
+                      cursor-pointer leading-snug ${chip.class}`}
                     style={{
                       top: `${top}px`,
                       height: `${height}px`,
                       left: `calc(${(item.col / item.totalCols) * 100}% + 2px)`,
                       width: `calc(${(1 / item.totalCols) * 100}% - 4px)`,
-                      ...(color
-                        ? { background: color + "44", color, "border-left": `3px solid ${color}` }
-                        : {}),
+                      ...chip.style,
                     }}
-                    classList={{ "bg-accent-muted text-accent border-l-2 border-l-accent": !color }}
                     onClick={() => props.onDayClick(dateStr())}
                   >
                     <div class="font-semibold truncate">{item.event.title || t("calendar.no_title")}</div>
-                    <div class="opacity-70 text-[0.625rem]">
+                    <div class="opacity-70 text-[0.625rem] tabular-nums">
                       {startLbl}{endLbl ? ` – ${crossesMidnight ? endLbl + " →" : endLbl}` : ""}
                     </div>
                     <Show when={item.event.location}>

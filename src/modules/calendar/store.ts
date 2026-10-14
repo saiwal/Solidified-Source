@@ -25,6 +25,13 @@ export { events, loading, error };
 const [range, setRange] = createSignal<CalRange | undefined>(undefined);
 export { range };
 
+// ── view + anchor date ────────────────────────────────────────────────────────
+// Shared by the header (Month/Week/Day/List switcher) and the content widget
+// (period label, prev/next, the grid itself).
+export type ViewType = "month" | "week" | "day" | "list";
+export const [viewType, setViewType] = createSignal<ViewType>("month");
+export const [anchor, setAnchor] = createSignal(new Date());
+
 // ── selected event (detail panel) ────────────────────────────────────────────
 const [selectedEvent, setSelectedEvent] = createSignal<CalEvent | null>(null);
 export { selectedEvent, setSelectedEvent };

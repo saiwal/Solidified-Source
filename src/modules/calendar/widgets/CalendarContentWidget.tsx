@@ -1,23 +1,23 @@
 import {
-  createEffect, createSignal, createMemo, Show, For,
+  createEffect, createSignal, createMemo, Show, For, Switch, Match,
 } from "solid-js";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { useAuth, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
+import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillChevron_left, MdFillChevron_right, MdOutlineAdd } from "solid-icons/md";
+import { MdFillChevron_left, MdFillChevron_right } from "solid-icons/md";
 import {
   events, loading, loadCalendar, monthRange, calendarRefreshVersion,
+  viewType, anchor, setAnchor, type ViewType,
 } from "../store";
 import type { CalEvent, CalRange } from "../api";
 import DayDetailModal from "../views/DayDetailModal";
-import { openEvent } from "@/shared/views/modal-host";
 import MonthView from "../views/MonthView";
 import WeekView from "../views/WeekView";
 import DayView from "../views/DayView";
 import ListView from "../views/ListView";
 import { isoDateStr, startOfWeek, addDays, eventOnDay } from "../views/calUtils";
-
-type ViewType = "month" | "week" | "day" | "list";
+import { iconBtn, SkeletonRows } from "@/shared/views/ui";
+import { Motion, fade } from "@/shared/views/anim";
 
 function rangeForView(view: ViewType, anchor: Date): CalRange {
   if (view === "list") {
@@ -39,16 +39,8 @@ function rangeForView(view: ViewType, anchor: Date): CalRange {
 export default function CalendarContentWidget() {
   const nick = usePageNick();
   const { t, locale } = useI18n();
-  const auth = useAuth();
-  // New events always go to the viewer's own calendar, regardless of whose
-  // /cal/:nick page is open — creation requires a local channel on this server.
-  const canCreate = () => auth()?.isLocal === true;
 
-  const today = new Date();
-  const [viewType, setViewType] = createSignal<ViewType>("month");
-  const [anchor, setAnchor] = createSignal(today);
   const [activeDay, setActiveDay] = createSignal<string | null>(null);
-  const [showModal, setShowModal] = createSignal(false);
 
   const fetchRange = createMemo(() => rangeForView(viewType(), anchor()));
 
@@ -85,11 +77,6 @@ export default function CalendarContentWidget() {
     return d.toLocaleDateString(locale(), { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   });
 
-  function handleDayClick(date: string) {
-    setActiveDay(date);
-    setShowModal(true);
-  }
-
   function refreshCurrent() {
     const n = nick();
     if (n) loadCalendar(n, fetchRange(), true);
@@ -124,93 +111,44 @@ export default function CalendarContentWidget() {
     return visibleEvents().filter(ev => eventOnDay(ev, d));
   });
 
-  const VIEWS: { key: ViewType; label: () => string }[] = [
-    { key: "month", label: () => t("calendar.view_month") as string },
-    { key: "week",  label: () => t("calendar.view_week")  as string },
-    { key: "day",   label: () => t("calendar.view_day")   as string },
-    { key: "list",  label: () => t("calendar.view_list")  as string },
-  ];
+  // The time grids scroll inside a window-sized box, so "scroll to 7am" has
+  // something to scroll and the day headers stay put.
+  const gridBox = "h-[calc(100dvh-15rem)] min-h-[26rem]";
 
   return (
-    <div class="flex flex-col gap-3 h-full min-h-0 max-w-5xl mx-auto">
-      {/* Toolbar */}
-      <div class="flex items-center gap-2 flex-wrap">
-        <h2 class="text-lg font-semibold text-txt mr-auto">{periodLabel()}</h2>
-        <Show when={loading()}>
-          <span class="text-xs text-muted">{t("calendar.loading")}</span>
-        </Show>
-
-        {/* Navigation */}
+    <div class="flex flex-col gap-4 max-w-5xl mx-auto">
+      {/* Period + navigation */}
+      <div class="flex items-center gap-1 flex-wrap">
+        <h2 class="text-base font-semibold text-txt mr-auto tabular-nums">{periodLabel()}</h2>
         <Show when={viewType() !== "list"}>
-          <div class="flex items-center gap-1">
-            <button
-              onClick={() => navigate(-1)}
-              class="p-1.5 rounded-lg border border-rim text-muted hover:bg-elevated hover:text-txt transition-colors"
-              aria-label="Previous"
-            >
-              <MdFillChevron_left size={18} />
-            </button>
-            <button
-              onClick={() => setAnchor(new Date())}
-              class="px-2 py-1 text-xs rounded-lg border border-rim text-muted hover:bg-elevated hover:text-txt transition-colors"
-            >
-              {t("calendar.today") as string}
-            </button>
-            <button
-              onClick={() => navigate(1)}
-              class="p-1.5 rounded-lg border border-rim text-muted hover:bg-elevated hover:text-txt transition-colors"
-              aria-label="Next"
-            >
-              <MdFillChevron_right size={18} />
-            </button>
-          </div>
-        </Show>
- 
-        {/* View switcher */}
-        <div class="flex rounded-lg border border-rim overflow-hidden shrink-0">
-          {VIEWS.map(v => (
-            <button
-              type="button"
-              onClick={() => setViewType(v.key)}
-              class={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewType() === v.key
-                  ? "bg-accent text-accent-fg"
-                  : "text-muted hover:bg-elevated hover:text-txt"
-              }`}
-            >
-              {v.label()}
-            </button>
-          ))}
-        </div>
-
-        {/* New event */}
-        <Show when={canCreate()}>
-          <button
-            type="button"
-            onClick={() => openEvent({ onCreated: refreshCurrent })}
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                   bg-accent text-accent-fg hover:opacity-90 transition-opacity"
-          >
-            <MdOutlineAdd class="w-3.5 h-3.5" />
-            {t("calendar.new_event")}
+          <button type="button" onClick={() => navigate(-1)} class={iconBtn}
+            title={t("calendar.previous")} aria-label={t("calendar.previous")}>
+            <MdFillChevron_left size={20} />
+          </button>
+          <button type="button" onClick={() => setAnchor(new Date())}
+            class="px-3 py-1.5 rounded-full text-sm text-muted hover:text-txt hover:bg-elevated/70 transition-colors">
+            {t("calendar.today")}
+          </button>
+          <button type="button" onClick={() => navigate(1)} class={iconBtn}
+            title={t("calendar.next")} aria-label={t("calendar.next")}>
+            <MdFillChevron_right size={20} />
           </button>
         </Show>
-     </div>
+      </div>
 
       {/* Category filter — only when the loaded range actually has categories */}
       <Show when={allCategories().length > 0}>
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-xs text-muted mr-0.5">{t("calendar.categories_label")}</span>
+        <div class="flex items-center gap-1 flex-wrap -mt-2">
           <For each={allCategories()}>
             {(cat) => (
               <button
                 type="button"
                 aria-pressed={catFilter() === cat}
                 onClick={() => setCatFilter((c) => (c === cat ? null : cat))}
-                class={`px-2 py-0.5 rounded text-xs transition-colors ${
+                class={`px-2.5 py-1 rounded-full text-xs transition-colors ${
                   catFilter() === cat
-                    ? "bg-accent text-accent-fg"
-                    : "bg-elevated text-txt hover:opacity-80"
+                    ? "bg-accent-muted text-accent-txt font-medium"
+                    : "text-muted hover:text-txt hover:bg-elevated/60"
                 }`}
               >
                 {cat}
@@ -220,46 +158,48 @@ export default function CalendarContentWidget() {
         </div>
       </Show>
 
-      {/* View content */}
-      <div class="flex-1 min-h-0 overflow-auto">
-        <Show when={viewType() === "month"}>
-          <MonthView
-            year={anchor().getFullYear()}
-            month={anchor().getMonth() + 1}
-            events={visibleEvents()}
-            onDayClick={handleDayClick}
-          />
-        </Show>
-        <Show when={viewType() === "week"}>
-          <WeekView
-            anchor={anchor()}
-            events={visibleEvents()}
-            onDayClick={handleDayClick}
-          />
-        </Show>
-        <Show when={viewType() === "day"}>
-          <DayView
-            date={anchor()}
-            events={visibleEvents()}
-            onDayClick={handleDayClick}
-          />
-        </Show>
-        <Show when={viewType() === "list"}>
-          <ListView events={visibleEvents()} />
-        </Show>
-      </div>
+      <Show when={viewType()} keyed>
+        {(v) => (
+          <Motion.div {...fade}>
+            <Switch>
+              <Match when={v === "month"}>
+                <MonthView
+                  year={anchor().getFullYear()}
+                  month={anchor().getMonth() + 1}
+                  events={visibleEvents()}
+                  onDayClick={setActiveDay}
+                />
+              </Match>
+              <Match when={v === "week"}>
+                <div class={gridBox}>
+                  <WeekView anchor={anchor()} events={visibleEvents()} onDayClick={setActiveDay} />
+                </div>
+              </Match>
+              <Match when={v === "day"}>
+                <div class={gridBox}>
+                  <DayView date={anchor()} events={visibleEvents()} onDayClick={setActiveDay} />
+                </div>
+              </Match>
+              <Match when={v === "list"}>
+                <Show when={!loading() || events().length > 0} fallback={<SkeletonRows count={6} />}>
+                  <ListView events={visibleEvents()} />
+                </Show>
+              </Match>
+            </Switch>
+          </Motion.div>
+        )}
+      </Show>
 
-      <Show when={showModal() && activeDay()}>
+      <Show when={activeDay()}>
         <DayDetailModal
           date={activeDay()!}
           events={activeDayEvs()}
-          onClose={() => { setShowModal(false); setActiveDay(null); }}
+          onClose={() => setActiveDay(null)}
           onEventCreated={refreshCurrent}
           onEventEdited={refreshCurrent}
           onEventDeleted={refreshCurrent}
         />
       </Show>
-
     </div>
   );
 }

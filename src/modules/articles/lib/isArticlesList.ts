@@ -3,13 +3,21 @@ import { useLocation } from "@solidjs/router";
 // The articles module shares one moduleId across several distinct routed
 // views (list, series index, series detail, article detail) — Layout.tsx's
 // <Slot moduleId> only knows the module, not which route is active, so the
-// module-default header/content widgets must hide themselves outside the
-// list route or they'd render on top of the series/article views' own
-// content too.
-export function useIsArticlesList(): () => boolean {
+// module-default header/content widgets must hide themselves on routes they
+// don't belong to or they'd render on top of those views' own content.
+
+/** "list" for /articles[/:nick], "series" for /articles/:nick/series, else null. */
+export function useArticlesSection(): () => "list" | "series" | null {
   const location = useLocation();
   return () => {
     const parts = location.pathname.split("/").filter(Boolean);
-    return parts[0] === "articles" && parts.length <= 2; // /articles or /articles/:nick only
+    if (parts[0] !== "articles") return null;
+    if (parts.length <= 2) return "list";
+    return parts.length === 3 && parts[2] === "series" ? "series" : null;
   };
+}
+
+export function useIsArticlesList(): () => boolean {
+  const section = useArticlesSection();
+  return () => section() === "list";
 }

@@ -266,3 +266,19 @@ export function columnLayout(events: CalEvent[]): TimedEv[] {
   }
   return items;
 }
+
+/**
+ * How an event chip is tinted: its calendar's own colour as a soft wash when
+ * it has one (that colour is data, not theme), otherwise the theme accent.
+ * `block` is for the time-grid blocks, which also get a leading bar.
+ */
+export function eventChip(ev: CalEvent, block = false): { class: string; style?: Record<string, string> } {
+  const c = ev.calendarColor;
+  if (c) {
+    return {
+      class: "",
+      style: { background: c + (block ? "40" : "2e"), color: c, ...(block ? { "border-left": `3px solid ${c}` } : {}) },
+    };
+  }
+  return { class: `bg-accent-muted text-accent-txt${block ? " border-l-[3px] border-l-accent" : ""}` };
+}

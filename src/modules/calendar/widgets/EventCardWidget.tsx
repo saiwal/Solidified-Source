@@ -59,7 +59,7 @@ export default function EventCardWidget(props: WidgetProps) {
           {(ev) => (
             <div class="bg-surface border border-rim rounded-xl overflow-hidden">
               <div class="px-4 py-3 flex items-start gap-2">
-                <MdFillEvent size={18} class="text-accent shrink-0 mt-0.5" />
+                <MdFillEvent size={18} class="text-accent-txt shrink-0 mt-0.5" />
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-txt">{ev().title}</p>
                   <p class="text-xs text-muted mt-0.5">{eventDate(ev(), locale())}</p>
@@ -71,7 +71,7 @@ export default function EventCardWidget(props: WidgetProps) {
               <A
                 href={`/cal/${nick()}`}
                 class="block px-4 py-2 border-t border-rim text-center text-xs font-medium
-                       text-accent hover:bg-elevated transition-colors"
+                       text-accent-txt hover:bg-elevated transition-colors"
               >
                 {t("widgets.view_calendar")}
               </A>

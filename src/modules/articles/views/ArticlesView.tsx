@@ -1,9 +1,8 @@
-// The title/search/new-article bar and the article list are registered as
-// widgets in ../index.ts (header / contentTop slots) and rendered by
-// Layout.tsx's <Slot .../> around this view — see hq/views/HqView.tsx for
-// the same pattern. Both widgets self-hide outside the list route (see
-// ../lib/isArticlesList.ts) since this module's other routes (series,
-// article detail) render their own real content here instead.
+// The header (title, Articles | Series switcher, search, New article) and the
+// article list are widgets registered in ../index.ts (header / contentTop
+// slots). The header also shows on the series index; the list only on the
+// list route (see ../lib/isArticlesList.ts), since the module's other routes
+// render their own content here instead.
 export default function ArticlesView() {
   return null;
 }

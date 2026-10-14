@@ -1,11 +1,11 @@
 import { For, Show, createMemo } from "solid-js";
 import type { CalEvent } from "../api";
-import { weeksForMonth, weekLayout, todayKey } from "./calUtils";
+import { weeksForMonth, weekLayout, todayKey, eventChip } from "./calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 
 const LANE_H = 22;
-const DAY_NUM_H = 30;
+const DAY_NUM_H = 34;
 
 // 2000-01-02 is a Sunday — anchor for building the weekday header labels.
 function weekdayLabels(locale: string, mondayStart: boolean): string[] {
@@ -28,17 +28,15 @@ export default function MonthView(props: Props) {
   const monthPrefix = () => `${props.year}-${String(props.month).padStart(2, "0")}`;
   const weeks = createMemo(() => weeksForMonth(props.year, props.month, mondayStart()));
   const headerLabels = () => weekdayLabels(locale(), mondayStart());
+  const fullDate = (date: string) =>
+    new Date(date + "T00:00:00").toLocaleDateString(locale(), { weekday: "long", month: "long", day: "numeric" });
 
   return (
     <div class="flex flex-col">
       {/* Weekday header */}
-      <div class="grid grid-cols-7 border-b border-rim sticky top-0 bg-surface z-10">
+      <div class="grid grid-cols-7 sticky top-0 bg-base z-10">
         <For each={headerLabels()}>
-          {(wd) => (
-            <div class="text-center text-xs font-medium text-muted py-2 border-r border-rim last:border-r-0">
-              {wd}
-            </div>
-          )}
+          {(wd) => <div class="text-center text-xs text-muted py-2">{wd}</div>}
         </For>
       </div>
 
@@ -47,8 +45,8 @@ export default function MonthView(props: Props) {
           const layout = createMemo(() => weekLayout(weekDates, props.events));
 
           return (
-            <div class="relative border-b border-rim last:border-b-0">
-              {/* Day cells — contain day number + spacer + single-day pills */}
+            <div class="relative border-t border-rim/40">
+              {/* Day cells — day number + spacer + single-day pills */}
               <div class="grid grid-cols-7">
                 <For each={weekDates}>
                   {(date) => {
@@ -59,41 +57,45 @@ export default function MonthView(props: Props) {
                     const spacerH = () => layout().lanes.length * LANE_H;
 
                     return (
-                      <div
-                        class={`border-r border-rim last:border-r-0 p-1 cursor-pointer
-                          hover:bg-elevated transition-colors min-h-[80px]
-                          ${inMonth ? "bg-surface" : "bg-base"}`}
+                      <button
+                        type="button"
+                        aria-label={fullDate(date)}
+                        aria-current={isToday ? "date" : undefined}
+                        class={`block text-left p-1 min-h-[88px] rounded-xl transition-colors
+                          hover:bg-elevated/40 focus-visible:outline-2 focus-visible:outline-accent
+                          ${isToday ? "bg-accent-muted/30" : ""}`}
                         onClick={() => props.onDayClick(date)}
                       >
                         <span
-                          class={`text-xs font-semibold w-6 h-6 flex items-center justify-center
-                            rounded-full mb-0.5
-                            ${isToday ? "bg-accent text-accent-fg"
-                              : inMonth ? "text-txt" : "text-muted"}`}
+                          class={`text-xs w-7 h-7 flex items-center justify-center rounded-full tabular-nums
+                            ${isToday ? "bg-accent text-accent-fg font-semibold"
+                              : inMonth ? "text-txt" : "text-muted/50"}`}
                         >
                           {day}
                         </span>
                         {/* Spacer reserves room for the absolute-positioned spanning bars */}
                         <Show when={spacerH() > 0}>
-                          <div style={{ height: `${spacerH()}px` }} />
+                          <span class="block" style={{ height: `${spacerH()}px` }} />
                         </Show>
                         <For each={dayEvs().slice(0, 2)}>
-                          {(ev) => (
-                            <div
-                              class="text-[0.625rem] leading-[18px] rounded px-1 mb-0.5 font-medium truncate"
-                              style={ev.calendarColor
-                                ? { background: ev.calendarColor + "33", color: ev.calendarColor }
-                                : undefined}
-                              classList={{ "bg-accent-muted text-accent": !ev.calendarColor }}
-                            >
-                              {ev.title || t("calendar.no_title")}
-                            </div>
-                          )}
+                          {(ev) => {
+                            const chip = eventChip(ev);
+                            return (
+                              <span
+                                class={`block text-[0.625rem] leading-[18px] rounded-md px-1.5 mb-0.5 font-medium truncate ${chip.class}`}
+                                style={chip.style}
+                              >
+                                {ev.title || t("calendar.no_title")}
+                              </span>
+                            );
+                          }}
                         </For>
                         <Show when={dayEvs().length > 2}>
-                          <span class="text-[0.625rem] text-muted pl-1">+{dayEvs().length - 2} more</span>
+                          <span class="block text-[0.625rem] text-muted pl-1.5">
+                            {t("calendar.more_events", { count: String(dayEvs().length - 2) })}
+                          </span>
                         </Show>
-                      </div>
+                      </button>
                     );
                   }}
                 </For>
@@ -111,18 +113,17 @@ export default function MonthView(props: Props) {
                         <For each={lane}>
                           {(span) => {
                             const pct = 100 / 7;
-                            const color = span.event.calendarColor;
+                            const chip = eventChip(span.event);
                             return (
                               <div
-                                class={`absolute top-0.5 bottom-0.5 text-[0.625rem] leading-[18px] font-medium px-1
-                                  truncate pointer-events-auto cursor-pointer
-                                  ${span.startsBefore ? "" : "rounded-l"} ${span.endsAfter ? "" : "rounded-r"}`}
+                                class={`absolute top-0.5 bottom-0.5 text-[0.625rem] leading-[18px] font-medium px-1.5
+                                  truncate pointer-events-auto cursor-pointer ${chip.class}
+                                  ${span.startsBefore ? "" : "rounded-l-md"} ${span.endsAfter ? "" : "rounded-r-md"}`}
                                 style={{
-                                  left: span.startsBefore ? "0" : `calc(${span.startCol * pct}% + 2px)`,
-                                  right: span.endsAfter ? "0" : `calc(${(6 - span.endCol) * pct}% + 2px)`,
-                                  ...(color ? { background: color + "33", color } : {}),
+                                  left: span.startsBefore ? "0" : `calc(${span.startCol * pct}% + 4px)`,
+                                  right: span.endsAfter ? "0" : `calc(${(6 - span.endCol) * pct}% + 4px)`,
+                                  ...chip.style,
                                 }}
-                                classList={{ "bg-accent-muted text-accent": !color }}
                                 onClick={() => props.onDayClick(weekDates[span.startCol])}
                               >
                                 {!span.startsBefore && (span.event.title || t("calendar.no_title"))}

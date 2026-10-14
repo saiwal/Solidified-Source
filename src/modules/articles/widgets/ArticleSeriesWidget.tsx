@@ -47,18 +47,18 @@ export default function ArticleSeriesWidget() {
           when={(data() ?? []).length > 0}
           fallback={<p class="px-4 py-3 text-xs text-muted">{t("articles.series_no_series")}</p>}
         >
-          <ul class="divide-y divide-rim">
+          <ul class="p-1.5 space-y-0.5">
             <For each={data()}>
               {(series) => (
                 <li>
                   <A
                     href={`/articles/${nick()}/series/${encodeURIComponent(series.name)}`}
-                    class="w-full px-4 py-2.5 flex items-center gap-2 text-left hover:bg-elevated transition-colors group"
+                    class="w-full px-2.5 py-2 rounded-xl flex items-center gap-2 text-left hover:bg-elevated/40 transition-colors group"
                   >
-                    <span class="flex-1 text-sm truncate text-txt group-hover:text-accent transition-colors">
+                    <span class="flex-1 text-sm truncate text-txt group-hover:text-accent-txt transition-colors">
                       {series.name}
                     </span>
-                    <span class="text-xs text-muted shrink-0">{series.count}</span>
+                    <span class="text-xs text-muted shrink-0 tabular-nums">{series.count}</span>
                   </A>
                 </li>
               )}

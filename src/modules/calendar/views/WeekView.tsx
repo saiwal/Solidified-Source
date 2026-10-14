@@ -1,9 +1,10 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createMemo, onMount } from "solid-js";
 import type { CalEvent } from "../api";
 import {
   HOUR_H, localDay, startOfWeek, addDays, isoDateStr, todayKey,
-  weekLayout, columnLayout, eventTopPx, eventHeightPx,
+  weekLayout, columnLayout, eventTopPx, eventHeightPx, eventChip,
 } from "./calUtils";
+import NowLine from "./NowLine";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 
@@ -15,11 +16,6 @@ interface Props {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const TIME_W = 44;
-
-function nowY() {
-  const n = new Date();
-  return (n.getHours() + n.getMinutes() / 60) * HOUR_H;
-}
 
 export default function WeekView(props: Props) {
   const { t, locale } = useI18n();
@@ -54,41 +50,39 @@ export default function WeekView(props: Props) {
 
   // allInLanes=true: single-day all-day events also appear in the banner (not just multi-day ones).
   const banner = createMemo(() => weekLayout(weekDates(), allDayEvs(), true));
-  const [curY, setCurY] = createSignal(nowY());
-  const timer = setInterval(() => setCurY(nowY()), 60_000);
-  onCleanup(() => clearInterval(timer));
+  const cols = `${TIME_W}px repeat(7, minmax(0, 1fr))`;
 
   let gridRef!: HTMLDivElement;
   onMount(() => gridRef?.scrollTo({ top: 7 * HOUR_H - 16 }));
 
   return (
-    <div class="flex flex-col h-full border border-rim rounded-xl overflow-hidden">
+    <div class="flex flex-col h-full">
       {/* Day headers */}
-      <div
-        class="grid border-b border-rim bg-surface shrink-0"
-        style={{ "grid-template-columns": `${TIME_W}px repeat(7, 1fr)` }}
-      >
-        <div class="border-r border-rim" />
+      <div class="grid shrink-0 pb-2" style={{ "grid-template-columns": cols }}>
+        <div />
         <For each={weekDates()}>
           {(date) => {
             const isToday = date === todayK;
             const d = new Date(date + "T12:00:00");
             return (
-              <div
-                class={`text-center py-2 border-r border-rim last:border-r-0 cursor-pointer
-                  hover:bg-elevated transition-colors ${isToday ? "bg-accent-muted/30" : ""}`}
+              <button
+                type="button"
+                aria-current={isToday ? "date" : undefined}
+                aria-label={d.toLocaleDateString(locale(), { weekday: "long", month: "long", day: "numeric" })}
+                class="flex flex-col items-center gap-0.5 py-1 rounded-xl hover:bg-elevated/40 transition-colors
+                  focus-visible:outline-2 focus-visible:outline-accent"
                 onClick={() => props.onDayClick(date)}
               >
-                <div class="text-[0.625rem] font-medium text-muted uppercase">
+                <span class={`text-xs ${isToday ? "text-accent-txt font-medium" : "text-muted"}`}>
                   {d.toLocaleDateString(locale(), { weekday: "short" })}
-                </div>
-                <div
-                  class={`text-sm font-bold mx-auto w-7 h-7 flex items-center justify-center
-                    rounded-full mt-0.5 ${isToday ? "bg-accent text-accent-fg" : "text-txt"}`}
+                </span>
+                <span
+                  class={`text-sm font-semibold w-8 h-8 flex items-center justify-center rounded-full tabular-nums
+                    ${isToday ? "bg-accent text-accent-fg" : "text-txt"}`}
                 >
                   {d.getDate()}
-                </div>
-              </div>
+                </span>
+              </button>
             );
           }}
         </For>
@@ -96,37 +90,27 @@ export default function WeekView(props: Props) {
 
       {/* All-day banner */}
       <Show when={banner().lanes.length > 0}>
-        <div
-          class="border-b border-rim shrink-0"
-          style={{ "grid-template-columns": `${TIME_W}px 1fr`, display: "grid" }}
-        >
-          <div class="border-r border-rim text-[0.625rem] text-muted flex items-center justify-end pr-2">
+        <div class="grid shrink-0 pb-2" style={{ "grid-template-columns": `${TIME_W}px 1fr` }}>
+          <div class="text-[0.625rem] text-muted flex items-center justify-end pr-2">
             {t("calendar.all_day")}
           </div>
-          <div
-            class="relative"
-            style={{ "min-height": `${banner().lanes.length * 22 + 6}px` }}
-          >
+          <div class="relative" style={{ "min-height": `${banner().lanes.length * 22 + 6}px` }}>
             <For each={banner().lanes}>
               {(lane, li) => (
-                <div
-                  class="absolute left-0 right-0"
-                  style={{ top: `${li() * 22 + 3}px`, height: "20px" }}
-                >
+                <div class="absolute left-0 right-0" style={{ top: `${li() * 22 + 3}px`, height: "20px" }}>
                   <For each={lane}>
                     {(span) => {
                       const pct = 100 / 7;
-                      const color = span.event.calendarColor;
+                      const chip = eventChip(span.event);
                       return (
                         <div
-                          class={`absolute h-full text-[0.625rem] leading-[20px] font-medium px-1 truncate
-                            cursor-pointer ${span.startsBefore ? "" : "rounded-l"} ${span.endsAfter ? "" : "rounded-r"}`}
+                          class={`absolute h-full text-[0.625rem] leading-[20px] font-medium px-1.5 truncate
+                            cursor-pointer ${chip.class} ${span.startsBefore ? "" : "rounded-l-md"} ${span.endsAfter ? "" : "rounded-r-md"}`}
                           style={{
                             left: span.startsBefore ? "0" : `calc(${span.startCol * pct}% + 2px)`,
                             right: span.endsAfter ? "0" : `calc(${(6 - span.endCol) * pct}% + 2px)`,
-                            ...(color ? { background: color + "33", color } : {}),
+                            ...chip.style,
                           }}
-                          classList={{ "bg-accent-muted text-accent": !color }}
                           onClick={() => props.onDayClick(weekDates()[span.startCol])}
                         >
                           {!span.startsBefore && (span.event.title || t("calendar.no_title"))}
@@ -142,22 +126,15 @@ export default function WeekView(props: Props) {
       </Show>
 
       {/* Scrollable time grid */}
-      <div class="flex-1 overflow-y-auto" ref={gridRef!}>
-        <div
-          class="relative"
-          style={{
-            "display": "grid",
-            "grid-template-columns": `${TIME_W}px repeat(7, 1fr)`,
-            "height": `${24 * HOUR_H}px`,
-          }}
-        >
-          {/* Time labels + row lines */}
-          <div class="relative border-r border-rim">
+      <div class="flex-1 min-h-0 overflow-y-auto border-t border-rim/40" ref={gridRef!}>
+        <div class="relative grid" style={{ "grid-template-columns": cols, height: `${24 * HOUR_H}px` }}>
+          {/* Time labels */}
+          <div class="relative">
             <For each={HOURS}>
               {(h) => (
                 <div
-                  class="absolute right-2 text-[0.625rem] text-muted leading-none"
-                  style={{ top: `${h * HOUR_H - 6}px` }}
+                  class="absolute right-2 text-[0.625rem] text-muted leading-none tabular-nums"
+                  style={{ top: `${h * HOUR_H - 5}px` }}
                 >
                   {h > 0 ? `${h}:00` : ""}
                 </div>
@@ -173,7 +150,7 @@ export default function WeekView(props: Props) {
 
               return (
                 <div
-                  class={`relative border-r border-rim last:border-r-0 ${isToday ? "bg-accent-muted/10" : ""}`}
+                  class={`relative border-l border-rim/30 ${isToday ? "bg-accent-muted/20" : ""}`}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest("[data-ev]")) return;
                     props.onDayClick(date);
@@ -182,53 +159,38 @@ export default function WeekView(props: Props) {
                   {/* Hour lines */}
                   <For each={HOURS}>
                     {(h) => (
-                      <div
-                        class="absolute left-0 right-0 border-t border-rim"
-                        style={{ top: `${h * HOUR_H}px` }}
-                      />
+                      <div class="absolute left-0 right-0 border-t border-rim/30" style={{ top: `${h * HOUR_H}px` }} />
                     )}
                   </For>
 
-                  {/* Current-time bar */}
                   <Show when={isToday}>
-                    <div
-                      class="absolute left-0 right-0 z-10 pointer-events-none"
-                      style={{ top: `${curY()}px` }}
-                    >
-                      <div class="relative">
-                        <div class="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-red-500" />
-                        <div class="border-t border-red-500 w-full" />
-                      </div>
-                    </div>
+                    <NowLine />
                   </Show>
 
                   {/* Timed events */}
                   <For each={items()}>
                     {(item) => {
-                      const color = item.event.calendarColor;
+                      const chip = eventChip(item.event, true);
                       const top = eventTopPx(item.event.start);
                       const height = eventHeightPx(item.event.start, item.event.end);
                       const startLbl = new Date(item.event.start).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
                       return (
                         <div
                           data-ev
-                          class="absolute rounded overflow-hidden px-1 py-0.5 text-[0.625rem] font-medium
-                            cursor-pointer leading-snug"
+                          class={`absolute rounded-md overflow-hidden px-1.5 py-0.5 text-[0.625rem] font-medium
+                            cursor-pointer leading-snug ${chip.class}`}
                           style={{
                             top: `${top}px`,
                             height: `${height}px`,
                             left: `${(item.col / item.totalCols) * 100}%`,
-                            width: `calc(${(1 / item.totalCols) * 100}% - 2px)`,
-                            "margin-left": "1px",
-                            ...(color
-                              ? { background: color + "44", color, "border-left": `3px solid ${color}` }
-                              : {}),
+                            width: `calc(${(1 / item.totalCols) * 100}% - 3px)`,
+                            "margin-left": "2px",
+                            ...chip.style,
                           }}
-                          classList={{ "bg-accent-muted text-accent border-l-2 border-l-accent": !color }}
                           onClick={() => props.onDayClick(date)}
                         >
                           <div class="font-semibold truncate">{item.event.title || t("calendar.no_title")}</div>
-                          <div class="opacity-70">{startLbl}</div>
+                          <div class="opacity-70 tabular-nums">{startLbl}</div>
                         </div>
                       );
                     }}

@@ -2182,6 +2182,13 @@ export type RawDictionary = {
     series_reorder_hint:   string;
     series_articles_count: string;
     back_to_series_index:  string;
+    back: string;
+    more: string;
+    like: string;
+    dislike: string;
+    move_up: string;
+    move_down: string;
+    rename: string;
   };
   cards: {
     title_mine: string;
@@ -2407,6 +2414,16 @@ export type RawDictionary = {
     today:                  string;
     no_upcoming_events:     string;
     upcoming_events:        string;
+    previous: string;
+    next: string;
+    more: string;
+    events_count: string;
+    more_events: string;
+    show_calendar: string;
+    hide_calendar: string;
+    export: string;
+    edit: string;
+    retry: string;
   };
   chat: {
     title_mine: string;

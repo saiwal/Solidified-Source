@@ -25,6 +25,7 @@ import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import CommentThread from "@/shared/views/CommentThread";
+import ActionBtn, { pop } from "./ActionBtn";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
@@ -99,22 +100,6 @@ function subtreeContainsUuid(nodes: ThreadNode[], uuid: string): boolean {
 
 // Persists across remounts caused by setNodeChildren updating the post reference.
 // openVersion is bumped on every change so the deep-thread collapse can react to it.
-// Click feedback on a reaction icon. WAAPI rather than a CSS class so it
-// replays on every click; callers pass a stable wrapper, since the icon inside
-// swaps outline → filled and a replaced node would drop the animation.
-function pop(el: Element | null | undefined, spin = false) {
-  if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  // 72deg = one star point, so the spin lands on an identical-looking star.
-  el.animate(
-    [
-      { transform: "scale(1) rotate(0)" },
-      { transform: `scale(1.4) rotate(${spin ? 36 : 0}deg)` },
-      { transform: `scale(1) rotate(${spin ? 72 : 0}deg)` },
-    ],
-    { duration: 350, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
-  );
-}
-
 const openedByMid = new Set<string>();
 const [openVersion, setOpenVersion] = createSignal(0);
 function setOpened(mid: string, open: boolean) {
@@ -2930,28 +2915,6 @@ function DeliveryReport(props: {
         </Show>
       </Show>
     </div>
-  );
-}
-
-function ActionBtn(props: {
-  icon: any;
-  count: number;
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-  activeClass: string;
-}) {
-  return (
-    <button
-      onClick={(e) => { pop(e.currentTarget.firstElementChild); props.onClick(); }}
-      title={props.label}
-      class={`flex items-center gap-1 wide:gap-1.5 px-2 wide:px-3 py-1.5 rounded-lg text-sm font-medium
-              transition-colors select-none hover:bg-overlay
-              ${props.active ? props.activeClass : "text-muted"}`}
-    >
-      <span class="inline-flex">{props.icon}</span>
-      <Show when={props.count > 0}><span>{props.count}</span></Show>
-    </button>
   );
 }
 
