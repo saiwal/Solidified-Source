@@ -35,6 +35,12 @@ check('emphasis', $bb('*em* and **strong**'),         $has('[i]em[/i]'));
 check('strong',   $bb('*em* and **strong**'),         $has('[b]strong[/b]'));
 check('list',     $bb("- one\n- two"),                $has('[list]'));
 check('ordered',  $bb("1. first\n2. second"),         $has('[list=1]'));
+// marked lets a list interrupt a paragraph; MarkdownExtra needs a blank line.
+check('list after text',    $bb("Intro\n- one\n- two"),   $has("Intro\n\n[list]"));
+check('ordered after text', $bb("Steps:\n1. a\n2. b"),    $has('[list=1]'));
+check('year not a list',    $bb("in\n2026. we"),           fn($g) => !str_contains($g, '[list'));
+check('nested untouched',   $bb("- a\n  - b\n- c"),        fn($g) => substr_count($g, '[list]') === 2);
+check('fence untouched',    $bb("```\ntext\n- x\n```"),  fn($g) => !str_contains($g, '[list'));
 check('link',     $bb('[link](https://example.com)'), $has('[url=https://example.com]link[/url]'));
 check('image',    $bb('![i](https://e.com/a.png)'),   $has('[img'));
 check('code',     $bb('`code`'),                      $has('[code]code[/code]'));
