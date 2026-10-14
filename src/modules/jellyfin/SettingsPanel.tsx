@@ -9,6 +9,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import { audience, audienceLoaded, loadAudience, setAudience, reminder, setReminder, setSettingsOpen, type Audience } from "./settings";
 import { buildRecap, type RecapPeriod } from "./recap";
+import { vaultStatus, lockVault, resetVault, type VaultStatus } from "@utsukta/spa-core/lib/vault";
+import { resyncFromHub } from "./store";
 import { ghostPill } from "./ui";
 
 const AUDIENCES: Audience[] = ["off", "self", "connections", "public"];
@@ -102,6 +104,8 @@ export default function SettingsPanel(props: { recap: ReturnType<typeof useRecap
         <p class="text-xs text-muted">{t("jellyfin.reminder_help")}</p>
       </div>
 
+      <VaultSettings />
+
       <div class="flex flex-wrap gap-2 pt-2">
         <button type="button" disabled={props.recap.busy()} onClick={() => void props.recap.open("day")}
           class={ghostPill}>
@@ -113,5 +117,41 @@ export default function SettingsPanel(props: { recap: ReturnType<typeof useRecap
         </button>
       </div>
     </section>
+  );
+}
+
+/** Vault: lock this browser, or reset after a forgotten passphrase. */
+function VaultSettings() {
+  const { t } = useI18n();
+  const [status, setStatus] = createSignal<VaultStatus | null>(null);
+  const [confirming, setConfirming] = createSignal(false);
+  const refresh = () => vaultStatus().then(setStatus).catch(() => setStatus(null));
+  void refresh();
+  return (
+    <Show when={status() && status() !== "new"}>
+      <div class="space-y-2">
+        <p class="text-sm text-txt">{t("jellyfin.vault_title")}</p>
+        <p class="text-xs text-muted">{t("jellyfin.vault_settings_help")}</p>
+        <div class="flex flex-wrap gap-2">
+          <Show when={status() === "unlocked"}>
+            <button type="button" class={ghostPill} onClick={() => void lockVault().then(refresh)}>{t("jellyfin.vault_lock")}</button>
+          </Show>
+          <Show when={!confirming()} fallback={
+            <>
+              <span class="text-sm text-red-500 self-center">{t("jellyfin.vault_reset_confirm")}</span>
+              <button type="button" class={ghostPill} onClick={() => setConfirming(false)}>{t("jellyfin.cancel")}</button>
+              <button type="button" class={`${ghostPill} !text-red-500`} onClick={async () => {
+                await resetVault(["jellyfin"]).catch(() => toast.error(t("jellyfin.save_failed")));
+                setConfirming(false);
+                await refresh();
+                void resyncFromHub();
+              }}>{t("jellyfin.vault_reset")}</button>
+            </>
+          }>
+            <button type="button" class={ghostPill} onClick={() => setConfirming(true)}>{t("jellyfin.vault_reset")}</button>
+          </Show>
+        </div>
+      </div>
+    </Show>
   );
 }

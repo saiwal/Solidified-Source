@@ -4,11 +4,12 @@
 import { createSignal, createEffect, Show, For } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useSearchParams } from "@solidjs/router";
-import { MdFillSearch, MdFillClose, MdOutlineDevices, MdOutlineMore_horiz, MdFillCheck, MdFillAdd, MdOutlineSettings, MdOutlineLogout } from "solid-icons/md";
+import { MdFillSearch, MdFillClose, MdOutlineDevices, MdOutlineMore_horiz, MdFillCheck, MdFillAdd, MdOutlineSettings, MdOutlineLogout, MdOutlineCloud_off } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createPopover } from "@/shared/stream/filters/createPopover";
-import { session, servers, isConnected, adding, setAdding, setActive, signOut } from "../store";
+import { session, servers, isConnected, adding, setAdding, setActive, signOut, hubStored, forgetOnHub } from "../store";
+import { toast } from "@utsukta/spa-core/store/toast";
 import { remotePlaying, useRemotePolling } from "../remote";
 import { setSettingsOpen } from "../settings";
 import { useSection, PAGE_PARAMS, type Section } from "../chrome/section";
@@ -147,6 +148,17 @@ export default function JellyfinHeaderWidget() {
               <span class="w-4 shrink-0 text-muted"><MdOutlineLogout size={16} /></span>
               <span class="truncate">{t("jellyfin.sign_out_of", { server: session()?.name ?? "" })}</span>
             </button>
+            <Show when={session() && hubStored().has(session()!.id)}>
+              <button type="button" class={menuItem} title={t("jellyfin.hub_forget_help")}
+                onClick={() => {
+                  more.setOpen(false);
+                  const s = session();
+                  if (s) forgetOnHub(s.id).then(() => toast.success(t("jellyfin.hub_forgotten"))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
+                }}>
+                <span class="w-4 shrink-0 text-muted"><MdOutlineCloud_off size={16} /></span>
+                <span class="truncate">{t("jellyfin.hub_forget")}</span>
+              </button>
+            </Show>
           </div>
         </Portal>
       </Show>

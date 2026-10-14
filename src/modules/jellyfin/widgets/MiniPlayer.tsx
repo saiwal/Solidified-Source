@@ -9,7 +9,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { MdFillPlay_arrow, MdFillPause, MdFillSkip_next, MdFillSkip_previous, MdFillGroups } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { imageUrl, type JellyfinSession, type JfItem } from "../api";
-import { currentSession, sessionFor, current, hasNext, playing, loading, toggle, next, prev } from "../store";
+import { currentSession, sessionFor, current, hasNext, playing, loading, toggle, next, prev, syncFromHub } from "../store";
 import { remotePlaying, remoteCommand, useRemotePolling } from "../remote";
 import { Art } from "../ui";
 import { Motion, slideUp } from "../anim";
@@ -38,6 +38,8 @@ export default function MiniPlayer() {
   usePresence();
   useRecapReminder();
   usePartyNotices();
+  // Sign this browser in to servers stored on the hub (once per page load)
+  void syncFromHub();
   const navigate = useNavigate();
   setPartyNavigator((path) => navigate(path));
   onCleanup(() => setPartyNavigator(null));

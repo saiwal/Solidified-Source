@@ -7,13 +7,15 @@ import Modal from "@/shared/views/Modal";
 import PlayerBar from "../player/PlayerBar";
 import FullPlayer from "../player/FullPlayer";
 import { Browser } from "../library/views";
+import VaultUnlock from "../VaultUnlock";
+import { vaultStatus, unlockVault, type VaultStatus } from "@utsukta/spa-core/lib/vault";
 import SettingsPanel, { useRecapComposer } from "../SettingsPanel";
 import { settingsOpen, setSettingsOpen } from "../settings";
 import { videoActive } from "../video/state";
 import { Motion, fade, pop } from "../anim";
 import {
   session, servers, deviceId, isConnected, adding, setAdding, prefillUrl, addServer,
-  current, toggle, next, prev, seek, position, muted, setMuted, startAddServer, sessionFor, setActive,
+  current, toggle, next, prev, seek, position, muted, setMuted, startAddServer, sessionFor, setActive, rememberOnHub, syncFromHub,
 } from "../store";
 import { joinParty, party } from "../syncplay";
 import { primaryPill, ghostPill } from "../ui";
@@ -76,13 +78,19 @@ export default function JellyfinContentWidget() {
   const { t } = useI18n();
   usePlayerShortcuts();
   usePartyJoin();
+  // Hub-stored sign-ins (once per page load; the mini-player may have started it already)
+  void syncFromHub();
   const recap = useRecapComposer();
   return (
     // Tall enough that the player bar rests at the foot of the window even
     // when a page is short; it is sticky within this column.
     <div class="max-w-5xl mx-auto min-h-[calc(100dvh-13rem)] flex flex-col">
-      <Show when={isConnected() && !adding()} fallback={<Motion.div {...fade}><ConnectForm /></Motion.div>}>
-        <div class="flex-1">
+      <Show when={isConnected() && !adding()} fallback={
+        // A fresh browser has no servers yet — exactly when a locked vault matters most
+        <Motion.div {...fade} class="space-y-6"><VaultUnlock /><ConnectForm /></Motion.div>
+      }>
+        <div class="flex-1 space-y-6">
+          <VaultUnlock />
           <Browser s={session()!} />
         </div>
         <PlayerBar />
@@ -112,6 +120,15 @@ function ConnectForm() {
   const [pass, setPass] = createSignal("");
   const [busy, setBusy] = createSignal(false);
   const [err, setErr] = createSignal<string | null>(null);
+  const [remember, setRemember] = createSignal(false);
+  // The vault passphrase — asked only when "Remember on my hub" is ticked and
+  // this browser hasn't unlocked the vault (or there's none yet: choose one)
+  const [vault, setVault] = createSignal<VaultStatus | null>(null);
+  const [vpass, setVpass] = createSignal("");
+  const [vpass2, setVpass2] = createSignal("");
+  createEffect(() => {
+    if (remember() && vault() === null) vaultStatus().then(setVault).catch(() => setVault("new"));
+  });
 
   // An https page can't fetch from plain http (except localhost) — the browser
   // blocks it before Jellyfin sees anything, with no useful error.
@@ -125,8 +142,24 @@ function ConnectForm() {
     setBusy(true);
     setErr(null);
     try {
-      addServer(await authenticate(normaliseServer(server()), user().trim(), pass(), deviceId()));
+      if (remember() && vault() === "new" && vpass() !== vpass2()) {
+        setErr(t("jellyfin.vault_mismatch"));
+        return;
+      }
+      const session = await authenticate(normaliseServer(server()), user().trim(), pass(), deviceId());
+      addServer(session);
+      // Signed in either way; storing on the hub is a second, separate step
+      if (remember()) {
+        const unlocked = vault() === "unlocked" || (await unlockVault(vpass()).catch(() => false));
+        if (!unlocked) toast.error(t("jellyfin.vault_wrong_saved"));
+        else await rememberOnHub(session).catch((e) => {
+          console.warn("[jellyfin] Remember on my hub failed", e);
+          toast.error(`${t("jellyfin.hub_store_failed")} (${e instanceof Error ? e.message : e})`, 20_000);
+        });
+      }
       setPass("");
+      setVpass("");
+      setVpass2("");
     } catch (ex) {
       setErr(ex instanceof JellyfinError && ex.status === 401 ? t("jellyfin.err_credentials") : t("jellyfin.err_unreachable"));
     } finally {
@@ -163,6 +196,27 @@ function ConnectForm() {
         <input type="password" value={pass()} onInput={(e) => setPass(e.currentTarget.value)}
           class={field} autocomplete="current-password" />
       </label>
+      <label class="flex items-start gap-3 text-sm text-txt">
+        <input type="checkbox" class="mt-0.5" checked={remember()} onChange={(e) => setRemember(e.currentTarget.checked)} />
+        <span class="space-y-0.5">
+          <span class="block">{t("jellyfin.hub_remember")}</span>
+          <span class="block text-xs text-muted">{t("jellyfin.hub_remember_help")}</span>
+        </span>
+      </label>
+      <Show when={remember() && (vault() === "new" || vault() === "locked")}>
+        <label class="block space-y-1">
+          <span class="text-xs text-muted">{vault() === "new" ? t("jellyfin.vault_choose") : t("jellyfin.vault_passphrase")}</span>
+          <input type="password" required minLength={vault() === "new" ? 10 : undefined} value={vpass()} onInput={(e) => setVpass(e.currentTarget.value)}
+            class={field} autocomplete={vault() === "new" ? "new-password" : "current-password"} />
+        </label>
+        <Show when={vault() === "new"}>
+          <label class="block space-y-1">
+            <span class="text-xs text-muted">{t("jellyfin.vault_confirm")}</span>
+            <input type="password" required value={vpass2()} onInput={(e) => setVpass2(e.currentTarget.value)} class={field} autocomplete="new-password" />
+          </label>
+          <p class="text-xs text-muted">{t("jellyfin.vault_new_help")}</p>
+        </Show>
+      </Show>
       <Show when={err()}>
         <p class="text-sm text-red-500">{err()}</p>
       </Show>

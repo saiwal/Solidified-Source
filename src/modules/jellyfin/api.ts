@@ -71,6 +71,8 @@ export interface JellyfinStore {
   deviceId: string;
   active: string | null;
   servers: JellyfinSession[];
+  /** Hub-stored servers signed out of on this device only — not re-added by the hub sync. */
+  hubSkip?: string[];
 }
 
 export function loadStore(): JellyfinStore {
@@ -80,7 +82,7 @@ export function loadStore(): JellyfinStore {
   } catch { /* unreadable or blocked — start fresh */ }
   const r = raw as Partial<JellyfinStore & JellyfinSession> | null;
   if (r && Array.isArray(r.servers) && r.deviceId) {
-    return { deviceId: r.deviceId, active: r.active ?? null, servers: r.servers };
+    return { deviceId: r.deviceId, active: r.active ?? null, servers: r.servers, hubSkip: Array.isArray(r.hubSkip) ? r.hubSkip : [] };
   }
   // Pre-multi-server shape: a bare session object. Keep it signed in.
   if (r && typeof r.server === "string" && r.deviceId) {
@@ -107,10 +109,10 @@ export function normaliseServer(url: string): string {
   return s;
 }
 
-function authHeader(deviceId: string, token?: string): string {
+function authHeader(deviceId: string, token?: string, device?: string): string {
   const parts = [
     `Client="${CLIENT}"`,
-    `Device="${navigator.userAgent.includes("Mobile") ? "Mobile browser" : "Browser"}"`,
+    `Device="${device ?? (navigator.userAgent.includes("Mobile") ? "Mobile browser" : "Browser")}"`,
     `DeviceId="${deviceId}"`,
     `Version="${VERSION}"`,
   ];
@@ -139,15 +141,8 @@ async function jf<T>(s: JellyfinSession, path: string, init?: RequestInit): Prom
   return (res.status === 204 ? undefined : await res.json()) as T;
 }
 
-/** Sign in with username/password; the password is used once and never stored. */
-export async function authenticate(server: string, username: string, password: string, deviceId: string): Promise<JellyfinSession> {
-  const res = await fetch(`${server}/Users/AuthenticateByName`, {
-    method: "POST",
-    headers: { Authorization: authHeader(deviceId), "Content-Type": "application/json" },
-    body: JSON.stringify({ Username: username, Pw: password }),
-  });
-  if (!res.ok) throw new JellyfinError(`Jellyfin ${res.status}`, res.status);
-  const data = await res.json();
+/** A session from Jellyfin's AuthenticationResult (password or Quick Connect sign-in). */
+async function sessionFrom(server: string, data: any, deviceId: string): Promise<JellyfinSession> {
   // Name is cosmetic (the switcher label) — fall back to the host on failure
   const info = await fetch(`${server}/System/Info/Public`).then((r) => r.json()).catch(() => null);
   return {
@@ -160,6 +155,52 @@ export async function authenticate(server: string, username: string, password: s
     deviceId,
     isAdmin: !!data.User.Policy?.IsAdministrator,
   };
+}
+
+/**
+ * Sign in with username/password; the password is used once and never stored.
+ * `deviceName` labels the session in Jellyfin's dashboard ("Hubzilla (stored)"
+ * for the anchor kept in the hub vault).
+ */
+export async function authenticate(server: string, username: string, password: string, deviceId: string, deviceName?: string): Promise<JellyfinSession> {
+  const res = await fetch(`${server}/Users/AuthenticateByName`, {
+    method: "POST",
+    headers: { Authorization: authHeader(deviceId, undefined, deviceName), "Content-Type": "application/json" },
+    body: JSON.stringify({ Username: username, Pw: password }),
+  });
+  if (!res.ok) throw new JellyfinError(`Jellyfin ${res.status}`, res.status);
+  return sessionFrom(server, await res.json(), deviceId);
+}
+
+/**
+ * A token of its own for a device, approved by an existing session through
+ * Quick Connect — no password. Used both ways: the hub-stored anchor approves
+ * a new browser, and a signed-in browser approves the anchor it stores. Each browser stays a
+ * separate Jellyfin session, which remote control and SyncPlay rely on.
+ * Throws JellyfinError(401) when the anchor has been revoked, and
+ * JellyfinError(403) when Quick Connect is switched off on the server.
+ */
+export async function quickConnectNewDevice(anchor: JellyfinSession, deviceId: string, deviceName?: string): Promise<JellyfinSession> {
+  const server = anchor.server;
+  const enabled = await fetch(`${server}/QuickConnect/Enabled`).then((r) => r.json()).catch(() => false);
+  if (enabled !== true) throw new JellyfinError("Quick Connect is off", 403);
+  // Each step names itself in the error, so a failure says where it broke
+  const step = async (name: string, p: Promise<Response>) => {
+    const r = await p.catch((e) => { throw new JellyfinError(`${name}: ${e instanceof Error ? e.message : e}`, 0); });
+    if (!r.ok) throw new JellyfinError(`${name}: HTTP ${r.status}`, r.status);
+    return r;
+  };
+  const init = await step("initiate", fetch(`${server}/QuickConnect/Initiate`, { method: "POST", headers: { Authorization: authHeader(deviceId, undefined, deviceName) } }));
+  const { Code, Secret } = await init.json();
+  await step("authorize", fetch(`${server}/QuickConnect/Authorize?code=${encodeURIComponent(Code)}`, {
+    method: "POST", headers: { Authorization: authHeader(anchor.deviceId, anchor.token) },
+  }));
+  const res = await step("sign-in", fetch(`${server}/Users/AuthenticateWithQuickConnect`, {
+    method: "POST",
+    headers: { Authorization: authHeader(deviceId, undefined, deviceName), "Content-Type": "application/json" },
+    body: JSON.stringify({ Secret }),
+  }));
+  return sessionFrom(server, await res.json(), deviceId);
 }
 
 /** Revoke the token server-side. Best effort — the local session is dropped regardless. */

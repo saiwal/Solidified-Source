@@ -2,8 +2,9 @@
 // created here, outside any component, so playback survives every route change
 // and widget remount. The NowPlaying widget is only a view onto it.
 import { createSignal } from "solid-js";
+import { vaultList, vaultPut, vaultDelete, vaultStatus, vaultSlots } from "@utsukta/spa-core/lib/vault";
 import {
-  loadStore, saveStore, logout, streamUrl, imageUrl, ticksToSeconds,
+  loadStore, saveStore, logout, streamUrl, imageUrl, ticksToSeconds, quickConnectNewDevice, JellyfinError,
   reportStart, reportProgress, reportStopped,
   type JellyfinStore, type JellyfinSession, type JfItem,
 } from "./api";
@@ -70,11 +71,16 @@ export function setActive(id: string): void {
  * ServerId, or the same URL — a session migrated from the single-server format
  * is keyed by URL, having never stored a ServerId.
  */
-export function addServer(s: JellyfinSession): void {
+export function addServer(s: JellyfinSession, activate = true): void {
   const st = store();
   const replaced = st.servers.filter((x) => x.id !== s.id && x.server === s.server).map((x) => x.id);
   const others = st.servers.filter((x) => x.id !== s.id && x.server !== s.server);
-  setStore({ ...st, active: s.id, servers: [...others, s] });
+  setStore({
+    ...st,
+    active: activate || !st.active ? s.id : st.active,
+    servers: [...others, s],
+    hubSkip: (st.hubSkip ?? []).filter((id) => id !== s.id), // signing in again undoes a device-only sign-out
+  });
   // Queued tracks from a replaced entry follow it to the new id
   if (replaced.length) setQueue(queue().map((q) => (replaced.includes(q.srv) ? { ...q, srv: s.id } : q)));
   setAdding(false);
@@ -92,12 +98,162 @@ export async function signOut(id: string, reconnect = false): Promise<void> {
   if (!s) return;
   dropServerFromQueue(id);
   const rest = st.servers.filter((x) => x.id !== id);
-  setStore({ ...st, servers: rest, active: st.active === id ? (rest[0]?.id ?? null) : st.active });
+  setStore({
+    ...st,
+    servers: rest,
+    active: st.active === id ? (rest[0]?.id ?? null) : st.active,
+    // Signed out here only: the hub sync mustn't quietly sign this browser back in
+    hubSkip: hubStored().has(id) ? [...new Set([...(st.hubSkip ?? []), id])] : st.hubSkip,
+  });
   if (reconnect) {
     setPrefillUrl(s.server);
     setAdding(true);
   }
   await logout(s);
+}
+
+// ── Hub vault: sign-ins stored on the hub, for other browsers and clones ──────
+//
+// Opt-in ("Remember on my hub" at sign-in). What the hub keeps — end-to-end
+// encrypted with the user's vault passphrase (spa-core/lib/vault.ts), so the
+// hub and its admin can't read it — is an *anchor*: a separate Jellyfin
+// session, labelled "Hubzilla (stored)", never used for playback. A browser
+// without a session for a stored server uses the anchor to approve a token of
+// its own through Quick Connect — every browser stays its own Jellyfin session,
+// which remote control and SyncPlay rely on.
+
+const VAULT = "jellyfin";
+
+interface HubEntry {
+  /** The Jellyfin ServerId — inside the encrypted entry, not in its slot name. */
+  id: string;
+  server: string;
+  name: string;
+  userId: string;
+  userName: string;
+  anchor: string;
+  anchorDevice: string;
+}
+
+/** Server ids (ServerId) stored on the hub, as last read. */
+const [hubStored, setHubStored] = createSignal<Set<string>>(new Set());
+/** The hub has a vault this browser hasn't unlocked yet (the page offers to). */
+const [vaultLocked, setVaultLocked] = createSignal(false);
+/**
+ * Why a hub-stored server couldn't sign this browser in: "revoked" (the
+ * anchor was rejected), "off" (Quick Connect disabled on the server) or
+ * "failed" (anything else; `detail` names the step). Shown on /jellyfin.
+ */
+export interface HubSyncError {
+  server: string;
+  name: string;
+  /** "empty": unlocked, nothing saved; "unreadable": saved entries that don't decrypt */
+  kind: "revoked" | "off" | "failed" | "empty" | "unreadable";
+  detail: string;
+}
+const [hubSyncError, setHubSyncError] = createSignal<HubSyncError | null>(null);
+export { hubStored, vaultLocked, hubSyncError };
+
+/**
+ * The vault slot for a server: a hash, so the hub doesn't even learn which
+ * Jellyfin server (its ServerId) an entry is for.
+ */
+async function slot(id: string): Promise<string> {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`jellyfin:${id}`));
+  return Array.from(new Uint8Array(h), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const anchorSession = (id: string, e: HubEntry): JellyfinSession => ({
+  id, name: e.name, server: e.server, userId: e.userId, userName: e.userName, token: e.anchor, deviceId: e.anchorDevice,
+});
+
+/**
+ * Store a server on the hub: this browser's own session approves a new
+ * "Hubzilla (stored)" session through Quick Connect, and that one becomes the
+ * anchor. No second password sign-in — a reverse proxy rate-limiting logins
+ * answered that one without CORS headers ("NetworkError") — so the password
+ * is used exactly once, and an already signed-in server can be stored too.
+ */
+export async function rememberOnHub(s: JellyfinSession): Promise<void> {
+  const anchorDevice = `hub-${crypto.randomUUID()}`;
+  // Each step labelled, so a failure says which one
+  const anchor = await quickConnectNewDevice(s, anchorDevice, "Hubzilla (stored)")
+    .catch((e) => { throw new Error(`creating the stored sign-in: ${e instanceof Error ? e.message : e}`); });
+  await vaultPut<HubEntry>(VAULT, await slot(s.id), {
+    id: s.id,
+    server: s.server, name: s.name, userId: s.userId, userName: s.userName, anchor: anchor.token, anchorDevice,
+  }).catch((e) => { throw new Error(`saving to the hub: ${e instanceof Error ? e.message : e}`); });
+  setHubStored(new Set([...hubStored(), s.id]));
+}
+
+/** Remove a server from the hub (and revoke its anchor). Browsers already signed in keep their own tokens. */
+export async function forgetOnHub(id: string): Promise<void> {
+  const key = await slot(id);
+  // Revoking the anchor needs it decrypted; locked, the entry is still deleted
+  const e = (await vaultList<HubEntry>(VAULT).catch(() => ({} as Record<string, HubEntry>)))[key];
+  if (e) await logout(anchorSession(id, e));
+  await vaultDelete(VAULT, key);
+  const next = new Set(hubStored());
+  next.delete(id);
+  setHubStored(next);
+}
+
+let hubSync: Promise<void> | null = null;
+/**
+ * Once per page load: sign this browser in to every hub-stored server it
+ * doesn't have yet. A revoked anchor or Quick Connect switched off just skips
+ * that server; with nothing signed in at all, the sign-in form is pre-filled.
+ */
+export function syncFromHub(): Promise<void> {
+  hubSync ??= (async () => {
+    let entries: Record<string, HubEntry>;
+    try {
+      const status = await vaultStatus();
+      setVaultLocked(status === "locked");
+      if (status !== "unlocked") return;
+      entries = await vaultList<HubEntry>(VAULT);
+      // Say so when there's nothing usable — otherwise unlocking looks like it did nothing
+      const total = await vaultSlots(VAULT);
+      const opened = Object.keys(entries).length;
+      if (!store().servers.length && opened === 0) {
+        setHubSyncError(total
+          ? { server: "", name: "", kind: "unreadable", detail: String(total) }
+          : { server: "", name: "", kind: "empty", detail: "" });
+      }
+    } catch (err) {
+      console.warn("[jellyfin] reading the hub vault failed", err);
+      return;
+    }
+    setHubStored(new Set(Object.values(entries).map((e) => e.id)));
+    const skip = new Set(store().hubSkip ?? []);
+    let first: HubEntry | null = null;
+    for (const e of Object.values(entries)) {
+      const id = e.id;
+      if (skip.has(id) || store().servers.some((x) => x.id === id || x.server === e.server)) continue;
+      try {
+        addServer(await quickConnectNewDevice(anchorSession(id, e), deviceId()), false);
+      } catch (err) {
+        console.warn("[jellyfin] hub sign-in failed for", e.server, err);
+        const status = err instanceof JellyfinError ? err.status : 0;
+        const detail = err instanceof Error ? err.message : String(err);
+        setHubSyncError({
+          server: e.server, name: e.name,
+          kind: status === 401 && detail.startsWith("authorize") ? "revoked" : status === 403 ? "off" : "failed",
+          detail,
+        });
+        first ??= e;
+      }
+    }
+    if (first && !store().servers.length) startAddServer(first.server);
+  })();
+  return hubSync;
+}
+
+/** After the user unlocks the vault: sync again, now that it can be read. */
+export function resyncFromHub(): Promise<void> {
+  hubSync = null;
+  setHubSyncError(null);
+  return syncFromHub();
 }
 
 // ── Player ────────────────────────────────────────────────────────────────────
