@@ -4,6 +4,7 @@ import "./tours";
 
 registerModule({
   id: "hq",
+  i18n: ["articles", "calendar", "cards", "settings"],
   // :uuid — core redirects DM notifications (/notify/view/:id, NOTIFY_MAIL)
   // server-side to classic HQ's /hq/<b64mid> permalink before the SPA loads,
   // so this route has to answer that URL too; HqView opens it in the same

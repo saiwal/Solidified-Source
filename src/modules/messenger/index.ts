@@ -8,6 +8,7 @@ const messengerView = () => import("./views/MessengerView");
 
 registerModule({
   id: "messenger",
+  i18n: ["chat"],
   // One view for every path: it parses the channel and selection out of the
   // url itself, so picking a conversation never remounts the list. On your
   // own nick it's your mailbox; on another channel, your DMs with it and the

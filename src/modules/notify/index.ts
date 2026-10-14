@@ -4,6 +4,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "notify",
+  i18n: ["hq"],
   routes: [
     { path: "/notify", component: () => import("./views/NotifyListView") },
     {

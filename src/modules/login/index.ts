@@ -3,6 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "login",
+  i18n: ["auth"],
   routes: [
     { path: "/login", component: () => import("./views/LoginView") },
   ],

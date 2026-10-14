@@ -3,6 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "profiles",
+  i18n: ["settings"],
   routes: [
     { path: "/settings/profile",     component: () => import("./views/ProfilesView") },
     { path: "/settings/profile/:id", component: () => import("./views/ProfileEditView") },

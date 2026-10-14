@@ -27,6 +27,7 @@ const settingsRoutes = SETTINGS_ITEMS.filter((item) => item.path !== "profile").
 
 registerModule({
   id: "settings",
+  i18n: ["blocklist", "directory"],
   routes: [
     { path: "/settings", component: () => import("./views/SettingsView") },
     ...settingsRoutes,

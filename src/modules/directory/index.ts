@@ -68,6 +68,7 @@ const subRoutes = CONNECTIONS_ITEMS.map((item) => ({
 
 registerModule({
   id: "directory",
+  i18n: ["chat", "guest_access", "invite", "sources"],
   routes: [
     {
       path: "/directory",

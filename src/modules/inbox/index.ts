@@ -6,6 +6,7 @@ const inboxView = () => import("./views/InboxView");
 
 registerModule({
   id: "inbox",
+  i18n: ["hq"],
   // One view, one route per section — SubPageLayout's mobile "< Back" relies
   // on the bare base path being its own route (see SettingsView).
   routes: [

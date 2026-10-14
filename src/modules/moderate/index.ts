@@ -4,6 +4,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "moderate",
+  i18n: ["directory"],
   routes: [{ path: "/moderate", component: () => import("./views/ModerateView") }],
   navItem: {
     label: () => useI18n().t("nav.moderate"),

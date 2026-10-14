@@ -4,6 +4,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 
 registerModule({
   id: "cloud",
+  i18n: ["files_mod"],
   routes: [
     { path: "/cloud", component: () => import("./views/FilesView") },
     { path: "/cloud/:nick", component: () => import("./views/FilesView") },

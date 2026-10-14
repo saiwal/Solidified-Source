@@ -7,6 +7,7 @@ import { registerModule } from "@utsukta/spa-core/module-registry";
 // GET /api/new-channel call instead.
 registerModule({
   id: "channel-create",
+  i18n: ["settings"],
   routes: [{ path: "/new_channel", component: () => import("./views/NewChannelView") }],
   slots: {},
   permissions: [],

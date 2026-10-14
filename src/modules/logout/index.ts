@@ -3,6 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "logout",
+  i18n: ["auth"],
   routes: [
     { path: "/logout", component: () => import("./views/LogoutView") },
   ],

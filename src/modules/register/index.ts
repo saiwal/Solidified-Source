@@ -3,6 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "register",
+  i18n: ["auth"],
   routes: [
     { path: "/register", component: () => import("./views/RegisterView") },
     { path: "/regate/:token", component: () => import("./views/RegateView") },

@@ -13,6 +13,7 @@ const channelWidgetPlacement: Pick<WidgetDef, "slot" | "defaultModules" | "conte
 
 registerModule({
   id: "channel",
+  i18n: ["directory"],
   routes: [
     { path: "/channel", component: () => import("./views/ChannelView") },
     { path: "/channel/:nick", component: () => import("./views/ChannelView") },

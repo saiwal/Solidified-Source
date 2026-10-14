@@ -1,6 +1,6 @@
 import { createEffect, createResource, createSignal, For, lazy, Match, onCleanup, Show, Suspense, Switch, type Component, createUniqueId } from "solid-js";
 import { marked } from "marked";
-import ePub, { type Rendition } from "epubjs";
+import type { Rendition } from "epubjs";
 import { MdFillClose_fullscreen, MdFillOpen_in_full, MdOutlineChevron_left, MdOutlineChevron_right, MdOutlineEdit } from "solid-icons/md";
 import { classifyPreview, HTML_PREVIEW_MAX_BYTES, parseCsv, TEXT_PREVIEW_MAX_BYTES } from "@utsukta/spa-core/lib/filePreview";
 import { bbcode } from "@utsukta/spa-core/lib/bbcode";
@@ -177,16 +177,21 @@ const FilePreviewModal: Component<Props> = (props) => {
   );
   onCleanup(() => { if (pdfBlobUrl.state === "ready") URL.revokeObjectURL(pdfBlobUrl()!); });
 
+  // epub.js (+ jszip, xmldom, localforage: ~320 KB) loads with the book, so
+  // previewing any other kind of file doesn't download it
   const [epubBuffer] = createResource(
     () => (kind() === "epub" ? props.url : undefined),
-    (url) => fetchArrayBuffer(url, "application/epub+zip"),
+    async (url) => {
+      const [buf, mod] = await Promise.all([fetchArrayBuffer(url, "application/epub+zip"), import("epubjs")]);
+      return { buf, ePub: mod.default };
+    },
   );
   let epubContainer: HTMLDivElement | undefined;
   let rendition: Rendition | undefined;
   createEffect(() => {
-    const buf = epubBuffer();
-    if (!buf || !epubContainer) return;
-    const book = ePub(buf);
+    const loaded = epubBuffer();
+    if (!loaded || !epubContainer) return;
+    const book = loaded.ePub(loaded.buf);
     rendition = book.renderTo(epubContainer, { width: "100%", height: "100%", flow: "scrolled-doc" });
     // epub.js renders each section into its own iframe document, which can't
     // see the host page's CSS custom properties — resolve them to literal

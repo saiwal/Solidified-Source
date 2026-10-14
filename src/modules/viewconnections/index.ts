@@ -6,6 +6,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 // in contentTop above it.
 registerModule({
   id: "viewconnections",
+  i18n: ["channel", "directory"],
   routes: [
     { path: "/viewconnections/:nick", component: () => import("./views/ViewConnectionsView") },
   ],

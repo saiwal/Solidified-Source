@@ -6,6 +6,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 
 registerModule({
   id: "cal",
+  i18n: ["calendar"],
   routes: [
     { path: "/cdav/calendar", component: () => import("./views/CalView") },
     { path: "/cal/:nick", component: () => import("./views/CalView") },

@@ -6,6 +6,7 @@ import { loadBackground } from "@utsukta/spa-core/lib/background";
 import { loadCornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { applyTheme } from "@utsukta/spa-core/lib/useTheme";
 import { installOfflineFallback } from "@utsukta/spa-core/lib/offline-fallback";
+import { i18nReady } from "@utsukta/spa-core/i18n";
 import type { ThemeId } from "@utsukta/spa-core/types/theme.types";
 
 // Before anything can issue a request.
@@ -35,4 +36,6 @@ loadTypography();
 loadBackground();
 loadCornerRadius();
 
-render(() => <App />, document.getElementById("root")!);
+// Core strings load as their own chunks; render once they're in rather than
+// paint raw keys. A failed load only warns, so this always resolves.
+i18nReady().then(() => render(() => <App />, document.getElementById("root")!));

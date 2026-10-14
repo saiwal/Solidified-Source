@@ -11,7 +11,7 @@ assert.equal(
   "Ye be viewing {{nick}}'s ship",
 );
 
-// idempotent — the dict is re-flattened on every locale change
+// idempotent — safe if a string passes through twice
 for (const s of ["Hello, my friend", "Delete the message", "No files found", "Your settings"]) {
   assert.equal(piratize(piratize(s)), piratize(s), s);
 }

@@ -8,6 +8,7 @@ import { registerModule } from "@utsukta/spa-core/module-registry";
 // itself via the account-level POST /api/portability/import call instead.
 registerModule({
   id: "channel-import",
+  i18n: ["channel_create", "settings"],
   routes: [{ path: "/import", component: () => import("./views/ImportChannelView") }],
   slots: {},
   permissions: [],

@@ -4,6 +4,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 registerModule({
   id: "chat",
+  i18n: ["calendar"],
   routes: [], // /chat/* is served by the messenger module
   widgets: [
     {

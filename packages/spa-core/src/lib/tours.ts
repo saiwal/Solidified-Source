@@ -1,4 +1,3 @@
-import Shepherd from "shepherd.js";
 
 /** A plain translator function — avoids depending on Solid context here, since
  * tours are started from event handlers, outside any reactive owner. */
@@ -99,6 +98,9 @@ export async function startTour(id: string, t: Translate, labels: TourButtonLabe
   const steps = def.steps.filter((s) => s.before || findVisible(s.selector));
   if (steps.length === 0) return;
 
+  // Loaded on first use: tours are rare, and shepherd.js was ~44 KB of the
+  // entry chunk every visitor downloaded
+  const { default: Shepherd } = await import("shepherd.js");
   const tour = new Shepherd.Tour({
     useModalOverlay: true,
     defaultStepOptions: {

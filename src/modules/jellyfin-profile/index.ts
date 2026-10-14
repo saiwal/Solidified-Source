@@ -9,6 +9,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 // and the widget renders nothing then.
 registerModule({
   id: "jellyfin-profile",
+  i18n: ["jellyfin"],
   routes: [],
   widgets: [
     {

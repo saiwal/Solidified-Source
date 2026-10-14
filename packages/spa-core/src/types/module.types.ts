@@ -127,6 +127,11 @@ export interface ModuleDef {
   /** @deprecated Use widgets instead. Ignored by the registry. */
   slots?: SlotsDef;
   widgets?: WidgetDef[];
+  /** i18n namespaces this module's routes and widgets need beyond the core set
+   * (see CORE in i18n/index.tsx). The namespace named after the module id
+   * ("-" → "_") is always included. Preloaded alongside each lazy chunk; an
+   * undeclared one still loads on first use, with a brief flash of raw keys. */
+  i18n?: string[];
   permissions?: string[];
   /** Stable URL path fragment from the app's .apd (e.g. "/articles/"). If set, module only
    * renders when an installed app's url contains this fragment. (Matched on url, not the

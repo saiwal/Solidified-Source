@@ -8,6 +8,7 @@ import { registerModule } from "@utsukta/spa-core/module-registry";
 
 registerModule({
   id: "rbmark",
+  i18n: ["bookmarks"],
   routes: [{ path: "/rbmark", component: () => import("./views/RbmarkView") }],
   requiresAuth: true,
 });

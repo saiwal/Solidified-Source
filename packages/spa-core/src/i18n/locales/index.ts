@@ -2,12 +2,15 @@ import type { RawDictionary } from "./namespaces/types";
 
 export type { RawDictionary };
 
+// Namespaces load lazily per locale — see ensureNamespaces() in ../index.tsx,
+// which globs ./<locale>/<namespace>.ts. A new locale needs its folder (with an
+// index.ts for the completeness check) plus an entry here.
 export const localeRegistry = {
-  en: { label: "English", flag: "🇬🇧", load: (): Promise<RawDictionary> => import("./en/index").then((m) => m.dict) },
-  hi: { label: "हिन्दी",  flag: "🇮🇳", load: (): Promise<RawDictionary> => import("./hi/index").then((m) => m.dict) },
-  de: { label: "Deutsch", flag: "🇩🇪", load: (): Promise<RawDictionary> => import("./de/index").then((m) => m.dict) },
-  arr:     { label: "Pirate", flag: "🏴‍☠️", load: (): Promise<RawDictionary> => import("./pirate/index").then((m) => m.dict) },
+  en:  { label: "English", flag: "🇬🇧" },
+  hi:  { label: "हिन्दी",  flag: "🇮🇳" },
+  de:  { label: "Deutsch", flag: "🇩🇪" },
+  arr: { label: "Pirate", flag: "🏴‍☠️" }, // derived from en, see pirate/index.ts
   // ← add new locales here
-} satisfies Record<string, { label: string; flag: string; load: () => Promise<RawDictionary> }>;
+} satisfies Record<string, { label: string; flag: string }>;
 
 export type Locale = keyof typeof localeRegistry;

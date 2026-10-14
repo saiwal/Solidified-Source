@@ -7,6 +7,7 @@ import type {
   WidgetDef,
   WidgetSlotName,
 } from "./types/module.types";
+import { ensureNamespaces } from "./i18n";
 
 // Widget as stored in the registry: defaults resolved, owning module recorded
 export interface RegisteredWidget extends WidgetDef {
@@ -34,6 +35,11 @@ export function registerModule(def: ModuleDef) {
   }
   modules.set(def.id, def);
 
+  // Every lazy chunk of this module waits for its strings too, in parallel.
+  const nss = [def.id.replace(/-/g, "_"), ...(def.i18n ?? [])];
+  const withStrings = <T,>(load: () => Promise<T>) => () =>
+    Promise.all([load(), ensureNamespaces(nss)]).then(([m]) => m);
+
   if (def.slots && Object.values(def.slots).some((e) => (Array.isArray(e) ? e.length > 0 : !!e))) {
     console.warn(`Module "${def.id}" uses deprecated "slots" — migrate to "widgets" (entries are ignored)`);
   }
@@ -46,6 +52,7 @@ export function registerModule(def: ModuleDef) {
       }
       widgets.set(w.id, {
         ...w,
+        loader: withStrings(w.loader),
         moduleId: def.id,
         defaultModules: w.defaultModules ?? [def.id],
       });
@@ -54,7 +61,7 @@ export function registerModule(def: ModuleDef) {
   }
 
   if (def.navItem) setNavItems((prev) => [...prev, def.navItem!]);
-  const taggedRoutes = def.routes.map((r) => ({ ...r, moduleId: def.id }));
+  const taggedRoutes = def.routes.map((r) => ({ ...r, component: withStrings(r.component), moduleId: def.id }));
   setRoutes((prev) => [...prev, ...taggedRoutes]);
 }
 
