@@ -1008,9 +1008,10 @@ export default function NotificationsAside() {
 
   // Other channels of this account needing attention. /spa/manage 403s for
   // delegated sessions — the error just means "no section", never a toast.
+  // Local only: a remote visitor has no account here and would just 403.
   const [manageData, { refetch: refetchManage }] = createQueryResource(
     "manage-channels",
-    () => (booted() && auth()?.isLoggedIn ? true : null),
+    () => (booted() && auth()?.isLocal ? true : null),
     fetchManageApi,
   );
 
