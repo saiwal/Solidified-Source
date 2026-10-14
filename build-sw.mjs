@@ -64,6 +64,9 @@ const { count, size } = await generateSW({
     'app-mermaid*.js',
     'app-*Diagram*.js',
     'app-swimlanes*.js',
+    // hls.js (light), loaded only when the Jellyfin player has to play a
+    // transcoded stream — ~360 KB nobody without Jellyfin should precache.
+    'app-hls*.js',
     // ponytail: these two are Rollup's auto-generated shared-chunk ids (the
     // "EIO257PC"/"FOHPRMQF" segments are content hashes, not source names),
     // so the exact match can go stale on a rebuild that reshuffles chunk
@@ -211,7 +214,7 @@ const { count, size } = await generateSW({
       // above — content-hashed and immutable, so CacheFirst is safe; they're
       // fetched (and cached) the first time a user actually opens one of
       // those tools rather than on every install.
-      urlPattern: /\/assets\/app-(Excalidraw|vendor-image-editor|cytoscape\.esm|dagre|cose-bilkent|mermaid|chunk-EIO257PC|chunk-FOHPRMQF|[A-Za-z0-9]*Diagram|swimlanes)[^/]*\.(js|css)$/,
+      urlPattern: /\/assets\/app-(Excalidraw|vendor-image-editor|cytoscape\.esm|dagre|cose-bilkent|mermaid|chunk-EIO257PC|chunk-FOHPRMQF|[A-Za-z0-9]*Diagram|swimlanes|hls)[^/]*\.(js|css)$/,
       handler: 'CacheFirst',
       options: {
         cacheName: 'hz-heavy-chunks',
