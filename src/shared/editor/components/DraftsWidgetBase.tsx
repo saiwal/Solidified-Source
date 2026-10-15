@@ -144,7 +144,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
 
       {/* Draft list */}
       <Show when={!loading()}>
-        <div class="divide-y divide-rim">
+        <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
           <For each={entries()}>
             {(entry) => {
               const isDeleting = () => deleting() === entry.draft.id;

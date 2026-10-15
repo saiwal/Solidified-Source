@@ -53,7 +53,7 @@ export default function SavedSearchesWidget() {
           <MdFillBookmarks size={14} class="text-muted shrink-0" />
           <h2 class="text-sm font-semibold text-txt">{t("network.saved_searches")}</h2>
         </div>
-        <div class="px-3 py-2 space-y-1">
+        <div class="px-3 py-2 space-y-1 max-h-[26rem] overflow-y-auto">
           <For each={savedSearches()}>
             {(s) => (
               <div class="flex items-center gap-1 group">

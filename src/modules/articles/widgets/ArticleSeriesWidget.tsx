@@ -47,7 +47,7 @@ export default function ArticleSeriesWidget() {
           when={(data() ?? []).length > 0}
           fallback={<p class="px-4 py-3 text-xs text-muted">{t("articles.series_no_series")}</p>}
         >
-          <ul class="p-1.5 space-y-0.5">
+          <ul class="p-1.5 space-y-0.5 max-h-[26rem] overflow-y-auto">
             <For each={data()}>
               {(series) => (
                 <li>

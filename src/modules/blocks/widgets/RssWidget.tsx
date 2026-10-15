@@ -95,7 +95,7 @@ export default function RssWidget(props: WidgetProps) {
             when={(feed()?.items.length ?? 0) > 0}
             fallback={<p class="px-4 py-3 text-xs text-muted">{t("widgets.rss_empty")}</p>}
           >
-            <ul class="divide-y divide-rim">
+            <ul class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
               <For each={feed()!.items}>
                 {(item) => (
                   <li>

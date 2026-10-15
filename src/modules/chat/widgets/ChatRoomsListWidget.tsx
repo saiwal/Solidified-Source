@@ -38,7 +38,7 @@ export default function ChatRoomsListWidget() {
           <p class="px-3.5 pb-4 text-xs text-muted text-center">{t("chat.no_chatrooms")}</p>
         </Show>
 
-        <div class="divide-y divide-rim border-t border-rim empty:border-t-0">
+        <div class="divide-y divide-rim border-t border-rim empty:border-t-0 max-h-[26rem] overflow-y-auto">
           <For each={data()?.rooms}>
             {(room) => (
               <button

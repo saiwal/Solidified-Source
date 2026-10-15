@@ -75,7 +75,7 @@ export default function CardDeckWidget() {
           when={(data() ?? []).length > 0}
           fallback={<p class="px-4 py-3 text-xs text-muted">{t("cards.deck_no_decks")}</p>}
         >
-          <ul class="divide-y divide-rim">
+          <ul class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
             <For each={data()}>
               {(deck) => (
                 <li>

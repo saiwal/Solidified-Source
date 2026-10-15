@@ -51,7 +51,7 @@ export default function WikiListWidget() {
 
         {/* List */}
         <Show when={!wikisLoading() && wikis().length > 0}>
-          <div class="divide-y divide-rim">
+          <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
             <For each={wikis()}>
               {(wiki) => (
                 <A

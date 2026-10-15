@@ -70,16 +70,17 @@ export default function ScheduledPostsWidget() {
 
   return (
     <Show when={posts().length > 0}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+      <div class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden"
+        style={{ "max-height": "480px" }}>
         {/* Header */}
-        <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between">
+        <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
           <span class="text-xs font-medium uppercase tracking-wider text-muted">
             {t("hq.scheduled")}
           </span>
           <span class="text-xs text-muted tabular-nums">{posts().length}</span>
         </div>
 
-        <div class="divide-y divide-rim">
+        <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-rim">
           <For each={posts()}>
             {(post) => (
               <div

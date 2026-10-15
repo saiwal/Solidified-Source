@@ -206,7 +206,8 @@ export default function DraftsWidget() {
 
   return (
     <>
-      <div data-tour="hq.drafts" class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden">
+      <div data-tour="hq.drafts" class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden"
+        style={{ "max-height": "480px" }}>
 
         {/* Header */}
         <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
@@ -245,7 +246,7 @@ export default function DraftsWidget() {
 
         {/* Draft list */}
         <Show when={!loading()}>
-          <div class="divide-y divide-rim">
+          <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-rim">
             <For each={entries()}>
               {(entry) => {
                 const loadable = () => isLoadable(entry.scope);

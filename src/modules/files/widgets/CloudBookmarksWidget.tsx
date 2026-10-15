@@ -25,7 +25,7 @@ export default function CloudBookmarksWidget() {
           <span class="text-xs text-muted tabular-nums">{bm.list().length}</span>
         </div>
 
-        <div class="divide-y divide-rim">
+        <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
           <For each={bm.list()}>
             {(b) => (
               <div class="flex items-center gap-2 px-3 py-2.5 hover:bg-elevated group transition-colors">

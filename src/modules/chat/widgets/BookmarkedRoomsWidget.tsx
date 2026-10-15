@@ -102,7 +102,7 @@ export function BookmarkedRoomsList(props: {
   }
 
   return (
-    <div class="divide-y divide-rim">
+    <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
       <For each={props.filter ? bookmarks().filter(props.filter) : bookmarks()}>
         {(bm) => {
           const push = (
