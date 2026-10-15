@@ -3,7 +3,7 @@
 // player and search pages.
 import { createMemo, createSignal, createEffect, For, Show, Switch, Match, type JSX } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
-import { useQuery, useInfiniteQuery } from "@tanstack/solid-query";
+import { useQuery, useInfiniteQuery } from "@utsukta/spa-core/lib/query";
 import { MdFillPlay_arrow, MdFillShuffle, MdFillRadio, MdOutlineSort, MdFillArrow_upward, MdFillArrow_downward } from "solid-icons/md";
 import { useSort } from "./sort";
 import { useI18n } from "@utsukta/spa-core/i18n";

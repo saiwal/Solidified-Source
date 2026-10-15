@@ -9,7 +9,7 @@
 // at the current position with that burned in / selected.
 import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { MdFillReplay, MdFillSkip_next, MdOutlinePhoto_camera, MdOutlineContent_cut } from "solid-icons/md";
 import { toast } from "@utsukta/spa-core/store/toast";
 import ClipStrip from "./ClipStrip";

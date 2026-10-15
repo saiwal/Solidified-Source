@@ -2,7 +2,7 @@
 // last pushed to the hub (Handlers/JellyfinNowPlaying.php decides who may see
 // it). Polls once a minute.
 import { Show } from "solid-js";
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { MdFillMusic_note } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";

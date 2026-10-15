@@ -4,7 +4,7 @@
 // Exported separately from App.tsx so stores can invalidate/refetch queries
 // without needing a component context (e.g. refetchNavData in nav-store).
 
-import { QueryClient } from "@tanstack/solid-query";
+import { QueryClient } from "./query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {

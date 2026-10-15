@@ -15,6 +15,7 @@ import { setScrollStyle } from "./scroll-style";
 import { setPostHeight } from "./post-height";
 import { setCommentOrder } from "./comment-order";
 import { setThreadMode } from "./thread-mode";
+import { setEmojiAsImages } from "./emoji-as-images";
 
 export type AuthState = {
   isLocal: boolean; // true = native logged-in user
@@ -173,6 +174,9 @@ async function fetchAuthState(): Promise<AuthState> {
   initNavOrder(isLocal ? data.spa?.nav_order : undefined);
   initDisabledFrontendModules(isLocal ? data.spa?.disabled_frontend_modules : undefined);
   initNsfwWords(isLocal ? data.nsfw?.words : undefined);
+  // pconfig system/no_smilies — the server wins, or the toggle only took
+  // effect in a browser that had visited Settings → Display.
+  if (isLocal) setEmojiAsImages(data.system?.no_smilies !== "1");
 
   return {
     isLocal,

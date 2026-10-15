@@ -23,7 +23,7 @@ import {
   useQuery,
   useQueryClient,
   keepPreviousData,
-} from "@tanstack/solid-query";
+} from "./query";
 
 export type QueryResource<T> = {
   (): T | undefined;

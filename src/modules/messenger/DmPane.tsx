@@ -3,7 +3,7 @@
 // from, and the picked thread as chat bubbles with a reply box.
 import { For, Show, createEffect, createMemo, createSignal, on, onMount } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMessages } from "@utsukta/spa-core/lib/message-store";
 import {

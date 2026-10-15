@@ -1,7 +1,7 @@
 // Heart toggle, synced with Jellyfin. Optimistic — flips at once, reverts if
 // the server refuses — and refreshes the Favourites tab afterwards.
 import { createSignal, createEffect } from "solid-js";
-import { useQueryClient } from "@tanstack/solid-query";
+import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { MdFillFavorite, MdOutlineFavorite_border } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { setFavorite, type JellyfinSession, type JfItem } from "../api";

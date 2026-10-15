@@ -2,7 +2,7 @@ import { persistedSignal, boolFlag } from "../lib/persisted";
 
 const [enabled, setEnabled] = persistedSignal(
   "hz-emoji-as-images",
-  false,
+  true, // core default: pconfig system/no_smilies unset = images on
   boolFlag.parse,
   boolFlag.format,
 );

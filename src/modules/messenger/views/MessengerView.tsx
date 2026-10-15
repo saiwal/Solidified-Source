@@ -13,7 +13,7 @@
 // lets you into. Desktop shows list + pane side by side; below md, one at a time.
 import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on, onMount, type JSX } from "solid-js";
 import { A, useLocation, useNavigate } from "@solidjs/router";
-import { useInfiniteQuery } from "@tanstack/solid-query";
+import { useInfiniteQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMessages } from "@utsukta/spa-core/lib/message-store";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";

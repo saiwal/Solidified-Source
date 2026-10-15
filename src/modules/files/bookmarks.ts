@@ -2,7 +2,7 @@
 // /cloud/ path on this hub — no storage of their own. Reads share the
 // bookmarks module's ["bookmarks"] query, so a save here shows up there too.
 import { createMemo } from "solid-js";
-import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import { useQuery, useQueryClient } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { isLocalUser } from "@utsukta/spa-core/store/auth-store";

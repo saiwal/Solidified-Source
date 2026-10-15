@@ -1,6 +1,6 @@
 import { lazy, For, Show, createEffect, createMemo, type Component, type ParentComponent } from "solid-js";
 import { Router, Route, useNavigate, useLocation } from "@solidjs/router";
-import { QueryClientProvider } from "@tanstack/solid-query";
+import { QueryClientProvider } from "@utsukta/spa-core/lib/query";
 import Layout from "./Layout";
 import { getRoutes } from "./router";
 import { I18nProvider, useI18n, hasStoredLocalePreference, resolveSupportedLocale } from "@utsukta/spa-core/i18n";

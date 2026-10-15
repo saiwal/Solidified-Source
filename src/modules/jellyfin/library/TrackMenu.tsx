@@ -3,7 +3,7 @@
 // stay usable at phone width.
 import { For, Show, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
-import { useQuery, useQueryClient } from "@tanstack/solid-query";
+import { useQuery, useQueryClient } from "@utsukta/spa-core/lib/query";
 import {
   MdFillMore_vert, MdFillQueue_play_next, MdFillPlaylist_add, MdFillRadio, MdFillCast, MdFillQueue_music,
   MdFillArrow_back, MdFillAdd,

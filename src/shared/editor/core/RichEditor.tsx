@@ -150,11 +150,70 @@ export default function RichEditor(props: Props) {
     setImgSel(null);
   };
 
+  // The caret as a text offset into the surface. A Range wouldn't do: the
+  // blur pass (opening a picker blurs the editor) replaces every node, so a
+  // saved Range is detached by the time the insert lands.
+  let caretOffset: number | null = null;
+  const trackCaret = () => {
+    const sel = window.getSelection();
+    if (!editorRef || !sel?.rangeCount) return;
+    // Only while the surface has focus: the blur pass's innerHTML swap
+    // collapses the selection to (editorRef, 0), and the selectionchange it
+    // queues fires after focus has left — recording that would put every
+    // attachment insert at the start of the body.
+    if (!editorRef.contains(document.activeElement)) return;
+    const r = sel.getRangeAt(0);
+    if (!editorRef.contains(r.endContainer)) return;
+    const pre = document.createRange();
+    pre.selectNodeContents(editorRef);
+    pre.setEnd(r.endContainer, r.endOffset);
+    caretOffset = pre.toString().length;
+  };
+  document.addEventListener("selectionchange", trackCaret);
+  onCleanup(() => document.removeEventListener("selectionchange", trackCaret));
+
+  const rangeAtOffset = (root: HTMLElement, offset: number): Range => {
+    const r = document.createRange();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const len = n.textContent?.length ?? 0;
+      if (offset <= len) {
+        r.setStart(n, offset);
+        r.collapse(true);
+        return r;
+      }
+      offset -= len;
+    }
+    r.selectNodeContents(root);
+    r.collapse(false);
+    return r;
+  };
+
+  // Callers insert attachments by appending to the body (appendInsert) —
+  // they can't know where the caret is. When the new body is the DOM's body
+  // plus a suffix, put that suffix at the caret instead, and echo the
+  // resulting body back. Returns false to fall through to a full re-render.
+  const insertAtCaret = (): boolean => {
+    if (!editorRef || caretOffset === null || !domSig?.startsWith(`${mime()} `)) return false;
+    const prev = domSig.slice(mime().length + 1);
+    if (!prev || !props.body.startsWith(prev) || props.body === prev) return false;
+    const suffix = props.body.slice(prev.length).replace(/^\n/, "");
+    const range = rangeAtOffset(editorRef, caretOffset);
+    range.insertNode(range.createContextualFragment(sourceToHtml(suffix, mime())));
+    const next = htmlToSource(editorRef.innerHTML, mime());
+    domSig = `${mime()} ${next}`;
+    hydrateShareEmbeds(editorRef);
+    hydrateCardEmbeds(editorRef);
+    if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
+    props.onInput(next);
+    return true;
+  };
+
   // Re-render whenever body/mimetype changed for a reason other than us
   // echoing the DOM back (attachment insert, draft load, tab switch, reset, …).
   createEffect(() => {
     const nextSig = sig();
-    if (tab() === "wysiwyg" && editorRef && nextSig !== domSig) {
+    if (tab() === "wysiwyg" && editorRef && nextSig !== domSig && !insertAtCaret()) {
       editorRef.innerHTML = sourceToHtml(props.body, mime());
       domSig = nextSig;
       hydrateShareEmbeds(editorRef);
@@ -283,6 +342,9 @@ export default function RichEditor(props: Props) {
     // replaces every node, so the range the toolbar saved to insert at is
     // detached and the insert lands at the start of the surface instead.
     if (wrapperEl?.contains(e.relatedTarget as Node)) return;
+    // The window lost focus (alt-tab), not the editor: it stays the
+    // activeElement, and re-rendering would drop the caret to the start.
+    if (document.activeElement === editorRef) return;
     if (wysiwygAllowed()) {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());

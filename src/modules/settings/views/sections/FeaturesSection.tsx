@@ -1,5 +1,5 @@
 import { Show, For, createMemo } from "solid-js";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/solid-query";
+import { useQuery, useMutation, useQueryClient } from "@utsukta/spa-core/lib/query";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";

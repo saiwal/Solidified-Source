@@ -9,7 +9,7 @@
 // the data revalidates on window focus/reconnect (see shared/lib/query-client).
 
 import { createSignal } from "solid-js";
-import { useQuery, keepPreviousData } from "@tanstack/solid-query";
+import { useQuery, keepPreviousData } from "../lib/query";
 import { fetchNavApi, type NavApiResponse } from "../lib/nav-api";
 import type { NavApp, NavChannel } from "../lib/nav-api";
 import { queryClient } from "../lib/query-client";

@@ -8,7 +8,7 @@
 // connection's. Nothing here writes.
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { A } from "@solidjs/router";
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isFeatureEnabled, inboxRules, type InboxRule } from "@utsukta/spa-core/store/auth-store";

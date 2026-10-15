@@ -1,5 +1,5 @@
 import { Show, For, createSignal } from "solid-js";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/solid-query";
+import { useQuery, useMutation, useQueryClient } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { useI18n } from "@utsukta/spa-core/i18n";

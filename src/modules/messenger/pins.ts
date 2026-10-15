@@ -2,7 +2,7 @@
 // Pinned DM conversations are ordinary Hubzilla bookmarks of the
 // conversation's Messenger url — the same storage as chatroom bookmarks, so a
 // pin also appears in the Bookmarks app and opens the conversation from there.
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { isLocalUser } from "@utsukta/spa-core/store/auth-store";

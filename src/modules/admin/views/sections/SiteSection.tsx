@@ -1,6 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
 import { A } from "@solidjs/router";
-import { useQueryClient } from "@tanstack/solid-query";
+import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminSite, saveAdminSite, fetchAdminThemes, uploadSiteLogo, removeSiteLogo } from "../../api";

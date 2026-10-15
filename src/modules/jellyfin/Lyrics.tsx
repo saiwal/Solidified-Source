@@ -2,7 +2,7 @@
 // lyrics highlight and follow the current line; plain ones just scroll.
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import { MdFillText_decrease, MdFillText_increase } from "solid-icons/md";
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { getLyrics, type JellyfinSession } from "./api";
 import { position } from "./store";

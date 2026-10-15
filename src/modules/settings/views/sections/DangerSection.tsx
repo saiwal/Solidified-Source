@@ -1,5 +1,5 @@
 import { Show, createSignal } from "solid-js";
-import { useQuery } from "@tanstack/solid-query";
+import { useQuery } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";

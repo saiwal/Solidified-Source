@@ -24,7 +24,7 @@ import {
   MdFillLock,
 } from "solid-icons/md";
 import { createSignal, createEffect, createMemo, on, For, Show, type JSX } from "solid-js";
-import { useInfiniteQuery, useQuery } from "@tanstack/solid-query";
+import { useInfiniteQuery, useQuery } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts, saveSortPref } from "../store";

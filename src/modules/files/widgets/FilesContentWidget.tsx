@@ -11,7 +11,7 @@ import {
 } from "solid-js";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { useQueryClient } from "@tanstack/solid-query";
+import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
