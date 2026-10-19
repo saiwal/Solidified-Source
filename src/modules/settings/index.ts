@@ -1,6 +1,7 @@
 import { registerModule } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { SubPageItem } from "@/shared/views/SubPageLayout";
+import { SUPERBLOCK_APP } from "@utsukta/spa-core/lib/blocklist-api";
 
 export const SETTINGS_ITEMS: SubPageItem[] = [
   // "profile" links to /settings/profile which is owned by the profiles module.
@@ -14,7 +15,7 @@ export const SETTINGS_ITEMS: SubPageItem[] = [
   { path: "display",       label: () => useI18n().t("settings.title_display") },
   { path: "integrations",  label: () => useI18n().t("settings.title_integrations") },
   { path: "features",      label: () => useI18n().t("settings.title_features") },
-  { path: "blocked",       label: () => useI18n().t("settings.title_blocked") },
+  { path: "blocked",       label: () => useI18n().t("settings.title_blocked"), requiresApp: SUPERBLOCK_APP },
   { path: "portability",   label: () => useI18n().t("settings.title_portability") },
   { path: "danger",        label: () => useI18n().t("settings.title_danger") },
 ];

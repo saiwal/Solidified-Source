@@ -12,7 +12,7 @@ import type { Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import { openComposer } from "@/shared/views/modal-host";
 import { createRoom } from "@/modules/chat/api";
-import { blockChannel, blockChannelFromSite } from "@utsukta/spa-core/lib/blocklist-api";
+import { blockChannel, blockChannelFromSite, SUPERBLOCK_APP, type BlockDuration } from "@utsukta/spa-core/lib/blocklist-api";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
@@ -85,6 +85,7 @@ export default function AuthorPopover(props: Props) {
   const [sendInvite, setSendInvite] = createSignal(true);
   const [blockState, setBlockState] = createSignal<"idle" | "loading" | "blocked">("idle");
   const [siteBlockState, setSiteBlockState] = createSignal<"idle" | "loading" | "blocked">("idle");
+  const [blockPanelOpen, setBlockPanelOpen] = createSignal(false);
   const { x: popX, y: popY, mount: popMount, unmount: popUnmount } =
     useFloating({ placement: "bottom-start", offset: 8 });
   const canHover = createMediaQuery("(hover: hover) and (pointer: fine)");
@@ -92,6 +93,8 @@ export default function AuthorPopover(props: Props) {
   const navViewer = useNavViewer();
   const installedApps = useInstalledApps();
   const chatroomsInstalled = () => isAppInstalled(installedApps(), "/chat/");
+  // Blocking is the superblock addon's feature and, like the addon, needs its app.
+  const superblockInstalled = () => isAppInstalled(installedApps(), SUPERBLOCK_APP);
   const navigate = useNavigate();
   let closeTimer: ReturnType<typeof setTimeout> | null = null;
   let triggerRef!: HTMLDivElement;
@@ -209,6 +212,7 @@ export default function AuthorPopover(props: Props) {
     e.preventDefault();
     e.stopPropagation();
     setChatPanelOpen((v) => !v);
+    setBlockPanelOpen(false);
     setChatExpire(0);
     setChatCustomMode(false);
     setChatCustomInput("60");
@@ -254,14 +258,22 @@ export default function AuthorPopover(props: Props) {
     }
   }
 
-  async function handleBlock(e: MouseEvent) {
+  function handleBlockButtonClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (blockState() !== "idle") return;
+    setBlockPanelOpen((v) => !v);
+    setChatPanelOpen(false);
+  }
+
+  // null = permanent, the addon's default.
+  async function handleBlock(duration: BlockDuration | null) {
     const hash = xchanHash() || props.hash;
     if (!hash || blockState() !== "idle") return;
+    setBlockPanelOpen(false);
     setBlockState("loading");
     try {
-      await blockChannel(hash);
+      await blockChannel(hash, duration);
       setBlockState("blocked");
     } catch {
       setBlockState("idle");
@@ -475,8 +487,9 @@ export default function AuthorPopover(props: Props) {
                       </button>
                     </Show>
 
+                    <Show when={superblockInstalled()}>
                     <button
-                      onClick={handleBlock}
+                      onClick={handleBlockButtonClick}
                       disabled={blockState() !== "idle"}
                       title={blockState() === "blocked" ? t("blocklist.blocked") : t("blocklist.block")}
                       class="w-8 h-8 flex items-center justify-center rounded-lg border border-rim text-muted
@@ -490,13 +503,14 @@ export default function AuthorPopover(props: Props) {
                         </Show>
                       </Show>
                     </button>
+                    </Show>
                   </Show>
                 </Show>
               </div>
             </Show>
 
             {/* Site-wide block — admins only */}
-            <Show when={isAdmin() && isLocal() && !isSelf() && xchanHash()}>
+            <Show when={isAdmin() && superblockInstalled() && isLocal() && !isSelf() && xchanHash()}>
               <div class="px-3 pb-3">
                 <button
                   onClick={handleSiteBlock}
@@ -509,6 +523,30 @@ export default function AuthorPopover(props: Props) {
                   </Show>
                   {siteBlockState() === "blocked" ? t("blocklist.site_blocked") : t("blocklist.block_from_site")}
                 </button>
+              </div>
+            </Show>
+
+            {/* Block duration — shown after clicking the block icon */}
+            <Show when={blockPanelOpen() && superblockInstalled()}>
+              <div class="px-3 pb-3 border-t border-rim/50 pt-2 space-y-2">
+                <p class="text-[0.6875rem] text-muted">{t("blocklist.block_for")}</p>
+                <div class="flex gap-1.5 flex-wrap items-center">
+                  {([
+                    [null,                          "blocklist.forever"],
+                    [{ amount: 1, unit: "hours" },  "blocklist.preset_hour"],
+                    [{ amount: 1, unit: "days" },   "blocklist.preset_day"],
+                    [{ amount: 1, unit: "weeks" },  "blocklist.preset_week"],
+                    [{ amount: 1, unit: "months" }, "blocklist.preset_month"],
+                  ] as const).map(([duration, key]) => (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); void handleBlock(duration); }}
+                      class="text-xs px-2.5 py-1 rounded-md border border-rim text-muted
+                             hover:border-red-500 hover:text-red-500 transition-colors"
+                    >
+                      {t(key)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </Show>
 
