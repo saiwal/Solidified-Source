@@ -8,6 +8,7 @@ export const post: RawDictionary["post"] = {
   unstar:               "स्टार हटाएँ",
   pin:                  "ऊपर पिन करें",
   unpin:                "अनपिन करें",
+  pin_failed:           "पिन की गई पोस्ट अपडेट नहीं हो सकी।",
   pinned_indicator:     "पिन किया गया",
   follow:               "अनुसरण करें",
   unfollow:             "अनुसरण छोड़ें",

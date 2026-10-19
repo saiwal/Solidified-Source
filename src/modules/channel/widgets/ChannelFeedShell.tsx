@@ -38,6 +38,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 export default function ChannelFeedShell(props: {
   body: Component;
   viewSwitcher?: JSX.Element;
+  /** Rendered above the toolbar (the newspaper masthead). */
+  header?: JSX.Element;
 }) {
   const nick = usePageNick();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -167,6 +169,7 @@ export default function ChannelFeedShell(props: {
 
   return (
     <>
+      {props.header}
       <div class="flex items-center gap-1.5 mb-4">
         <div class="flex-1 min-w-0">
           <SortSelect

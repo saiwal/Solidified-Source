@@ -250,7 +250,8 @@ export async function fetchAdminDbUpdates(): Promise<DbUpdate[]> {
 
 // ── Logs ──────────────────────────────────────────────────────────────────────
 
-export const fetchAdminLogs = () => get<AdminLogs>("logs");
+export const fetchAdminLogs = (after?: number) =>
+  get<AdminLogs>("logs", after === undefined ? undefined : { after: String(after) });
 
 export const saveLogSettings = (settings: { debugging: boolean; logfile: string; loglevel: number }) =>
   post<AdminLogs>("logs", settings);

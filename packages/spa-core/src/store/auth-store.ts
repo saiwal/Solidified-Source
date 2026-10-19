@@ -39,6 +39,8 @@ export type AuthState = {
   // pconfig system/page_mimetype — the channel's default format for new
   // webpages and blocks (Webpages.php:134, Blocks.php:84). '' = bbcode.
   pageMimetype: string;
+  // site config system/feed_contacts — RSS connections allowed on this hub.
+  feedContacts: boolean;
   /** pconfig spa/inbox_rules — auto-filing rules for the inbox. Rides the boot
    *  payload like widget_layout does; see Concerns/FilesByRules.php. */
   inboxRules: InboxRule[];
@@ -71,6 +73,7 @@ const ANONYMOUS: AuthState = {
   features: {},
   localOnlyPostsEnabled: false,
   pageMimetype: "",
+  feedContacts: false,
   inboxRules: [],
   composerMode: "",
   postMode: "",
@@ -193,6 +196,7 @@ async function fetchAuthState(): Promise<AuthState> {
     features: (data.features ?? {}) as Record<string, boolean>,
     localOnlyPostsEnabled: isLocal && data.spa?.local_only_posts === "1",
     pageMimetype: String(data.system?.page_mimetype ?? ""),
+    feedContacts: isLocal && data.feed_contacts === true,
     inboxRules: parseInboxRules(isLocal ? data.spa?.inbox_rules : undefined),
     // Theme-side stores (modal-host) read their prefs from here.
     composerMode: String(data.spa?.composer_mode ?? ""),
@@ -274,6 +278,9 @@ export function notifyInvertOrder(): boolean {
 }
 export function isFeatureEnabled(name: string): boolean {
   return authState()?.features[name] === true;
+}
+export function isFeedContactsEnabled(): boolean {
+  return authState()?.feedContacts ?? false;
 }
 export function isLocalOnlyPostsEnabled(): boolean {
   return authState()?.localOnlyPostsEnabled ?? false;

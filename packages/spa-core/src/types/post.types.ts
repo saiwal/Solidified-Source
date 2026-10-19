@@ -25,6 +25,8 @@ export interface EventData {
   finish: string;
   id: string;
   description: string;
+  // Core's [event-adjust]: false = floating wall time, shown as stored (no tz conversion)
+  adjust?: boolean;
 }
 
 export interface Post {

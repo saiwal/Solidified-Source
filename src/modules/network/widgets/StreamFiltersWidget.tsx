@@ -22,6 +22,7 @@ import {
   MdFillEdit,
   MdFillPublic,
   MdFillLock,
+  MdFillRss_feed,
 } from "solid-icons/md";
 import { createSignal, createEffect, createMemo, on, For, Show, type JSX } from "solid-js";
 import { useInfiniteQuery, useQuery } from "@utsukta/spa-core/lib/query";
@@ -31,7 +32,7 @@ import { loadNetwork, resetPosts, saveSortPref } from "../store";
 import { fetchFolders, fetchConnectionPage, CONN_PAGE_SIZE, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, isFeedContactsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { createPopover } from "@/shared/stream/filters/createPopover";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -55,6 +56,8 @@ const CHIPS = [
   { key: "dm",   labelKey: "network.direct_messages",  Icon: MdFillMail          },
   { key: "event",labelKey: "network.events",           Icon: MdFillEvent         },
   { key: "poll", labelKey: "network.polls",            Icon: MdFillPoll          },
+  // Sets net=rss (parseNetworkParams); shown only when the hub allows feed connections.
+  { key: "rss",  labelKey: "network.rss_feeds",        Icon: MdFillRss_feed      },
 ] as const;
 
 const str = (v: string | string[] | undefined): string =>
@@ -379,7 +382,7 @@ export default function StreamFiltersWidget() {
   const hasAnyFilter = () =>
     (str(searchParams.order) || "created") !== "created" || !!searchParams.range || !!searchParams.search ||
     searchParams.star === "1" || searchParams.pf === "1" ||
-    searchParams.conv === "1" || searchParams.dm === "1" || searchParams.event === "1" || searchParams.poll === "1" ||
+    searchParams.conv === "1" || searchParams.dm === "1" || searchParams.event === "1" || searchParams.poll === "1" || searchParams.rss === "1" ||
     !!(tag() || file() || dbegin() || dend() || cmin() || cmax()) ||
     !!(searchParams.cid || searchParams.gid);
 
@@ -432,7 +435,7 @@ export default function StreamFiltersWidget() {
   const hasSaveableSearch = () => !!(search() || tag() || xchanLabel());
 
   function captureParams(): Record<string, string> {
-    const keys = ["order","range","search","tag","file","star","pf","conv","dm","event","poll","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
+    const keys = ["order","range","search","tag","file","star","pf","conv","dm","event","poll","rss","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
     const p: Record<string, string> = {};
     for (const k of keys) {
       const v = str(searchParams[k]);
@@ -460,7 +463,7 @@ export default function StreamFiltersWidget() {
     setSearchParams(
       {
         order: undefined, range: undefined, search: undefined, tag: undefined, file: undefined,
-        star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined, poll: undefined,
+        star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined, poll: undefined, rss: undefined,
         dbegin: undefined, dend: undefined,
         cmin: undefined, cmax: undefined,
         cid: undefined, gid: undefined, xchan_label: undefined,
@@ -535,7 +538,7 @@ export default function StreamFiltersWidget() {
           </Show>
         </div>
 
-        <For each={CHIPS}>
+        <For each={CHIPS.filter((c) => c.key !== "rss" || isFeedContactsEnabled())}>
           {(chip) => {
             const active = () => searchParams[chip.key] === "1";
             return (

@@ -277,6 +277,21 @@ export async function setCategories(nick: string, hash: string, categories: stri
   return json.data?.categories ?? [];
 }
 
+/** Every category in the channel's cloud, with how many visible items carry it. */
+export async function listCategoryCounts(nick: string): Promise<{ name: string; count: number }[]> {
+  const res = await apiFetch(`/spa/files/${nick}/categories`);
+  if (!res.ok) throw new Error(`listCategoryCounts ${res.status}`);
+  return (await res.json()).data ?? [];
+}
+
+/** Items carrying a category anywhere under a folder's subtree ('' = entire cloud). */
+export async function filesInCategory(nick: string, cat: string, folderHash: string): Promise<FileMeta[]> {
+  const qs = new URLSearchParams({ cat, folder: folderHash });
+  const res = await apiFetch(`/spa/files/${nick}/search?${qs}`);
+  if (!res.ok) throw new Error(`filesInCategory ${res.status}`);
+  return (await res.json()).data ?? [];
+}
+
 // ── wall_upload / wall_attach (post-attachment upload) ────────────────────────
 
 export interface WallUploadResult {

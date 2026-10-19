@@ -72,11 +72,23 @@ markdownTurndown.escape = (text: string) => text;
  * "[b]bold[/b]" into "\[b\]bold\[/b\]" and destroy [img]/[zrl]/[attachment].
  * See markdownProtect.ts.
  */
+// Share/card embeds (sourceToHtml's compactShareEmbed/compactCardEmbed) carry
+// their source as data-share-id/-raw and data-card-id instead — without them
+// here, turndown serializes the hydrated *preview* and the embed is lost.
+const embedSource = (el: HTMLElement): string | null => {
+  const raw = el.getAttribute("data-bb-raw") ?? el.getAttribute("data-share-raw");
+  if (raw !== null) return decodeURIComponent(raw);
+  const share = el.getAttribute("data-share-id");
+  if (share) return `[share=${share}][/share]`;
+  const card = el.getAttribute("data-card-id");
+  if (card) return `[card=${card}][/card]`;
+  return null;
+};
+
 markdownTurndown.addRule("bbraw", {
   filter: (node) =>
-    node.nodeType === 1 && typeof node.hasAttribute === "function" && node.hasAttribute("data-bb-raw"),
-  replacement: (_content, node) =>
-    decodeURIComponent((node as HTMLElement).getAttribute("data-bb-raw") ?? ""),
+    node.nodeType === 1 && typeof node.getAttribute === "function" && embedSource(node as HTMLElement) !== null,
+  replacement: (_content, node) => embedSource(node as HTMLElement) ?? "",
 });
 
 /**

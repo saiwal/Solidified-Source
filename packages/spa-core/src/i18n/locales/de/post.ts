@@ -9,6 +9,7 @@ export const post: RawDictionary["post"] = {
   unstar:               "Markierung entfernen",
   pin:                  "Oben anheften",
   unpin:                "Loslösen",
+  pin_failed:           "Angehefteter Beitrag konnte nicht aktualisiert werden.",
   pinned_indicator:     "Angeheftet",
   follow:               "Folgen",
   unfollow:             "Entfolgen",

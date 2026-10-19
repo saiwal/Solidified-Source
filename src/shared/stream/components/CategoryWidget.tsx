@@ -4,7 +4,7 @@
 // Response: { data: { categories: { name: string; slug: string; count: number }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { type Component, createEffect, on, For, Show } from "solid-js";
+import { type Component, createEffect, createSignal, on, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -73,6 +73,8 @@ export interface CategoryWidgetProps {
   activeSlug?: string;
   /** Pre-fetched data — skips the internal fetch when provided */
   data?: CategoryItem[];
+  /** Max categories before the "show more" collapse. Default: 20 */
+  maxVisible?: number;
   /** Card heading. Defaults to the generic "Categories". */
   title?: string;
   /** Colour each category name by a hue derived from the name. */
@@ -85,6 +87,8 @@ export interface CategoryWidgetProps {
 
 const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
   const { t } = useI18n();
+  const [expanded, setExpanded] = createSignal(false);
+  const max = () => props.maxVisible ?? 20;
 
   const [remote] = createQueryResource(
     "stream-categories",
@@ -99,6 +103,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
 
   const categories = (): CategoryItem[] => props.data ?? remote() ?? [];
   const total = () => categories().reduce((s, c) => s + c.count, 0);
+  const visible = () => (expanded() ? categories() : categories().slice(0, max()));
 
   return (
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
@@ -123,7 +128,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
           }
         >
           <ul class="divide-y divide-rim max-h-80 overflow-y-auto">
-            <For each={categories()}>
+            <For each={visible()}>
               {(cat) => {
                 const pct = () =>
                   total() > 0 ? Math.round((cat.count / total()) * 100) : 0;
@@ -175,6 +180,16 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
               }}
             </For>
           </ul>
+
+          <Show when={categories().length > max()}>
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              class="w-full px-4 py-2 text-xs text-muted hover:text-txt
+                     border-t border-rim text-center transition-colors"
+            >
+              {expanded() ? t("ui.show_less") : t("widgets.show_more_categories")}
+            </button>
+          </Show>
         </Show>
       </Show>
     </div>

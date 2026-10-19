@@ -508,11 +508,14 @@ export default function PostCard(props: {
           t("post.save_bookmark") as string)
       : props.post.body;
 
-  // Pin: channel wall owner only, top-level non-private posts (backend
-  // re-validates this — these are UI-visibility gates, not the source of truth).
+  // Pin: core's pinnable rule — on the viewer's own wall (a connection's post
+  // in your network stream is your copy but not your wall), top-level,
+  // public, published. Backend re-validates, adding the pin_types check.
   const canPin = () =>
     !!props.handlers.onPin &&
     ownsStreamCopy() &&
+    props.post.flags.includes("wall") &&
+    !props.post.flags.includes("scheduled") &&
     props.post.item_thread_top === 1 &&
     !isPrivate();
   const isPinned = () => props.post.pinned ?? false;

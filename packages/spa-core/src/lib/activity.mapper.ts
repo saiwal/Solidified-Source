@@ -6,7 +6,10 @@ import { matchNsfwWord, wrapNsfwHtml } from "./nsfw";
 import { nsfwWordsList } from "../store/nsfw-settings";
 import type { Post, EventData, PollData } from "../types/post.types";
 
-export function parseEventData(raw: string): EventData | undefined {
+export function parseEventData(body: string): EventData | undefined {
+  // A reshared event carries the original's event tags inside its [share]
+  // block — that's an embed (bbcode.ts renders it), not this post's event.
+  const raw = body.replace(/\[share[\s\S]*?\[\/share\]/gi, "");
   const get = (tag: string) => {
     // [\s\S]*? (not [^\[]*?) — description can contain nested bbcode tags
     // (links, images, lists, …), which all start with '[' too.
@@ -18,7 +21,7 @@ export function parseEventData(raw: string): EventData | undefined {
   if (!summary || !start) return undefined;
   const rawDescription = get("event-description");
   const description = rawDescription ? sanitizeHtml(bbcodeDisplay(rawDescription)) : "";
-  return { summary, start, finish: get("event-finish"), id: get("event-id"), description };
+  return { summary, start, finish: get("event-finish"), id: get("event-id"), description, adjust: !!Number(get("event-adjust")) };
 }
 
 // Verbs that represent actual displayable content

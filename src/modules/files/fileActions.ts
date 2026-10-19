@@ -34,7 +34,7 @@ export const FILE_ACTIONS: readonly Rule[] = [
   { id: "wopiEdit",                  need: "write" },
   { id: "rename",      folder: true, need: "write" },
   { id: "moveCopy",    folder: true, need: "write", multi: true },
-  { id: "categories",  folder: true, need: "write" },
+  { id: "categories",  folder: true, need: "write", multi: true },
   { id: "download",    folder: true,                multi: true },
   // Never the open folder: a stray toolbar click must not delete where you stand.
   { id: "delete",                    need: "write", multi: true, danger: true },

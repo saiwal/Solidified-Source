@@ -61,6 +61,7 @@ export const network: RawDictionary["network"] = {
   // Privacy group filter
   privacy_groups:          "गोपनीयता समूह",
   polls:                   "Polls",
+  rss_feeds:               "RSS फ़ीड",
   // Forum filter
   forums:                  "फ़ोरम",
   post_to_forum:           "{{name}} में पोस्ट करें",

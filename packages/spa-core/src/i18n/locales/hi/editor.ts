@@ -113,9 +113,7 @@ export const editor: RawDictionary["editor"] = {
   write_tab:   "लिखें",
   source_tab:  "स्रोत",
   // RichEditor source placeholders
-  bbcode_source_placeholder:  "BBCode स्रोत…",
-  markdown_source_placeholder: "Markdown स्रोत…",
-  html_source_placeholder:    "HTML स्रोत…",
+  source_placeholder: "स्रोत…",
   // AclPicker
   img_width:              "छवि की चौड़ाई",
   img_alt:                "ऑल्ट टेक्स्ट",

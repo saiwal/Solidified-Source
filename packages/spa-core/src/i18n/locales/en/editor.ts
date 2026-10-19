@@ -114,9 +114,7 @@ export const editor = {
   source_tab:  "Source",
 
   // RichEditor source placeholders
-  bbcode_source_placeholder:  "BBCode source…",
-  markdown_source_placeholder: "Markdown source…",
-  html_source_placeholder:    "HTML source…",
+  source_placeholder: "Source…",
 
   // AclPicker
   img_width:              "Image width",

@@ -345,9 +345,13 @@ window.addEventListener("pagehide", persist);
 function el(): HTMLAudioElement {
   if (audio) return audio;
   audio = new Audio();
+  // CORS mode, so the visualizer's analyser may read the samples — without it a
+  // cross-origin stream routed through Web Audio plays as silence
+  audio.crossOrigin = "anonymous";
   audio.preload = "auto";
   audio.volume = volume();
   audio.muted = muted();
+  audio.addEventListener("play", () => void ctx?.resume());
   audio.addEventListener("playing", () => { setPlaying(true); setLoading(false); setError(null); });
   audio.addEventListener("pause", () => {
     setPlaying(false);
@@ -705,6 +709,26 @@ export function partyLoad(i: number, startAt: number): Promise<void> {
 
 /** Party: the <audio> element, for the sync engine to drive directly. */
 export const partyMedia = (): HTMLMediaElement => el();
+
+// ── Visualizer ────────────────────────────────────────────────────────────────
+
+let ctx: AudioContext | null = null;
+let analyserNode: AnalyserNode | null = null;
+
+/**
+ * Routes <audio> through Web Audio, on first call only. That can't be undone
+ * for the page's life, and a suspended context plays silence (iOS suspends it
+ * in the background), so nothing calls this until the visualizer is turned on;
+ * the "play" listener in el() resumes a suspended context.
+ */
+export function analyser(): AnalyserNode {
+  if (analyserNode) return analyserNode;
+  ctx = new AudioContext();
+  analyserNode = ctx.createAnalyser();
+  analyserNode.fftSize = 128;
+  ctx.createMediaElementSource(el()).connect(analyserNode).connect(ctx.destination);
+  return analyserNode;
+}
 
 // ── Media Session — lock-screen / headset / notification controls ─────────────
 

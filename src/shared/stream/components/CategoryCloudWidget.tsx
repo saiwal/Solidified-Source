@@ -3,7 +3,7 @@
 // Alternate category layout: a tag-cloud of pills with font size scaled by
 // post count, instead of the row list in CategoryWidget. Same API and props.
 
-import { type Component, createEffect, For, on, Show } from "solid-js";
+import { type Component, createEffect, createSignal, For, on, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -27,6 +27,8 @@ function CloudSkeleton() {
 
 const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
   const { t } = useI18n();
+  const [expanded, setExpanded] = createSignal(false);
+  const max = () => props.maxVisible ?? 20;
 
   const [remote] = createQueryResource(
     "stream-categories",
@@ -41,6 +43,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
 
   const categories = (): CategoryItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...categories().map((c) => c.count), 1);
+  const visible = () => (expanded() ? categories() : categories().slice(0, max()));
 
   return (
     <div class="bg-surface border border-rim rounded-xl overflow-hidden">
@@ -60,7 +63,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
           }
         >
           <div class="px-4 py-3 flex flex-wrap gap-1.5">
-            <For each={categories()}>
+            <For each={visible()}>
               {(cat) => {
                 const isActive = () => props.activeSlug === cat.slug;
                 // Scale font between 11 px (min) and 17 px (max) by relative weight
@@ -85,6 +88,16 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
               }}
             </For>
           </div>
+
+          <Show when={categories().length > max()}>
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              class="w-full px-4 py-2 text-xs text-muted hover:text-txt
+                     border-t border-rim text-center transition-colors"
+            >
+              {expanded() ? t("ui.show_less") : t("widgets.show_more_categories")}
+            </button>
+          </Show>
         </Show>
       </Show>
     </div>

@@ -47,6 +47,15 @@ registerModule({
       contexts: "any",
       visitorVisible: false,
     },
+    {
+      // Categories in use; a click filters the open folder's subtree via ?cat=
+      id: "cloud.categories",
+      label: () => useI18n().t("widgets.cloud_categories"),
+      loader: () => import("./widgets/CloudCategoriesWidget"),
+      slot: "right",
+      defaultModules: ["cloud"],
+      contexts: ["cloud"],
+    },
   ],
   permissions: [],
   appUrlSlug: "/cloud/",

@@ -26,6 +26,7 @@ export const hq: RawDictionary["hq"] = {
   clear_filters:         "Alle löschen",
   suggestions:           "Werte",
   inbox_feed:            "Posteingang",
+  rss_feed:              "RSS",
   empty_trash:           "Papierkorb leeren",
   empty_trash_confirm:   "{{count}} Nachricht(en) endgültig löschen? Das kann nicht rückgängig gemacht werden.",
   emptied_trash:         "{{count}} Nachricht(en) gelöscht",

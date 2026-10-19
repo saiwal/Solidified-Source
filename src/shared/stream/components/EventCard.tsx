@@ -6,12 +6,13 @@ import { apiRsvpAttend, apiRsvpDecline, apiRsvpMaybe } from "@utsukta/spa-core/l
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { EventData } from "@utsukta/spa-core/types/post.types";
 
-function formatEventDate(iso: string, locale: string): string {
+function formatEventDate(iso: string, locale: string, adjust?: boolean): string {
   if (!iso) return "";
   try {
     return new Date(iso.replace(" ", "T") + "Z").toLocaleString(locale, {
       weekday: "short", year: "numeric", month: "short",
       day: "numeric", hour: "2-digit", minute: "2-digit",
+      timeZone: adjust ? undefined : "UTC",
     });
   } catch {
     return iso;
@@ -57,8 +58,8 @@ export default function EventCard(props: {
     }
   }
 
-  const startDate  = () => formatEventDate(props.event.start,  locale());
-  const finishDate = () => formatEventDate(props.event.finish, locale());
+  const startDate  = () => formatEventDate(props.event.start,  locale(), props.event.adjust);
+  const finishDate = () => formatEventDate(props.event.finish, locale(), props.event.adjust);
 
   const isUpcoming = () => {
     try { return new Date(props.event.start.replace(" ", "T") + "Z") > new Date(); }

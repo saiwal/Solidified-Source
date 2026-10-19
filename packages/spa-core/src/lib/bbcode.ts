@@ -355,13 +355,15 @@ function bbFormatAttachData(text: string): string {
 // normally once it's wrapped here.
 // ---------------------------------------------------------------------------
 
-function bbEventAttributes(summary: string, description: string, start: string, finish: string): string {
+function bbEventAttributes(summary: string, description: string, start: string, finish: string, adjust: boolean): string {
   const fmtDate = (raw: string) => {
     const d = new Date(raw.replace(" ", "T") + "Z");
     if (isNaN(d.getTime())) return raw;
     return d.toLocaleString(undefined, {
       weekday: "short", year: "numeric", month: "short", day: "numeric",
       hour: "numeric", minute: "2-digit",
+      // No [event-adjust] = floating time: core shows it as stored, unconverted.
+      timeZone: adjust ? undefined : "UTC",
     });
   };
   const dateLine = finish ? `${fmtDate(start)} → ${fmtDate(finish)}` : fmtDate(start);
@@ -851,9 +853,9 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   // event's tags are already converted by the time its body is captured.
   // ------------------------------------------------------------------
   text = text.replace(
-    /\[event-summary\]([\s\S]*?)\[\/event-summary\](?:\[event-description\]([\s\S]*?)\[\/event-description\])?\[event-start\]([\s\S]*?)\[\/event-start\](?:\[event-finish\]([\s\S]*?)\[\/event-finish\])?(?:\[event-id\][\s\S]*?\[\/event-id\])?(?:\[event-adjust\][\s\S]*?\[\/event-adjust\])?/gi,
-    (_m, summary, description, start, finish) =>
-      bbEventAttributes(summary, description ?? "", start, finish ?? "")
+    /\[event-summary\]([\s\S]*?)\[\/event-summary\](?:\[event-description\]([\s\S]*?)\[\/event-description\])?\[event-start\]([\s\S]*?)\[\/event-start\](?:\[event-finish\]([\s\S]*?)\[\/event-finish\])?(?:\[event-id\][\s\S]*?\[\/event-id\])?(?:\[event-adjust\]([\s\S]*?)\[\/event-adjust\])?/gi,
+    (_m, summary, description, start, finish, adjust) =>
+      bbEventAttributes(summary, description ?? "", start, finish ?? "", !!Number(adjust))
   );
 
   // ------------------------------------------------------------------

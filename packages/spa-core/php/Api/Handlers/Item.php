@@ -11,6 +11,7 @@ require_once ('include/crypto.php');
 
 use Zotlabs\Daemon\Master;
 use Zotlabs\Lib\Libsync;
+use Zotlabs\Lib\Config;
 use Zotlabs\Lib\Enotify;
 use Zotlabs\Lib\ObjCache;
 use Zotlabs\Access\PermissionLimits;
@@ -893,10 +894,8 @@ class Item
         // Expressed to core as nopush, since core owns the summon now.
         $localOnly = (!empty($body['local_only']) && get_pconfig($uid, 'spa', 'local_only_posts')) ? 1 : 0;
 
-        // Markdown is an input format, not a storage format. Keep what the
-        // author typed so editing reopens in Markdown rather than the
-        // converted bbcode. '' when this was not Markdown.
-        $mdSource = ($mimetype === 'text/markdown') ? $content : '';
+        // Markdown is an input format, not a storage format: store bbcode, and
+        // edits start from that bbcode, as in core.
         [$content, $mimetype] = ContentTypes::toBbcode($content, $mimetype);
 
         // Compact composer tokens core knows nothing about. Everything else the
@@ -960,9 +959,6 @@ class Item
         if ($localOnly) {
             set_iconfig($iid, 'spa', 'local_only', 1);
         }
-        if ($mdSource !== '') {
-            ContentTypes::rememberMarkdown($iid, $mdSource);
-        }
         $this->setEmbedIconfig($iid, $content);
 
         // Fetch the stored item back fully formatted and return it
@@ -1010,9 +1006,7 @@ class Item
 
         $mimetype = ContentTypes::validate($body['mimetype'] ?? null, ContentTypes::POST);
 
-        // Markdown is an input format, not a storage format; keep the source so
-        // editing reopens in Markdown. '' when this was not Markdown.
-        $mdSource = ($mimetype === 'text/markdown') ? $content : '';
+        // Markdown is an input format, not a storage format.
         [$content, $mimetype] = ContentTypes::toBbcode($content, $mimetype);
 
         if ($mimetype === 'text/bbcode') {
@@ -1034,10 +1028,6 @@ class Item
         $iid = intval($post['item_id'] ?? 0);
         if (!$iid) {
             json_return_and_die(['error' => 'Failed to post comment']);
-        }
-
-        if ($mdSource !== '') {
-            ContentTypes::rememberMarkdown($iid, $mdSource);
         }
 
         $row = q('SELECT mid, uuid FROM item WHERE id = %d LIMIT 1', intval($iid));
@@ -1246,28 +1236,42 @@ class Item
         $col = (str_contains($mid, '/') || str_contains($mid, ':')) ? 'mid' : 'uuid';
         $midEsc = dbesc($mid);
 
-        $item = dbq("SELECT id, uuid FROM item
+        // Mirrors core's pinnable rule (ThreadItem): own wall, top-level,
+        // public, published (not delayed), and an item_type in system/pin_types.
+        // "-1" keeps an emptied pin_types list valid SQL (matches nothing).
+        // Compare to '' — the default list is [ITEM_TYPE_POST] = "0", which ?: treats as empty.
+        $pinTypes = implode(',', array_map('intval', (array) Config::Get('system', 'pin_types', [ITEM_TYPE_POST])));
+        if ($pinTypes === '') $pinTypes = '-1';
+        $item = dbq("SELECT id, uuid, item_type, item_private, item_wall, item_delayed FROM item
                      WHERE item.$col = '$midEsc' AND item.uid = $uid
                        AND item.id = item.parent
-                       AND item.item_private = 0
-                       AND item.item_wall = 1
                        AND item.item_deleted = 0
                      LIMIT 1");
 
         if (!$item) {
-            json_return_and_die(['error' => 'Item not found, not eligible, or permission denied']);
+            Response::error(404, 'Item not found');
         }
 
         $midb64 = $item[0]['uuid'];
-        $pinned = get_pconfig($uid, 'pinned', ITEM_TYPE_POST, []);
+        $itemType = intval($item[0]['item_type']);
+        $pinned = get_pconfig($uid, 'pinned', $itemType, []);
         $pinned = is_array($pinned) ? $pinned : [];
         $isPinned = in_array($midb64, $pinned, true);
+
+        // The rule gates pinning only. Unpinning must always work: core's
+        // Pin module skips the item_wall check, and a federated update can
+        // later flip item_wall to 0, so a pinned post can stop being pinnable.
+        if (!$isPinned && (intval($item[0]['item_private']) || !intval($item[0]['item_wall'])
+                || intval($item[0]['item_delayed'])
+                || !in_array($itemType, array_map('intval', explode(',', $pinTypes)), true))) {
+            Response::error(403, 'Item is not eligible for pinning');
+        }
 
         $pinned = $isPinned
             ? array_values(array_diff($pinned, [$midb64]))
             : [...$pinned, $midb64];
 
-        set_pconfig($uid, 'pinned', ITEM_TYPE_POST, $pinned);
+        set_pconfig($uid, 'pinned', $itemType, $pinned);
 
         Libsync::build_sync_packet($uid, ['config']);
 
@@ -1525,11 +1529,7 @@ class Item
         // articles, cards and wiki pages (that is why the lookup above cannot
         // use item_normal()), and those keep their real mimetype, so the
         // conversion has to be gated on the item's own type.
-        $mdSource = '';
         if (intval($item[0]['item_type']) === ITEM_TYPE_POST) {
-            if ($mimetype === 'text/markdown') {
-                $mdSource = $content;
-            }
             [$content, $mimetype] = ContentTypes::toBbcode($content, $mimetype);
         }
 
@@ -1626,17 +1626,6 @@ class Item
         // than going through item_store_update(), so nothing else would write
         // (or clear) the embed index for it.
         $this->setEmbedIconfig($iid, $content);
-
-        // Refresh (or clear) the remembered Markdown source. Clearing matters:
-        // an item re-saved as bbcode must not keep an older Markdown source
-        // that a later edit would restore over the top of it.
-        if (intval($item[0]['item_type']) === ITEM_TYPE_POST) {
-            if ($mdSource !== '') {
-                ContentTypes::rememberMarkdown($iid, $mdSource);
-            } else {
-                ContentTypes::forgetMarkdown($iid);
-            }
-        }
 
         // Rebuild term records to match the edited body (mentions, hashtags,
         // groups, emoji) — same delete+reinsert approach core's own
@@ -2371,18 +2360,10 @@ class Item
         $body     = $item['body'];
         $mimetype = $item['mimetype'];
 
-        // A post composed in Markdown is stored as bbcode (ContentTypes::
-        // toBbcode), so reopen it in the Markdown the author actually typed
-        // when we still have it. recallMarkdown() returns '' if the body has
-        // since been changed elsewhere, in which case the stored bbcode is
-        // authoritative and editing continues in bbcode.
-        $md = ContentTypes::recallMarkdown(intval($item['id']), $body);
-        if ($md !== '') {
-            $body     = $md;
-            $mimetype = 'text/markdown';
-        } elseif ($mimetype === 'text/bbcode') {
-            // Only the stored bbcode carries full [share …] blocks; a Markdown
-            // source keeps the compact [share=<id>] token the composer wrote.
+        // Edits start from the stored body, as in core — a post composed in
+        // Markdown was stored as bbcode (ContentTypes::toBbcode) and edits as
+        // bbcode from then on.
+        if ($mimetype === 'text/bbcode') {
             $body = $this->collapseShareTags($body, $ob_hash);
         }
 
@@ -2486,10 +2467,13 @@ class Item
                     // the two directions agree about what is embeddable.
                     $embeddable = !intval($target['item_private'])
                         || ($isCard && intval($target['uid']) === intval(local_channel()));
-                    if ($embeddable) {
-                        $collapsed = $isCard
-                            ? '[card=' . intval($target['id']) . '][/card]'
-                            : '[share=' . intval($target['id']) . '][/share]';
+                    $token = $isCard
+                        ? '[card=' . intval($target['id']) . '][/card]'
+                        : '[share=' . intval($target['id']) . '][/share]';
+                    // resolveItem() and the save-time expander look the id up
+                    // differently; collapse only what save can re-expand.
+                    if ($embeddable && $this->embedTokensResolve($token)) {
+                        $collapsed = $token;
                     }
                 }
             }

@@ -1,10 +1,10 @@
 // The full player: one quiet room around the music. The cover, large, on a
 // slow-breathing wash of itself; the controls beneath; and beside them (below,
 // on a phone) the queue, the lyrics or the party.
-import { Show, Switch, Match, createEffect, onCleanup } from "solid-js";
+import { Show, Switch, Match, createEffect, onCleanup, lazy } from "solid-js";
 import {
   MdFillPlay_arrow, MdFillPause, MdFillSkip_next, MdFillSkip_previous, MdFillShuffle, MdFillRepeat,
-  MdFillRepeat_one, MdFillVolume_up, MdFillVolume_off, MdFillKeyboard_arrow_down, MdOutlineStop_circle,
+  MdFillRepeat_one, MdFillVolume_up, MdFillVolume_off, MdFillKeyboard_arrow_down, MdOutlineStop_circle, MdOutlineGraphic_eq,
 } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import Modal from "@/shared/views/Modal";
@@ -23,7 +23,9 @@ import PartyBar from "../party/PartyBar";
 import FavoriteButton from "../library/FavoriteButton";
 import TrackMenu from "../library/TrackMenu";
 import Queue from "./Queue";
-import { fullOpen, setFullOpen, fullTab, setFullTab, type PlayerTab } from "../chrome/player-ui";
+import { fullOpen, setFullOpen, fullTab, setFullTab, visualizerOn, toggleVisualizer, type PlayerTab } from "../chrome/player-ui";
+
+const Visualizer = lazy(() => import("./Visualizer"));
 
 const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -125,7 +127,11 @@ export default function FullPlayer() {
                     </button>
                   </div>
 
-                  <div class="flex items-center gap-1">
+                  <Show when={visualizerOn()}>
+                    <div class="w-full max-w-md"><Visualizer /></div>
+                  </Show>
+
+                  <div class="flex flex-wrap items-center justify-center gap-1">
                     <Show when={currentSession()}>
                       {(s) => (
                         <>
@@ -135,6 +141,9 @@ export default function FullPlayer() {
                         </>
                       )}
                     </Show>
+                    <button type="button" class={toggleCls(visualizerOn())} title={t("jellyfin.visualizer")} aria-pressed={visualizerOn()} onClick={toggleVisualizer}>
+                      <MdOutlineGraphic_eq size={20} />
+                    </button>
                     <button type="button" class={iconBtn} title={t("jellyfin.close_player")} onClick={() => { setFullOpen(false); stop(); }}>
                       <MdOutlineStop_circle size={20} />
                     </button>

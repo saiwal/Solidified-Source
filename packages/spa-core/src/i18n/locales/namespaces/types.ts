@@ -476,6 +476,7 @@ export type RawDictionary = {
     no_popular:     string;
     load_error:     string;
     show_more_tags: string;
+    show_more_categories: string;
     archive:        string;
     archive_prev_year:  string;
     archive_prev_month: string;
@@ -575,6 +576,9 @@ export type RawDictionary = {
     cfg_too_large:      string;
     cfg_article:        string;
     cfg_card:           string;
+    cfg_newspaper_sections: string;
+    cfg_newspaper_sections_hint: string;
+    cfg_no_categories: string;
     menu_bar:           string;
     menu_tree:          string;
     cfg_menu:           string;
@@ -705,6 +709,7 @@ export type RawDictionary = {
     cloud_header:  string;
     cloud_content: string;
     cloud_bookmarks: string;
+    cloud_categories: string;
     // Photos header (photos.header) / album+image browser (photos.content)
     photos_header:  string;
     photos_content: string;
@@ -850,6 +855,7 @@ export type RawDictionary = {
   post: {
     like: string; dislike: string; repeat: string;
     star: string; unstar: string; pin: string; unpin: string; pinned_indicator: string; follow: string; unfollow: string;
+    pin_failed:           string;
     follow_for_notifs: string; unfollow_post: string; statistics: string; post_statistics: string;
     view_source: string; import_post: string; import: string; original: string; toggle_comments: string;
     flat: string; threaded: string;
@@ -995,9 +1001,7 @@ export type RawDictionary = {
     write_tab:   string;
     source_tab:  string;
     // RichEditor source placeholders
-    bbcode_source_placeholder:  string;
-    markdown_source_placeholder: string;
-    html_source_placeholder:    string;
+    source_placeholder: string;
     // AclPicker
     acl_search_placeholder: string;
     img_width:              string;
@@ -1642,6 +1646,7 @@ export type RawDictionary = {
     direct_messages:      string;
     events:               string;
     polls:                string;
+    rss_feeds:            string;
     filter_by_connection: string;
     connection_placeholder: string;
     forum_placeholder: string;
@@ -1882,6 +1887,7 @@ export type RawDictionary = {
     clear_filters:         string;
     suggestions:           string;
     inbox_feed:            string;
+    rss_feed:              string;
     empty_trash:           string;
     empty_trash_confirm:   string;
     emptied_trash:         string;
@@ -2004,6 +2010,7 @@ export type RawDictionary = {
     connect:            string;
     connected:          string;
     rss_feed:           string;
+    channel_created_on: string;
     search:             string;
     search_placeholder: string;
     compose:            string;
@@ -2556,6 +2563,8 @@ export type RawDictionary = {
     bulk_partial_fail: string;
     delete_selected:  string;
     already_here:     string;
+    category_filter:  string;
+    categories_bulk_hint: string;
   };
   wiki: {
     title_mine: string;
@@ -2899,6 +2908,7 @@ export type RawDictionary = {
     party_signin_to_join: string;
     lyrics_smaller: string;
     lyrics_larger: string;
+    visualizer: string;
     tab_movies: string;
     tab_shows: string;
     shelf_continue: string;
@@ -3111,15 +3121,47 @@ export type RawDictionary = {
     logs_desc:        string;
     refresh:          string;
     no_logfile:       string;
-    logfile_label:    string;
     search_messages:  string;
-    show_of:          string;
-    of:               string;
-    entries:          string;
     log_empty:        string;
     no_filter_match:  string;
     show_more:        string;
     show_less:        string;
+    live: string;
+    paused: string;
+    pause: string;
+    resume: string;
+    new_entries: string;
+    poll_error: string;
+    all_levels: string;
+    level_error: string;
+    level_warning: string;
+    level_info: string;
+    level_debug: string;
+    all_files: string;
+    clear_filters: string;
+    filter_request: string;
+    filter_file: string;
+    filter_fn: string;
+    filter_hint: string;
+    download: string;
+    copy: string;
+    copied: string;
+    log_settings: string;
+    debugging: string;
+    logging_enabled: string;
+    logging_disabled: string;
+    log_level: string;
+    log_file: string;
+    lvl_normal: string;
+    lvl_trace: string;
+    lvl_debug: string;
+    lvl_data: string;
+    lvl_all: string;
+    saved: string;
+    save_settings: string;
+    debugging_off: string;
+    log_unreadable: string;
+    showing_n_of: string;
     queue_title:      string;
     queue_desc:       string;
     undelivered:      string;

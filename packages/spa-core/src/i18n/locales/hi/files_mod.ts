@@ -71,4 +71,6 @@ export const files_mod: RawDictionary["files_mod"] = {
   bulk_partial_fail: "{{count}} आइटम विफल: {{names}}",
   delete_selected:  "हटाएँ",
   already_here:     "पहले से इसी फ़ोल्डर में — दूसरा गंतव्य चुनें",
+  category_filter:  "श्रेणी: {{name}}",
+  categories_bulk_hint: "हर चयनित आइटम में जोड़ी जाएगी; मौजूदा श्रेणियाँ बनी रहेंगी।",
 };

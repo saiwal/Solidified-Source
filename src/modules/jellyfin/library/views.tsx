@@ -299,7 +299,7 @@ function Hero(props: {
   return (
     <header class="relative isolate">
       <Show when={art()}>
-        <div class="absolute -inset-x-4 -top-24 h-[calc(100%+6rem)] -z-10 overflow-hidden pointer-events-none
+        <div class="absolute -inset-x-4 -top-4 bottom-0 -z-10 overflow-hidden pointer-events-none
                     [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden="true">
           <img src={art()!} alt="" class="w-full h-full object-cover blur-3xl opacity-25 saturate-150 scale-110" />
         </div>

@@ -86,7 +86,7 @@ for (const displayPath of ["", "tmp", "tmp/folder 2", "a/b/c", "we#ird & name"])
   // wopiEdit needs a WOPI config — null here, so never on.
   assert.deepStrictEqual(on([file], false),
     ["share", "bookmark", "permissions", "rename", "moveCopy", "categories", "download", "delete"]);
-  assert.deepStrictEqual(on([file, file2], false), ["permissions", "moveCopy", "download", "delete"]);
+  assert.deepStrictEqual(on([file, file2], false), ["permissions", "moveCopy", "categories", "download", "delete"]);
   // Open folder: everything single-target except delete.
   assert.deepStrictEqual(on([folder], true),
     ["share", "bookmark", "permissions", "rename", "moveCopy", "categories", "download"]);

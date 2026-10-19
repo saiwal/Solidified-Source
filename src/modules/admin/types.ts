@@ -350,5 +350,11 @@ export interface AdminLogs {
   logfile: string | null;
   debugging: boolean;
   loglevel: number;
+  /** logfile is set and the PHP process can read it */
+  readable: boolean;
+  /** byte offset to pass back as `after` on the next poll */
+  offset: number;
+  /** the file shrank since `after` (rotated) — entries are a fresh tail */
+  reset: boolean;
   entries: LogEntry[];
 }

@@ -131,11 +131,8 @@ const PostComposer: Component<ComposerProps> = (props) => {
   // get_features() — so the addon gates the feature and its toggle gates the
   // composer.
   //
-  // Editing is driven by props.initialMimetype instead, which the compose
-  // endpoint sets from the Markdown source it remembered for the item
-  // (ContentTypes::recallMarkdown); this is only the fallback for when that
-  // seed is missing, where bbcode is the safe assumption since the stored body
-  // always is bbcode.
+  // Markdown is input-only: a post is stored as bbcode and edited as bbcode,
+  // as in core.
   const feature = (name: string) =>
     props.wallOwner ? props.wallOwner.features[name] === true : isFeatureEnabled(name);
 

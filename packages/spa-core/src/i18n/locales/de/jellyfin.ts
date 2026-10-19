@@ -128,6 +128,7 @@ export const jellyfin: RawDictionary["jellyfin"] = {
   share_episode: "Schaue gerade {{series}} – {{title}}",
   lyrics_smaller: "Kleinere Schrift",
   lyrics_larger: "Größere Schrift",
+  visualizer: "Visualisierung (kann die Hintergrundwiedergabe auf dem iPhone stoppen)",
   party_watch: "Gemeinsam schauen",
   party_listen: "Gemeinsam hören",
   party_starting: "Wird gestartet…",

@@ -273,6 +273,17 @@ for (const [name, [html, md]] of Object.entries(STYLED)) {
   assert.equal(trip(md), md, `${name} must be a fixed point`);
 }
 
+// Real share/card embeds don't use data-bb-raw — their hydrated preview must
+// never reach the markdown (a reshared post was saved as its rendered text).
+for (const [attrs, want] of [
+  ['data-share-id="7"', "[share=7][/share]"],
+  ['data-card-id="9"', "[card=9][/card]"],
+  [`data-share-raw="${encodeRaw("[share author='a']x[/share]")}"`, "[share author='a']x[/share]"],
+]) {
+  const html = `<p>hi</p>${ZWSP}<div ${attrs} contenteditable="false"><h3><strong>preview</strong></h3><img src="x"></div>${ZWSP}`;
+  assert.equal(htmlToMarkdown(html).trim(), `hi\n\n${want}`, attrs);
+}
+
 console.log(`markdown-roundtrip: ok (${Object.keys(STABLE).length} byte-identical, all idempotent, ${Object.keys(SHAPES).length} line shapes, ${Object.keys(STYLED).length} bbcode-only)`);
 
 // ── The premise behind the WYSIWYG guard (wysiwygSafe.ts) ───────────────────

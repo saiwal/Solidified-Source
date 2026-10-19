@@ -19,6 +19,9 @@ export { canPostWall };
 const [wallCompose, setWallCompose] = createSignal<WallCompose | null>(null);
 export { wallCompose };
 
+const [channelCreated, setChannelCreated] = createSignal<string | null>(null);
+export { channelCreated };
+
 const [pinPending, setPinPending] = createSignal(false);
 export { pinPending };
 
@@ -27,6 +30,7 @@ async function channelFetcher(params: ChannelParams): Promise<ChannelStreamResul
   const result = await fetchChannelPosts(nick(), params);
   setCanPostWall(result.canPostWall);
   setWallCompose(result.wallCompose);
+  setChannelCreated(result.channelCreated);
   return result;
 }
 
@@ -86,6 +90,12 @@ export async function handlePin(mid: string) {
     setPinPending(false);
   }
 }
+
+// A pin toggled from the post-detail modal (which has no handle on this
+// store) — reload so the post moves in/out of the pinned spots.
+window.addEventListener("hz:pin-changed", () => {
+  if (nick()) void store.load();
+});
 
 // ── shared handlers object — one instance reused by channel.feed and its
 // alternate-layout widgets (newspaper/timeline/scrapbook) ────────────────────

@@ -29,6 +29,7 @@ export const network: RawDictionary["network"] = {
   direct_messages:      "Direktnachrichten",
   events:               "Termine",
   polls:                "Umfragen",
+  rss_feeds:            "RSS-Feeds",
   // Connection filter
   filter_by_connection: "Nach Verbindung filtern",
   connection_placeholder: "Verbindung…",

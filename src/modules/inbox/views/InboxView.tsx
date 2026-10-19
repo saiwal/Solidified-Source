@@ -17,10 +17,10 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useOnlineStatus } from "@utsukta/spa-core/lib/useOnlineStatus";
 import { syncInbox, setInboxActive, syncProgress } from "@utsukta/spa-core/lib/message-store";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useAuth, isFeedContactsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
-import { MdOutlineEdit, MdOutlineMail, MdOutlineFilter_alt } from "solid-icons/md";
+import { MdOutlineEdit, MdOutlineMail, MdOutlineFilter_alt, MdOutlineRss_feed } from "solid-icons/md";
 import { openComposer } from "@/shared/views/modal-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
@@ -56,6 +56,14 @@ const FEED_SECTIONS: { key: string; type: MessageType }[] = [
   { key: "notices", type: "notification" },
 ];
 
+// The full inbox narrowed to posts from RSS connections (net=rss, see
+// Concerns/StreamFilters). Listed under Inbox only when the hub allows feeds.
+const RSS_KEY = "rss";
+const feedSections = () =>
+  isFeedContactsEnabled()
+    ? [FEED_SECTIONS[0], { key: RSS_KEY, type: "" as MessageType }, ...FEED_SECTIONS.slice(1)]
+    : FEED_SECTIONS;
+
 const Icon: Component<{ path: string }> = (props) => (
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d={props.path} />
@@ -78,6 +86,10 @@ export default function InboxView() {
   const location = useLocation();
   const online = useOnlineStatus();
 
+  const activeKey = createMemo(
+    () => location.pathname.replace(/^\/inbox\/?/, "").replace(/\/$/, "") || "all",
+  );
+
   // One string holds the whole filter state — `from:alice is:unread words` —
   // so the box always shows exactly what the list is filtered by, and the pills
   // below are just shortcuts for editing it.
@@ -89,7 +101,7 @@ export default function InboxView() {
   // and the second is thread-aware); everything else rides through as filters.
   const filters = createMemo(() => {
     const { author: _a, unread: _u, ...rest } = parsed().params;
-    return rest;
+    return activeKey() === RSS_KEY ? { ...rest, net: "rss" } : rest;
   });
   let searchRef: HTMLInputElement | undefined;
 
@@ -109,15 +121,11 @@ export default function InboxView() {
   });
   onCleanup(() => setInboxActive(false));
 
-  const activeKey = createMemo(
-    () => location.pathname.replace(/^\/inbox\/?/, "").replace(/\/$/, "") || "all",
-  );
-
   const selection = createMemo<{ type: FeedType; file: string }>(() => {
     const key = activeKey();
     if (key.startsWith(FOLDER_PREFIX))
       return { type: "folder", file: decodeURIComponent(key.slice(FOLDER_PREFIX.length)) };
-    return { type: FEED_SECTIONS.find((s) => s.key === key)?.type ?? "", file: "" };
+    return { type: feedSections().find((s) => s.key === key)?.type ?? "", file: "" };
   });
 
   // Only DMs get an unread badge — the all-messages count was every delivered
@@ -126,13 +134,13 @@ export default function InboxView() {
     type === "direct" ? folderData()?.unread_direct ?? 0 : 0;
 
   const items = createMemo<SubPageItem[]>(() => [
-    ...FEED_SECTIONS.map((s, i) => ({
+    ...feedSections().map((s, i, all) => ({
       path: s.key,
       label: () =>
-        t((s.type === "" ? "hq.inbox_feed" : FEED_META[s.type].titleKey) as Parameters<typeof t>[0]) as string,
-      icon: <Icon path={TYPE_ICON_PATH[s.type]} />,
+        s.key === RSS_KEY ? t("hq.rss_feed") : t((s.type === "" ? "hq.inbox_feed" : FEED_META[s.type].titleKey) as Parameters<typeof t>[0]) as string,
+      icon: s.key === RSS_KEY ? <MdOutlineRss_feed size={16} /> : <Icon path={TYPE_ICON_PATH[s.type]} />,
       trailing: <Badge n={feedBadge(s.type)} />,
-      dividerAfter: i === FEED_SECTIONS.length - 1,
+      dividerAfter: i === all.length - 1,
     })),
     ...(folderData()?.folders ?? []).map((f, i, all) => ({
       path: `${FOLDER_PREFIX}${encodeURIComponent(f.name)}`,

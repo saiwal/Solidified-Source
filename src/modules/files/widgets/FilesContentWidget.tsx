@@ -9,7 +9,7 @@ import {
   type Component,
   type JSX,
 } from "solid-js";
-import { useLocation, useNavigate } from "@solidjs/router";
+import { useLocation, useNavigate, useSearchParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -38,6 +38,7 @@ import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclIsRestricted, fetchA
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import {
   listFolderMeta,
+  filesInCategory,
   fetchFileMeta,
   downloadItems,
   parentPath,
@@ -569,6 +570,18 @@ export default function FilesContentWidget() {
     ({ nick: n, hash }) => listFolderMeta(n, hash)
   );
 
+  // Category filter: ?cat= (set by the cloud.categories widget, or a core
+  // term link) swaps the listing for that category's items in this subtree.
+  // Folder navigation pushes a bare cloudPath(), so it drops the filter.
+  const [params, setParams] = useSearchParams();
+  const cat = () => (typeof params.cat === "string" && params.cat) || "";
+  const [catHits] = createQueryResource(
+    "files-cat",
+    () => (cat() ? { nick: nick(), cat: cat(), hash: current().hash } : null),
+    ({ nick: n, cat: c, hash }) => filesInCategory(n, c, hash)
+  );
+  createEffect(on(cat, () => clearSelection(), { defer: true }));
+
   // View filter: narrows the open folder by name. Cleared on folder change.
   const [query, setQuery] = createSignal("");
   const [filterOpen, setFilterOpen] = createSignal(false);
@@ -579,7 +592,7 @@ export default function FilesContentWidget() {
   // and the open folder's own row and the tree search go stale the same way.
   const queryClient = useQueryClient();
   const refetch = () => {
-    for (const key of ["files-folder", "files-meta", "files-search"])
+    for (const key of ["files-folder", "files-meta", "files-search", "files-cat", "files-categories"])
       queryClient.invalidateQueries({ queryKey: [key] });
   };
 
@@ -598,7 +611,7 @@ export default function FilesContentWidget() {
   const [overrides, setOverrides] = createSignal<Map<string, FileMeta>>(new Map());
 
   const displayFiles = createMemo(() =>
-    (files()?.items ?? []).map((f) => overrides().get(f.hash) ?? f)
+    ((cat() ? catHits() : files()?.items) ?? []).map((f) => overrides().get(f.hash) ?? f)
   );
 
   // Sorting
@@ -705,7 +718,7 @@ export default function FilesContentWidget() {
     if (id === "permissions") { setPermItems(items); return; }
     if (items.length > 1) {
       if (id === "download") downloadItems(nick(), items);
-      else if (id === "moveCopy") setActiveModal({ kind: "moveCopy", item: items[0], items });
+      else if (id === "moveCopy" || id === "categories") setActiveModal({ kind: id, item: items[0], items });
       else if (id === "delete") void handleBulkDelete();
       return;
     }
@@ -816,7 +829,7 @@ export default function FilesContentWidget() {
     refetch();
   }
 
-  function handleBulkMoved(failed: FileMeta[]) {
+  function handleBulkDone(failed: FileMeta[]) {
     setActiveModal(null);
     setSelected(new Set(failed.map((f) => f.hash)));
     if (failed.length) {
@@ -882,7 +895,7 @@ export default function FilesContentWidget() {
 
   // Single-item actions (the toolbar's runToolbarAction routes here)
   // `items` is only set for a multi-selection; otherwise the modal is for the
-  // one row it belongs to. Rename/categories are single-item by nature.
+  // one row it belongs to. Rename is single-item by nature.
   const [activeModal, setActiveModal] =
     createSignal<{ kind: ModalKind; item: FileMeta; items?: FileMeta[] } | null>(null);
   const [previewItem, setPreviewItem] = createSignal<FileMeta | null>(null);
@@ -938,6 +951,7 @@ export default function FilesContentWidget() {
 
   function handleCategoriesSaved() {
     setActiveModal(null);
+    refetch();
   }
 
   return (
@@ -1000,6 +1014,22 @@ export default function FilesContentWidget() {
               title={t("files_mod.clear_selection") as string}
               aria-label={t("files_mod.clear_selection") as string}
               class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
+            >
+              <MdOutlineClose size={14} />
+            </button>
+          </div>
+        </Show>
+
+        {/* Category chip — while it shows, the list is that category's items */}
+        <Show when={cat()}>
+          <div class="flex items-center gap-1 min-w-0 pl-2.5 pr-1 py-1 rounded-lg border border-accent/40 bg-accent/10 text-xs text-txt">
+            <span class="font-medium truncate">{t("files_mod.category_filter", { name: cat() })}</span>
+            <button
+              type="button"
+              onClick={() => setParams({ cat: undefined })}
+              title={t("files_mod.clear_filter") as string}
+              aria-label={t("files_mod.clear_filter") as string}
+              class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
             >
               <MdOutlineClose size={14} />
             </button>
@@ -1202,13 +1232,13 @@ export default function FilesContentWidget() {
       </Show>
 
       {/* ── File list / grid ── */}
-      <Show when={!files.loading} fallback={<Skeleton />}>
+      <Show when={!files.loading && !(cat() && catHits.loading)} fallback={<Skeleton />}>
         <Show
-          when={!files.error}
+          when={!files.error && !(cat() && catHits.error)}
           fallback={
             <div class="py-10 text-center space-y-2">
               <p class="text-sm text-red-500">{t("files_mod.load_failed")}</p>
-              <p class="text-xs text-muted">{String(files.error)}</p>
+              <p class="text-xs text-muted">{String(files.error ?? catHits.error)}</p>
               <button onClick={() => refetch()} class="text-xs text-accent hover:underline">
                 {t("files_mod.retry")}
               </button>
@@ -1218,7 +1248,7 @@ export default function FilesContentWidget() {
           <Show
             when={sortedFiles().length > 0}
             fallback={<p class="py-12 text-center text-sm text-muted">
-              {query().trim() ? t("files_mod.no_matches") : t("files_mod.folder_empty")}
+              {query().trim() || cat() ? t("files_mod.no_matches") : t("files_mod.folder_empty")}
             </p>}
           >
             <Show
@@ -1287,15 +1317,16 @@ export default function FilesContentWidget() {
         <MoveCopyModal
           items={activeModal()!.items ?? [activeModal()!.item]}
           nick={nick()}
-          onDone={activeModal()!.items ? handleBulkMoved : handleMoved}
+          onDone={activeModal()!.items ? handleBulkDone : handleMoved}
           onClose={() => setActiveModal(null)}
         />
       </Show>
       <Show when={activeModal()?.kind === "categories"}>
         <CategoriesModal
           item={activeModal()!.item}
+          items={activeModal()!.items}
           nick={nick()}
-          onSaved={handleCategoriesSaved}
+          onSaved={activeModal()!.items ? handleBulkDone : handleCategoriesSaved}
           onClose={() => setActiveModal(null)}
         />
       </Show>

@@ -7,7 +7,7 @@ import { buildThreadTree, appendNewBranches, mergeReplies, applyBranchMeta } fro
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { apiDeleteItem, apiEditItem, apiFetchRemoteReplies, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
+import { apiDeleteItem, apiEditItem, apiFetchRemoteReplies, apiTogglePin, apiToggleStar, fetchComments, fetchDisplayItem } from "@utsukta/spa-core/lib/item-api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { isDirectMessage } from "@/shared/stream/components/DmMeta";
 import type { CreatedComment } from "@/shared/editor/composers/CommentComposer";
@@ -359,6 +359,20 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
       apiToggleStar(found.iid).catch(() => {
         setLocalReactions(prev => ({ ...prev, [mid]: { ...(prev[mid] ?? {}), viewerStarred: current } }));
       });
+    },
+    // PostCard still gates the menu entry (own wall copy, top-level, public).
+    // The channel stream behind the modal listens for "hz:pin-changed" and
+    // reloads, since a pin moves the post (skybox / pinned banner).
+    async onPin(mid) {
+      const found = findInTree(nodeData(), mid);
+      if (!found?.uuid) return;
+      try {
+        const { pinned } = await apiTogglePin(found.uuid);
+        setLocalReactions(prev => ({ ...prev, [mid]: { ...(prev[mid] ?? {}), pinned } }));
+        window.dispatchEvent(new CustomEvent("hz:pin-changed"));
+      } catch {
+        toast.error(t("post.pin_failed"));
+      }
     },
     async onEdit(mid, payload) {
       const found = findInTree(nodeData(), mid);

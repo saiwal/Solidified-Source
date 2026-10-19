@@ -27,7 +27,7 @@ export type WallCompose = {
   features:      Record<string, boolean>;
 };
 
-export type ChannelStreamResult = StreamResult & { canPostWall: boolean; wallCompose: WallCompose | null };
+export type ChannelStreamResult = StreamResult & { canPostWall: boolean; wallCompose: WallCompose | null; channelCreated: string | null };
 
 export async function fetchChannelPosts(
   nickname: string,
@@ -63,6 +63,7 @@ export async function fetchChannelPosts(
     limit:        meta?.limit ?? 10,
     nouveau:      meta?.nouveau ?? false,
     canPostWall:  meta?.can_post_wall ?? false,
+    channelCreated: (meta?.channel_created as string | null) ?? null,
     wallCompose:  meta?.wall_compose
       ? {
           name:          meta.wall_compose.name,

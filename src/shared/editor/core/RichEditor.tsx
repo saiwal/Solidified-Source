@@ -561,13 +561,7 @@ export default function RichEditor(props: Props) {
           onDrop={handleDrop}
           style={{ "min-height": surfaceMinH(), "max-height": maxH() }}
           class={`${surfaceGrowClass()} min-w-0 overflow-y-auto ${surfaceSkin()} w-full p-3 text-sm font-mono text-txt outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
-          placeholder={
-            mime() === "text/markdown"
-              ? t("editor.markdown_source_placeholder")
-              : mime() === "text/html"
-                ? t("editor.html_source_placeholder")
-                : t("editor.bbcode_source_placeholder")
-          }
+          placeholder={t("editor.source_placeholder")}
         />
       </Show>
         <Show when={zenOffered()}>

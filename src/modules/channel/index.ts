@@ -77,6 +77,7 @@ registerModule({
       id: "channel.feed_newspaper",
       label: () => useI18n().t("widgets.channel_feed_newspaper"),
       loader: () => import("./widgets/ChannelNewspaperWidget"),
+      configComponent: () => import("./widgets/ChannelNewspaperConfig"),
       slot: "contentTop",
       defaultModules: [],
       contexts: ["channel"],

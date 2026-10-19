@@ -74,4 +74,6 @@ export const files_mod: RawDictionary["files_mod"] = {
   bulk_partial_fail: "{{count}} item(s) failed: {{names}}",
   delete_selected:  "Delete",
   already_here:     "Already in this folder — pick another destination",
+  category_filter:  "Category: {{name}}",
+  categories_bulk_hint: "Added to every selected item; existing categories are kept.",
 };

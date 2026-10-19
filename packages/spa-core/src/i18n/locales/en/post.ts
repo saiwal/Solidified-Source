@@ -9,6 +9,7 @@ export const post: RawDictionary["post"] = {
   unstar:               "Unstar",
   pin:                  "Pin to top",
   unpin:                "Unpin",
+  pin_failed:           "Could not update the pinned post.",
   pinned_indicator:     "Pinned",
   follow:               "Follow",
   unfollow:             "Unfollow",
