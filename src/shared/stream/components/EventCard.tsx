@@ -98,6 +98,15 @@ export default function EventCard(props: {
             <span>{finishDate()}</span>
           </div>
         </Show>
+        <Show when={props.event.location}>
+          <div class="flex items-center gap-2 text-muted">
+            <svg class="w-4 h-4 shrink-0 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span class="break-words min-w-0">{props.event.location}</span>
+          </div>
+        </Show>
       </div>
 
       {/* RSVP row */}
