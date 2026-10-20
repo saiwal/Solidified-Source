@@ -9,7 +9,7 @@ import {
 } from "solid-icons/md";
 import DOMPurify from "dompurify";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
 import type { CalEvent } from "../api";
 import { deleteEvent } from "../api";
@@ -32,10 +32,10 @@ interface Props {
 
 export default function DayDetailModal(props: Props) {
   const { t, locale } = useI18n();
-  const auth = useAuth();
+  const role = useViewerRole();
   // New events always go to the viewer's own calendar — creation requires a
   // local channel on this server, same as the header's New event button.
-  const canCreate = () => auth()?.isLocal === true;
+  const canCreate = () => role() === "owner";
   const [activeEventId, setActiveEventId] = createSignal<number | null>(null);
   // The creator is hosted by ModalHost, so this modal steps aside for it: left
   // open, its showModal() would make a docked or minimized creator inert.
@@ -208,10 +208,12 @@ function EventDetailPanel(props: { event: CalEvent; onEdit: () => void; onDelete
             </a>
           </Show>
           <Show when={ev.rw}>
-            <button type="button" onClick={props.onEdit} class={iconBtn}
-              title={t("calendar.edit_event")} aria-label={t("calendar.edit_event")}>
-              <MdOutlineEdit size={16} />
-            </button>
+            <Show when={ev.editable !== false}>
+              <button type="button" onClick={props.onEdit} class={iconBtn}
+                title={t("calendar.edit_event")} aria-label={t("calendar.edit_event")}>
+                <MdOutlineEdit size={16} />
+              </button>
+            </Show>
             <button type="button" onClick={() => setConfirming(true)} class={`${iconBtn} hover:text-red-500!`}
               title={t("calendar.delete_event")} aria-label={t("calendar.delete_event")}>
               <MdOutlineDelete size={16} />

@@ -13,6 +13,8 @@ export interface CalEvent {
   nofinish: boolean;
   timezone: string;
   rw: boolean;
+  /** Channel-calendar events: false when the owner isn't the author (delete only). */
+  editable?: boolean;
   plink: string;
   html: string;       // only populated for ?id= requests
   /**

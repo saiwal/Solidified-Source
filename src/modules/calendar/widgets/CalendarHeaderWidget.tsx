@@ -5,7 +5,6 @@ import { Portal } from "solid-js/web";
 import { MdOutlineAdd, MdOutlineMore_horiz, MdOutlineFile_download, MdOutlineFile_upload } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
@@ -26,12 +25,12 @@ const menuItem = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm te
 export default function CalendarHeaderWidget() {
   const { t } = useI18n();
   const owner = usePageOwnerName();
-  const auth = useAuth();
   const role = useViewerRole();
   const nick = usePageNick();
   // New events always go to the viewer's own calendar — creation requires a
   // local channel on this server, regardless of whose /cal page is open.
-  const canCreate = () => auth()?.isLocal === true;
+  // New events land in the viewer's own calendar, so offer it only there.
+  const canCreate = () => role() === "owner";
   const more = createPopover({ placement: "bottom-end" });
   const [importing, setImporting] = createSignal(false);
 
