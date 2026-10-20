@@ -27,6 +27,8 @@ export interface EventData {
   description: string;
   // Core's [event-adjust]: false = floating wall time, shown as stored (no tz conversion)
   adjust?: boolean;
+  // [event-location]; core keeps it only here, never in item.location
+  location?: string;
 }
 
 export interface Post {

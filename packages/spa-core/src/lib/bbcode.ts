@@ -355,7 +355,7 @@ function bbFormatAttachData(text: string): string {
 // normally once it's wrapped here.
 // ---------------------------------------------------------------------------
 
-function bbEventAttributes(summary: string, description: string, start: string, finish: string, adjust: boolean): string {
+function bbEventAttributes(summary: string, description: string, start: string, finish: string, adjust: boolean, location = ""): string {
   const fmtDate = (raw: string) => {
     const d = new Date(raw.replace(" ", "T") + "Z");
     if (isNaN(d.getTime())) return raw;
@@ -372,6 +372,7 @@ function bbEventAttributes(summary: string, description: string, start: string, 
     `<div class="bb-event">` +
       `<div class="bb-event-title">${summary}</div>` +
       `<div class="bb-event-date">📅 ${escapeHtml(dateLine)}</div>` +
+      (location ? `<div class="bb-event-location">📍 ${location}</div>` : "") +
       (description ? `<div class="bb-event-desc">${description}</div>` : "") +
     `</div>`
   );
@@ -853,9 +854,9 @@ export function bbcode(text: string, options: BbcodeOptions = {}): string {
   // event's tags are already converted by the time its body is captured.
   // ------------------------------------------------------------------
   text = text.replace(
-    /\[event-summary\]([\s\S]*?)\[\/event-summary\](?:\[event-description\]([\s\S]*?)\[\/event-description\])?\[event-start\]([\s\S]*?)\[\/event-start\](?:\[event-finish\]([\s\S]*?)\[\/event-finish\])?(?:\[event-id\][\s\S]*?\[\/event-id\])?(?:\[event-adjust\]([\s\S]*?)\[\/event-adjust\])?/gi,
-    (_m, summary, description, start, finish, adjust) =>
-      bbEventAttributes(summary, description ?? "", start, finish ?? "", !!Number(adjust))
+    /\[event-summary\]([\s\S]*?)\[\/event-summary\](?:\[event-description\]([\s\S]*?)\[\/event-description\])?\[event-start\]([\s\S]*?)\[\/event-start\](?:\[event-finish\]([\s\S]*?)\[\/event-finish\])?(?:\[event-location\]([\s\S]*?)\[\/event-location\])?(?:\[event-id\][\s\S]*?\[\/event-id\])?(?:\[event-adjust\]([\s\S]*?)\[\/event-adjust\])?/gi,
+    (_m, summary, description, start, finish, location, adjust) =>
+      bbEventAttributes(summary, description ?? "", start, finish ?? "", !!Number(adjust), location ?? "")
   );
 
   // ------------------------------------------------------------------

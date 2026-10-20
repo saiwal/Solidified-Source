@@ -21,7 +21,7 @@ export function parseEventData(body: string): EventData | undefined {
   if (!summary || !start) return undefined;
   const rawDescription = get("event-description");
   const description = rawDescription ? sanitizeHtml(bbcodeDisplay(rawDescription)) : "";
-  return { summary, start, finish: get("event-finish"), id: get("event-id"), description, adjust: !!Number(get("event-adjust")) };
+  return { summary, start, finish: get("event-finish"), id: get("event-id"), description, adjust: !!Number(get("event-adjust")), location: get("event-location") };
 }
 
 // Verbs that represent actual displayable content
