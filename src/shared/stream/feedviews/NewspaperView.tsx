@@ -404,7 +404,7 @@ export function Masthead(props: {
           )}
         </Show>
         <h1 class="font-serif font-black tracking-tight text-txt text-[clamp(2rem,6vw,3.5rem)] leading-none min-w-0 break-words">
-          {masthead()}
+          <A href={`/profile/${nick()}`} class="hover:opacity-80 transition-opacity">{masthead()}</A>
         </h1>
       </div>
       <Show when={props.tagline}>
