@@ -21,8 +21,9 @@ import DOMPurify from "dompurify";
 import EventCard from "@/shared/stream/components/EventCard";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
-import { MdFillPush_pin, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFavorite_border, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
+import { MdFillPush_pin, MdOutlineCheck, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFavorite_border, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { createConfirmTap } from "@/shared/stream/components/ActionBtn";
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
 function useColumnCount(el: () => HTMLElement | undefined): () => number {
   return useMasonryColumnCount(el, 16, 3);
@@ -38,6 +39,11 @@ function MasonryCard(props: {
   const p = props.post;
   const auth = useAuth();
   const canInteract = () => auth()?.isLoggedIn === true;
+  const [repeatArmed, confirmRepeat] = createConfirmTap();
+  const onRepeat = () => {
+    const fire = () => props.handlers.onRepeat(p.mid);
+    if (p.viewerRepeated) fire(); else confirmRepeat(fire);
+  };
   const replyCount = () =>
     p.children.length > 0
       ? Math.max(countAllComments(p.children), p.commentCount ?? 0)
@@ -294,16 +300,17 @@ function MasonryCard(props: {
 
           <Show when={!p.flags?.includes("private") && canInteract()}>
             <button
-              onClick={() => props.handlers.onRepeat(p.mid)}
+              onClick={onRepeat}
+              title={repeatArmed() ? t("post.repeat_confirm") : t("post.repeat")}
               aria-label={t("post.repeat")}
               aria-pressed={p.viewerRepeated}
               class="flex items-center gap-1 text-xs transition-colors"
               classList={{
-                "text-accent": p.viewerRepeated,
-                "text-muted hover:text-accent": !p.viewerRepeated,
+                "text-accent": p.viewerRepeated || repeatArmed(),
+                "text-muted hover:text-accent": !p.viewerRepeated && !repeatArmed(),
               }}
             >
-              <MdOutlineRefresh class="w-3.5 h-3.5" />
+              <Show when={repeatArmed()} fallback={<MdOutlineRefresh class="w-3.5 h-3.5" />}><MdOutlineCheck class="w-3.5 h-3.5" /></Show>
               {p.repeatCount || ""}
             </button>
           </Show>

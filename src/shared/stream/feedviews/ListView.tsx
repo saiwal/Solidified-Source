@@ -14,8 +14,9 @@ import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import CommentComposer from "@/shared/editor/composers/CommentComposer";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
+import { createConfirmTap } from "@/shared/stream/components/ActionBtn";
 import { useListBehavior } from "@utsukta/spa-core/store/list-behavior";
-import { MdFillKeyboard_arrow_down, MdFillPush_pin, MdOutlineChat_bubble_outline, MdOutlineExpand_more, MdOutlineOpen_in_new, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
+import { MdFillKeyboard_arrow_down, MdFillPush_pin, MdOutlineChat_bubble_outline, MdOutlineExpand_more, MdOutlineCheck, MdOutlineOpen_in_new, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
@@ -132,6 +133,11 @@ function RowDetails(props: {
   const { t } = useI18n();
   const auth = useAuth();
   const canInteract = () => auth()?.isLoggedIn === true;
+  const [repeatArmed, confirmRepeat] = createConfirmTap();
+  const onRepeat = () => {
+    const fire = () => props.handlers.onRepeat(p.mid);
+    if (p.viewerRepeated) fire(); else confirmRepeat(fire);
+  };
 
   return (
     <div
@@ -140,14 +146,15 @@ function RowDetails(props: {
     >
       <Show when={!p.flags?.includes("private") && canInteract()}>
         <button
-          onClick={() => props.handlers.onRepeat(p.mid)}
+          onClick={onRepeat}
+          title={repeatArmed() ? t("post.repeat_confirm") : t("post.repeat")}
           class="flex items-center gap-1 text-[0.6875rem] px-2 py-1 rounded-md transition-colors"
           classList={{
-            "text-accent bg-accent-muted": p.viewerRepeated,
-            "text-muted hover:text-txt hover:bg-elevated": !p.viewerRepeated,
+            "text-accent bg-accent-muted": p.viewerRepeated || repeatArmed(),
+            "text-muted hover:text-txt hover:bg-elevated": !p.viewerRepeated && !repeatArmed(),
           }}
         >
-          <MdOutlineRefresh class="w-3 h-3" />
+          <Show when={repeatArmed()} fallback={<MdOutlineRefresh class="w-3 h-3" />}><MdOutlineCheck class="w-3 h-3" /></Show>
           <Show when={p.repeatCount > 0}>
             <span>{p.repeatCount}</span>
           </Show>

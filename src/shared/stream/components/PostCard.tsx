@@ -25,7 +25,7 @@ import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
 import CommentThread from "@/shared/views/CommentThread";
-import ActionBtn, { pop } from "./ActionBtn";
+import ActionBtn, { pop, createConfirmTap } from "./ActionBtn";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
@@ -933,8 +933,11 @@ export default function PostCard(props: {
   function onDislike() {
     props.handlers.onDislike(props.post.mid);
   }
+  // Undoing a repeat is the recovery path, so only the repeat itself confirms.
+  const [repeatArmed, confirmRepeat] = createConfirmTap();
   function onRepeat() {
-    props.handlers.onRepeat(props.post.mid);
+    const fire = () => props.handlers.onRepeat(props.post.mid);
+    if (props.post.viewerRepeated) fire(); else confirmRepeat(fire);
   }
   function onStar() {
     props.handlers.onStar?.(props.post.mid);
@@ -1377,16 +1380,18 @@ export default function PostCard(props: {
           <Show when={!isPrivate() && canInteract()}>
             <CompactActionBtn
               icon={
-                props.post.viewerRepeated ? (
+                repeatArmed() ? (
+                  <MdOutlineCheck size={14} />
+                ) : props.post.viewerRepeated ? (
                   <MdFillShare size={14} />
                 ) : (
                   <MdOutlineShare size={14} />
                 )
               }
               count={props.post.repeatCount}
-              label={t("post.repeat")}
+              label={repeatArmed() ? t("post.repeat_confirm") : t("post.repeat")}
               onClick={onRepeat}
-              active={props.post.viewerRepeated}
+              active={props.post.viewerRepeated || repeatArmed()}
             />
           </Show>
           <Show when={canStar()}>
@@ -2069,16 +2074,18 @@ export default function PostCard(props: {
         <Show when={!isPrivate() && canInteract()}>
           <ActionBtn
             icon={
-              props.post.viewerRepeated ? (
+              repeatArmed() ? (
+                <MdOutlineCheck size={17} />
+              ) : props.post.viewerRepeated ? (
                 <MdFillShare size={17} />
               ) : (
                 <MdOutlineShare size={17} />
               )
             }
             count={props.post.repeatCount}
-            label={t("post.repeat")}
+            label={repeatArmed() ? t("post.repeat_confirm") : t("post.repeat")}
             onClick={onRepeat}
-            active={props.post.viewerRepeated}
+            active={props.post.viewerRepeated || repeatArmed()}
             activeClass="text-accent"
           />
         </Show>

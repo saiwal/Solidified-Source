@@ -2,7 +2,22 @@
 // A reaction button (icon + count) and its click "pop". Shared by PostCard's
 // action bar and the article reading page, so reactions look and feel the
 // same everywhere.
-import { Show, type JSX } from "solid-js";
+import { Show, createSignal, onCleanup, type JSX } from "solid-js";
+
+// Two-tap guard for actions that publish (repeat): the first tap arms — the
+// caller shows a tick in place — and only a second tap within `ms` runs it.
+export function createConfirmTap(ms = 3000) {
+  const [armed, setArmed] = createSignal(false);
+  let timer: number | undefined;
+  onCleanup(() => clearTimeout(timer));
+  const tap = (fn: () => void) => {
+    clearTimeout(timer);
+    if (armed()) { setArmed(false); fn(); return; }
+    setArmed(true);
+    timer = window.setTimeout(() => setArmed(false), ms);
+  };
+  return [armed, tap] as const;
+}
 
 // Click feedback on a reaction icon. WAAPI rather than a CSS class so it
 // replays on every click; callers pass a stable wrapper, since the icon inside

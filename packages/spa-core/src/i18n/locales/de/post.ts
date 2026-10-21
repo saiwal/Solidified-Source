@@ -5,6 +5,7 @@ export const post: RawDictionary["post"] = {
   like:                 "Gefällt mir",
   dislike:              "Gefällt mir nicht",
   repeat:               "Wiederholen",
+  repeat_confirm:       "Zum Wiederholen erneut tippen",
   star:                 "Markieren",
   unstar:               "Markierung entfernen",
   pin:                  "Oben anheften",

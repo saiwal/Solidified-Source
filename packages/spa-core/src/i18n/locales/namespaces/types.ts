@@ -853,7 +853,7 @@ export type RawDictionary = {
     excalidraw_download:  string;
   };
   post: {
-    like: string; dislike: string; repeat: string;
+    like: string; dislike: string; repeat: string; repeat_confirm: string;
     star: string; unstar: string; pin: string; unpin: string; pinned_indicator: string; follow: string; unfollow: string;
     pin_failed:           string;
     follow_for_notifs: string; unfollow_post: string; statistics: string; post_statistics: string;
