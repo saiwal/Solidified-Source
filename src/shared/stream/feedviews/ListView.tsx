@@ -22,7 +22,7 @@ import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
 import { openPost } from "@/shared/views/modal-host";
 import CardShell from "../CardShell";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Avatar } from "@ui/Avatar";
 
@@ -62,6 +62,7 @@ function getParticipants(thread: ThreadNode) {
 
 function VoteGutter(props: { post: ThreadNode; handlers: StreamHandlers }) {
   const p = props.post;
+  const { t } = useI18n();
   const auth = useAuth();
   const canInteract = () => auth()?.isLoggedIn === true;
   const score = () => (p.likeCount ?? 0) - (p.dislikeCount ?? 0);
@@ -73,13 +74,11 @@ function VoteGutter(props: { post: ThreadNode; handlers: StreamHandlers }) {
       onClick={(e) => e.stopPropagation()}
     >
       <Show when={canInteract()}>
-        <button
+        <IconButton
+          label={t("post.like")}
+          size="sm"
+          pressed={p.viewerLiked}
           onClick={() => props.handlers.onLike(p.mid)}
-          class="flex items-center justify-center w-6 h-5 rounded transition-colors"
-          classList={{
-            "text-accent": p.viewerLiked,
-            "text-subtle hover:text-accent": !p.viewerLiked,
-          }}
         >
           <svg
             class="w-3.5 h-3.5"
@@ -92,7 +91,7 @@ function VoteGutter(props: { post: ThreadNode; handlers: StreamHandlers }) {
           >
             <path d="M18 15l-6-6-6 6" />
           </svg>
-        </button>
+        </IconButton>
       </Show>
 
       <span
@@ -107,16 +106,14 @@ function VoteGutter(props: { post: ThreadNode; handlers: StreamHandlers }) {
       </span>
 
       <Show when={canInteract()}>
-        <button
+        <IconButton
+          label={t("post.dislike")}
+          size="sm"
+          pressed={p.viewerDisliked}
           onClick={() => props.handlers.onDislike(p.mid)}
-          class="flex items-center justify-center w-6 h-5 rounded transition-colors"
-          classList={{
-            "text-accent": p.viewerDisliked,
-            "text-subtle hover:text-subtle/60": !p.viewerDisliked,
-          }}
         >
           <MdOutlineExpand_more class="w-3.5 h-3.5" />
-        </button>
+        </IconButton>
       </Show>
     </div>
   );
@@ -148,37 +145,28 @@ function RowDetails(props: {
       onClick={(e) => e.stopPropagation()}
     >
       <Show when={!p.flags?.includes("private") && canInteract()}>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          pressed={p.viewerRepeated || repeatArmed()}
           onClick={onRepeat}
           title={repeatArmed() ? t("post.repeat_confirm") : t("post.repeat")}
-          class="flex items-center gap-1 text-[0.6875rem] px-2 py-1 rounded-md transition-colors"
-          classList={{
-            "text-accent bg-accent-muted": p.viewerRepeated || repeatArmed(),
-            "text-muted hover:text-txt hover:bg-elevated": !p.viewerRepeated && !repeatArmed(),
-          }}
         >
           <Show when={repeatArmed()} fallback={<MdOutlineRefresh class="w-3 h-3" />}><MdOutlineCheck class="w-3 h-3" /></Show>
           <Show when={p.repeatCount > 0}>
             <span>{p.repeatCount}</span>
           </Show>
           <span class="hidden sm:inline">{t("post.repeat")}</span>
-        </button>
+        </Button>
       </Show>
 
-      <button
-        onClick={() => props.onReplies()}
-        class="flex items-center gap-1 text-[0.6875rem] px-2 py-1 rounded-md transition-colors"
-        classList={{
-          "text-accent bg-accent-muted": props.repliesActive,
-          "text-muted hover:text-txt hover:bg-elevated": !props.repliesActive,
-        }}
-      >
+      <Button variant="ghost" size="sm" pressed={props.repliesActive} onClick={() => props.onReplies()}>
         <MdOutlineChat_bubble_outline class="w-3 h-3" />
         <Show when={props.replyCount > 0}>
           <span>{props.replyCount}</span>
         </Show>
         <span class="hidden sm:inline">{props.replyLabel}</span>
-      </button>
+      </Button>
 
       <Show when={p.via}>
         <a
@@ -442,13 +430,13 @@ function MessageRow(props: {
           onClick={handleNsfwToggleClick}
         />
         <Show when={canInteract()}>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            pressed={props.msg.viewerLiked}
+            aria-label={t("post.like")}
+            class="mt-1 h-6! px-2!"
             onClick={() => props.handlers.onLike(props.msg.mid)}
-            class="mt-1 flex items-center gap-1 text-[0.625rem] transition-colors"
-            classList={{
-              "text-accent": props.msg.viewerLiked,
-              "text-subtle hover:text-accent": !props.msg.viewerLiked,
-            }}
           >
             <svg
               class="w-3 h-3"
@@ -465,7 +453,7 @@ function MessageRow(props: {
             </svg>
             <Show when={props.msg.likeCount > 0}>{props.msg.likeCount}</Show>
             <span>{t("post.like")}</span>
-          </button>
+          </Button>
         </Show>
       </div>
     </div>

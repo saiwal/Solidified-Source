@@ -12,6 +12,7 @@ import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
 import CardShell from "../CardShell";
 import { EmptyState } from "@ui/EmptyState";
+import { Button } from "@ui/Button";
 
 type Entry =
   | { kind: "day"; key: string; label: string }
@@ -110,14 +111,16 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
 
         <div class="flex items-center gap-4 shrink-0" onClick={(e) => e.stopPropagation()}>
           <Show when={canInteract()}>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={p.viewerLiked}
+              aria-label={t("post.like")}
               onClick={() => props.handlers.onLike(p.mid)}
-              class="flex items-center gap-1.5 text-sm transition-colors"
-              classList={{ "text-accent": p.viewerLiked, "text-muted hover:text-accent": !p.viewerLiked }}
             >
               <MdOutlineFavorite_border class="w-4 h-4" />
               {p.likeCount || ""}
-            </button>
+            </Button>
           </Show>
           <Show when={replyCountOf(p) > 0}>
             <span class="text-sm text-muted">

@@ -9,6 +9,7 @@ import { Show, createSignal } from "solid-js";
 import { MdOutlineFormat_list_bulleted, MdOutlineFormat_list_numbered } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
+import { IconButton } from "@ui/Button";
 
 export type ListKind = "bullet" | "number" | "alpha";
 
@@ -52,22 +53,18 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
 
   return (
     <>
-      <button
+      <IconButton
+        label={t("editor.list_toolbar_title")}
+        size="sm"
+        aria-expanded={open()}
+        class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
-        type="button"
-        title={t("editor.list_toolbar_title")}
         disabled={props.disabled}
         onMouseDown={(e) => e.preventDefault()}
         onClick={toggle}
-        class={
-          "px-1.5 py-0.5 rounded transition-colors " +
-          (props.disabled
-            ? "text-muted/40 cursor-not-allowed"
-            : `text-txt hover:bg-elevated ${open() ? "bg-elevated" : ""}`)
-        }
       >
         <MdOutlineFormat_list_bulleted class="w-4 h-4" />
-      </button>
+      </IconButton>
 
       <Show when={open()}>
         <div

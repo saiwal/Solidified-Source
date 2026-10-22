@@ -308,17 +308,15 @@ const SourcesSection: Component = () => {
       title={t("sources.title")}
       description={t("sources.description")}
       action={
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          pressed={creating()}
           onClick={() => { setEditingId(null); setCreating((v) => !v); }}
-          class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-            creating()
-              ? "border-accent text-accent bg-accent/10"
-              : "border-rim text-muted hover:border-rim-strong hover:text-txt"
-          }`}
         >
           <MdFillAdd size={15} />
           {t("sources.new_source")}
-        </button>
+        </Button>
       }
     >
       <p class="text-xs text-muted">{t("sources.import_desc")}</p>

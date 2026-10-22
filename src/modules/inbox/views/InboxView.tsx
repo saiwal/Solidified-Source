@@ -38,12 +38,11 @@ import {
   type MessageType,
 } from "@/modules/hq/widgets/MessageList";
 import { Badge, CountBadge } from "@ui/Badge";
+import { buttonClass } from "@ui/Button";
 
 const FOLDER_PREFIX = "folder/";
 
-const COMPOSE_BTN =
-  "flex-1 flex items-center justify-center py-2 rounded-xl " +
-  "bg-accent text-accent-fg hover:opacity-90 transition-opacity";
+const COMPOSE_BTN = `${buttonClass("primary")} flex-1`;
 
 const TRASH_ICON =
   "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16";

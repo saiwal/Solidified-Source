@@ -11,6 +11,7 @@ import HookSettingsForm from "./HookSettingsForm";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Switch } from "@ui/Toggle";
 import { Badge } from "@ui/Badge";
+import { Button } from "@ui/Button";
 
 export default function ThemesSection() {
   const { t } = useI18n();
@@ -59,16 +60,14 @@ export default function ThemesSection() {
 
                       <div class="flex items-center gap-2 shrink-0">
                         <Show when={theme.has_settings}>
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            pressed={configTheme() === theme.name}
                             onClick={() => setConfigTheme(configTheme() === theme.name ? null : theme.name)}
-                            class={`px-2 py-1 text-xs rounded border transition-colors
-                              ${configTheme() === theme.name
-                                ? "border-accent text-accent bg-accent/5"
-                                : "border-rim text-muted hover:bg-elevated"}`}
                           >
                             {t("admin.settings_label")}
-                          </button>
+                          </Button>
                         </Show>
                         <Switch
                           checked={theme.allowed}

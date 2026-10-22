@@ -9,6 +9,7 @@ import { getEmojiMap, type EmojiEntry } from "@utsukta/spa-core/store/emoji-stor
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { Input } from "@ui/Field";
+import { iconButtonClass } from "@ui/Button";
 
 export interface EmojiPickerProps {
   onSelect: (entry: EmojiEntry) => void;
@@ -38,7 +39,7 @@ export default function EmojiPicker(props: EmojiPickerProps) {
 
   const triggerClass = () =>
     props.triggerClass ??
-    `px-1.5 py-0.5 rounded text-txt hover:bg-elevated transition-colors ${open() ? "bg-elevated" : ""}`;
+    `${iconButtonClass("default", "sm")} ${open() ? "bg-elevated text-txt" : ""}`;
 
   return (
     <>

@@ -5,6 +5,7 @@ import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { MdFillFavorite, MdOutlineFavorite_border } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { setFavorite, type JellyfinSession, type JfItem } from "../api";
+import { IconButton } from "@ui/Button";
 
 export default function FavoriteButton(props: { s: JellyfinSession; item: JfItem; size?: number }) {
   const { t } = useI18n();
@@ -25,10 +26,14 @@ export default function FavoriteButton(props: { s: JellyfinSession; item: JfItem
   };
 
   return (
-    <button type="button" onClick={flip} aria-pressed={fav()}
-      title={fav() ? t("jellyfin.unfavorite") : t("jellyfin.favorite")}
-      class={`p-1 shrink-0 transition-colors ${fav() ? "text-danger-txt" : "text-muted hover:text-txt"}`}>
+    <IconButton
+      label={fav() ? t("jellyfin.unfavorite") : t("jellyfin.favorite")}
+      size="sm"
+      pressed={fav()}
+      class={fav() ? "text-danger-txt!" : ""}
+      onClick={flip}
+    >
       {fav() ? <MdFillFavorite size={props.size ?? 16} /> : <MdOutlineFavorite_border size={props.size ?? 16} />}
-    </button>
+    </IconButton>
   );
 }

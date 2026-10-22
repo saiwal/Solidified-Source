@@ -1375,14 +1375,12 @@ export default function PostCard(props: {
             />
           </Show>
           <Show when={canStar()}>
-            <button
+            <IconButton
+              label={props.post.viewerStarred ? t("post.unstar") : t("post.star")}
+              size="sm"
+              pressed={props.post.viewerStarred}
+              class={props.post.viewerStarred ? "bg-transparent! text-yellow-500!" : ""}
               onClick={(e) => { pop(e.currentTarget.firstElementChild, true); onStar(); }}
-              title={
-                props.post.viewerStarred ? t("post.unstar") : t("post.star")
-              }
-              class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
-                     transition-colors select-none hover:bg-overlay
-                     ${props.post.viewerStarred ? "text-yellow-500" : "text-subtle hover:text-txt"}`}
             >
               <span class="inline-flex">
                 <Show
@@ -1392,31 +1390,29 @@ export default function PostCard(props: {
                   <MdFillStar size={14} />
                 </Show>
               </span>
-            </button>
+            </IconButton>
           </Show>
           <Show when={canFolder()}>
-            <button
+            <IconButton
+              label={t("post.save_to_folder")}
+              size="sm"
+              pressed={showFolderPicker() || hasFolders()}
               onClick={toggleFolderPicker}
-              title={t("post.save_to_folder")}
-              class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
-                     transition-colors select-none hover:bg-overlay
-                     ${showFolderPicker() || hasFolders() ? "text-accent" : "text-subtle hover:text-txt"}`}
             >
               <Show when={hasFolders()} fallback={<MdFillFolder_open size={14} />}><MdFillFolder size={14} /></Show>
-            </button>
+            </IconButton>
           </Show>
 
 
           <Show when={canReactionQueue()}>
-            <button
+            <IconButton
+              label={t("moderate.pending_reactions")}
+              size="sm"
+              pressed={showReactionQueue()}
               onClick={toggleReactionQueue}
-              title={t("moderate.pending_reactions")}
-              class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
-                     transition-colors select-none hover:bg-overlay
-                     ${showReactionQueue() ? "text-accent" : "text-subtle hover:text-txt"}`}
             >
               <MdOutlineFlag size={14} />
-            </button>
+            </IconButton>
           </Show>
 
           <Show when={isRss()}>
@@ -1453,16 +1449,9 @@ export default function PostCard(props: {
             label={t("post.more_actions")}
             class="min-w-[11rem]"
             trigger={(p, open) => (
-              <button
-                {...p}
-                title={t("post.more_actions")}
-                aria-label={t("post.more_actions")}
-                class={`flex items-center px-1 py-1 rounded-md text-xs
-                     transition-colors hover:bg-overlay
-                     ${open() ? "text-accent" : "text-subtle"}`}
-              >
+              <IconButton label={t("post.more_actions")} size="sm" pressed={open()} {...p}>
                 <MdFillMore_vert size={14} />
-              </button>
+              </IconButton>
             )}
           >
             {/* Share — the only entry every viewer gets */}
@@ -2003,12 +1992,12 @@ export default function PostCard(props: {
           />
         </Show>
         <Show when={canStar()}>
-          <button
+          <IconButton
+            label={props.post.viewerStarred ? t("post.unstar") : t("post.star")}
+            size="sm"
+            pressed={props.post.viewerStarred}
+            class={props.post.viewerStarred ? "bg-transparent! text-yellow-500!" : ""}
             onClick={(e) => { pop(e.currentTarget.firstElementChild, true); onStar(); }}
-            title={props.post.viewerStarred ? t("post.unstar") : t("post.star")}
-            class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                   transition-colors select-none hover:bg-overlay
-                   ${props.post.viewerStarred ? "text-yellow-500" : "text-muted hover:text-txt"}`}
           >
             <span class="inline-flex">
               <Show
@@ -2018,31 +2007,27 @@ export default function PostCard(props: {
                 <MdFillStar size={17} />
               </Show>
             </span>
-          </button>
+          </IconButton>
         </Show>
         <Show when={canFolder()}>
-          <button
+          <IconButton
+            label={t("post.save_to_folder")}
+            pressed={showFolderPicker() || hasFolders()}
             onClick={toggleFolderPicker}
-            title={t("post.save_to_folder")}
-            class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                   transition-colors select-none hover:bg-overlay
-                   ${showFolderPicker() || hasFolders() ? "text-accent" : "text-muted hover:text-txt"}`}
           >
             <Show when={hasFolders()} fallback={<MdFillFolder_open size={17} />}><MdFillFolder size={17} /></Show>
-          </button>
+          </IconButton>
         </Show>
 
 
         <Show when={canReactionQueue()}>
-          <button
+          <IconButton
+            label={t("moderate.pending_reactions")}
+            pressed={showReactionQueue()}
             onClick={toggleReactionQueue}
-            title={t("moderate.pending_reactions")}
-            class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                   transition-colors select-none hover:bg-overlay
-                   ${showReactionQueue() ? "text-accent" : "text-muted hover:text-txt"}`}
           >
             <MdOutlineFlag size={17} />
-          </button>
+          </IconButton>
         </Show>
 
         {/* ── Comments + thread controls group ── */}
@@ -2084,16 +2069,9 @@ export default function PostCard(props: {
           label={t("post.more_actions")}
           class="min-w-[11rem]"
           trigger={(p, open) => (
-            <button
-              {...p}
-              title={t("post.more_actions")}
-              aria-label={t("post.more_actions")}
-              class={`flex items-center px-1.5 py-1.5 rounded-lg text-sm font-medium
-                   transition-colors hover:bg-overlay
-                   ${open() ? "text-accent" : "text-muted"}`}
-            >
+            <IconButton label={t("post.more_actions")} pressed={open()} {...p}>
               <MdFillMore_vert size={18} />
-            </button>
+            </IconButton>
           )}
         >
           {/* Share — the only entry every viewer gets */}
@@ -2415,14 +2393,12 @@ function PostStats(props: {
           <div class="flex border-b border-rim mb-3">
             <For each={tabs()}>
               {(t) => (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  pressed={tab() === t.key}
+                  class="-mb-px"
                   onClick={() => setTab(t.key)}
-                  class={`px-4 py-2 text-xs font-semibold transition-colors border-b-2 -mb-px
-                    ${
-                      tab() === t.key
-                        ? "border-accent text-txt"
-                        : "border-transparent text-muted hover:text-txt hover:border-rim"
-                    }`}
                 >
                   {t.label}
                   <span
@@ -2431,7 +2407,7 @@ function PostStats(props: {
                   >
                     {t.count}
                   </span>
-                </button>
+                </Button>
               )}
             </For>
           </div>
@@ -2613,16 +2589,12 @@ function FolderPicker(props: {
                 const inFolder = () => props.itemFolders.includes(folder);
                 const saving = () => props.saving === folder;
                 return (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    pressed={inFolder()}
                     onClick={() => props.onToggle(folder)}
                     disabled={!!props.saving}
-                    class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs
-                           transition-colors disabled:opacity-60 select-none"
-                    classList={{
-                      "bg-accent text-accent-fg font-medium": inFolder(),
-                      "bg-overlay text-muted hover:bg-elevated hover:text-txt":
-                        !inFolder(),
-                    }}
                     title={
                       inFolder()
                         ? `Remove from "${folder}"`
@@ -2661,7 +2633,7 @@ function FolderPicker(props: {
                       </svg>
                     </Show>
                     <span class="truncate max-w-[100px]">{folder}</span>
-                  </button>
+                  </Button>
                 );
               }}
             </For>
@@ -2758,15 +2730,15 @@ function CompactActionBtn(props: {
   active?: boolean;
 }) {
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="sm"
+      pressed={props.active}
       onClick={(e) => { pop(e.currentTarget.firstElementChild); props.onClick(); }}
       title={props.label}
-      class={`flex items-center gap-1 px-2 py-1 rounded-md text-xs
-              transition-colors select-none hover:bg-overlay
-              ${props.active ? "text-accent" : "text-subtle"}`}
     >
       <span class="inline-flex">{props.icon}</span>
       <Show when={props.count > 0}><span>{props.count}</span></Show>
-    </button>
+    </Button>
   );
 }

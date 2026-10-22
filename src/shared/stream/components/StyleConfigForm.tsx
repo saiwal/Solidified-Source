@@ -32,18 +32,14 @@ export default function StyleConfigForm(props: StyleConfigFormProps) {
         <div class="flex flex-wrap gap-1.5 mt-1">
           <For each={props.options}>
             {(opt) => (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={style() === opt.value}
                 onClick={() => setStyle(opt.value)}
-                aria-pressed={style() === opt.value}
-                class="px-2.5 py-1 rounded-lg border text-xs transition-colors"
-                classList={{
-                  "bg-accent text-accent-fg border-accent": style() === opt.value,
-                  "bg-elevated text-txt border-rim hover:border-accent": style() !== opt.value,
-                }}
               >
                 {opt.label}
-              </button>
+              </Button>
             )}
           </For>
         </div>

@@ -66,7 +66,7 @@ function usePubstreamHandlers(tag: () => string): StreamHandlers {
   };
 }
 
-const ICON_BTN = iconButtonClass("square");
+const ICON_BTN = iconButtonClass("outline");
 
 export default function PubstreamContentWidget() {
   const { t } = useI18n();

@@ -5,6 +5,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiRsvpAttend, apiRsvpDecline, apiRsvpMaybe } from "@utsukta/spa-core/lib/item-api";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { EventData } from "@utsukta/spa-core/types/post.types";
+import { Button } from "@ui/Button";
 
 function formatEventDate(iso: string, locale: string, adjust?: boolean): string {
   if (!iso) return "";
@@ -116,7 +117,7 @@ export default function EventCard(props: {
             label="Attend"
             count={attendCount()}
             active={attending()}
-            activeClass="bg-success/15 text-success-txt border-success/40"
+            activeClass="bg-success/15! text-success-txt! border-success/40!"
             onClick={() => rsvp("accept")}
             disabled={pending()}
           />
@@ -124,7 +125,7 @@ export default function EventCard(props: {
             label="Maybe"
             count={maybeCount()}
             active={maybe()}
-            activeClass="bg-warning/15 text-warning-txt border-warning/40"
+            activeClass="bg-warning/15! text-warning-txt! border-warning/40!"
             onClick={() => rsvp("tentativeaccept")}
             disabled={pending()}
           />
@@ -132,7 +133,7 @@ export default function EventCard(props: {
             label="Decline"
             count={declineCount()}
             active={declining()}
-            activeClass="bg-danger/15 text-danger-txt border-danger/40"
+            activeClass="bg-danger/15! text-danger-txt! border-danger/40!"
             onClick={() => rsvp("reject")}
             disabled={pending()}
           />
@@ -166,13 +167,13 @@ function RsvpBtn(props: {
   disabled: boolean;
 }) {
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="sm"
+      pressed={props.active}
+      class={`border ${props.active ? props.activeClass : "border-rim"}`}
       onClick={props.onClick}
       disabled={props.disabled}
-      class={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all select-none disabled:opacity-60
-              ${props.active
-                ? props.activeClass
-                : "border-rim text-muted hover:border-accent/40 hover:text-txt"}`}
     >
       <span>{props.label}</span>
       <Show when={props.count > 0}>
@@ -180,6 +181,6 @@ function RsvpBtn(props: {
           {props.count}
         </span>
       </Show>
-    </button>
+    </Button>
   );
 }

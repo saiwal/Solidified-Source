@@ -139,18 +139,14 @@ export default function CalendarContentWidget() {
         <div class="flex items-center gap-1 flex-wrap -mt-2">
           <For each={allCategories()}>
             {(cat) => (
-              <button
-                type="button"
-                aria-pressed={catFilter() === cat}
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={catFilter() === cat}
                 onClick={() => setCatFilter((c) => (c === cat ? null : cat))}
-                class={`px-2.5 py-1 rounded-full text-xs transition-colors ${
-                  catFilter() === cat
-                    ? "bg-accent-muted text-accent-txt font-medium"
-                    : "text-muted hover:text-txt hover:bg-elevated/60"
-                }`}
               >
                 {cat}
-              </button>
+              </Button>
             )}
           </For>
         </div>

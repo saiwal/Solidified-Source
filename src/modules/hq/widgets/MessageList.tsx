@@ -119,32 +119,22 @@ export const FolderViewToggle: Component<{ mode: ViewMode; onChange: (m: ViewMod
   const { t } = useI18n();
   return (
     <div class="flex items-center gap-0.5 bg-overlay rounded-lg p-0.5">
-      <button
-        type="button"
+      <IconButton
+        label={t("hq.folder_view_list")}
+        size="sm"
+        pressed={props.mode === "list"}
         onClick={() => props.onChange("list")}
-        aria-label={t("hq.folder_view_list")}
-        aria-pressed={props.mode === "list"}
-        class="p-1 rounded-md transition-colors"
-        classList={{
-          "bg-surface text-txt shadow-sm": props.mode === "list",
-          "text-muted hover:text-txt": props.mode !== "list",
-        }}
       >
         <ListIcon class="w-3.5 h-3.5" />
-      </button>
-      <button
-        type="button"
+      </IconButton>
+      <IconButton
+        label={t("hq.folder_view_grid")}
+        size="sm"
+        pressed={props.mode === "grid"}
         onClick={() => props.onChange("grid")}
-        aria-label={t("hq.folder_view_grid")}
-        aria-pressed={props.mode === "grid"}
-        class="p-1 rounded-md transition-colors"
-        classList={{
-          "bg-surface text-txt shadow-sm": props.mode === "grid",
-          "text-muted hover:text-txt": props.mode !== "grid",
-        }}
       >
         <GridIcon class="w-3.5 h-3.5" />
-      </button>
+      </IconButton>
     </div>
   );
 };
@@ -195,13 +185,11 @@ const RowButton: Component<{
   active?: boolean;
   onClick: () => void;
 }> = (props) => (
-  <button
-    type="button"
-    title={props.title}
-    aria-label={props.title}
+  <IconButton
+    label={props.title}
+    size="sm"
+    pressed={props.active}
     onClick={(e) => { e.stopPropagation(); props.onClick(); }}
-    class="p-1 rounded-md hover:bg-elevated transition-colors"
-    classList={{ "text-accent": props.active, "text-muted hover:text-txt": !props.active }}
   >
     <svg
       class="w-4 h-4"
@@ -211,7 +199,7 @@ const RowButton: Component<{
     >
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d={props.path} />
     </svg>
-  </button>
+  </IconButton>
 );
 
 

@@ -2,21 +2,19 @@
 import { useHelpMode } from "@utsukta/spa-core/store/help-mode";
 import { MdFillLive_help } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { IconButton } from "@ui/Button";
 
 export default function HelpTrigger() {
   const { t } = useI18n();
   const { helpMode, enter, exit } = useHelpMode();
   return (
-    <button
+    <IconButton
+      label={t("ui.help_mode")}
+      pressed={helpMode()}
+      class="px-[12px] py-[8px]"
       onClick={() => helpMode() ? exit() : enter()}
-      class={`px-[12px] py-[8px] rounded-lg  hover:opacity-80 text-sm transition-colors
-        ${helpMode()
-          ? "bg-accent-muted text-accent"
-          : "text-muted hover:bg-elevated"
-        }`}
-      title={t("ui.help_mode")}
     >
     <MdFillLive_help size={17}/>
-    </button>
+    </IconButton>
   );
 }

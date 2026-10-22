@@ -45,7 +45,7 @@ const isUrl = (val: string) => val.startsWith("https://");
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { fetchGroups, type PrivacyGroup } from "@/modules/directory/groups/api";
-import { IconButton } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { Badge, CountBadge } from "@ui/Badge";
@@ -621,29 +621,25 @@ export default function StreamFiltersWidget() {
             </button>
             <Show when={folderOpen()}>
               <div class="pl-6 pt-1 pb-0.5 flex flex-wrap gap-1.5">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  pressed={!file()}
                   onClick={() => { sp({ file: undefined }); setTimeout(applyNow, 0); }}
-                  class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors"
-                  classList={{
-                    "bg-accent text-accent-fg font-medium": !file(),
-                    "bg-elevated text-muted hover:text-txt": !!file(),
-                  }}
                 >
                   {t("network.folder_all")}
-                </button>
+                </Button>
                 <For each={folders() ?? []}>
                   {(folder) => (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={file() === folder}
                       onClick={() => { sp({ file: folder }); setTimeout(applyNow, 0); }}
-                      class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors"
-                      classList={{
-                        "bg-accent text-accent-fg font-medium": file() === folder,
-                        "bg-elevated text-muted hover:text-txt": file() !== folder,
-                      }}
                     >
                       <MdFillFolder size={11} class="shrink-0" />
                       <span class="truncate max-w-[120px]">{folder}</span>
-                    </button>
+                    </Button>
                   )}
                 </For>
               </div>

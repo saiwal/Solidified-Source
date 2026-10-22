@@ -19,15 +19,13 @@
 
 import { For, Show, type JSX } from "solid-js";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
-import { Button } from "@ui/Button";
+import { Button, iconButtonClass } from "@ui/Button";
 
 const PANEL =
   "z-50 bg-surface border border-rim rounded-xl shadow-xl p-2 max-h-72 overflow-y-auto";
 
 function triggerClass(open: boolean) {
-  return `px-1.5 py-0.5 rounded text-txt hover:bg-elevated transition-colors ${
-    open ? "bg-elevated" : ""
-  }`;
+  return `${iconButtonClass("default", "sm")} ${open ? "bg-elevated text-txt" : ""}`;
 }
 
 /** Fires on mousedown so the editor selection survives the click. */

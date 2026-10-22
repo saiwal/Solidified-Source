@@ -3,6 +3,7 @@ import { For, Show } from "solid-js";
 import { Motion, Presence, scalePreset } from "@utsukta/spa-core/lib/motion-presets";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { MdOutlineCheck } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
 
 const LanguageSwitcher = () => {
   const { t, locale, setLocale } = useI18n();
@@ -16,15 +17,15 @@ const LanguageSwitcher = () => {
 
   return (
     <>
-      <button
+      <IconButton
+        label={t("ui.language")}
+        aria-expanded={open()}
+        class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         onClick={toggle}
-        title={t("ui.language")}
-        class={`p-[8px] rounded-lg transition-colors text-muted hover:bg-elevated hover:text-txt
-                ${open() ? "bg-elevated text-txt" : ""}`}
       >
         <span class="text-xs font-semibold uppercase tracking-wide">{locale()}</span>
-      </button>
+      </IconButton>
 
       <Presence>
         <Show when={open()}>

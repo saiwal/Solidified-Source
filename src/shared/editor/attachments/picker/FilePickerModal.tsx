@@ -12,6 +12,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 import { Modal, ModalPanel } from "@ui/Modal";
 import { Button } from "@ui/Button";
+import { Tabs } from "@ui/Tabs";
 type Tab = "photos" | "files";
 
 interface Props {
@@ -87,22 +88,17 @@ const FilePickerModal: Component<Props> = (props) => {
         {/* Header */}
 
         {/* Tabs */}
-        <div class="flex border-b border-rim shrink-0">
-          <Show when={props.accept !== "files"}>
-            <TabButton
-              label={t("editor.photos_tab")}
-              active={tab() === "photos"}
-              onClick={() => setTab("photos")}
-            />
-          </Show>
-          <Show when={props.accept !== "photos"}>
-            <TabButton
-              label={t("editor.files_tab")}
-              active={tab() === "files"}
-              onClick={() => setTab("files")}
-            />
-          </Show>
-        </div>
+        <Tabs
+          variant="underline"
+          class="px-4 pt-2 border-b border-rim shrink-0"
+          label={t("editor.attach_existing")}
+          value={tab()}
+          onChange={setTab}
+          items={[
+            ...(props.accept !== "files" ? [{ value: "photos" as Tab, label: t("editor.photos_tab") }] : []),
+            ...(props.accept !== "photos" ? [{ value: "files" as Tab, label: t("editor.files_tab") }] : []),
+          ]}
+        />
 
         {/* Content */}
         <div class="flex-1 overflow-hidden min-h-0 p-4">
@@ -147,22 +143,3 @@ const FilePickerModal: Component<Props> = (props) => {
 };
 
 export default FilePickerModal;
-
-// ── Helper ────────────────────────────────────────────────────────────────────
-
-function TabButton(props: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      class={
-        "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors " +
-        (props.active
-          ? "border-accent text-txt"
-          : "border-transparent text-muted hover:text-txt hover:border-rim")
-      }
-    >
-      {props.label}
-    </button>
-  );
-}

@@ -22,7 +22,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchRooms } from "../api";
 import { isChatUnread, isRemoteChatUnread, markRemoteChatSeen } from "../unread";
-import { IconButton } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { EmptyState } from "@ui/EmptyState";
 
@@ -110,23 +110,21 @@ export function BookmarkedRoomsList(props: {
         {(bm) => {
           const push = (
             <Show when={isRemoteBookmark(bm)}>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={!!bm.push}
+                class="shrink-0"
                 onClick={async () => {
                   if (!(await setChatPush(bm.id, !bm.push))) toast.error(t("chat.remote_push_failed"));
                 }}
-                class="p-1 rounded shrink-0 transition-colors"
-                classList={{
-                  "text-accent": !!bm.push,
-                  "text-muted hover:text-txt": !bm.push,
-                }}
                 title={t(bm.push ? "chat.remote_push_on" : "chat.remote_push_off") as string}
                 aria-label={t(bm.push ? "chat.remote_push_on" : "chat.remote_push_off") as string}
-                aria-pressed={!!bm.push}
               >
                 {bm.push
                   ? <MdOutlineNotifications_active class="w-3.5 h-3.5" />
                   : <MdOutlineNotifications_off class="w-3.5 h-3.5" />}
-              </button>
+              </Button>
             </Show>
           );
           const parts: BookmarkRowParts = {

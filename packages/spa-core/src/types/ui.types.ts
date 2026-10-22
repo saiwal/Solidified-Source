@@ -10,17 +10,19 @@ export type ButtonVariant = "primary" | "ghost" | "danger";
 /** md is the full-size pill; sm fits a dense row or a header. */
 export type ButtonSize = "md" | "sm";
 
-export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "aria-pressed"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** Makes it an on/off toggle: renders aria-pressed and the "on" look when true. */
+  pressed?: boolean;
 }
 
 export interface IconButtonProps
   extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, "title" | "aria-label" | "aria-pressed"> {
   /** Required: an icon-only button has no other accessible name. Used for both title and aria-label. */
   label: string;
-  /** square is the bordered header button; danger tints on hover. */
-  variant?: "default" | "danger" | "square";
+  /** outline is the bordered header button (round, like the pills); danger tints on hover. */
+  variant?: "default" | "danger" | "outline";
   size?: ButtonSize;
   /** Set for toggles: renders aria-pressed and the "on" colour. */
   pressed?: boolean;

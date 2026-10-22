@@ -9,6 +9,7 @@ import { Show, For, createSignal } from "solid-js";
 import { MdOutlineTitle } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
+import { IconButton } from "@ui/Button";
 
 export interface HeadingToolDropdownProps {
   disabled?: boolean;
@@ -50,22 +51,18 @@ export default function HeadingToolDropdown(props: HeadingToolDropdownProps) {
 
   return (
     <>
-      <button
+      <IconButton
+        label={t("editor.heading")}
+        size="sm"
+        aria-expanded={open()}
+        class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
-        type="button"
-        title={t("editor.heading")}
         disabled={props.disabled}
         onMouseDown={(e) => e.preventDefault()}
         onClick={toggle}
-        class={
-          "px-1.5 py-0.5 rounded transition-colors " +
-          (props.disabled
-            ? "text-muted/40 cursor-not-allowed"
-            : `text-txt hover:bg-elevated ${open() ? "bg-elevated" : ""}`)
-        }
       >
         <MdOutlineTitle class="w-4 h-4" />
-      </button>
+      </IconButton>
 
       <Show when={open()}>
         <div

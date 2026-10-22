@@ -126,7 +126,7 @@ export default function DisplaySection() {
                 </For>
               </Select>
               <Show when={previewScheme() !== "custom"}>
-                <IconButton label={t("settings.color_scheme_edit")} variant="square" onClick={() => {
+                <IconButton label={t("settings.color_scheme_edit")} variant="outline" onClick={() => {
                     updateCustomColors(colorsFromAppliedTheme());
                     switchTheme("custom");
                     setPreviewScheme("custom");

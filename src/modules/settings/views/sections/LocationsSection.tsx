@@ -74,19 +74,17 @@ export default function LocationsSection() {
             <For each={locations()}>
               {(loc) => (
                 <div class="flex items-center gap-3 py-3">
-                  <button
-                    type="button"
-                    title={loc.primary ? undefined : t("settings.locations_set_primary")}
+                  <IconButton
+                    label={t("settings.locations_set_primary")}
+                    pressed={loc.primary}
+                    class="shrink-0"
                     disabled={loc.primary || !!isBusy(loc.id)}
                     onClick={() => run("set_primary", loc.id)}
-                    class={`shrink-0 disabled:cursor-not-allowed ${
-                      loc.primary ? "text-accent" : "text-muted hover:text-txt"
-                    }`}
                   >
                     <Show when={loc.primary} fallback={<MdOutlineRadio_button_unchecked size={18} />}>
                       <MdFillCheck_circle size={18} />
                     </Show>
-                  </button>
+                  </IconButton>
 
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium text-txt leading-snug truncate">{loc.addr}</p>

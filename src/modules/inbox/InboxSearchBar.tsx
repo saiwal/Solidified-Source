@@ -36,18 +36,9 @@ const INPUT =
   "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent";
 
 const Pill: Component<{ on: boolean; label: string; onClick: () => void }> = (props) => (
-  <button
-    type="button"
-    onClick={props.onClick}
-    aria-pressed={props.on}
-    class="shrink-0 px-2.5 py-1 rounded-full text-xs transition-colors"
-    classList={{
-      "bg-accent-muted text-accent font-medium": props.on,
-      "bg-overlay text-muted hover:bg-elevated hover:text-txt": !props.on,
-    }}
-  >
+  <Button variant="ghost" size="sm" pressed={props.on} class="shrink-0" onClick={props.onClick}>
     {props.label}
-  </button>
+  </Button>
 );
 
 export const InboxSearchBar: Component<{

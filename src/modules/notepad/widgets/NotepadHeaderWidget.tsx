@@ -3,6 +3,7 @@ import { useSearchParams } from "@solidjs/router";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Input } from "@ui/Field";
+import { IconButton } from "@ui/Button";
 
 export default function NotepadHeaderWidget() {
   const { t, locale } = useI18n();
@@ -43,34 +44,26 @@ export default function NotepadHeaderWidget() {
           <Show
             when={searchOpen()}
             fallback={
-              <button
-                type="button"
-                title={t("notepad.search")}
+              <IconButton
+                label={t("notepad.search")}
+                variant="outline"
+                pressed={!!activeSearch()}
                 onClick={() => {
                   setSearchInput(activeSearch());
                   setSearchOpen(true);
                 }}
-                class={`p-1.5 rounded-lg border transition-colors
-                ${
-                  activeSearch()
-                    ? "bg-accent text-accent-fg border-accent"
-                    : "border-rim bg-surface text-muted hover:bg-elevated hover:text-txt"
-                }`}
               >
                 <MdFillSearch size={15} />
-              </button>
+              </IconButton>
             }
           >
             <form onSubmit={submitSearch} class="flex items-center gap-1">
               <Input class="w-40" type="search" value={searchInput()} onInput={(e) => setSearchInput(e.currentTarget.value)} placeholder={t("notepad.search_placeholder")} autofocus onKeyDown={(e) => {
                   if (e.key === "Escape") setSearchOpen(false);
                 }} />
-              <button
-                type="submit"
-                class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors"
-              >
+              <IconButton label={t("notepad.search")} variant="outline" type="submit">
                 <MdFillSearch size={15} />
-              </button>
+              </IconButton>
               <button
                 type="button"
                 onClick={() => {

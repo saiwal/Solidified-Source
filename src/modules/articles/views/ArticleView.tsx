@@ -530,12 +530,15 @@ export default function ArticleView() {
                             policy, comments_closed and item_nocomment, so a
                             comments-disabled article offers no reply button rather
                             than one whose submit is rejected. */}
-                        <button type="button" aria-expanded={replyOpen()} onClick={() => setReplyOpen(v => !v)}
-                          title={t("articles.comment")} aria-label={t("articles.comment")}
-                          class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium hover:bg-overlay transition active:scale-90
-                                 ${replyOpen() ? "text-accent-txt" : "text-muted hover:text-txt"}`}>
+                        <IconButton
+                          label={t("articles.comment")}
+                          pressed={replyOpen()}
+                          class="active:scale-90"
+                          aria-expanded={replyOpen()}
+                          onClick={() => setReplyOpen(v => !v)}
+                        >
                           <MdOutlineReply size={17} />
-                        </button>
+                        </IconButton>
                       </Show>
                     </div>
                   </div>

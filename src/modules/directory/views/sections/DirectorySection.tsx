@@ -73,55 +73,37 @@ export default function DirectorySection() {
 
         {/* Scope toggle */}
         <div class="flex rounded-lg border border-rim overflow-hidden text-sm">
-          <button
-            onClick={() => setGlobalDir(1)}
-            class={`px-3 py-1.5 transition-colors ${
-              globalDir() === 1
-                ? "bg-accent-muted text-accent font-medium"
-                : "bg-surface text-muted hover:bg-overlay"
-            }`}
-          >
+          <Button variant="ghost" size="sm" pressed={globalDir() === 1} onClick={() => setGlobalDir(1)}>
             {t("directory.global_dir")}
-          </button>
+          </Button>
           <div class="w-px bg-rim" />
-          <button
-            onClick={() => setGlobalDir(0)}
-            class={`px-3 py-1.5 transition-colors ${
-              globalDir() === 0
-                ? "bg-accent-muted text-accent font-medium"
-                : "bg-surface text-muted hover:bg-overlay"
-            }`}
-          >
+          <Button variant="ghost" size="sm" pressed={globalDir() === 0} onClick={() => setGlobalDir(0)}>
             {t("directory.local_dir")}
-          </button>
+          </Button>
         </div>
 
         {/* Divider */}
         <span class="hidden sm:block w-px h-5 bg-rim" />
 
         {/* Forums chip */}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          pressed={pubforums() === 1}
           onClick={() => setPubforums(pubforums() === 1 ? 0 : 1)}
-          class={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
-            pubforums() === 1
-              ? "border-accent bg-accent-muted text-accent font-medium"
-              : "border-rim bg-surface text-muted hover:bg-overlay"
-          }`}
         >
           {t("directory.filter_forums_only")}
-        </button>
+        </Button>
 
         {/* Safe mode chip */}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          pressed={safe() === 1}
           onClick={() => setSafe(safe() === 1 ? 0 : 1)}
-          class={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
-            safe() === 1
-              ? "border-accent bg-accent-muted text-accent font-medium"
-              : "border-rim bg-surface text-muted hover:bg-overlay"
-          }`}
         >
           {t("directory.filter_safe_mode")}
-        </button>
+        </Button>
       </div>
 
       {/* ── Skeleton ── */}

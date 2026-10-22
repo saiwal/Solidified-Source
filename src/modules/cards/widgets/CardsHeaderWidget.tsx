@@ -12,7 +12,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useIsCardsList } from "../lib/isCardsList";
 import { boardView, setBoardView } from "../lib/kanban";
 import { fetchKanban } from "../api";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
 
@@ -96,17 +96,14 @@ export default function CardsHeaderWidget() {
             <Show
               when={searchOpen()}
               fallback={
-                <button
-                  type="button"
-                  title={t("cards.search")}
+                <IconButton
+                  label={t("cards.search")}
+                  variant="outline"
+                  pressed={!!activeSearch()}
                   onClick={() => { setSearchInput(activeSearch()); setSearchOpen(true); }}
-                  class={`p-1.5 rounded-lg border transition-colors
-                    ${activeSearch()
-                      ? "bg-accent text-accent-fg border-accent"
-                      : "border-rim bg-surface text-muted hover:bg-elevated hover:text-txt"}`}
                 >
                   <MdFillSearch size={15} />
-                </button>
+                </IconButton>
               }
             >
               <form onSubmit={submitSearch} class="flex items-center gap-1">
@@ -119,12 +116,9 @@ export default function CardsHeaderWidget() {
                   autofocus
                   onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
                 />
-                <button
-                  type="submit"
-                  class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors"
-                >
+                <IconButton label={t("cards.search")} variant="outline" type="submit">
                   <MdFillSearch size={15} />
-                </button>
+                </IconButton>
                 <button
                   type="button"
                   onClick={() => setSearchOpen(false)}

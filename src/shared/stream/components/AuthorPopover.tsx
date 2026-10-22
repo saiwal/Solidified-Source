@@ -482,21 +482,20 @@ export default function AuthorPopover(props: Props) {
                     </Show>
 
                     <Show when={superblockInstalled()}>
-                    <button
+                    <IconButton
+                      label={blockState() === "blocked" ? t("blocklist.blocked") : t("blocklist.block")}
+                      variant="outline"
+                      pressed={blockState() === "blocked"}
+                      class={blockState() === "blocked" ? "text-danger-txt! border-danger" : "hover:text-danger-txt hover:border-danger"}
                       onClick={handleBlockButtonClick}
                       disabled={blockState() !== "idle"}
-                      title={blockState() === "blocked" ? t("blocklist.blocked") : t("blocklist.block")}
-                      class="w-8 h-8 flex items-center justify-center rounded-lg border border-rim text-muted
-                             hover:border-danger hover:text-danger-txt transition-colors
-                             disabled:cursor-default"
-                      classList={{ "text-danger-txt border-danger": blockState() === "blocked" }}
                     >
                       <Show when={blockState() !== "loading"} fallback={<Spinner size="sm" />}>
                         <Show when={blockState() === "blocked"} fallback={<MdOutlineBlock size={16} />}>
                           <MdOutlineCheck size={16} />
                         </Show>
                       </Show>
-                    </button>
+                    </IconButton>
                     </Show>
                   </Show>
                 </Show>
@@ -556,27 +555,23 @@ export default function AuthorPopover(props: Props) {
                     [1440,  "24h"],
                     [10080, "1w"],
                   ] as [number, string][]).map(([val, label]) => (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={chatExpire() === val && !chatCustomMode()}
                       onClick={() => { setChatExpire(val); setChatCustomMode(false); }}
-                      class={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                        chatExpire() === val && !chatCustomMode()
-                          ? "border-accent text-accent bg-accent/10"
-                          : "border-rim text-muted hover:border-accent hover:text-accent"
-                      }`}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    pressed={chatCustomMode()}
                     onClick={() => { setChatCustomMode(true); setChatExpire(parseInt(chatCustomInput()) || 60); }}
-                    class={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                      chatCustomMode()
-                        ? "border-accent text-accent bg-accent/10"
-                        : "border-rim text-muted hover:border-accent hover:text-accent"
-                    }`}
                   >
                     Custom
-                  </button>
+                  </Button>
                   <Show when={chatCustomMode()}>
                     <Input size="sm" class="w-16" type="number" min="1" max="10080" value={chatCustomInput()} onInput={(e) => {
                         setChatCustomInput(e.currentTarget.value);

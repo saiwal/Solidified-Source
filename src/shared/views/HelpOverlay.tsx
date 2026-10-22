@@ -8,6 +8,7 @@ import { useDocs } from "@utsukta/spa-core/lib/useDocs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
 export default function HelpOverlay() {
   const { t } = useI18n();
   const { helpMode, helpTarget, exit } = useHelpMode();
@@ -71,16 +72,15 @@ function HelpModalHeader(props: { target: string; onClose: () => void }) {
       {/* tab row */}
       <div class="flex gap-1 px-5 pb-0">
         {tabs.map((tab) => (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            pressed={docType() === tab.id}
+            class="rounded-t-md"
             onClick={() => setDocType(tab.id)}
-            class={`px-3 py-1.5 text-xs font-medium rounded-t-md border-b-2 transition-colors
-              ${docType() === tab.id
-                ? "border-accent text-accent bg-accent-muted"
-                : "border-transparent text-muted hover:text-txt hover:bg-elevated"
-              }`}
           >
             {tab.label()}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

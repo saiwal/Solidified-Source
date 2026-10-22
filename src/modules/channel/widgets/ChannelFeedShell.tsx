@@ -187,23 +187,21 @@ export default function ChannelFeedShell(props: {
         <div class="flex items-center justify-end gap-1.5 shrink-0">
           {props.viewSwitcher}
           <Show when={canPostWall() && auth()?.isLocal}>
-            <IconButton label={t("channel.compose")} variant="square" onClick={openCompose}>
+            <IconButton label={t("channel.compose")} variant="outline" onClick={openCompose}>
               <MdFillCreate size={15} />
             </IconButton>
           </Show>
           <Show
             when={searchOpen()}
             fallback={
-              <button
-                title={t("channel.search")}
+              <IconButton
+                label={t("channel.search")}
+                variant="outline"
+                pressed={!!currentSearch()}
                 onClick={() => { setSearchInput(currentSearch()); setSearchOpen(true); }}
-                class={`p-1.5 rounded-lg border transition-colors
-                  ${currentSearch()
-                    ? "bg-accent text-accent-fg border-accent"
-                    : "border-rim bg-surface text-muted hover:bg-elevated hover:text-txt"}`}
               >
                 <MdFillSearch size={15} />
-              </button>
+              </IconButton>
             }
           >
             <form onSubmit={submitSearch} class="flex items-center gap-1">
@@ -216,12 +214,9 @@ export default function ChannelFeedShell(props: {
                 autofocus
                 onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
               />
-              <button
-                type="submit"
-                class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors"
-              >
+              <IconButton label={t("channel.search")} variant="outline" type="submit">
                 <MdFillSearch size={15} />
-              </button>
+              </IconButton>
               <button
                 type="button"
                 onClick={clearSearch}

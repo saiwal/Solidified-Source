@@ -166,30 +166,28 @@ const DirectoryCard: Component<Props> = (props) => {
           </a>
         </Show>
         <Show when={isDirectoryAdmin()}>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             disabled={censoring()}
             onClick={() => handleCensor(e().censored > 0 ? 0 : 1)}
             title={t("directory.mark_unsafe")}
-            class={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
-              e().censored === 1
-                ? "border-danger bg-danger/15 text-danger-txt"
-                : "border-danger/60 text-danger-txt/80 hover:bg-danger/10"
-            }`}
+            aria-pressed={e().censored === 1}
+            class={e().censored === 1 ? "bg-danger/15 text-danger-txt!" : "text-danger-txt! hover:bg-danger/10!"}
           >
             {t("directory.unsafe")}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             disabled={censoring()}
             onClick={() => handleCensor(e().censored > 1 ? 0 : 2)}
             title={t("directory.mark_spam")}
-            class={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
-              e().censored > 1
-                ? "border-danger bg-danger/15 text-danger-txt"
-                : "border-danger/60 text-danger-txt/80 hover:bg-danger/10"
-            }`}
+            aria-pressed={e().censored > 1}
+            class={e().censored > 1 ? "bg-danger/15 text-danger-txt!" : "text-danger-txt! hover:bg-danger/10!"}
           >
             {t("directory.spam")}
-          </button>
+          </Button>
         </Show>
       </div>
     </Card>

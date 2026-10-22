@@ -1,6 +1,7 @@
 import { createSignal, For, createMemo } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Field, Input, Select } from "@ui/Field";
+import { Button } from "@ui/Button";
 
 type Category = {
   label: string;
@@ -109,16 +110,14 @@ export function UnitConverter() {
       <div class="flex flex-wrap gap-1.5">
         <For each={Object.entries(CATEGORIES)}>
           {([key, cat]) => (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={category() === key}
               onClick={() => { setCategory(key); setFromIdx(0); setToIdx(1); }}
-              class={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                category() === key
-                  ? "bg-elevated text-txt border-rim-strong"
-                  : "text-muted border-rim hover:bg-elevated hover:text-txt"
-              }`}
             >
               {cat.label}
-            </button>
+            </Button>
           )}
         </For>
       </div>

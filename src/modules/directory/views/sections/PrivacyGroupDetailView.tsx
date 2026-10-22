@@ -207,27 +207,25 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
                 </label>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    pressed={detail().group.is_default_acl}
                     onClick={toggleDefaultAcl}
-                    class={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors
-                      ${detail().group.is_default_acl
-                        ? "border-accent bg-accent-muted text-accent"
-                        : "border-rim text-muted hover:bg-elevated"}`}
                   >
                     {detail().group.is_default_acl ? <MdFillStar size={14} /> : <MdFillStar_border size={14} />}
                     {t("directory.post_to_group_default")}
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    pressed={detail().group.is_default_group}
                     onClick={toggleDefaultGroup}
-                    class={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors
-                      ${detail().group.is_default_group
-                        ? "border-accent bg-accent-muted text-accent"
-                        : "border-rim text-muted hover:bg-elevated"}`}
                   >
                     {detail().group.is_default_group ? <MdFillStar size={14} /> : <MdFillStar_border size={14} />}
                     {t("directory.add_connections_default")}
-                  </button>
+                  </Button>
                 </div>
 
                 <div class="pt-2 border-t border-rim">

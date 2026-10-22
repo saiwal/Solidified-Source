@@ -8,6 +8,7 @@ import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { Motion, Presence, scalePreset } from "@utsukta/spa-core/lib/motion-presets";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineCheck } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
 
 const ThemeToggle = () => {
   const { t } = useI18n();
@@ -26,15 +27,15 @@ const ThemeToggle = () => {
 
   return (
     <>
-      <button
+      <IconButton
+        label={t("ui.theme")}
+        aria-expanded={open()}
+        class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         onClick={toggle}
-        title={t("ui.theme")}
-        class={`p-[8px] rounded-lg transition-colors text-muted hover:bg-elevated hover:text-txt
-                ${open() ? "bg-elevated text-txt" : ""}`}
       >
         <BiRegularPalette size={18} />
-      </button>
+      </IconButton>
 
       <Presence>
         <Show when={open()}>

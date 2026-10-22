@@ -3,6 +3,7 @@
 // action bar and the article reading page, so reactions look and feel the
 // same everywhere.
 import { Show, createSignal, onCleanup, type JSX } from "solid-js";
+import { Button } from "@ui/Button";
 
 // Two-tap guard for actions that publish (repeat): the first tap arms — the
 // caller shows a tick in place — and only a second tap within `ms` runs it.
@@ -43,16 +44,19 @@ export default function ActionBtn(props: {
   active?: boolean;
   activeClass: string;
 }) {
+  // activeClass is kept for callers; the "on" look now comes from `pressed`.
   return (
-    <button
-      onClick={(e) => { pop(e.currentTarget.firstElementChild); props.onClick(); }}
+    <Button
+      variant="ghost"
+      size="sm"
+      pressed={props.active}
       title={props.label}
-      class={`flex items-center gap-1 wide:gap-1.5 px-2 wide:px-3 py-1.5 rounded-lg text-sm font-medium
-              transition-colors select-none hover:bg-overlay
-              ${props.active ? props.activeClass : "text-muted"}`}
+      aria-label={props.label}
+      class="select-none"
+      onClick={(e) => { pop(e.currentTarget.firstElementChild); props.onClick(); }}
     >
       <span class="inline-flex">{props.icon}</span>
       <Show when={props.count > 0}><span>{props.count}</span></Show>
-    </button>
+    </Button>
   );
 }

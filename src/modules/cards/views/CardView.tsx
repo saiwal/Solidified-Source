@@ -431,31 +431,31 @@ export default function CardView() {
                 {/* Reactions / action bar */}
                 <div class="flex items-center gap-1 pt-4 border-t border-rim flex-wrap">
                   <Show when={auth()?.isLoggedIn}>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={reactions().viewerLiked}
                       onClick={handleLike}
                       title="Like"
-                      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors select-none hover:bg-overlay
-                             ${reactions().viewerLiked ? "text-accent" : "text-muted"}`}
                     >
                       <MdOutlineThumb_up size={17} />
                       <Show when={reactions().likeCount > 0}>
                         <span>{reactions().likeCount}</span>
                       </Show>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={reactions().viewerDisliked}
                       onClick={handleDislike}
                       title="Dislike"
-                      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors select-none hover:bg-overlay
-                             ${reactions().viewerDisliked ? "text-accent" : "text-muted"}`}
                     >
                       <MdOutlineThumb_down size={17} />
                       <Show when={reactions().dislikeCount > 0}>
                         <span>{reactions().dislikeCount}</span>
                       </Show>
-                    </button>
+                    </Button>
                   </Show>
 
                   <IconButton label={t("share.action")} class="ml-auto" onClick={shareCard}>
@@ -463,15 +463,15 @@ export default function CardView() {
                   </IconButton>
 
                   <Show when={auth()?.isLoggedIn}>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={replyOpen()}
                       onClick={() => setReplyOpen(v => !v)}
-                      class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay
-                             ${replyOpen() ? "text-accent" : "text-muted hover:text-txt"}`}
                     >
                       <MdFillChat size={17} />
                       <span>{t("cards.comment")}</span>
-                    </button>
+                    </Button>
                   </Show>
 
                   {/* Owner actions */}

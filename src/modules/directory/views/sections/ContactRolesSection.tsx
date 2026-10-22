@@ -500,17 +500,10 @@ export default function ContactRolesSection() {
       title={t("directory.contact_roles_title")}
       description={t("directory.contact_roles_desc")}
       action={
-        <button
-          onClick={() => setShowCreate((v) => !v)}
-          class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-            showCreate()
-              ? "border-accent text-accent bg-accent/10"
-              : "border-rim text-muted hover:border-rim-strong hover:text-txt"
-          }`}
-        >
+        <Button variant="ghost" size="sm" pressed={showCreate()} onClick={() => setShowCreate((v) => !v)}>
           <MdFillAdd size={15} />
           {t("directory.create_role")}
-        </button>
+        </Button>
       }
     >
       {/* Create form */}
@@ -537,13 +530,11 @@ export default function ContactRolesSection() {
                   <Show
                     when={!pill.system && pill.name !== null && pill.name !== ""}
                     fallback={
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        pressed={selected() === pill.name}
                         onClick={() => { resetReveal(); setActiveRole(pill.name); }}
-                        class={`px-3 py-1 rounded-full text-sm transition-colors flex items-center gap-1.5 ${
-                          selected() === pill.name
-                            ? "bg-accent text-accent-fg"
-                            : "bg-overlay text-muted hover:bg-surface"
-                        }`}
                       >
                         {pill.label}
                         <span class={`text-xs font-medium tabular-nums ${
@@ -551,7 +542,7 @@ export default function ContactRolesSection() {
                         }`}>
                           {pill.count}
                         </span>
-                      </button>
+                      </Button>
                     }
                   >
                     <CustomRolePill

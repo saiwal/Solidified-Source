@@ -44,7 +44,7 @@ export default function JellyfinHeaderWidget() {
   const devices = createPopover({ placement: "bottom-end" });
 
   // Same vocabulary as the Cards header: bordered square icon buttons
-  const squareBtn = iconButtonClass("square");
+  const squareBtn = iconButtonClass("outline");
 
   return (
     <div class="max-w-5xl mx-auto">
@@ -65,12 +65,14 @@ export default function JellyfinHeaderWidget() {
 
           <div class="flex items-center gap-1.5">
             <Show when={searching()} fallback={
-              <button type="button" title={t("jellyfin.search")} aria-label={t("jellyfin.search")} onClick={openSearch}
-                class={`p-1.5 rounded-lg border transition-colors ${activeSearch()
-                  ? "bg-accent text-accent-fg border-accent"
-                  : "border-rim bg-surface text-muted hover:bg-elevated hover:text-txt"}`}>
+              <IconButton
+                label={t("jellyfin.search")}
+                variant="outline"
+                pressed={!!activeSearch()}
+                onClick={openSearch}
+              >
                 <MdFillSearch size={15} />
-              </button>
+              </IconButton>
             }>
               <form onSubmit={submit} class="flex items-center gap-1">
                 <Input
@@ -83,7 +85,7 @@ export default function JellyfinHeaderWidget() {
                   placeholder={t("jellyfin.search_placeholder")}
                   aria-label={t("jellyfin.search")}
                 />
-                <IconButton label={t("jellyfin.search")} variant="square" type="submit">
+                <IconButton label={t("jellyfin.search")} variant="outline" type="submit">
                   <MdFillSearch size={15} />
                 </IconButton>
                 <IconButton label={t("jellyfin.clear_search")} size="sm" onClick={closeSearch}>
@@ -106,7 +108,7 @@ export default function JellyfinHeaderWidget() {
               label={t("jellyfin.more")}
               class="w-64"
               trigger={(p) => (
-                <IconButton label={t("jellyfin.more")} variant="square" {...p}>
+                <IconButton label={t("jellyfin.more")} variant="outline" {...p}>
                   <MdOutlineMore_horiz size={15} />
                 </IconButton>
               )}

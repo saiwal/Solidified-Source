@@ -15,7 +15,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import ClipStrip from "./ClipStrip";
 import CaptureDialog from "./CaptureDialog";
 import { screenshot, fileStem } from "./capture";
-import { Art, iconBtn } from "../ui";
+import { Art } from "../ui";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   getItem, playbackInfo, withApiKey, directVideoUrl, reportVideo, stopEncoding, nextEpisode, ticksToSeconds, episodes, imageUrl,
@@ -378,10 +378,14 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
               <IconButton label={t("jellyfin.screenshot")} disabled={!loaded()} onClick={() => void shoot()}>
                 <MdOutlinePhoto_camera size={20} />
               </IconButton>
-              <button type="button" class={`${iconBtn} ${clipping() ? "!text-accent-txt" : ""}`} aria-pressed={clipping()}
-                title={t("jellyfin.clip")} aria-label={t("jellyfin.clip")} disabled={!loaded()} onClick={() => setClipping(!clipping())}>
+              <IconButton
+                label={t("jellyfin.clip")}
+                pressed={clipping()}
+                disabled={!loaded()}
+                onClick={() => setClipping(!clipping())}
+              >
                 <MdOutlineContent_cut size={20} />
-              </button>
+              </IconButton>
             </span>
             <Show when={loaded()}>
               {(l) => <span class="ml-auto text-xs text-muted/70">{l().transcoding ? t("jellyfin.transcoding") : t("jellyfin.direct_play")}</span>}

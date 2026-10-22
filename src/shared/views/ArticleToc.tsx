@@ -74,7 +74,7 @@ function FloatingToc(props: { entries: TocEntry[]; activeId: string; label: stri
       <div class="flex flex-col items-end">
         <IconButton
           label={props.label}
-          variant="square"
+          variant="outline"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open()}
         >

@@ -1,4 +1,5 @@
 import type { JSX } from "solid-js";
+import { Button } from "@ui/Button";
 
 export default function FilterChip(props: {
   active: boolean;
@@ -6,14 +7,8 @@ export default function FilterChip(props: {
   label: string | JSX.Element;
 }) {
   return (
-    <button
-      onClick={props.onClick}
-      class={`px-3 py-1.5 text-sm rounded-lg border transition-colors shrink-0
-        ${props.active
-          ? "border-accent bg-accent-muted text-accent"
-          : "border-rim bg-surface text-muted hover:bg-overlay"}`}
-    >
+    <Button variant="ghost" size="sm" pressed={props.active} class="shrink-0" onClick={props.onClick}>
       {props.label}
-    </button>
+    </Button>
   );
 }

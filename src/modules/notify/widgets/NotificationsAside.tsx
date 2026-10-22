@@ -568,19 +568,15 @@ function StreamSection(props: {
                   </button>
                 </Show>
               </form>
-              <button
-                type="button"
+              <IconButton
+                label={t("notify.filter_starters")}
+                size="sm"
+                pressed={startersOnly()}
+                class="shrink-0"
                 onClick={() => setStartersOnly((v) => !v)}
-                title={t("notify.filter_starters")}
-                aria-pressed={startersOnly()}
-                class={`shrink-0 p-1 rounded-md border transition-colors ${
-                  startersOnly()
-                    ? "bg-accent text-accent-fg border-accent"
-                    : "bg-surface text-subtle border-rim hover:text-txt"
-                }`}
               >
                 <MdFillForum class="w-3 h-3" />
-              </button>
+              </IconButton>
             </div>
           </Show>
 
@@ -940,6 +936,13 @@ function StatusDot(props: { status: ConnStatus }) {
 
 export default function NotificationsAside() {
   const { t } = useI18n();
+  const connLabel = () =>
+    ({
+      connecting: t("notify.conn_connecting"),
+      live: t("notify.conn_live"),
+      polling: t("notify.conn_polling"),
+      error: t("notify.conn_disconnected"),
+    })[connStatus()];
   const auth = useAuth();
   const isAdmin = useIsAdmin();
 
@@ -1392,41 +1395,33 @@ export default function NotificationsAside() {
 
       <div class="space-y-3">
         {/* Header */}
+        {/* One evenly spaced icon toolbar; the title stays for screen readers
+            only, and the connection status rides on the refresh button. */}
+        <h3 class="sr-only">{t("ui.notifications_title")}</h3>
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-bold text-txt flex items-center gap-1.5">
-            <StatusDot status={connStatus()} />
-            {t("ui.notifications_title")}
-          </h3>
-          <div class="flex items-center gap-1.5">
             <Show when={booted() && auth()?.isLoggedIn}>
-              <button
+              <IconButton
+                label={t("hq.msg_tab_notices")}
+                size="sm"
+                pressed={showNotices()}
                 onClick={() => setShowNotices((v) => !v)}
-                title={t("hq.msg_tab_notices")}
-                class="p-1 rounded transition-colors"
-                classList={{
-                  "text-accent bg-accent-muted": showNotices(),
-                  "text-subtle hover:text-txt hover:bg-elevated": !showNotices(),
-                }}
               >
                 <MdOutlineCampaign class="w-4 h-4" />
-              </button>
+              </IconButton>
             </Show>
             <Show when={otherChannels().length > 0}>
-              <button
+              <IconButton
+                label={t("notify.other_channels")}
+                size="sm"
+                pressed={showOtherChannels()}
+                class="relative"
                 onClick={() => setShowOtherChannels((v) => !v)}
-                title={t("notify.other_channels")}
-                class="relative p-1 rounded transition-colors"
-                classList={{
-                  "text-accent bg-accent-muted": showOtherChannels(),
-                  "text-subtle hover:text-txt hover:bg-elevated":
-                    !showOtherChannels(),
-                }}
               >
                 <MdFillHome class="w-4 h-4" />
                 <Show when={!showOtherChannels()}>
                   <span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
                 </Show>
-              </button>
+              </IconButton>
             </Show>
             <Show
               when={
@@ -1435,32 +1430,38 @@ export default function NotificationsAside() {
                 (hasNewAnnouncements() || showAnnouncements() || isAdmin())
               }
             >
-              <button
+              <IconButton
+                label={t("widgets.site_announcements")}
+                size="sm"
+                pressed={showAnnouncements()}
+                class="relative"
                 onClick={toggleAnnouncements}
-                title={t("widgets.site_announcements")}
-                class="relative p-1 rounded transition-colors"
-                classList={{
-                  "text-accent bg-accent-muted": showAnnouncements(),
-                  "text-subtle hover:text-txt hover:bg-elevated": !showAnnouncements(),
-                }}
               >
                 <MdOutlineAnnouncement class="w-4 h-4" />
                 <Show when={!showAnnouncements() && hasNewAnnouncements()}>
                   <span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
                 </Show>
-              </button>
+              </IconButton>
             </Show>
             <Show when={booted() && hasAnyCount()}>
               <IconButton label={t("ui.mark_all_read")} size="sm" onClick={markAllRead}>
                 <MdFillDone_all class="w-4 h-4" />
               </IconButton>
             </Show>
-            <IconButton label={t("ui.refresh")} size="sm" onClick={manualRefresh} disabled={refreshing()}>
+            <IconButton
+              label={`${t("ui.refresh")} · ${connLabel()}`}
+              size="sm"
+              class="relative"
+              onClick={manualRefresh}
+              disabled={refreshing()}
+            >
               <MdFillRefresh
                 class={`w-4 h-4 ${refreshing() ? "animate-spin" : ""}`}
               />
+              <span class="absolute bottom-0.5 right-0.5 inline-flex rounded-full bg-surface p-px">
+                <StatusDot status={connStatus()} />
+              </span>
             </IconButton>
-          </div>
         </div>
 
         <Show when={showNotices()}>

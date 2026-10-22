@@ -25,7 +25,7 @@ const CameraCapture = lazy(() => import("@/shared/editor/attachments/CameraCaptu
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
-import { Button } from "@ui/Button";
+import { Button, IconButton as UiIconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 const FilePickerModal = lazy(() => import("@/shared/editor/attachments/picker/FilePickerModal"));
 
@@ -220,35 +220,27 @@ export default function ChatComposer(props: Props) {
             </IconButton>
           </Show>
           <EmojiPicker onSelect={insertEmoji} />
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            pressed={formatting()}
             title={t("editor.more_tools")}
-            aria-pressed={formatting()}
             onClick={() => setFormatting(!formatting())}
-            class="px-1.5 py-1 rounded-md text-xs font-semibold transition-colors"
-            classList={{
-              "text-accent bg-accent/10": formatting(),
-              "text-muted hover:text-txt hover:bg-overlay": !formatting(),
-            }}
           >
             Aa
-          </button>
+          </Button>
           <Show when={props.encrypt && isFeatureEnabled("content_encrypt")}>
-            <button
+            <UiIconButton
+              label={sessionPassword() ? t("chat.session_encrypted") : t("editor.encrypt_toggle")}
+              size="sm"
+              pressed={!!sessionPassword()}
               ref={encPop.ref}
-              type="button"
-              title={sessionPassword() ? t("chat.session_encrypted") : t("editor.encrypt_toggle")}
               aria-haspopup="dialog"
               aria-expanded={sessionSetupOpen()}
               onClick={() => setSessionSetupOpen(!sessionSetupOpen())}
-              class="p-1.5 rounded-md transition-colors"
-              classList={{
-                "text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20": !!sessionPassword(),
-                "text-muted hover:text-txt hover:bg-elevated": !sessionPassword(),
-              }}
             >
               <MdOutlineLock class="w-4 h-4" />
-            </button>
+            </UiIconButton>
           </Show>
           <SourceToggleButton
             tab={store.tab()}

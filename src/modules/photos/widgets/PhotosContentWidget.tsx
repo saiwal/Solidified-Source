@@ -154,15 +154,9 @@ function SortToolbar(props: {
       <span class="text-xs text-muted">{t("photos.sort_by")}:</span>
       <For each={(['date', 'name', 'size'] as SortKey[])}>
         {(s) => (
-          <button
-            onClick={() => props.onSort(s)}
-            class={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
-              ${props.sort === s
-                ? 'bg-surface text-txt'
-                : 'text-muted hover:text-txt hover:bg-surface/50'}`}
-          >
+          <Button variant="ghost" size="sm" pressed={props.sort === s} onClick={() => props.onSort(s)}>
             {sortLabels[s]}
-          </button>
+          </Button>
         )}
       </For>
       <button
@@ -176,22 +170,22 @@ function SortToolbar(props: {
       </button>
 
       <div class="flex items-center gap-1 ml-auto">
-        <button
+        <IconButton
+          label={t("photos.view_grid")}
+          size="sm"
+          pressed={props.view === 'grid'}
           onClick={() => props.onView('grid')}
-          title={t("photos.view_grid")}
-          class={`p-1.5 rounded-md transition-colors
-            ${props.view === 'grid' ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
         >
           <MdFillApps size={17} />
-        </button>
-        <button
+        </IconButton>
+        <IconButton
+          label={t("photos.view_list")}
+          size="sm"
+          pressed={props.view === 'list'}
           onClick={() => props.onView('list')}
-          title={t("photos.view_list")}
-          class={`p-1.5 rounded-md transition-colors
-            ${props.view === 'list' ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
         >
           <MdFillFormat_list_bulleted size={17} />
-        </button>
+        </IconButton>
         {props.children}
       </div>
     </div>
@@ -638,19 +632,20 @@ function AlbumsView(props: { auto: boolean }) {
         onView={setViewMode}
       >
         <Show when={canWrite() && !props.auto}>
-          <button
+          <IconButton
+            label={t("photos.new_album")}
+            size="sm"
+            pressed={showForm()}
+            class="ml-1"
             onClick={() => {
               setShowForm(v => !v); setCreateError(''); setNewName('');
               setAclMode('public'); setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>());
             }}
-            title={t("photos.new_album")}
-            class={`ml-1 p-1.5 rounded-md transition-colors
-              ${showForm() ? 'text-accent bg-surface' : 'text-muted hover:text-txt'}`}
           >
             <Show when={showForm()} fallback={<MdFillAdd size={17} />}>
               <MdFillClose size={17} />
             </Show>
-          </button>
+          </IconButton>
         </Show>
       </SortToolbar>
 
@@ -956,13 +951,9 @@ function AlbumGrid() {
         <span class="text-xs text-muted">{t("photos.sort_by")}:</span>
         <For each={(['date', 'name'] as const)}>
           {(s) => (
-            <button
-              onClick={() => setSortBy(s)}
-              class={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
-                ${sortBy() === s ? 'bg-surface text-txt' : 'text-muted hover:text-txt hover:bg-surface/50'}`}
-            >
+            <Button variant="ghost" size="sm" pressed={sortBy() === s} onClick={() => setSortBy(s)}>
               {s === 'date' ? t("photos.sort_date") : t("photos.sort_name")}
-            </button>
+            </Button>
           )}
         </For>
 
@@ -1023,18 +1014,16 @@ function AlbumGrid() {
 
           {/* Album privacy — ACL changes stay owner-only, only for real albums (non-root) */}
           <Show when={!sel.selectMode() && !!datum() && isOwner()}>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={aclOpen()}
               onClick={() => setAclOpen(v => !v)}
               title={t("photos.acl_privacy")}
-              class={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                     transition-colors
-                     ${aclOpen()
-                       ? 'text-accent bg-accent/10'
-                       : 'text-muted hover:text-txt hover:bg-surface/50'}`}
             >
               <MdOutlineLock size={15} />
               {t("photos.acl_privacy")}
-            </button>
+            </Button>
           </Show>
         </Show>
       </div>
@@ -1673,31 +1662,31 @@ function ImageView() {
           <div class="mt-4 pt-3 border-t border-rim flex items-center gap-1">
             {/* Like / Dislike */}
             <Show when={auth()?.isLoggedIn}>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={d()?.viewer_liked}
                 onClick={handleLike}
                 title={t("post.like")}
-                class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                       transition-colors select-none hover:bg-overlay
-                       ${d()?.viewer_liked ? 'text-accent' : 'text-muted'}`}
               >
                 <Show when={d()?.viewer_liked} fallback={<MdOutlineThumb_up size={17} />}>
                   <MdFillThumb_up size={17} />
                 </Show>
                 <span>{d()?.like_count ?? 0}</span>
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={d()?.viewer_disliked}
                 onClick={handleDislike}
                 title={t("post.dislike")}
-                class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                       transition-colors select-none hover:bg-overlay
-                       ${d()?.viewer_disliked ? 'text-accent' : 'text-muted'}`}
               >
                 <Show when={d()?.viewer_disliked} fallback={<MdOutlineThumb_down size={17} />}>
                   <MdFillThumb_down size={17} />
                 </Show>
                 <span>{d()?.dislike_count ?? 0}</span>
-              </button>
+              </Button>
             </Show>
 
             {/* Comments toggle */}
@@ -1749,15 +1738,13 @@ function ImageView() {
 
             {/* Reply */}
             <Show when={auth()?.isLoggedIn && d()?.item_id}>
-              <button
+              <IconButton
+                label={t("photos.comment")}
+                pressed={replyOpen()}
                 onClick={() => setReplyOpen(v => !v)}
-                class={`flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                       transition-colors hover:bg-overlay
-                       ${replyOpen() ? 'text-accent' : 'text-muted hover:text-txt'}`}
-                title={t("photos.comment")}
               >
                 <MdOutlineReply size={17} />
-              </button>
+              </IconButton>
             </Show>
 
             {/* More dropdown */}
@@ -1767,16 +1754,9 @@ function ImageView() {
                 class="min-w-[11rem]"
                 onOpenChange={(o) => { if (!o) setDeleteConfirming(false); }}
                 trigger={(p, open) => (
-                  <button
-                    {...p}
-                    title={t("post.more_actions")}
-                    aria-label={t("post.more_actions")}
-                    class={`flex items-center px-1.5 py-1.5 rounded-lg text-sm font-medium
-                           transition-colors hover:bg-overlay
-                           ${open() ? 'text-accent' : 'text-muted'}`}
-                  >
+                  <IconButton label={t("post.more_actions")} pressed={open()} {...p}>
                     <MdFillMore_vert size={18} />
-                  </button>
+                  </IconButton>
                 )}
               >
                 <MenuItem

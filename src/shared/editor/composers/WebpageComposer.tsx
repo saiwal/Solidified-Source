@@ -37,7 +37,7 @@ import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import SummaryField from "../components/SummaryField";
 import ComposerActionBar from "../components/ComposerActionBar";
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
 
 interface Props {
@@ -326,22 +326,16 @@ export default function WebpageComposer(props: Props) {
                   LayoutTemplatesView.tsx's per-row button — one-click access to
                   editing this page's real regions without hunting for the
                   sidebar pencil separately. */}
-              <button
-                type="button"
+              <IconButton
+                label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
+                size="sm"
+                pressed={editingWidgets()}
                 onClick={() => setEditingWidgets(!editingWidgets())}
-                aria-pressed={editingWidgets()}
-                class="p-1.5 rounded-md transition-colors"
-                classList={{
-                  "bg-accent text-accent-fg": editingWidgets(),
-                  "text-muted hover:text-txt hover:bg-elevated": !editingWidgets(),
-                }}
-                aria-label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
-                title={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
               >
                 <Show when={editingWidgets()} fallback={<MdOutlineEdit size={14} />}>
                   <MdFillCheck size={14} />
                 </Show>
-              </button>
+              </IconButton>
             </div>
 
             <Show when={layoutTemplate() && templateChrome(layoutTemplate()) === "zen"}>

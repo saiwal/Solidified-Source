@@ -349,43 +349,36 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 
 				{/* Expiry badge — clickable for owner */}
 				<Show when={!room.loading()}>
-					<button
-						onClick={() => room.isOwner() && setExpireEditing((v) => !v)}
-						title={room.isOwner() ? (t("chat.expire_after") as string) : undefined}
-						class={`flex items-center gap-1 shrink-0 text-xs px-1.5 py-1 rounded-lg text-muted transition-colors ${
-							room.isOwner() ? "hover:bg-elevated hover:text-txt cursor-pointer" : "cursor-default"
-						}`}
+					<Button
+					  variant="ghost"
+					  size="sm"
+					  disabled={!room.isOwner()}
+					  onClick={() => room.isOwner() && setExpireEditing((v) => !v)}
+					  title={room.isOwner() ? (t("chat.expire_after") as string) : undefined}
 					>
 						<MdOutlineTimer class="w-4 h-4" />
 						<span class="hidden sm:inline">{expireLabel(room.expire())}</span>
-					</button>
+					</Button>
 				</Show>
 
 				{/* Click cycles sound → push → silent */}
-				<button
-					onClick={() => void cycleChatNotify(props.nick, props.roomId)}
-					title={t(`chat.notify_${notifyMode()}`) as string}
-					aria-label={t(`chat.notify_${notifyMode()}`) as string}
-					class="p-1.5 rounded-lg transition-colors hover:bg-elevated"
-					classList={{
-						"text-accent": notifyMode() !== "silent",
-						"text-muted hover:text-txt": notifyMode() === "silent",
-					}}
-				>
+				<IconButton
+      label={t(`chat.notify_${notifyMode()}`) as string}
+      size="sm"
+      pressed={notifyMode() !== "silent"}
+      onClick={() => void cycleChatNotify(props.nick, props.roomId)}
+    >
 					<Dynamic component={NOTIFY_ICON[notifyMode()]} class="w-4 h-4" />
-				</button>
+				</IconButton>
 				<Show when={isLocalUser()}>
-					<button
-						onClick={() => void toggleBookmark()}
-						title={isBookmarked() ? t("chat.unbookmark") as string : t("chat.bookmark") as string}
-						class="p-1.5 rounded-lg transition-colors hover:bg-elevated"
-						classList={{
-							"text-accent": isBookmarked(),
-							"text-muted hover:text-txt": !isBookmarked(),
-						}}
-					>
+					<IconButton
+       label={isBookmarked() ? t("chat.unbookmark") as string : t("chat.bookmark") as string}
+       size="sm"
+       pressed={isBookmarked()}
+       onClick={() => void toggleBookmark()}
+     >
 						<Show when={isBookmarked()} fallback={<MdOutlineBookmark_border class="w-4 h-4" />}><MdFillBookmark class="w-4 h-4" /></Show>
-					</button>
+					</IconButton>
 				</Show>
 				{/* A visitor from another hub saves the bookmark on their own hub. */}
 				<Show when={!isLocalUser() && room.bookmarkUrl()}>
@@ -508,29 +501,25 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 							[1440,  "24h"],
 							[10080, "1w"],
 						] as [number, string][]).map(([val, label]) => (
-							<button
-								onClick={() => { void handleSetExpire(val); setExpireCustomMode(false); }}
-								disabled={expireUpdating()}
-								class={`text-xs px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 ${
-									room.expire() === val && !expireCustomMode()
-										? "border-accent text-accent bg-accent/10"
-										: "border-rim text-muted hover:border-accent hover:text-accent"
-								}`}
+							<Button
+							  variant="ghost"
+							  size="sm"
+							  pressed={room.expire() === val && !expireCustomMode()}
+							  onClick={() => { void handleSetExpire(val); setExpireCustomMode(false); }}
+							  disabled={expireUpdating()}
 							>
 								{label}
-							</button>
+							</Button>
 						))}
-						<button
-							onClick={() => { setExpireCustomMode(true); }}
-							disabled={expireUpdating()}
-							class={`text-xs px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 ${
-								expireCustomMode()
-									? "border-accent text-accent bg-accent/10"
-									: "border-rim text-muted hover:border-accent hover:text-accent"
-							}`}
+						<Button
+						  variant="ghost"
+						  size="sm"
+						  pressed={expireCustomMode()}
+						  onClick={() => { setExpireCustomMode(true); }}
+						  disabled={expireUpdating()}
 						>
 							Custom
-						</button>
+						</Button>
 						<Show when={expireCustomMode()}>
 							<Input
 							  size="sm"

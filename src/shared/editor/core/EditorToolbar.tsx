@@ -22,6 +22,7 @@ import type { DiagramInsert } from "../diagram/DiagramComposerModal";
 import { diagramKind } from "../diagram/renderMermaidImage";
 import { spell, bbcodeTokensWork, linkText, type Kind } from "./markup";
 import { Spinner } from "@ui/Spinner";
+import { IconButton } from "@ui/Button";
 
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
 const DiagramComposerModal = lazy(() => import("../diagram/DiagramComposerModal"));
@@ -1040,22 +1041,17 @@ function Btn(props: {
   active?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      title={props.title}
+    <IconButton
+      label={props.title}
+      size="sm"
+      pressed={props.active}
       disabled={props.disabled}
       onMouseDown={(e) => {
         e.preventDefault();
         if (!props.disabled) props.onPress(e);
       }}
-      class={
-        "px-1.5 py-0.5 rounded transition-colors " +
-        (props.disabled
-          ? "text-muted/40 cursor-not-allowed"
-          : `hover:bg-elevated ${props.active ? "bg-elevated text-accent" : "text-txt"}`)
-      }
     >
       {props.children}
-    </button>
+    </IconButton>
   );
 }

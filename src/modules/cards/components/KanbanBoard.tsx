@@ -202,17 +202,15 @@ export default function KanbanBoard(props: { nick: string }) {
       <div class="flex items-center gap-1 border-b border-rim overflow-x-auto">
         <For each={boards()}>
           {(b) => (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={b.name === activeBoard()}
+              class="-mb-px"
               onClick={() => setParams({ board: b.name })}
-              class="px-3 py-2 text-sm whitespace-nowrap border-b-2 -mb-px transition-colors"
-              classList={{
-                "border-accent text-txt font-medium": b.name === activeBoard(),
-                "border-transparent text-muted hover:text-txt": b.name !== activeBoard(),
-              }}
             >
               {b.name}
-            </button>
+            </Button>
           )}
         </For>
 

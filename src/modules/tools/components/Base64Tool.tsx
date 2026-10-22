@@ -52,16 +52,15 @@ export function Base64Tool() {
       {/* Mode toggle */}
       <div class="flex gap-2 self-start bg-elevated border border-rim rounded-xl p-1">
         {(["encode", "decode"] as Mode[]).map((m) => (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            pressed={mode() === m}
+            class="capitalize"
             onClick={() => setMode(m)}
-            class={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
-              mode() === m
-                ? "bg-accent text-accent-fg"
-                : "text-muted hover:text-txt"
-            }`}
           >
             {m === "encode" ? t("tools.base64_encode") : t("tools.base64_decode")}
-          </button>
+          </Button>
         ))}
       </div>
 

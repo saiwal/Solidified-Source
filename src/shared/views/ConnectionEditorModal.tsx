@@ -23,6 +23,7 @@ import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
+import { Tabs } from "@ui/Tabs";
 interface Props {
   connection: Connection;
   authorName: string;
@@ -46,17 +47,9 @@ const CrossIcon = () => (
 
 function FlagToggle(p: { label: string; active: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      type="button"
-      onClick={() => p.onChange(!p.active)}
-      class={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-        p.active
-          ? "bg-accent/10 border-accent text-accent"
-          : "border-rim text-muted hover:border-rim-strong hover:text-txt"
-      }`}
-    >
+    <Button variant="ghost" size="sm" pressed={p.active} onClick={() => p.onChange(!p.active)}>
       {p.label}
-    </button>
+    </Button>
   );
 }
 
@@ -133,12 +126,6 @@ function ConnectionEditorModal(props: Props) {
   const [refreshFailed, setRefreshFailed] = createSignal(false);
 
   const connectedOn = () => formatDate(props.connection.connected);
-  const tabCls = (t: Tab) =>
-    `flex-1 py-2 text-xs font-medium border-b-2 transition-colors ${
-      tab() === t
-        ? "border-accent text-accent"
-        : "border-transparent text-muted hover:text-txt"
-    }`;
 
   async function handleSave() {
     setSaving(true);
@@ -242,17 +229,18 @@ function ConnectionEditorModal(props: Props) {
         </div>
 
         {/* Tab bar */}
-        <div class="flex border-b border-rim shrink-0">
-          <button class={tabCls("settings")}  onClick={() => setTab("settings")}>
-            {t("connection.tab_settings")}
-          </button>
-          <button class={tabCls("perms")}     onClick={() => setTab("perms")}>
-            {t("connection.tab_permissions")}
-          </button>
-          <button class={tabCls("filters")}   onClick={() => setTab("filters")}>
-            {t("connection.tab_filters")}
-          </button>
-        </div>
+        <Tabs
+          variant="underline"
+          class="px-4 pt-2 border-b border-rim shrink-0"
+          label={props.authorName}
+          value={tab()}
+          onChange={setTab}
+          items={[
+            { value: "settings", label: t("connection.tab_settings") },
+            { value: "perms", label: t("connection.tab_permissions") },
+            { value: "filters", label: t("connection.tab_filters") },
+          ]}
+        />
 
         {/* Tab body — scrollable */}
         <div class="flex-1 overflow-y-auto">
@@ -500,14 +488,11 @@ function ConnectionEditorModal(props: Props) {
 
         {/* Footer */}
         <div class="flex items-center gap-2 px-4 py-3 border-t border-rim shrink-0">
-          <button
+          <Button
+            variant={confirmDelete() ? "danger" : "ghost"}
+            size="sm"
             onClick={handleDelete}
             disabled={deleting()}
-            class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors
-                   disabled:opacity-50 disabled:cursor-default
-                   ${confirmDelete()
-                     ? "bg-danger/10 text-danger-txt hover:bg-danger/20"
-                     : "text-muted hover:bg-overlay hover:text-accent"}`}
           >
             <Show when={deleting()}>
               <Spinner size="xs" />
@@ -517,7 +502,7 @@ function ConnectionEditorModal(props: Props) {
               : props.connection.pending
               ? t("connection.reject")
               : t("connection.remove")}
-          </button>
+          </Button>
 
           <Show when={props.connection.pending}>
             <Button size="sm" onClick={handleApprove} disabled={approving()}>

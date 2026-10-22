@@ -15,6 +15,7 @@ import { SETTINGS_ITEMS } from "@/modules/settings/index";
 import { Button } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
+import { Switch } from "@ui/Toggle";
 
 export default function ProfilesView() {
   const { t } = useI18n();
@@ -111,28 +112,13 @@ export default function ProfilesView() {
             <p class="text-sm font-medium text-txt">{t("profiles.feature_title")}</p>
             <p class="text-xs text-muted mt-0.5 leading-relaxed">{t("profiles.feature_desc")}</p>
           </div>
-          <button
-            type="button"
+          <Switch
+            class="mt-0.5"
+            checked={multiEnabled()}
             disabled={togglingFeature()}
-            onClick={() => toggleMultiProfiles(multiEnabled())}
-            aria-pressed={multiEnabled()}
-            class={[
-              "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors mt-0.5",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-              "disabled:opacity-40 disabled:cursor-not-allowed",
-              multiEnabled() ? "bg-accent" : "bg-elevated border border-rim",
-            ].join(" ")}
-          >
-            <span class="sr-only">
-              {multiEnabled() ? t("settings.feat_toggle_off") : t("settings.feat_toggle_on")}
-            </span>
-            <span
-              class={[
-                "inline-block h-4 w-4 rounded-full transition-transform",
-                multiEnabled() ? "translate-x-6 bg-accent-fg" : "translate-x-1 bg-muted",
-              ].join(" ")}
-            />
-          </button>
+            label={multiEnabled() ? t("settings.feat_toggle_off") : t("settings.feat_toggle_on")}
+            onChange={() => void toggleMultiProfiles(multiEnabled())}
+          />
         </Card>
       </Show>
     </div>

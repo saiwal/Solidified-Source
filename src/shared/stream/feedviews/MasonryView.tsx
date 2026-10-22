@@ -26,6 +26,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { createConfirmTap } from "@/shared/stream/components/ActionBtn";
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
 import { EmptyState } from "@ui/EmptyState";
+import { Button } from "@ui/Button";
 function useColumnCount(el: () => HTMLElement | undefined): () => number {
   return useMasonryColumnCount(el, 16, 3);
 }
@@ -284,36 +285,30 @@ function MasonryCard(props: {
           onClick={(e) => e.stopPropagation()}
         >
           <Show when={canInteract()}>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={p.viewerLiked}
               onClick={() => props.handlers.onLike(p.mid)}
               aria-label={t("post.like")}
-              aria-pressed={p.viewerLiked}
-              class="flex items-center gap-1 text-xs transition-colors"
-              classList={{
-                "text-accent": p.viewerLiked,
-                "text-muted hover:text-accent": !p.viewerLiked,
-              }}
             >
               <MdOutlineFavorite_border class="w-3.5 h-3.5" />
               {p.likeCount || ""}
-            </button>
+            </Button>
           </Show>
 
           <Show when={!p.flags?.includes("private") && canInteract()}>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={p.viewerRepeated || repeatArmed()}
               onClick={onRepeat}
               title={repeatArmed() ? t("post.repeat_confirm") : t("post.repeat")}
               aria-label={t("post.repeat")}
-              aria-pressed={p.viewerRepeated}
-              class="flex items-center gap-1 text-xs transition-colors"
-              classList={{
-                "text-accent": p.viewerRepeated || repeatArmed(),
-                "text-muted hover:text-accent": !p.viewerRepeated && !repeatArmed(),
-              }}
             >
               <Show when={repeatArmed()} fallback={<MdOutlineRefresh class="w-3.5 h-3.5" />}><MdOutlineCheck class="w-3.5 h-3.5" /></Show>
               {p.repeatCount || ""}
-            </button>
+            </Button>
           </Show>
 
           <Show when={replyCount() > 0}>

@@ -22,25 +22,29 @@ const VARIANT: Record<ButtonVariant, string> = {
 };
 const SIZE: Record<ButtonSize, string> = { md: "h-10 px-5 gap-2 text-sm", sm: "h-8 px-3 gap-1.5 text-xs" };
 
-export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md"): string {
+// "On" overrides the variant's own colours (the `!`), so a pressed ghost chip
+// reads as selected rather than hovered.
+const PRESSED = "hz-btn-pressed bg-accent-muted! text-accent-txt!";
+
+export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md", pressed = false): string {
   return (
     `hz-btn hz-btn-${variant} hz-btn-${size} inline-flex items-center justify-center shrink-0 ` +
     `rounded-3xl font-medium transition disabled:opacity-60 disabled:pointer-events-none ` +
-    `${SIZE[size]} ${VARIANT[variant]} ${focus}`
+    `${SIZE[size]} ${VARIANT[variant]} ${focus} ${pressed ? PRESSED : ""}`
   );
 }
 
 const ICON_VARIANT = {
   default: "rounded-3xl text-muted hover:text-txt hover:bg-elevated/70",
   danger: "rounded-3xl text-muted hover:text-danger-txt hover:bg-danger/10",
-  square: "rounded-lg border border-rim bg-surface text-muted hover:bg-elevated hover:text-txt",
+  outline: "rounded-3xl border border-rim bg-surface text-muted hover:bg-elevated hover:text-txt",
 } as const;
 
 export function iconButtonClass(variant: keyof typeof ICON_VARIANT = "default", size: ButtonSize = "md"): string {
   return (
     `hz-btn hz-btn-icon hz-btn-icon-${variant} inline-flex items-center justify-center shrink-0 ` +
     `transition-colors disabled:opacity-40 disabled:pointer-events-none ` +
-    `${variant === "square" || size === "sm" ? "p-1.5" : "p-2"} ${ICON_VARIANT[variant]} ${focus}`
+    `${variant === "outline" || size === "sm" ? "p-1.5" : "p-2"} ${ICON_VARIANT[variant]} ${focus}`
   );
 }
 
@@ -50,11 +54,12 @@ export const ghostPill = buttonClass("ghost");
 export const iconBtn = iconButtonClass();
 
 export function Button(props: ButtonProps) {
-  const [own, rest] = splitProps(props, ["variant", "size", "class", "type"]);
+  const [own, rest] = splitProps(props, ["variant", "size", "pressed", "class", "type"]);
   return (
     <button
       type={own.type ?? "button"}
-      class={`${buttonClass(own.variant, own.size)} ${own.class ?? ""}`}
+      aria-pressed={own.pressed}
+      class={`${buttonClass(own.variant, own.size, own.pressed)} ${own.class ?? ""}`}
       {...rest}
     />
   );

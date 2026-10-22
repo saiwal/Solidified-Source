@@ -6,6 +6,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { fetchLockview, scopeLabel, type Lockview, type LockviewType } from "@utsukta/spa-core/lib/lockview-api";
+import { IconButton } from "@ui/Button";
 
 /**
  * The padlock on a private item — classic's lockview dropdown (conv_item.tpl:83
@@ -50,16 +51,14 @@ const LockviewPopover: Component<{
 
   return (
     <>
-      <button
+      <IconButton
+        label={t("share.who_can_see") as string}
+        pressed={open()}
         ref={setTriggerRef}
         onClick={onToggle}
-        title={t("share.who_can_see") as string}
-        aria-label={t("share.who_can_see") as string}
-        class={`flex items-center rounded transition-colors hover:bg-overlay
-               ${open() ? "text-accent" : "text-muted hover:text-txt"}`}
       >
         <MdFillLock size={size()} />
-      </button>
+      </IconButton>
 
       <Show when={open()}>
         <Portal mount={topLayer()}>

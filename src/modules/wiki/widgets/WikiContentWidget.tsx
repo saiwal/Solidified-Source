@@ -233,19 +233,16 @@ export default function WikiContentWidget() {
                     <div class="flex items-center gap-1 shrink-0 w-24 justify-end">
                       {/* Privacy icon with tooltip */}
                       <div class="relative group/priv">
-                        <button
-                          type="button"
+                        <IconButton
+                          label={t("wiki.privacy")}
+                          variant="outline"
+                          pressed={wiki.is_private}
                           onClick={() => openAclEditor(wiki.url_name)}
-                          class={`p-1.5 rounded-lg border transition-colors ${
-                            wiki.is_private
-                              ? "border-accent/40 text-accent hover:bg-accent-muted"
-                              : "border-rim text-muted hover:text-accent hover:border-accent/40"
-                          }`}
                         >
                           <Show when={wiki.is_private} fallback={<MdFillLock_open size={13} />}>
                             <MdFillLock size={13} />
                           </Show>
-                        </button>
+                        </IconButton>
                         <div class="absolute bottom-full right-0 mb-1.5 px-2 py-1 rounded-md
                                     bg-surface border border-rim text-xs text-txt whitespace-nowrap
                                     pointer-events-none opacity-0 group-hover/priv:opacity-100

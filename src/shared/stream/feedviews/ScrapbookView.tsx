@@ -13,6 +13,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
 import { EmptyState } from "@ui/EmptyState";
+import { Button } from "@ui/Button";
 
 const ROTATIONS = ["-rotate-3", "rotate-2", "-rotate-1", "rotate-3", "-rotate-2", "rotate-1"];
 const NOTE_COLORS = [
@@ -49,14 +50,16 @@ function Stamp(props: { post: ThreadNode; handlers: StreamHandlers }) {
       <span class="shrink-0">· {formatPostDate(p.created, locale())}</span>
       <span class="ml-auto flex items-center gap-2 shrink-0">
         <Show when={canInteract()}>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            pressed={p.viewerLiked}
+            class={p.viewerLiked ? "bg-transparent! text-rose-500!" : "hover:text-rose-500!"}
             onClick={() => props.handlers.onLike(p.mid)}
-            class="flex items-center gap-0.5 transition-colors"
-            classList={{ "text-rose-500": p.viewerLiked, "hover:text-rose-500": !p.viewerLiked }}
           >
             <MdOutlineFavorite_border class="w-3 h-3" />
             <Show when={p.likeCount > 0}>{p.likeCount}</Show>
-          </button>
+          </Button>
         </Show>
         <Show when={replyCountOf(p) > 0}>
           <span>💬 {replyCountOf(p)}</span>

@@ -30,7 +30,7 @@ import { setCurrentPageTemplateId } from "../store";
 import { editingWidgets, setEditingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import TemplateNameForm from "@/shared/views/TemplateNameForm";
 import { MdFillAdd, MdOutlineDashboard, MdOutlineEdit, MdFillCheck } from "solid-icons/md";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Select } from "@ui/Field";
 
 function templateWidgetCount(tpl: { slots: Partial<Record<string, unknown[]>> } | undefined): number {
@@ -201,21 +201,16 @@ export default function LayoutTemplatesView() {
                       <option value="zen">{t("webpages.chrome_mode_zen")}</option>
                     </Select>
                     <div class="flex items-center gap-1 shrink-0">
-                      <button
+                      <IconButton
+                        label={t("webpages.edit_widgets")}
+                        size="sm"
+                        pressed={selectedTemplateId() === id && editingWidgets()}
                         onClick={() => editTemplate(id)}
-                        aria-pressed={selectedTemplateId() === id && editingWidgets()}
-                        class="p-1.5 rounded-md transition-colors"
-                        classList={{
-                          "bg-accent text-accent-fg": selectedTemplateId() === id && editingWidgets(),
-                          "text-muted hover:text-txt hover:bg-elevated": !(selectedTemplateId() === id && editingWidgets()),
-                        }}
-                        aria-label={t("webpages.edit_widgets")}
-                        title={t("webpages.edit_widgets")}
                       >
                         <Show when={selectedTemplateId() === id && editingWidgets()} fallback={<MdOutlineEdit size={14} />}>
                           <MdFillCheck size={14} />
                         </Show>
-                      </button>
+                      </IconButton>
                       <Button variant="ghost" size="sm" onClick={() => setRenamingId(id)}>
                         {t("webpages.rename")}
                       </Button>

@@ -20,6 +20,7 @@ import {
   type JSX,
 } from "solid-js";
 import { MdOutlineExpand_less } from "solid-icons/md";
+import { buttonClass, iconButtonClass } from "@ui/Button";
 
 /**
  * True inside SplitSubmitButton's menu. A PopoverButton there expands its panel
@@ -65,12 +66,7 @@ export function composerTriggerClass(active: boolean, inMenu: boolean): string {
       (active ? "text-accent bg-accent/10" : "text-txt hover:bg-elevated")
     );
   }
-  return (
-    "flex items-center gap-1.5 px-2.5 py-1.5 wide:px-2 wide:py-1 rounded-md text-xs border transition-colors " +
-    (active
-      ? "bg-accent/10 text-accent border-accent/30"
-      : "text-muted hover:text-txt hover:bg-elevated border-rim")
-  );
+  return buttonClass("ghost", "sm", active);
 }
 
 export interface PrimarySubmitButtonProps {
@@ -84,8 +80,7 @@ export const PrimarySubmitButton: Component<PrimarySubmitButtonProps> = (props) 
     type="button"
     disabled={props.disabled}
     onClick={props.onClick}
-    class="px-5 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg hover:opacity-90
-           active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+    class={buttonClass("primary")}
   >
     {props.children}
   </button>
@@ -102,8 +97,7 @@ export const SecondaryButton: Component<SecondaryButtonProps> = (props) => (
     type="button"
     disabled={props.disabled}
     onClick={props.onClick}
-    class="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-rim text-xs text-muted
-           hover:text-txt hover:bg-elevated transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+    class={buttonClass("ghost", "sm")}
   >
     {props.children}
   </button>
@@ -128,6 +122,7 @@ export const ToggleButton: Component<ToggleButtonProps> = (props) => {
       type="button"
       onClick={props.onClick}
       title={props.title}
+      aria-pressed={props.active}
       class={composerTriggerClass(props.active, inMenu)}
     >
       {props.children}
@@ -151,12 +146,8 @@ export const IconButton: Component<IconButtonProps> = (props) => (
     title={props.title}
     data-tour={props.dataTour}
     onClick={props.onClick}
-    class={
-      "p-1.5 rounded-md text-muted transition-colors " +
-      (props.variant === "danger"
-        ? "hover:text-danger-txt hover:bg-danger/10"
-        : "hover:text-txt hover:bg-elevated")
-    }
+    aria-label={props.title}
+    class={iconButtonClass(props.variant === "danger" ? "danger" : "default", "sm")}
   >
     {props.children}
   </button>
@@ -211,6 +202,7 @@ export const PopoverButton: Component<PopoverButtonProps> = (props) => {
         type="button"
         onClick={() => props.setOpen(!props.open())}
         title={props.title}
+        aria-expanded={props.open()}
         class={composerTriggerClass(props.active ?? props.open(), inMenu)}
       >
         {props.icon}
@@ -288,7 +280,9 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           (props.icon ? "p-2.5 " : "px-5 py-1.5 text-sm font-semibold ") +
           "bg-accent text-accent-fg hover:opacity-90 " +
           "active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed " +
-          (props.icon ? (props.menu ? "rounded-l-full" : "rounded-full") : props.menu ? "rounded-l-lg" : "rounded-lg")
+          // rounded-3xl like Button, so the split pill matches the rest and
+          // follows the corner-radius setting.
+          (props.menu ? "rounded-l-3xl" : "rounded-3xl")
         }
       >
         {props.children}
@@ -302,7 +296,7 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           aria-expanded={open()}
           onClick={() => setOpen(!open())}
           class={
-            (props.icon ? "pl-1.5 pr-2 rounded-r-full" : "px-2 rounded-r-lg") +
+            (props.icon ? "pl-1.5 pr-2 rounded-r-3xl" : "px-2 rounded-r-3xl") +
             " border-l border-accent-fg/25 bg-accent text-accent-fg hover:opacity-90 active:opacity-80 transition-opacity"
           }
         >

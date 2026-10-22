@@ -63,7 +63,6 @@ export default function FullPlayer() {
   // Nothing to show once the music stops
   createEffect(() => { if (!current()) setFullOpen(false); });
 
-  const toggleCls = (on: boolean) => `${iconBtn} ${on ? "!text-accent-txt" : ""}`;
 
   return (
     <Show when={fullOpen() && current()}>
@@ -110,9 +109,9 @@ export default function FullPlayer() {
                   <Show when={error()}><p class="text-sm text-danger-txt">{t("jellyfin.err_playback")}</p></Show>
 
                   <div class="flex items-center gap-2 sm:gap-4">
-                    <button type="button" class={toggleCls(shuffled())} title={t("jellyfin.shuffle")} aria-pressed={shuffled()} onClick={toggleShuffle}>
+                    <IconButton label={t("jellyfin.shuffle")} pressed={shuffled()} onClick={toggleShuffle}>
                       <MdFillShuffle size={20} />
-                    </button>
+                    </IconButton>
                     <IconButton label={t("jellyfin.previous")} onClick={prev}>
                       <MdFillSkip_previous size={30} />
                     </IconButton>
@@ -123,10 +122,13 @@ export default function FullPlayer() {
                     <IconButton label={t("jellyfin.next")} onClick={next} disabled={!hasNext()}>
                       <MdFillSkip_next size={30} />
                     </IconButton>
-                    <button type="button" class={toggleCls(repeat() !== "off")} aria-pressed={repeat() !== "off"} onClick={cycleRepeat}
-                      title={t(repeat() === "one" ? "jellyfin.repeat_one" : repeat() === "all" ? "jellyfin.repeat_all" : "jellyfin.repeat_off")}>
+                    <IconButton
+                      label={t(repeat() === "one" ? "jellyfin.repeat_one" : repeat() === "all" ? "jellyfin.repeat_all" : "jellyfin.repeat_off")}
+                      pressed={repeat() !== "off"}
+                      onClick={cycleRepeat}
+                    >
                       <Show when={repeat() === "one"} fallback={<MdFillRepeat size={20} />}><MdFillRepeat_one size={20} /></Show>
-                    </button>
+                    </IconButton>
                   </div>
 
                   <Show when={visualizerOn()}>
@@ -143,9 +145,13 @@ export default function FullPlayer() {
                         </>
                       )}
                     </Show>
-                    <button type="button" class={toggleCls(visualizerOn())} title={t("jellyfin.visualizer")} aria-pressed={visualizerOn()} onClick={toggleVisualizer}>
+                    <IconButton
+                      label={t("jellyfin.visualizer")}
+                      pressed={visualizerOn()}
+                      onClick={toggleVisualizer}
+                    >
                       <MdOutlineGraphic_eq size={20} />
-                    </button>
+                    </IconButton>
                     <IconButton
                       label={t("jellyfin.close_player")}
                       onClick={() => { setFullOpen(false); stop(); }}

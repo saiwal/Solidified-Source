@@ -75,7 +75,7 @@ export default function CalendarHeaderWidget() {
             label={t("calendar.more")}
             class="w-60"
             trigger={(p) => (
-              <IconButton label={t("calendar.more")} variant="square" {...p}>
+              <IconButton label={t("calendar.more")} variant="outline" {...p}>
                 <MdOutlineMore_horiz size={15} />
               </IconButton>
             )}

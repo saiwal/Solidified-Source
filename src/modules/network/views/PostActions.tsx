@@ -16,6 +16,7 @@ import {
   MdOutlineStar,
   MdOutlineDelete,
 } from "solid-icons/md";
+import { Button } from "@ui/Button";
 
 interface Props {
   post: ThreadNode;
@@ -27,16 +28,17 @@ export default function PostActions(props: Props) {
 
   return (
     <div class="flex items-center gap-3 text-sm text-muted">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
+        pressed={props.post.viewerLiked}
         onClick={() => handleLike(props.post.mid)}
-        class={`flex items-center gap-1 transition-colors hover:text-accent
-          ${props.post.viewerLiked ? "text-accent" : ""}`}
       >
         <MdOutlineThumb_up class="w-4 h-4" />
         <Show when={props.post.likeCount > 0}>
           <span>{props.post.likeCount}</span>
         </Show>
-      </button>
+      </Button>
 
       <button
         onClick={() => handleDislike(props.post.mid)}

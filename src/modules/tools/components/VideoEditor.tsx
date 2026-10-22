@@ -6,7 +6,7 @@ import { MdOutlineMovie, MdFillCheck, MdFillFolder } from "solid-icons/md";
 import { grabFrame } from "@/shared/editor/attachments/videoPoster";
 
 import { FFmpegWorker, FFMPEG_BASE } from "@/shared/lib/ffmpeg-client";
-import { buttonClass } from "@ui/Button";
+import { Button, buttonClass } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { CardHeader } from "@ui/Card";
 
@@ -415,9 +415,6 @@ export function VideoEditor(props: VideoEditorProps = {}) {
   // ── CSS shortcuts ─────────────────────────────────────────────────────────────
   const btnPrimary = buttonClass("primary", "sm");
   const btnOutline = buttonClass("ghost", "sm");
-  const chip       = "px-3 py-1.5 text-xs rounded-lg border transition-colors";
-  const chipOn     = "bg-accent text-accent-fg border-accent";
-  const chipOff    = "border-rim text-muted hover:bg-elevated hover:text-txt";
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
@@ -504,13 +501,15 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                   {(q) => {
                     const copyDisabled = q === "copy" && hasVideoFilter();
                     return (
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        pressed={quality() === q && !copyDisabled}
                         onClick={() => { if (!copyDisabled) setQuality(q); }}
                         disabled={copyDisabled}
-                        class={`${chip} ${quality() === q && !copyDisabled ? chipOn : chipOff} disabled:opacity-40 disabled:cursor-not-allowed`}
                       >
                         {s(QUALITY_KEY[q])}
-                      </button>
+                      </Button>
                     );
                   }}
                 </For>
@@ -526,9 +525,14 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                 <div class="flex flex-wrap gap-2">
                   <For each={ROTATIONS}>
                     {(rot) => (
-                      <button onClick={() => setRotate(rot)} class={`${chip} ${rotate() === rot ? chipOn : chipOff}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        pressed={rotate() === rot}
+                        onClick={() => setRotate(rot)}
+                      >
                         {s(ROTATE_KEY[rot])}
-                      </button>
+                      </Button>
                     )}
                   </For>
                 </div>
@@ -539,9 +543,14 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                 <div class="flex flex-wrap gap-2">
                   <For each={SPEEDS}>
                     {(spd) => (
-                      <button onClick={() => setSpeed(spd)} class={`${chip} ${speed() === spd ? chipOn : chipOff}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        pressed={speed() === spd}
+                        onClick={() => setSpeed(spd)}
+                      >
                         {spd}×
-                      </button>
+                      </Button>
                     )}
                   </For>
                 </div>
@@ -557,9 +566,14 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                 <div class="flex flex-wrap gap-2">
                   <For each={RESOLUTIONS}>
                     {(res) => (
-                      <button onClick={() => setResolution(res)} class={`${chip} ${resolution() === res ? chipOn : chipOff}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        pressed={resolution() === res}
+                        onClick={() => setResolution(res)}
+                      >
                         {res === "original" ? s("tools.vid_res_original") : res}
-                      </button>
+                      </Button>
                     )}
                   </For>
                 </div>
@@ -585,9 +599,14 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                   <div class="flex flex-wrap gap-2">
                     <For each={GIF_FPS}>
                       {(fps) => (
-                        <button onClick={() => setGifFps(fps)} class={`${chip} ${gifFps() === fps ? chipOn : chipOff}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          pressed={gifFps() === fps}
+                          onClick={() => setGifFps(fps)}
+                        >
                           {fps} fps
-                        </button>
+                        </Button>
                       )}
                     </For>
                   </div>

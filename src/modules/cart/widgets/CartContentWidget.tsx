@@ -605,24 +605,22 @@ function MyShop() {
           {t('cart.orders_tab')}
         </span>
         <div class="flex gap-1">
-          <button
+          <IconButton
+            label={t('cart.manage_catalog')}
+            size="sm"
+            pressed={showCatalog()}
             onClick={toggleCatalog}
-            title={t('cart.manage_catalog')}
-            class={`p-1.5 rounded-lg transition-colors ${showCatalog()
-              ? 'bg-accent text-accent-fg'
-              : 'text-muted hover:text-txt hover:bg-surface'}`}
           >
             <MdFillFormat_list_bulleted size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            label={t('cart.payment_settings')}
+            size="sm"
+            pressed={showSettings()}
             onClick={toggleSettings}
-            title={t('cart.payment_settings')}
-            class={`p-1.5 rounded-lg transition-colors ${showSettings()
-              ? 'bg-accent text-accent-fg'
-              : 'text-muted hover:text-txt hover:bg-surface'}`}
           >
             <MdFillSettings size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -704,17 +702,16 @@ function CatalogManagerPanel() {
                   <p class="text-xs text-muted mt-0.5">{item.price}<Show when={paymentConfig()?.currency}> {paymentConfig()!.currency}</Show></p>
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0">
-                  <button
+                  <IconButton
+                    label={item.active ? t('cart.catalog_deactivate') : t('cart.catalog_activate')}
+                    size="sm"
+                    pressed={item.active}
                     onClick={() => toggleCatalogItemAction(item.sku)}
-                    title={item.active ? t('cart.catalog_deactivate') : t('cart.catalog_activate')}
-                    class={`p-1.5 rounded-lg transition-colors ${item.active
-                      ? 'text-success-txt hover:bg-surface'
-                      : 'text-subtle hover:text-txt hover:bg-surface'}`}
                   >
                     <Show when={item.active} fallback={<MdFillToggle_off size={20} />}>
                       <MdFillToggle_on size={20} />
                     </Show>
-                  </button>
+                  </IconButton>
                   <IconButton
                     label={t('cart.catalog_edit_item')}
                     size="sm"
@@ -888,17 +885,14 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
               <span class="text-[0.6875rem] font-mono w-7 text-center">{uploadPct()}%</span>
             </Show>
           </Button>
-          <button
-            type="button"
+          <IconButton
+            label="Choose from albums"
+            variant="outline"
+            pressed={showPicker()}
             onClick={openPicker}
-            title="Choose from albums"
-            class={`flex items-center justify-center px-2.5 py-1.5 rounded-lg border transition-colors shrink-0
-              ${showPicker()
-                ? 'bg-accent text-accent-fg border-accent'
-                : 'bg-surface border-rim text-muted hover:text-txt hover:border-accent'}`}
           >
             <MdFillPhoto_library size={16} />
-          </button>
+          </IconButton>
           <input ref={fileInput} type="file" accept="image/*" class="hidden" onChange={handleFileSelect} />
         </div>
 

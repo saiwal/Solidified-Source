@@ -10,7 +10,7 @@ import { VideoEditor } from "@/modules/tools/components/VideoEditor";
 import { MdOutlineChevron_left, MdOutlineRefresh, MdOutlineVideocam } from "solid-icons/md";
 
 import { Modal, ModalPanel } from "@ui/Modal";
-import { Button, IconButton } from "@ui/Button";
+import { Button, IconButton, buttonClass } from "@ui/Button";
 type Mode  = "photo" | "video" | "audio";
 type Stage = "initializing" | "streaming" | "captured" | "editing" | "editing-video" | "error";
 
@@ -245,8 +245,8 @@ const CameraCapture: Component<Props> = (props) => {
 
   // ── Shared classes ───────────────────────────────────────────────────────────
 
-  const btnPrimary = "px-4 py-2 rounded-xl text-sm font-medium bg-accent text-accent-fg hover:opacity-90 transition-opacity disabled:opacity-50";
-  const btnOutline = "px-4 py-2 rounded-xl text-sm font-medium border border-rim text-muted hover:bg-elevated hover:text-txt transition-colors";
+  const btnPrimary = buttonClass("primary");
+  const btnOutline = buttonClass("ghost");
 
   return (
     <>

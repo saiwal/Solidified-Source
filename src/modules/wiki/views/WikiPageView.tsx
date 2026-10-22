@@ -54,7 +54,7 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
     <div class="md:hidden fixed top-20 right-4 z-40 flex flex-col items-end">
       <IconButton
         label={t("wiki.wikis")}
-        variant="square"
+        variant="outline"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open()}
       >
@@ -501,17 +501,9 @@ export default function WikiPageView() {
               <div class="flex items-center gap-2">
                 <Show when={!editMode()}>
                   {/* History toggle */}
-                  <button
-                    type="button"
-                    onClick={toggleHistory}
-                    class="text-sm border border-rim px-3 py-1.5 rounded-lg transition-colors"
-                    classList={{
-                      "bg-elevated text-txt": showHistory(),
-                      "text-muted hover:bg-elevated": !showHistory(),
-                    }}
-                  >
+                  <Button variant="ghost" size="sm" pressed={showHistory()} onClick={toggleHistory}>
                     {t("wiki.history")}
-                  </button>
+                  </Button>
 
                   {/* Rename (not Home) */}
                   <Show when={!isHome()}>

@@ -16,7 +16,7 @@ import { Button, IconButton, iconButtonClass } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
 
-const squareBtn = iconButtonClass("square");
+const squareBtn = iconButtonClass("outline");
 
 export default function ArticlesHeaderWidget() {
   const { t, locale } = useI18n();
@@ -121,7 +121,7 @@ export default function ArticlesHeaderWidget() {
                     autofocus
                     onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
                   />
-                  <IconButton label={t("articles.search")} variant="square" type="submit">
+                  <IconButton label={t("articles.search")} variant="outline" type="submit">
                     <MdFillSearch size={15} />
                   </IconButton>
                   <IconButton label={t("articles.cancel")} size="sm" onClick={() => setSearchOpen(false)}>

@@ -241,17 +241,16 @@ export default function LogsSection() {
             >
               {/* Toolbar */}
               <div class="flex items-center gap-2 flex-wrap">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  pressed={live()}
                   onClick={toggleLive}
-                  aria-pressed={live()}
-                  class={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
-                    live() ? "border-success/40 text-success-txt" : "border-rim text-muted hover:bg-elevated"
-                  }`}
                   title={live() ? t("admin.pause") : t("admin.resume")}
                 >
                   <span class={`h-2 w-2 rounded-full ${live() ? "bg-success animate-pulse" : "bg-muted"}`} />
                   {live() ? t("admin.live") : t("admin.paused")}
-                </button>
+                </Button>
                 <Show when={pollError()}>
                   <span class="text-xs text-danger-txt">{t("admin.poll_error")}</span>
                 </Show>

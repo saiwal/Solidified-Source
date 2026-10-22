@@ -101,24 +101,22 @@ const MoveCopyModal: Component<Props> = (props) => {
 
         {/* Breadcrumb */}
         <div class="flex items-center gap-1 px-4 py-2 text-sm flex-wrap border-b border-rim shrink-0">
-          <button
-            onClick={() => navToCrumb(-1)}
-            class={`hover:text-txt transition-colors ${crumbs().length === 0 ? "text-txt font-medium" : "text-accent"}`}
-          >
+          <Button variant="ghost" size="sm" pressed={!(crumbs().length === 0)} onClick={() => navToCrumb(-1)}>
             {t("files_mod.root_folder")}
-          </button>
+          </Button>
           <For each={crumbs()}>
             {(crumb, i) => (
               <>
                 <span class="text-muted">/</span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  pressed={!(i() === crumbs().length - 1)}
+                  class="truncate max-w-[120px]"
                   onClick={() => navToCrumb(i())}
-                  class={`hover:text-txt transition-colors truncate max-w-[120px] ${
-                    i() === crumbs().length - 1 ? "text-txt font-medium" : "text-accent"
-                  }`}
                 >
                   {crumb.name}
-                </button>
+                </Button>
               </>
             )}
           </For>
@@ -176,14 +174,8 @@ export default MoveCopyModal;
 
 function ToggleButton(props: { active: boolean; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      class={`px-3 py-1.5 text-sm font-medium border-b-2 transition-colors ${
-        props.active ? "border-accent text-txt" : "border-transparent text-muted hover:text-txt hover:border-rim"
-      }`}
-    >
+    <Button variant="ghost" size="sm" pressed={props.active} onClick={props.onClick}>
       {props.label}
-    </button>
+    </Button>
   );
 }

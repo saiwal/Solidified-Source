@@ -11,6 +11,7 @@ import { Show, type Component } from "solid-js";
 import { MdOutlineCode } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { EditorTab } from "../types/editor.types";
+import { Button } from "@ui/Button";
 
 export interface SourceToggleButtonProps {
   tab: EditorTab;
@@ -30,23 +31,17 @@ const SourceToggleButton: Component<SourceToggleButtonProps> = (props) => {
   const isSource = () => props.tab === "source";
   return (
     <Show when={props.canWysiwyg ?? true}>
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
+      pressed={isSource()}
+      class={props.borderless ? "h-6! px-1!" : ""}
       onClick={props.onToggle}
       title={isSource() ? t("editor.write_tab") : t("editor.source_tab")}
-      class={
-        "flex items-center gap-1.5 rounded-md text-xs transition-colors shrink-0 " +
-        (props.borderless
-          ? "px-1 py-0.5 " + (isSource() ? "text-accent" : "text-muted hover:text-txt")
-          : "px-2 wide:px-2.5 py-1 border " +
-            (isSource()
-              ? "bg-accent/10 text-accent border-accent/30"
-              : "text-muted hover:text-txt hover:bg-elevated border-rim"))
-      }
     >
       <MdOutlineCode class="w-3.5 h-3.5" />
       <span class="hidden wide:inline">{isSource() ? t("editor.write_tab") : t("editor.source_tab")}</span>
-    </button>
+    </Button>
     </Show>
   );
 };

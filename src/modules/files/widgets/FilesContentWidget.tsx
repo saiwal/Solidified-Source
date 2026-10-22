@@ -501,20 +501,15 @@ const GROUP = "contents";
 /** Every toolbar control: icon only, label as tooltip + accessible name. */
 function ToolButton(props: { label: string; active?: boolean; danger?: boolean; disabled?: boolean; onClick: () => void; children: JSX.Element }) {
   return (
-    <button
-      type="button"
-      title={props.label}
-      aria-label={props.label}
-      aria-pressed={props.active}
+    <IconButton
+      label={props.label}
+      variant={props.danger ? "danger" : "outline"}
+      pressed={props.active}
       disabled={props.disabled}
       onClick={props.onClick}
-      class={`p-1.5 rounded-lg transition-colors disabled:opacity-40
-              ${props.active ? "bg-accent text-accent-fg"
-                : props.danger ? "bg-elevated text-muted hover:bg-danger/15 hover:text-danger-txt"
-                : "bg-elevated text-muted hover:bg-accent/15 hover:text-txt"}`}
     >
       {props.children}
-    </button>
+    </IconButton>
   );
 }
 

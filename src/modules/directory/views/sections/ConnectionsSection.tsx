@@ -72,18 +72,15 @@ function togglePerm(key: string) {
 function PermChip(props: { key: string; label: string; class?: string }) {
   const active = () => perms().includes(props.key);
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
+      pressed={active()}
+      class={props.class}
       onClick={() => togglePerm(props.key)}
-      aria-pressed={active()}
-      class={`shrink-0 text-[0.6875rem] leading-none px-2 py-1 rounded-full border transition-colors ${
-        active()
-          ? "border-accent bg-accent-muted text-accent"
-          : "border-rim text-muted hover:border-rim-strong hover:text-txt"
-      } ${props.class ?? ""}`}
     >
       {props.label}
-    </button>
+    </Button>
   );
 }
 
@@ -271,16 +268,17 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
               <MdOutlineEmail size={14} />
             </IconButton>
             <Show when={chatroomsInstalled()}>
-              <button
+              <IconButton
+                label={t("ui.start_chatroom")}
+                size="sm"
+                pressed={chatPanelOpen()}
                 onClick={handleChatButtonClick}
                 disabled={chatCreating()}
-                title={t("ui.start_chatroom")}
-                class={`p-1.5 rounded transition-colors disabled:opacity-50 ${chatPanelOpen() ? "text-accent bg-accent/10" : "text-muted hover:text-txt hover:bg-overlay"}`}
               >
                 <Show when={!chatCreating()} fallback={<Spinner size="xs" />}>
                   <MdOutlineChat_bubble size={14} />
                 </Show>
-              </button>
+              </IconButton>
             </Show>
           </Show>
           <IconButton label={t("directory.edit")} size="sm" onClick={() => setEditOpen(true)}>
@@ -306,27 +304,23 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
               [1440,  "24h"],
               [10080, "1w"],
             ] as [number, string][]).map(([val, label]) => (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={chatExpire() === val && !chatCustomMode()}
                 onClick={() => { setChatExpire(val); setChatCustomMode(false); }}
-                class={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                  chatExpire() === val && !chatCustomMode()
-                    ? "border-accent text-accent bg-accent/10"
-                    : "border-rim text-muted hover:border-accent hover:text-accent"
-                }`}
               >
                 {label}
-              </button>
+              </Button>
             ))}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              pressed={chatCustomMode()}
               onClick={() => { setChatCustomMode(true); setChatExpire(parseInt(chatCustomInput()) || 60); }}
-              class={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                chatCustomMode()
-                  ? "border-accent text-accent bg-accent/10"
-                  : "border-rim text-muted hover:border-accent hover:text-accent"
-              }`}
             >
               Custom
-            </button>
+            </Button>
             <Show when={chatCustomMode()}>
               <Input size="sm" class="w-16" type="number" min="1" max="10080" value={chatCustomInput()} onInput={(e) => {
                   setChatCustomInput(e.currentTarget.value);
@@ -536,7 +530,7 @@ export default function ConnectionsSection() {
           </Button>
           <IconButton
             label={t("directory.import_connections")}
-            variant="square"
+            variant="outline"
             class="shrink-0"
             onClick={() => setImportOpen(true)}
           >
@@ -554,16 +548,15 @@ export default function ConnectionsSection() {
         <div class="flex-1 min-w-0 flex gap-4 overflow-x-auto [scrollbar-width:none]">
           <For each={FILTER_IDS}>
             {(id) => (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                pressed={filter() === id}
+                class="shrink-0 -mb-px"
                 onClick={() => handleFilterChange(id)}
-                class={`shrink-0 -mb-px pb-2 text-sm border-b-2 transition-colors ${
-                  filter() === id
-                    ? "border-accent text-txt font-medium"
-                    : "border-transparent text-muted hover:text-txt"
-                }`}
               >
                 {t(`directory.filter_${id}` as any)}
-              </button>
+              </Button>
             )}
           </For>
         </div>

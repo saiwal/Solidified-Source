@@ -17,6 +17,7 @@ import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Switch } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
+import { Tabs } from "@ui/Tabs";
 
 interface AppEntry {
   name: string;
@@ -184,23 +185,12 @@ export default function IntegrationsSection() {
       description={t("settings.desc_integrations")}
     >
       <div class="flex gap-2 flex-wrap">
-        <div class="flex rounded-lg border border-rim overflow-hidden text-xs font-medium">
-          <For each={TABS}>
-            {(tab) => (
-              <button
-                type="button"
-                onClick={() => setFilter(tab.value)}
-                class={`px-3 py-1.5 transition-colors
-                  ${filter() === tab.value
-                    ? "bg-elevated text-txt"
-                    : "text-muted hover:bg-elevated hover:text-txt"
-                  }`}
-              >
-                {t(tab.labelKey as any)}
-              </button>
-            )}
-          </For>
-        </div>
+        <Tabs
+          label={t("settings.title_integrations")}
+          value={filter()}
+          onChange={setFilter}
+          items={TABS.map((tab) => ({ value: tab.value, label: t(tab.labelKey as any) }))}
+        />
         <Input
           class="flex-1 min-w-1"
           type="search"

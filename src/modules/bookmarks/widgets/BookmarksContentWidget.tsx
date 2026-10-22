@@ -200,7 +200,9 @@ export default function BookmarksContentWidget() {
                       >
                         {t("bookmarks.rename_folder")}
                       </Button>
-                      <button
+                      <Button
+                        variant={confirmFolder() === menu.id ? "danger" : "ghost"}
+                        size="sm"
                         onClick={() => {
                           if (confirmFolder() === menu.id) {
                             void run(() => deleteFolder(menu.id));
@@ -209,16 +211,12 @@ export default function BookmarksContentWidget() {
                             setConfirmFolder(menu.id);
                           }
                         }}
-                        class={`text-[0.625rem] px-2 py-0.5 rounded border transition-colors
-                                ${confirmFolder() === menu.id
-                                  ? "border-danger text-danger-txt"
-                                  : "border-rim text-muted hover:text-danger-txt"}`}
                         title={t("bookmarks.delete_folder") as string}
                       >
                         {confirmFolder() === menu.id
                           ? t("bookmarks.delete_folder_confirm")
                           : t("bookmarks.delete_folder")}
-                      </button>
+                      </Button>
                     </CardHeader>
 
                     <div class="divide-y divide-rim">

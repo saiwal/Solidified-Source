@@ -122,26 +122,12 @@ const LatexComposerModal: Component<Props> = (props) => {
       >
         <div class="flex flex-col gap-3 p-4">
           <div class="flex items-center gap-1 self-start rounded-lg border border-rim p-0.5">
-            <button
-              type="button"
-              onClick={() => setDisplayMode(false)}
-              class={
-                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors " +
-                (!displayMode() ? "bg-accent text-accent-fg" : "text-muted hover:text-txt")
-              }
-            >
+            <Button variant="ghost" size="sm" pressed={!displayMode()} onClick={() => setDisplayMode(false)}>
               {t("editor.latex_mode_inline")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDisplayMode(true)}
-              class={
-                "px-2.5 py-1 rounded-md text-xs font-medium transition-colors " +
-                (displayMode() ? "bg-accent text-accent-fg" : "text-muted hover:text-txt")
-              }
-            >
+            </Button>
+            <Button variant="ghost" size="sm" pressed={displayMode()} onClick={() => setDisplayMode(true)}>
               {t("editor.latex_mode_block")}
-            </button>
+            </Button>
           </div>
 
           <div>

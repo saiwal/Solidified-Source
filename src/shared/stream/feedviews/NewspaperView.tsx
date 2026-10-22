@@ -17,7 +17,7 @@ import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillCheck, MdFillPush_pin, MdOutlineContent_copy, MdOutlineFavorite_border } from "solid-icons/md";
 import { BiRegularRss } from "solid-icons/bi";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
-import { IconButton } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { EmptyState } from "@ui/EmptyState";
 
 function eventOf(post: ThreadNode) {
@@ -52,14 +52,16 @@ function Byline(props: { post: ThreadNode; onOpen: () => void; handlers: StreamH
           <span>{replyCountOf(props.post)} {t(replyCountOf(props.post) === 1 ? "post.comments_singular" : "post.comments_plural")}</span>
         </Show>
         <Show when={canInteract()}>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            pressed={props.post.viewerLiked}
+            aria-label={t("post.like")}
             onClick={() => props.handlers.onLike(props.post.mid)}
-            class="flex items-center gap-1 transition-colors"
-            classList={{ "text-accent": props.post.viewerLiked, "hover:text-accent": !props.post.viewerLiked }}
           >
             <MdOutlineFavorite_border class="w-3 h-3" />
             <Show when={props.post.likeCount > 0}>{props.post.likeCount}</Show>
-          </button>
+          </Button>
         </Show>
       </div>
     </div>

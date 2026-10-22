@@ -161,15 +161,13 @@ function ChannelCard(props: {
 
       {/* Actions */}
       <div class="flex items-center gap-1.5 shrink-0">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => props.onAct(ch.channel_id, ch.blocked ? "unblock" : "block")}
-          class={`px-2 py-1 text-xs rounded border transition-colors
-            ${ch.blocked
-              ? "border-success/40 text-success-txt hover:bg-success-muted"
-              : "border-rim text-muted hover:bg-elevated"}`}
         >
           {ch.blocked ? "Uncensor" : "Censor"}
-        </button>
+        </Button>
         <Button
           variant="ghost"
           size="sm"

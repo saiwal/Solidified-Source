@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams, A } from "@solidjs/router";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Input } from "@ui/Field";
+import { IconButton } from "@ui/Button";
 
 export default function HelpChooserWidget() {
   const { t } = useI18n();
@@ -63,12 +64,9 @@ export default function HelpChooserWidget() {
           onInput={(e) => setQuery(e.currentTarget.value)}
           placeholder={t("help.search_placeholder")}
         />
-        <button
-          type="submit"
-          class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors"
-        >
+        <IconButton label={t("help.search_placeholder")} variant="outline" type="submit">
           <MdFillSearch size={15} />
-        </button>
+        </IconButton>
         <Show when={currentQuery()}>
           <button
             type="button"

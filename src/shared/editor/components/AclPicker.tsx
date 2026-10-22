@@ -26,7 +26,7 @@ import { MdFillCheck, MdFillLock, MdFillPerson, MdOutlineExpand_more, MdOutlineG
 void motion;
 
 import { entryKey, type AclMode } from "./acl-mode";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
@@ -391,19 +391,16 @@ const AclPicker: Component<AclPickerProps> = (props) => {
 
                     {/* Deny button — hidden when showDeny=false */}
                     <Show when={props.showDeny !== false}>
-                      <button
-                        type="button"
-                        title={t("editor.acl_deny_title")}
+                      <IconButton
+                        label={t("editor.acl_deny_title")}
+                        variant="danger"
+                        size="sm"
+                        pressed={isDenied()}
+                        class={isDenied() ? "bg-danger-muted! text-danger-txt!" : ""}
                         onClick={() => props.onToggle(c, "deny")}
-                        class={
-                          "shrink-0 w-6 h-6 rounded flex items-center justify-center text-xs transition-colors " +
-                          (isDenied()
-                            ? "bg-danger-muted text-danger-txt"
-                            : "text-muted/50 hover:bg-danger/10 hover:text-danger-txt")
-                        }
                       >
                         ✕
-                      </button>
+                      </IconButton>
                     </Show>
                   </li>
                 );

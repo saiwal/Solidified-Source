@@ -48,22 +48,17 @@ export default function NavUtilities(props: NavUtilitiesProps) {
           <ThemeToggle />
         </div>
         <Show when={isOwner()}>
-          <button
+          <IconButton
+            label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
+            pressed={editingWidgets()}
+            class="p-[8px]"
             onClick={() => setEditingWidgets(!editingWidgets())}
             data-tour="nav.edit_layout"
-            aria-pressed={editingWidgets()}
-            aria-label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
-            title={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
-            class={`p-[8px] rounded-lg transition-colors ${
-              editingWidgets()
-                ? "bg-accent text-accent-fg"
-                : "text-muted hover:bg-elevated hover:text-txt"
-            }`}
           >
             <Show when={editingWidgets()} fallback={<MdOutlineEdit size={18} />}>
               <MdFillCheck size={18} />
             </Show>
-          </button>
+          </IconButton>
         </Show>
         <Show when={showFeedIcon()}>
           <IconButton

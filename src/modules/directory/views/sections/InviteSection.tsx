@@ -23,12 +23,6 @@ import {
 import { Button } from "@ui/Button";
 import { Field, Input, Textarea } from "@ui/Field";
 
-const chipClass = (active: boolean) =>
-  `px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-    active
-      ? "border-accent text-accent bg-accent/10"
-      : "border-rim text-muted hover:border-rim-strong hover:text-txt"
-  }`;
 
 // Core's field_duration.qmc.tpl offers exactly these three, even though
 // calcdue() also understands w/m/y.
@@ -186,9 +180,9 @@ const InviteSection: Component = () => {
                   <div class="flex items-center gap-1.5">
                     <For each={UNITS}>
                       {(u) => (
-                        <button onClick={() => setDurq(u)} class={chipClass(durq() === u)}>
+                        <Button variant="ghost" size="sm" pressed={durq() === u} onClick={() => setDurq(u)}>
                           {t(`invite.unit_${u}` as "invite.unit_d")}
-                        </button>
+                        </Button>
                       )}
                     </For>
                   </div>
@@ -206,9 +200,9 @@ const InviteSection: Component = () => {
                   <div class="flex flex-wrap items-center gap-1.5">
                     <For each={langs()}>
                       {(l) => (
-                        <button onClick={() => setLang(l)} class={chipClass(lang() === l)}>
+                        <Button variant="ghost" size="sm" pressed={lang() === l} onClick={() => setLang(l)}>
                           {l}
-                        </button>
+                        </Button>
                       )}
                     </For>
                   </div>
@@ -216,9 +210,9 @@ const InviteSection: Component = () => {
                 <div class="flex flex-wrap items-center gap-1.5">
                   <For each={styles()}>
                     {(s) => (
-                      <button onClick={() => setStyle(s)} class={chipClass(style() === s)}>
+                      <Button variant="ghost" size="sm" pressed={style() === s} onClick={() => setStyle(s)}>
                         {s}
-                      </button>
+                      </Button>
                     )}
                   </For>
                 </div>

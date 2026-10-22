@@ -242,17 +242,10 @@ const PrivacyGroupsView: Component = () => {
       title={t("directory.privacy_groups_title")}
       description={t("directory.privacy_groups_desc")}
       action={
-        <button
-          onClick={() => setShowCreate((v) => !v)}
-          class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-            showCreate()
-              ? "border-accent text-accent bg-accent/10"
-              : "border-rim text-muted hover:border-rim-strong hover:text-txt"
-          }`}
-        >
+        <Button variant="ghost" size="sm" pressed={showCreate()} onClick={() => setShowCreate((v) => !v)}>
           <MdFillAdd size={15} />
           {t("directory.create")}
-        </button>
+        </Button>
       }
     >
       <Show when={showCreate()}>

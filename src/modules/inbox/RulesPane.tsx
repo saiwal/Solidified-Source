@@ -21,7 +21,7 @@ import { MdOutlineFilter_alt, MdOutlineWarning, MdOutlineAdd, MdOutlineClose } f
 import { fetchConnections, type Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import SuggestInput from "@/shared/views/SuggestInput";
-import { Button, IconButton } from "@ui/Button";
+import { Button, IconButton, buttonClass } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { cardClass } from "@ui/Card";
 import { Badge } from "@ui/Badge";
@@ -32,9 +32,7 @@ interface Rule {
   expr: string;
 }
 
-const EDIT_BTN =
-  "shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-overlay text-muted " +
-  "hover:bg-elevated hover:text-txt transition-colors";
+const EDIT_BTN = `shrink-0 ${buttonClass("ghost", "sm")}`;
 
 function rulesOf(incl?: string, excl?: string): Rule[] {
   return [

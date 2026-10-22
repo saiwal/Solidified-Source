@@ -23,7 +23,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { usePins, setPinned } from "./pins";
 import type { AclEntry } from "@/modules/network/api";
 import { groupThreads, groupName, shortTime, type DmGroup } from "./dms";
-import { IconButton } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Textarea } from "@ui/Field";
 import { Avatar } from "@ui/Avatar";
 
@@ -46,21 +46,17 @@ export function PinButton(props: { pinned: boolean; onClick: () => void; always?
   const { t } = useI18n();
   const label = () => t(props.pinned ? "messenger.unpin" : "messenger.pin") as string;
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      size="sm"
+      pressed={props.pinned}
+      class="shrink-0"
       onClick={props.onClick}
       title={label()}
       aria-label={label()}
-      aria-pressed={props.pinned}
-      class="p-1.5 rounded-lg shrink-0 hover:bg-elevated"
-      classList={{
-        "text-accent": props.pinned,
-        "text-muted hover:text-txt": !props.pinned,
-        "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-60": !props.pinned && !props.always,
-      }}
     >
       {props.pinned ? <MdFillPush_pin size={16} /> : <MdOutlinePush_pin size={16} />}
-    </button>
+    </Button>
   );
 }
 
@@ -323,20 +319,18 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
     }
   }
 
-  const ACTION = "p-0.5 rounded hover:text-txt hover:bg-elevated disabled:opacity-50";
   // Shown on hover/focus with a mouse; always (faintly) on touch screens.
   const REVEAL = "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-60";
 
   const replyButton = (m: any) => (
-    <button
-      type="button"
+    <IconButton
+      label={t("messenger.reply") as string}
+      size="sm"
+      class={`mt-0.5 ${REVEAL}`}
       onClick={() => setReplyTo(m)}
-      aria-label={t("messenger.reply") as string}
-      title={t("messenger.reply") as string}
-      class={`p-1 mt-0.5 rounded-full text-muted hover:text-txt hover:bg-elevated shrink-0 ${REVEAL}`}
     >
       <MdOutlineReply size={16} />
-    </button>
+    </IconButton>
   );
 
   return (
@@ -428,15 +422,15 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                     <Show when={m.edited && m.edited !== m.created}>
                       <span title={itemDate(m.edited).toLocaleString(locale())}>· {t("messenger.edited")}</span>
                     </Show>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={!!m.viewer_liked}
+                      class="h-6! px-1.5!"
                       disabled={busy()}
                       onClick={() => void act(() => apiToggleLike(m.uuid))}
-                      aria-pressed={!!m.viewer_liked}
                       title={t(m.viewer_liked ? "messenger.unlike" : "messenger.like") as string}
                       aria-label={t(m.viewer_liked ? "messenger.unlike" : "messenger.like") as string}
-                      class={`flex items-center gap-0.5 ${ACTION}`}
-                      classList={{ "text-accent": !!m.viewer_liked }}
                     >
                       <Show when={m.viewer_liked} fallback={<MdOutlineFavorite_border size={12} />}>
                         <MdFillFavorite size={12} />
@@ -444,28 +438,27 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                       <Show when={m.like_count > 0}>
                         <span class="tabular-nums" aria-label={t("messenger.likes", { n: String(m.like_count) }) as string}>{m.like_count}</span>
                       </Show>
-                    </button>
+                    </Button>
                     {/* Edit and delete are local-channel endpoints; remote visitors do that on their own hub. */}
                     <Show when={self && auth()?.isLocal && editing()?.uuid !== m.uuid}>
-                      <button
-                        type="button"
+                      <IconButton
+                        label={t("messenger.edit") as string}
+                        size="sm"
+                        class={REVEAL}
                         onClick={() => void startEdit(m)}
-                        title={t("messenger.edit") as string}
-                        aria-label={t("messenger.edit") as string}
-                        class={`${ACTION} ${REVEAL}`}
                       >
                         <MdOutlineEdit size={12} />
-                      </button>
-                      <button
-                        type="button"
+                      </IconButton>
+                      <IconButton
+                        label={t("messenger.delete") as string}
+                        variant="danger"
+                        size="sm"
+                        class={REVEAL}
                         disabled={busy()}
                         onClick={() => void remove(m, i() === 0)}
-                        title={t("messenger.delete") as string}
-                        aria-label={t("messenger.delete") as string}
-                        class={`p-0.5 rounded hover:text-danger-txt hover:bg-elevated disabled:opacity-50 ${REVEAL}`}
                       >
                         <MdOutlineDelete size={12} />
-                      </button>
+                      </IconButton>
                     </Show>
                   </div>
                 </div>
