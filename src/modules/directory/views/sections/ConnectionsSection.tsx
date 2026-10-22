@@ -23,6 +23,13 @@ import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import CardShell from "@/shared/stream/CardShell";
 import { resetReveal } from "@/shared/stream/reveal";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
+import { EmptyState } from "@ui/EmptyState";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -85,7 +92,7 @@ function PermissionDot(props: { granted: string[] }) {
   const { t } = useI18n();
   const count = () => props.granted.length;
   const color = () =>
-    count() === 3 ? "bg-green-500" : count() > 0 ? "bg-yellow-500" : "bg-red-500";
+    count() === 3 ? "bg-success" : count() > 0 ? "bg-warning" : "bg-danger";
   const tooltip = () => {
     const labels = PERM_ORDER.filter((p) => props.granted.includes(p.key)).map((p) => t(p.labelKey as any));
     return `${t("directory.perm_accepts")}: ${labels.length ? labels.join(", ") : t("directory.perm_nothing")}`;
@@ -204,16 +211,12 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
   }
 
   return (
-    <div class="group rounded-xl border border-rim bg-surface overflow-hidden hover:border-rim-strong transition-colors">
+    <Card class="group overflow-hidden hover:border-rim-strong transition-colors">
       {/* Phone: actions sit on their own row under the address, so the name gets
           the whole line. sm+: they take a right-hand column. */}
       <div class="grid grid-cols-[auto_minmax(0,1fr)] sm:grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 items-start p-3 sm:p-4">
         <a href={`/chanview?f=&hash=${encodeURIComponent(props.conn.xchan_hash)}`} class="row-span-2 sm:row-span-1">
-          <img
-            src={props.conn.photo}
-            alt={props.conn.name}
-            class="w-10 h-10 rounded-full object-cover ring-1 ring-rim bg-overlay"
-          />
+          <Avatar src={props.conn.photo} name={props.conn.name} size={10} class="ring-1 ring-rim" />
         </a>
 
         <div class="min-w-0">
@@ -227,20 +230,20 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
             <PermissionDot granted={props.conn.granted_perms} />
             <PlatformIcon url={props.conn.url} network={props.conn.network} size={14} />
             <Show when={props.conn.is_forum}>
-              <span class="shrink-0 text-[0.625rem] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold bg-accent-muted text-accent">
+              <Badge tone="accent" size="sm" class="shrink-0 uppercase tracking-wide">
                 {t("directory.forum")}
-              </span>
+              </Badge>
             </Show>
             <Show when={props.conn.pending}>
-              <span class="shrink-0 text-[0.625rem] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold bg-accent-muted text-accent">
+              <Badge tone="accent" size="sm" class="shrink-0 uppercase tracking-wide">
                 {t("directory.pending")}
-              </span>
+              </Badge>
             </Show>
             <For each={props.conn.status.filter((s) => s !== "pending")}>
               {(s) => (
-                <span class="shrink-0 text-[0.625rem] uppercase tracking-wide px-1.5 py-0.5 rounded font-semibold bg-accent-muted text-accent">
+                <Badge tone="accent" size="sm" class="shrink-0 uppercase tracking-wide">
                   {s}
-                </span>
+                </Badge>
               )}
             </For>
           </div>
@@ -252,29 +255,21 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
         {/* Quiet until hovered/focused on pointer devices; always shown on touch. */}
         <div class="col-start-2 flex flex-wrap items-center gap-0.5 mt-1 -ml-1.5 sm:ml-0 sm:mt-0 sm:col-start-3 sm:row-start-1 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
           <Show when={props.conn.pending}>
-            <button
-              onClick={handleApprove}
-              disabled={busy()}
-              class="text-xs px-2 py-1 rounded bg-accent text-accent-fg hover:opacity-80 disabled:opacity-50 transition-opacity"
-            >
+            <Button size="sm" onClick={handleApprove} disabled={busy()}>
               {t("directory.approve")}
-            </button>
+            </Button>
           </Show>
           <Show when={!props.conn.pending}>
-            <button
-              onClick={() =>
+            <IconButton label={t("ui.send_dm")} size="sm" onClick={() =>
                 openDm({
                   xid: props.conn.xchan_hash,
                   name: props.conn.name,
                   nick: props.conn.address,
                   photo: props.conn.photo,
                 })
-              }
-              title={t("ui.send_dm")}
-              class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-            >
+              }>
               <MdOutlineEmail size={14} />
-            </button>
+            </IconButton>
             <Show when={chatroomsInstalled()}>
               <button
                 onClick={handleChatButtonClick}
@@ -282,34 +277,21 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
                 title={t("ui.start_chatroom")}
                 class={`p-1.5 rounded transition-colors disabled:opacity-50 ${chatPanelOpen() ? "text-accent bg-accent/10" : "text-muted hover:text-txt hover:bg-overlay"}`}
               >
-                <Show when={!chatCreating()} fallback={<span class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin inline-block" />}>
+                <Show when={!chatCreating()} fallback={<Spinner size="xs" />}>
                   <MdOutlineChat_bubble size={14} />
                 </Show>
               </button>
             </Show>
           </Show>
-          <button
-            onClick={() => setEditOpen(true)}
-            class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-            title={t("directory.edit")}
-          >
+          <IconButton label={t("directory.edit")} size="sm" onClick={() => setEditOpen(true)}>
             <MdOutlineEdit size={14} />
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={busy()}
-            class="p-1.5 rounded text-muted hover:text-accent hover:bg-accent-muted disabled:opacity-50 transition-colors"
-            title={t("directory.remove")}
-          >
+          </IconButton>
+          <IconButton label={t("directory.remove")} size="sm" onClick={handleDelete} disabled={busy()}>
             <MdOutlineDelete class="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => setExpanded((e) => !e)}
-            class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-            title={t("directory.details")}
-          >
+          </IconButton>
+          <IconButton label={t("directory.details")} size="sm" onClick={() => setExpanded((e) => !e)}>
             <MdOutlineExpand_more class={`w-3.5 h-3.5 transition-transform ${expanded() ? "rotate-180" : ""}`} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -346,18 +328,10 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
               Custom
             </button>
             <Show when={chatCustomMode()}>
-              <input
-                type="number"
-                min="1"
-                max="10080"
-                value={chatCustomInput()}
-                onInput={(e) => {
+              <Input size="sm" class="w-16" type="number" min="1" max="10080" value={chatCustomInput()} onInput={(e) => {
                   setChatCustomInput(e.currentTarget.value);
                   setChatExpire(parseInt(e.currentTarget.value) || 0);
-                }}
-                placeholder="min"
-                class="w-16 bg-surface border border-accent text-txt text-xs rounded-md px-2 py-1 focus:outline-none"
-              />
+                }} placeholder="min" />
             </Show>
           </div>
           <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -370,18 +344,12 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
             <span class="text-[0.6875rem] text-muted">Notify {props.conn.name}</span>
           </label>
           <div class="flex gap-2">
-            <button
-              onClick={() => void handleStartChat()}
-              class="text-xs bg-accent text-accent-fg rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity"
-            >
+            <Button size="sm" onClick={() => void handleStartChat()}>
               {t("chat.create")}
-            </button>
-            <button
-              onClick={() => setChatPanelOpen(false)}
-              class="text-xs border border-rim text-muted rounded-lg px-3 py-1.5 hover:bg-overlay transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setChatPanelOpen(false)}>
               {t("chat.cancel")}
-            </button>
+            </Button>
           </div>
         </div>
       </Show>
@@ -419,7 +387,7 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
           }}
         />
       </Show>
-    </div>
+    </Card>
   );
 }
 
@@ -545,45 +513,40 @@ export default function ConnectionsSection() {
       <div class="flex flex-wrap gap-2">
         <label class="relative flex-1 min-w-[12rem]">
           <MdOutlineSearch size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-          <input
+          <Input
+            class="w-full"
             type="search"
             placeholder={t("directory.search_connections")}
             value={input()}
             onInput={(e) => { setInput(e.currentTarget.value); setAddError(null); }}
             onKeyDown={(e) => e.key === "Enter" && applySearch()}
-            class="w-full pl-9 pr-3 py-2 rounded-lg border border-rim bg-surface text-sm text-txt
-                   placeholder:text-muted focus:outline-none hover:border-rim-strong
-                   focus:border-accent transition-colors"
           />
         </label>
         <div class="flex gap-2">
-          <button
+          <Button
+            class="shrink-0"
             onClick={handleAdd}
             disabled={addBusy() || !input().trim()}
             title={t("directory.connect")}
-            class="shrink-0 px-3 py-2 rounded-lg bg-accent text-accent-fg text-sm font-medium
-                   hover:opacity-90 disabled:opacity-40 transition-opacity flex items-center gap-1.5"
           >
             <Show when={addBusy()}>
-              <span class="w-3 h-3 border-2 border-accent-fg/40 border-t-accent-fg rounded-full animate-spin" />
+              <Spinner size="xs" class="text-accent-fg" />
             </Show>
             {addBusy() ? t("directory.add_connection_connecting") : "+ " + t("directory.connect")}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <IconButton
+            label={t("directory.import_connections")}
+            variant="square"
+            class="shrink-0"
             onClick={() => setImportOpen(true)}
-            title={t("directory.import_connections")}
-            aria-label={t("directory.import_connections")}
-            class="shrink-0 px-2.5 py-2 rounded-lg border border-rim bg-surface text-muted
-                   hover:text-txt hover:bg-overlay transition-colors"
           >
             <MdOutlineUpload_file size={18} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       <Show when={addError()}>
-        <p class="text-xs text-red-500">{addError()}</p>
+        <p class="text-xs text-danger-txt">{addError()}</p>
       </Show>
 
       {/* ── Status tabs + sort ── */}
@@ -637,7 +600,7 @@ export default function ConnectionsSection() {
           <ConnectionsSkeleton />
         </Match>
         <Match when={connections().length === 0}>
-          <p class="py-8 text-center text-sm text-muted">{t("directory.no_connections")}</p>
+          <EmptyState>{t("directory.no_connections")}</EmptyState>
         </Match>
         <Match when={true}>
           <div class="space-y-2">
@@ -647,7 +610,7 @@ export default function ConnectionsSection() {
           </div>
           <Show when={loadingMore()}>
             <div class="py-4 flex justify-center">
-              <span class="w-5 h-5 border-2 border-muted/30 border-t-accent rounded-full animate-spin" />
+              <Spinner size="lg" tone="accent" label={t("ui.loading")} />
             </div>
           </Show>
         </Match>

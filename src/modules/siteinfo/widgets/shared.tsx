@@ -1,6 +1,7 @@
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchSiteInfo } from "../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Badge } from "@ui/Badge";
 
 // Every siteinfo widget calls this independently — TanStack Query dedupes
 // the fetch and shares the cache under the "siteinfo" key, so this doesn't
@@ -47,9 +48,9 @@ export function RegistrationBadge(props: { policy: 0 | 1 | 2 }) {
     : t("ui.siteinfo_closed");
 
   return (
-    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-accent-muted text-accent">
+    <Badge tone="accent">
       {label()}
-    </span>
+    </Badge>
   );
 }
 

@@ -2,9 +2,10 @@ import { isolate } from "@utsukta/spa-core/lib/isolate";
 import { createSignal, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
-import { inputClass } from "../../store/FormHelpers";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import ConfigModal from "./ConfigModal";
+import { Field, Textarea } from "@ui/Field";
+import { Spinner } from "@ui/Spinner";
 
 interface NsfwSettings {
   nsfw_words: string;
@@ -71,21 +72,21 @@ function NsfwConfigModal(props: { onClose: () => void }) {
         when={loaded()}
         fallback={
           <div class="flex items-center justify-center gap-2 py-10 text-sm text-muted">
-            <span class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            <Spinner size="md" />
           </div>
         }
       >
         <div class="space-y-1.5">
-          <label class="block text-sm font-medium text-txt">{t("settings.privacy_nsfw_words")}</label>
-          <textarea
+          <Field label={t("settings.privacy_nsfw_words")} hint={t("settings.privacy_nsfw_words_hint")}>
+            <Textarea
+            class="w-full"
             rows="3"
             value={words() ?? ""}
             onInput={(e) => setWords(e.currentTarget.value)}
-            class={inputClass}
-          />
-          <p class="text-xs text-muted">{t("settings.privacy_nsfw_words_hint")}</p>
+            />
+          </Field>
           <Show when={!loaded()!.nsfw_installed}>
-            <p class="text-xs text-amber-500">{t("settings.privacy_nsfw_app_hint")}</p>
+            <p class="text-xs text-warning-txt">{t("settings.privacy_nsfw_app_hint")}</p>
           </Show>
         </div>
       </Show>

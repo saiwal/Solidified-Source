@@ -3,6 +3,7 @@ import { isAdmin } from "@utsukta/spa-core/store/auth-store";
 import { createSignal, createEffect, on, onCleanup, onMount, For, Show } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
 
 interface PerfStats {
   loadavg: [number, number, number];
@@ -132,7 +133,7 @@ function PerfStatsPanelInner() {
   }
 
   return (
-    <div class="bg-surface rounded-2xl p-3.5 border border-rim shadow-sm">
+    <Card raised class="p-3.5">
       {/* Header */}
       <div class="flex items-center justify-between mb-2.5">
         <span class="text-xs font-medium uppercase tracking-wider text-muted">
@@ -140,7 +141,7 @@ function PerfStatsPanelInner() {
         </span>
         <Show when={latest()}>
           <span class="flex items-center gap-1.5 text-xs text-muted">
-            <span class={`w-1.5 h-1.5 rounded-full ${error() ? "bg-red-400" : "bg-green-400 animate-pulse"}`} />
+            <span class={`w-1.5 h-1.5 rounded-full ${error() ? "bg-danger" : "bg-success animate-pulse"}`} />
             {error() ? "error" : age() < 3 ? "live" : `${age()}s ago`}
           </span>
         </Show>
@@ -192,6 +193,6 @@ function PerfStatsPanelInner() {
           );
         }}
       </Show>
-    </div>
+    </Card>
   );
 }

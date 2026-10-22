@@ -4,6 +4,8 @@ import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import type { SavedDraft } from "../store/createComposerStore";
 import { listServerDrafts, deleteServerDraft, draftsVersion } from "../api/drafts";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 // Shared list UI behind the per-module drafts widgets (articles, webpages,
 // wiki, …) — one card with header/skeleton/empty-state/list chrome, fetching
@@ -104,7 +106,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
   }
 
   return (
-    <div class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden">
+    <Card raised class="flex flex-col overflow-hidden">
 
       {/* Header */}
       <div class="px-4 pt-3.5 pb-3 flex items-center justify-between shrink-0">
@@ -117,15 +119,14 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
             <span class="text-xs text-muted tabular-nums">{entries().length}</span>
           </Show>
           {/* Refresh */}
-          <button
-            type="button"
-            title={props.refreshTitle}
+          <IconButton
+            label={props.refreshTitle}
+            size="sm"
             onClick={() => void loadAll()}
             disabled={loading()}
-            class="p-0.5 rounded text-muted hover:text-txt transition-colors disabled:opacity-40"
           >
             <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -183,7 +184,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
                         title={props.deleteTitle}
                         onClick={() => void deleteDraft(entry.scope, entry.draft.id)}
                         class="p-0.5 -m-0.5 rounded text-muted/70 opacity-100 md:opacity-0 md:group-hover:opacity-100
-                               hover:text-red-500 focus-visible:opacity-100 transition-all"
+                               hover:text-danger-txt focus-visible:opacity-100 transition-all"
                       >
                         <Show
                           when={!isDeleting()}
@@ -208,6 +209,6 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
           </For>
         </div>
       </Show>
-    </div>
+    </Card>
   );
 }

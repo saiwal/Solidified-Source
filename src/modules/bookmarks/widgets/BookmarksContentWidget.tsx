@@ -15,6 +15,10 @@ import {
 } from "../api";
 import { resetChatBookmarks } from "@/modules/chat/bookmarks";
 import { MdOutlineBookmark_border, MdOutlineDelete, MdOutlineExpand_less, MdOutlineExpand_more } from "solid-icons/md";
+import { Button, IconButton } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { Card, CardHeader } from "@ui/Card";
+import { Badge } from "@ui/Badge";
 
 export default function BookmarksContentWidget() {
   const { t } = useI18n();
@@ -122,9 +126,9 @@ export default function BookmarksContentWidget() {
         <div class="space-y-4">
           <For each={[1, 2]}>{() => (
             <div class="bg-surface border border-rim rounded-2xl overflow-hidden animate-pulse">
-              <div class="px-4 py-3 border-b border-rim">
+              <CardHeader>
                 <div class="h-3.5 bg-elevated rounded w-32" />
-              </div>
+              </CardHeader>
               <div class="divide-y divide-rim">
                 <For each={[1, 2, 3]}>{() => (
                   <div class="px-4 py-3 flex items-center gap-3">
@@ -162,8 +166,8 @@ export default function BookmarksContentWidget() {
 
               <For each={section.menus}>
                 {(menu) => (
-                  <div class="bg-surface border border-rim rounded-2xl overflow-hidden shadow-sm">
-                    <div class="px-4 py-3 border-b border-rim flex items-center gap-2">
+                  <Card raised class="overflow-hidden">
+                    <CardHeader class="flex items-center gap-2">
                       <svg class="w-3.5 h-3.5 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
@@ -177,35 +181,25 @@ export default function BookmarksContentWidget() {
                           </span>
                         }
                       >
-                        <input
-                          type="text"
-                          class="text-xs bg-elevated border border-rim rounded px-2 py-1 text-txt min-w-0 flex-1"
-                          value={renameValue()}
-                          onInput={(e) => setRenameValue(e.currentTarget.value)}
-                          onKeyDown={(e) => {
+                        <Input size="sm" class="min-w-0 flex-1" type="text" value={renameValue()} onInput={(e) => setRenameValue(e.currentTarget.value)} onKeyDown={(e) => {
                             if (e.key === "Enter") void renameFolder(menu);
                             if (e.key === "Escape") setRenaming(null);
-                          }}
-                        />
-                        <button
-                          onClick={() => void renameFolder(menu)}
-                          disabled={busy()}
-                          class="text-[0.625rem] px-2 py-0.5 rounded bg-accent text-accent-fg disabled:opacity-50"
-                        >
+                          }} />
+                        <Button size="sm" onClick={() => void renameFolder(menu)} disabled={busy()}>
                           {t("bookmarks.save")}
-                        </button>
+                        </Button>
                       </Show>
 
                       <span class="ml-auto text-xs text-muted tabular-nums">{menu.items.length}</span>
 
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => { setRenaming(menu.id); setRenameValue(menu.label); }}
-                        class="text-[0.625rem] px-2 py-0.5 rounded border border-rim text-muted
-                               hover:text-txt hover:border-rim-strong transition-colors"
                         title={t("bookmarks.rename_folder") as string}
                       >
                         {t("bookmarks.rename_folder")}
-                      </button>
+                      </Button>
                       <button
                         onClick={() => {
                           if (confirmFolder() === menu.id) {
@@ -217,15 +211,15 @@ export default function BookmarksContentWidget() {
                         }}
                         class={`text-[0.625rem] px-2 py-0.5 rounded border transition-colors
                                 ${confirmFolder() === menu.id
-                                  ? "border-red-500 text-red-500"
-                                  : "border-rim text-muted hover:text-red-500"}`}
+                                  ? "border-danger text-danger-txt"
+                                  : "border-rim text-muted hover:text-danger-txt"}`}
                         title={t("bookmarks.delete_folder") as string}
                       >
                         {confirmFolder() === menu.id
                           ? t("bookmarks.delete_folder_confirm")
                           : t("bookmarks.delete_folder")}
                       </button>
-                    </div>
+                    </CardHeader>
 
                     <div class="divide-y divide-rim">
                       <For each={menu.items}>
@@ -236,16 +230,14 @@ export default function BookmarksContentWidget() {
                               fallback={
                                 <div class="flex items-center gap-3">
                                   <Show when={item.is_chat}>
-                                    <span class="shrink-0 text-[0.625rem] font-medium px-1.5 py-0.5 rounded
-                                                 bg-accent/10 text-accent border border-accent/20">
+                                    <Badge tone="accent" size="sm" class="shrink-0">
                                       {t("bookmarks.chat_badge")}
-                                    </span>
+                                    </Badge>
                                   </Show>
                                   <Show when={item.private}>
-                                    <span class="shrink-0 text-[0.625rem] font-medium px-1.5 py-0.5 rounded
-                                                 bg-elevated text-muted border border-rim">
+                                    <Badge size="sm" class="shrink-0">
                                       {t("bookmarks.private_badge")}
-                                    </span>
+                                    </Badge>
                                   </Show>
 
                                   <button
@@ -257,65 +249,60 @@ export default function BookmarksContentWidget() {
                                   </button>
 
                                   <div class="flex items-center gap-1 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                    <button
+                                    <IconButton
+                                      label={t("bookmarks.move_up") as string}
+                                      size="sm"
                                       onClick={() => void nudge(menu, index(), -1)}
                                       disabled={busy() || index() === 0}
-                                      class="p-1 rounded text-muted hover:text-txt disabled:opacity-30 transition-colors"
-                                      title={t("bookmarks.move_up") as string}
                                     >
                                       <MdOutlineExpand_less class="w-3 h-3" />
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton
+                                      label={t("bookmarks.move_down") as string}
+                                      size="sm"
                                       onClick={() => void nudge(menu, index(), 1)}
                                       disabled={busy() || index() === menu.items.length - 1}
-                                      class="p-1 rounded text-muted hover:text-txt disabled:opacity-30 transition-colors"
-                                      title={t("bookmarks.move_down") as string}
                                     >
                                       <MdOutlineExpand_more class="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => visit(item)}
-                                      class="text-[0.625rem] px-2 py-0.5 rounded border border-rim text-muted
-                                             hover:text-txt hover:border-rim-strong transition-colors"
-                                    >
+                                    </IconButton>
+                                    <Button variant="ghost" size="sm" onClick={() => visit(item)}>
                                       {t("bookmarks.visit")}
-                                    </button>
-                                    <button
-                                      onClick={() => startEdit(item, menu)}
-                                      class="text-[0.625rem] px-2 py-0.5 rounded border border-rim text-muted
-                                             hover:text-txt hover:border-rim-strong transition-colors"
-                                    >
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => startEdit(item, menu)}>
                                       {t("bookmarks.edit")}
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <IconButton
+                                      label={t("bookmarks.remove") as string}
+                                      variant="danger"
+                                      size="sm"
                                       onClick={() => void remove(item)}
-                                      class="p-1 rounded text-muted hover:text-red-500 transition-colors"
-                                      title={t("bookmarks.remove") as string}
                                     >
                                       <MdOutlineDelete class="w-3.5 h-3.5" />
-                                    </button>
+                                    </IconButton>
                                   </div>
                                 </div>
                               }
                             >
                               <div class="space-y-2">
-                                <input
+                                <Input
+                                  class="w-full"
                                   type="text"
-                                  class="w-full text-sm bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt"
                                   placeholder={t("bookmarks.field_title") as string}
                                   value={editTitle()}
                                   onInput={(e) => setEditTitle(e.currentTarget.value)}
                                 />
-                                <input
+                                <Input
+                                  size="sm"
+                                  class="w-full"
                                   type="url"
-                                  class="w-full text-xs bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt"
                                   placeholder={t("bookmarks.field_url") as string}
                                   value={editUrl()}
                                   onInput={(e) => setEditUrl(e.currentTarget.value)}
                                 />
                                 <div class="flex flex-wrap items-center gap-2">
-                                  <select
-                                    class="text-xs bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt min-w-0 flex-1"
+                                  <Select
+                                    size="sm"
+                                    class="min-w-0 flex-1"
                                     value={String(editFolder())}
                                     onChange={(e) => setEditFolder(parseInt(e.currentTarget.value, 10))}
                                   >
@@ -324,20 +311,13 @@ export default function BookmarksContentWidget() {
                                     <For each={[...folderOptions(), ...connections().map((m) => ({ id: m.id, label: m.label }))]}>
                                       {(f) => <option value={String(f.id)}>{f.label}</option>}
                                     </For>
-                                  </select>
-                                  <button
-                                    onClick={() => void saveEdit(item)}
-                                    disabled={busy()}
-                                    class="text-xs px-3 py-1.5 rounded-lg bg-accent text-accent-fg font-medium disabled:opacity-50"
-                                  >
+                                  </Select>
+                                  <Button size="sm" onClick={() => void saveEdit(item)} disabled={busy()}>
                                     {busy() ? t("bookmarks.saving") : t("bookmarks.save")}
-                                  </button>
-                                  <button
-                                    onClick={() => setEditing(null)}
-                                    class="text-xs px-3 py-1.5 rounded-lg border border-rim text-muted hover:text-txt transition-colors"
-                                  >
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
                                     {t("bookmarks.cancel")}
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             </Show>
@@ -345,7 +325,7 @@ export default function BookmarksContentWidget() {
                         )}
                       </For>
                     </div>
-                  </div>
+                  </Card>
                 )}
               </For>
             </section>

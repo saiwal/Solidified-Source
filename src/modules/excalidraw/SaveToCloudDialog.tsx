@@ -4,16 +4,17 @@
  * channel's cloud storage. Reuses the editor's folder browser (FilesPicker)
  * and ACL picker rather than growing new ones.
  */
-import { createSignal, Show, type Component, createUniqueId } from "solid-js";
+import { createSignal, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import FilesPicker, { type PickerFolder } from "@/shared/editor/attachments/picker/FilesPicker";
 import AclPicker, { entryKey, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { aclFromPickerKeys } from "@/modules/files/api";
 import { saveSceneToCloud, defaultSceneName } from "./scene-io";
 import type { ExcalidrawExport } from "./ExcalidrawCanvas";
-import { MdOutlineClose } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Field, Input } from "@ui/Field";
 interface Props {
   nick: string;
   api: ExcalidrawExport;
@@ -70,33 +71,23 @@ const SaveToCloudDialog: Component<Props> = (props) => {
     }
   }
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[90]">
-      <div class="flex flex-col w-full max-w-2xl h-[85vh] bg-surface border border-rim rounded-xl shadow-2xl overflow-hidden">
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold text-txt">{t("editor.excalidraw_save_title")}</span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-          
-          aria-label={t("layout.close")}>
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </header>
-
+    <Modal onClose={props.onClose} class="z-[90]">
+      <ModalPanel
+        title={t("editor.excalidraw_save_title")}
+        onClose={props.onClose}
+        size="xl"
+        class="flex flex-col h-[85vh] overflow-hidden"
+      >
         <div class="flex-1 min-h-0 flex flex-col gap-4 p-4">
-          <label class="block shrink-0">
-            <span class="block text-xs text-muted mb-1">{t("editor.excalidraw_filename_prompt")}</span>
-            <input
-              type="text"
-              value={filename()}
-              onInput={(e) => setFilename(e.currentTarget.value)}
-              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt
-                     focus:outline-none focus:border-accent"
+          <Field label={t("editor.excalidraw_filename_prompt")} size="sm">
+            <Input
+            class="w-full"
+            type="text"
+            value={filename()}
+            onInput={(e) => setFilename(e.currentTarget.value)}
             />
-          </label>
+          </Field>
 
           <div class="flex-1 min-h-0 flex flex-col">
             <span class="block text-xs text-muted mb-1">{t("editor.excalidraw_folder")}</span>
@@ -125,7 +116,7 @@ const SaveToCloudDialog: Component<Props> = (props) => {
           </div>
 
           <Show when={error()}>
-            <p class="text-sm text-red-500">{error()}</p>
+            <p class="text-sm text-danger-txt">{error()}</p>
           </Show>
         </div>
 
@@ -134,25 +125,15 @@ const SaveToCloudDialog: Component<Props> = (props) => {
             /{folder().displayPath ? `${folder().displayPath}/` : ""}{filename().trim()}
           </span>
           <div class="flex gap-2">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-surface transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               {t("editor.cancel_btn")}
-            </button>
-            <button
-              type="button"
-              disabled={busy() || !filename().trim()}
-              onClick={() => void save()}
-              class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            >
+            </Button>
+            <Button size="sm" disabled={busy() || !filename().trim()} onClick={() => void save()}>
               {busy() ? t("editor.excalidraw_saving") : t("editor.excalidraw_save_cloud")}
-            </button>
+            </Button>
           </div>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

@@ -2,7 +2,6 @@ import {
   createSignal,
   Show,
   type Component,
-  createUniqueId,
 } from "solid-js";
 import PhotosPicker from "./PhotosPicker";
 import FilesPicker from "./FilesPicker";
@@ -10,9 +9,9 @@ import type { FileMeta } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
 import type { AttachmentAccept } from "../AttachmentBar";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineClose } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
 type Tab = "photos" | "files";
 
 interface Props {
@@ -77,22 +76,15 @@ const FilePickerModal: Component<Props> = (props) => {
       ? selectedPhotoIds().size
       : selectedFileHashes().size;
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="flex flex-col w-full max-w-2xl h-[85vh] bg-surface border border-rim rounded-xl shadow-2xl overflow-hidden">
+    <Modal onClose={props.onClose} class="z-[60]">
+      <ModalPanel
+        title={t("editor.attach_existing")}
+        onClose={props.onClose}
+        size="xl"
+        class="flex flex-col h-[85vh] overflow-hidden"
+      >
         {/* Header */}
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold text-txt">{t("editor.attach_existing")}</span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-          
-          aria-label={t("layout.close")}>
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </header>
 
         {/* Tabs */}
         <div class="flex border-b border-rim shrink-0">
@@ -139,27 +131,17 @@ const FilePickerModal: Component<Props> = (props) => {
             </Show>
           </span>
           <div class="flex gap-2">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-surface transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               {t("editor.cancel_btn")}
-            </button>
-            <button
-              type="button"
-              disabled={selectionCount() === 0}
-              onClick={confirm}
-              class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            >
+            </Button>
+            <Button size="sm" disabled={selectionCount() === 0} onClick={confirm}>
               {selectionCount() > 0
                 ? t("editor.attach_count_btn", { count: selectionCount() })
                 : t("editor.attach_btn")}
-            </button>
+            </Button>
           </div>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

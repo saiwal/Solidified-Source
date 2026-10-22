@@ -13,6 +13,10 @@ import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 type ChannelProfile = {
   channel_name: string;
@@ -164,11 +168,7 @@ function ProfileHeader(props: {
           <img src={p.channel_cover} alt="" class="absolute inset-0 w-full h-full object-cover" />
         </Show>
         <div class="absolute -bottom-10 left-5">
-          <img
-            src={p.channel_photo_l}
-            alt={p.channel_name}
-            class="w-20 h-20 rounded-full ring-4 ring-surface object-cover bg-overlay"
-          />
+          <Avatar src={p.channel_photo_l} name={p.channel_name} size={20} class="ring-4 ring-surface" />
         </div>
         <Show when={props.isOwner}>
           <a
@@ -208,14 +208,13 @@ function ProfileHeader(props: {
                 </a>
               }
             >
-              <button
+              <IconButton
+                label={t("channel.rss_feed")}
+                size="sm"
                 onClick={() => openFeedModal(p.channel_address)}
-                title={t("channel.rss_feed")}
-                aria-label={t("channel.rss_feed")}
-                class="p-1.5 rounded-full border border-rim text-muted hover:text-accent hover:border-accent transition-colors"
               >
                 <MdFillRss_feed size={16} />
-              </button>
+              </IconButton>
             </Show>
           </Show>
           <Show when={!props.isOwner}>
@@ -234,16 +233,16 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
   const { t } = useI18n();
 
   return (
-    <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
+    <Card raised class="overflow-hidden">
       <ProfileHeader p={p} isOwner={props.isOwner} isVisitor={props.isVisitor} />
 
       <div class="px-5 pb-5">
         {/* Remote badge */}
         <Show when={p.is_remote}>
           <div class="mt-3">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-overlay text-muted border border-rim">
+            <Badge>
               <MdFillPublic size={11} /> {t("channel.remote_channel")}
-            </span>
+            </Badge>
           </div>
         </Show>
 
@@ -271,7 +270,7 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
           <div class="mt-3 flex flex-wrap gap-1.5">
             <For each={p.keywords}>
               {(tag) => (
-                <span class="px-2 py-0.5 text-xs rounded-full bg-overlay text-muted">#{tag}</span>
+                <Badge>#{tag}</Badge>
               )}
             </For>
           </div>
@@ -345,7 +344,7 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
           </div>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -356,7 +355,7 @@ function FullCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: boole
   const { t, locale } = useI18n();
 
   return (
-    <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
+    <Card raised class="overflow-hidden">
       <ProfileHeader p={p} isOwner={props.isOwner} isVisitor={props.isVisitor} />
 
       <div class="px-5 pb-6 space-y-5 mt-4">
@@ -400,7 +399,7 @@ function FullCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: boole
           <div class="flex flex-wrap gap-1.5">
             <For each={p.keywords}>
               {(tag) => (
-                <span class="px-2 py-0.5 text-xs rounded-full bg-overlay text-muted">#{tag}</span>
+                <Badge>#{tag}</Badge>
               )}
             </For>
           </div>
@@ -486,7 +485,7 @@ function FullCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: boole
           </div>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -557,7 +556,7 @@ function Field(props: { label: string; value: string; bbcode?: boolean; tags?: b
           <div class="flex flex-wrap gap-1.5">
             <For each={splitTags(props.value)}>
               {(tag) => (
-                <span class="px-2 py-0.5 text-xs rounded-full bg-overlay text-muted">{tag}</span>
+                <Badge>{tag}</Badge>
               )}
             </For>
           </div>
@@ -629,21 +628,16 @@ function FollowButton(props: { p: ChannelProfile; isVisitor: boolean }) {
           {/* No DM while the request is unapproved — post_mail isn't granted
               until they accept, so the send would be dropped on their hub. */}
           <Show when={props.p.is_connected && !pending() && !props.isVisitor && props.p.channel_hash && auth()?.uid}>
-            <button
-              onClick={() =>
+            <IconButton label={t("ui.send_dm")} class="shrink-0" onClick={() =>
                 openDm({
                   xid: props.p.channel_hash!,
                   name: props.p.channel_name,
                   nick: nick(),
                   photo: props.p.channel_photo_l,
                 })
-              }
-              title={t("ui.send_dm")}
-              aria-label={t("ui.send_dm")}
-              class="shrink-0 p-2 rounded-full border border-rim text-muted hover:text-accent hover:border-accent transition-colors"
-            >
+              }>
               <MdOutlineMail size={16} />
-            </button>
+            </IconButton>
           </Show>
         </div>
       }

@@ -8,6 +8,10 @@ import { useConnectionSearch } from "@/shared/editor/components/useConnectionSea
 import type { AclEntry } from "@/modules/network/api";
 import { MessageList, FolderViewToggle, folderViewMode, setFolderViewMode } from "./MessageList";
 import { TABS, type Tab } from "./MessageTabs";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 const HqFoldersWidget = lazy(() => import("./HqFoldersWidget"));
 
@@ -62,7 +66,7 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
         }
       >
         {(c) => (
-          <span class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs bg-elevated text-txt w-fit max-w-full">
+          <Badge class="w-fit max-w-full">
             <Show
               when={c().photo}
               fallback={
@@ -71,7 +75,7 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
                 </span>
               }
             >
-              <img src={c().photo} alt="" class="w-4 h-4 rounded-full shrink-0 object-cover" />
+              <Avatar src={c().photo} size={4} />
             </Show>
             <span class="truncate">{c().name}</span>
             <button
@@ -81,7 +85,7 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
             >
               <MdOutlineClose size={12} />
             </button>
-          </span>
+          </Badge>
         )}
       </Show>
 
@@ -108,7 +112,7 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
                         </span>
                       }
                     >
-                      <img src={c.photo} alt="" class="w-6 h-6 rounded-full shrink-0 object-cover bg-elevated" />
+                      <Avatar src={c.photo} size={6} />
                     </Show>
                     <span class="flex flex-col min-w-0 flex-1">
                       <span class="truncate text-xs font-medium text-txt">{c.name}</span>
@@ -138,26 +142,24 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
   const isNotices = () => tab() === "notification";
 
   return (
-    <div
+    <Card raised class="flex flex-col overflow-hidden"
       data-tour="hq.messages"
-      class="bg-surface rounded-2xl border border-rim flex flex-col overflow-hidden shadow-sm"
-      style={{ "max-height": "480px" }}
-    >
+     
+      style={{ "max-height": "480px" }}>
       <div class="px-2.5 py-2 shrink-0 flex items-center justify-between gap-2 border-b border-rim">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-muted truncate">
           {t("hq.messages")}
         </h3>
         <Show when={isFeed()} fallback={<FolderViewToggle mode={folderViewMode()} onChange={setFolderViewMode} />}>
-          <button
-            type="button"
-            title={t("hq.refresh")}
+          <IconButton
+            label={t("hq.refresh")}
+            size="sm"
+            class="shrink-0"
             onClick={() => setReloadKey((k) => k + 1)}
             disabled={refreshing()}
-            class="w-6 h-6 flex items-center justify-center rounded-md text-muted
-                   hover:bg-overlay hover:text-txt transition-colors disabled:opacity-50 shrink-0"
           >
             <MdOutlineRefresh size={14} class={refreshing() ? "animate-spin" : ""} />
-          </button>
+          </IconButton>
         </Show>
       </div>
 
@@ -204,6 +206,6 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
           </Show>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

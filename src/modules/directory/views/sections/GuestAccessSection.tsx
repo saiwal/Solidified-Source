@@ -11,6 +11,10 @@ import {
   type GuestToken,
 } from "../../tokens/api";
 import { editing, setEditing } from "../../tokens/store";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Select } from "@ui/Field";
+import { cardClass } from "@ui/Card";
+import { Badge } from "@ui/Badge";
 
 /**
  * Guest Access — /directory/guest-access.
@@ -33,14 +37,9 @@ export default function GuestAccessSection() {
       title={t("guest_access.title") as string}
       description={t("guest_access.description") as string}
       action={
-        <button
-          type="button"
-          onClick={() => setEditing(0)}
-          class="px-3 py-1.5 text-sm rounded-md font-medium
-                 bg-accent text-accent-fg hover:opacity-90 transition-opacity"
-        >
+        <Button size="sm" onClick={() => setEditing(0)}>
           {t("guest_access.new_token")}
-        </button>
+        </Button>
       }
     >
       <Show when={quota()?.limit != null}>
@@ -129,9 +128,9 @@ function TokenRow(props: {
         <div class="flex items-center gap-2">
           <span class="text-sm font-medium text-txt truncate">{props.token.name}</span>
           <Show when={props.token.expired}>
-            <span class="px-1.5 py-0.5 rounded text-[0.625rem] font-medium bg-red-500/15 text-red-500">
+            <Badge tone="danger" size="sm">
               {t("guest_access.expired")}
-            </span>
+            </Badge>
           </Show>
         </div>
         <span class="text-[0.6875rem] text-muted font-mono truncate block">
@@ -142,35 +141,25 @@ function TokenRow(props: {
       <span class="hidden sm:block text-xs text-muted shrink-0">{expiryLabel()}</span>
 
       <div class="flex items-center gap-1 shrink-0">
-        <button
-          type="button"
-          onClick={() => {
+        <IconButton label={t("guest_access.login_password") as string} size="sm" onClick={() => {
             navigator.clipboard.writeText(props.token.token)
               .then(() => toast.success(t("share.copied") as string))
               .catch(() => toast.error(t("share.copy_failed") as string));
-          }}
-          title={t("guest_access.login_password") as string}
-          class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-        >
+          }}>
           <MdOutlineContent_copy size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={props.onEdit}
-          title={t("guest_access.edit_token") as string}
-          class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-        >
+        </IconButton>
+        <IconButton label={t("guest_access.edit_token") as string} size="sm" onClick={props.onEdit}>
           <MdOutlineEdit_note size={14} />
-        </button>
-        <button
-          type="button"
+        </IconButton>
+        <IconButton
+          label={t("guest_access.delete") as string}
+          variant="danger"
+          size="sm"
           onClick={remove}
           disabled={busy()}
-          title={t("guest_access.delete") as string}
-          class="p-1.5 rounded text-muted hover:text-red-500 hover:bg-overlay transition-colors disabled:opacity-50"
         >
           <BiRegularTrash size={14} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );
@@ -223,72 +212,75 @@ function TokenForm(props: {
     }
   }
 
-  const field = "w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt";
-
   return (
-    <form class="space-y-3 rounded-xl border border-rim bg-surface p-4" onSubmit={submit}>
+    <form class={`${cardClass()} space-y-3 p-4`} onSubmit={submit}>
       <h2 class="text-sm font-semibold text-txt">
         {props.token ? t("guest_access.edit_token") : t("guest_access.new_token")}
       </h2>
 
       <div class="space-y-1">
-        <label class="block text-xs text-muted">{t("guest_access.login_name")}</label>
-        <input type="text" required value={name()} onInput={(e) => setName(e.currentTarget.value)} class={field} />
+        <Field label={t("guest_access.login_name")} size="sm">
+          <Input
+          class="w-full"
+          type="text"
+          required
+          value={name()}
+          onInput={(e) => setName(e.currentTarget.value)}
+          />
+        </Field>
       </div>
 
       <div class="space-y-1">
         <label class="block text-xs text-muted">{t("guest_access.login_password")}</label>
         <div class="flex gap-2">
-          <input
+          <Input
+            class="w-full font-mono flex-1 min-w-0"
             type="text"
             required
             value={token()}
             onInput={(e) => setToken(e.currentTarget.value)}
-            class={`${field} font-mono flex-1 min-w-0`}
           />
-          <button
-            type="button"
+          <IconButton
+            label={t("guest_access.regenerate") as string}
+            class="shrink-0"
             onClick={() => newTokenValue().then(setToken).catch(() => {})}
-            title={t("guest_access.regenerate") as string}
-            class="px-3 py-1.5 rounded-lg border border-rim text-muted hover:bg-elevated transition-colors shrink-0"
           >
             <MdOutlineRefresh size={15} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div class="space-y-1">
-          <label class="block text-xs text-muted">{t("guest_access.expires")}</label>
-          <input type="date" value={expires()} onInput={(e) => setExpires(e.currentTarget.value)} class={field} />
+          <Field label={t("guest_access.expires")} size="sm">
+            <Input
+            class="w-full"
+            type="date"
+            value={expires()}
+            onInput={(e) => setExpires(e.currentTarget.value)}
+            />
+          </Field>
         </div>
         <div class="space-y-1">
-          <label class="block text-xs text-muted">{t("guest_access.role")}</label>
-          <select value={role()} onChange={(e) => setRole(e.currentTarget.value)} class={field}>
+          <Field label={t("guest_access.role")} size="sm">
+            <Select class="w-full" value={role()} onChange={(e) => setRole(e.currentTarget.value)}>
             <option value="" />
             <For each={props.roles}>
-              {(r) => <option value={r.name}>{r.label}</option>}
+            {(r) => <option value={r.name}>{r.label}</option>}
             </For>
-          </select>
+            </Select>
+          </Field>
         </div>
       </div>
       <p class="text-[0.6875rem] text-muted">{t("guest_access.role_hint")}</p>
 
       <div class="flex gap-2">
-        <button
-          type="submit"
-          disabled={saving()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
-        >
+        <Button size="sm" type="submit" disabled={saving()}>
           {saving() ? t("guest_access.saving") : t("guest_access.save")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setEditing(null)}
-          class="px-3 py-1.5 rounded-lg border border-rim text-sm text-muted hover:bg-elevated transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
           {t("guest_access.cancel")}
-        </button>
+        </Button>
       </div>
     </form>
   );

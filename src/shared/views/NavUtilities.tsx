@@ -13,6 +13,7 @@ void helpable;
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets, setEditingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
+import { IconButton } from "@ui/Button";
 
 const CHANNEL_CONTEXT_MODULES = ["channel", "profile", "articles"];
 
@@ -65,14 +66,13 @@ export default function NavUtilities(props: NavUtilitiesProps) {
           </button>
         </Show>
         <Show when={showFeedIcon()}>
-          <button
+          <IconButton
+            label={t("widgets.rss_feeds")}
+            class="p-[8px]"
             onClick={() => openFeedModal(pageNick())}
-            title={t("widgets.rss_feeds")}
-            aria-label={t("widgets.rss_feeds")}
-            class="inline-flex items-center justify-center p-[8px] rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
           >
             <BiRegularRss size={18} />
-          </button>
+          </IconButton>
         </Show>
         <div use:helpable="nav.help_mode">
           <HelpTrigger />

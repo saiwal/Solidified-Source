@@ -15,15 +15,16 @@
  *   in-app rather than federated as standalone objects, so a live KaTeX
  *   render beats a static raster image.
  */
-import { createEffect, createSignal, onCleanup, onMount, Show, type Component, createUniqueId } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { renderLatexPreview, renderLatexToPngFile, LatexRenderError } from "./renderLatexImage";
 import { bbAlt } from "../attachments/insertHelpers";
-import { MdOutlineClose } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Field, Textarea } from "@ui/Field";
 interface Props {
   mode: "image" | "live";
   onClose: () => void;
@@ -50,7 +51,7 @@ const LatexComposerModal: Component<Props> = (props) => {
     if (!previewRef) return;
     if (!src.trim()) {
       previewRef.textContent = t("editor.latex_preview_empty");
-      previewRef.classList.remove("text-red-500");
+      previewRef.classList.remove("text-danger-txt");
       previewRef.classList.add("text-muted");
       return;
     }
@@ -111,24 +112,14 @@ const LatexComposerModal: Component<Props> = (props) => {
     return t("editor.latex_insert_btn");
   };
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
-      <div
-        class="flex flex-col w-full max-w-lg rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden"
+    <Modal onClose={props.onClose} class="z-[80]">
+      <ModalPanel
+        title={t("editor.latex_modal_title")}
+        onClose={props.onClose}
+        size="lg"
+        class="flex flex-col text-txt overflow-hidden"
       >
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold">{t("editor.latex_modal_title")}</span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-          
-          aria-label={t("layout.close")}>
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </header>
-
         <div class="flex flex-col gap-3 p-4">
           <div class="flex items-center gap-1 self-start rounded-lg border border-rim p-0.5">
             <button
@@ -154,19 +145,17 @@ const LatexComposerModal: Component<Props> = (props) => {
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-muted mb-1">
-              {t("editor.latex_source_label")}
-            </label>
-            <textarea
+            <Field label={t("editor.latex_source_label")} size="sm">
+              <Textarea
+              class="w-full resize-none font-mono"
               ref={textareaRef}
               value={source()}
               onInput={(e) => setSource(e.currentTarget.value)}
               onKeyDown={(e) => e.stopPropagation()}
               placeholder={t("editor.latex_source_placeholder")}
               rows={3}
-              class="w-full resize-none rounded-lg border border-rim bg-elevated px-3 py-2 text-sm font-mono
-                     text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
-            />
+              />
+            </Field>
           </div>
 
           <div>
@@ -179,29 +168,19 @@ const LatexComposerModal: Component<Props> = (props) => {
           </div>
 
           <Show when={error()}>
-            <p class="text-xs text-red-500">{error()}</p>
+            <p class="text-xs text-danger-txt">{error()}</p>
           </Show>
         </div>
 
         <footer class="flex items-center justify-end gap-2 px-4 py-3 border-t border-rim bg-elevated shrink-0">
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("editor.cancel_btn")}
-          </button>
-          <button
-            type="button"
-            disabled={!source().trim() || inserting()}
-            onClick={() => void insert()}
-            class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg
-                   hover:opacity-90 active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button size="sm" disabled={!source().trim() || inserting()} onClick={() => void insert()}>
             {insertLabel()}
-          </button>
+          </Button>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

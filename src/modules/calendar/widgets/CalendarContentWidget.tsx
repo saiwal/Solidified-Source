@@ -16,8 +16,9 @@ import WeekView from "../views/WeekView";
 import DayView from "../views/DayView";
 import ListView from "../views/ListView";
 import { isoDateStr, startOfWeek, addDays, eventOnDay } from "../views/calUtils";
-import { iconBtn, SkeletonRows } from "@/shared/views/ui";
+import { SkeletonRows } from "@/shared/views/ui";
 import { Motion, fade } from "@/shared/views/anim";
+import { Button, IconButton } from "@ui/Button";
 
 function rangeForView(view: ViewType, anchor: Date): CalRange {
   if (view === "list") {
@@ -121,18 +122,15 @@ export default function CalendarContentWidget() {
       <div class="flex items-center gap-1 flex-wrap">
         <h2 class="text-base font-semibold text-txt mr-auto tabular-nums">{periodLabel()}</h2>
         <Show when={viewType() !== "list"}>
-          <button type="button" onClick={() => navigate(-1)} class={iconBtn}
-            title={t("calendar.previous")} aria-label={t("calendar.previous")}>
+          <IconButton label={t("calendar.previous")} onClick={() => navigate(-1)}>
             <MdFillChevron_left size={20} />
-          </button>
-          <button type="button" onClick={() => setAnchor(new Date())}
-            class="px-3 py-1.5 rounded-full text-sm text-muted hover:text-txt hover:bg-elevated/70 transition-colors">
+          </IconButton>
+          <Button variant="ghost" size="sm" onClick={() => setAnchor(new Date())}>
             {t("calendar.today")}
-          </button>
-          <button type="button" onClick={() => navigate(1)} class={iconBtn}
-            title={t("calendar.next")} aria-label={t("calendar.next")}>
+          </Button>
+          <IconButton label={t("calendar.next")} onClick={() => navigate(1)}>
             <MdFillChevron_right size={20} />
-          </button>
+          </IconButton>
         </Show>
       </div>
 

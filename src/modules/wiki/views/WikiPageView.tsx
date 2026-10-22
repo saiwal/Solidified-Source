@@ -26,7 +26,10 @@ import {
 } from "../store";
 import { savePage, deletePage, revertPage, renamePage, type WikiMimeType } from "../api";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card, cardClass } from "@ui/Card";
 // ── Floating page list (small screens) ──────────────────────────────────────────
 
 function FloatingPageList(props: { nick: string; wikiName: string; pageName: string }) {
@@ -49,17 +52,14 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
 
   return (
     <div class="md:hidden fixed top-20 right-4 z-40 flex flex-col items-end">
-      <button
-        type="button"
+      <IconButton
+        label={t("wiki.wikis")}
+        variant="square"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open()}
-        aria-label={t("wiki.wikis")}
-        class="w-11 h-11 rounded-full flex items-center justify-center
-               bg-elevated border border-rim shadow-lg hover:shadow-xl
-               text-muted hover:text-txt transition-all"
       >
         <MdOutlineList size={20} />
-      </button>
+      </IconButton>
       <Show when={open()}>
         <div
           class="mt-2 w-64 max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto
@@ -112,11 +112,11 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
                 when={!creatingPage()}
                 fallback={
                   <form onSubmit={handleNewPage} class="space-y-1.5">
-                    <input
+                    <Input
+                      size="sm"
+                      class="w-full"
                       type="text"
                       autofocus
-                      class="w-full bg-surface border border-rim text-txt rounded-lg px-2 py-1 text-xs
-                             hover:border-rim-strong focus:outline-none"
                       placeholder={t("wiki.page_name_placeholder") as string}
                       value={newPageInput()}
                       onInput={(e) => setNewPageInput(e.currentTarget.value)}
@@ -130,13 +130,13 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
                       >
                         {t("wiki.create_page")}
                       </button>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => { setCreatingPage(false); setNewPageInput(""); }}
-                        class="text-xs text-muted hover:text-txt px-2 py-1 rounded-md transition-colors"
                       >
                         {t("wiki.cancel")}
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 }
@@ -358,7 +358,7 @@ export default function WikiPageView() {
 
       {/* ── Sidebar: page list ──────────────────────────────────────────── */}
       <aside class="hidden md:flex flex-col w-52 shrink-0 gap-2">
-        <div class="bg-surface border border-rim rounded-xl p-3 space-y-1 sticky top-20">
+        <Card class="p-3 space-y-1 sticky top-20">
           <Show when={currentWiki()}>
             <div class="text-xs font-semibold uppercase tracking-wide text-muted mb-2 truncate">
               {currentWiki()!.name}
@@ -396,11 +396,11 @@ export default function WikiPageView() {
                 when={!creatingPage()}
                 fallback={
                   <form onSubmit={handleNewPage} class="space-y-1.5">
-                    <input
+                    <Input
+                      size="sm"
+                      class="w-full"
                       type="text"
                       autofocus
-                      class="w-full bg-surface border border-rim text-txt rounded-lg px-2 py-1 text-xs
-                             hover:border-rim-strong focus:outline-none"
                       placeholder={t("wiki.page_name_placeholder") as string}
                       value={newPageInput()}
                       onInput={(e) => setNewPageInput(e.currentTarget.value)}
@@ -414,13 +414,13 @@ export default function WikiPageView() {
                       >
                         {t("wiki.create_page")}
                       </button>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => { setCreatingPage(false); setNewPageInput(""); }}
-                        class="text-xs text-muted hover:text-txt px-2 py-1 rounded-md transition-colors"
                       >
                         {t("wiki.cancel")}
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 }
@@ -444,7 +444,7 @@ export default function WikiPageView() {
               {t("wiki.all_wikis")}
             </A>
           </div>
-        </div>
+        </Card>
       </aside>
 
       {/* ── Main content ──────────────────────────────────────────────────── */}
@@ -515,32 +515,24 @@ export default function WikiPageView() {
 
                   {/* Rename (not Home) */}
                   <Show when={!isHome()}>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => { setRenaming(true); setNewPageName(pageData()!.page.name); }}
-                      class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg transition-colors"
                     >
                       {t("wiki.rename")}
-                    </button>
+                    </Button>
                   </Show>
 
-                  <button
-                    type="button"
-                    onClick={toggleEditMode}
-                    class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg transition-colors"
-                  >
+                  <Button variant="ghost" size="sm" onClick={toggleEditMode}>
                     {t("wiki.edit")}
-                  </button>
+                  </Button>
                 </Show>
 
                 <Show when={!isHome() && !editMode()}>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDel(true)}
-                    class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg transition-colors"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmDel(true)}>
                     {t("wiki.delete")}
-                  </button>
+                  </Button>
                 </Show>
               </div>
             </Show>
@@ -550,13 +542,12 @@ export default function WikiPageView() {
           <Show when={renaming()}>
             <form
               onSubmit={handleRename}
-              class="flex items-center gap-2 bg-surface border border-rim rounded-xl p-3"
+              class={`${cardClass()} flex items-center gap-2 p-3`}
             >
-              <input
+              <Input
+                class="flex-1"
                 type="text"
                 autofocus
-                class="flex-1 bg-surface border border-rim text-txt rounded-lg px-3 py-1.5 text-sm
-                       hover:border-rim-strong focus:outline-none"
                 value={newPageName()}
                 onInput={(e) => setNewPageName(e.currentTarget.value)}
               />
@@ -568,19 +559,15 @@ export default function WikiPageView() {
               >
                 {renameBusy() ? t("wiki.renaming") : t("wiki.rename_save")}
               </button>
-              <button
-                type="button"
-                onClick={() => setRenaming(false)}
-                class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setRenaming(false)}>
                 {t("wiki.cancel")}
-              </button>
+              </Button>
             </form>
           </Show>
 
           {/* History panel */}
           <Show when={showHistory()}>
-            <div class="bg-surface border border-rim rounded-xl p-4 space-y-3">
+            <Card class="p-4 space-y-3">
               <h2 class="text-sm font-semibold text-txt">{t("wiki.history")}</h2>
 
               <Show when={historyLoading()}>
@@ -607,34 +594,28 @@ export default function WikiPageView() {
                           </div>
                         </div>
                         <div class="flex shrink-0 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => loadRevisionPreview(
+                          <Button variant="ghost" size="sm" onClick={() => loadRevisionPreview(
                               params.nick, params.wikiName, params.pageName, entry.revision
-                            )}
-                            class="text-xs border border-rim text-muted hover:bg-elevated
-                                   px-2.5 py-1 rounded-lg transition-colors"
-                          >
+                            )}>
                             {t("wiki.view_revision")}
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             disabled={reverting() !== null}
                             onClick={() => handleRevert(entry.revision)}
-                            class="text-xs border border-rim text-muted hover:bg-elevated
-                                   px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
                           >
                             {reverting() === entry.revision
                               ? t("wiki.reverting")
                               : t("wiki.revert")}
-                          </button>
+                          </Button>
                         </div>
                       </li>
                     )}
                   </For>
                 </ul>
               </Show>
-            </div>
+            </Card>
           </Show>
 
           {/* Edit mode */}
@@ -668,22 +649,13 @@ export default function WikiPageView() {
 
         {/* Revision preview modal */}
         <Show when={previewRevision() !== null}>
-          <Modal onClose={closePreview} bare labelledBy="wiki-preview-title" class="fixed inset-0 w-full h-full z-50 flex items-center justify-center bg-black/60 p-4">
-            <div class="bg-surface border border-rim rounded-xl flex flex-col max-w-3xl w-full max-h-[85vh]">
+          <Modal onClose={closePreview} bare class="fixed inset-0 w-full h-full z-50 flex items-center justify-center bg-black/60 p-4">
+            <ModalPanel
+              title={<>{t("wiki.revision_preview")} #{previewRevision()}</>}
+              onClose={closePreview}
+              class="flex flex-col max-w-3xl max-h-[85vh]"
+            >
               {/* Header */}
-              <div class="flex items-center justify-between px-5 py-3 border-b border-rim shrink-0">
-                <span id="wiki-preview-title" class="text-sm font-medium text-txt">
-                  {t("wiki.revision_preview")} #{previewRevision()}
-                </span>
-                <button
-                  type="button"
-                  onClick={closePreview}
-                  class="text-muted hover:text-txt transition-colors text-lg leading-none"
-                
-                aria-label={t("layout.close")}>
-                  ✕
-                </button>
-              </div>
               {/* Body */}
               <div class="overflow-y-auto flex-1 px-5 py-4">
                 <Show when={previewLoading()}>
@@ -704,36 +676,26 @@ export default function WikiPageView() {
                   />
                 </Show>
               </div>
-            </div>
+            </ModalPanel>
           </Modal>
         </Show>
 
         {/* Delete confirmation modal */}
         <Show when={confirmDel()}>
           <Modal onClose={() => setConfirmDel(false)} bare labelledBy="wiki-del-msg" class="fixed inset-0 w-full h-full z-50 flex items-center justify-center bg-black/50">
-            <div class="bg-surface border border-rim rounded-xl p-6 space-y-4 max-w-sm w-full mx-4">
+            <ModalPanel size="sm" class="p-6 space-y-4 mx-4">
               <p id="wiki-del-msg" class="text-txt text-sm">
                 {t("wiki.delete")} <strong>{params.pageName}</strong>{t("wiki.delete_confirm")}
               </p>
               <div class="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDel(false)}
-                  class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDel(false)}>
                   {t("wiki.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleting()}
-                  class="text-sm border border-rim text-red-400 hover:bg-elevated px-3 py-1.5 rounded-lg
-                         disabled:opacity-50"
-                >
+                </Button>
+                <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting()}>
                   {deleting() ? t("wiki.deleting") : t("wiki.delete")}
-                </button>
+                </Button>
               </div>
-            </div>
+            </ModalPanel>
           </Modal>
         </Show>
       </main>

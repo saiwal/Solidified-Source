@@ -7,6 +7,8 @@ import DayDetailModal from "@/modules/calendar/views/DayDetailModal";
 import { localDay, todayKey } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 function next30DaysRange() {
   const start = new Date();
@@ -72,22 +74,17 @@ export default function UpcomingEventsWidget() {
 
   return (
     <>
-      <div data-tour="hq.events" class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden">
+      <Card raised class="flex flex-col overflow-hidden" data-tour="hq.events">
 
         {/* Header */}
         <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
           <span class="text-xs font-medium uppercase tracking-wider text-muted">
             {t("hq.upcoming_events")}
           </span>
-          <button
-            type="button"
-            onClick={() => openEvent({ onCreated: load })}
-            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
-                   bg-accent text-accent-fg hover:opacity-90 transition-opacity"
-          >
+          <Button size="sm" onClick={() => openEvent({ onCreated: load })}>
             <MdOutlineAdd class="w-3 h-3" />
             {t("hq.new_event")}
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -180,7 +177,7 @@ export default function UpcomingEventsWidget() {
             }}
           </For>
         </div>
-      </div>
+      </Card>
 
       <Show when={activeEvent()}>
         {(ev) => (

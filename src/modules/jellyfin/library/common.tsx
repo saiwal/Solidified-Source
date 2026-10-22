@@ -8,6 +8,8 @@ import { session, signOut, playList, current } from "../store";
 import { fmtTime, Art, SkeletonGrid, SkeletonRows, SkeletonShelf } from "../ui";
 import FavoriteButton from "./FavoriteButton";
 import TrackMenu from "./TrackMenu";
+import { Button } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 // Jellyfin-side queries don't touch the hub, so a window refocus refetch is
 // cheap but pointless for a library that rarely changes.
@@ -46,17 +48,16 @@ export function Loading(props: { kind?: "grid" | "rows" | "shelves" | "poster-gr
 
 export function Empty(props: { children?: JSX.Element }) {
   const { t } = useI18n();
-  return <p class="py-8 text-center text-sm text-muted">{props.children ?? t("jellyfin.empty")}</p>;
+  return <EmptyState>{props.children ?? t("jellyfin.empty")}</EmptyState>;
 }
 
 /** Back, saying where to: "← Albums". Falls back to plain "Back". */
 export function BackLink(props: { to?: string }) {
   const { t } = useI18n();
   return (
-    <button type="button" onClick={() => history.back()}
-      class="inline-flex items-center gap-1.5 -ml-1 px-1 py-1 rounded-lg text-sm text-muted hover:text-txt transition-colors">
+    <Button variant="ghost" size="sm" class="-ml-1" onClick={() => history.back()}>
       <MdFillArrow_back size={16} /> {props.to ?? t("jellyfin.back")}
-    </button>
+    </Button>
   );
 }
 

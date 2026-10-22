@@ -21,6 +21,7 @@ import CategoryTagsField from "../components/CategoryTagsField";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import EncryptToggle from "../components/EncryptToggle";
+import { Textarea } from "@ui/Field";
 // Lazy: only fetched once the user opts into encrypting or decrypting — see
 // PostComposer/DMComposer for the same split.
 
@@ -178,19 +179,12 @@ export default function NoteComposer(props: Props) {
         fallback={
           <>
             {notebookField()}
-            <textarea
-              value={store.body()}
-              onInput={(e) => store.setBody(e.currentTarget.value)}
-              onKeyDown={(e) => {
+            <Textarea class="w-full min-h-[120px] max-h-[50vh] resize-y overflow-y-auto" value={store.body()} onInput={(e) => store.setBody(e.currentTarget.value)} onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                   e.preventDefault();
                   void store.submit();
                 }
-              }}
-              placeholder={t("notepad.placeholder")}
-              class="w-full min-h-[120px] max-h-[50vh] p-3 text-sm rounded-lg border border-rim bg-elevated text-txt
-                     outline-none focus:border-accent/50 resize-y overflow-y-auto"
-            />
+              }} placeholder={t("notepad.placeholder")} />
           </>
         }
       >

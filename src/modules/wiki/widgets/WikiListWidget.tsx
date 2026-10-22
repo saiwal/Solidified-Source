@@ -5,6 +5,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { MdFillLock } from "solid-icons/md";
 import { wikis, wikisLoading, wikisError, loadWikis } from "../store";
+import { Card } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function WikiListWidget() {
   const { t } = useI18n();
@@ -21,7 +23,7 @@ export default function WikiListWidget() {
 
   return (
     <Show when={!hidden()}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+      <Card raised class="overflow-hidden">
 
         {/* Header */}
         <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
@@ -46,7 +48,7 @@ export default function WikiListWidget() {
 
         {/* Empty */}
         <Show when={!wikisLoading() && wikis().length === 0}>
-          <p class="px-4 py-6 text-xs text-muted text-center">{t("wiki.no_wikis")}</p>
+          <EmptyState size="sm" class="px-4">{t("wiki.no_wikis")}</EmptyState>
         </Show>
 
         {/* List */}
@@ -69,7 +71,7 @@ export default function WikiListWidget() {
             </For>
           </div>
         </Show>
-      </div>
+      </Card>
     </Show>
   );
 }

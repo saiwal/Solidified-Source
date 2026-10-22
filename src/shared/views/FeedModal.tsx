@@ -4,7 +4,7 @@
 // module; tag and articles-only feeds point at the SPA's own /spa/feed
 // (core's /feed has no tag or article-type filter — see Handlers/Feed.php).
 
-import { createSignal, createMemo, For, Show, type Component, createUniqueId } from "solid-js";
+import { createSignal, createMemo, For, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories, type CategoryItem } from "@/shared/stream/components/CategoryWidget";
@@ -13,7 +13,8 @@ import { MdOutlineContent_copy as MdOutlineContentCopy, MdOutlineCheck } from "s
 import { BiRegularLinkExternal, BiRegularRss } from "solid-icons/bi";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { EmptyState } from "@ui/EmptyState";
 
 interface Props {
   channelNick: string;
@@ -176,18 +177,16 @@ const FeedModal: Component<Props> = (props) => {
 
   const webpageRows: FeedRow[] = [feedRow(t("widgets.subscribe_all_webpages") as string, spaFeed("?type=webpages"))];
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="w-full max-w-md lg:max-w-3xl max-h-[85vh] flex flex-col rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
-        <header class="flex items-center justify-between px-5 py-3.5 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold text-txt">{t("widgets.rss_feeds")}</span>
-          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2" aria-label={t("layout.close")}>
-            ×
-          </button>
-        </header>
+    <Modal onClose={props.onClose} class="z-[60]">
+      <ModalPanel
+        title={t("widgets.rss_feeds")}
+        onClose={props.onClose}
+        size="md"
+        class="lg:max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+      >
         <div class="overflow-y-auto p-5">
-          <Show when={!loading()} fallback={<p class="py-6 text-sm text-muted text-center">…</p>}>
+          <Show when={!loading()} fallback={<EmptyState size="sm">…</EmptyState>}>
             <div
               class="grid grid-cols-1 gap-x-8 gap-y-6"
               classList={{ "lg:grid-cols-2": articlesInstalled() }}
@@ -214,7 +213,7 @@ const FeedModal: Component<Props> = (props) => {
             </Show>
           </Show>
         </div>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

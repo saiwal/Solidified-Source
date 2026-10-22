@@ -36,6 +36,10 @@ import {
 import { fetchGroup } from "../../groups/api";
 import type { PrivacyGroup, GroupContact } from "../../groups/api";
 import CardShell from "@/shared/stream/CardShell";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 // ── Inline create form ────────────────────────────────────────────────────────
 
@@ -59,31 +63,21 @@ const CreateForm: Component<{ onDone: () => void }> = (props) => {
   return (
     <div class="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-2">
       <div class="flex gap-2">
-        <input
+        <Input
+          class="flex-1"
           autofocus
           type="text"
           placeholder={t("directory.group_name_placeholder")}
           value={name()}
           onInput={(e) => setName(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Escape" && props.onDone()}
-          class="flex-1 bg-surface border border-rim text-txt rounded-lg px-3 py-1.5 text-sm
-                 hover:border-rim-strong focus:outline-none focus:border-accent"
         />
-        <button
-          onClick={submit}
-          disabled={busy() || !name().trim()}
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-fg
-                 text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity shrink-0"
-        >
+        <Button size="sm" class="shrink-0" onClick={submit} disabled={busy() || !name().trim()}>
           {busy() ? t("directory.creating") : t("directory.create")}
-        </button>
-        <button
-          onClick={props.onDone}
-          class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
-          title="Cancel"
-        >
+        </Button>
+        <IconButton label="Cancel" size="sm" class="shrink-0" onClick={props.onDone}>
           <MdFillClose size={16} />
-        </button>
+        </IconButton>
       </div>
       <label class="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
         <input
@@ -135,7 +129,7 @@ const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
   }
 
   return (
-    <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+    <Card class="px-4 py-3">
       <div class="flex items-center gap-3">
         <button
           onClick={toggleExpanded}
@@ -193,14 +187,14 @@ const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
           {t("directory.edit_label")}
         </A>
 
-        <button
+        <IconButton
+          label={t("directory.delete_group")}
+          variant="danger"
           onClick={handleDelete}
           disabled={deleteBusy()}
-          class="text-muted hover:text-red-500 disabled:opacity-40 transition-colors"
-          title={t("directory.delete_group")}
         >
           <MdFillDelete size={17} />
-        </button>
+        </IconButton>
       </div>
 
       <Show when={expanded()}>
@@ -232,7 +226,7 @@ const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
           </Show>
         </div>
       </Show>
-    </div>
+    </Card>
   );
 };
 
@@ -279,9 +273,9 @@ const PrivacyGroupsView: Component = () => {
           when={groups().length > 0}
           fallback={
             <Show when={!showCreate()}>
-              <p class="text-muted text-sm text-center py-10">
+              <EmptyState>
                 {t("directory.no_privacy_groups")}
-              </p>
+              </EmptyState>
             </Show>
           }
         >

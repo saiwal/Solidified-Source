@@ -2,6 +2,7 @@ import { Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
 import { useSiteinfo, RegistrationBadge, Centered } from "./shared";
+import { Card } from "@ui/Card";
 
 export default function SiteinfoHeaderWidget() {
   const { t } = useI18n();
@@ -13,7 +14,7 @@ export default function SiteinfoHeaderWidget() {
       <Show when={!info.loading} fallback={<HeaderSkeleton />}>
         <Show when={info()} fallback={<p class="text-sm text-accent">{t("ui.siteinfo_load_failed")}</p>}>
           {(data) => (
-            <div class="rounded-xl border border-rim bg-surface p-6">
+            <Card class="p-6">
               <div class="flex items-start gap-4">
                 <img
                   src={navData()?.sitelogo || import.meta.env.BASE_URL + "hubzilla.svg"}
@@ -30,7 +31,7 @@ export default function SiteinfoHeaderWidget() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
         </Show>
       </Show>

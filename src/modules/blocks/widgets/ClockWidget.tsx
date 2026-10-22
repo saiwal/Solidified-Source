@@ -7,6 +7,7 @@ import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -110,9 +111,9 @@ export default function ClockWidget(props: WidgetProps) {
       when={configured()}
       fallback={
         <Show when={editingWidgets()}>
-          <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+          <Card class="px-4 py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
-          </div>
+          </Card>
         </Show>
       }
     >

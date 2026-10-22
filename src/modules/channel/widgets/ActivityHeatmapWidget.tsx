@@ -7,6 +7,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
 
 interface ActivityData {
   days: number;
@@ -80,7 +81,7 @@ export default function ActivityHeatmapWidget() {
 
   return (
     <Show when={!data.loading && data()}>
-      <div class="bg-surface border border-rim rounded-xl p-4">
+      <Card class="p-4">
         <h3 class="text-xs font-semibold text-muted uppercase tracking-wide mb-3">
           {t("widgets.activity_heatmap")}
         </h3>
@@ -109,7 +110,7 @@ export default function ActivityHeatmapWidget() {
             {t("widgets.activity_heatmap_total", { count: total() })}
           </p>
         </Show>
-      </div>
+      </Card>
     </Show>
   );
 }

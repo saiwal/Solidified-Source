@@ -41,6 +41,11 @@ import {
 import type { PaymentSettings, CatalogItemInput } from '../api';
 import { useI18n } from '@utsukta/spa-core/i18n';
 import { useViewerRole } from '@utsukta/spa-core/store/site-config';
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Textarea } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function CartContentWidget() {
   const pageNick = usePageNick();
@@ -81,7 +86,7 @@ function CatalogGrid() {
   return (
     <>
       <Show when={catalogWithQty().length === 0}>
-        <p class="text-sm text-muted py-8 text-center">{t('cart.no_items')}</p>
+        <EmptyState>{t('cart.no_items')}</EmptyState>
       </Show>
       <div class="columns-1 sm:columns-2 lg:columns-3 gap-4">
         <For each={catalogWithQty()}>
@@ -103,15 +108,11 @@ function CatalogGrid() {
               <Show when={item.in_order === 0}
                 fallback={<QtyStepper sku={item.sku} qty={item.in_order} />}
               >
-                <button
-                  onClick={() => viewerRole() === 'anonymous'
+                <Button class="w-full" onClick={() => viewerRole() === 'anonymous'
                     ? (window.location.href = '/login')
-                    : addItem(item.sku)}
-                  class="flex items-center justify-center gap-2 w-full py-2 rounded-xl
-                         bg-accent text-accent-fg text-sm font-medium hover:opacity-90 transition-opacity"
-                >
+                    : addItem(item.sku)}>
                   <MdOutlineAdd_shopping_cart size={16} /> {t('cart.add_to_cart')}
-                </button>
+                </Button>
               </Show>
             </div>
           )}
@@ -188,13 +189,14 @@ function CartContents(props: { onBrowse: () => void }) {
                     <p class="text-xs text-muted mt-0.5">{item.price}<Show when={paymentConfig()?.currency}> {paymentConfig()!.currency}</Show></p>
                   </div>
                   <QtyStepper sku={item.sku} qty={item.qty} />
-                  <button
+                  <IconButton
+                    label={t('cart.remove')}
+                    variant="danger"
+                    class="shrink-0 ml-1"
                     onClick={() => removeItem(item.sku)}
-                    title={t('cart.remove')}
-                    class="shrink-0 text-subtle hover:text-red-500 transition-colors ml-1"
                   >
                     <MdFillRemove_shopping_cart size={20} />
-                  </button>
+                  </IconButton>
                 </div>
               );
             }}
@@ -226,13 +228,13 @@ function OrderPlacedBanner(props: { paid: boolean }) {
   const { t } = useI18n();
   return (
     <div class="rounded-2xl border p-5 text-center flex flex-col items-center gap-2
-                bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-      <MdFillCheck_circle size={32} class="text-green-500" />
-      <p class="text-sm font-semibold text-green-800 dark:text-green-300">
+                bg-success-muted border-success/40">
+      <MdFillCheck_circle size={32} class="text-success-txt" />
+      <p class="text-sm font-semibold text-success-txt">
         {props.paid ? t('cart.payment_success') : t('cart.order_placed')}
       </p>
       <Show when={!props.paid}>
-        <p class="text-xs text-green-700 dark:text-green-400">{t('cart.order_placed_note')}</p>
+        <p class="text-xs text-success-txt">{t('cart.order_placed_note')}</p>
       </Show>
     </div>
   );
@@ -326,7 +328,7 @@ function PayPalButton() {
 
   return (
     <Show when={!sdkError()} fallback={
-      <p class="text-xs text-red-500 py-2 text-center">{t('cart.payment_failed')}</p>
+      <p class="text-xs text-danger-txt py-2 text-center">{t('cart.payment_failed')}</p>
     }>
       <div ref={container!} class="min-h-[50px]" />
     </Show>
@@ -410,7 +412,7 @@ function RazorpayButton(_props: { provider: import('../api').PaymentProvider }) 
         </Show>
       </button>
       <Show when={err()}>
-        <p class="text-xs text-red-500 text-center">{t('cart.payment_failed')}</p>
+        <p class="text-xs text-danger-txt text-center">{t('cart.payment_failed')}</p>
       </Show>
     </div>
   );
@@ -469,16 +471,14 @@ function CashfreeButton(_props: { provider: import('../api').PaymentProvider }) 
 
   return (
     <div class="flex flex-col gap-2">
-      <input
+      <Input
         type="tel"
         placeholder={t('cart.cashfree_phone_placeholder')}
         value={phone()}
         onInput={e => setPhone(e.currentTarget.value)}
-        class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-               placeholder-subtle focus:outline-none focus:border-accent"
       />
       <Show when={err()}>
-        <p class="text-xs text-red-500">{err()}</p>
+        <p class="text-xs text-danger-txt">{err()}</p>
       </Show>
       <button
         onClick={pay}
@@ -531,7 +531,7 @@ function UpiPayment(props: { provider: import('../api').PaymentProvider }) {
   };
 
   return (
-    <div class="flex flex-col gap-3 p-3 rounded-xl border border-rim bg-surface">
+    <Card class="flex flex-col gap-3 p-3">
       <div class="flex items-center justify-between">
         <p class="text-sm font-medium text-txt">{t('cart.pay_via_upi')}</p>
         <span class="text-xs text-muted">{subtotal()} {currency()}</span>
@@ -570,12 +570,12 @@ function UpiPayment(props: { provider: import('../api').PaymentProvider }) {
 
       <button
         onClick={() => checkout(`Buyer claimed UPI payment to ${props.provider.upi_id}`)}
-        class="w-full py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white
+        class="w-full py-2 rounded-xl bg-success hover:bg-success/85 text-success-fg
                text-sm font-medium transition-colors"
       >
         {t('cart.i_have_paid')}
       </button>
-    </div>
+    </Card>
   );
 }
 
@@ -656,13 +656,9 @@ function CatalogManagerPanel() {
         <span class="text-xs font-semibold text-muted uppercase tracking-wide">
           {t('cart.manage_catalog')}
         </span>
-        <button
-          onClick={openAdd}
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-fg
-                 text-xs font-medium hover:opacity-90 transition-opacity"
-        >
+        <Button size="sm" onClick={openAdd}>
           <MdFillAdd size={14} /> {t('cart.catalog_add_item')}
-        </button>
+        </Button>
       </div>
 
       <Show when={editingSku() !== undefined}>
@@ -678,7 +674,7 @@ function CatalogManagerPanel() {
       </Show>
 
       <Show when={!catalogManageLoading() && managedCatalog().length === 0}>
-        <p class="text-sm text-muted text-center py-6">{t('cart.catalog_no_items')}</p>
+        <EmptyState size="sm">{t('cart.catalog_no_items')}</EmptyState>
       </Show>
 
       <Show when={!catalogManageLoading() && managedCatalog().length > 0}>
@@ -694,16 +690,15 @@ function CatalogManagerPanel() {
                   }
                 >
                   <img src={item.photo_url!} alt={item.desc}
-                    class="w-10 h-10 object-cover rounded-lg shrink-0" />
+                  class="w-full h-auto block rounded-xl bg-surface" />
                 </Show>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5">
                     <p class="text-sm font-medium text-txt truncate">{item.desc}</p>
                     <Show when={!item.active}>
-                      <span class="text-[0.625rem] font-medium px-1.5 py-0.5 rounded-full shrink-0
-                                   bg-surface text-muted border border-rim">
+                      <Badge size="sm" class="shrink-0">
                         {t('cart.catalog_inactive')}
-                      </span>
+                      </Badge>
                     </Show>
                   </div>
                   <p class="text-xs text-muted mt-0.5">{item.price}<Show when={paymentConfig()?.currency}> {paymentConfig()!.currency}</Show></p>
@@ -713,27 +708,28 @@ function CatalogManagerPanel() {
                     onClick={() => toggleCatalogItemAction(item.sku)}
                     title={item.active ? t('cart.catalog_deactivate') : t('cart.catalog_activate')}
                     class={`p-1.5 rounded-lg transition-colors ${item.active
-                      ? 'text-green-500 hover:bg-surface'
+                      ? 'text-success-txt hover:bg-surface'
                       : 'text-subtle hover:text-txt hover:bg-surface'}`}
                   >
                     <Show when={item.active} fallback={<MdFillToggle_off size={20} />}>
                       <MdFillToggle_on size={20} />
                     </Show>
                   </button>
-                  <button
+                  <IconButton
+                    label={t('cart.catalog_edit_item')}
+                    size="sm"
                     onClick={() => openEdit(item.sku)}
-                    class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-surface transition-colors"
-                    title={t('cart.catalog_edit_item')}
                   >
                     <MdFillEdit size={16} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
+                    label={t('cart.catalog_delete')}
+                    variant="danger"
+                    size="sm"
                     onClick={() => deleteCatalogItemAction(item.sku)}
-                    class="p-1.5 rounded-lg text-muted hover:text-red-500 hover:bg-surface transition-colors"
-                    title={t('cart.catalog_delete')}
                   >
                     <MdFillDelete size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             )}
@@ -843,30 +839,29 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
       </Show>
 
       <div class="flex flex-col gap-1">
-        <label class="text-xs text-muted">{t('cart.catalog_description')}</label>
-        <input
+        <Field label={t('cart.catalog_description')} size="sm">
+          <Input
           type="text"
           value={desc()}
           onInput={e => setDesc(e.currentTarget.value)}
           placeholder="Item name / description"
-          class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                 placeholder-subtle focus:outline-none focus:border-accent"
           autofocus
-        />
+          />
+        </Field>
       </div>
 
       <div class="flex flex-col gap-1">
-        <label class="text-xs text-muted">{t('cart.catalog_price')}</label>
-        <input
+        <Field label={t('cart.catalog_price')} size="sm">
+          <Input
+          class="w-32"
           type="number"
           value={price()}
           onInput={e => setPrice(e.currentTarget.value)}
           min="0"
           step="0.01"
           placeholder="0.00"
-          class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                 placeholder-subtle focus:outline-none focus:border-accent w-32"
-        />
+          />
+        </Field>
       </div>
 
       <div class="flex flex-col gap-1.5">
@@ -874,26 +869,25 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
 
         {/* URL input + upload + albums picker toggle */}
         <div class="flex gap-2">
-          <input
+          <Input
+            class="flex-1"
             type="url"
             value={photoUrl()}
             onInput={e => setPhotoUrl(e.currentTarget.value)}
             placeholder="https://…"
-            class="flex-1 text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                   placeholder-subtle focus:outline-none focus:border-accent"
           />
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            class="shrink-0"
             onClick={() => fileInput.click()}
             disabled={uploading()}
             title="Upload from device"
-            class="flex items-center justify-center px-2.5 py-1.5 rounded-lg bg-surface border border-rim
-                   text-muted hover:text-txt hover:border-accent transition-colors disabled:opacity-50 shrink-0"
           >
             <Show when={uploading()} fallback={<MdFillImage size={16} />}>
               <span class="text-[0.6875rem] font-mono w-7 text-center">{uploadPct()}%</span>
             </Show>
-          </button>
+          </Button>
           <button
             type="button"
             onClick={openPicker}
@@ -920,7 +914,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
 
         {/* Album picker panel */}
         <Show when={showPicker()}>
-          <div class="border border-rim rounded-xl overflow-hidden bg-surface">
+          <Card class="overflow-hidden">
             {/* Picker header */}
             <div class="flex items-center justify-between px-3 py-2 border-b border-rim bg-elevated">
               <Show when={pickerAlbum()} fallback={
@@ -956,7 +950,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
               {/* Album list */}
               <Show when={!pickerAlbum() && !albumsLoading()}>
                 <Show when={albums().length === 0}>
-                  <p class="text-xs text-muted text-center py-6">No albums found.</p>
+                  <EmptyState size="sm">No albums found.</EmptyState>
                 </Show>
                 <div class="grid grid-cols-3 gap-1.5">
                   <For each={albums()}>
@@ -991,7 +985,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
               {/* Photo grid */}
               <Show when={pickerAlbum() && !photosLoading()}>
                 <Show when={albumPhotos().length === 0}>
-                  <p class="text-xs text-muted text-center py-6">No photos in this album.</p>
+                  <EmptyState size="sm">No photos in this album.</EmptyState>
                 </Show>
                 <div class="grid grid-cols-4 gap-1.5">
                   <For each={albumPhotos()}>
@@ -1011,7 +1005,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
               </Show>
 
             </div>
-          </div>
+          </Card>
         </Show>
       </div>
 
@@ -1026,20 +1020,12 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
       </label>
 
       <div class="flex gap-2 pt-1">
-        <button
-          onClick={save}
-          disabled={saving() || !desc().trim()}
-          class="px-4 py-2 rounded-xl bg-accent text-accent-fg text-sm font-medium
-                 hover:opacity-90 disabled:opacity-50 transition-opacity"
-        >
+        <Button onClick={save} disabled={saving() || !desc().trim()}>
           {saving() ? '…' : t('cart.catalog_save_item')}
-        </button>
-        <button
-          onClick={props.onClose}
-          class="px-4 py-2 rounded-xl text-sm font-medium text-muted hover:text-txt transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" onClick={props.onClose}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1087,14 +1073,13 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
       <div class="flex flex-col gap-1.5 pb-2 border-b border-rim">
         <label class="text-xs font-medium text-muted">{t('cart.store_currency')}</label>
         <div class="flex items-center gap-2">
-          <input
+          <Input
+            class="font-mono w-20 uppercase tracking-widest"
             type="text"
             value={form().currency}
             onInput={e => set(['currency'], e.currentTarget.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3))}
             maxlength="3"
             placeholder="USD"
-            class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                   font-mono w-20 uppercase focus:outline-none focus:border-accent tracking-widest"
           />
           <span class="text-xs text-subtle">{t('cart.store_currency_hint')}</span>
         </div>
@@ -1116,26 +1101,26 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
         <Show when={form().paypal.enabled}>
           <div class="flex flex-col gap-2 pl-6">
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.paypal_client_id')}</label>
-              <input
+              <Field label={t('cart.paypal_client_id')} size="sm">
+                <Input
+                class="font-mono"
                 type="text"
                 value={form().paypal.client_id}
                 onInput={e => set(['paypal', 'client_id'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       placeholder-subtle focus:outline-none focus:border-accent font-mono"
                 placeholder="A..."
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.paypal_secret')}</label>
-              <input
+              <Field label={t('cart.paypal_secret')} size="sm">
+                <Input
+                class="font-mono"
                 type="password"
                 value={form().paypal.secret}
                 onInput={e => set(['paypal', 'secret'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       placeholder-subtle focus:outline-none focus:border-accent font-mono"
                 placeholder="E..."
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs text-muted">{t('cart.paypal_mode')}</label>
@@ -1173,33 +1158,36 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
         <Show when={form().razorpay.enabled}>
           <div class="flex flex-col gap-2 pl-6">
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.razorpay_key_id')}</label>
-              <input type="text"
+              <Field label={t('cart.razorpay_key_id')} size="sm">
+                <Input
+                class="font-mono"
+                type="text"
                 value={form().razorpay.key_id}
                 onInput={e => set(['razorpay', 'key_id'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       font-mono focus:outline-none focus:border-accent"
                 placeholder="rzp_test_..."
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.razorpay_key_secret')}</label>
-              <input type="password"
+              <Field label={t('cart.razorpay_key_secret')} size="sm">
+                <Input
+                class="font-mono"
+                type="password"
                 value={form().razorpay.key_secret}
                 onInput={e => set(['razorpay', 'key_secret'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       font-mono focus:outline-none focus:border-accent"
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.razorpay_currency')}</label>
-              <input type="text"
+              <Field label={t('cart.razorpay_currency')} size="sm">
+                <Input
+                class="font-mono w-24"
+                type="text"
                 value={form().razorpay.currency}
                 onInput={e => set(['razorpay', 'currency'], e.currentTarget.value.toUpperCase())}
                 maxlength="3"
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       font-mono w-24 focus:outline-none focus:border-accent"
-              />
+                />
+              </Field>
             </div>
           </div>
         </Show>
@@ -1220,23 +1208,25 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
         <Show when={form().cashfree.enabled}>
           <div class="flex flex-col gap-2 pl-6">
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.cashfree_app_id')}</label>
-              <input type="text"
+              <Field label={t('cart.cashfree_app_id')} size="sm">
+                <Input
+                class="font-mono"
+                type="text"
                 value={form().cashfree.app_id}
                 onInput={e => set(['cashfree', 'app_id'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       font-mono focus:outline-none focus:border-accent"
                 placeholder="TEST..."
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.cashfree_secret_key')}</label>
-              <input type="password"
+              <Field label={t('cart.cashfree_secret_key')} size="sm">
+                <Input
+                class="font-mono"
+                type="password"
                 value={form().cashfree.secret_key}
                 onInput={e => set(['cashfree', 'secret_key'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       font-mono focus:outline-none focus:border-accent"
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-xs text-muted">{t('cart.cashfree_mode')}</label>
@@ -1274,24 +1264,25 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
         <Show when={form().upi.enabled}>
           <div class="flex flex-col gap-2 pl-6">
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.upi_id_label')}</label>
-              <input type="text"
+              <Field label={t('cart.upi_id_label')} size="sm">
+                <Input
+                class="font-mono"
+                type="text"
                 value={form().upi.upi_id}
                 onInput={e => set(['upi', 'upi_id'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       font-mono focus:outline-none focus:border-accent"
                 placeholder="yourname@upi"
-              />
+                />
+              </Field>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-xs text-muted">{t('cart.upi_display_name')}</label>
-              <input type="text"
+              <Field label={t('cart.upi_display_name')} size="sm">
+                <Input
+                type="text"
                 value={form().upi.display_name}
                 onInput={e => set(['upi', 'display_name'], e.currentTarget.value)}
-                class="text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim text-txt
-                       focus:outline-none focus:border-accent"
                 placeholder="Your Shop Name"
-              />
+                />
+              </Field>
             </div>
           </div>
         </Show>
@@ -1300,31 +1291,22 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
       {/* Manual */}
       <div class="flex flex-col gap-2">
         <p class="text-xs font-medium text-muted">{t('cart.manual_instructions')}</p>
-        <textarea
+        <Textarea
+          class="resize-none"
           value={form().manual.instructions}
           onInput={e => set(['manual', 'instructions'], e.currentTarget.value)}
           rows={3}
-          class="text-sm px-3 py-2 rounded-lg bg-surface border border-rim text-txt
-                 placeholder-subtle focus:outline-none focus:border-accent resize-none"
           placeholder="e.g. Bank transfer to account #1234…"
         />
       </div>
 
       <div class="flex gap-2">
-        <button
-          onClick={save}
-          disabled={paymentSettingsLoading()}
-          class="px-4 py-2 rounded-xl bg-accent text-accent-fg text-sm font-medium
-                 hover:opacity-90 disabled:opacity-50 transition-opacity"
-        >
+        <Button onClick={save} disabled={paymentSettingsLoading()}>
           {paymentSettingsLoading() ? t('cart.payment_processing') : t('cart.save_settings')}
-        </button>
-        <button
-          onClick={props.onClose}
-          class="px-4 py-2 rounded-xl text-sm font-medium text-muted hover:text-txt transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" onClick={props.onClose}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1428,13 +1410,9 @@ function OrderDetail() {
               <span class="font-semibold text-txt">{ord()!.subtotal} <span class="text-xs font-normal text-muted">{ord()!.currency}</span></span>
             </div>
             <Show when={!ord()!.paid}>
-              <button
-                onClick={() => markOrderPaid(ord()!.hash!)}
-                class="mt-1 w-full py-2 rounded-xl bg-accent text-accent-fg text-sm font-medium
-                       hover:opacity-90 transition-opacity"
-              >
+              <Button class="mt-1 w-full" onClick={() => markOrderPaid(ord()!.hash!)}>
                 {t('cart.mark_paid')}
-              </button>
+              </Button>
             </Show>
           </div>
 
@@ -1455,15 +1433,15 @@ function OrderDetail() {
                       <Show when={!item.fulfilled}>
                         <button
                           onClick={() => fulfillItem(ord()!.hash!, item.id)}
-                          class="px-2 py-1 rounded-lg text-xs font-medium bg-green-100 dark:bg-green-900/30
-                                 text-green-700 dark:text-green-400 hover:opacity-80 transition-opacity"
+                          class="px-2 py-1 rounded-lg text-xs font-medium bg-success-muted
+                                 text-success-txt hover:opacity-80 transition-opacity"
                         >
                           {t('cart.fulfill_item')}
                         </button>
                         <button
                           onClick={() => cancelItem(ord()!.hash!, item.id)}
-                          class="px-2 py-1 rounded-lg text-xs font-medium bg-red-100 dark:bg-red-900/30
-                                 text-red-700 dark:text-red-400 hover:opacity-80 transition-opacity"
+                          class="px-2 py-1 rounded-lg text-xs font-medium bg-danger-muted
+                                 text-danger-txt hover:opacity-80 transition-opacity"
                         >
                           {t('cart.cancel_item')}
                         </button>
@@ -1488,23 +1466,17 @@ function OrderDetail() {
               )}
             </For>
             <div class="flex gap-2 mt-1">
-              <input
+              <Input
+                class="flex-1"
                 type="text"
                 value={noteText()}
                 onInput={e => setNoteText(e.currentTarget.value)}
                 onKeyDown={e => e.key === 'Enter' && submitNote()}
                 placeholder={t('cart.note_placeholder')}
-                class="flex-1 text-sm px-3 py-1.5 rounded-lg bg-surface border border-rim
-                       text-txt placeholder-subtle focus:outline-none focus:border-accent"
               />
-              <button
-                onClick={submitNote}
-                disabled={!noteText().trim()}
-                class="px-3 py-1.5 rounded-lg text-sm font-medium bg-accent text-accent-fg
-                       hover:opacity-90 disabled:opacity-40 transition-opacity"
-              >
+              <Button size="sm" onClick={submitNote} disabled={!noteText().trim()}>
                 {t('cart.add_note')}
-              </button>
+              </Button>
             </div>
           </div>
         </Show>
@@ -1520,14 +1492,13 @@ function StatusBadge(props: { paid?: boolean; fulfilled?: boolean; exception?: b
   return (
     <div class="flex flex-wrap gap-1 justify-end shrink-0">
       <Show when={props.exception}>
-        <span class="flex items-center gap-0.5 text-[0.625rem] font-medium px-1.5 py-0.5 rounded-full
-                     bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+        <Badge tone="danger" size="sm">
           <MdFillError size={10} /> {t('cart.order_exception')}
-        </span>
+        </Badge>
       </Show>
       <span class={`text-[0.625rem] font-medium px-1.5 py-0.5 rounded-full ${props.paid
-        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'}`}>
+        ? 'bg-success-muted text-success-txt'
+        : 'bg-warning-muted text-warning-txt'}`}>
         {props.paid ? t('cart.order_paid') : t('cart.order_unpaid')}
       </span>
       <span class={`text-[0.625rem] font-medium px-1.5 py-0.5 rounded-full ${props.fulfilled
@@ -1546,9 +1517,9 @@ function ItemStatusBadge(props: { item: import('../api').OrderItem }) {
     <Show when={item().fulfilled !== undefined}>
       <span class={`text-[0.625rem] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
         item().exception
-          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+          ? 'bg-danger-muted text-danger-txt'
           : item().fulfilled
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+            ? 'bg-success-muted text-success-txt'
             : 'bg-surface text-muted'
       }`}>
         {item().exception ? t('cart.item_exception') : item().fulfilled ? t('cart.item_fulfilled') : t('cart.item_pending')}

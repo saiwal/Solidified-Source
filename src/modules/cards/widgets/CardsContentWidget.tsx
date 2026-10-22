@@ -30,6 +30,7 @@ import { useIsCardsList } from "../lib/isCardsList";
 import { boardView } from "../lib/kanban";
 import { fetchKanban } from "../api";
 import CardShell from "@/shared/stream/CardShell";
+import { Button } from "@ui/Button";
 
 // 20rem minimum column with a ceiling of 3 reproduces the density the old
 // `columns-1 sm:columns-2 lg:columns-3` gave: 3 columns across the full
@@ -128,13 +129,9 @@ export default function CardsContentWidget() {
 
             <Show when={hasMore()}>
               <div class="flex justify-center pt-2">
-                <button
-                  onClick={loadMore}
-                  class="px-4 py-2 text-sm font-medium rounded-lg border border-rim
-                         bg-surface text-muted hover:bg-elevated transition-colors"
-                >
+                <Button variant="ghost" onClick={loadMore}>
                   {t("cards.load_more")}
-                </button>
+                </Button>
               </div>
             </Show>
 

@@ -16,6 +16,7 @@ import { fetchBlockByName } from "@/modules/webpages/api";
 import { renderBody, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
+import { Card } from "@ui/Card";
 
 export default function HtmlBlockWidget(props: WidgetProps) {
   const { t } = useI18n();
@@ -54,15 +55,15 @@ export default function HtmlBlockWidget(props: WidgetProps) {
       when={hasContent()}
       fallback={
         <Show when={editingWidgets()}>
-          <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+          <Card class="px-4 py-3">
             <p class="text-xs text-muted">
               {blockName() && block.error ? t("widgets.block_load_failed") : t("widgets.not_configured")}
             </p>
-          </div>
+          </Card>
         </Show>
       }
     >
-      <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+      <Card class="overflow-hidden">
         <Show when={title()}>
           <div class="px-4 py-3">
             <h3 class="text-sm font-semibold text-txt">{title()}</h3>
@@ -73,7 +74,7 @@ export default function HtmlBlockWidget(props: WidgetProps) {
           onClick={onBodyClick}
           innerHTML={content()}
         />
-      </div>
+      </Card>
     </Show>
   );
 }

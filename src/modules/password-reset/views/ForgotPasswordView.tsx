@@ -3,6 +3,9 @@ import { A } from "@solidjs/router";
 import { fetchPasswordResetToken, requestPasswordReset } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 export default function ForgotPasswordView() {
   const { t } = useI18n();
@@ -41,7 +44,7 @@ export default function ForgotPasswordView() {
 
   return (
     <div class="min-h-[60vh] flex items-center justify-center">
-      <div class="w-full max-w-md bg-surface border border-rim rounded-2xl p-8 shadow-sm">
+      <Card raised class="w-full max-w-md p-8">
         <div class="mb-8 text-center">
           <div
             class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-txt mb-4
@@ -72,7 +75,8 @@ export default function ForgotPasswordView() {
               <label class="text-sm font-medium text-txt" for="reset-email">
                 {t("auth.reset_email_label")}
               </label>
-              <input
+              <Input
+                class="w-full"
                 id="reset-email"
                 type="email"
                 autocomplete="email"
@@ -80,25 +84,13 @@ export default function ForgotPasswordView() {
                 disabled={loading()}
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
-                class="w-full px-3 py-2 rounded-lg border border-rim bg-base text-txt text-sm
-                       placeholder:text-muted
-                       focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent
-                       disabled:opacity-60 transition-colors"
                 placeholder={t("auth.email_placeholder")}
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading() || !token()}
-              class="w-full py-2.5 px-4 rounded-lg bg-accent text-accent-fg font-medium text-sm
-                     hover:opacity-90 active:opacity-80
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     focus:outline-none focus:ring-2 focus:ring-accent/40
-                     transition-opacity"
-            >
+            <Button class="w-full" type="submit" disabled={loading() || !token()}>
               {loading() ? t("auth.reset_requesting") : t("auth.reset_request_submit")}
-            </button>
+            </Button>
 
             <p class="text-center text-sm text-muted">
               <A href="/login" class="text-accent hover:underline font-medium">
@@ -107,7 +99,7 @@ export default function ForgotPasswordView() {
             </p>
           </form>
         </Show>
-      </div>
+      </Card>
     </div>
   );
 }

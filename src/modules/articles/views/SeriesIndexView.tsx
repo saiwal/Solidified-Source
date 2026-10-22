@@ -8,6 +8,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { SkeletonRows } from "@/shared/views/ui";
 import { fetchSeriesList } from "../api";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function SeriesIndexView() {
   const params = useParams<{ nick: string }>();
@@ -27,7 +28,7 @@ export default function SeriesIndexView() {
         <Show when={!data.loading} fallback={<SkeletonRows count={4} />}>
           <Show
             when={(data() ?? []).length > 0}
-            fallback={<p class="text-sm text-muted py-16 text-center">{t("articles.series_no_series")}</p>}
+            fallback={<EmptyState>{t("articles.series_no_series")}</EmptyState>}
           >
             <div class="space-y-0.5">
               <For each={data()}>

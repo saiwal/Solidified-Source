@@ -62,6 +62,8 @@ import EncryptToggle from "../components/EncryptToggle";
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
 // initial bundle.
 import { underlineFieldClass } from "../lib/fieldStyles";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -504,12 +506,12 @@ const PostComposer: Component<ComposerProps> = (props) => {
           meta={
             <>
               <Show when={caps.title}>
-                <input
+                <Input
+                  class="w-full font-bold"
                   type="text"
                   placeholder={t("editor.title_placeholder")}
                   value={store.title()}
                   onInput={(e) => store.setTitle(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
                 />
               </Show>
 
@@ -662,13 +664,12 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 }
               >
                 <div class="flex flex-col gap-2">
-                  <input
+                  <Input
+                    class="w-full"
                     type="text"
                     value={location()}
                     placeholder={t("editor.location_placeholder")}
                     onInput={(e) => setLocation(e.currentTarget.value)}
-                    class="w-full bg-transparent border border-rim rounded px-2.5 py-1 text-sm
-                           text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
                   />
                   <Show
                     when={!locating()}
@@ -696,19 +697,18 @@ const PostComposer: Component<ComposerProps> = (props) => {
                       </button>
                     }
                   >
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={geotag}
                       title={t("editor.location_use_browser")}
-                      class="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs border border-rim text-muted
-                             hover:text-txt hover:bg-elevated transition-colors"
                     >
                       <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="3" stroke-width="2" />
                         <path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
                       </svg>
                       {t("editor.location_use_browser")}
-                    </button>
+                    </Button>
                   </Show>
                   </Show>
                 </div>

@@ -10,6 +10,7 @@ import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { Card, CardHeader } from "@ui/Card";
 
 interface SeriesItem {
   name: string;
@@ -37,10 +38,10 @@ export default function ArticleSeriesWidget() {
   );
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-rim">
+    <Card class="overflow-hidden">
+      <CardHeader>
         <h3 class="text-sm font-semibold text-txt">{t("widgets.article_series")}</h3>
-      </div>
+      </CardHeader>
 
       <Show when={!data.loading}>
         <Show
@@ -66,6 +67,6 @@ export default function ArticleSeriesWidget() {
           </ul>
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 }

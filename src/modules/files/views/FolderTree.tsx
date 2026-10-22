@@ -4,6 +4,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { listFolderMeta, searchFiles, pruneTree, type PNode, type FileMeta, type FolderFrame } from "../api";
 import FileIcon from "./FileIcon";
+import { IconButton } from "@ui/Button";
 
 // Desktop-only folder sidebar. Children load on expand, under the same
 // "files-folder" query key as the main listing — so a refetch there (new
@@ -167,15 +168,14 @@ export default function FolderTree(props: Props) {
           class="flex-1 min-w-0 bg-transparent text-txt placeholder:text-muted focus:outline-none"
         />
         <Show when={query()}>
-          <button
-            type="button"
+          <IconButton
+            label={t("files_mod.clear_filter") as string}
+            size="sm"
+            class="shrink-0"
             onClick={() => setQuery("")}
-            title={t("files_mod.clear_filter") as string}
-            aria-label={t("files_mod.clear_filter") as string}
-            class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
           >
             <MdOutlineClose size={14} />
-          </button>
+          </IconButton>
         </Show>
       </label>
 

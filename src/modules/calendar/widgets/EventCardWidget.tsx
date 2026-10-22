@@ -11,6 +11,7 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillEvent } from "solid-icons/md";
 import { fetchEvents, type CalEvent } from "../api";
+import { Card } from "@ui/Card";
 
 function eventDate(ev: CalEvent, locale: string): string {
   const d = new Date(ev.start);
@@ -24,9 +25,9 @@ function eventDate(ev: CalEvent, locale: string): string {
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }
@@ -57,7 +58,7 @@ export default function EventCardWidget(props: WidgetProps) {
       <Show when={!event.loading}>
         <Show when={event()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(ev) => (
-            <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+            <Card class="overflow-hidden">
               <div class="px-4 py-3 flex items-start gap-2">
                 <MdFillEvent size={18} class="text-accent-txt shrink-0 mt-0.5" />
                 <div class="min-w-0 flex-1">
@@ -75,7 +76,7 @@ export default function EventCardWidget(props: WidgetProps) {
               >
                 {t("widgets.view_calendar")}
               </A>
-            </div>
+            </Card>
           )}
         </Show>
       </Show>

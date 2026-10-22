@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { Card } from "@ui/Card";
 
 type CalcOp = "+" | "-" | "×" | "÷" | null;
 
@@ -108,14 +109,14 @@ export function Calculator() {
   return (
     <div class="flex flex-col items-center gap-4">
       {/* Display */}
-      <div class="w-full max-w-xs bg-surface border border-rim rounded-xl px-5 py-4">
+      <Card class="w-full max-w-xs px-5 py-4">
         <div class="text-muted text-sm h-5 text-right">
           {prev() !== null ? `${prev()} ${op() ?? ""}` : ""}
         </div>
         <div class="text-txt text-right font-mono text-4xl truncate mt-1">
           {display()}
         </div>
-      </div>
+      </Card>
 
       {/* Keypad */}
       <div class="grid grid-cols-4 gap-2.5 w-full max-w-xs">

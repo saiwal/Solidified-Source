@@ -31,6 +31,10 @@ import { createInboxActions, TRASH, type PatchFn } from "@/modules/inbox/actions
 import { createRowDrag } from "@/modules/inbox/useDragToFolder";
 import { createInboxKeys } from "@/modules/inbox/keys";
 import FolderMenu from "@/modules/inbox/FolderMenu";
+import { Button, IconButton } from "@ui/Button";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 export type { MessageType, FeedType };
 
 // Background auto-refresh so new messages show up without a manual click.
@@ -180,48 +184,8 @@ function entryFolders(e: MessageEntry): string[] {
   return e.folders ?? (e.info ? parseFolderNames(e.info) : []);
 }
 
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
-function avatarHue(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffff;
-  return h % 360;
-}
 
-// ── Avatar ────────────────────────────────────────────────────────────────
-
-const Avatar: Component<{ src?: string; name: string; size?: string }> = (props) => {
-  const hue = () => avatarHue(props.name);
-  const size = props.size ?? "w-8 h-8";
-  return (
-    <div
-      class={`${size} rounded-full shrink-0 flex items-center justify-center text-xs font-semibold overflow-hidden select-none`}
-      style={{
-        // Tint only behind initials — an avatar with alpha must show whatever
-        // the row sits on (card, pattern, wallpaper), not a disc of its own.
-        background: props.src ? undefined : `hsl(${hue()}, 55%, 82%)`,
-        color: `hsl(${hue()}, 45%, 35%)`,
-      }}
-    >
-      <Show when={props.src} fallback={<span>{initials(props.name)}</span>}>
-        <img
-          src={props.src}
-          alt={props.name}
-          class="w-full h-full object-cover"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-        />
-      </Show>
-    </div>
-  );
-};
 
 // ── Row action button ─────────────────────────────────────────────────────
 
@@ -415,7 +379,7 @@ const MessageItem: Component<{
           when={props.selectable && (props.selected || undefined)}
           fallback={
             <div class="relative shrink-0">
-              <Avatar src={e().author_img} name={e().author_name} size="w-7 h-7" />
+              <Avatar src={e().author_img} name={e().author_name} size={7} />
               <Show when={props.selectable}>
                 <input
                   type="checkbox"
@@ -485,13 +449,12 @@ const MessageItem: Component<{
             <div class="flex flex-wrap gap-1 mt-0.5">
               <For each={entryFolders(e())}>
                 {(name) => (
-                  <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md
-                               bg-overlay text-[0.625rem] font-medium text-muted">
+                  <Badge size="sm">
                     <svg class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={FOLDER_ICON_PATH} />
                     </svg>
                     <span class="truncate max-w-[200px]">{name}</span>
-                  </span>
+                  </Badge>
                 )}
               </For>
             </div>
@@ -982,13 +945,9 @@ export const MessageList: Component<{
             onClick={() => bulkAll((e) => acts.trash(e))}
           />
           <div class="flex-1" />
-          <button
-            type="button"
-            onClick={clearSelection}
-            class="text-xs text-muted hover:text-txt px-2 py-1 rounded-md hover:bg-surface"
-          >
+          <Button variant="ghost" size="sm" onClick={clearSelection}>
             {t("hq.clear_selection")}
-          </button>
+          </Button>
         </div>
       </Show>
 
@@ -1089,15 +1048,10 @@ export const MessageList: Component<{
         }}
       >
         <div class="sticky top-0 z-10 shrink-0 flex items-center gap-1 px-2 py-1.5 border-b border-rim bg-surface">
-          <button
-            type="button"
-            onClick={() => setOpenMid(null)}
-            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
-                   hover:bg-overlay hover:text-txt transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setOpenMid(null)}>
             <MdOutlineChevron_left class="w-4 h-4" />
             {t("hq.back_to_list")}
-          </button>
+          </Button>
 
           <Show when={mailable() && openEntryData()}>
             {(entry) => <ActionRail entry={entry()} acts={rowActions()} t={t} class="ml-1" />}
@@ -1108,26 +1062,22 @@ export const MessageList: Component<{
           <span class="text-[0.625rem] text-muted tabular-nums shrink-0">
             {t("hq.n_of_m", { n: String(openIndex() + 1), m: String(flatRows().length) })}
           </span>
-          <button
-            type="button"
+          <IconButton
+            label={t("hq.previous_message")}
+            size="sm"
             onClick={() => step(-1)}
             disabled={openIndex() <= 0}
-            title={t("hq.previous_message")}
-            aria-label={t("hq.previous_message")}
-            class="p-1 rounded-md text-muted hover:bg-overlay hover:text-txt disabled:opacity-30 transition-colors"
           >
             <MdOutlineExpand_less class="w-4 h-4" />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label={t("hq.next_message")}
+            size="sm"
             onClick={() => step(1)}
             disabled={openIndex() >= flatRows().length - 1 && offset() === -1}
-            title={t("hq.next_message")}
-            aria-label={t("hq.next_message")}
-            class="p-1 rounded-md text-muted hover:bg-overlay hover:text-txt disabled:opacity-30 transition-colors"
           >
             <MdOutlineExpand_more class="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Own boundary: PostDetailModal is lazy, and without one its first
@@ -1136,7 +1086,7 @@ export const MessageList: Component<{
           <Suspense
             fallback={
               <div class="h-full flex items-center justify-center">
-                <span class="w-5 h-5 border-2 border-muted border-t-transparent rounded-full animate-spin" />
+                <Spinner size="lg" tone="muted" />
               </div>
             }
           >

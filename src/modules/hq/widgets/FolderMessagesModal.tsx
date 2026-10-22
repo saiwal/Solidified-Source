@@ -3,7 +3,8 @@ import { BiRegularX } from "solid-icons/bi";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { FOLDER_ICON_PATH, TYPE_ICON_PATH, MessageList } from "./MessageList";
 
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
+import { IconButton } from "@ui/Button";
 interface FolderMessagesModalProps {
   title: string;
   feedType: "folder" | "starred";
@@ -14,7 +15,7 @@ interface FolderMessagesModalProps {
 const FolderMessagesModal: Component<FolderMessagesModalProps> = (props) => {
   const { t } = useI18n();
   const iconPath = () => (props.feedType === "starred" ? TYPE_ICON_PATH.starred : FOLDER_ICON_PATH);
-  const iconColor = () => (props.feedType === "starred" ? "text-amber-500" : "text-muted");
+  const iconColor = () => (props.feedType === "starred" ? "text-warning-txt" : "text-muted");
 
   return (
     <Modal onClose={props.onClose} labelledBy="folder-modal-title" class="z-50">
@@ -30,14 +31,9 @@ const FolderMessagesModal: Component<FolderMessagesModalProps> = (props) => {
             </svg>
             <span class="truncate">{props.title}</span>
           </h2>
-          <button
-            onClick={props.onClose}
-            class="p-1.5 rounded-lg hover:bg-elevated
-                   text-subtle hover:text-txt transition-colors shrink-0"
-            aria-label={t("post.modal_close")}
-          >
+          <IconButton label={t("post.modal_close")} size="sm" class="shrink-0" onClick={props.onClose}>
             <BiRegularX />
-          </button>
+          </IconButton>
         </div>
 
         <div class="min-h-[280px] max-h-[65vh] flex flex-col">

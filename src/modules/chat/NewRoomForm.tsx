@@ -6,6 +6,9 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { createChatRoom } from "./store";
 import AclPicker, { entryKey, aclModeToScope, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
+import { Button } from "@ui/Button";
+import { Field, Input } from "@ui/Field";
+import { cardClass } from "@ui/Card";
 
 export default function NewRoomForm(props: {
   nick: string;
@@ -110,29 +113,30 @@ export default function NewRoomForm(props: {
   return (
     <form
       onSubmit={handleCreate}
-      class="bg-surface border border-rim rounded-xl p-4 space-y-4"
+      class={`${cardClass()} p-4 space-y-4`}
     >
       <h2 class="text-sm font-medium text-txt">{t("chat.new_chatroom")}</h2>
 
-      <input
+      <Input
+        class="w-full"
         type="text"
         placeholder={t("chat.room_name_placeholder") as string}
         value={newName()}
         onInput={(e) => setNewName(e.currentTarget.value)}
-        class="w-full bg-surface border border-rim text-txt text-sm rounded-lg px-3 py-2 hover:border-rim-strong focus:outline-none focus:border-accent transition-colors"
         required
       />
 
       <div class="flex items-center gap-2">
-        <label class="text-xs text-muted shrink-0">{t("chat.expire_after")}</label>
-        <input
+        <Field label={t("chat.expire_after")} size="sm">
+          <Input
+          class="w-24"
           type="number"
           min="0"
           max="10080"
           value={newExpire()}
           onInput={(e) => setNewExpire(parseInt(e.currentTarget.value) || 0)}
-          class="w-24 bg-surface border border-rim text-txt text-sm rounded-lg px-3 py-1.5 hover:border-rim-strong focus:outline-none focus:border-accent transition-colors"
-        />
+          />
+        </Field>
         <span class="text-xs text-muted">{t("chat.minutes_never")}</span>
       </div>
 
@@ -167,24 +171,16 @@ export default function NewRoomForm(props: {
       </Show>
 
       <Show when={formError()}>
-        <p class="text-xs text-red-500">{formError()}</p>
+        <p class="text-xs text-danger-txt">{formError()}</p>
       </Show>
 
       <div class="flex gap-2 justify-end pt-1">
-        <button
-          type="button"
-          onClick={props.onCancel}
-          class="text-sm border border-rim text-muted hover:bg-elevated rounded-lg px-3 py-1.5 transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onCancel}>
           {t("chat.cancel")}
-        </button>
-        <button
-          type="submit"
-          disabled={creating()}
-          class="text-sm bg-accent text-accent-fg rounded-lg px-4 py-1.5 hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
+        </Button>
+        <Button size="sm" type="submit" disabled={creating()}>
           {creating() ? t("chat.creating") : t("chat.create")}
-        </button>
+        </Button>
       </div>
     </form>
   );

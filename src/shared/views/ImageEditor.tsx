@@ -2,6 +2,7 @@ import { onCleanup, onMount, Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import FilerobotImageEditor from "filerobot-image-editor";
 import { TABS, TOOLS } from "react-filerobot-image-editor";
+import { Button } from "@ui/Button";
 
 // input.utils.js in @scaleflex/ui hardcodes lightPalette for input bg/text/border,
 // completely bypassing the theme object. Inject CSS overrides using the stable
@@ -298,14 +299,15 @@ export default function ImageEditor(props: ImageEditorProps) {
     <>
       <div ref={container} style="position: fixed; inset: 0; z-index: 9999;" />
       <Show when={props.onSkip}>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          class="ml-3 shrink-0"
           ref={skipButton}
-          type="button"
           onClick={() => props.onSkip!()}
-          class="ml-3 shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md border border-rim text-txt text-sm hover:bg-elevated transition-colors"
         >
           {t("ui.use_original")}
-        </button>
+        </Button>
       </Show>
     </>
   );

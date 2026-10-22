@@ -11,7 +11,8 @@ import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 
 import type { ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
 
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 const ExcalidrawCanvas = lazy(() => import("@/modules/excalidraw/ExcalidrawCanvas"));
 const VideoEditor = lazy(() =>
@@ -255,14 +256,9 @@ const FilePreviewModal: Component<Props> = (props) => {
             <span id={titleId} class="text-sm font-semibold text-txt truncate">{props.filename}</span>
             <div class="flex items-center gap-3 shrink-0 ml-2">
               <Show when={editable()}>
-                <button
-                  onClick={openEditor}
-                  disabled={savingEdit()}
-                  title="Edit"
-                  class="text-muted hover:text-txt disabled:opacity-50"
-                >
+                <IconButton label="Edit" onClick={openEditor} disabled={savingEdit()}>
                   <MdOutlineEdit size={18} />
-                </button>
+                </IconButton>
               </Show>
               <button
                 onClick={() => setWide((v) => !v)}
@@ -307,7 +303,7 @@ const FilePreviewModal: Component<Props> = (props) => {
               <Show
                 when={pdfBlobUrl.state !== "errored"}
                 fallback={
-                  <p class="text-sm text-red-500">
+                  <p class="text-sm text-danger-txt">
                     Couldn't load preview.{" "}
                     <a href={props.url} download={props.filename} class="underline">Download instead</a>
                   </p>
@@ -323,7 +319,7 @@ const FilePreviewModal: Component<Props> = (props) => {
               <Show
                 when={epubBuffer.state !== "errored"}
                 fallback={
-                  <p class="text-sm text-red-500">
+                  <p class="text-sm text-danger-txt">
                     Couldn't load preview.{" "}
                     <a href={props.url} download={props.filename} class="underline">Download instead</a>
                   </p>
@@ -331,21 +327,13 @@ const FilePreviewModal: Component<Props> = (props) => {
               >
                 <Show when={epubBuffer.state === "ready"} fallback={<p class="text-sm text-muted">Loading…</p>}>
                   <div class="flex items-center gap-2 h-[80vh]">
-                    <button
-                      onClick={() => rendition?.prev()}
-                      title="Previous page"
-                      class="shrink-0 text-muted hover:text-txt"
-                    >
+                    <IconButton label="Previous page" class="shrink-0" onClick={() => rendition?.prev()}>
                       <MdOutlineChevron_left size={24} />
-                    </button>
+                    </IconButton>
                     <div ref={epubContainer} class="flex-1 h-full rounded-lg border border-rim" />
-                    <button
-                      onClick={() => rendition?.next()}
-                      title="Next page"
-                      class="shrink-0 text-muted hover:text-txt"
-                    >
+                    <IconButton label="Next page" class="shrink-0" onClick={() => rendition?.next()}>
                       <MdOutlineChevron_right size={24} />
-                    </button>
+                    </IconButton>
                   </div>
                 </Show>
               </Show>
@@ -355,7 +343,7 @@ const FilePreviewModal: Component<Props> = (props) => {
               <Show
                 when={!sceneError()}
                 fallback={
-                  <p class="text-sm text-red-500">
+                  <p class="text-sm text-danger-txt">
                     Couldn't load drawing.{" "}
                     <a href={props.url} download={props.filename} class="underline">Download instead</a>
                   </p>
@@ -397,7 +385,7 @@ const FilePreviewModal: Component<Props> = (props) => {
                 <Show
                   when={text.state !== "errored"}
                   fallback={
-                    <p class="text-sm text-red-500">
+                    <p class="text-sm text-danger-txt">
                       Couldn't load preview.{" "}
                       <a href={props.url} download={props.filename} class="underline">Download instead</a>
                     </p>
@@ -414,13 +402,9 @@ const FilePreviewModal: Component<Props> = (props) => {
                                 : "Scripts are disabled."}{" "}
                               Only run scripts from files you trust.
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => setRunScripts(true)}
-                              class="px-2 py-1 rounded border border-rim hover:text-txt"
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => setRunScripts(true)}>
                               Run scripts
-                            </button>
+                            </Button>
                           </div>
                         </Show>
                         {/* Uploaded HTML is untrusted. Never allow-same-origin: the frame

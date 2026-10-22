@@ -27,6 +27,8 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import { toggleVerb, repeatItem } from "@/shared/stream/store/actions-store";
 import { MdFillPublic, MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useScrollStyle } from "@utsukta/spa-core/store/scroll-style";
+import { Button, iconButtonClass } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 // ── iid lookup from the pubstream flat posts signal ────────────────────────
 function iidForMid(mid: string): number {
@@ -64,10 +66,7 @@ function usePubstreamHandlers(tag: () => string): StreamHandlers {
   };
 }
 
-const ICON_BTN =
-  "p-1.5 rounded-lg border border-rim bg-surface text-muted " +
-  "hover:bg-elevated hover:text-txt transition-colors shrink-0 " +
-  "flex items-center justify-center";
+const ICON_BTN = iconButtonClass("square");
 
 export default function PubstreamContentWidget() {
   const { t } = useI18n();
@@ -159,7 +158,8 @@ export default function PubstreamContentWidget() {
             >
               <div class="flex items-center gap-1">
                 <span class="text-muted text-sm shrink-0">#</span>
-                <input
+                <Input
+                  class="w-28"
                   ref={searchInputRef}
                   type="search"
                   value={tag()}
@@ -167,9 +167,6 @@ export default function PubstreamContentWidget() {
                   onKeyDown={(e) => e.key === "Enter" && setSearchOpen(false)}
                   onBlur={onSearchBlur}
                   placeholder={t("pubstream.filter_by_tag")}
-                  class="h-8 w-28 sm:w-36 text-sm border border-rim rounded-lg bg-surface
-                         text-txt placeholder:text-muted px-2.5 py-1.5
-                         focus:outline-none focus:ring-2 focus:ring-accent transition-colors"
                 />
                 <Show when={tag()}>
                   <button onClick={clearTag} title={t("pubstream.clear")} class={ICON_BTN}>
@@ -238,13 +235,9 @@ export default function PubstreamContentWidget() {
 
         <Show when={!loading() && hasMore() && threads().length > 0 && scrollStyle() === "load_more"}>
           <div class="flex justify-center mt-6 mb-2">
-            <button
-              onClick={() => loadMore(tag() || undefined)}
-              class="px-6 py-2 rounded-xl border border-rim text-sm text-muted
-                     hover:bg-elevated hover:text-txt transition-colors"
-            >
+            <Button variant="ghost" onClick={() => loadMore(tag() || undefined)}>
               {t("pubstream.load_more")}
-            </button>
+            </Button>
           </div>
         </Show>
 

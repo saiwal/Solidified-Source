@@ -7,7 +7,7 @@ import {
   MdFillRepeat_one, MdFillVolume_up, MdFillVolume_off, MdFillKeyboard_arrow_down, MdOutlineStop_circle, MdOutlineGraphic_eq,
 } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 import { imageUrl } from "../api";
 import {
   currentSession, current, queue, index, playing, position, displayDuration, loading, error,
@@ -24,6 +24,8 @@ import FavoriteButton from "../library/FavoriteButton";
 import TrackMenu from "../library/TrackMenu";
 import Queue from "./Queue";
 import { fullOpen, setFullOpen, fullTab, setFullTab, visualizerOn, toggleVisualizer, type PlayerTab } from "../chrome/player-ui";
+import { IconButton } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 const Visualizer = lazy(() => import("./Visualizer"));
 
@@ -105,22 +107,22 @@ export default function FullPlayer() {
                     </div>
                   </div>
 
-                  <Show when={error()}><p class="text-sm text-red-500">{t("jellyfin.err_playback")}</p></Show>
+                  <Show when={error()}><p class="text-sm text-danger-txt">{t("jellyfin.err_playback")}</p></Show>
 
                   <div class="flex items-center gap-2 sm:gap-4">
                     <button type="button" class={toggleCls(shuffled())} title={t("jellyfin.shuffle")} aria-pressed={shuffled()} onClick={toggleShuffle}>
                       <MdFillShuffle size={20} />
                     </button>
-                    <button type="button" class={iconBtn} title={t("jellyfin.previous")} onClick={prev}>
+                    <IconButton label={t("jellyfin.previous")} onClick={prev}>
                       <MdFillSkip_previous size={30} />
-                    </button>
+                    </IconButton>
                     <button type="button" onClick={toggle} title={playing() ? t("jellyfin.pause") : t("jellyfin.play")}
                       class={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent text-accent-fg shadow-lg hover:brightness-110 transition ${loading() ? "animate-pulse" : ""}`}>
                       <Show when={playing()} fallback={<MdFillPlay_arrow size={36} />}><MdFillPause size={36} /></Show>
                     </button>
-                    <button type="button" class={iconBtn} title={t("jellyfin.next")} onClick={next} disabled={!hasNext()}>
+                    <IconButton label={t("jellyfin.next")} onClick={next} disabled={!hasNext()}>
                       <MdFillSkip_next size={30} />
-                    </button>
+                    </IconButton>
                     <button type="button" class={toggleCls(repeat() !== "off")} aria-pressed={repeat() !== "off"} onClick={cycleRepeat}
                       title={t(repeat() === "one" ? "jellyfin.repeat_one" : repeat() === "all" ? "jellyfin.repeat_all" : "jellyfin.repeat_off")}>
                       <Show when={repeat() === "one"} fallback={<MdFillRepeat size={20} />}><MdFillRepeat_one size={20} /></Show>
@@ -144,13 +146,19 @@ export default function FullPlayer() {
                     <button type="button" class={toggleCls(visualizerOn())} title={t("jellyfin.visualizer")} aria-pressed={visualizerOn()} onClick={toggleVisualizer}>
                       <MdOutlineGraphic_eq size={20} />
                     </button>
-                    <button type="button" class={iconBtn} title={t("jellyfin.close_player")} onClick={() => { setFullOpen(false); stop(); }}>
+                    <IconButton
+                      label={t("jellyfin.close_player")}
+                      onClick={() => { setFullOpen(false); stop(); }}
+                    >
                       <MdOutlineStop_circle size={20} />
-                    </button>
+                    </IconButton>
                     <span class="mx-2 h-5 w-px bg-rim/60" aria-hidden="true" />
-                    <button type="button" class={iconBtn} title={muted() ? t("jellyfin.unmute") : t("jellyfin.mute")} onClick={() => setMuted(!muted())}>
+                    <IconButton
+                      label={muted() ? t("jellyfin.unmute") : t("jellyfin.mute")}
+                      onClick={() => setMuted(!muted())}
+                    >
                       <Show when={muted() || volume() === 0} fallback={<MdFillVolume_up size={20} />}><MdFillVolume_off size={20} /></Show>
-                    </button>
+                    </IconButton>
                     <input type="range" min="0" max="1" step="0.05" value={muted() ? 0 : volume()}
                       onInput={(e) => setVolume(Number(e.currentTarget.value))} aria-label={t("jellyfin.volume")}
                       class="w-24 h-1 accent-[var(--color-accent)]" />
@@ -179,7 +187,7 @@ export default function FullPlayer() {
                       <Switch>
                         <Match when={tab === "queue"}><Queue /></Match>
                         <Match when={tab === "lyrics"}>
-                          <Show when={current()?.HasLyrics && currentSession()} fallback={<p class="px-2 py-10 text-center text-sm text-muted">{t("jellyfin.no_lyrics")}</p>}>
+                          <Show when={current()?.HasLyrics && currentSession()} fallback={<EmptyState class="px-2">{t("jellyfin.no_lyrics")}</EmptyState>}>
                             <Lyrics s={currentSession()!} itemId={current()!.Id} />
                           </Show>
                         </Match>

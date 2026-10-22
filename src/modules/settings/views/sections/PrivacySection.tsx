@@ -2,10 +2,12 @@ import { Show } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useSectionForm } from "../../store/useSectionForm";
-import { SaveBar, Group, SwitchRow } from "../../store/FormHelpers";
+import { SaveBar, Group } from "../../store/FormHelpers";
 import { setLocalOnlyPostsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineTune, MdOutlineVisibility_off } from "solid-icons/md";
+import { Toggle } from "@ui/Toggle";
+import { Card, CardHeader } from "@ui/Card";
 
 interface PrivacyData {
   autoperms: number;
@@ -67,13 +69,13 @@ export default function PrivacySection() {
             title={t("settings.privacy_advanced")}
             desc={t("settings.privacy_advanced_desc")}
           >
-            <SwitchRow name="autoperms"                     label={t("settings.privacy_autoperms")}         hint={t("settings.privacy_autoperms_hint")}         checked={!!data()!.autoperms} />
-            <SwitchRow name="permit_all_mentions"           label={t("settings.privacy_permit_mentions")}   hint={t("settings.privacy_permit_mentions_hint")}   checked={!!data()!.permit_all_mentions} />
-            <SwitchRow name="moderate_unsolicited_comments" label={t("settings.privacy_moderate_comments")} hint={t("settings.privacy_moderate_comments_hint")} checked={!!data()!.moderate_unsolicited_comments} />
-            <SwitchRow name="index_opt_out"                 label={t("settings.privacy_index_opt_out")}     hint={t("settings.privacy_index_opt_out_hint")}     checked={!!data()!.index_opt_out} />
-            <SwitchRow name="suggestme"                     label={t("settings.privacy_suggestme")}         hint={t("settings.privacy_suggestme_hint")}         checked={!!data()!.suggestme} />
-            <SwitchRow name="show_online_status"            label={t("settings.privacy_online_status")}     hint={t("settings.privacy_online_status_hint")}     checked={!!data()!.show_online_status} />
-            <SwitchRow name="ocap_enabled"                  label={t("settings.privacy_ocap")}              hint={t("settings.privacy_ocap_hint")}              checked={!!data()!.ocap_enabled} />
+            <Toggle name="autoperms"                     label={t("settings.privacy_autoperms")}         hint={t("settings.privacy_autoperms_hint")}         checked={!!data()!.autoperms} />
+            <Toggle name="permit_all_mentions"           label={t("settings.privacy_permit_mentions")}   hint={t("settings.privacy_permit_mentions_hint")}   checked={!!data()!.permit_all_mentions} />
+            <Toggle name="moderate_unsolicited_comments" label={t("settings.privacy_moderate_comments")} hint={t("settings.privacy_moderate_comments_hint")} checked={!!data()!.moderate_unsolicited_comments} />
+            <Toggle name="index_opt_out"                 label={t("settings.privacy_index_opt_out")}     hint={t("settings.privacy_index_opt_out_hint")}     checked={!!data()!.index_opt_out} />
+            <Toggle name="suggestme"                     label={t("settings.privacy_suggestme")}         hint={t("settings.privacy_suggestme_hint")}         checked={!!data()!.suggestme} />
+            <Toggle name="show_online_status"            label={t("settings.privacy_online_status")}     hint={t("settings.privacy_online_status_hint")}     checked={!!data()!.show_online_status} />
+            <Toggle name="ocap_enabled"                  label={t("settings.privacy_ocap")}              hint={t("settings.privacy_ocap_hint")}              checked={!!data()!.ocap_enabled} />
           </Group>
 
           <Group
@@ -81,7 +83,7 @@ export default function PrivacySection() {
             title={t("settings.privacy_local_only_group")}
             desc={t("settings.privacy_local_only_group_desc")}
           >
-            <SwitchRow name="local_only_posts" label={t("settings.privacy_local_only_posts")} hint={t("settings.privacy_local_only_posts_hint")} checked={!!data()!.local_only_posts} />
+            <Toggle name="local_only_posts" label={t("settings.privacy_local_only_posts")} hint={t("settings.privacy_local_only_posts_hint")} checked={!!data()!.local_only_posts} />
           </Group>
 
           <SaveBar saving={saving()} />
@@ -95,14 +97,14 @@ function Skeleton() {
   return (
     <div class="space-y-5 animate-pulse">
       {[...Array(1)].map(() => (
-        <div class="rounded-xl border border-rim bg-surface">
-          <div class="flex items-center gap-3 px-4 py-3 border-b border-rim">
+        <Card>
+          <CardHeader class="flex items-center gap-3">
             <div class="h-8 w-8 rounded-lg bg-elevated" />
             <div class="space-y-1.5">
               <div class="h-3.5 w-36 rounded bg-elevated" />
               <div class="h-3 w-52 rounded bg-elevated" />
             </div>
-          </div>
+          </CardHeader>
           <div class="px-4 py-2 space-y-3">
             {[...Array(5)].map(() => (
               <div class="flex items-center justify-between gap-4">
@@ -111,7 +113,7 @@ function Skeleton() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );

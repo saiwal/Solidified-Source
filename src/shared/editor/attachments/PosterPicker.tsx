@@ -3,13 +3,13 @@
  * Plays the local File when we still have it (fresh upload), else the hub copy
  * — same-origin /attach or /cloud, so the canvas isn't tainted.
  */
-import { createSignal, createUniqueId, onCleanup, type Component } from "solid-js";
+import { createSignal, onCleanup, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
-import Modal from "@/shared/views/Modal";
-import { MdOutlineClose } from "solid-icons/md";
+import { Modal, ModalPanel } from "@ui/Modal";
 import { grabFrame } from "./videoPoster";
 import type { Attachment } from "./types";
+import { Button } from "@ui/Button";
 
 interface Props {
   attachment: Attachment;
@@ -19,7 +19,6 @@ interface Props {
 
 const PosterPicker: Component<Props> = (props) => {
   const { t } = useI18n();
-  const titleId = createUniqueId();
   const [busy, setBusy] = createSignal(false);
   let videoEl: HTMLVideoElement | undefined;
 
@@ -44,34 +43,23 @@ const PosterPicker: Component<Props> = (props) => {
   }
 
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
-      <div class="flex flex-col w-full max-w-lg rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden">
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold">{t("editor.poster_title")}</span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            aria-label={t("layout.close")}
-            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-          >
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </header>
+    <Modal onClose={props.onClose} class="z-[80]">
+      <ModalPanel
+        title={t("editor.poster_title")}
+        onClose={props.onClose}
+        size="lg"
+        class="flex flex-col text-txt overflow-hidden"
+      >
         <div class="flex flex-col gap-3 p-4">
           <video ref={videoEl} src={src} controls playsinline preload="auto" class="w-full max-h-72 rounded-lg bg-black" />
           <p class="text-xs text-muted">{t("editor.poster_hint")}</p>
           <div class="flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              onClick={useFrame}
-              disabled={busy()}
-              class="px-4 py-1.5 rounded-lg text-sm font-medium bg-accent text-accent-fg hover:opacity-90 disabled:opacity-50 transition-opacity"
-            >
+            <Button size="sm" onClick={useFrame} disabled={busy()}>
               {t("editor.poster_use_frame")}
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

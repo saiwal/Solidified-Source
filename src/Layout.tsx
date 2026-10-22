@@ -174,7 +174,7 @@ const Layout: ParentComponent = (props) => {
             <div
               role="alert"
               class="fixed top-0 inset-x-0 z-[100] flex items-center justify-center gap-2
-                   bg-amber-500 text-amber-950 text-sm font-medium py-1.5 select-none"
+                   bg-warning text-warning-fg text-sm font-medium py-1.5 select-none"
             >
               <svg
                 aria-hidden="true"
@@ -344,7 +344,7 @@ const Layout: ParentComponent = (props) => {
               </span>
               <Show when={!hidesWidgetSlots()}>
                 <Show when={showsTemplateNotice()}>
-                  <p class="text-xs text-amber-600 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1.5 mb-2">
+                  <p class="text-xs text-warning-txt bg-warning/10 border border-warning/30 rounded-lg px-2 py-1.5 mb-2">
                     {t("widgets.template_shared_notice")
                       .replace("{{name}}", templateName(pageTemplateId()!) ?? "")
                       .replace("{{count}}", String(templateUsageCount(pageTemplateId()!)))}

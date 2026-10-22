@@ -1,26 +1,23 @@
 // Same layout as the Cards header: title left, Month/Week/Day/List switcher in
 // the middle, New event + ⋯ (iCal export/import) on the right.
-import { createSignal, For, Show } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, Show } from "solid-js";
 import { MdOutlineAdd, MdOutlineMore_horiz, MdOutlineFile_download, MdOutlineFile_upload } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
-import { createPopover } from "@/shared/stream/filters/createPopover";
 import { openEvent } from "@/shared/views/modal-host";
 import { importCalendar } from "../api";
 import { viewType, setViewType, bumpCalendarRefresh, type ViewType } from "../store";
+import { Button, IconButton } from "@ui/Button";
+import { Menu, MenuItem } from "@ui/Menu";
+import { Tabs } from "@ui/Tabs";
 
 const VIEWS: ViewType[] = ["month", "week", "day", "list"];
 const VIEW_LABEL = {
   month: "calendar.view_month", week: "calendar.view_week", day: "calendar.view_day", list: "calendar.view_list",
 } as const;
 
-const squareBtn = "p-1.5 rounded-lg border border-rim bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors";
-const panel = "z-50 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2";
-const menuItem = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-txt hover:bg-elevated/70 text-left cursor-pointer";
 
 export default function CalendarHeaderWidget() {
   const { t } = useI18n();
@@ -31,13 +28,12 @@ export default function CalendarHeaderWidget() {
   // local channel on this server, regardless of whose /cal page is open.
   // New events land in the viewer's own calendar, so offer it only there.
   const canCreate = () => role() === "owner";
-  const more = createPopover({ placement: "bottom-end" });
+  let fileInput!: HTMLInputElement;
   const [importing, setImporting] = createSignal(false);
 
   async function handleImport(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
-    more.setOpen(false);
     if (!file) return;
     setImporting(true);
     try {
@@ -59,62 +55,49 @@ export default function CalendarHeaderWidget() {
           {owner() === null ? t("calendar.title_mine") : t("calendar.title_of", { name: owner()! })}
         </h1>
 
-        <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
-          <For each={VIEWS}>
-            {(v) => (
-              <button
-                type="button"
-                aria-pressed={viewType() === v}
-                onClick={() => setViewType(v)}
-                class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
-                  ${viewType() === v ? "bg-accent text-accent-fg font-semibold" : "text-muted hover:text-txt"}`}
-              >
-                {t(VIEW_LABEL[v])}
-              </button>
-            )}
-          </For>
-        </div>
+        <Tabs
+          label={t("nav.calendar")}
+          class="mx-auto"
+          value={viewType()}
+          onChange={setViewType}
+          items={VIEWS.map((v) => ({ value: v, label: t(VIEW_LABEL[v]) }))}
+        />
 
         <div class="flex items-center gap-1.5">
           <Show when={canCreate()}>
-            <button
-              type="button"
-              onClick={() => openEvent({ onCreated: bumpCalendarRefresh })}
-              class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg hover:opacity-90 transition-opacity"
-            >
+            <Button size="sm" onClick={() => openEvent({ onCreated: bumpCalendarRefresh })}>
               <MdOutlineAdd class="w-4 h-4" />
               {t("calendar.new_event")}
-            </button>
+            </Button>
           </Show>
 
-          <span ref={more.ref}>
-            <button type="button" class={squareBtn} title={t("calendar.more")} aria-label={t("calendar.more")}
-              aria-expanded={more.open()} onClick={() => more.setOpen(!more.open())}>
-              <MdOutlineMore_horiz size={15} />
-            </button>
-          </span>
-        </div>
-      </div>
-
-      <Show when={more.open()}>
-        <Portal mount={topLayer()}>
-          <div ref={more.floating} style={more.style()} class={`${panel} w-60`}>
-            <a href={`/spa/cal/${encodeURIComponent(nick())}?export=ical`} download={`${nick()}-calendar.ics`}
-              class={menuItem} onClick={() => more.setOpen(false)}>
-              <span class="w-4 shrink-0 text-muted"><MdOutlineFile_download size={16} /></span>
+          <Menu
+            label={t("calendar.more")}
+            class="w-60"
+            trigger={(p) => (
+              <IconButton label={t("calendar.more")} variant="square" {...p}>
+                <MdOutlineMore_horiz size={15} />
+              </IconButton>
+            )}
+          >
+            <MenuItem
+              icon={<MdOutlineFile_download size={16} />}
+              href={`/spa/cal/${encodeURIComponent(nick())}?export=ical`}
+              download={`${nick()}-calendar.ics`}
+            >
               {t("calendar.export_ical")}
-            </a>
+            </MenuItem>
             {/* Import lands in the viewer's own channel calendar, so only offer it there */}
             <Show when={role() === "owner"}>
-              <label class={`${menuItem} ${importing() ? "opacity-60 pointer-events-none" : ""}`}>
-                <span class="w-4 shrink-0 text-muted"><MdOutlineFile_upload size={16} /></span>
+              <MenuItem icon={<MdOutlineFile_upload size={16} />} disabled={importing()} onClick={() => fileInput.click()}>
                 {importing() ? t("calendar.importing") : t("calendar.import_ical")}
-                <input type="file" accept=".ics,.ical,text/calendar" class="hidden" onChange={handleImport} disabled={importing()} />
-              </label>
+              </MenuItem>
             </Show>
-          </div>
-        </Portal>
-      </Show>
+          </Menu>
+          {/* Outside the menu: it has to outlive the menu closing while the file picker is open. */}
+          <input ref={fileInput} type="file" accept=".ics,.ical,text/calendar" class="hidden" onChange={handleImport} />
+        </div>
+      </div>
     </div>
   );
 }

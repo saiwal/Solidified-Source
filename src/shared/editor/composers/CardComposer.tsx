@@ -44,6 +44,7 @@ import {
   type CardTemplate, type TemplateFields,
 } from "../lib/cardTemplates";
 import { MdOutlineRefresh } from "solid-icons/md";
+import { Input, Textarea } from "@ui/Field";
 
 export type { CardTemplate };
 
@@ -413,12 +414,12 @@ export default function CardComposer(props: Props) {
       meta={
         <>
           {/* Title */}
-          <input
+          <Input
+            class="w-full font-bold"
             type="text"
             placeholder={t("editor.card_title_placeholder")}
             value={store.title()}
             onInput={(e) => onTitleChange(e.currentTarget.value)}
-            class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
 
           {/* Summary */}
@@ -505,34 +506,34 @@ export default function CardComposer(props: Props) {
       <Show when={template() !== "freeform"}>
         <div class={`flex-1 ${floor()} flex flex-col gap-4`}>
             <Show when={template() === "quote"}>
-              <textarea
+              <Textarea
+                class="w-full flex-1 min-h-[88px] resize-none"
                 placeholder={t("cards.quote_text")}
                 value={fields().quoteText}
                 onInput={(e) => setField("quoteText")(e.currentTarget.value)}
-                class={`w-full flex-1 min-h-[88px] px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
               />
-              <input
+              <Input
+                class="w-full"
                 type="text"
                 placeholder={t("cards.quote_attribution")}
                 value={fields().quoteAttribution}
                 onInput={(e) => setField("quoteAttribution")(e.currentTarget.value)}
-                class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
               />
             </Show>
 
             <Show when={template() === "definition"}>
-              <input
+              <Input
+                class="w-full"
                 type="text"
                 placeholder={t("cards.definition_term")}
                 value={fields().defTerm}
                 onInput={(e) => setField("defTerm")(e.currentTarget.value)}
-                class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
               />
-              <textarea
+              <Textarea
+                class="w-full flex-1 min-h-[88px] resize-none"
                 placeholder={t("cards.definition_body")}
                 value={fields().defBody}
                 onInput={(e) => setField("defBody")(e.currentTarget.value)}
-                class={`w-full flex-1 min-h-[88px] px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
               />
             </Show>
 
@@ -540,17 +541,10 @@ export default function CardComposer(props: Props) {
               {/* URL + fetch. Blur auto-fills the empty fields above; the button
                   forces a re-fetch that overwrites them. */}
               <div class="flex items-center gap-2">
-                <input
-                  type="url"
-                  placeholder={t("cards.link_url")}
-                  value={fields().linkUrl}
-                  onInput={(e) => {
+                <Input class="flex-1 min-w-0" type="url" placeholder={t("cards.link_url")} value={fields().linkUrl} onInput={(e) => {
                     setField("linkUrl")(e.currentTarget.value);
                     setMetaError(false);
-                  }}
-                  onBlur={() => void loadLinkMeta()}
-                  class={`flex-1 min-w-0 px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-                />
+                  }} onBlur={() => void loadLinkMeta()} />
                 <IconButton
                   title={metaLoading() ? t("cards.link_fetching") : t("cards.link_fetch")}
                   onClick={() => void loadLinkMeta(true)}
@@ -560,7 +554,7 @@ export default function CardComposer(props: Props) {
               </div>
 
               <Show when={metaError()}>
-                <p class="text-xs text-red-500">{t("cards.link_fetch_failed")}</p>
+                <p class="text-xs text-danger-txt">{t("cards.link_fetch_failed")}</p>
               </Show>
 
               {/* Fetched thumbnail — opt in, since not every link wants one. */}
@@ -582,11 +576,11 @@ export default function CardComposer(props: Props) {
                 </label>
               </Show>
 
-              <textarea
+              <Textarea
+                class="w-full flex-1 min-h-[88px] resize-none"
                 placeholder={t("cards.link_note")}
                 value={fields().linkNote}
                 onInput={(e) => setField("linkNote")(e.currentTarget.value)}
-                class={`w-full flex-1 min-h-[88px] px-0 py-1.5 text-sm text-txt placeholder:text-muted resize-none ${underlineFieldClass}`}
               />
             </Show>
         </div>

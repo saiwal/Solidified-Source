@@ -2,6 +2,9 @@ import { createSignal, Show, Switch, Match } from "solid-js";
 import { A } from "@solidjs/router";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Field, Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 type Mode = "file" | "migrate";
 
@@ -85,7 +88,7 @@ export default function ImportChannelView() {
 
   return (
     <div class="min-h-[60vh] flex items-center justify-center py-8">
-      <div class="w-full max-w-lg bg-surface border border-rim rounded-2xl p-6 sm:p-8 shadow-sm space-y-4">
+      <Card raised class="w-full max-w-lg p-6 sm:p-8 space-y-4">
         <div class="mb-2 text-center">
           <h1 class="text-xl font-bold text-txt">{t("settings.portability_import_title")}</h1>
           <p class="text-sm text-muted mt-1">{t("settings.portability_import_desc")}</p>
@@ -132,72 +135,64 @@ export default function ImportChannelView() {
           </Match>
 
           <Match when={mode() === "migrate"}>
-            <div class="rounded-lg border border-amber-300 bg-amber-50/50 dark:bg-amber-900/10 p-3">
-              <p class="text-xs text-amber-800 dark:text-amber-300">
+            <div class="rounded-lg border border-warning/40 bg-warning-muted/50 p-3">
+              <p class="text-xs text-warning-txt">
                 {t("settings.portability_migrate_warning")}
               </p>
             </div>
 
             <div class="space-y-2">
-              <label class="block text-xs font-medium text-muted">
-                {t("settings.portability_old_address_label")}
-              </label>
-              <input
+              <Field label={t("settings.portability_old_address_label")} size="sm">
+                <Input
+                class="w-full"
                 type="text"
                 value={oldAddress()}
                 onInput={(e) => setOldAddress(e.currentTarget.value)}
                 placeholder={t("settings.portability_old_address_placeholder")}
                 disabled={busy()}
-                class="w-full px-3 py-2 rounded-lg border border-rim bg-surface
-                       text-txt text-sm outline-none focus:border-accent transition-colors"
-              />
+                />
+              </Field>
             </div>
 
             <div class="space-y-2">
-              <label class="block text-xs font-medium text-muted">
-                {t("settings.portability_old_email_label")}
-              </label>
-              <input
+              <Field label={t("settings.portability_old_email_label")} size="sm">
+                <Input
+                class="w-full"
                 type="email"
                 value={oldEmail()}
                 onInput={(e) => setOldEmail(e.currentTarget.value)}
                 autocomplete="off"
                 disabled={busy()}
-                class="w-full px-3 py-2 rounded-lg border border-rim bg-surface
-                       text-txt text-sm outline-none focus:border-accent transition-colors"
-              />
+                />
+              </Field>
             </div>
 
             <div class="space-y-2">
-              <label class="block text-xs font-medium text-muted">
-                {t("settings.portability_old_password_label")}
-              </label>
-              <input
+              <Field label={t("settings.portability_old_password_label")} size="sm">
+                <Input
+                class="w-full"
                 type="password"
                 value={oldPassword()}
                 onInput={(e) => setOldPassword(e.currentTarget.value)}
                 autocomplete="off"
                 disabled={busy()}
-                class="w-full px-3 py-2 rounded-lg border border-rim bg-surface
-                       text-txt text-sm outline-none focus:border-accent transition-colors"
-              />
+                />
+              </Field>
             </div>
           </Match>
         </Switch>
 
         <div class="space-y-2">
-          <label class="block text-xs font-medium text-muted">
-            {t("settings.portability_newname_label")}
-          </label>
-          <input
+          <Field label={t("settings.portability_newname_label")} size="sm">
+            <Input
+            class="w-full"
             type="text"
             value={newname()}
             onInput={(e) => setNewname(e.currentTarget.value)}
             placeholder={t("settings.portability_newname_placeholder")}
             disabled={busy()}
-            class="w-full px-3 py-2 rounded-lg border border-rim bg-surface
-                   text-txt text-sm outline-none focus:border-accent transition-colors"
-          />
+            />
+          </Field>
         </div>
 
         <label class="flex items-center gap-2 text-sm text-txt cursor-pointer">
@@ -213,44 +208,34 @@ export default function ImportChannelView() {
 
         <Show when={makePrimary()}>
           <div class="space-y-2">
-            <label class="block text-xs font-medium text-muted">
-              {t("settings.portability_import_password_label")}
-            </label>
-            <input
+            <Field label={t("settings.portability_import_password_label")} size="sm">
+              <Input
+              class="w-full"
               type="password"
               value={localPassword()}
               onInput={(e) => setLocalPassword(e.currentTarget.value)}
               placeholder={t("settings.danger_password_placeholder")}
               autocomplete="current-password"
               disabled={busy()}
-              class="w-full px-3 py-2 rounded-lg border border-rim bg-surface
-                     text-txt text-sm outline-none focus:border-accent transition-colors"
-            />
+              />
+            </Field>
           </div>
         </Show>
 
         <Switch>
           <Match when={mode() === "file"}>
-            <button
-              type="button"
-              disabled={!importFile() || busy()}
-              onClick={handleImport}
-              class="w-full px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            >
+            <Button class="w-full" disabled={!importFile() || busy()} onClick={handleImport}>
               {busy() ? t("settings.portability_importing") : t("settings.portability_import_btn")}
-            </button>
+            </Button>
           </Match>
           <Match when={mode() === "migrate"}>
-            <button
-              type="button"
+            <Button
+              class="w-full"
               disabled={!oldAddress().trim() || !oldEmail().trim() || !oldPassword() || busy()}
               onClick={handleMigrate}
-              class="w-full px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
             >
               {busy() ? t("settings.portability_migrating") : t("settings.portability_migrate_btn")}
-            </button>
+            </Button>
           </Match>
         </Switch>
 
@@ -259,7 +244,7 @@ export default function ImportChannelView() {
             {t("channel_create.title")}
           </A>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

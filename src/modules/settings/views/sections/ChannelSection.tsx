@@ -2,12 +2,16 @@ import { Show, For, createSignal, createUniqueId } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchChannelSettings, saveChannelSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
-import { SaveBar, Group, Field, SwitchRow, inputClass } from "../../store/FormHelpers";
+import { SaveBar, Group } from "../../store/FormHelpers";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import FilterRuleBuilder from "@/shared/views/FilterRuleBuilder";
 import { MdOutlineFilter_alt, MdOutlineManage_accounts, MdOutlineShield, MdOutlineTune } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Field, Input, Select } from "@ui/Field";
+import { Toggle } from "@ui/Toggle";
+import { Card, CardHeader } from "@ui/Card";
 interface PermRow {
   key: string;
   label: string;
@@ -15,10 +19,6 @@ interface PermRow {
   help: string;
   options: Record<string, string>;
 }
-
-const NUMBER_ROW_INPUT = `w-16 shrink-0 px-2 py-1.5 rounded-lg border border-rim bg-base text-txt
-  text-sm text-center hover:border-rim-strong focus:outline-none
-  focus:border-rim-strong transition-colors`;
 
 export default function ChannelSection() {
   const { t } = useI18n();
@@ -74,10 +74,10 @@ export default function ChannelSection() {
             >
               <div class="py-2.5">
                 <Field label={t("settings.channel_role")} hint={t("settings.channel_role_hint")}>
-                  <select
+                  <Select
+                    class="w-full"
                     name="permissions_role"
                     required
-                    class={inputClass}
                     onChange={(e) => setRoleSel(e.currentTarget.value)}
                   >
                     <Show when={d().permissions_role === ""}>
@@ -92,7 +92,7 @@ export default function ChannelSection() {
                         </option>
                       )}
                     </For>
-                  </select>
+                  </Select>
                 </Field>
               </div>
               <Show when={effRole() === "custom"}>
@@ -101,14 +101,9 @@ export default function ChannelSection() {
                     <span class="block text-sm text-txt">{t("settings.privacy_perm_limits")}</span>
                     <span class="block text-xs text-muted">{t("settings.privacy_perm_limits_desc")}</span>
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setPermOpen(true)}
-                    class="shrink-0 px-3 py-1.5 text-sm rounded-lg border border-rim bg-base text-txt
-                           hover:border-rim-strong transition-colors"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setPermOpen(true)}>
                     {t("settings.channel_perm_limits_open")}
-                  </button>
+                  </Button>
                 </div>
                 {/* Mirrors of the modal's state — these are what actually submit */}
                 <For each={permRows()}>
@@ -126,7 +121,7 @@ export default function ChannelSection() {
             >
               <div class="py-2.5 space-y-4">
                 <Field label={t("settings.channel_timezone")}>
-                  <select name="timezone" class={inputClass}>
+                  <Select class="w-full" name="timezone">
                     <For each={Object.entries(d().timezones)}>
                       {([continent, zones]) => (
                         <optgroup label={continent}>
@@ -140,20 +135,26 @@ export default function ChannelSection() {
                         </optgroup>
                       )}
                     </For>
-                  </select>
+                  </Select>
                 </Field>
                 <Field label={t("settings.channel_defloc")} hint={t("settings.channel_defloc_hint")}>
-                  <input type="text" name="defloc" value={d().defloc} class={inputClass} />
+                  <Input class="w-full" type="text" name="defloc" value={d().defloc} />
                 </Field>
               </div>
-              <SwitchRow name="allow_location" label={t("settings.channel_allow_location")} checked={!!d().allow_location} />
-              <SwitchRow name="adult" label={t("settings.channel_adult")} hint={t("settings.channel_adult_hint")} checked={!!d().adult} />
+              <Toggle name="allow_location" label={t("settings.channel_allow_location")} checked={!!d().allow_location} />
+              <Toggle name="adult" label={t("settings.channel_adult")} hint={t("settings.channel_adult_hint")} checked={!!d().adult} />
               <div class="flex items-center justify-between gap-4 py-2.5">
                 <span class="min-w-0">
                   <span class="block text-sm text-txt">{t("settings.channel_maxreq")}</span>
                   <span class="block text-xs text-muted">{t("settings.channel_maxreq_hint")}</span>
                 </span>
-                <input type="number" name="maxreq" min="0" value={d().maxreq} class={NUMBER_ROW_INPUT} />
+                <Input
+                  class="w-16 shrink-0 text-center"
+                  type="number"
+                  name="maxreq"
+                  min="0"
+                  value={d().maxreq}
+                />
               </div>
             </Group>
 
@@ -165,17 +166,23 @@ export default function ChannelSection() {
             >
               <div class="py-2.5 space-y-4">
                 <Field label={t("settings.channel_photo_path")} hint={t("settings.channel_path_hint")}>
-                  <input type="text" name="photo_path" value={d().photo_path} class={inputClass} />
+                  <Input class="w-full" type="text" name="photo_path" value={d().photo_path} />
                 </Field>
                 <Field label={t("settings.channel_attach_path")} hint={t("settings.channel_path_hint")}>
-                  <input type="text" name="attach_path" value={d().attach_path} class={inputClass} />
+                  <Input class="w-full" type="text" name="attach_path" value={d().attach_path} />
                 </Field>
                 <div class="flex items-center justify-between gap-4">
                   <span class="min-w-0">
                     <span class="block text-sm text-txt">{t("settings.channel_expire")}</span>
                     <span class="block text-xs text-muted">{expireHint()}</span>
                   </span>
-                  <input type="number" name="expire" min="0" value={d().expire} class={NUMBER_ROW_INPUT} />
+                  <Input
+                    class="w-16 shrink-0 text-center"
+                    type="number"
+                    name="expire"
+                    min="0"
+                    value={d().expire}
+                  />
                 </div>
                 <Field label={t("settings.channel_filter_incl")} hint={t("settings.channel_filter_hint")}>
                   <FilterRuleBuilder value={inclVal()} onChange={setIncl} rows={3} />
@@ -192,7 +199,7 @@ export default function ChannelSection() {
 
             <Show when={permOpen()}>
               <Modal onClose={() => setPermOpen(false)} labelledBy={titleId} class="z-[60]">
-                <div class="w-full max-w-3xl rounded-2xl bg-surface border border-rim shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                <ModalPanel class="max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
 
                   <header class="flex items-center gap-3 px-4 py-3 border-b border-rim shrink-0">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-muted text-accent">
@@ -214,14 +221,9 @@ export default function ChannelSection() {
                               <span class="block text-xs text-muted">{perm.help}</span>
                             </Show>
                           </span>
-                          <select
-                            class="w-full sm:w-60 shrink-0 px-2.5 py-1.5 rounded-lg border border-rim
-                                   bg-base text-txt text-sm hover:border-rim-strong focus:outline-none
-                                   focus:border-rim-strong transition-colors"
-                            onChange={(e) =>
+                          <Select class="w-full shrink-0" onChange={(e) =>
                               setPermOverrides({ ...permOverrides(), [perm.key]: Number(e.currentTarget.value) })
-                            }
-                          >
+                            }>
                             <For each={Object.entries(perm.options)}>
                               {([val, label]) => (
                                 <option value={val} selected={Number(val) === perm.value}>
@@ -229,46 +231,26 @@ export default function ChannelSection() {
                                 </option>
                               )}
                             </For>
-                          </select>
+                          </Select>
                         </div>
                       )}
                     </For>
-                    <div class="flex items-center justify-between gap-4 py-2.5 border-t border-rim">
-                      <span class="block text-sm text-txt">{t("settings.privacy_group_actor")}</span>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={!!gaVal()}
-                        onClick={() => setGaOverride(gaVal() ? 0 : 1)}
-                        class={
-                          "appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 " +
-                          "border transition-colors " +
-                          "after:absolute after:top-1/2 after:left-1 after:-translate-y-1/2 " +
-                          "after:h-4 after:w-4 after:rounded-full " +
-                          "after:transition-transform after:duration-150 motion-reduce:after:transition-none " +
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 " +
-                          "focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
-                          (gaVal()
-                            ? "bg-accent border-accent after:translate-x-5 after:bg-accent-fg"
-                            : "bg-elevated border-rim after:bg-muted")
-                        }
-                      />
-                    </div>
+                    <Toggle
+                      class="border-t border-rim"
+                      label={t("settings.privacy_group_actor")}
+                      checked={!!gaVal()}
+                      onChange={(on) => void setGaOverride(on ? 1 : 0)}
+                    />
                   </div>
 
                   <footer class="flex items-center justify-between gap-4 px-4 py-3 border-t border-rim shrink-0">
                     <p class="text-xs text-muted">{t("settings.channel_perm_limits_note")}</p>
-                    <button
-                      type="button"
-                      onClick={() => setPermOpen(false)}
-                      class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                             hover:opacity-90 transition-opacity"
-                    >
+                    <Button onClick={() => setPermOpen(false)}>
                       {t("settings.channel_perm_limits_done")}
-                    </button>
+                    </Button>
                   </footer>
 
-                </div>
+                </ModalPanel>
               </Modal>
             </Show>
 
@@ -283,14 +265,14 @@ function Skeleton() {
   return (
     <div class="space-y-5 animate-pulse">
       {[...Array(3)].map(() => (
-        <div class="rounded-xl border border-rim bg-surface">
-          <div class="flex items-center gap-3 px-4 py-3 border-b border-rim">
+        <Card>
+          <CardHeader class="flex items-center gap-3">
             <div class="h-8 w-8 rounded-lg bg-elevated" />
             <div class="space-y-1.5">
               <div class="h-3.5 w-36 rounded bg-elevated" />
               <div class="h-3 w-52 rounded bg-elevated" />
             </div>
-          </div>
+          </CardHeader>
           <div class="px-4 py-2 space-y-3">
             {[...Array(3)].map(() => (
               <div class="flex items-center justify-between gap-4">
@@ -299,7 +281,7 @@ function Skeleton() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );

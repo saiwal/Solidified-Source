@@ -22,6 +22,9 @@ import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
 import { openPost } from "@/shared/views/modal-host";
 import CardShell from "../CardShell";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -317,7 +320,7 @@ function ListRow(props: {
               </Show>
               <Show when={isExpiring()}>
                 <span
-                  class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 leading-none"
+                  class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-warning/15 text-warning-txt leading-none"
                   title={expiresTitle()}
                 >
                   <MdOutlineTimer size={11} />
@@ -357,11 +360,7 @@ function ListRow(props: {
                 </div>
               }
             >
-              <img
-                src={p.authorAvatar}
-                alt={p.authorName}
-                class="w-4 h-4 rounded-full object-cover shrink-0"
-              />
+              <Avatar src={p.authorAvatar} name={p.authorName} size={4} />
             </Show>
             <span class="text-[0.6875rem] text-muted font-medium truncate">
               {p.authorName}
@@ -421,11 +420,7 @@ function MessageRow(props: {
           </div>
         }
       >
-        <img
-          src={props.msg.authorAvatar}
-          alt={props.msg.authorName}
-          class="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
-        />
+        <Avatar src={props.msg.authorAvatar} name={props.msg.authorName} size={6} class="mt-0.5" />
       </Show>
       <div class="flex-1 min-w-0">
         <div class="flex items-baseline gap-1.5 mb-0.5">
@@ -746,11 +741,7 @@ function InboxRow(props: {
                         </div>
                       }
                     >
-                      <img
-                        src={node!.authorAvatar}
-                        alt={name}
-                        class="w-4 h-4 rounded-full object-cover ring-1 ring-base shrink-0"
-                      />
+                      <Avatar src={node!.authorAvatar} name={name} size={4} class="ring-1 ring-base" />
                     </Show>
                   );
                 }}
@@ -805,19 +796,18 @@ function InboxRow(props: {
             profileUid={props.profileUid}
           />
           <Show when={p.hasMoreComments && props.handlers.onLoadMoreComments}>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              class="w-full"
               onClick={loadMoreComments}
               disabled={loadingMoreComments()}
-              class="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium
-                     text-muted hover:bg-overlay hover:text-txt transition-colors
-                     border-t border-rim disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Show when={!loadingMoreComments()} fallback={<MdOutlineRefresh size={13} class="animate-spin" />}>
                 <MdFillKeyboard_arrow_down size={13} />
               </Show>
               {loadingMoreComments() ? t("post.loading") : t("post.load_more_comments")}
-            </button>
+            </Button>
           </Show>
         </Show>
       </div>
@@ -867,7 +857,7 @@ export default function ListView(props: {
 
   return (
     <>
-      <div class="bg-surface rounded-xl border border-rim shadow-sm overflow-hidden max-w-5xl mx-auto">
+      <Card raised class="overflow-hidden max-w-5xl mx-auto">
         <For
           each={props.posts}
           fallback={
@@ -908,17 +898,17 @@ export default function ListView(props: {
             </CardShell>
           )}
         </For>
-      </div>
+      </Card>
     </>
   );
 }
 
 export function ListPlaceholder(props: { count?: number }) {
   return (
-    <div class="bg-surface rounded-xl border border-rim shadow-sm overflow-hidden max-w-5xl mx-auto">
+    <Card raised class="overflow-hidden max-w-5xl mx-auto">
       <For each={Array(props.count ?? 8).fill(0)}>
         {() => <ListRowPlaceholder />}
       </For>
-    </div>
+    </Card>
   );
 }

@@ -5,6 +5,7 @@ import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { CardHeader } from "@ui/Card";
 
 export type SubPageContext = "owner" | "local" | "remote" | "anonymous" | "all";
 
@@ -137,7 +138,7 @@ export default function SubPageLayout(props: Props) {
       >
         {/* Mobile back bar */}
         <Show when={!atBase()}>
-          <div class="flex items-center gap-2 px-4 py-3 border-b border-rim md:hidden shrink-0">
+          <CardHeader class="flex items-center gap-2 md:hidden shrink-0">
             <button
               type="button"
               onClick={() => navigate(props.base)}
@@ -154,7 +155,7 @@ export default function SubPageLayout(props: Props) {
             <span class="text-sm font-medium text-txt ml-1">
               {(() => { const l = activeItem()?.label; return l ? (typeof l === "function" ? l() : l) : ""; })()}
             </span>
-          </div>
+          </CardHeader>
         </Show>
 
         {/* At the base path the redirect effect above is about to navigate to

@@ -9,6 +9,9 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDeckDetail, renameDeck, reorderDeck } from "../api";
 import { cardPath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
+import { Button } from "@ui/Button";
+import { cardClass } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function DeckView() {
   const params = useParams<{ nick: string; name: string }>();
@@ -69,15 +72,10 @@ export default function DeckView() {
       <div class="flex items-center justify-between gap-3">
         <h1 class="text-xl font-bold text-txt">{name()}</h1>
         <Show when={isOwner()}>
-          <button
-            type="button"
-            onClick={doRename}
-            class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-rim
-                   text-muted hover:text-txt hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={doRename}>
             <BiRegularEdit class="w-4 h-4" />
             {t("cards.deck_rename")}
-          </button>
+          </Button>
         </Show>
       </div>
 
@@ -88,12 +86,12 @@ export default function DeckView() {
       <Show when={!data.loading} fallback={<p class="text-sm text-muted">…</p>}>
         <Show
           when={order().length > 0}
-          fallback={<p class="text-sm text-muted py-8 text-center">{t("cards.deck_no_decks")}</p>}
+          fallback={<EmptyState>{t("cards.deck_no_decks")}</EmptyState>}
         >
           <ol class="space-y-2">
             <For each={order()}>
               {(card, i) => (
-                <li class="flex items-center gap-3 bg-surface border border-rim rounded-xl px-4 py-3">
+                <li class={`${cardClass()} flex items-center gap-3 px-4 py-3`}>
                   <span class="text-sm text-muted w-6 shrink-0">{i() + 1}.</span>
                   <A
                     href={cardPath(nick(), card)}

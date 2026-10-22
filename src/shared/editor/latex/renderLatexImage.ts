@@ -143,10 +143,10 @@ export function renderLatexPreview(
     katex.render(source, el, { displayMode, throwOnError: true, output: "html" });
   } catch (err) {
     el.textContent = err instanceof Error ? err.message : String(err);
-    el.classList.add("text-red-500");
+    el.classList.add("text-danger-txt");
     return;
   }
-  el.classList.remove("text-red-500");
+  el.classList.remove("text-danger-txt");
 }
 
 interface BuiltSvg {

@@ -27,7 +27,7 @@ export default function FavoriteButton(props: { s: JellyfinSession; item: JfItem
   return (
     <button type="button" onClick={flip} aria-pressed={fav()}
       title={fav() ? t("jellyfin.unfavorite") : t("jellyfin.favorite")}
-      class={`p-1 shrink-0 transition-colors ${fav() ? "text-red-500" : "text-muted hover:text-txt"}`}>
+      class={`p-1 shrink-0 transition-colors ${fav() ? "text-danger-txt" : "text-muted hover:text-txt"}`}>
       {fav() ? <MdFillFavorite size={props.size ?? 16} /> : <MdOutlineFavorite_border size={props.size ?? 16} />}
     </button>
   );

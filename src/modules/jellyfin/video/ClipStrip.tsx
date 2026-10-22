@@ -6,8 +6,10 @@ import { MdOutlineFirst_page, MdOutlineLast_page, MdOutlinePlay_circle, MdOutlin
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import type { JellyfinSession, JfItem } from "../api";
-import { fmtClock, parseClock, primaryPill, ghostPill, iconBtn } from "../ui";
+import { fmtClock, parseClock } from "../ui";
 import { CLIP_MAX_SECONDS, makeClip, fileStem, type ClipPhase } from "./capture";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 export default function ClipStrip(props: {
   s: JellyfinSession;
@@ -76,7 +78,6 @@ export default function ClipStrip(props: {
     el.value = clock(cur());
   };
 
-  const time = "w-24 bg-transparent border-0 border-b border-rim focus:border-accent outline-none py-1 text-sm text-txt tabular-nums text-center";
   const phaseLabel = () => {
     const p = phase();
     if (!p) return "";
@@ -90,29 +91,43 @@ export default function ClipStrip(props: {
     <section class="basis-full space-y-3 p-4 rounded-2xl bg-elevated/40">
       <div class="flex items-center justify-between gap-2">
         <h3 class="text-sm font-semibold text-txt">{t("jellyfin.clip")}</h3>
-        <button type="button" class={iconBtn} title={t("jellyfin.close")} onClick={props.onClose} disabled={!!phase()}>
+        <IconButton label={t("jellyfin.close")} onClick={props.onClose} disabled={!!phase()}>
           <MdOutlineClose size={18} />
-        </button>
+        </IconButton>
       </div>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div class="flex items-center gap-1">
-          <button type="button" class={iconBtn} title={t("jellyfin.clip_set_start")} onClick={() => setStart(now())}>
+          <IconButton label={t("jellyfin.clip_set_start")} onClick={() => setStart(now())}>
             <MdOutlineFirst_page size={20} />
-          </button>
-          <input type="text" inputmode="decimal" value={clock(start())} aria-label={t("jellyfin.clip_start")}
-            placeholder={long() ? "0:00:00.0" : "0:00.0"} title={t("jellyfin.clip_time_hint")}
+          </IconButton>
+          <Input
+            class="w-24 tabular-nums text-center"
+            type="text"
+            inputmode="decimal"
+            value={clock(start())}
+            aria-label={t("jellyfin.clip_start")}
+            placeholder={long() ? "0:00:00.0" : "0:00.0"}
+            title={t("jellyfin.clip_time_hint")}
             onChange={(e) => commit(e.currentTarget, setStart, start)}
-            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} class={time} />
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+          />
         </div>
         <span class="text-muted" aria-hidden="true">–</span>
         <div class="flex items-center gap-1">
-          <input type="text" inputmode="decimal" value={clock(end())} aria-label={t("jellyfin.clip_end")}
-            placeholder={long() ? "0:00:00.0" : "0:00.0"} title={t("jellyfin.clip_time_hint")}
+          <Input
+            class="w-24 tabular-nums text-center"
+            type="text"
+            inputmode="decimal"
+            value={clock(end())}
+            aria-label={t("jellyfin.clip_end")}
+            placeholder={long() ? "0:00:00.0" : "0:00.0"}
+            title={t("jellyfin.clip_time_hint")}
             onChange={(e) => commit(e.currentTarget, setEnd, end)}
-            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} class={time} />
-          <button type="button" class={iconBtn} title={t("jellyfin.clip_set_end")} onClick={() => setEnd(now())}>
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+          />
+          <IconButton label={t("jellyfin.clip_set_end")} onClick={() => setEnd(now())}>
             <MdOutlineLast_page size={20} />
-          </button>
+          </IconButton>
         </div>
         <span class="text-sm text-muted tabular-nums">
           {t("jellyfin.clip_length", { n: length().toFixed(1), max: String(CLIP_MAX_SECONDS) })}
@@ -120,13 +135,13 @@ export default function ClipStrip(props: {
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <Show when={!props.inParty}>
-          <button type="button" class={ghostPill} onClick={preview} disabled={!!phase()}>
+          <Button variant="ghost" onClick={preview} disabled={!!phase()}>
             <MdOutlinePlay_circle size={18} /> {t("jellyfin.clip_preview")}
-          </button>
+          </Button>
         </Show>
-        <button type="button" class={primaryPill} onClick={() => void create()} disabled={!!phase() || !props.item || length() <= 0}>
+        <Button onClick={() => void create()} disabled={!!phase() || !props.item || length() <= 0}>
           {phase() ? phaseLabel() : t("jellyfin.clip_create")}
-        </button>
+        </Button>
       </div>
       <Show when={phase()}>
         {(p) => (

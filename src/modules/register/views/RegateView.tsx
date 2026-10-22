@@ -3,6 +3,11 @@ import { useParams, A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchRegateState, submitRegate } from "../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
 
 export default function RegateView() {
   const { t } = useI18n();
@@ -38,14 +43,9 @@ export default function RegateView() {
     }
   };
 
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-rim bg-base text-txt text-sm font-mono " +
-    "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent " +
-    "disabled:opacity-60 transition-colors";
-
   return (
     <div class="min-h-[60vh] flex items-center justify-center py-8">
-      <div class="w-full max-w-md bg-surface border border-rim rounded-2xl p-8 shadow-sm">
+      <Card raised class="w-full max-w-md p-8">
 
         {/* Brand */}
         <div class="mb-6 text-center">
@@ -61,7 +61,7 @@ export default function RegateView() {
 
         <Show when={state.loading}>
           <div class="flex justify-center py-8">
-            <div class="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <Spinner size="xl" tone="accent" label={t("ui.loading")} />
           </div>
         </Show>
 
@@ -103,7 +103,7 @@ export default function RegateView() {
               {/* Redirecting after success */}
               <Match when={done() === "complete"}>
                 <div class="flex justify-center py-8">
-                  <div class="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+                  <Spinner size="xl" tone="accent" label={t("ui.loading")} />
                 </div>
               </Match>
 
@@ -114,9 +114,9 @@ export default function RegateView() {
 
                   <Show when={s().email}>
                     <div class="text-center">
-                      <span class="inline-block px-3 py-1 rounded-full bg-elevated text-xs text-muted font-mono break-all">
+                      <Badge class="font-mono break-all">
                         {s().email}
-                      </span>
+                      </Badge>
                     </div>
                   </Show>
 
@@ -125,7 +125,8 @@ export default function RegateView() {
                       <label class="text-sm font-medium text-txt" for="regate-pin">
                         {t("auth.regate_code_label")}
                       </label>
-                      <input
+                      <Input
+                        class="w-full font-mono"
                         id="regate-pin"
                         type="text"
                         inputmode="text"
@@ -134,7 +135,6 @@ export default function RegateView() {
                         disabled={loading()}
                         value={pin()}
                         onInput={(e) => setPin(e.currentTarget.value.toLowerCase().replace(/\s/g, ""))}
-                        class={inputClass}
                         placeholder={t("auth.regate_code_ph")}
                         maxLength={s().type === "e" ? 24 : 6}
                       />
@@ -146,20 +146,16 @@ export default function RegateView() {
                     </div>
 
                     <Show when={error()}>
-                      <p class="text-sm text-red-500 text-center">{error()}</p>
+                      <p class="text-sm text-danger-txt text-center">{error()}</p>
                     </Show>
 
-                    <button
+                    <Button
+                      class="w-full"
                       type="submit"
                       disabled={loading() || (s().type === "e" ? pin().length !== 24 : pin().length !== 6)}
-                      class="w-full py-2.5 px-4 rounded-lg bg-accent text-accent-fg font-medium text-sm
-                             hover:opacity-90 active:opacity-80
-                             disabled:opacity-50 disabled:cursor-not-allowed
-                             focus:outline-none focus:ring-2 focus:ring-accent/40
-                             transition-opacity"
                     >
                       {loading() ? t("auth.regate_verifying") : t("auth.regate_verify")}
-                    </button>
+                    </Button>
                   </form>
 
                   <p class="text-center text-sm text-muted pt-1">
@@ -175,7 +171,7 @@ export default function RegateView() {
           )}
         </Show>
 
-      </div>
+      </Card>
     </div>
   );
 }

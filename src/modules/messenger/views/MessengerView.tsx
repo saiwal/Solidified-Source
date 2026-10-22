@@ -28,11 +28,17 @@ import type { ChatBookmark } from "@/modules/chat/bookmarks";
 import NewRoomForm from "@/modules/chat/NewRoomForm";
 import { deleteChatRoom } from "@/modules/chat/store";
 import { groupThreads, groupName, groupMatches, shortTime, type DmGroup } from "../dms";
-import DmPane, { Avatar, PinButton, decodeHtmlEntities, toRecipient } from "../DmPane";
+import DmPane, { PinButton, decodeHtmlEntities, toRecipient } from "../DmPane";
 import { usePins, setPinned } from "../pins";
 import { toast } from "@utsukta/spa-core/store/toast";
 import NewDmPane from "../NewDmPane";
 import RoomPane from "../RoomPane";
+import { Button, IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Tabs } from "@ui/Tabs";
+import { CountBadge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
+import { EmptyState } from "@ui/EmptyState";
 
 /** A row holding a link plus a pin button beside it. */
 const pinRowClass = (active: boolean) =>
@@ -209,7 +215,7 @@ export default function MessengerView() {
   }
 
   const roomActive = (n: string, id: number) => path()[0] === "chat" && n === nick() && segs()[1] === String(id);
-  const empty = (text: string) => <p class="px-4 py-8 text-sm text-muted text-center">{text}</p>;
+  const empty = (text: string) => <EmptyState class="px-4">{text}</EmptyState>;
   const section = (text: string) => (
     <p class="px-3 pt-2 pb-1 text-[0.6875rem] font-medium uppercase tracking-wider text-muted">{text}</p>
   );
@@ -219,7 +225,7 @@ export default function MessengerView() {
   const dmRow = (g: DmGroup | undefined, key: string, title: string) => (
     <div class={pinRowClass(segs()[0] === "dm" && segs()[1] === key)}>
       <A href={`${base()}/dm/${encodeURIComponent(key)}`} class="flex-1 min-w-0 flex items-center gap-3 py-2.5">
-        <Avatar src={g?.people[0]?.photo} name={g ? groupName(g) : title} />
+        <Avatar src={g?.people[0]?.photo} name={g ? groupName(g) : title} size={10} />
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2">
             <span class="flex-1 text-sm text-txt truncate" classList={{ "font-semibold": (g?.unread ?? 0) > 0 }}>{g ? groupName(g) : title}</span>
@@ -237,11 +243,7 @@ export default function MessengerView() {
                   ×{g!.threads.length}
                 </span>
               </Show>
-              <Show when={g!.unread > 0}>
-                <span class="min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-accent text-accent-fg text-[0.625rem] font-semibold flex items-center justify-center tabular-nums">
-                  {g!.unread}
-                </span>
-              </Show>
+              <CountBadge n={g!.unread} />
             </div>
           </Show>
         </div>
@@ -253,7 +255,7 @@ export default function MessengerView() {
   );
 
   return (
-    <div class="flex h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem] border border-rim rounded-2xl overflow-hidden bg-surface">
+    <Card class="flex h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem] overflow-hidden">
       {/* ── List ── */}
       <aside
         class="flex-col w-full md:w-72 lg:w-80 shrink-0 md:border-r border-rim min-h-0"
@@ -271,25 +273,26 @@ export default function MessengerView() {
             />
           </label>
           <Show when={roomsOn()}>
-          <div role="tablist" class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-elevated text-sm">
-            <For each={["dms", "rooms"] as const}>
-              {(k) => (
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={tab() === k}
-                  onClick={() => setTab(k)}
-                  class="flex items-center justify-center gap-1.5 py-1.5 rounded-lg transition-colors"
-                  classList={{ "bg-surface text-txt font-medium shadow-sm": tab() === k, "text-muted hover:text-txt": tab() !== k }}
-                >
-                  {k === "dms" ? t("messenger.tab_dms") : t("messenger.tab_rooms")}
-                  <Show when={k === "dms" && groups().some((g) => g.unread)}>
-                    <span class="w-1.5 h-1.5 rounded-full bg-accent" />
-                  </Show>
-                </button>
-              )}
-            </For>
-          </div>
+          <Tabs
+            label={t("nav.messenger")}
+            stretch
+            value={tab()}
+            onChange={setTab}
+            items={[
+              {
+                value: "dms" as const,
+                label: (
+                  <span class="inline-flex items-center gap-1.5">
+                    {t("messenger.tab_dms")}
+                    <Show when={groups().some((g) => g.unread)}>
+                      <span class="w-1.5 h-1.5 rounded-full bg-accent" />
+                    </Show>
+                  </span>
+                ),
+              },
+              { value: "rooms" as const, label: t("messenger.tab_rooms") },
+            ]}
+          />
           </Show>
         </div>
 
@@ -344,15 +347,15 @@ export default function MessengerView() {
                     count={r.in_room}
                     onOpen={() => navigate(`${chatBase()}/${r.id}`)}
                     extra={isOwner() ? (
-                      <button
-                        type="button"
+                      <IconButton
+                        label={t("chat.delete_room") as string}
+                        variant="danger"
+                        size="sm"
+                        class="opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
                         onClick={() => void dropRoom(r.id, r.name)}
-                        class="p-1.5 rounded text-muted hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all shrink-0"
-                        title={t("chat.delete_room") as string}
-                        aria-label={t("chat.delete_room") as string}
                       >
                         <MdOutlineDelete size={16} />
-                      </button>
+                      </IconButton>
                     ) : undefined}
                     pin={canPin() ? { pinned: isRoomBookmarked(nick(), r.id), onClick: () => void toggleRoomPin(r.id, r.name) } : undefined}
                   />
@@ -367,14 +370,10 @@ export default function MessengerView() {
 
         <Show when={tab() === "dms" ? canNewDm() : canCreateRoom()}>
           <div class="p-3 border-t border-rim shrink-0">
-            <button
-              type="button"
-              onClick={() => void newItem()}
-              class="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-accent text-accent-fg text-sm font-medium hover:opacity-90 transition-opacity"
-            >
+            <Button class="w-full" onClick={() => void newItem()}>
               <MdOutlineAdd size={18} />
               {tab() === "dms" ? t("messenger.new_dm") : t("messenger.new_room")}
-            </button>
+            </Button>
           </div>
         </Show>
       </aside>
@@ -409,6 +408,6 @@ export default function MessengerView() {
           </Match>
         </Switch>
       </main>
-    </div>
+    </Card>
   );
 }

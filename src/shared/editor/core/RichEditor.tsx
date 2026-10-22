@@ -14,6 +14,8 @@ import { sourceToHtml, hydrateShareEmbeds, hydrateCardEmbeds, hydrateLatexEmbeds
 import { completesMarkdownBlock } from "./markdownProtect";
 import { htmlToSource } from "./htmlToSource";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Input, Textarea } from "@ui/Field";
 
 interface Props {
   body: string;
@@ -625,65 +627,37 @@ export default function RichEditor(props: Props) {
             <div class="flex items-center gap-1">
               <For each={[25, 50, 75] as const}>
                 {(pct) => (
-                  <button
-                    type="button"
-                    onClick={() => {
+                  <Button variant="ghost" size="sm" onClick={() => {
                       const el = imgSel()!.el;
                       const base = el.naturalWidth || el.getBoundingClientRect().width;
                       applyImgWidth((base * pct) / 100);
-                    }}
-                    class="px-1.5 py-0.5 rounded text-xs text-muted hover:bg-elevated hover:text-txt transition-colors"
-                  >
+                    }}>
                     {pct}%
-                  </button>
+                  </Button>
                 )}
               </For>
-              <button
-                type="button"
-                onClick={() => applyImgWidth(null)}
-                class="px-1.5 py-0.5 rounded text-xs text-muted hover:bg-elevated hover:text-txt transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => applyImgWidth(null)}>
                 100%
-              </button>
+              </Button>
               <span class="w-px h-4 bg-rim mx-0.5" />
-              <input
-                type="number"
-                min="16"
-                title={t("editor.img_width")}
-                value={widthVal()}
-                onInput={(e) => setWidthVal(e.currentTarget.value)}
-                onChange={(e) => {
+              <Input size="sm" class="w-16" type="number" min="16" title={t("editor.img_width")} value={widthVal()} onInput={(e) => setWidthVal(e.currentTarget.value)} onChange={(e) => {
                   const w = parseInt(e.currentTarget.value, 10);
                   if (w > 0) applyImgWidth(w);
-                }}
-                onKeyDown={(e) => {
+                }} onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     const w = parseInt(widthVal(), 10);
                     if (w > 0) applyImgWidth(w);
                   }
-                }}
-                class="w-16 px-1.5 py-0.5 text-xs rounded border border-rim bg-elevated text-txt
-                       outline-none focus:border-accent/50"
-              />
+                }} />
               <span class="text-[0.625rem] text-muted">px</span>
             </div>
-            <textarea
-              placeholder={t("editor.img_alt")}
-              title={t("editor.img_alt")}
-              rows={4}
-              value={altVal()}
-              onInput={(e) => setAltVal(e.currentTarget.value)}
-              onChange={(e) => applyImgAlt(e.currentTarget.value)}
-              onKeyDown={(e) => {
+            <Textarea size="sm" class="w-full min-w-[220px] resize-none" placeholder={t("editor.img_alt")} title={t("editor.img_alt")} rows={4} value={altVal()} onInput={(e) => setAltVal(e.currentTarget.value)} onChange={(e) => applyImgAlt(e.currentTarget.value)} onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                   e.preventDefault();
                   applyImgAlt(altVal());
                 }
-              }}
-              class="w-full min-w-[220px] px-2 py-1 text-xs rounded border border-rim bg-elevated text-txt
-                     outline-none focus:border-accent/50 resize-none"
-            />
+              }} />
           </div>
         </Portal>
       </Show>

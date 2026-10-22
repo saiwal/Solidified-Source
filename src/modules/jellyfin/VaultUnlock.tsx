@@ -5,7 +5,8 @@ import { MdOutlineLock } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { unlockVault } from "@utsukta/spa-core/lib/vault";
 import { vaultLocked, resyncFromHub, hubSyncError } from "./store";
-import { primaryPill, ghostPill } from "./ui";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 const [dismissed, setDismissed] = createSignal(false);
 
@@ -49,12 +50,19 @@ export default function VaultUnlock() {
       <form onSubmit={submit} class="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-elevated/40">
         <MdOutlineLock size={20} class="text-muted shrink-0" />
         <p class="text-sm text-txt flex-1 basis-56">{t("jellyfin.vault_locked")}</p>
-        <input type="password" value={pass()} onInput={(e) => setPass(e.currentTarget.value)} required
-          placeholder={t("jellyfin.vault_passphrase")} aria-label={t("jellyfin.vault_passphrase")} autocomplete="current-password"
-          class="w-44 bg-transparent border-0 border-b border-rim focus:border-accent outline-none py-1 text-sm text-txt" />
-        <button type="submit" class={primaryPill} disabled={busy()}>{t("jellyfin.vault_unlock")}</button>
-        <button type="button" class={ghostPill} onClick={() => setDismissed(true)}>{t("jellyfin.vault_not_now")}</button>
-        <Show when={wrong()}><p class="basis-full text-sm text-red-500">{t("jellyfin.vault_wrong")}</p></Show>
+        <Input
+          class="w-44"
+          type="password"
+          value={pass()}
+          onInput={(e) => setPass(e.currentTarget.value)}
+          required
+          placeholder={t("jellyfin.vault_passphrase")}
+          aria-label={t("jellyfin.vault_passphrase")}
+          autocomplete="current-password"
+        />
+        <Button type="submit" disabled={busy()}>{t("jellyfin.vault_unlock")}</Button>
+        <Button variant="ghost" onClick={() => setDismissed(true)}>{t("jellyfin.vault_not_now")}</Button>
+        <Show when={wrong()}><p class="basis-full text-sm text-danger-txt">{t("jellyfin.vault_wrong")}</p></Show>
       </form>
     </Show>
     </>

@@ -22,6 +22,8 @@ import {
   parseYearMonth,
   type ArchiveWidgetProps,
 } from "./ArchiveWidget";
+import { Button } from "@ui/Button";
+import { Card, CardHeader } from "@ui/Card";
 
 // 2000-01-02 is a Sunday — anchor for building a Sun-first weekday label row.
 function weekdayLabels(locale: string): string[] {
@@ -124,30 +126,20 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
   };
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-rim">
+    <Card class="overflow-hidden">
+      <CardHeader>
         <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.archive")}</h3>
-      </div>
+      </CardHeader>
 
       <div class="px-3 pt-3">
         {/* Month/year navigation */}
         <div class="flex items-center gap-1 mb-2">
-          <button
-            type="button"
-            onClick={prevYear}
-            title={t("widgets.archive_prev_year")}
-            class="px-1.5 py-1 text-xs text-muted rounded hover:bg-elevated hover:text-txt transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={prevYear} title={t("widgets.archive_prev_year")}>
             «
-          </button>
-          <button
-            type="button"
-            onClick={prevMonth}
-            title={t("widgets.archive_prev_month")}
-            class="px-1.5 py-1 text-xs text-muted rounded hover:bg-elevated hover:text-txt transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={prevMonth} title={t("widgets.archive_prev_month")}>
             ‹
-          </button>
+          </Button>
 
           <button
             type="button"
@@ -158,22 +150,12 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
             {monthName(viewMonth(), locale())} {viewYear()}
           </button>
 
-          <button
-            type="button"
-            onClick={nextMonth}
-            title={t("widgets.archive_next_month")}
-            class="px-1.5 py-1 text-xs text-muted rounded hover:bg-elevated hover:text-txt transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={nextMonth} title={t("widgets.archive_next_month")}>
             ›
-          </button>
-          <button
-            type="button"
-            onClick={nextYear}
-            title={t("widgets.archive_next_year")}
-            class="px-1.5 py-1 text-xs text-muted rounded hover:bg-elevated hover:text-txt transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={nextYear} title={t("widgets.archive_next_year")}>
             »
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -238,7 +220,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
           </div>
         </div>
       </Show>
-    </div>
+    </Card>
   );
 };
 

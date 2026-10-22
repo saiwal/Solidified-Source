@@ -1,7 +1,7 @@
 import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 import {
   fetchAdminServiceClasses,
   createServiceClass,
@@ -11,6 +11,9 @@ import {
 } from "../../api";
 import { SERVICE_CLASS_PROP_DEFS, type AdminServiceClass, type ServiceClassProperties } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Field, Input, Select } from "@ui/Field";
+import { Badge } from "@ui/Badge";
 
 const EMPTY_PROPS: ServiceClassProperties = {};
 
@@ -30,9 +33,9 @@ export default function ServiceClassesSection() {
           <div class="rounded-lg border border-rim overflow-hidden">
             <div class="flex items-center justify-between px-3 py-2.5 border-b border-rim bg-elevated/30">
               <span class="text-sm text-muted">{t("admin.unrestricted_row_label")}</span>
-              <span class="px-1.5 py-0.5 text-xs rounded-full bg-elevated text-muted font-medium">
+              <Badge>
                 {d().unrestricted_count}
-              </span>
+              </Badge>
             </div>
 
             <Show when={d().classes.length > 0} fallback={
@@ -130,46 +133,32 @@ function ServiceClassRow(props: { cls: AdminServiceClass; onChanged: () => void 
           <div class="flex items-center gap-2">
             <span class="text-sm font-mono font-medium text-txt truncate">{props.cls.name}</span>
             <Show when={props.cls.is_default}>
-              <span class="px-1.5 py-0.5 text-xs rounded-full bg-accent/15 text-accent font-medium">
+              <Badge tone="accent">
                 {t("admin.default_badge")}
-              </span>
+              </Badge>
             </Show>
-            <span class="px-1.5 py-0.5 text-xs rounded-full bg-elevated text-muted font-medium">
+            <Badge>
               {props.cls.account_count}
-            </span>
+            </Badge>
           </div>
           <p class="text-xs text-muted truncate">{summarizeProps(props.cls.properties, t)}</p>
           <Show when={error()}>
-            <p class="text-xs text-red-600 dark:text-red-400">{error()}</p>
+            <p class="text-xs text-danger-txt">{error()}</p>
           </Show>
         </div>
 
         <div class="flex items-center gap-1.5 shrink-0">
           <Show when={!props.cls.is_default}>
-            <button
-              onClick={onSetDefault}
-              disabled={busy()}
-              class="px-2 py-1 text-xs rounded border border-rim text-txt hover:bg-elevated
-                     disabled:opacity-50 transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={onSetDefault} disabled={busy()}>
               {t("admin.set_default")}
-            </button>
+            </Button>
           </Show>
-          <button
-            onClick={() => setEditing(true)}
-            class="px-2 py-1 text-xs rounded border border-rim text-txt hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
             {t("admin.edit")}
-          </button>
-          <button
-            onClick={onDelete}
-            disabled={busy()}
-            class="px-2 py-1 text-xs rounded border border-red-300 text-red-600
-                   hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20
-                   disabled:opacity-50 transition-colors"
-          >
+          </Button>
+          <Button variant="danger" size="sm" onClick={onDelete} disabled={busy()}>
             {t("admin.delete")}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -196,13 +185,9 @@ function CreateClassButton(props: { onCreated: () => void }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-accent text-accent-fg
-               hover:opacity-90 transition-opacity"
-      >
+      <Button size="sm" onClick={() => setOpen(true)}>
         + {t("admin.create_class")}
-      </button>
+      </Button>
       <Show when={open()}>
         <ServiceClassModal
           mode="create"
@@ -292,16 +277,16 @@ function ServiceClassModal(props: {
 
         <form onSubmit={onSubmit} class="p-4 space-y-4">
           <div class="space-y-1">
-            <label class="text-sm font-medium text-txt">{t("admin.class_name_label")}</label>
-            <input
+            <Field label={t("admin.class_name_label")} hint={t("admin.class_name_hint")}>
+              <Input
+              class="w-full"
               type="text"
               value={name()}
               onInput={(e) => setName(e.currentTarget.value)}
               disabled={props.mode === "edit"}
-              class={`${inputCls} disabled:opacity-60`}
               placeholder="e.g. standard"
-            />
-            <p class="text-xs text-muted">{t("admin.class_name_hint")}</p>
+              />
+            </Field>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -314,36 +299,34 @@ function ServiceClassModal(props: {
                   <Show
                     when={def.unit === "bytes"}
                     fallback={
-                      <input
+                      <Input
+                        class="w-full"
                         type="number"
                         min="0"
                         step={def.unit === "price" ? "0.01" : "1"}
                         value={values()[def.key] ?? ""}
                         onInput={(e) => setValue(def.key, e.currentTarget.value)}
-                        class={inputCls}
                         placeholder={def.unit === "price" ? "0.00" : t("admin.unlimited_hint")}
                       />
                     }
                   >
                     <div class="flex gap-1.5">
-                      <input
+                      <Input
+                        class="w-full flex-1"
                         type="number"
                         min="0"
                         value={values()[def.key] ?? ""}
                         onInput={(e) => setValue(def.key, e.currentTarget.value)}
-                        class={`${inputCls} flex-1`}
                         placeholder={t("admin.unlimited_hint")}
                       />
-                      <select
+                      <Select
                         value={units()[def.key] ?? "MB"}
                         onChange={(e) => setUnit(def.key, e.currentTarget.value as ByteUnit)}
-                        class="px-2 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
-                               focus:outline-none focus:border-accent"
                       >
                         <option value="KB">KB</option>
                         <option value="MB">MB</option>
                         <option value="GB">GB</option>
-                      </select>
+                      </Select>
                     </div>
                   </Show>
                 </div>
@@ -352,29 +335,22 @@ function ServiceClassModal(props: {
           </div>
 
           <Show when={error()}>
-            <p class="text-xs text-red-600 dark:text-red-400">{error()}</p>
+            <p class="text-xs text-danger-txt">{error()}</p>
           </Show>
 
           <div class="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={props.onClose}
-              class="px-3 py-1.5 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors">
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               Cancel
-            </button>
-            <button type="submit" disabled={saving()}
-              class="px-4 py-1.5 text-xs rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-50 transition-opacity">
+            </Button>
+            <Button size="sm" type="submit" disabled={saving()}>
               {saving() ? t("admin.saving") : t("admin.save")}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
     </Modal>
   );
 }
-
-const inputCls =
-  "w-full px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt " +
-  "placeholder:text-muted focus:outline-none focus:border-accent";
 
 function Skeleton() {
   return (

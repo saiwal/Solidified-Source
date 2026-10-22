@@ -5,6 +5,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDeckList } from "../api";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function DeckIndexView() {
   const params = useParams<{ nick: string }>();
@@ -32,7 +33,7 @@ export default function DeckIndexView() {
       <Show when={!data.loading}>
         <Show
           when={(data() ?? []).length > 0}
-          fallback={<p class="text-sm text-muted py-8 text-center">{t("cards.deck_no_decks")}</p>}
+          fallback={<EmptyState>{t("cards.deck_no_decks")}</EmptyState>}
         >
           <div class="space-y-2">
             <For each={data()}>

@@ -3,14 +3,11 @@ import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { createEffect, createMemo, createSignal, lazy, on, onMount, onCleanup, Show, For } from "solid-js";
 import type { JSX } from "solid-js";
-import { Portal } from "solid-js/web";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
-import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import {
   photos, albums, albumName, detail, loading, albumsLoading, albumsError, canWrite,
   tab, photoSort, photoDir, loadingMore, setPhotoSorting, loadMorePhotos,
@@ -51,6 +48,13 @@ import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
 import CardShell from "@/shared/stream/CardShell";
+import { Button, IconButton } from "@ui/Button";
+import { Input, Select, Textarea } from "@ui/Field";
+import { Card, cardClass } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
+import { EmptyState } from "@ui/EmptyState";
+import { Menu, MenuItem } from "@ui/Menu";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -287,15 +291,13 @@ function SelectToggle(props: { sel: PhotoSelection }) {
   const { t } = useI18n();
   return (
     <Show when={!props.sel.selectMode()} fallback={
-      <button onClick={props.sel.exitSelectMode}
-        class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
+      <Button variant="ghost" size="sm" onClick={props.sel.exitSelectMode}>
         {t("photos.cancel")}
-      </button>
+      </Button>
     }>
-      <button onClick={props.sel.enterSelectMode}
-        class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted hover:text-txt transition-colors">
+      <Button variant="ghost" size="sm" onClick={props.sel.enterSelectMode}>
         {t("photos.select")}
-      </button>
+      </Button>
     </Show>
   );
 }
@@ -309,60 +311,54 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
   return (
     <>
       <Show when={sel.selectMode() && sel.selected().size > 0}>
-        <div class="flex items-center gap-x-3 gap-y-2 flex-wrap px-3 py-2 bg-surface rounded-xl border border-rim">
+        <Card class="flex items-center gap-x-3 gap-y-2 flex-wrap px-3 py-2">
           <span class="text-sm text-txt font-medium">
             {sel.selected().size} {t("photos.selected")}
           </span>
           <div class="flex items-center gap-2 flex-wrap ml-auto">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => downloadPhotos(sel.nick(), Array.from(sel.selected()))}
-              class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-txt
-                     hover:bg-overlay transition-colors"
             >
               <MdOutlineDownload size={14} />
               {t("photos.download_selected")}
-            </button>
+            </Button>
             <Show when={canWrite()}>
-              <select
-                disabled={sel.moving()}
-                value=""
-                onChange={(e) => {
+              <Select size="sm" class="max-w-[9rem] font-medium" disabled={sel.moving()} value="" onChange={(e) => {
                   const v = e.currentTarget.value;
                   e.currentTarget.value = "";
                   if (v) sel.handleBatchMove(v === "__root__" ? "" : v);
-                }}
-                class="max-w-[9rem] px-2 py-1.5 rounded-lg text-xs font-medium bg-overlay text-txt
-                       border border-rim outline-none disabled:opacity-50"
-              >
+                }}>
                 <option value="">{sel.moving() ? t("photos.batch_moving") : t("photos.move_selected")}</option>
                 <option value="__root__">{t("photos.move_root")}</option>
                 <For each={sel.moveTargets().filter(a => a.folder !== (props.folder ?? ''))}>
                   {(a) => <option value={a.folder}>{a.album}</option>}
                 </For>
-              </select>
+              </Select>
             </Show>
             <Show when={canWrite()}>
             <Show when={sel.confirmBatch()} fallback={
-              <button onClick={sel.handleBatchDelete}
-                class="px-3 py-1.5 rounded-lg text-xs font-medium text-red-500
-                       hover:bg-red-500/10 transition-colors">
+              <Button variant="ghost" size="sm" onClick={sel.handleBatchDelete}>
                 {t("photos.delete_selected")}
-              </button>
+              </Button>
             }>
-              <span class="text-xs text-red-500">{t("photos.confirm")}?</span>
-              <button onClick={sel.handleBatchDelete} disabled={sel.batchDeleting()}
-                class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500 text-white
-                       hover:bg-red-600 transition-colors disabled:opacity-50">
+              <span class="text-xs text-danger-txt">{t("photos.confirm")}?</span>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={sel.handleBatchDelete}
+                disabled={sel.batchDeleting()}
+              >
                 {sel.batchDeleting() ? t("photos.batch_deleting") : t("photos.delete_selected")}
-              </button>
-              <button onClick={() => sel.setConfirmBatch(false)}
-                class="px-2 py-1 rounded-md text-xs text-muted hover:text-txt transition-colors">
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => sel.setConfirmBatch(false)}>
                 {t("photos.cancel")}
-              </button>
+              </Button>
             </Show>
             </Show>
           </div>
-        </div>
+        </Card>
       </Show>
 
       <Show when={sel.selectMode()}>
@@ -408,7 +404,7 @@ function SquarePhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
 
       <Show when={p().is_nsfw}>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span class="px-2 py-0.5 rounded-md bg-black/60 text-red-400 text-xs font-bold tracking-wide">
+          <span class="px-2 py-0.5 rounded-md bg-black/60 text-danger-txt text-xs font-bold tracking-wide">
             {t("photos.nsfw")}
           </span>
         </div>
@@ -455,10 +451,9 @@ function SquarePhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
                 <MdOutlineDelete size={18} />
               </button>
             }>
-              <button onClick={() => sel.handleDeletePhoto(p().resource_id)}
-                class="px-2 py-0.5 rounded-md bg-red-500 text-white text-xs font-medium">
+              <Button variant="danger" size="sm" onClick={() => sel.handleDeletePhoto(p().resource_id)}>
                 {t("photos.confirm")}
-              </button>
+              </Button>
               <button onClick={() => sel.setPendingDelete(null)} class={btn}>
                 <MdFillClose size={16} />
               </button>
@@ -511,7 +506,7 @@ function AllPhotosView() {
       </Show>
 
       <Show when={!loading() && photos().length === 0}>
-        <p class="text-sm text-muted py-8 text-center">{t("photos.no_photos")}</p>
+        <EmptyState>{t("photos.no_photos")}</EmptyState>
       </Show>
 
       <Show when={!loading() && viewMode() === 'grid'}>
@@ -663,7 +658,7 @@ function AlbumsView(props: { auto: boolean }) {
       <Show when={showForm()}>
         <form
           onSubmit={handleCreate}
-          class="flex flex-wrap items-center gap-2 p-3 bg-surface rounded-xl border border-rim"
+          class={`${cardClass()} flex flex-wrap items-center gap-2 p-3`}
         >
           <input
             type="text"
@@ -684,7 +679,7 @@ function AlbumsView(props: { auto: boolean }) {
             onClear={() => { setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>()); }}
           />
           <Show when={createError()}>
-            <span class="text-xs text-red-500">{createError()}</span>
+            <span class="text-xs text-danger-txt">{createError()}</span>
           </Show>
           <button
             type="submit"
@@ -704,12 +699,12 @@ function AlbumsView(props: { auto: boolean }) {
 
       {/* Permission denied */}
       <Show when={!albumsLoading() && albumsError() === 'denied'}>
-        <p class="text-sm text-muted py-8 text-center">{t("photos.not_accessible")}</p>
+        <EmptyState>{t("photos.not_accessible")}</EmptyState>
       </Show>
 
       {/* Empty */}
       <Show when={!albumsLoading() && !albumsError() && sortedAlbums().length === 0}>
-        <p class="text-sm text-muted py-8 text-center">{t("photos.no_albums")}</p>
+        <EmptyState>{t("photos.no_albums")}</EmptyState>
       </Show>
 
       {/* Grid mode */}
@@ -1010,23 +1005,18 @@ function AlbumGrid() {
           {/* Delete album — bulk-destructive, stays owner-only regardless of write_storage */}
           <Show when={!sel.selectMode() && isOwner()}>
             <Show when={confirmAlbum()} fallback={
-              <button onClick={handleDeleteAlbum} disabled={deletingAlbum()}
-                class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-500/70
-                       hover:text-red-500 hover:bg-red-500/10 transition-colors">
+              <Button variant="ghost" size="sm" onClick={handleDeleteAlbum} disabled={deletingAlbum()}>
                 {t("photos.delete_album")}
-              </button>
+              </Button>
             }>
               <div class="flex items-center gap-1">
-                <span class="text-xs text-red-500">{t("photos.confirm")}?</span>
-                <button onClick={handleDeleteAlbum} disabled={deletingAlbum()}
-                  class="px-2 py-1 rounded-md text-xs font-medium bg-red-500 text-white
-                         hover:bg-red-600 transition-colors disabled:opacity-50">
+                <span class="text-xs text-danger-txt">{t("photos.confirm")}?</span>
+                <Button variant="danger" size="sm" onClick={handleDeleteAlbum} disabled={deletingAlbum()}>
                   {deletingAlbum() ? t("photos.batch_deleting") : t("photos.delete_album")}
-                </button>
-                <button onClick={() => setConfirmAlbum(false)}
-                  class="px-2 py-1 rounded-md text-xs text-muted hover:text-txt transition-colors">
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmAlbum(false)}>
                   {t("photos.cancel")}
-                </button>
+                </Button>
               </div>
             </Show>
           </Show>
@@ -1062,7 +1052,7 @@ function AlbumGrid() {
       <SelectionBar sel={sel} folder={datum()} />
 
       <Show when={photos().length === 0}>
-        <p class="text-sm text-muted py-8 text-center">{t("photos.no_photos")}</p>
+        <EmptyState>{t("photos.no_photos")}</EmptyState>
       </Show>
 
       {/* Share composer — Show forces remount so initialBody is captured correctly */}
@@ -1133,9 +1123,6 @@ function ImageView() {
   const [threaded, setThreaded]           = createSignal(true);
   const [editFile, setEditFile]           = createSignal<File | null>(null);
   const [editUploading, setEditUploading] = createSignal(false);
-  const { open: moreOpen, setOpen: setMoreOpen, toggle: openMoreDropdown,
-          floatStyle: moreStyle, setTriggerRef: setMoreRef, setPanelRef: setMorePanelRef } =
-    useDropdown({ placement: "bottom-end", offset: 4 });
   const [deleteConfirming, setDeleteConfirming] = createSignal(false);
   const [aclOpen, setAclOpen]                   = createSignal(false);
   const [renameOpen, setRenameOpen]             = createSignal(false);
@@ -1357,7 +1344,6 @@ function ImageView() {
     }
     if (deleteTimer) clearTimeout(deleteTimer);
     setDeleteConfirming(false);
-    setMoreOpen(false);
     const photo = d();
     if (!photo) return;
     try {
@@ -1371,7 +1357,6 @@ function ImageView() {
   function openRename() {
     setRenameInput(d()?.filename ?? '');
     setRenameOpen(true);
-    setMoreOpen(false);
   }
 
   async function handleRename(e: Event) {
@@ -1422,7 +1407,6 @@ function ImageView() {
     const photo = d();
     if (!photo) return;
     setNsfwSaving(true);
-    setMoreOpen(false);
     try {
       await toggleNsfwAction(nick() ?? '', photo.resource_id, !photo.is_nsfw);
     } catch (err) {
@@ -1535,7 +1519,7 @@ function ImageView() {
       </div>
 
       {/* Card */}
-      <div class="bg-surface border border-rim rounded-2xl overflow-hidden shadow-sm mb-4">
+      <Card raised class="overflow-hidden mb-4">
 
         {/* Image */}
         <div class="relative bg-overlay flex items-center justify-center min-h-48 overflow-hidden">
@@ -1554,7 +1538,7 @@ function ImageView() {
               onClick={() => setNsfwRevealed(true)}
               class="absolute inset-0 flex flex-col items-center justify-center gap-2 cursor-pointer"
             >
-              <span class="px-2 py-0.5 rounded-md bg-black/60 text-red-400 text-xs font-bold tracking-wide">
+              <span class="px-2 py-0.5 rounded-md bg-black/60 text-danger-txt text-xs font-bold tracking-wide">
                 {t("photos.nsfw")}
               </span>
               <span class="px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm font-medium">
@@ -1586,10 +1570,9 @@ function ImageView() {
         <div class="p-3 md:p-5">
           {/* NSFW badge */}
           <Show when={d()?.is_nsfw}>
-            <span class="inline-block mb-2 px-2 py-0.5 rounded-md bg-red-500/15 text-red-500
-                         text-xs font-semibold tracking-wide">
+            <Badge tone="danger" class="mb-2 tracking-wide">
               {t("photos.nsfw")}
-            </span>
+            </Badge>
           </Show>
 
           {/* Title — editable with write access */}
@@ -1611,25 +1594,28 @@ function ImageView() {
               </div>
             }>
               <form onSubmit={handleTitleSave} class="mb-2 flex items-center gap-2">
-                <input
+                <Input
+                  class="flex-1"
                   type="text"
                   value={titleInput()}
                   onInput={e => setTitleInput(e.currentTarget.value)}
                   disabled={titleSaving()}
                   autofocus
                   placeholder={t("photos.title_ph")}
-                  class="flex-1 bg-overlay text-sm text-txt placeholder:text-muted rounded-lg
-                         px-3 py-1.5 outline-none border border-rim disabled:opacity-50"
                 />
                 <button type="submit" disabled={titleSaving()}
                   class="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
                          transition-opacity disabled:opacity-40 flex-shrink-0">
                   {titleSaving() ? t("photos.title_saving") : t("photos.title_save")}
                 </button>
-                <button type="button" onClick={() => setTitleEditing(false)}
-                  class="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-txt transition-colors flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="flex-shrink-0"
+                  onClick={() => setTitleEditing(false)}
+                >
                   {t("photos.cancel")}
-                </button>
+                </Button>
               </form>
             </Show>
           </Show>
@@ -1653,15 +1639,14 @@ function ImageView() {
               </div>
             }>
               <form onSubmit={handleDescSave} class="mb-3 flex flex-col gap-2">
-                <textarea
+                <Textarea
+                  class="w-full resize-none"
                   value={descInput()}
                   onInput={e => setDescInput(e.currentTarget.value)}
                   disabled={descSaving()}
                   autofocus
                   rows={3}
                   placeholder={t("photos.description_ph")}
-                  class="w-full bg-overlay text-sm text-txt placeholder:text-muted rounded-lg
-                         px-3 py-2 outline-none border border-rim resize-none disabled:opacity-50"
                 />
                 <div class="flex items-center gap-2">
                   <button type="submit" disabled={descSaving()}
@@ -1669,10 +1654,9 @@ function ImageView() {
                            transition-opacity disabled:opacity-40">
                     {descSaving() ? t("photos.description_saving") : t("photos.description_save")}
                   </button>
-                  <button type="button" onClick={() => setDescEditing(false)}
-                    class="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-txt transition-colors">
+                  <Button variant="ghost" size="sm" onClick={() => setDescEditing(false)}>
                     {t("photos.cancel")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </Show>
@@ -1718,10 +1702,10 @@ function ImageView() {
 
             {/* Comments toggle */}
             <Show when={commentCount() > 0}>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowComments(v => !v)}
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                       text-muted hover:bg-overlay hover:text-txt transition-colors"
                 title={t("post.toggle_comments")}
               >
                 <Show when={showComments()} fallback={<MdFillKeyboard_arrow_down size={17} />}>
@@ -1729,21 +1713,21 @@ function ImageView() {
                 </Show>
                 <MdFillChat size={15} />
                 <span>{commentCount()}</span>
-              </button>
+              </Button>
             </Show>
 
             {/* Thread / flat toggle */}
             <Show when={showComments() && hasNested()}>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setThreaded(v => !v)}
-                class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium
-                       text-muted hover:bg-overlay hover:text-txt transition-colors"
                 title={threaded() ? t("photos.switch_flat") : t("photos.switch_threaded")}
               >
                 <Show when={threaded()} fallback={<MdFillAccount_tree size={17} />}>
                   <MdFillFormat_list_bulleted size={17} />
                 </Show>
-              </button>
+              </Button>
             </Show>
 
             <a
@@ -1756,14 +1740,12 @@ function ImageView() {
               <MdOutlineDownload size={17} />
             </a>
 
-            <button
+            <IconButton
+              label={t("share.action")}
               onClick={() => { const p = d(); if (p) openShare(shareTargetForPhoto(nick(), p)); }}
-              title={t("share.action")}
-              class="flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                     transition-colors hover:bg-overlay text-muted hover:text-txt"
             >
               <MdOutlineShare size={17} />
-            </button>
+            </IconButton>
 
             {/* Reply */}
             <Show when={auth()?.isLoggedIn && d()?.item_id}>
@@ -1780,80 +1762,56 @@ function ImageView() {
 
             {/* More dropdown */}
             <Show when={canWrite()}>
-              <div ref={setMoreRef} class="relative">
-                <button
-                  onClick={openMoreDropdown}
-                  title={t("post.more_actions")}
-                  class={`flex items-center px-1.5 py-1.5 rounded-lg text-sm font-medium
-                         transition-colors hover:bg-overlay
-                         ${moreOpen() ? 'text-accent' : 'text-muted'}`}
-                >
-                  <MdFillMore_vert size={18} />
-                </button>
-              </div>
-            </Show>
-          </div>
-
-          <Show when={moreOpen()}>
-            <Portal mount={topLayer()}>
-              <div
-                ref={setMorePanelRef}
-                class="z-[9999] min-w-[11rem] bg-surface border border-rim rounded-lg shadow-lg py-1"
-                style={moreStyle()}
-              >
-                <button
-                  onClick={() => { setMoreOpen(false); startEdit(); }}
-                  disabled={editUploading()}
-                  class="w-full flex items-center gap-2 px-3 py-2 text-sm text-txt
-                         hover:bg-overlay transition-colors text-left disabled:opacity-50"
-                >
-                  <Show when={editUploading()}
-                    fallback={<MdOutlineEdit size={15} />}
+              <Menu
+                label={t("post.more_actions")}
+                class="min-w-[11rem]"
+                onOpenChange={(o) => { if (!o) setDeleteConfirming(false); }}
+                trigger={(p, open) => (
+                  <button
+                    {...p}
+                    title={t("post.more_actions")}
+                    aria-label={t("post.more_actions")}
+                    class={`flex items-center px-1.5 py-1.5 rounded-lg text-sm font-medium
+                           transition-colors hover:bg-overlay
+                           ${open() ? 'text-accent' : 'text-muted'}`}
                   >
-                    <div class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  </Show>
-                  <span>{editUploading() ? t("photos.editing") : t("photos.edit_photo")}</span>
-                </button>
-                <button
-                  onClick={openRename}
-                  class="w-full flex items-center gap-2 px-3 py-2 text-sm text-txt
-                         hover:bg-overlay transition-colors text-left"
+                    <MdFillMore_vert size={18} />
+                  </button>
+                )}
+              >
+                <MenuItem
+                  icon={<Show when={editUploading()} fallback={<MdOutlineEdit size={15} />}><Spinner size="sm" /></Show>}
+                  disabled={editUploading()}
+                  onClick={startEdit}
                 >
-                  <MdOutlineEdit size={15} class="opacity-60" />
-                  <span>{t("photos.rename")}</span>
-                </button>
+                  {editUploading() ? t("photos.editing") : t("photos.edit_photo")}
+                </MenuItem>
+                <MenuItem icon={<MdOutlineEdit size={15} />} onClick={openRename}>{t("photos.rename")}</MenuItem>
                 {/* ACL changes stay owner-only, even with write access */}
                 <Show when={isOwner()}>
-                  <button
-                    onClick={() => { setMoreOpen(false); setAclOpen(v => !v); }}
-                    class="w-full flex items-center gap-2 px-3 py-2 text-sm text-txt
-                           hover:bg-overlay transition-colors text-left"
-                  >
-                    <MdOutlineLock size={15} />
-                    <span>{t("photos.acl_privacy")}</span>
-                  </button>
+                  <MenuItem icon={<MdOutlineLock size={15} />} onClick={() => setAclOpen(v => !v)}>
+                    {t("photos.acl_privacy")}
+                  </MenuItem>
                 </Show>
-                <button
-                  onClick={handleNsfwToggle}
+                <MenuItem
+                  icon={<span class="text-xs font-bold leading-none text-danger-txt">18+</span>}
                   disabled={nsfwSaving()}
-                  class="w-full flex items-center gap-2 px-3 py-2 text-sm text-txt
-                         hover:bg-overlay transition-colors text-left disabled:opacity-50"
+                  onClick={handleNsfwToggle}
                 >
-                  <span class="text-xs font-bold w-[15px] text-center leading-none text-red-400">18+</span>
-                  <span>{d()?.is_nsfw ? t("photos.nsfw_unmark") : t("photos.nsfw_mark")}</span>
-                </button>
-                <button
+                  {d()?.is_nsfw ? t("photos.nsfw_unmark") : t("photos.nsfw_mark")}
+                </MenuItem>
+                {/* Two-step: the first click arms it (menu stays open), the second deletes. */}
+                <MenuItem
+                  icon={<MdOutlineDelete size={15} />}
+                  danger={deleteConfirming()}
+                  keepOpen={!deleteConfirming()}
                   onClick={onDeleteClick}
-                  class={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-overlay
-                         transition-colors text-left
-                         ${deleteConfirming() ? 'text-red-500' : 'text-txt'}`}
                 >
-                  <MdOutlineDelete size={15} />
-                  <span>{deleteConfirming() ? t("photos.confirm") : t("photos.delete_photo")}</span>
-                </button>
-              </div>
-            </Portal>
-          </Show>
+                  {deleteConfirming() ? t("photos.confirm") : t("photos.delete_photo")}
+                </MenuItem>
+              </Menu>
+            </Show>
+          </div>
 
           {/* ACL editor */}
           <Show when={aclOpen() && d()?.resource_id}>
@@ -1889,13 +1847,9 @@ function ImageView() {
               >
                 {renaming() ? t("photos.renaming") : t("photos.rename")}
               </button>
-              <button
-                type="button"
-                onClick={() => setRenameOpen(false)}
-                class="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-txt transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setRenameOpen(false)}>
                 {t("photos.cancel")}
-              </button>
+              </Button>
             </form>
           </Show>
 
@@ -1933,7 +1887,7 @@ function ImageView() {
             handlers={handlers}
           />
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

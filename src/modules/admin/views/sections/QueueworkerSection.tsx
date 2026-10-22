@@ -3,6 +3,9 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminQueueworker, saveQueueworkerSettings } from "../../api";
 import type { QueueworkerSettings } from "../../types";
+import { Button } from "@ui/Button";
+import { Field, Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 export default function QueueworkerSection() {
   const [data, { refetch }] = createQueryResource("admin-queueworker", fetchAdminQueueworker);
@@ -41,12 +44,9 @@ export default function QueueworkerSection() {
       title="Queue Worker"
       description="Monitor queue status and configure worker settings."
       action={
-        <button
-          onClick={refetch}
-          class="px-3 py-1.5 text-xs rounded-lg border border-rim text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={refetch}>
           Refresh
-        </button>
+        </Button>
       }
     >
       <Show when={data()} fallback={<Skeleton />}>
@@ -84,7 +84,7 @@ export default function QueueworkerSection() {
             </Show>
 
             {/* Settings form */}
-            <div class="rounded-lg border border-rim bg-surface p-4 space-y-4">
+            <Card class="p-4 space-y-4">
               <p class="text-sm font-semibold text-txt">Worker Settings</p>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -126,18 +126,13 @@ export default function QueueworkerSection() {
 
               <div class="flex items-center gap-3 justify-end pt-1">
                 <Show when={saved()}>
-                  <span class="text-xs text-green-600 dark:text-green-400">Saved</span>
+                  <span class="text-xs text-success-txt">Saved</span>
                 </Show>
-                <button
-                  onClick={onSave}
-                  disabled={saving()}
-                  class="px-4 py-1.5 text-sm rounded-lg bg-accent text-accent-fg
-                         hover:opacity-90 disabled:opacity-50 transition-opacity"
-                >
+                <Button size="sm" onClick={onSave} disabled={saving()}>
                   {saving() ? "Saving…" : "Save settings"}
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
             {/* Jobs table */}
             <Show when={d().jobs.length > 0}>
@@ -167,7 +162,7 @@ export default function QueueworkerSection() {
                                 when={job.reservation_id}
                                 fallback={<span class="text-muted">queued</span>}
                               >
-                                <span class="text-amber-600 dark:text-amber-400">active</span>
+                                <span class="text-warning-txt">active</span>
                               </Show>
                             </td>
                           </tr>
@@ -210,17 +205,16 @@ function NumberField(props: {
 }) {
   return (
     <div class="space-y-1">
-      <label class="text-xs font-medium text-muted">{props.label}</label>
-      <input
+      <Field label={props.label} hint={props.hint} size="sm">
+        <Input
+        class="w-full"
         type="number"
         value={props.value}
         min={props.min}
         disabled={props.disabled}
         onInput={(e) => props.onChange(parseInt(e.currentTarget.value) || props.min)}
-        class="w-full px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
-               focus:outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed"
-      />
-      <p class="text-xs text-muted">{props.hint}</p>
+        />
+      </Field>
     </div>
   );
 }

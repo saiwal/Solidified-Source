@@ -19,7 +19,7 @@
 import { Show, For, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { CONTENT_TYPES, type MimeType } from "@utsukta/spa-core/lib/mimetypes";
-import { underlineFieldClass } from "../lib/fieldStyles";
+import { Select } from "@ui/Field";
 
 const LABEL_KEY = {
   "text/bbcode": "editor.format_bbcode",
@@ -53,15 +53,15 @@ const FormatSelect: Component<FormatSelectProps> = (props) => {
       <Show when={!props.hideLabel}>
         <label class="block text-xs text-muted mb-1">{t("editor.format")}</label>
       </Show>
-      <select
+      <Select
+        class="w-full"
         value={props.value()}
         onChange={(e) => change(e.currentTarget.value as MimeType)}
-        class={`w-full bg-transparent px-0 py-1.5 text-sm text-txt ${underlineFieldClass}`}
       >
         <For each={choices()}>
           {(mime) => <option value={mime}>{t(LABEL_KEY[mime])}</option>}
         </For>
-      </select>
+      </Select>
     </div>
   );
 };

@@ -6,6 +6,8 @@ import { createSignal, Index, Show } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillAdd, MdFillClose } from "solid-icons/md";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 interface Row {
   label: string;
@@ -14,9 +16,6 @@ interface Row {
 
 const MAX_LINKS = 20;
 const MAX_CONFIG_CHARS = 1900;
-
-const inputClass =
-  "w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt";
 
 export default function LinkListConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
@@ -50,8 +49,14 @@ export default function LinkListConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_title")}
-        <input type="text" value={title()} maxLength={60}
-               onInput={(e) => setTitle(e.currentTarget.value)} class={`mt-1 ${inputClass}`} />
+        <Input
+          size="sm"
+          class="mt-1 w-full"
+          type="text"
+          value={title()}
+          maxLength={60}
+          onInput={(e) => setTitle(e.currentTarget.value)}
+        />
       </label>
 
       <span class="text-xs text-muted">{t("widgets.cfg_links")}</span>
@@ -60,57 +65,51 @@ export default function LinkListConfig(props: WidgetConfigProps) {
       <Index each={rows()}>
         {(row, i) => (
           <div class="flex items-center gap-1">
-            <input
+            <Input
+              size="sm"
+              class="w-full"
               type="text"
               placeholder={t("widgets.cfg_link_label")}
               value={row().label}
               maxLength={60}
               onInput={(e) => setRow(i, { label: e.currentTarget.value })}
-              class={inputClass}
               style={{ "max-width": "35%" }}
             />
-            <input
+            <Input
+              size="sm"
+              class="w-full"
               type="url"
               placeholder="https://…"
               value={row().url}
               maxLength={200}
               onInput={(e) => setRow(i, { url: e.currentTarget.value })}
-              class={inputClass}
             />
-            <button
+            <IconButton
+              label={t("widgets.remove_widget")}
+              size="sm"
+              class="shrink-0"
               onClick={() => removeRow(i)}
-              aria-label={t("widgets.remove_widget")}
-              class="p-1 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors shrink-0"
             >
               <MdFillClose size={14} />
-            </button>
+            </IconButton>
           </div>
         )}
       </Index>
 
       <Show when={rows().length < MAX_LINKS}>
-        <button
-          onClick={addRow}
-          class="self-start flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
-                 hover:text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" class="self-start" onClick={addRow}>
           <MdFillAdd size={12} />
           {t("widgets.cfg_add_link")}
-        </button>
+        </Button>
       </Show>
 
       <div class="flex items-center justify-between gap-2">
         <Show when={size() > MAX_CONFIG_CHARS}>
           <span class="text-[0.625rem] text-muted">{t("widgets.cfg_too_large")}</span>
         </Show>
-        <button
-          onClick={() => props.onSave(cleanConfig())}
-          disabled={!valid()}
-          class="ml-auto px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all disabled:opacity-40"
-        >
+        <Button size="sm" class="ml-auto" onClick={() => props.onSave(cleanConfig())} disabled={!valid()}>
           {t("widgets.cfg_save")}
-        </button>
+        </Button>
       </div>
     </div>
   );

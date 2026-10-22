@@ -15,8 +15,9 @@ import {
 import { useI18n } from "@utsukta/spa-core/i18n";
 import FilterChip from "./FilterChip";
 import { RANGE_AWARE, RANGES, DEFAULT_RANGE, resolveRange, type SortOrder, type SortRange } from "./ranked";
-import { createPopover } from "./createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
+import { Button, IconButton } from "@ui/Button";
 void helpable;
 
 type IconType = Component<{ size?: number; class?: string }>;
@@ -107,20 +108,20 @@ export default function SortSelect(props: {
         when={wide()}
         fallback={
           <>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               title={t("network.sort_by")}
               aria-expanded={open()}
               aria-haspopup="listbox"
               onClick={() => { ref(root); setRangeFor(null); setOpen(!open()); }}
-              class="flex items-center gap-1 px-2 py-1.5 rounded-lg border border-rim
-                     bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors"
             >
               <CurrentIcon />
               <span class="hidden sm:inline text-xs font-medium">
                 {labelFor(current().id, current().key)}
               </span>
               <MdFillKeyboard_arrow_down size={14} />
-            </button>
+            </Button>
 
             <Show when={open()}>
               <Portal mount={topLayer()}>
@@ -149,16 +150,15 @@ export default function SortSelect(props: {
                         <span>{labelFor(o.id, o.key)}</span>
                       </button>
                       <Show when={RANGE_AWARE.includes(o.id)}>
-                        <button
-                          title={t("network.date_range")}
-                          aria-label={t("network.date_range")}
+                        <IconButton
+                          label={t("network.date_range")}
+                          class="self-stretch rounded-r-md"
                           aria-expanded={rangeFor() === o.id}
                           onClick={() => toggleRanges(o.id)}
-                          class="px-2 py-1.5 self-stretch flex items-center rounded-r-md hover:bg-black/10"
                         >
                           <MdFillKeyboard_arrow_down size={14}
                             class={rangeFor() === o.id ? "rotate-180" : ""} />
-                        </button>
+                        </IconButton>
                       </Show>
                     </div>
                     <Show when={rangeFor() === o.id}>

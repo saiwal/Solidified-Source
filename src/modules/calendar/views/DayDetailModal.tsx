@@ -17,9 +17,10 @@ import CategoryChips from "./CategoryChips";
 import { openEvent } from "@/shared/views/modal-host";
 import { fmtEventRange } from "./calUtils";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import Modal from "@/shared/views/Modal";
-import { iconBtn, primaryPill } from "@/shared/views/ui";
+import { Modal } from "@ui/Modal";
 import { Motion, pop, slideDown } from "@/shared/views/anim";
+import { Button, IconButton, iconBtn } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 interface Props {
   date: string;
@@ -81,17 +82,16 @@ export default function DayDetailModal(props: Props) {
               </p>
             </Show>
           </div>
-          <button type="button" onClick={props.onClose} class={`${iconBtn} -mr-2 -mt-1`}
-            title={t("layout.close")} aria-label={t("layout.close")}>
+          <IconButton label={t("layout.close")} class="-mr-2 -mt-1" onClick={props.onClose}>
             <MdFillClose size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Event list */}
         <div class="overflow-y-auto flex-1 px-3 pb-2 space-y-0.5">
           <Show
             when={evCount() > 0}
-            fallback={<p class="px-3 py-8 text-sm text-muted text-center">{t("calendar.no_events")}</p>}
+            fallback={<EmptyState class="px-3">{t("calendar.no_events")}</EmptyState>}
           >
             <For each={props.events}>
               {(ev) => {
@@ -144,10 +144,10 @@ export default function DayDetailModal(props: Props) {
 
         <Show when={canCreate()}>
           <div class="px-6 pt-2 pb-6 shrink-0 flex justify-end">
-            <button type="button" onClick={create} class={primaryPill}>
+            <Button onClick={create}>
               <MdFillAdd size={18} />
               {t("calendar.new_event")}
-            </button>
+            </Button>
           </div>
         </Show>
       </Motion.div>
@@ -189,14 +189,12 @@ function EventDetailPanel(props: { event: CalEvent; onEdit: () => void; onDelete
         fallback={
           <div class="flex items-center gap-3 flex-wrap py-1">
             <span class="text-xs text-muted">{t("calendar.delete_event_confirm")}</span>
-            <button type="button" disabled={deleting()} onClick={handleDelete}
-              class="text-xs font-medium text-red-500 hover:underline disabled:opacity-50">
+            <Button variant="danger" size="sm" disabled={deleting()} onClick={handleDelete}>
               {deleting() ? t("calendar.deleting_event") : t("calendar.delete_event")}
-            </button>
-            <button type="button" onClick={() => setConfirming(false)}
-              class="text-xs text-muted hover:text-txt transition-colors">
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
               {t("calendar.cancel")}
-            </button>
+            </Button>
           </div>
         }
       >
@@ -209,15 +207,17 @@ function EventDetailPanel(props: { event: CalEvent; onEdit: () => void; onDelete
           </Show>
           <Show when={ev.rw}>
             <Show when={ev.editable !== false}>
-              <button type="button" onClick={props.onEdit} class={iconBtn}
-                title={t("calendar.edit_event")} aria-label={t("calendar.edit_event")}>
+              <IconButton label={t("calendar.edit_event")} onClick={props.onEdit}>
                 <MdOutlineEdit size={16} />
-              </button>
+              </IconButton>
             </Show>
-            <button type="button" onClick={() => setConfirming(true)} class={`${iconBtn} hover:text-red-500!`}
-              title={t("calendar.delete_event")} aria-label={t("calendar.delete_event")}>
+            <IconButton
+              label={t("calendar.delete_event")}
+              variant="danger"
+              onClick={() => setConfirming(true)}
+            >
               <MdOutlineDelete size={16} />
-            </button>
+            </IconButton>
           </Show>
         </div>
       </Show>

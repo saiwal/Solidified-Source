@@ -19,6 +19,7 @@
 
 import { For, Show, type JSX } from "solid-js";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
+import { Button } from "@ui/Button";
 
 const PANEL =
   "z-50 bg-surface border border-rim rounded-xl shadow-xl p-2 max-h-72 overflow-y-auto";
@@ -199,13 +200,9 @@ export function PromptPanel(props: {
               </label>
             )}
           </For>
-          <button
-            type="button"
-            onClick={submit}
-            class="self-end px-2.5 py-1 text-xs font-semibold rounded bg-accent text-accent-fg hover:opacity-90"
-          >
+          <Button size="sm" class="self-end" onClick={submit}>
             {props.submitLabel}
-          </button>
+          </Button>
         </div>
       </Show>
     </>

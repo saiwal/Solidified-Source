@@ -38,7 +38,7 @@ export function handleDecryptClick(e: MouseEvent): boolean {
         Cancel
       </button>
     </div>
-    <span class="hz-decrypt-error text-xs text-red-400 hidden"></span>
+    <span class="hz-decrypt-error text-xs text-danger-txt hidden"></span>
   `;
 
   btn.replaceWith(form);

@@ -7,12 +7,14 @@
  * The preview is the same OSM embed iframe the posted map will use — no
  * Leaflet, no tile traffic beyond the one frame the user is looking at.
  */
-import { createSignal, onMount, Show, type Component, createUniqueId } from "solid-js";
+import { createSignal, onMount, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
 import { DEFAULT_TMS, geocode, osmEmbedSrc, type Coord } from "@utsukta/spa-core/lib/osm";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 interface Props {
   onClose: () => void;
   onInsert: (bbcode: string) => void;
@@ -71,71 +73,45 @@ const MapPickerModal: Component<Props> = (props) => {
     props.onClose();
   };
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
-      <div
-        class="w-full max-w-lg rounded-xl border border-rim bg-surface shadow-2xl
-               text-txt overflow-hidden"
-      >
-        <div class="px-4 py-3 border-b border-rim">
-          <h2 id={titleId} class="text-sm font-semibold">{t("editor.map_modal_title")}</h2>
-        </div>
-
+    <Modal onClose={props.onClose} class="z-[80]">
+      <ModalPanel title={t("editor.map_modal_title")} size="lg" class="text-txt overflow-hidden">
         <div class="p-4 space-y-3">
           <div class="flex gap-2">
-            <input
-              ref={inputRef}
-              type="search"
-              value={place()}
-              onInput={(e) => setPlace(e.currentTarget.value)}
-              onKeyDown={(e) => {
+            <Input class="flex-1" ref={inputRef} type="search" value={place()} onInput={(e) => setPlace(e.currentTarget.value)} onKeyDown={(e) => {
                 e.stopPropagation();
                 if (e.key === "Enter") { e.preventDefault(); void search(); }
-              }}
-              placeholder={t("editor.map_place_placeholder")}
-              aria-label={t("editor.map_place")}
-              class="flex-1 px-2 py-1.5 text-sm rounded-lg border border-rim bg-elevated
-                     text-txt outline-none focus:border-accent"
-            />
-            <button
-              type="button"
+              }} placeholder={t("editor.map_place_placeholder")} aria-label={t("editor.map_place")} />
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => void search()}
               disabled={!place().trim() || !!busy()}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim hover:bg-elevated
-                     disabled:opacity-50"
             >
               {busy() === "search" ? t("editor.map_searching") : t("editor.map_place")}
-            </button>
+            </Button>
           </div>
 
           <div class="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={locate}
-              disabled={!!busy()}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim hover:bg-elevated
-                     disabled:opacity-50"
-            >
+            <Button variant="ghost" size="sm" onClick={locate} disabled={!!busy()}>
               {busy() === "locate" ? t("editor.map_locating") : t("editor.map_use_browser")}
-            </button>
+            </Button>
 
             <label class="flex items-center gap-2 text-sm text-muted ml-auto">
               {t("editor.map_zoom")}
-              <input
+              <Input
+                class="w-16"
                 type="number"
                 min="1"
                 max="18"
                 value={zoom()}
                 onInput={(e) => setZoom(Math.min(18, Math.max(1, Number(e.currentTarget.value) || 16)))}
-                class="w-16 px-2 py-1 text-sm rounded-lg border border-rim bg-elevated
-                       text-txt outline-none focus:border-accent"
               />
             </label>
           </div>
 
           <Show when={error()}>
-            <p class="text-sm text-red-500">{error()}</p>
+            <p class="text-sm text-danger-txt">{error()}</p>
           </Show>
 
           <Show when={coord()}>
@@ -152,13 +128,9 @@ const MapPickerModal: Component<Props> = (props) => {
         </div>
 
         <div class="px-4 py-3 border-t border-rim flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="px-3 py-1.5 text-sm rounded-lg border border-rim hover:bg-elevated"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("ui.cancel_btn")}
-          </button>
+          </Button>
           <button
             type="button"
             onClick={insert}
@@ -168,7 +140,7 @@ const MapPickerModal: Component<Props> = (props) => {
             {t("editor.map_insert")}
           </button>
         </div>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

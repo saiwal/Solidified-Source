@@ -4,6 +4,8 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchConnections } from "../api";
+import { Card } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 export default function ChannelConnectionsWidget() {
   const nick = usePageNick();
@@ -19,7 +21,7 @@ export default function ChannelConnectionsWidget() {
 
   return (
     <Show when={!data.loading && !data()?.hidden && conns().length > 0}>
-      <div class="rounded-xl bg-surface border border-rim p-3">
+      <Card class="p-3">
         <div class="flex items-center justify-between mb-2.5">
           <h3 class="text-xs font-semibold text-muted uppercase tracking-wide">
             {t("widgets.connections")}
@@ -37,11 +39,7 @@ export default function ChannelConnectionsWidget() {
                 : conn.url;
               return (
                 <a href={href} title={conn.name} class="group flex flex-col items-center gap-0.5">
-                  <img
-                    src={conn.photo}
-                    alt={conn.name}
-                    class="w-11 h-11 rounded-full object-cover ring-1 ring-rim group-hover:ring-2 group-hover:ring-accent transition-all"
-                  />
+                  <Avatar src={conn.photo} name={conn.name} size={11} class="ring-1 ring-rim group-hover:ring-2 group-hover:ring-accent transition-all" />
                   <span class="text-[0.625rem] text-muted leading-tight text-center w-full truncate group-hover:text-txt transition-colors">
                     {conn.name}
                   </span>
@@ -63,7 +61,7 @@ export default function ChannelConnectionsWidget() {
             </Show>
           </div>
         </Show>
-      </div>
+      </Card>
     </Show>
   );
 }

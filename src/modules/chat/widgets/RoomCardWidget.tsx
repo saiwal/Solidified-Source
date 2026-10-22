@@ -10,13 +10,15 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillChat } from "solid-icons/md";
 import { fetchRooms } from "../api";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }
@@ -47,7 +49,7 @@ export default function RoomCardWidget(props: WidgetProps) {
       <Show when={!room.loading}>
         <Show when={room()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(r) => (
-            <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+            <Card class="overflow-hidden">
               <div class="px-4 py-3 flex items-center gap-2">
                 <MdFillChat size={18} class="text-accent shrink-0" />
                 <div class="min-w-0 flex-1">
@@ -57,15 +59,15 @@ export default function RoomCardWidget(props: WidgetProps) {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                class="w-full"
                 onClick={() => openChat(nick(), r().id, r().name)}
-                class="block w-full px-4 py-2 border-t border-rim text-center text-xs font-medium
-                       text-accent hover:bg-elevated transition-colors"
               >
                 {t("widgets.join_room")}
-              </button>
-            </div>
+              </Button>
+            </Card>
           )}
         </Show>
       </Show>

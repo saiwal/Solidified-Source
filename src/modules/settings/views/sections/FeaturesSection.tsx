@@ -6,6 +6,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { refetchNavData } from "@utsukta/spa-core/store/nav-store";
 import { setFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Switch } from "@ui/Toggle";
+import { Card } from "@ui/Card";
 
 interface FeatureEntry {
   name: string;
@@ -134,36 +136,20 @@ function FeatureRow(props: {
   const f = props.feature;
 
   return (
-    <div class="flex items-start gap-4 rounded-lg border border-rim bg-surface px-4 py-3">
+    <Card class="flex items-start gap-4 px-4 py-3">
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium text-txt">{f.label}</p>
         <Show when={f.description}>
           <p class="text-xs text-muted mt-0.5 leading-relaxed">{f.description}</p>
         </Show>
       </div>
-      <button
-        type="button"
+      <Switch
+        checked={f.enabled}
         disabled={props.isBusy}
-        onClick={props.onToggle}
-        aria-pressed={f.enabled}
-        class={[
-          "shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-          "disabled:opacity-40 disabled:cursor-not-allowed",
-          f.enabled ? "bg-accent" : "bg-elevated border border-rim",
-        ].join(" ")}
-      >
-        <span class="sr-only">
-          {f.enabled ? t("settings.feat_toggle_off") : t("settings.feat_toggle_on")}
-        </span>
-        <span
-          class={[
-            "inline-block h-4 w-4 rounded-full transition-transform",
-            f.enabled ? "translate-x-6 bg-accent-fg" : "translate-x-1 bg-muted",
-          ].join(" ")}
-        />
-      </button>
-    </div>
+        onChange={props.onToggle}
+        label={f.enabled ? t("settings.feat_toggle_off") : t("settings.feat_toggle_on")}
+      />
+    </Card>
   );
 }
 

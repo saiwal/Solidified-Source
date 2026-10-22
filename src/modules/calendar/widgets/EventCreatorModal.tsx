@@ -20,7 +20,8 @@ import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { prevDay, nextDay, zonedTimeToUtc, utcToZonedDateTime } from "../views/calUtils";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import ComposerModal from "@/shared/editor/components/ComposerModal";
-import { primaryPill, ghostPill } from "@/shared/views/ui";
+import { Button } from "@ui/Button";
+import { Field, Input } from "@ui/Field";
 
 function timezones(): string[] {
   try {
@@ -294,16 +295,17 @@ export default function EventCreatorModal(props: Props) {
 
         {/* Title */}
         <div class="flex flex-col gap-1">
-          <label class="text-xs text-muted">{t("calendar.title_label")}</label>
-          <input
+          <Field label={t("calendar.title_label")} size="sm">
+            <Input
+            class="w-full"
             ref={titleRef!}
             type="text"
             required
             placeholder={t("calendar.title_placeholder") as string}
             value={title()}
             onInput={(e) => setTitle(e.currentTarget.value)}
-            class={inputClass}
-          />
+            />
+          </Field>
         </div>
 
         {/* All-day toggle */}
@@ -320,31 +322,27 @@ export default function EventCreatorModal(props: Props) {
         {/* Start */}
         <div class="flex gap-4">
           <div class="flex flex-col gap-1 flex-1">
-            <label class="text-xs text-muted">{t("calendar.start_label")}</label>
-            <input
-              type="date"
-              required
-              value={startDate()}
-              onInput={(e) => {
-                const v = e.currentTarget.value;
-                setStartDate(v);
-                // Keep a stale end date (e.g. left over from the day cell
-                // that opened this modal) from silently producing an
-                // end-before-start event.
-                if (endDate() < v) setEndDate(v);
-              }}
-              class={inputClass}
-            />
+            <Field label={t("calendar.start_label")} size="sm">
+              <Input class="w-full" type="date" required value={startDate()} onInput={(e) => {
+              const v = e.currentTarget.value;
+              setStartDate(v);
+              // Keep a stale end date (e.g. left over from the day cell
+              // that opened this modal) from silently producing an
+              // end-before-start event.
+              if (endDate() < v) setEndDate(v);
+              }} />
+            </Field>
           </div>
           <Show when={!allDay()}>
             <div class="flex flex-col gap-1 w-28">
-              <label class="text-xs text-muted">{t("calendar.time_label")}</label>
-              <input
+              <Field label={t("calendar.time_label")} size="sm">
+                <Input
+                class="w-full"
                 type="time"
                 value={startTime()}
                 onChange={(e) => setStartTime(e.currentTarget.value)}
-                class={inputClass}
-              />
+                />
+              </Field>
             </div>
           </Show>
         </div>
@@ -380,23 +378,25 @@ export default function EventCreatorModal(props: Props) {
         <Show when={!nofinish()}>
           <div class="flex gap-4">
             <div class="flex flex-col gap-1 flex-1">
-              <label class="text-xs text-muted">{t("calendar.end_label")}</label>
-              <input
+              <Field label={t("calendar.end_label")} size="sm">
+                <Input
+                class="w-full"
                 type="date"
                 value={endDate()}
                 onInput={(e) => setEndDate(e.currentTarget.value)}
-                class={inputClass}
-              />
+                />
+              </Field>
             </div>
             <Show when={!allDay()}>
               <div class="flex flex-col gap-1 w-28">
-                <label class="text-xs text-muted">{t("calendar.time_label")}</label>
-                <input
+                <Field label={t("calendar.time_label")} size="sm">
+                  <Input
+                  class="w-full"
                   type="time"
                   value={endTime()}
                   onChange={(e) => setEndTime(e.currentTarget.value)}
-                  class={inputClass}
-                />
+                  />
+                </Field>
               </div>
             </Show>
           </div>
@@ -404,14 +404,15 @@ export default function EventCreatorModal(props: Props) {
 
         {/* Location */}
         <div class="flex flex-col gap-1">
-          <label class="text-xs text-muted">{t("calendar.location_label")}</label>
-          <input
+          <Field label={t("calendar.location_label")} size="sm">
+            <Input
+            class="w-full"
             type="text"
             placeholder={t("calendar.optional") as string}
             value={location()}
             onInput={(e) => setLocation(e.currentTarget.value)}
-            class={inputClass}
-          />
+            />
+          </Field>
         </div>
 
         {/* Categories — channel calendar only, mirroring core, which hides its own
@@ -484,22 +485,14 @@ export default function EventCreatorModal(props: Props) {
           </Show>
 
           <div class="flex gap-2 ml-auto">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class={ghostPill}
-            >
+            <Button variant="ghost" onClick={props.onClose}>
               {t("calendar.cancel")}
-            </button>
-            <button
-              type="submit"
-              disabled={submitting()}
-              class={primaryPill}
-            >
+            </Button>
+            <Button type="submit" disabled={submitting()}>
               {submitting()
                 ? (isEdit ? t("calendar.saving") : t("calendar.creating"))
                 : (isEdit ? t("calendar.save_event") : t("calendar.create_event"))}
-            </button>
+            </Button>
           </div>
         </div>
       </form>

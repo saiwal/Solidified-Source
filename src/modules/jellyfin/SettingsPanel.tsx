@@ -11,7 +11,8 @@ import { audience, audienceLoaded, loadAudience, setAudience, reminder, setRemin
 import { buildRecap, type RecapPeriod } from "./recap";
 import { vaultStatus, lockVault, resetVault, type VaultStatus } from "@utsukta/spa-core/lib/vault";
 import { resyncFromHub } from "./store";
-import { ghostPill } from "./ui";
+import { Button, IconButton } from "@ui/Button";
+import { Select } from "@ui/Field";
 
 const AUDIENCES: Audience[] = ["off", "self", "connections", "public"];
 const AUDIENCE_LABEL = {
@@ -62,26 +63,24 @@ export function useRecapComposer() {
 export default function SettingsPanel(props: { recap: ReturnType<typeof useRecapComposer> }) {
   const { t } = useI18n();
   void loadAudience();
-  const field = "bg-transparent border-0 border-b border-rim focus:border-accent outline-none py-1 pr-6 text-sm text-txt";
 
   return (
     <section class="w-full max-w-md space-y-6 p-6 rounded-3xl bg-surface shadow-2xl">
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-lg font-semibold text-txt">{t("jellyfin.settings")}</h2>
-        <button type="button" title={t("jellyfin.cancel")} onClick={() => setSettingsOpen(false)} class="p-1 text-muted hover:text-txt">
+        <IconButton label={t("jellyfin.cancel")} size="sm" onClick={() => setSettingsOpen(false)}>
           <MdFillClose size={18} />
-        </button>
+        </IconButton>
       </div>
 
       <div class="space-y-1">
         <label class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-sm text-txt">{t("jellyfin.np_label")}</span>
-          <select class={field} value={audience()} disabled={!audienceLoaded()}
-            onChange={async (e) => {
+          <Select value={audience()} disabled={!audienceLoaded()} onChange={async (e) => {
               if (!(await setAudience(e.currentTarget.value as Audience))) toast.error(t("jellyfin.save_failed"));
             }}>
             <For each={AUDIENCES}>{(a) => <option value={a}>{t(AUDIENCE_LABEL[a])}</option>}</For>
-          </select>
+          </Select>
         </label>
         <p class="text-xs text-muted">{t("jellyfin.np_help")}</p>
       </div>
@@ -93,13 +92,16 @@ export default function SettingsPanel(props: { recap: ReturnType<typeof useRecap
               onChange={(e) => setReminder({ enabled: e.currentTarget.checked })} />
             {t("jellyfin.reminder_label")}
           </label>
-          <select class={field} value={String(reminder().hour)} disabled={!reminder().enabled}
+          <Select
+            value={String(reminder().hour)}
+            disabled={!reminder().enabled}
             onChange={(e) => setReminder({ hour: Number(e.currentTarget.value) })}
-            aria-label={t("jellyfin.reminder_time")}>
+            aria-label={t("jellyfin.reminder_time")}
+          >
             <For each={Array.from({ length: 24 }, (_, h) => h)}>
               {(h) => <option value={String(h)}>{`${String(h).padStart(2, "0")}:00`}</option>}
             </For>
-          </select>
+          </Select>
         </div>
         <p class="text-xs text-muted">{t("jellyfin.reminder_help")}</p>
       </div>
@@ -107,14 +109,12 @@ export default function SettingsPanel(props: { recap: ReturnType<typeof useRecap
       <VaultSettings />
 
       <div class="flex flex-wrap gap-2 pt-2">
-        <button type="button" disabled={props.recap.busy()} onClick={() => void props.recap.open("day")}
-          class={ghostPill}>
+        <Button variant="ghost" disabled={props.recap.busy()} onClick={() => void props.recap.open("day")}>
           {t("jellyfin.recap_day")}
-        </button>
-        <button type="button" disabled={props.recap.busy()} onClick={() => void props.recap.open("week")}
-          class={ghostPill}>
+        </Button>
+        <Button variant="ghost" disabled={props.recap.busy()} onClick={() => void props.recap.open("week")}>
           {t("jellyfin.recap_week")}
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -134,21 +134,21 @@ function VaultSettings() {
         <p class="text-xs text-muted">{t("jellyfin.vault_settings_help")}</p>
         <div class="flex flex-wrap gap-2">
           <Show when={status() === "unlocked"}>
-            <button type="button" class={ghostPill} onClick={() => void lockVault().then(refresh)}>{t("jellyfin.vault_lock")}</button>
+            <Button variant="ghost" onClick={() => void lockVault().then(refresh)}>{t("jellyfin.vault_lock")}</Button>
           </Show>
           <Show when={!confirming()} fallback={
             <>
-              <span class="text-sm text-red-500 self-center">{t("jellyfin.vault_reset_confirm")}</span>
-              <button type="button" class={ghostPill} onClick={() => setConfirming(false)}>{t("jellyfin.cancel")}</button>
-              <button type="button" class={`${ghostPill} !text-red-500`} onClick={async () => {
+              <span class="text-sm text-danger-txt self-center">{t("jellyfin.vault_reset_confirm")}</span>
+              <Button variant="ghost" onClick={() => setConfirming(false)}>{t("jellyfin.cancel")}</Button>
+              <Button variant="ghost" class="!text-danger-txt" onClick={async () => {
                 await resetVault(["jellyfin"]).catch(() => toast.error(t("jellyfin.save_failed")));
                 setConfirming(false);
                 await refresh();
                 void resyncFromHub();
-              }}>{t("jellyfin.vault_reset")}</button>
+              }}>{t("jellyfin.vault_reset")}</Button>
             </>
           }>
-            <button type="button" class={ghostPill} onClick={() => setConfirming(true)}>{t("jellyfin.vault_reset")}</button>
+            <Button variant="ghost" onClick={() => setConfirming(true)}>{t("jellyfin.vault_reset")}</Button>
           </Show>
         </div>
       </div>

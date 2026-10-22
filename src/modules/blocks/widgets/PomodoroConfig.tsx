@@ -3,12 +3,11 @@
 import { createSignal, For } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Select } from "@ui/Field";
 
 const WORK_OPTIONS = [15, 25, 45, 60];
 const BREAK_OPTIONS = [5, 10, 15];
-
-const inputClass =
-  "mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt";
 
 export default function PomodoroConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
@@ -19,23 +18,29 @@ export default function PomodoroConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_work_min")}
-        <select value={String(work())} onChange={(e) => setWork(Number(e.currentTarget.value))} class={inputClass}>
+        <Select
+          size="sm"
+          class="mt-1 w-full"
+          value={String(work())}
+          onChange={(e) => setWork(Number(e.currentTarget.value))}
+        >
           <For each={WORK_OPTIONS}>{(n) => <option value={String(n)}>{n}</option>}</For>
-        </select>
+        </Select>
       </label>
       <label class="text-xs text-muted">
         {t("widgets.cfg_break_min")}
-        <select value={String(brk())} onChange={(e) => setBrk(Number(e.currentTarget.value))} class={inputClass}>
+        <Select
+          size="sm"
+          class="mt-1 w-full"
+          value={String(brk())}
+          onChange={(e) => setBrk(Number(e.currentTarget.value))}
+        >
           <For each={BREAK_OPTIONS}>{(n) => <option value={String(n)}>{n}</option>}</For>
-        </select>
+        </Select>
       </label>
-      <button
-        onClick={() => props.onSave({ work: work(), break: brk() })}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all"
-      >
+      <Button size="sm" class="self-end" onClick={() => props.onSave({ work: work(), break: brk() })}>
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

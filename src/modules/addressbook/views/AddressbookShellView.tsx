@@ -6,6 +6,8 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchAddressbooks, type Addressbook } from "../api";
 import CardsSection from "./CardsSection";
 import AddressbookSidebar from "./AddressbookSidebar";
+import { Card } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 const BASE = "/cdav/addressbook";
 
@@ -59,7 +61,7 @@ export default function AddressbookShellView() {
       }
     >
       <Suspense fallback={<SectionSkeleton />}>
-        <Show when={activeBook()} fallback={<EmptyState message={emptyMessage()} />}>
+        <Show when={activeBook()} fallback={<EmptyState>{emptyMessage()}</EmptyState>}>
           {(book) => <CardsSection book={book()} />}
         </Show>
       </Suspense>
@@ -73,11 +75,6 @@ export default function AddressbookShellView() {
   }
 }
 
-function EmptyState(props: { message: string }) {
-  return (
-    <div class="px-4 md:px-6 py-10 text-sm text-muted">{props.message}</div>
-  );
-}
 
 function SectionSkeleton() {
   return (
@@ -86,13 +83,13 @@ function SectionSkeleton() {
       <div class="h-px w-full bg-rim" />
       <div class="space-y-3">
         {[...Array(4)].map(() => (
-          <div class="rounded-lg border border-rim bg-surface p-3 flex items-center gap-3">
+          <Card class="p-3 flex items-center gap-3">
             <div class="w-11 h-11 rounded-full bg-overlay shrink-0" />
             <div class="flex-1 space-y-2">
               <div class="h-3.5 bg-overlay rounded w-1/3" />
               <div class="h-3 bg-overlay rounded w-1/2" />
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

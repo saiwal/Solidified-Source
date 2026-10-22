@@ -5,6 +5,7 @@ import path from "path";
 import { readdirSync, readFileSync, writeFileSync, statSync } from "fs";
 import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL } from "./theme.config.mjs";
 import { SPA_CORE_PLACEHOLDER } from "@utsukta/spa-core";
+import { uiShadow } from "@utsukta/spa-ui/vite-plugin";
 
 // Step 2 plumbing check: this repo (theme-solidified) resolving
 // @utsukta/spa-core via the npm workspace. Remove once Step 3 gives this
@@ -123,6 +124,7 @@ function templateThemeSlug(): Plugin {
 
 export default defineConfig({
   plugins: [
+    uiShadow({ themeUiDir: path.resolve(__dirname, "src/ui") }),
     publicDirListing(),
     serveFFmpegCore(),
     solid(),

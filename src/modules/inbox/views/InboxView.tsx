@@ -37,6 +37,7 @@ import {
   type FeedType,
   type MessageType,
 } from "@/modules/hq/widgets/MessageList";
+import { Badge, CountBadge } from "@ui/Badge";
 
 const FOLDER_PREFIX = "folder/";
 
@@ -70,14 +71,6 @@ const Icon: Component<{ path: string }> = (props) => (
   </svg>
 );
 
-const Badge: Component<{ n: number }> = (props) => (
-  <Show when={props.n > 0}>
-    <span class="shrink-0 min-w-[1.25rem] px-1 h-5 rounded-full bg-accent text-surface
-                 text-[0.625rem] font-bold flex items-center justify-center tabular-nums">
-      {props.n}
-    </span>
-  </Show>
-);
 
 export default function InboxView() {
   const { t } = useI18n();
@@ -139,7 +132,7 @@ export default function InboxView() {
       label: () =>
         s.key === RSS_KEY ? t("hq.rss_feed") : t((s.type === "" ? "hq.inbox_feed" : FEED_META[s.type].titleKey) as Parameters<typeof t>[0]) as string,
       icon: s.key === RSS_KEY ? <MdOutlineRss_feed size={16} /> : <Icon path={TYPE_ICON_PATH[s.type]} />,
-      trailing: <Badge n={feedBadge(s.type)} />,
+      trailing: <CountBadge n={feedBadge(s.type)} />,
       dividerAfter: i === all.length - 1,
     })),
     ...(folderData()?.folders ?? []).map((f, i, all) => ({
@@ -147,7 +140,7 @@ export default function InboxView() {
       dividerAfter: i === all.length - 1,
       label: f.name,
       icon: <Icon path={f.name === TRASH ? TRASH_ICON : FOLDER_ICON_PATH} />,
-      trailing: <Badge n={f.unread} />,
+      trailing: <CountBadge n={f.unread} />,
       // Outlined while a drag is in flight, filled once the pointer is over it -
       // without that there is no way to tell where a message would land.
       highlight: hoverFolder() === f.name,
@@ -245,9 +238,9 @@ export default function InboxView() {
           actions={
             <>
               <Show when={!online()}>
-                <span class="shrink-0 text-[0.625rem] px-1.5 py-0.5 rounded-md bg-overlay text-muted">
+                <Badge size="sm" class="shrink-0">
                   {t("layout.offline")}
-                </span>
+                </Badge>
               </Show>
 
               <Show when={selection().file === TRASH}>
@@ -256,7 +249,7 @@ export default function InboxView() {
                   onClick={() => void doEmptyTrash()}
                   disabled={emptying() || trashCount() === 0}
                   class="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors
-                         bg-overlay text-muted hover:bg-elevated hover:text-red-500
+                         bg-overlay text-muted hover:bg-elevated hover:text-danger-txt
                          disabled:opacity-40 disabled:hover:bg-overlay disabled:hover:text-muted"
                 >
                   {emptying() ? t("hq.emptying") : t("hq.empty_trash")}

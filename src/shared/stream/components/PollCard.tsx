@@ -4,6 +4,8 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiVotePoll } from "@utsukta/spa-core/lib/item-api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import type { PollData } from "@utsukta/spa-core/types/post.types";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 function formatEndTime(iso: string): string {
   try {
@@ -96,7 +98,7 @@ export default function PollCard(props: {
     currentVotes().reduce((sum, o) => sum + o.votes, 0);
 
   return (
-    <div class="mt-3 rounded-lg border border-rim bg-surface p-3 space-y-2 text-sm">
+    <Card class="mt-3 p-3 space-y-2 text-sm">
       <For each={props.poll.options}>
         {(option) => {
           const isSelected  = () => selected().includes(option.name);
@@ -154,21 +156,20 @@ export default function PollCard(props: {
         </span>
 
         <Show when={canVote()}>
-          <button
-            type="button"
+          <Button
+            size="sm"
+            class="shrink-0"
             disabled={selected().length === 0 || submitting()}
             onClick={submit}
-            class="shrink-0 rounded-md px-3 py-1 text-xs font-medium bg-accent text-accent-fg
-                   hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
             {submitting() ? "Voting…" : "Vote"}
-          </button>
+          </Button>
         </Show>
       </div>
 
       <Show when={error()}>
-        <p class="text-xs text-red-500">{error()}</p>
+        <p class="text-xs text-danger-txt">{error()}</p>
       </Show>
-    </div>
+    </Card>
   );
 }

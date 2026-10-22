@@ -2,7 +2,7 @@ import { onCleanup, onMount, type Component } from "solid-js";
 import { MdOutlineClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 interface Props {
   /** attach.id — the WOPI file id the `wopi` addon expects at /wopi/:id */
   fileId: number;

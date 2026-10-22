@@ -10,6 +10,8 @@ import { resolveNotifyPath, connectionRequestId } from "@utsukta/spa-core/lib/no
 import { openConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
 import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
 import { MdOutlineNotifications_none } from "solid-icons/md";
+import { Card } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 interface NotifyEntry {
   notify_id?: number;
@@ -106,7 +108,7 @@ export default function NotifyListView() {
 
       {/* Alerts list */}
       <Show when={!entries.loading && (entries() ?? []).length > 0}>
-        <div class="bg-surface border border-rim rounded-2xl overflow-hidden shadow-sm divide-y divide-rim">
+        <Card raised class="overflow-hidden divide-y divide-rim">
           <For each={entries()}>
             {(entry) => (
               <button
@@ -115,11 +117,7 @@ export default function NotifyListView() {
                 class="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-elevated transition-colors"
               >
                 <Show when={entry.photo}>
-                  <img
-                    src={entry.photo}
-                    alt={entry.name ?? ""}
-                    class="w-8 h-8 rounded-full shrink-0 object-cover"
-                  />
+                  <Avatar src={entry.photo} name={entry.name ?? ""} size={8} />
                 </Show>
                 <div class="min-w-0 flex-1">
                   <p class="text-sm text-txt leading-snug">
@@ -137,7 +135,7 @@ export default function NotifyListView() {
               </button>
             )}
           </For>
-        </div>
+        </Card>
       </Show>
     </div>
   );

@@ -48,7 +48,7 @@ export default function HqFoldersWidget(props: { viewMode: ViewMode }) {
   const iconPath = (folder: FolderEntry) =>
     folder.special === "starred" ? TYPE_ICON_PATH.starred : FOLDER_ICON_PATH;
   const iconColor = (folder: FolderEntry) =>
-    folder.special === "starred" ? "text-amber-500" : "text-accent/70";
+    folder.special === "starred" ? "text-warning-txt" : "text-accent/70";
 
   return (
     <div class="flex-1 flex flex-col overflow-hidden">

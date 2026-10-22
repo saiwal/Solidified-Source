@@ -9,13 +9,16 @@
  * composing channel can't embed, so listing other people's cards here would
  * just be a way to earn a 422 on save.
  */
-import { createSignal, createMemo, onMount, Show, For, type Component, createUniqueId } from "solid-js";
+import { createSignal, createMemo, onMount, Show, For, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchCardsPickerList } from "@/modules/cards/api";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { CardHeader } from "@ui/Card";
 interface Props {
   onClose: () => void;
   onInsert: (iid: number) => void;
@@ -53,29 +56,24 @@ const CardPickerModal: Component<Props> = (props) => {
     props.onClose();
   };
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
-      <div
-        class="w-full max-w-lg max-h-[70vh] flex flex-col rounded-xl border border-rim
-               bg-surface shadow-2xl text-txt overflow-hidden"
+    <Modal onClose={props.onClose} class="z-[80]">
+      <ModalPanel
+        title={t("cards.insert_card")}
+        size="lg"
+        class="max-h-[70vh] flex flex-col text-txt overflow-hidden"
       >
-        <div class="px-4 py-3 border-b border-rim shrink-0">
-          <h2 id={titleId} class="text-sm font-semibold">{t("cards.insert_card")}</h2>
-        </div>
-
-        <div class="px-4 py-3 border-b border-rim shrink-0">
-          <input
+        <CardHeader class="shrink-0">
+          <Input
+            class="w-full"
             ref={inputRef}
             type="search"
             value={query()}
             onInput={(e) => setQuery(e.currentTarget.value)}
             onKeyDown={(e) => e.stopPropagation()}
             placeholder={t("cards.card_picker_search")}
-            class="w-full px-2 py-1.5 text-sm rounded-lg border border-rim bg-elevated
-                   text-txt outline-none focus:border-accent"
           />
-        </div>
+        </CardHeader>
 
         <div class="flex-1 overflow-y-auto min-h-0">
           <Show when={cards.loading}>
@@ -125,15 +123,11 @@ const CardPickerModal: Component<Props> = (props) => {
         </div>
 
         <div class="px-4 py-3 border-t border-rim flex justify-end shrink-0">
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("editor.cancel_btn")}
-          </button>
+          </Button>
         </div>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

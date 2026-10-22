@@ -6,6 +6,7 @@ import PostCard from "../components/PostCard";
 import { openPost } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import CardShell from "../CardShell";
+import { EmptyState } from "@ui/EmptyState";
 
 export function FeedPlaceholder() {
   return (
@@ -40,7 +41,7 @@ export default function FeedView(props: { posts: ThreadNode[]; handlers: StreamH
     <div class="max-w-3xl mx-auto">
       <For
         each={props.posts}
-        fallback={<p class="text-center py-16 text-muted text-sm">{t("network.all_caught_up")}</p>}
+        fallback={<EmptyState>{t("network.all_caught_up")}</EmptyState>}
       >
         {(post) => (
           <CardShell uuid={post.uuid}>

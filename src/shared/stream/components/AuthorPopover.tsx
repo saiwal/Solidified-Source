@@ -18,6 +18,11 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
 import { usePlatformSoftware } from "@utsukta/spa-core/lib/usePlatformSoftware";
 import { PlatformIcon, platformLabel, networkBadge, type NetworkBadge } from "./PlatformIcons";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 interface Props {
   name: string;
@@ -350,12 +355,7 @@ export default function AuthorPopover(props: Props) {
                     </div>
                   }
                 >
-                  <img
-                    src={props.avatar}
-                    width="48"
-                    height="48"
-                    class="w-12 h-12 rounded-full object-cover ring-2 ring-rim shrink-0"
-                  />
+                  <Avatar src={props.avatar} size={12} class="ring-2 ring-rim" />
                 </Show>
                 <div class="min-w-0 flex-1 pt-0.5">
                   <div class="font-semibold text-sm text-txt truncate leading-tight">{props.name}</div>
@@ -376,10 +376,10 @@ export default function AuthorPopover(props: Props) {
                     }
                   >
                     {(name) => (
-                      <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[0.625rem] font-semibold leading-none bg-accent/15 text-accent-txt">
+                      <Badge tone="accent" size="sm" class="mt-1.5">
                         <PlatformIcon url={props.url} size={12} />
                         {platformLabel(name())}
-                      </span>
+                      </Badge>
                     )}
                   </Show>
                 </div>
@@ -426,7 +426,7 @@ export default function AuthorPopover(props: Props) {
                 <Show when={isLocal() && !isSelf()}>
                   <Show when={cs().tag === "loading"}>
                     <button disabled class="w-8 h-8 flex items-center justify-center rounded-lg border border-rim text-muted cursor-default">
-                      <span class="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                      <Spinner size="sm" />
                     </button>
                   </Show>
 
@@ -442,10 +442,9 @@ export default function AuthorPopover(props: Props) {
                   </Show>
 
                   <Show when={cs().tag === "just_connected"}>
-                    <button disabled title={t("ui.connected_check")}
-                      class="w-8 h-8 flex items-center justify-center rounded-lg border border-rim text-muted cursor-default">
+                    <IconButton label={t("ui.connected_check")} size="sm" disabled>
                       <MdOutlineCheck size={16} />
-                    </button>
+                    </IconButton>
                   </Show>
 
                   <Show when={cs().tag === "connected"}>
@@ -457,21 +456,16 @@ export default function AuthorPopover(props: Props) {
                              hover:border-accent hover:text-accent transition-colors
                              disabled:opacity-50 disabled:cursor-default disabled:hover:border-rim disabled:hover:text-muted"
                     >
-                      <Show when={editReady()} fallback={<span class="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />}>
+                      <Show when={editReady()} fallback={<Spinner size="sm" />}>
                         <MdOutlineEdit size={16} />
                       </Show>
                     </button>
                   </Show>
 
                   <Show when={xchanHash()}>
-                    <button
-                      onClick={handleDm}
-                      title={t("ui.send_dm")}
-                      class="w-8 h-8 flex items-center justify-center rounded-lg border border-rim text-muted
-                             hover:border-accent hover:text-accent transition-colors"
-                    >
+                    <IconButton label={t("ui.send_dm")} size="sm" onClick={handleDm}>
                       <MdOutlineEmail size={16} />
-                    </button>
+                    </IconButton>
                     <Show when={chatroomsInstalled()}>
                       <button
                         onClick={handleChatButtonClick}
@@ -481,7 +475,7 @@ export default function AuthorPopover(props: Props) {
                                hover:border-accent hover:text-accent transition-colors
                                disabled:opacity-50 disabled:cursor-default disabled:hover:border-rim disabled:hover:text-muted"
                       >
-                        <Show when={!chatCreating()} fallback={<span class="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />}>
+                        <Show when={!chatCreating()} fallback={<Spinner size="sm" />}>
                           <MdOutlineChat_bubble size={16} />
                         </Show>
                       </button>
@@ -493,11 +487,11 @@ export default function AuthorPopover(props: Props) {
                       disabled={blockState() !== "idle"}
                       title={blockState() === "blocked" ? t("blocklist.blocked") : t("blocklist.block")}
                       class="w-8 h-8 flex items-center justify-center rounded-lg border border-rim text-muted
-                             hover:border-red-500 hover:text-red-500 transition-colors
+                             hover:border-danger hover:text-danger-txt transition-colors
                              disabled:cursor-default"
-                      classList={{ "text-red-500 border-red-500": blockState() === "blocked" }}
+                      classList={{ "text-danger-txt border-danger": blockState() === "blocked" }}
                     >
-                      <Show when={blockState() !== "loading"} fallback={<span class="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />}>
+                      <Show when={blockState() !== "loading"} fallback={<Spinner size="sm" />}>
                         <Show when={blockState() === "blocked"} fallback={<MdOutlineBlock size={16} />}>
                           <MdOutlineCheck size={16} />
                         </Show>
@@ -516,9 +510,9 @@ export default function AuthorPopover(props: Props) {
                   onClick={handleSiteBlock}
                   disabled={siteBlockState() !== "idle"}
                   class="w-full flex items-center justify-center gap-1.5 text-[0.6875rem] font-medium
-                         text-red-500/80 hover:text-red-500 transition-colors disabled:cursor-default"
+                         text-danger-txt/80 hover:text-danger-txt transition-colors disabled:cursor-default"
                 >
-                  <Show when={siteBlockState() !== "loading"} fallback={<span class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}>
+                  <Show when={siteBlockState() !== "loading"} fallback={<Spinner size="xs" />}>
                     <MdOutlineGavel size={13} />
                   </Show>
                   {siteBlockState() === "blocked" ? t("blocklist.site_blocked") : t("blocklist.block_from_site")}
@@ -538,13 +532,13 @@ export default function AuthorPopover(props: Props) {
                     [{ amount: 1, unit: "weeks" },  "blocklist.preset_week"],
                     [{ amount: 1, unit: "months" }, "blocklist.preset_month"],
                   ] as const).map(([duration, key]) => (
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); void handleBlock(duration); }}
-                      class="text-xs px-2.5 py-1 rounded-md border border-rim text-muted
-                             hover:border-red-500 hover:text-red-500 transition-colors"
                     >
                       {t(key)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -584,18 +578,10 @@ export default function AuthorPopover(props: Props) {
                     Custom
                   </button>
                   <Show when={chatCustomMode()}>
-                    <input
-                      type="number"
-                      min="1"
-                      max="10080"
-                      value={chatCustomInput()}
-                      onInput={(e) => {
+                    <Input size="sm" class="w-16" type="number" min="1" max="10080" value={chatCustomInput()} onInput={(e) => {
                         setChatCustomInput(e.currentTarget.value);
                         setChatExpire(parseInt(e.currentTarget.value) || 0);
-                      }}
-                      placeholder="min"
-                      class="w-16 bg-surface border border-accent text-txt text-xs rounded-md px-2 py-1 focus:outline-none"
-                    />
+                      }} placeholder="min" />
                   </Show>
                 </div>
                 <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -607,12 +593,9 @@ export default function AuthorPopover(props: Props) {
                   />
                   <span class="text-[0.6875rem] text-muted">Notify {props.name}</span>
                 </label>
-                <button
-                  onClick={handleStartChat}
-                  class="w-full text-xs bg-accent text-accent-fg rounded-lg py-1.5 hover:opacity-90 transition-opacity"
-                >
+                <Button size="sm" class="w-full" onClick={handleStartChat}>
                   {t("chat.create")}
-                </button>
+                </Button>
               </div>
             </Show>
           </div>

@@ -1,11 +1,13 @@
 // modules/directory/views/DirectoryEntryModal.tsx
 import { Show, For, type Component, createEffect, createSignal, on } from "solid-js";
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
 import { chanviewHref, type DirectoryEntry } from "../people/api";
 import { connectToChannel } from "../connections/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdOutlineBlock, MdOutlineClose } from "solid-icons/md";
+import { Button, IconButton } from "@ui/Button";
+import { Badge } from "@ui/Badge";
 
 interface Props {
   entry: DirectoryEntry | null;
@@ -43,7 +45,7 @@ const DirectoryEntryModal: Component<Props> = (props) => {
   return (
     <Show when={e()}>
       <Modal onClose={props.onClose} label={e()!.name} class="z-50">
-          <div class="relative w-full max-w-md max-h-[90vh] flex flex-col rounded-2xl bg-surface shadow-2xl overflow-hidden">
+          <ModalPanel size="md" class="relative max-h-[90vh] flex flex-col overflow-hidden">
 
             {/* ── Cover banner ── */}
             <Show when={e()!.cover}>
@@ -74,36 +76,37 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                       {e()!.address}
                     </p>
                   </div>
-                  <button
+                  <IconButton
+                    label={t("directory.close")}
+                    size="sm"
+                    class="shrink-0"
                     autofocus
                     onClick={props.onClose}
-                    class="shrink-0 p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors"
-                    aria-label={t("directory.close")}
                   >
                     <MdOutlineClose class="w-4 h-4" />
-                  </button>
+                  </IconButton>
                 </div>
 
                 {/* Badges row */}
                 <div class="flex flex-wrap gap-1.5 mt-2">
                   <Show when={e()!.public_forum}>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-accent-muted text-accent border border-accent/30">
+                    <Badge tone="accent">
                       <svg aria-hidden="true" class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
                         <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
                       </svg>
                       {t("directory.public_forum")}
-                    </span>
+                    </Badge>
                   </Show>
                   <Show when={e()!.is_connected}>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-accent-muted text-accent border border-accent/30">
+                    <Badge tone="accent">
                       <MdFillCheck class="w-3.5 h-3.5 shrink-0" /> {t("directory.connected")}
-                    </span>
+                    </Badge>
                   </Show>
                   <Show when={e()!.common_count !== null && e()!.common_count! > 0}>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-accent-muted text-accent border border-accent/30">
+                    <Badge tone="accent">
                       {e()!.common_count} {(e()!.common_count ?? 0) === 1 ? t("directory.mutual") : t("directory.mutuals")}
-                    </span>
+                    </Badge>
                   </Show>
                 </div>
               </div>
@@ -161,9 +164,9 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                   <div class="flex flex-wrap gap-1.5">
                     <For each={e()!.keywords}>
                       {(kw) => (
-                        <span class="inline-block px-2 py-0.5 rounded text-xs bg-overlay text-muted">
+                        <Badge>
                           {kw}
-                        </span>
+                        </Badge>
                       )}
                     </For>
                   </div>
@@ -185,13 +188,9 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                     </a>
                   }
                 >
-                  <button
-                    onClick={handleConnect}
-                    disabled={connecting()}
-                    class="flex-1 text-center px-4 py-2 rounded-lg text-sm font-semibold bg-accent text-accent-fg hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  >
+                  <Button class="flex-1" onClick={handleConnect} disabled={connecting()}>
                     {connecting() ? t("directory.connecting") : t("directory.connect")}
-                  </button>
+                  </Button>
                 </Show>
               </Show>
              <Show when={isConnected() || e()!.connect_url}>
@@ -212,10 +211,10 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                 </a>
               </Show>
               <Show when={connectError()}>
-                <p class="w-full text-xs text-red-600 dark:text-red-400">{connectError()}</p>
+                <p class="w-full text-xs text-danger-txt">{connectError()}</p>
               </Show>
             </div>
-          </div>
+          </ModalPanel>
       </Modal>
     </Show>
   );

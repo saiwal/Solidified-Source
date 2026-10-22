@@ -38,6 +38,8 @@ import CommentThread from "@/shared/views/CommentThread";
 import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
+import { Button, IconButton } from "@ui/Button";
+import { Card, cardClass } from "@ui/Card";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -57,27 +59,17 @@ function DeleteConfirm(props: { uuid: string; onDeleted: () => void; onCancel: (
   };
 
   return (
-    <div class="flex items-center gap-3 px-4 py-3 bg-surface border border-rim rounded-xl">
+    <Card class="flex items-center gap-3 px-4 py-3">
       <p class="text-sm text-txt flex-1">
         {t("cards.delete_confirm")}
       </p>
-      <button
-        type="button"
-        onClick={props.onCancel}
-        class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-elevated transition-colors"
-      >
+      <Button variant="ghost" size="sm" onClick={props.onCancel}>
         {t("cards.cancel")}
-      </button>
-      <button
-        type="button"
-        onClick={confirm}
-        disabled={deleting()}
-        class="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-500 text-white
-               hover:opacity-90 disabled:opacity-40 transition-opacity"
-      >
+      </Button>
+      <Button variant="danger" size="sm" onClick={confirm} disabled={deleting()}>
         {deleting() ? t("cards.deleting") : t("cards.delete")}
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }
 
@@ -466,15 +458,9 @@ export default function CardView() {
                     </button>
                   </Show>
 
-                  <button
-                    type="button"
-                    onClick={shareCard}
-                    title={t("share.action")}
-                    class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                           transition-colors hover:bg-overlay text-muted hover:text-txt"
-                  >
+                  <IconButton label={t("share.action")} class="ml-auto" onClick={shareCard}>
                     <MdOutlineShare size={17} />
-                  </button>
+                  </IconButton>
 
                   <Show when={auth()?.isLoggedIn}>
                     <button
@@ -490,24 +476,19 @@ export default function CardView() {
 
                   {/* Owner actions */}
                   <Show when={isOwner()}>
-                    <button
-                      type="button"
+                    <IconButton
+                      label={t("cards.edit_card")}
                       onClick={() => { setConfirmDelete(false); openEditor(d().card); }}
-                      title={t("cards.edit_card")}
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay text-muted hover:text-txt"
                     >
                       <BiRegularEdit size={17} />
-                    </button>
-                    <button
-                      type="button"
+                    </IconButton>
+                    <IconButton
+                      label={t("cards.delete_card")}
+                      variant="danger"
                       onClick={() => setConfirmDelete(true)}
-                      title={t("cards.delete_card")}
-                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
-                             transition-colors hover:bg-overlay text-muted hover:text-red-500"
                     >
                       <BiRegularTrash size={17} />
-                    </button>
+                    </IconButton>
                   </Show>
                 </div>
 
@@ -525,7 +506,7 @@ export default function CardView() {
 
                 {/* Mentioned in — items on this channel that embed this card */}
                 <Show when={(d().card.mentionedIn?.length ?? 0) > 0}>
-                  <section class="rounded-xl border border-rim bg-surface p-4 space-y-2">
+                  <section class={`${cardClass()} p-4 space-y-2`}>
                     <h2 class="text-sm font-semibold text-txt">{t("cards.mentioned_in")}</h2>
                     <ul class="space-y-1">
                       <For each={d().card.mentionedIn}>

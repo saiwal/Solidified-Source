@@ -8,6 +8,10 @@ import {
 import type { ManagedChannel, ManagedDelegate } from "../api";
 import { buildDelegateSwitchUrl } from "../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 // ── ChannelCard ───────────────────────────────────────────────────────────────
 
@@ -29,11 +33,7 @@ const ChannelCard: Component<{
     >
       {/* Avatar */}
       <div class="relative shrink-0">
-        <img
-          src={props.channel.photo}
-          alt={props.channel.channel_name}
-          class="w-10 h-10 rounded-full object-cover"
-        />
+        <Avatar src={props.channel.photo} name={props.channel.channel_name} size={10} />
         <Show when={props.channel.is_current}>
           <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-accent border-2 border-surface" />
         </Show>
@@ -46,19 +46,19 @@ const ChannelCard: Component<{
             {props.channel.channel_name}
           </span>
           <Show when={props.channel.is_current}>
-            <span class="text-xs px-1.5 py-0.5 rounded bg-accent-muted text-accent-txt">
+            <Badge tone="accent">
               {t("manage.current_badge")}
-            </span>
+            </Badge>
           </Show>
           <Show when={props.channel.is_default}>
-            <span class="text-xs px-1.5 py-0.5 rounded bg-surface text-muted">
+            <Badge>
               {t("manage.default_badge")}
-            </span>
+            </Badge>
           </Show>
           <Show when={props.channel.intros > 0}>
-            <span class="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+            <Badge tone="warning">
               {props.channel.intros} {t("manage.new_badge")}
-            </span>
+            </Badge>
           </Show>
         </div>
         <p class="text-xs text-muted truncate">
@@ -81,15 +81,13 @@ const ChannelCard: Component<{
           </button>
         </Show>
         <Show when={!props.channel.is_current}>
-          <button
+          <Button
+            size="sm"
             onClick={() => props.onSwitch(props.channel.channel_id)}
             disabled={props.disabled}
-            class="px-2.5 py-1 text-xs rounded-md font-medium
-                   bg-accent hover:opacity-90 text-accent-fg
-                   disabled:opacity-40 transition-opacity"
           >
             {t("manage.switch")}
-          </button>
+          </Button>
         </Show>
       </div>
     </div>
@@ -109,11 +107,7 @@ const DelegateCard: Component<{ delegate: ManagedDelegate }> = (props) => {
       class="flex items-center gap-3 p-3 rounded-lg border border-rim bg-surface
              hover:border-rim-strong transition-colors"
     >
-      <img
-        src={props.delegate.photo}
-        alt={props.delegate.name}
-        class="w-10 h-10 rounded-full object-cover shrink-0"
-      />
+      <Avatar src={props.delegate.photo} name={props.delegate.name} size={10} />
       <div class="flex-1 min-w-0">
         <p class="font-medium text-sm truncate">{props.delegate.name}</p>
         <p class="text-xs text-muted truncate">
@@ -128,13 +122,13 @@ const DelegateCard: Component<{ delegate: ManagedDelegate }> = (props) => {
 // ── Skeletons ─────────────────────────────────────────────────────────────────
 
 const ChannelSkeleton: Component = () => (
-  <div class="flex items-center gap-3 p-3 rounded-lg border border-rim bg-surface">
+  <Card class="flex items-center gap-3 p-3">
     <div class="w-10 h-10 rounded-full bg-elevated animate-pulse shrink-0" />
     <div class="flex-1 space-y-2">
       <div class="h-3 w-32 rounded bg-elevated animate-pulse" />
       <div class="h-2.5 w-24 rounded bg-elevated animate-pulse" />
     </div>
-  </div>
+  </Card>
 );
 
 // ── ManageContentWidget ─────────────────────────────────────────────────────

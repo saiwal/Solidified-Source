@@ -2,6 +2,8 @@ import { createSignal, createEffect, on } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import QRCode from "qrcode";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Field, Textarea } from "@ui/Field";
 
 export function QRGenerator() {
   const { t } = useI18n();
@@ -41,14 +43,15 @@ export function QRGenerator() {
   return (
     <div class="flex flex-col gap-5 items-center max-w-sm w-full mx-auto">
       <div class="w-full flex flex-col gap-2">
-        <label class="text-sm text-muted">{t("tools.qr_text_label")}</label>
-        <textarea
-          class="bg-surface border border-rim text-txt hover:border-rim-strong focus:outline-none rounded-xl px-4 py-3 resize-none text-sm w-full"
+        <Field label={t("tools.qr_text_label")}>
+          <Textarea
+          class="resize-none w-full"
           rows={3}
           value={text()}
           onInput={(e) => setText(e.currentTarget.value)}
           placeholder={t("tools.qr_placeholder")}
-        />
+          />
+        </Field>
       </div>
 
       <div class="w-full flex flex-col gap-2">
@@ -74,12 +77,9 @@ export function QRGenerator() {
               style={{ width: `${Math.min(size(), 280)}px`, height: `${Math.min(size(), 280)}px` }}
             />
           </div>
-          <button
-            onClick={download}
-            class="border border-rim text-muted hover:bg-elevated hover:text-txt rounded-xl px-5 py-2 text-sm transition-colors"
-          >
+          <Button variant="ghost" onClick={download}>
             {t("tools.qr_download")}
-          </button>
+          </Button>
         </div>
       )}
     </div>

@@ -3,6 +3,8 @@
 import { createSignal, For } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
 
 const COUNTS = [3, 5, 10];
 
@@ -17,32 +19,34 @@ export default function RssConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_feed_url")}
-        <input
+        <Input
+          size="sm"
+          class="mt-1 w-full"
           type="url"
           value={url()}
           onInput={(e) => setUrl(e.currentTarget.value)}
           placeholder="https://example.com/feed.xml"
-          class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
         />
       </label>
       <label class="text-xs text-muted">
         {t("widgets.cfg_item_count")}
-        <select
+        <Select
+          size="sm"
+          class="mt-1 w-full"
           value={String(count())}
           onChange={(e) => setCount(Number(e.currentTarget.value))}
-          class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
         >
           <For each={COUNTS}>{(n) => <option value={String(n)}>{n}</option>}</For>
-        </select>
+        </Select>
       </label>
-      <button
+      <Button
+        size="sm"
+        class="self-end"
         onClick={() => props.onSave({ url: url().trim(), count: count() })}
         disabled={!valid()}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all disabled:opacity-40"
       >
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

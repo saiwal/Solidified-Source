@@ -3,7 +3,6 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import type { MimeType, EditorTab } from "../types/editor.types";
-import { underlineFieldClass } from "../lib/fieldStyles";
 import FormatSelect from "../components/FormatSelect";
 import ComposerShell from "../components/ComposerShell";
 import { zenMode } from "@utsukta/spa-core/store/zen";
@@ -13,6 +12,7 @@ import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
+import { Input } from "@ui/Field";
 
 // Core's wiki addon offers no HTML option (Mod_Wiki.php:221).
 const WIKI_FORMATS = ["text/bbcode", "text/markdown", "text/plain"] as const;
@@ -98,9 +98,9 @@ export default function WikiComposer(props: Props) {
         </>
       }
       panels={
-        <input
+        <Input
+          class="w-full"
           type="text"
-          class={`w-full px-0 py-1.5 text-sm text-txt ${underlineFieldClass}`}
           placeholder={t("wiki.changes_placeholder")}
           value={commitMsg()}
           onInput={(e) => setCommitMsg(e.currentTarget.value)}

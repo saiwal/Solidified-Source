@@ -7,6 +7,7 @@ import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillOpen_in_new } from "solid-icons/md";
+import { Card } from "@ui/Card";
 
 export interface LinkEntry {
   label: string;
@@ -35,13 +36,13 @@ export default function LinkListWidget(props: WidgetProps) {
       when={links().length > 0}
       fallback={
         <Show when={editingWidgets()}>
-          <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+          <Card class="px-4 py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
-          </div>
+          </Card>
         </Show>
       }
     >
-      <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+      <Card class="overflow-hidden">
         <Show when={title()}>
           <div class="px-4 py-3">
             <h3 class="text-sm font-semibold text-txt">{title()}</h3>
@@ -65,7 +66,7 @@ export default function LinkListWidget(props: WidgetProps) {
             )}
           </For>
         </ul>
-      </div>
+      </Card>
     </Show>
   );
 }

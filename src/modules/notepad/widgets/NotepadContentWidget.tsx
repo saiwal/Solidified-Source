@@ -14,6 +14,8 @@ import NoteComposer from "@/shared/editor/composers/NoteComposer";
 import { notes, loading, hasMore, loadNotes, removeNote } from "../store";
 import type { Note } from "../api";
 import CardShell from "@/shared/stream/CardShell";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 function fmtDate(iso: string, locale: string): string {
   return new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(locale, {
@@ -61,7 +63,7 @@ function NoteCard(props: {
   });
 
   return (
-    <div class="bg-surface border border-rim rounded-xl p-4 space-y-3 group hover:border-rim-strong transition-colors">
+    <Card class="p-4 space-y-3 group hover:border-rim-strong transition-colors">
       <div
         ref={bodyRef}
         class={`prose prose-sm dark:prose-invert max-w-none text-txt leading-relaxed
@@ -75,13 +77,9 @@ function NoteCard(props: {
         <div class="flex flex-wrap gap-1.5">
           <For each={props.note.categories}>
             {(cat) => (
-              <button
-                onClick={() => setSearchParams({ cat, tag: undefined })}
-                class="px-2 py-0.5 rounded-full bg-elevated border border-rim text-xs text-muted
-                       hover:text-txt hover:border-rim-strong transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setSearchParams({ cat, tag: undefined })}>
                 {cat}
-              </button>
+              </Button>
             )}
           </For>
         </div>
@@ -114,38 +112,26 @@ function NoteCard(props: {
           fallback={
             <span class="inline-flex gap-2 items-center">
               <span>{t("notepad.delete_confirm")}</span>
-              <button
-                onClick={props.onDelete}
-                class="px-2 py-0.5 rounded bg-red-600 text-white text-xs hover:bg-red-700 transition-colors"
-              >
+              <Button variant="danger" size="sm" onClick={props.onDelete}>
                 {t("notepad.delete")}
-              </button>
-              <button
-                onClick={props.onCancelDelete}
-                class="px-2 py-0.5 rounded border border-rim text-muted hover:bg-elevated transition-colors"
-              >
+              </Button>
+              <Button variant="ghost" size="sm" onClick={props.onCancelDelete}>
                 {t("notepad.cancel")}
-              </button>
+              </Button>
             </span>
           }
         >
           <span class="inline-flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={props.onEdit}
-              class="px-2 py-0.5 rounded border border-rim text-muted hover:bg-elevated transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={props.onEdit}>
               {t("notepad.edit")}
-            </button>
-            <button
-              onClick={props.onDelete}
-              class="px-2 py-0.5 rounded border border-red-300 text-red-500 hover:bg-red-50 transition-colors"
-            >
+            </Button>
+            <Button variant="danger" size="sm" onClick={props.onDelete}>
               {t("notepad.delete")}
-            </button>
+            </Button>
           </span>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -201,12 +187,12 @@ export default function NotepadContentWidget() {
             </div>
           }
         >
-          <div class="bg-surface border border-rim rounded-xl p-4">
+          <Card class="p-4">
             <NoteComposer
               nick={nick()}
               onSaved={() => loadNotes(true)}
             />
-          </div>
+          </Card>
         </Show>
       </Show>
 
@@ -263,14 +249,9 @@ export default function NotepadContentWidget() {
 
         <Show when={hasMore()}>
           <div class="flex justify-center">
-            <button
-              onClick={() => loadNotes(false)}
-              disabled={loading()}
-              class="px-4 py-2 text-sm rounded-lg border border-rim bg-surface text-muted
-                     hover:bg-elevated transition-colors disabled:opacity-40"
-            >
+            <Button variant="ghost" onClick={() => loadNotes(false)} disabled={loading()}>
               {loading() ? "…" : t("notepad.load_more")}
-            </button>
+            </Button>
           </div>
         </Show>
       </Show>

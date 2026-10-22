@@ -21,6 +21,11 @@ import { MdOutlineFilter_alt, MdOutlineWarning, MdOutlineAdd, MdOutlineClose } f
 import { fetchConnections, type Connection } from "@/modules/directory/connections/api";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import SuggestInput from "@/shared/views/SuggestInput";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { cardClass } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 interface Rule {
   kind: "incl" | "excl";
@@ -56,8 +61,8 @@ function RuleRow(props: { rule: Rule; action: any }) {
       <span
         class={`shrink-0 mt-0.5 px-2 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wide ${
           props.rule.kind === "incl"
-            ? "bg-emerald-500/10 text-emerald-500"
-            : "bg-red-500/10 text-red-500"
+            ? "bg-success/10 text-success-txt"
+            : "bg-danger/10 text-danger-txt"
         }`}
       >
         {t(props.rule.kind === "incl" ? "filters.rule_keep" : "filters.rule_skip")}
@@ -77,7 +82,7 @@ function RuleRow(props: { rule: Rule; action: any }) {
                       {t(p().join === "all" ? "filters.join_and" : "filters.join_or")}
                     </span>
                   </Show>
-                  <span class="px-2 py-0.5 rounded-md bg-overlay text-xs text-txt">{label(c)}</span>
+                  <Badge>{label(c)}</Badge>
                 </>
               )}
             </For>
@@ -152,7 +157,7 @@ function AutoFileRules() {
   }
 
   return (
-    <section class="rounded-xl border border-rim bg-surface">
+    <section class={cardClass()}>
       <header class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-rim">
         <h3 class="text-xs font-semibold uppercase tracking-wide text-muted">
           {t("filters.scope_autofile")}
@@ -195,21 +200,21 @@ function AutoFileRules() {
                 />
                 <span class="min-w-0 truncate text-sm text-txt">{r.name || r.folder}</span>
                 <code class="flex-1 min-w-0 truncate text-xs font-mono text-muted">{r.expr}</code>
-                <span class="shrink-0 px-2 py-0.5 rounded-md bg-overlay text-xs text-txt">
+                <Badge class="shrink-0">
                   → {r.folder}
-                </span>
+                </Badge>
                 <button type="button" class={EDIT_BTN} onClick={() => setDraft({ ...r })}>
                   {t("filters.edit")}
                 </button>
-                <button
-                  type="button"
-                  title={t("filters.remove")}
+                <IconButton
+                  label={t("filters.remove")}
+                  size="sm"
+                  class="shrink-0"
                   disabled={busy()}
                   onClick={() => void commit(inboxRules().filter((x) => x.id !== r.id))}
-                  class="shrink-0 p-1 rounded-lg text-muted hover:text-txt hover:bg-base transition-colors"
                 >
                   <MdOutlineClose size={16} />
-                </button>
+                </IconButton>
               </div>
             )}
           </For>
@@ -220,14 +225,12 @@ function AutoFileRules() {
         {(d) => (
           <div class="px-3.5 py-3 border-t border-rim space-y-3 bg-base/40">
             <div class="flex flex-wrap items-center gap-2">
-              <input
+              <Input
+                class="flex-1 min-w-[10rem]"
                 type="text"
                 value={d().name}
                 placeholder={t("filters.rule_name")}
                 onInput={(e) => patch({ name: e.currentTarget.value })}
-                class="flex-1 min-w-[10rem] px-2.5 py-1.5 rounded-lg border border-rim bg-surface
-                       text-txt text-sm placeholder:text-muted focus:outline-none
-                       hover:border-rim-strong focus:border-rim-strong transition-colors"
               />
               <span class="text-xs text-muted">{t("filters.file_into")}</span>
               {/* Folders are free-text file tags, so this suggests without
@@ -255,15 +258,9 @@ function AutoFileRules() {
             />
 
             <div class="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={busy() || !d().folder.trim() || !d().expr.trim()}
-                onClick={save}
-                class="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-accent-fg
-                       hover:opacity-90 disabled:opacity-40 transition-opacity"
-              >
+              <Button size="sm" disabled={busy() || !d().folder.trim() || !d().expr.trim()} onClick={save}>
                 {t("filters.save_rule")}
-              </button>
+              </Button>
               <button type="button" class={EDIT_BTN} onClick={() => setDraft(null)}>
                 {t("filters.cancel")}
               </button>
@@ -314,7 +311,7 @@ export default function RulesPane() {
 
       <AutoFileRules />
 
-      <section class="rounded-xl border border-rim bg-surface">
+      <section class={cardClass()}>
         <header class="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-rim">
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted">
             {t("filters.scope_channel")}
@@ -331,7 +328,7 @@ export default function RulesPane() {
         </div>
       </section>
 
-      <section class="rounded-xl border border-rim bg-surface">
+      <section class={cardClass()}>
         <header class="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-rim">
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted">
             {t("filters.scope_connections")}
@@ -342,7 +339,7 @@ export default function RulesPane() {
             so a rule listed here would otherwise look active while doing nothing. */}
         <Show when={connRules().length && !isFeatureEnabled("connfilter")}>
           <div class="flex flex-wrap items-center gap-2 px-3.5 py-2 border-b border-rim
-                      bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                      bg-warning/10 text-warning-txt">
             <MdOutlineWarning size={16} class="shrink-0" />
             <span class="flex-1 min-w-0 text-xs">{t("filters.connfilter_off")}</span>
             <A href="/settings/features" class={EDIT_BTN}>{t("filters.connfilter_enable")}</A>
@@ -358,7 +355,7 @@ export default function RulesPane() {
               {(entry) => (
                 <div class="py-2">
                   <div class="flex items-center gap-2">
-                    <img src={entry.conn.photo} alt="" class="w-5 h-5 rounded-full shrink-0" />
+                    <Avatar src={entry.conn.photo} size={5} />
                     <span class="min-w-0 truncate text-sm text-txt">{entry.conn.name}</span>
                     <span class="min-w-0 truncate text-xs text-muted">{entry.conn.address}</span>
                   </div>

@@ -11,14 +11,15 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchArticle } from "../api";
 import { articlePath } from "@/shared/lib/shareLinks";
 import { bbcodeExcerpt } from "@utsukta/spa-core/lib/bbcode";
+import { Card } from "@ui/Card";
 
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }
@@ -47,7 +48,7 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
       <Show when={!article.loading}>
         <Show when={article()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(a) => (
-            <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+            <Card class="overflow-hidden">
               <div class="px-4 py-3">
                 <h4 class="text-sm font-semibold text-txt">{a().title}</h4>
                 <p class="text-[0.625rem] text-muted mt-0.5">
@@ -62,7 +63,7 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
               >
                 {t("widgets.read_article")}
               </A>
-            </div>
+            </Card>
           )}
         </Show>
       </Show>

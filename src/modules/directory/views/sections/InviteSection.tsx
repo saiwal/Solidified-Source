@@ -20,9 +20,8 @@ import {
   type InviteInfo,
   type RecipientResult,
 } from "../../invite/api";
-
-const inputClass =
-  "w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-sm text-txt";
+import { Button } from "@ui/Button";
+import { Field, Input, Textarea } from "@ui/Field";
 
 const chipClass = (active: boolean) =>
   `px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
@@ -120,7 +119,7 @@ const InviteSection: Component = () => {
       {/* A gate failure (app off, invites disabled, quota spent) is the whole
           answer — core returns the message instead of the form, so do that. */}
       <Show when={!info.error} fallback={
-        <p class="text-sm text-amber-500">
+        <p class="text-sm text-warning-txt">
           {String(info.error?.message ?? info.error)}
         </p>
       }>
@@ -135,26 +134,25 @@ const InviteSection: Component = () => {
 
               {/* Recipients */}
               <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-txt">
-                  {t("invite.recipients_label")}
-                </label>
-                <textarea
-                  class={`${inputClass} h-28 font-mono`}
+                <Field label={t("invite.recipients_label")} size="sm">
+                  <Textarea
+                  class="w-full h-28 font-mono"
                   value={recipients()}
                   onInput={(e) => { setRecipients(e.currentTarget.value); setResults(null); }}
-                />
+                  />
+                </Field>
                 <div class="flex items-center justify-between gap-2">
                   <p class="text-xs text-muted">
                     {t("invite.max_recipients", { max: String(d().max_recipients) })}
                   </p>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={check}
                     disabled={busy() || addresses().length === 0}
-                    class="px-3 py-1.5 rounded-lg text-xs font-medium border border-rim text-muted
-                           hover:border-rim-strong hover:text-txt transition-colors disabled:opacity-40"
                   >
                     {t("invite.check")}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -162,9 +160,9 @@ const InviteSection: Component = () => {
                 <ul class="space-y-1">
                   <For each={results()!}>
                     {(r) => (
-                      <li class={`flex items-start gap-1.5 text-xs ${r.ok ? "text-muted" : "text-red-500"}`}>
+                      <li class={`flex items-start gap-1.5 text-xs ${r.ok ? "text-muted" : "text-danger-txt"}`}>
                         <Show when={r.ok} fallback={<MdFillError size={13} class="mt-0.5 shrink-0" />}>
-                          <MdFillCheck_circle size={13} class="mt-0.5 shrink-0 text-green-500" />
+                          <MdFillCheck_circle size={13} class="mt-0.5 shrink-0 text-success-txt" />
                         </Show>
                         <span>{r.message}</span>
                       </li>
@@ -177,11 +175,11 @@ const InviteSection: Component = () => {
               <div class="space-y-1.5">
                 <label class="block text-xs font-medium text-txt">{t("invite.expire_label")}</label>
                 <div class="flex flex-wrap items-center gap-3">
-                  <input
+                  <Input
+                    class="w-full w-20"
                     type="number"
                     min="1"
                     max="99"
-                    class={`${inputClass} w-20`}
                     value={durn()}
                     onInput={(e) => setDurn(parseInt(e.currentTarget.value, 10) || 1)}
                   />
@@ -228,13 +226,14 @@ const InviteSection: Component = () => {
 
               {/* Subject */}
               <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-txt">{t("invite.subject_label")}</label>
-                <input
+                <Field label={t("invite.subject_label")} size="sm">
+                  <Input
+                  class="w-full"
                   type="text"
-                  class={inputClass}
                   value={subject()}
                   onInput={(e) => setSubject(e.currentTarget.value)}
-                />
+                  />
+                </Field>
               </div>
 
               {/* Preview */}
@@ -248,27 +247,23 @@ const InviteSection: Component = () => {
 
               {/* Personal note */}
               <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-txt">{t("invite.message_label")}</label>
-                <textarea
-                  class={`${inputClass} h-24`}
+                <Field label={t("invite.message_label")} size="sm">
+                  <Textarea
+                  class="w-full h-24"
                   placeholder={t("invite.message_ph")}
                   value={message()}
                   onInput={(e) => setMessage(e.currentTarget.value)}
-                />
+                  />
+                </Field>
               </div>
 
               <p class="text-xs text-muted">{t("invite.log_note")}</p>
 
               <div class="flex justify-end">
-                <button
-                  onClick={send}
-                  disabled={busy() || addresses().length === 0 || !style()}
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-fg
-                         text-sm font-medium hover:brightness-110 transition-all disabled:opacity-40"
-                >
+                <Button size="sm" onClick={send} disabled={busy() || addresses().length === 0 || !style()}>
                   <MdFillSend size={15} />
                   {t("invite.submit")}
-                </button>
+                </Button>
               </div>
             </div>
           )}

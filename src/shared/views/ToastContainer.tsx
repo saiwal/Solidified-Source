@@ -3,6 +3,7 @@ import { Portal } from "solid-js/web";
 import { toasts, dismiss, type Toast, type ToastType } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineCheck, MdOutlineClose } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -38,15 +39,15 @@ function ToastIcon(props: { type: ToastType }) {
 
 const styles: Record<ToastType, { bar: string; icon: string; bg: string; border: string; text: string }> = {
   error: {
-    bar:    "bg-red-500",
-    icon:   "text-red-500",
+    bar:    "bg-danger",
+    icon:   "text-danger-txt",
     bg:     "bg-surface",
     border: "border-rim",
     text:   "text-txt",
   },
   success: {
-    bar:    "bg-green-500",
-    icon:   "text-green-500",
+    bar:    "bg-success",
+    icon:   "text-success-txt",
     bg:     "bg-surface",
     border: "border-rim",
     text:   "text-txt",
@@ -59,8 +60,8 @@ const styles: Record<ToastType, { bar: string; icon: string; bg: string; border:
     text:   "text-txt",
   },
   warning: {
-    bar:    "bg-amber-500",
-    icon:   "text-amber-500",
+    bar:    "bg-warning",
+    icon:   "text-warning-txt",
     bg:     "bg-surface",
     border: "border-rim",
     text:   "text-txt",
@@ -98,14 +99,14 @@ function ToastItem(props: { toast: Toast }) {
       </div>
 
       {/* Dismiss */}
-      <button
+      <IconButton
+        label={t("ui.dismiss_notification")}
+        size="sm"
+        class="mt-2.5 mr-2.5 shrink-0"
         onClick={(e) => { e.stopPropagation(); dismiss(props.toast.id); }}
-        aria-label={t("ui.dismiss_notification")}
-        class="mt-2.5 mr-2.5 shrink-0 p-0.5 rounded text-muted hover:text-txt
-               hover:bg-elevated transition-colors"
       >
         <MdOutlineClose class="w-3.5 h-3.5" />
-      </button>
+      </IconButton>
     </div>
   );
 }

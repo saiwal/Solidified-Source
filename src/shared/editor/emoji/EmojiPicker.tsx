@@ -8,6 +8,7 @@ import { MdOutlineEmoji_emotions } from "solid-icons/md";
 import { getEmojiMap, type EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
+import { Input } from "@ui/Field";
 
 export interface EmojiPickerProps {
   onSelect: (entry: EmojiEntry) => void;
@@ -59,14 +60,14 @@ export default function EmojiPicker(props: EmojiPickerProps) {
         >
           {/* Search input */}
           <div class="p-2 border-b border-rim">
-            <input
+            <Input
+              size="sm"
+              class="w-full"
               autofocus
               type="text"
               value={query()}
               onInput={(e) => setQuery(e.currentTarget.value)}
               placeholder={t("editor.emoji_search_placeholder")}
-              class="w-full px-2 py-1 text-xs rounded-lg border border-rim bg-elevated text-txt
-                     placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
             />
           </div>
 

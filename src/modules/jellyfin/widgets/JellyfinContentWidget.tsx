@@ -3,7 +3,7 @@ import { useSearchParams } from "@solidjs/router";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { authenticate, normaliseServer, JellyfinError } from "../api";
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 import PlayerBar from "../player/PlayerBar";
 import FullPlayer from "../player/FullPlayer";
 import { Browser } from "../library/views";
@@ -18,7 +18,8 @@ import {
   current, toggle, next, prev, seek, position, muted, setMuted, startAddServer, sessionFor, setActive, rememberOnHub, syncFromHub,
 } from "../store";
 import { joinParty, party } from "../syncplay";
-import { primaryPill, ghostPill } from "../ui";
+import { Button } from "@ui/Button";
+import { Field, Input } from "@ui/Field";
 
 /**
  * Player shortcuts while /jellyfin is open: Space play/pause, ←/→ seek 10s,
@@ -167,8 +168,6 @@ function ConnectForm() {
     }
   };
 
-  const field = "w-full bg-transparent border-0 border-b border-rim focus:border-accent outline-none py-2 text-txt placeholder:text-muted/60 transition-colors";
-
   return (
     <form onSubmit={submit} class="max-w-sm mx-auto mt-8 space-y-5">
       <Show when={pendingJoin()} fallback={<p class="text-sm text-muted">{t("jellyfin.connect_intro")}</p>}>
@@ -178,24 +177,39 @@ function ConnectForm() {
           </p>
         )}
       </Show>
-      <label class="block space-y-1">
-        <span class="text-xs text-muted">{t("jellyfin.server_url")}</span>
-        <input type="url" required value={server()} onInput={(e) => setServer(e.currentTarget.value)}
-          placeholder="https://jellyfin.example.com" class={field} autocomplete="url" />
-      </label>
+      <Field label={t("jellyfin.server_url")} size="sm">
+        <Input
+        class="w-full"
+        type="url"
+        required
+        value={server()}
+        onInput={(e) => setServer(e.currentTarget.value)}
+        placeholder="https://jellyfin.example.com"
+        autocomplete="url"
+        />
+      </Field>
       <Show when={mixedContent()}>
-        <p class="text-xs text-red-500">{t("jellyfin.mixed_content")}</p>
+        <p class="text-xs text-danger-txt">{t("jellyfin.mixed_content")}</p>
       </Show>
-      <label class="block space-y-1">
-        <span class="text-xs text-muted">{t("jellyfin.username")}</span>
-        <input type="text" required value={user()} onInput={(e) => setUser(e.currentTarget.value)}
-          class={field} autocomplete="username" />
-      </label>
-      <label class="block space-y-1">
-        <span class="text-xs text-muted">{t("jellyfin.password")}</span>
-        <input type="password" value={pass()} onInput={(e) => setPass(e.currentTarget.value)}
-          class={field} autocomplete="current-password" />
-      </label>
+      <Field label={t("jellyfin.username")} size="sm">
+        <Input
+        class="w-full"
+        type="text"
+        required
+        value={user()}
+        onInput={(e) => setUser(e.currentTarget.value)}
+        autocomplete="username"
+        />
+      </Field>
+      <Field label={t("jellyfin.password")} size="sm">
+        <Input
+        class="w-full"
+        type="password"
+        value={pass()}
+        onInput={(e) => setPass(e.currentTarget.value)}
+        autocomplete="current-password"
+        />
+      </Field>
       <label class="flex items-start gap-3 text-sm text-txt">
         <input type="checkbox" class="mt-0.5" checked={remember()} onChange={(e) => setRemember(e.currentTarget.checked)} />
         <span class="space-y-0.5">
@@ -204,32 +218,44 @@ function ConnectForm() {
         </span>
       </label>
       <Show when={remember() && (vault() === "new" || vault() === "locked")}>
-        <label class="block space-y-1">
-          <span class="text-xs text-muted">{vault() === "new" ? t("jellyfin.vault_choose") : t("jellyfin.vault_passphrase")}</span>
-          <input type="password" required minLength={vault() === "new" ? 10 : undefined} value={vpass()} onInput={(e) => setVpass(e.currentTarget.value)}
-            class={field} autocomplete={vault() === "new" ? "new-password" : "current-password"} />
-        </label>
+        <Field label={vault() === "new" ? t("jellyfin.vault_choose") : t("jellyfin.vault_passphrase")} size="sm">
+          <Input
+          class="w-full"
+          type="password"
+          required
+          minLength={vault() === "new" ? 10 : undefined}
+          value={vpass()}
+          onInput={(e) => setVpass(e.currentTarget.value)}
+          autocomplete={vault() === "new" ? "new-password" : "current-password"}
+          />
+        </Field>
         <Show when={vault() === "new"}>
-          <label class="block space-y-1">
-            <span class="text-xs text-muted">{t("jellyfin.vault_confirm")}</span>
-            <input type="password" required value={vpass2()} onInput={(e) => setVpass2(e.currentTarget.value)} class={field} autocomplete="new-password" />
-          </label>
+          <Field label={t("jellyfin.vault_confirm")} size="sm">
+            <Input
+            class="w-full"
+            type="password"
+            required
+            value={vpass2()}
+            onInput={(e) => setVpass2(e.currentTarget.value)}
+            autocomplete="new-password"
+            />
+          </Field>
           <p class="text-xs text-muted">{t("jellyfin.vault_new_help")}</p>
         </Show>
       </Show>
       <Show when={err()}>
-        <p class="text-sm text-red-500">{err()}</p>
+        <p class="text-sm text-danger-txt">{err()}</p>
       </Show>
       <div class="flex flex-wrap items-center justify-between gap-2">
         <p class="text-[0.6875rem] text-muted">{t("jellyfin.password_note")}</p>
         <Show when={servers().length > 0}>
-          <button type="button" onClick={() => { setPendingJoin(null); setAdding(false); }} class={`${ghostPill} ml-auto`}>
+          <Button variant="ghost" class="ml-auto" onClick={() => { setPendingJoin(null); setAdding(false); }}>
             {t("jellyfin.cancel")}
-          </button>
+          </Button>
         </Show>
-        <button type="submit" disabled={busy()} class={primaryPill}>
+        <Button type="submit" disabled={busy()}>
           {busy() ? t("jellyfin.connecting") : t("jellyfin.connect")}
-        </button>
+        </Button>
       </div>
     </form>
   );

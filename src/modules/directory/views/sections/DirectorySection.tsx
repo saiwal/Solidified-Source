@@ -12,6 +12,9 @@ import DirectoryEntryModal from "../DirectoryEntryModal";
 import type { DirectoryEntry } from "../../people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import CardShell from "@/shared/stream/CardShell";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { EmptyState } from "@ui/EmptyState";
 
 type Order = "date" | "rdate" | "alphabetic" | "ralpha";
 
@@ -42,39 +45,28 @@ export default function DirectorySection() {
 
       {/* ── Search row ── */}
       <form onSubmit={handleSearch} class="flex gap-2">
-        <input
+        <Input
+          class="flex-1"
           type="text"
           value={searchInput()}
           onInput={(e) => setSearchInput(e.currentTarget.value)}
           placeholder="Name, address, or keyword…"
-          class="flex-1 border border-rim rounded-lg px-3 py-2 text-sm bg-surface text-txt
-                 placeholder:text-muted focus:outline-none focus:border-rim-strong
-                 hover:border-rim-strong transition-colors"
         />
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-lg bg-accent text-accent-fg text-sm font-medium
-                 hover:opacity-80 transition-opacity shrink-0"
-        >
+        <Button class="shrink-0" type="submit">
           {t("directory.search")}
-        </button>
+        </Button>
       </form>
 
       {/* ── Filter bar ── */}
       <div class="flex flex-wrap items-center gap-2">
 
         {/* Sort */}
-        <select
-          value={order()}
-          onChange={(e) => setOrder(e.currentTarget.value as Order)}
-          class="px-3 py-1.5 rounded-lg border border-rim bg-surface text-txt text-sm
-                 focus:outline-none hover:border-rim-strong transition-colors"
-        >
+        <Select value={order()} onChange={(e) => setOrder(e.currentTarget.value as Order)}>
           <option value="date">{t("directory.sort_newest")}</option>
           <option value="rdate">{t("directory.sort_oldest")}</option>
           <option value="alphabetic">{t("directory.sort_az")}</option>
           <option value="ralpha">{t("directory.sort_za")}</option>
-        </select>
+        </Select>
 
         {/* Divider */}
         <span class="hidden sm:block w-px h-5 bg-rim" />
@@ -143,7 +135,7 @@ export default function DirectorySection() {
       <Show when={!loading()}>
         <Show
           when={entries().length > 0}
-          fallback={<p class="py-12 text-center text-muted">{t("directory.no_channels")}</p>}
+          fallback={<EmptyState>{t("directory.no_channels")}</EmptyState>}
         >
           <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
             <For each={entries()}>
@@ -154,13 +146,9 @@ export default function DirectorySection() {
 
         <Show when={hasMore() && !loadingMore()}>
           <div class="flex justify-center py-4">
-            <button
-              onClick={loadMoreDirectory}
-              class="px-4 py-2 text-sm font-medium rounded-lg border border-rim
-                     bg-surface text-muted hover:bg-overlay transition-colors"
-            >
+            <Button variant="ghost" onClick={loadMoreDirectory}>
               {t("directory.load_more")}
-            </button>
+            </Button>
           </div>
         </Show>
 

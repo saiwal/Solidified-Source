@@ -24,7 +24,9 @@ import { IconButton, SplitSubmitButton } from "@/shared/editor/components/button
 const CameraCapture = lazy(() => import("@/shared/editor/attachments/CameraCapture"));
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { createPopover } from "@/shared/stream/filters/createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 const FilePickerModal = lazy(() => import("@/shared/editor/attachments/picker/FilePickerModal"));
 
 interface Props {
@@ -265,7 +267,7 @@ export default function ChatComposer(props: Props) {
       </div>
 
       <Show when={store.error()}>
-        <p class="text-xs text-red-500 mt-1">{store.error()}</p>
+        <p class="text-xs text-danger-txt mt-1">{store.error()}</p>
       </Show>
 
       {/* Session encryption — set a password once and every message you send
@@ -295,11 +297,9 @@ export default function ChatComposer(props: Props) {
               when={!sessionPassword()}
               fallback={
                 <div class="flex justify-end gap-2">
-                  <button type="button"
-                    onClick={() => setSessionSetupOpen(false)}
-                    class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors">
+                  <Button variant="ghost" size="sm" onClick={() => setSessionSetupOpen(false)}>
                     {t("editor.encrypt_cancel")}
-                  </button>
+                  </Button>
                   <button type="button"
                     onClick={disableSession}
                     class="px-3 py-1.5 rounded-lg text-sm font-semibold text-yellow-600 bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors">
@@ -312,36 +312,35 @@ export default function ChatComposer(props: Props) {
                 class="space-y-3"
                 onSubmit={(e) => { e.preventDefault(); enableSession(); }}
               >
-                <input
+                <Input
+                  class="w-full"
                   ref={pwInput}
                   type="password"
                   placeholder={t("editor.encrypt_password_placeholder")}
                   value={sessionPwInput()}
                   onInput={(e) => setSessionPwInput(e.currentTarget.value)}
-                  class="w-full bg-elevated border border-rim rounded-lg px-2.5 py-1.5 text-sm text-txt
-                         placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
                 />
-                <input
+                <Input
+                  class="w-full"
                   type="text"
                   placeholder={t("editor.encrypt_hint_placeholder")}
                   value={sessionHintInput()}
                   onInput={(e) => setSessionHintInput(e.currentTarget.value)}
-                  class="w-full bg-elevated border border-rim rounded-lg px-2.5 py-1.5 text-sm text-txt
-                         placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
                 />
                 <Show when={sessionError()}>
-                  <p class="text-red-400 text-xs">{sessionError()}</p>
+                  <p class="text-danger-txt text-xs">{sessionError()}</p>
                 </Show>
                 <div class="flex justify-end gap-2">
-                  <button type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => { setSessionSetupOpen(false); setSessionError(""); }}
-                    class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors">
+                  >
                     {t("editor.encrypt_cancel")}
-                  </button>
-                  <button type="submit"
-                    class="px-3 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg hover:opacity-90 transition-opacity">
+                  </Button>
+                  <Button size="sm" type="submit">
                     {t("editor.encrypt_btn")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </Show>

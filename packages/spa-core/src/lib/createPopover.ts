@@ -1,5 +1,5 @@
 import { createSignal, createEffect, onCleanup, type JSX } from "solid-js";
-import { useFloating } from "@utsukta/spa-core/lib/useFloating";
+import { useFloating } from "./useFloating";
 import type { Placement } from "@floating-ui/dom";
 
 // Open/close state + placement for a dropdown panel. Shared by SortSelect and

@@ -4,6 +4,7 @@ import solid from "vite-plugin-solid";
 import path from "path";
 import { readdirSync, readFileSync, writeFileSync, statSync } from "fs";
 import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL } from "./theme.config.mjs";
+import { uiShadow } from "@utsukta/spa-ui/vite-plugin";
 
 const OUT_DIR = path.resolve(__dirname, BUILD_OUT_DIR_REL);
 
@@ -57,6 +58,7 @@ function templateThemeSlug(): Plugin {
 
 export default defineConfig({
   plugins: [
+    uiShadow({ themeUiDir: path.resolve(__dirname, "src/ui") }),
     solid(),
     viteStaticCopy({
       targets: [

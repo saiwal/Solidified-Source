@@ -22,6 +22,8 @@ import { approveModerationItem, dropModerationItem } from "@/modules/moderate/ap
 import ComposerModal from "@/shared/editor/components/ComposerModal";
 import { createMediaQuery } from "@solid-primitives/media";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 function flatNodes(posts: Post[]): ThreadNode[] {
   return posts.map((p) => ({ ...p, children: [] }));
 }
@@ -480,7 +482,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
 
             <Show when={nodeError()}>
               <div class="bg-surface rounded-2xl p-6 text-center">
-                <p class="text-sm text-red-500">
+                <p class="text-sm text-danger-txt">
                   {t("post.load_error")}: {nodeError()?.message}
                 </p>
               </div>
@@ -499,36 +501,32 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
                   contextBanner={
                     <>
                     <Show when={canFetchReplies()}>
-                      <div class="flex items-center justify-between gap-3 px-4 py-2 mb-3 rounded-xl bg-surface border border-rim text-xs text-muted">
+                      <Card class="flex items-center justify-between gap-3 px-4 py-2 mb-3 text-xs text-muted">
                         <span>{t("post.fetch_more_replies_hint")}</span>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="shrink-0"
                           onClick={() => void fetchMoreReplies()}
                           disabled={fetchingReplies()}
-                          class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium
-                                 rounded-full border border-rim bg-base text-muted
-                                 hover:bg-overlay hover:text-txt transition-colors
-                                 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {fetchingReplies() ? t("post.fetch_replies_loading") : t("post.fetch_more_replies")}
-                        </button>
-                      </div>
+                        </Button>
+                      </Card>
                     </Show>
                     <Show when={isNarrowContext()}>
-                      <div class="flex items-center justify-between gap-3 px-4 py-2 mb-3 rounded-xl bg-surface border border-rim text-xs text-muted">
+                      <Card class="flex items-center justify-between gap-3 px-4 py-2 mb-3 text-xs text-muted">
                         <span>{t("post.viewing_in_context")}</span>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="shrink-0"
                           onClick={loadFullThread}
                           disabled={loadingFullThread()}
-                          class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium
-                                 rounded-full border border-rim bg-base text-muted
-                                 hover:bg-overlay hover:text-txt transition-colors
-                                 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {loadingFullThread() ? t("post.loading") : t("post.show_all_comments")}
-                        </button>
-                      </div>
+                        </Button>
+                      </Card>
                     </Show>
                     </>
                   }

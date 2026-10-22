@@ -31,7 +31,9 @@ import {
 } from "./modal-host";
 import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 import { MdOutlineClose } from "solid-icons/md";
-import { createPopover } from "@/shared/stream/filters/createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
+import { Button, IconButton } from "@ui/Button";
+import { CountBadge } from "@ui/Badge";
 
 
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
@@ -125,15 +127,7 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
 function UnreadBadge(props: { count: number }) {
   const { t } = useI18n();
   return (
-    <Show when={props.count > 0}>
-      <span
-        class="shrink-0 min-w-[1.125rem] rounded-full bg-accent px-1 text-center text-[0.625rem]
-               font-semibold leading-[1.125rem] text-accent-fg tabular-nums"
-        aria-label={t("editor.unread_count", { count: String(props.count) })}
-      >
-        {props.count > 99 ? "99+" : props.count}
-      </span>
-    </Show>
+    <CountBadge n={props.count} label={t("editor.unread_count", { count: String(props.count) })} />
   );
 }
 
@@ -158,14 +152,14 @@ function MinimizedItem(props: { entry: ComposerEntry; class: string; onRestore?:
         <span class="truncate">{props.entry.docTitle() || props.entry.title || t("post.modal_title")}</span>
         <UnreadBadge count={props.entry.unread()} />
       </button>
-      <button
-        type="button"
-        class="p-1 rounded text-muted hover:text-red-500 hover:bg-red-500/10 transition-colors"
-        title={t("editor.close_esc")}
+      <IconButton
+        label={t("editor.close_esc")}
+        variant="danger"
+        size="sm"
         onClick={() => closeComposer(props.entry.id)}
       >
         <MdOutlineClose class="w-3.5 h-3.5" />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -180,10 +174,10 @@ function OverflowPill(props: { entries: ComposerEntry[]; mount: Element }) {
   const pop = createPopover({ placement: "top-start" });
   return (
     <div ref={pop.ref} class="shrink-0">
-      <button
-        type="button"
-        class="rounded-t-lg border border-rim border-b-0 bg-elevated shadow-lg px-3 py-1.5
-               text-xs font-medium text-txt hover:text-accent transition-colors"
+      <Button
+        variant="ghost"
+        size="sm"
+        class="rounded-t-lg"
         aria-haspopup="true"
         aria-expanded={pop.open()}
         aria-label={t("editor.minimized_more", { count: String(props.entries.length) })}
@@ -193,7 +187,7 @@ function OverflowPill(props: { entries: ComposerEntry[]; mount: Element }) {
           +{props.entries.length}
           <UnreadBadge count={props.entries.reduce((n, e) => n + e.unread(), 0)} />
         </span>
-      </button>
+      </Button>
       <Show when={pop.open()}>
         <Portal mount={props.mount}>
           <div

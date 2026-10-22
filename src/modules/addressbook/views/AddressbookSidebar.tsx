@@ -9,10 +9,8 @@ import {
   importVcf,
   type Addressbook,
 } from "../api";
-
-const inputClass =
-  "w-full rounded-lg border border-rim bg-surface px-3 py-1.5 text-sm text-txt " +
-  "placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 const btnClass =
   "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-sm text-muted " +
@@ -91,8 +89,8 @@ export default function AddressbookSidebar(props: Props) {
     <div class="space-y-1">
       <Show when={mode() !== "idle"}>
         <form onSubmit={submit} class="space-y-2 pb-2">
-          <input
-            class={inputClass}
+          <Input
+            class="w-full"
             value={name()}
             onInput={(e) => setName(e.currentTarget.value)}
             placeholder={t("addressbook.addressbook_name") as string}
@@ -100,24 +98,16 @@ export default function AddressbookSidebar(props: Props) {
             autofocus
           />
           <div class="flex gap-2">
-            <button
-              type="submit"
-              disabled={busy() || !name().trim()}
-              class="flex-1 rounded-lg bg-accent px-3 py-1.5 text-sm text-accent-fg disabled:opacity-50"
-            >
+            <Button size="sm" class="flex-1" type="submit" disabled={busy() || !name().trim()}>
               {busy()
                 ? t("addressbook.saving")
                 : mode() === "create"
                   ? t("addressbook.create")
                   : t("addressbook.rename")}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode("idle"); setName(""); }}
-              class="rounded-lg border border-rim px-3 py-1.5 text-sm text-muted hover:text-txt"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setMode("idle"); setName(""); }}>
               {t("addressbook.cancel")}
-            </button>
+            </Button>
           </div>
         </form>
       </Show>
@@ -151,7 +141,7 @@ export default function AddressbookSidebar(props: Props) {
               {t("addressbook.export_vcf")}
             </a>
 
-            <button type="button" class={`${btnClass} hover:text-red-500`} disabled={busy()}
+            <button type="button" class={`${btnClass} hover:text-danger-txt`} disabled={busy()}
                     onClick={remove}>
               <MdOutlineDelete class="w-4 h-4 shrink-0" />
               {t("addressbook.delete_addressbook")}

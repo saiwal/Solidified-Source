@@ -2,6 +2,8 @@ import { For, Show } from "solid-js";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { getAllTours, startTour } from "@utsukta/spa-core/lib/tours";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 export default function HelpToursWidget() {
   const { t } = useI18n();
@@ -18,7 +20,7 @@ export default function HelpToursWidget() {
 
   return (
     <Show when={tours.length > 0}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+      <Card raised class="overflow-hidden">
         <div class="px-4 pt-3.5 pb-3">
           <h3 class="text-sm font-semibold text-txt">{t("tour.guided_tours")}</h3>
           <p class="text-xs text-muted mt-0.5">{t("tour.guided_tours_desc")}</p>
@@ -33,19 +35,14 @@ export default function HelpToursWidget() {
                     <p class="text-[0.7rem] text-muted truncate">{tour.description!(t)}</p>
                   </Show>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleStart(tour.id, tour.path)}
-                  class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-semibold bg-accent text-accent-fg
-                         hover:opacity-90 transition-opacity"
-                >
+                <Button size="sm" class="shrink-0" onClick={() => handleStart(tour.id, tour.path)}>
                   {t("tour.start_tour")}
-                </button>
+                </Button>
               </li>
             )}
           </For>
         </ul>
-      </div>
+      </Card>
     </Show>
   );
 }

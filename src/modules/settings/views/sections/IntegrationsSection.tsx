@@ -13,6 +13,10 @@ import NsfwConfigModal from "./NsfwConfigModal";
 import CardsConfigModal from "./CardsConfigModal";
 import { getFrontendToggleableModules, frontendFeatureEnabled } from "@utsukta/spa-core/module-registry";
 import { disabledFrontendModules, setFrontendModuleEnabled } from "@utsukta/spa-core/store/disabled-frontend-modules";
+import { IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Switch } from "@ui/Toggle";
+import { EmptyState } from "@ui/EmptyState";
 
 interface AppEntry {
   name: string;
@@ -89,36 +93,6 @@ function AppIcon(props: { app: AppEntry }) {
   );
 }
 
-function Toggle(props: {
-  on: boolean;
-  disabled?: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      title={props.label}
-      disabled={props.disabled}
-      onClick={props.onClick}
-      aria-pressed={props.on}
-      class={[
-        "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-        "disabled:opacity-40 disabled:cursor-not-allowed",
-        props.on ? "bg-accent" : "bg-elevated border border-rim",
-      ].join(" ")}
-    >
-      <span class="sr-only">{props.label}</span>
-      <span
-        class={[
-          "inline-block h-4 w-4 rounded-full transition-transform",
-          props.on ? "translate-x-6 bg-accent-fg" : "translate-x-1 bg-muted",
-        ].join(" ")}
-      />
-    </button>
-  );
-}
 
 export default function IntegrationsSection() {
   const { t } = useI18n();
@@ -227,14 +201,12 @@ export default function IntegrationsSection() {
             )}
           </For>
         </div>
-        <input
+        <Input
+          class="flex-1 min-w-1"
           type="search"
           placeholder={t("settings.integ_search_placeholder")}
           value={search()}
           onInput={(e) => setSearch(e.currentTarget.value)}
-          class="flex-1 min-w-1 px-3 py-1.5 text-sm rounded-lg bg-surface border border-rim
-                 text-txt hover:border-rim-strong focus:outline-none focus:border-accent
-                 placeholder:text-muted"
         />
       </div>
 
@@ -242,7 +214,7 @@ export default function IntegrationsSection() {
         <Show
           when={filtered().length > 0}
           fallback={
-            <p class="text-sm text-muted text-center py-8">{t("settings.integ_no_results")}</p>
+            <EmptyState>{t("settings.integ_no_results")}</EmptyState>
           }
         >
           {/* Column headers — the per-row labels used to repeat on every line */}
@@ -297,26 +269,24 @@ export default function IntegrationsSection() {
                   </div>
 
                   <div class="col-start-4 row-start-1 sm:row-end-3 w-11 flex justify-center">
-                    <Toggle
-                      on={row.enabled}
+                    <Switch
+                      checked={row.enabled}
                       disabled={!!row.app && isBusy(row.app.name)}
                       label={row.enabled ? t("settings.integ_remove") : t("settings.integ_install")}
-                      onClick={() => toggleRow(row)}
+                      onChange={() => toggleRow(row)}
                     />
                   </div>
 
                   {/* Config lives after the toggles, not between them */}
                   <div class="col-start-5 row-start-1 sm:row-end-3 w-7">
                     <Show when={row.app?.installed && CONFIGURABLE_APPS.has(row.app.name.toLowerCase())}>
-                      <button
-                        type="button"
-                        title={t("settings.integ_configure")}
+                      <IconButton
+                        label={t("settings.integ_configure")}
+                        size="sm"
                         onClick={() => setConfigApp(row.app!.name.toLowerCase())}
-                        class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                               text-muted hover:bg-elevated hover:text-txt"
                       >
                         <MdOutlineSettings size={16} />
-                      </button>
+                      </IconButton>
                     </Show>
                   </div>
                 </div>

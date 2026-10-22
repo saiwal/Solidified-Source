@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* The @ui primitives' default implementation — scanned explicitly so its
+   classes exist even when no file of this theme mentions them. */
+@source "../packages/spa-ui/src";
 @import "./styles/theme.css";
 @import "./styles/fonts.css";
 @import "plyr/dist/plyr.css";
@@ -560,6 +563,20 @@
   --color-accent-muted: var(--color-accent-muted);
   --color-accent-txt:   var(--color-accent-txt);
   --color-accent-fg:    var(--color-accent-fg);
+
+  /* status — same four roles as accent; never use raw red/green/amber for these */
+  --color-danger:        var(--color-danger);
+  --color-danger-muted:  var(--color-danger-muted);
+  --color-danger-txt:    var(--color-danger-txt);
+  --color-danger-fg:     var(--color-danger-fg);
+  --color-success:       var(--color-success);
+  --color-success-muted: var(--color-success-muted);
+  --color-success-txt:   var(--color-success-txt);
+  --color-success-fg:    var(--color-success-fg);
+  --color-warning:       var(--color-warning);
+  --color-warning-muted: var(--color-warning-muted);
+  --color-warning-txt:   var(--color-warning-txt);
+  --color-warning-fg:    var(--color-warning-fg);
 
   /* --radius-xl: var(--radius-xl); */
 }

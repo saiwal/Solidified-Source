@@ -68,4 +68,14 @@ const lightCss = buildCustomThemeCSS(lightBuilt);
 assert(lightCss.includes("--color-elevated: color-mix(in srgb, #eeeee8, white 18%);"));
 assert(lightCss.includes("--color-overlay: color-mix(in srgb, #eeeee8, black 8%);"));
 
+// Status colors: older stored themes have none, so the hue follows light/dark...
+assert(legacyCss.includes("--color-danger: #f87171;"));
+assert(lightCss.includes("--color-danger: #dc2626;"));
+assert(lightCss.includes("--color-warning-muted: color-mix(in srgb, #d97706, #eeeee8 84%);"));
+// ...and re-picking a hue re-derives its muted/txt but keeps its fg.
+const redder = withColorChange({ ...nord, dangerMuted: "#111111", dangerFg: "#000000" }, "danger", "#ff0000");
+assert(!("dangerMuted" in redder));
+assert.equal(redder.dangerFg, "#000000");
+assert(buildCustomThemeCSS(redder).includes("--color-danger-txt: color-mix(in srgb, #ff0000, white 15%);"));
+
 console.log("theme-colors: ok");

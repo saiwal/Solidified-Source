@@ -23,6 +23,9 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { usePins, setPinned } from "./pins";
 import type { AclEntry } from "@/modules/network/api";
 import { groupThreads, groupName, shortTime, type DmGroup } from "./dms";
+import { IconButton } from "@ui/Button";
+import { Textarea } from "@ui/Field";
+import { Avatar } from "@ui/Avatar";
 
 /** hq-messages summaries are entity-escaped text; decode, render as text. */
 export function decodeHtmlEntities(str: string): string {
@@ -31,20 +34,6 @@ export function decodeHtmlEntities(str: string): string {
   return ta.value;
 }
 
-export function Avatar(props: { src?: string; name: string; class?: string }) {
-  return (
-    <Show
-      when={props.src}
-      fallback={
-        <div class={`rounded-full bg-accent-muted flex items-center justify-center text-accent font-semibold shrink-0 ${props.class ?? "w-10 h-10"}`}>
-          {props.name?.[0]?.toUpperCase() ?? "?"}
-        </div>
-      }
-    >
-      <img src={props.src} alt="" class={`rounded-full object-cover shrink-0 ${props.class ?? "w-10 h-10"}`} />
-    </Show>
-  );
-}
 
 /** A participant as a recipient chip. */
 export const toRecipient = (p: { hash: string; name: string; addr: string; url?: string; photo?: string }): AclEntry => ({
@@ -131,7 +120,7 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
   const header = (subtitle?: string) => (
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-rim shrink-0">
       <BackButton href={props.uuid && (group()?.threads.length ?? 0) > 1 ? base() : `${props.base}/dm`} />
-      <Avatar src={group()?.people[0]?.photo} name={group() ? groupName(group()!) : "?"} class="w-9 h-9" />
+      <Avatar src={group()?.people[0]?.photo} name={group() ? groupName(group()!) : ""} size={9} />
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium text-txt truncate">{group() ? groupName(group()!) : "…"}</p>
         <Show when={subtitle}>
@@ -150,29 +139,16 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
       {/* The same thread as a comment tree, in the stream's post view. */}
       <Show when={props.uuid}>
         {(uuid) => (
-          <button
-            type="button"
-            onClick={() => openPost(uuid())}
-            title={t("messenger.view_thread") as string}
-            aria-label={t("messenger.view_thread") as string}
-            class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-elevated"
-          >
+          <IconButton label={t("messenger.view_thread") as string} size="sm" onClick={() => openPost(uuid())}>
             <MdOutlineForum size={18} />
-          </button>
+          </IconButton>
         )}
       </Show>
       {/* Remote visitors send from their own hub. */}
       <Show when={auth()?.isLocal}>
-        <button
-          type="button"
-          onClick={newThread}
-          disabled={!group()}
-          title={t("messenger.new_dm") as string}
-          aria-label={t("messenger.new_dm") as string}
-          class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-elevated disabled:opacity-40"
-        >
+        <IconButton label={t("messenger.new_dm") as string} size="sm" onClick={newThread} disabled={!group()}>
           <MdOutlineEdit size={18} />
-        </button>
+        </IconButton>
       </Show>
     </div>
   );
@@ -185,7 +161,7 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
         <div class="flex flex-col flex-1 min-h-0">
           {header(group() ? (t("messenger.conversations", { n: String(group()!.threads.length) }) as string) : undefined)}
           <Show when={person.isError || (person.isSuccess && !group())}>
-            <p class="p-4 text-sm text-red-500">{t("messenger.load_failed")}</p>
+            <p class="p-4 text-sm text-danger-txt">{t("messenger.load_failed")}</p>
           </Show>
           <div class="flex-1 overflow-y-auto divide-y divide-rim">
             <For each={group()?.threads}>
@@ -372,7 +348,7 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
           </div>
         </Show>
         <Show when={thread.isError}>
-          <p class="text-sm text-red-500">{t("messenger.load_failed")}</p>
+          <p class="text-sm text-danger-txt">{t("messenger.load_failed")}</p>
         </Show>
         <For each={messages()}>
           {({ m, quoted, self, day, first }, i) => (
@@ -390,7 +366,7 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                       a run's later messages stay aligned beneath it. */}
                   <Show when={first} fallback={<div class="w-12 shrink-0" />}>
                     <A href={channelHref(m)} title={m.author?.name} class="w-12 shrink-0 flex flex-col items-center gap-0.5 group/author">
-                      <Avatar src={m.author?.photo?.src} name={m.author?.name ?? "?"} class="w-7 h-7" />
+                      <Avatar src={m.author?.photo?.src} name={m.author?.name ?? ""} size={7} />
                       <span class="w-full text-center text-[0.625rem] leading-tight text-muted truncate group-hover/author:text-txt group-hover/author:underline">
                         {m.author?.name}
                       </span>
@@ -427,17 +403,10 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                       when={editing()?.uuid === m.uuid}
                       fallback={<div class="post-body [&_img]:max-w-full" innerHTML={renderBody(m.body, m.mimetype, undefined, sanitizeHtml)} />}
                     >
-                      <textarea
-                        value={editing()!.body}
-                        onInput={(e) => setEditing({ ...editing()!, body: e.currentTarget.value })}
-                        onKeyDown={(e) => {
+                      <Textarea class="w-64 max-w-full field-sizing-content min-h-16 max-h-60" value={editing()!.body} onInput={(e) => setEditing({ ...editing()!, body: e.currentTarget.value })} onKeyDown={(e) => {
                           if (e.key === "Escape") setEditing(null);
                           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) saveEdit();
-                        }}
-                        ref={(el) => requestAnimationFrame(() => el.focus())}
-                        rows={3}
-                        class="w-64 max-w-full field-sizing-content min-h-16 max-h-60 bg-surface text-txt border border-rim rounded-lg px-2 py-1 text-sm outline-none focus:border-accent"
-                      />
+                        }} ref={(el) => requestAnimationFrame(() => el.focus())} rows={3} />
                       <div class="flex justify-end gap-2 mt-1 text-xs">
                         <button type="button" onClick={() => setEditing(null)} class="px-2 py-0.5 rounded hover:underline">
                           {t("messenger.cancel")}
@@ -493,7 +462,7 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                         onClick={() => void remove(m, i() === 0)}
                         title={t("messenger.delete") as string}
                         aria-label={t("messenger.delete") as string}
-                        class={`p-0.5 rounded hover:text-red-500 hover:bg-elevated disabled:opacity-50 ${REVEAL}`}
+                        class={`p-0.5 rounded hover:text-danger-txt hover:bg-elevated disabled:opacity-50 ${REVEAL}`}
                       >
                         <MdOutlineDelete size={12} />
                       </button>
@@ -512,15 +481,13 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
               <p class="font-semibold text-txt truncate">{t("messenger.replying_to", { name: r().author?.name ?? "" })}</p>
               <p class="text-muted truncate">{snippet(r())}</p>
             </div>
-            <button
-              type="button"
+            <IconButton
+              label={t("messenger.cancel_reply") as string}
+              size="sm"
               onClick={() => setReplyTo(null)}
-              aria-label={t("messenger.cancel_reply") as string}
-              title={t("messenger.cancel_reply") as string}
-              class="p-1 rounded-md text-muted hover:text-txt hover:bg-elevated"
             >
               <MdOutlineClose size={16} />
-            </button>
+            </IconButton>
           </div>
         )}
       </Show>

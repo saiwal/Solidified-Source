@@ -9,6 +9,7 @@
 import { createSignal, Show, For } from "solid-js";
 import { MdOutlineToc } from "solid-icons/md";
 import type { TocEntry } from "@utsukta/spa-core/lib/useToc";
+import { IconButton } from "@ui/Button";
 
 function indentClass(level: number, minLevel: number): string {
   const d = level - minLevel;
@@ -71,17 +72,14 @@ function FloatingToc(props: { entries: TocEntry[]; activeId: string; label: stri
   return (
     <div class="xl:hidden sticky top-2 z-10 mb-3 flex justify-end">
       <div class="flex flex-col items-end">
-        <button
-          type="button"
+        <IconButton
+          label={props.label}
+          variant="square"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open()}
-          aria-label={props.label}
-          class="w-11 h-11 rounded-full flex items-center justify-center
-                 bg-elevated border border-rim shadow-lg hover:shadow-xl
-                 text-muted hover:text-txt transition-all"
         >
           <MdOutlineToc size={20} />
-        </button>
+        </IconButton>
         <Show when={open()}>
           <div
             class="mt-2 w-64 max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto

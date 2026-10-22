@@ -25,6 +25,7 @@ import { MdFillPush_pin, MdOutlineCheck, MdOutlineExpand_less, MdOutlineExpand_m
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { createConfirmTap } from "@/shared/stream/components/ActionBtn";
 import { isDirectMessage as isDM, DmBadge, DmRecipients } from "@/shared/stream/components/DmMeta";
+import { EmptyState } from "@ui/EmptyState";
 function useColumnCount(el: () => HTMLElement | undefined): () => number {
   return useMasonryColumnCount(el, 16, 3);
 }
@@ -193,7 +194,7 @@ function MasonryCard(props: {
             </Show>
             <Show when={isExpiring()}>
               <span
-                class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 leading-none"
+                class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-warning/15 text-warning-txt leading-none"
                 title={expiresTitle()}
               >
                 <MdOutlineTimer size={11} />
@@ -400,7 +401,7 @@ export default function MasonryView(props: {
       <Show
         when={items().length > 0}
         fallback={
-          <p class="text-center py-16 text-muted text-sm">Nothing here yet.</p>
+          <EmptyState>Nothing here yet.</EmptyState>
         }
       >
         <div class="flex gap-3 items-start" ref={setGridEl}>

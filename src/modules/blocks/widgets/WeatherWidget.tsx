@@ -12,6 +12,7 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
 
 interface WeatherData {
   label: string;
@@ -76,13 +77,13 @@ export default function WeatherWidget(props: WidgetProps) {
       when={location()}
       fallback={
         <Show when={editingWidgets()}>
-          <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+          <Card class="px-4 py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
-          </div>
+          </Card>
         </Show>
       }
     >
-      <div class="bg-surface border border-rim rounded-xl px-4 py-4">
+      <Card class="px-4 py-4">
         <Show when={weather.loading}>
           <div class="animate-pulse flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-elevated" />
@@ -112,7 +113,7 @@ export default function WeatherWidget(props: WidgetProps) {
             {t("widgets.wind")}: {Math.round(weather()!.windspeed)} {unit() === "f" ? "mph" : "km/h"}
           </p>
         </Show>
-      </div>
+      </Card>
     </Show>
   );
 }

@@ -5,6 +5,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { savedSearches, loadSavedSearches, removeSavedSearch, type SavedSearch } from "../saved-searches";
 import { loadNetwork, resetPosts } from "../store";
 import type { NetworkParams } from "../api";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 const ALL_PARAM_KEYS = [
   "order", "search", "tag", "star", "pf", "conv", "dm", "event",
@@ -48,7 +50,7 @@ export default function SavedSearchesWidget() {
 
   return (
     <Show when={savedSearches().length > 0}>
-      <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+      <Card class="overflow-hidden">
         <div class="px-4 py-3 flex items-center gap-2">
           <MdFillBookmarks size={14} class="text-muted shrink-0" />
           <h2 class="text-sm font-semibold text-txt">{t("network.saved_searches")}</h2>
@@ -66,19 +68,20 @@ export default function SavedSearchesWidget() {
                   <MdFillBookmarks size={13} class="shrink-0 text-accent opacity-70" />
                   <span class="truncate">{s.label}</span>
                 </button>
-                <button
+                <IconButton
+                  label={t("network.delete_saved_search")}
+                  variant="danger"
+                  size="sm"
+                  class="opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
                   onClick={() => void removeSavedSearch(s.id)}
-                  title={t("network.delete_saved_search")}
-                  class="p-1.5 rounded-lg text-muted opacity-100 md:opacity-0 md:group-hover:opacity-100
-                         hover:text-red-500 hover:bg-elevated transition-all shrink-0"
                 >
                   <MdFillDelete size={13} />
-                </button>
+                </IconButton>
               </div>
             )}
           </For>
         </div>
-      </div>
+      </Card>
     </Show>
   );
 }

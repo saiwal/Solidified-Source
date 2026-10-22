@@ -7,7 +7,7 @@ import { useHelpMode, type DocType } from "@utsukta/spa-core/store/help-mode";
 import { useDocs } from "@utsukta/spa-core/lib/useDocs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
 export default function HelpOverlay() {
   const { t } = useI18n();
   const { helpMode, helpTarget, exit } = useHelpMode();
@@ -32,12 +32,12 @@ export default function HelpOverlay() {
 
       <Show when={helpTarget()}>
         <Modal onClose={exit} labelledBy="help-modal-title" class="z-[9999]">
-          <div class="w-full max-w-2xl bg-surface rounded-xl border border-rim overflow-hidden">
+          <ModalPanel size="xl" class="overflow-hidden">
             <HelpModalHeader target={helpTarget()!} onClose={exit} />
             <div class="px-5 py-4 max-h-[60vh] overflow-y-auto">
               <DocContent target={helpTarget()!} />
             </div>
-          </div>
+          </ModalPanel>
         </Modal>
       </Show>
     </>

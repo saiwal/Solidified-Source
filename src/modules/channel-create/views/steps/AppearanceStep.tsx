@@ -4,6 +4,7 @@ import { FONT_SIZES, FONT_FAMILIES, type FontSize } from "@utsukta/spa-core/lib/
 import { RADIUS_MAP, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck } from "solid-icons/md";
+import { Badge } from "@ui/Badge";
 
 const FONT_SIZE_OPTS: { value: FontSize; labelKey: string }[] = [
   { value: "small", labelKey: "settings.font_size_small" },
@@ -62,9 +63,9 @@ export default function AppearanceStep(props: {
           <p class="text-txt leading-snug">{t("channel_create.preview_text")}</p>
         </div>
         <div class="mt-3 flex gap-2">
-          <span class="px-2.5 py-1 rounded-lg bg-elevated text-xs text-muted">
+          <Badge>
             {t("channel_create.preview_like")}
-          </span>
+          </Badge>
           <span class="px-2.5 py-1 rounded-lg bg-accent text-accent-fg text-xs font-medium">
             {t("channel_create.preview_reply")}
           </span>

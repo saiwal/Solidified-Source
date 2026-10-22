@@ -7,6 +7,9 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
 import { useIsWikiList } from "../lib/isWikiList";
+import { Button } from "@ui/Button";
+import { Field, Input, Select } from "@ui/Field";
+import { cardClass } from "@ui/Card";
 
 export default function WikiHeaderWidget() {
   const nick = usePageNick();
@@ -101,46 +104,46 @@ export default function WikiHeaderWidget() {
         <div class="flex items-center justify-between">
           <h1 class="text-xl font-semibold text-txt">{owner() === null ? t("wiki.title_mine") : t("wiki.title_of", { name: owner()! })}</h1>
           <Show when={canCreate()}>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => creating() ? resetCreateForm() : setCreating(true)}
-              class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg transition-colors"
             >
               {creating() ? t("wiki.cancel") : t("wiki.new_wiki")}
-            </button>
+            </Button>
           </Show>
         </div>
 
         {/* Create form */}
         <Show when={creating()}>
           <form
-            class="bg-surface border border-rim rounded-xl p-4 space-y-3"
+            class={`${cardClass()} p-4 space-y-3`}
             onSubmit={handleCreate}
           >
             <div class="space-y-1">
-              <label class="text-xs text-muted font-medium">{t("wiki.wiki_name_label")}</label>
-              <input
+              <Field label={t("wiki.wiki_name_label")} size="sm">
+                <Input
+                class="w-full"
                 type="text"
-                class="w-full bg-surface border border-rim text-txt rounded-lg px-3 py-2 text-sm
-                       hover:border-rim-strong focus:outline-none"
                 placeholder={t("wiki.wiki_name_placeholder") as string}
                 value={newName()}
                 onInput={(e) => setNewName(e.currentTarget.value)}
                 required
-              />
+                />
+              </Field>
             </div>
             <div class="space-y-1">
-              <label class="text-xs text-muted font-medium">{t("editor.format")}</label>
-              <select
-                class="w-full bg-surface border border-rim text-txt rounded-lg px-3 py-2 text-sm
-                       hover:border-rim-strong focus:outline-none"
+              <Field label={t("editor.format")} size="sm">
+                <Select
+                class="w-full"
                 value={newMime()}
                 onChange={(e) => setNewMime(e.currentTarget.value as WikiMimeType)}
-              >
+                >
                 <For each={WIKI_MIME_TYPES}>
-                  {(m) => <option value={m}>{t(WIKI_MIME_LABEL[m])}</option>}
+                {(m) => <option value={m}>{t(WIKI_MIME_LABEL[m])}</option>}
                 </For>
-              </select>
+                </Select>
+              </Field>
               <label class="flex items-center gap-2 text-xs text-muted pt-1">
                 <input
                   type="checkbox"

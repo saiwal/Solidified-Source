@@ -12,6 +12,7 @@ import { UnseenBadge } from "../components/UnseenBadge";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
+import { EmptyState } from "@ui/EmptyState";
 
 const ROTATIONS = ["-rotate-3", "rotate-2", "-rotate-1", "rotate-3", "-rotate-2", "rotate-1"];
 const NOTE_COLORS = [
@@ -163,7 +164,7 @@ export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: St
     <div class="max-w-6xl mx-auto">
       <Show
         when={props.posts.length > 0}
-        fallback={<p class="text-center py-16 text-muted text-sm">{t("network.all_caught_up")}</p>}
+        fallback={<EmptyState>{t("network.all_caught_up")}</EmptyState>}
       >
         <div class="flex gap-5 items-start" ref={setGridEl}>
           {/* Index, not For: splitIntoColumns builds new column arrays on

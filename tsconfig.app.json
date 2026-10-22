@@ -16,6 +16,13 @@
 		"paths": {
 			"@/*": [
 				"./src/*"
+			],
+			"@ui/*": [
+				"./src/ui/*",
+				"./packages/spa-ui/src/*"
+			],
+			"@ui-base/*": [
+				"./packages/spa-ui/src/*"
 			]
 		},
 		/* Bundler mode */
@@ -35,6 +42,7 @@
 		"noUncheckedSideEffectImports": true
 	},
 	"include": [
-		"src"
+		"src",
+		"packages/spa-ui/src"
 	]
 }

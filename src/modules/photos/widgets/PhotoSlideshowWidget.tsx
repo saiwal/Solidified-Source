@@ -7,6 +7,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { fetchPhotoAlbum, fetchPhotoSummary } from "../api/api";
+import { Card } from "@ui/Card";
 
 export default function PhotoSlideshowWidget(props: WidgetProps) {
   const nick = usePageNick();
@@ -35,16 +36,15 @@ export default function PhotoSlideshowWidget(props: WidgetProps) {
   return (
     <Show when={current()}>
       {(photo) => (
-        <div
-          class="bg-surface border border-rim rounded-xl overflow-hidden"
+        <Card class="overflow-hidden"
+         
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
           onFocusIn={() => setPaused(true)}
           onFocusOut={() => setPaused(false)}
           onTouchStart={() => setPaused(true)}
           onTouchEnd={() => setPaused(false)}
-          onTouchCancel={() => setPaused(false)}
-        >
+          onTouchCancel={() => setPaused(false)}>
           <A href={`/photos/${nick()}/image/${photo().resource_id}`} class="block">
             <img
               src={photo().src}
@@ -57,7 +57,7 @@ export default function PhotoSlideshowWidget(props: WidgetProps) {
           <Show when={photo().title}>
             <p class="px-3 py-2 text-xs text-muted truncate">{photo().title}</p>
           </Show>
-        </div>
+        </Card>
       )}
     </Show>
   );

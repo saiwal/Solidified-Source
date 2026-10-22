@@ -10,6 +10,7 @@ import { fetchAccountSettings } from "@/modules/settings/api/api";
 import type { AccountQuota } from "@/modules/settings/store/types";
 import { formatQuotaValue, quotaPercent } from "@/shared/lib/quota-format";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
 
 export default function UsageQuotasWidget() {
   const { t } = useI18n();
@@ -22,7 +23,7 @@ export default function UsageQuotasWidget() {
 
   return (
     <Show when={!settings.loading && quotas().length > 0}>
-      <div data-tour="hq.quotas" class="bg-surface border border-rim rounded-xl p-4">
+      <Card class="p-4" data-tour="hq.quotas">
         <h3 class="text-xs font-semibold text-muted uppercase tracking-wide mb-3">
           {t("widgets.usage_quotas")}
         </h3>
@@ -37,7 +38,7 @@ export default function UsageQuotasWidget() {
         >
           {t("widgets.usage_quotas_view_all")}
         </A>
-      </div>
+      </Card>
     </Show>
   );
 }
@@ -55,7 +56,7 @@ function QuotaTile(props: { quota: AccountQuota }) {
       <div class="flex-1 min-w-0 h-1.5 rounded-full bg-elevated overflow-hidden">
         <div
           class="h-full rounded-full bg-accent transition-all"
-          classList={{ "bg-red-500": pct() >= 90 }}
+          classList={{ "bg-danger": pct() >= 90 }}
           style={{ width: `${pct()}%` }}
         />
       </div>

@@ -37,6 +37,8 @@ import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import SummaryField from "../components/SummaryField";
 import ComposerActionBar from "../components/ComposerActionBar";
 import { underlineFieldClass } from "../lib/fieldStyles";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
 
 interface Props {
   profileUid: number;
@@ -273,12 +275,12 @@ export default function WebpageComposer(props: Props) {
       meta={
         <>
           {/* Title */}
-          <input
+          <Input
+            class="w-full font-bold"
             type="text"
             placeholder={t("webpages.title_placeholder")}
             value={store.title()}
             onInput={(e) => onTitleChange(e.currentTarget.value)}
-            class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
 
           {/* Summary */}
@@ -305,29 +307,20 @@ export default function WebpageComposer(props: Props) {
           <div class="space-y-2">
             <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
               {t("webpages.layout_template_label")}
-              <select
-                ref={selectRef}
-                onChange={(e) => {
+              <Select size="sm" ref={selectRef} onChange={(e) => {
                   setLayoutTemplate(e.currentTarget.value);
                   setJustCreatedTemplate(false);
-                }}
-                class="bg-elevated border border-rim rounded-lg px-2 py-1 text-xs text-txt"
-              >
+                }}>
                 <option value="">{t("webpages.layout_template_default")}</option>
                 <For each={templateList()}>
                   {([id, tpl]) => <option value={id}>{tpl.name}</option>}
                 </For>
-              </select>
+              </Select>
 
-              <button
-                type="button"
-                onClick={() => setCreatingTemplate((o) => !o)}
-                class="flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-rim
-                       text-muted hover:text-txt hover:bg-elevated transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setCreatingTemplate((o) => !o)}>
                 <MdFillAdd size={12} />
                 {t("webpages.new_template")}
-              </button>
+              </Button>
 
               {/* Same pencil/checkmark toggle as Layout.tsx's sidebar header and
                   LayoutTemplatesView.tsx's per-row button — one-click access to
@@ -352,7 +345,7 @@ export default function WebpageComposer(props: Props) {
             </div>
 
             <Show when={layoutTemplate() && templateChrome(layoutTemplate()) === "zen"}>
-              <p class="text-xs text-amber-500">{t("webpages.zen_chrome_notice")}</p>
+              <p class="text-xs text-warning-txt">{t("webpages.zen_chrome_notice")}</p>
             </Show>
 
             <Show when={creatingTemplate()}>

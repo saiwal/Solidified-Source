@@ -18,6 +18,7 @@ import {
   handleStar, handleDelete, handleEdit,
   handleComment, loadComments, loadMoreComments, handleRefresh,
 } from "../store";
+import { Button } from "@ui/Button";
 const handlers: StreamHandlers = {
   onLike:           handleLike,
   onDislike:        handleDislike,
@@ -71,12 +72,9 @@ export default function NetworkContentWidget() {
 
       <Show when={newPosts().length > 0}>
         <div class="sticky top-2 z-10 flex justify-center">
-          <button
-            onClick={flushNewPosts}
-            class="px-4 py-2 rounded-full bg-accent text-accent-fg text-sm font-medium shadow-lg hover:opacity-90 transition-opacity"
-          >
+          <Button onClick={flushNewPosts}>
             ↑ {newPosts().length} {t("network.new_posts")}
-          </button>
+          </Button>
         </div>
       </Show>
 
@@ -126,13 +124,9 @@ export default function NetworkContentWidget() {
 
         <Show when={hasMore() && !loadingMore() && scrollStyle() === "load_more"}>
           <div class="flex justify-center py-4">
-            <button
-              onClick={loadMore}
-              class="px-4 py-2 text-sm font-medium rounded-lg border border-rim
-                     bg-surface text-muted hover:bg-overlay transition-colors"
-            >
+            <Button variant="ghost" onClick={loadMore}>
               {t("network.load_more")}
-            </button>
+            </Button>
           </div>
         </Show>
 

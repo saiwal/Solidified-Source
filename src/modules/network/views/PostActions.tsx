@@ -40,8 +40,8 @@ export default function PostActions(props: Props) {
 
       <button
         onClick={() => handleDislike(props.post.mid)}
-        class={`flex items-center gap-1 transition-colors hover:text-red-500
-          ${props.post.viewerDisliked ? "text-red-500" : ""}`}
+        class={`flex items-center gap-1 transition-colors hover:text-danger-txt
+          ${props.post.viewerDisliked ? "text-danger-txt" : ""}`}
       >
         <MdOutlineThumb_down class="w-4 h-4" />
         <Show when={props.post.dislikeCount > 0}>
@@ -51,8 +51,8 @@ export default function PostActions(props: Props) {
 
       <button
         onClick={() => handleRepeat(props.post.mid)}
-        class={`flex items-center gap-1 transition-colors hover:text-green-500
-          ${props.post.viewerRepeated ? "text-green-500" : ""}`}
+        class={`flex items-center gap-1 transition-colors hover:text-success-txt
+          ${props.post.viewerRepeated ? "text-success-txt" : ""}`}
       >
         <MdOutlineRepeat class="w-4 h-4" />
         <Show when={props.post.repeatCount > 0}>
@@ -73,7 +73,7 @@ export default function PostActions(props: Props) {
       <Show when={isOwner()}>
         <button
           onClick={() => handleDelete(props.post.mid)}
-          class="transition-colors hover:text-red-600 ml-auto"
+          class="transition-colors hover:text-danger-txt ml-auto"
         >
           <MdOutlineDelete class="w-4 h-4" />
         </button>

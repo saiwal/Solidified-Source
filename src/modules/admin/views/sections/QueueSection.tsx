@@ -3,6 +3,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminQueue, adminQueueAction } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
 
 export default function QueueSection() {
   const { t } = useI18n();
@@ -35,12 +36,9 @@ export default function QueueSection() {
                 />
                 {t("admin.expert_mode")}
               </label>
-              <button
-                onClick={refetch}
-                class="px-3 py-1.5 text-xs rounded-lg border border-rim text-txt hover:bg-elevated transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={refetch}>
                 {t("admin.refresh")}
-              </button>
+              </Button>
               </div>
             </div>
 
@@ -79,14 +77,15 @@ export default function QueueSection() {
                                   ["drop", t("admin.queue_drophub"), "✕"],
                                 ] as const}>
                                   {([action, label, glyph]) => (
-                                    <button
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
                                       title={label}
                                       aria-label={label}
                                       onClick={() => act(action, item.outq_posturl)}
-                                      class="px-2 py-1 rounded border border-rim text-txt hover:bg-elevated transition-colors"
                                     >
                                       {glyph}
-                                    </button>
+                                    </Button>
                                   )}
                                 </For>
                               </div>

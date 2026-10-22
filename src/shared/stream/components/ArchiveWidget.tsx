@@ -15,6 +15,7 @@ import {
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { Card, CardHeader } from "@ui/Card";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -182,10 +183,10 @@ const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
   };
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-rim">
+    <Card class="overflow-hidden">
+      <CardHeader>
         <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.archive")}</h3>
-      </div>
+      </CardHeader>
 
       <Show when={remote.loading}>
         <ArchiveSkeleton />
@@ -260,7 +261,7 @@ const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
           </ul>
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 };
 

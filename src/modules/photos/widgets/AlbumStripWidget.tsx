@@ -10,15 +10,16 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchPhotoAlbum } from "../api/api";
 import { variantSrc } from "../api/api";
+import { Card } from "@ui/Card";
 
 const MAX_THUMBS = 6;
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }
@@ -52,7 +53,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
           when={(data()?.photos.length ?? 0) > 0}
           fallback={<EditHint text={t("widgets.item_unavailable")} />}
         >
-          <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+          <Card class="overflow-hidden">
             <div class="px-4 py-3">
               <h3 class="text-sm font-semibold text-txt truncate">
                 {data()!.album_name || t("widgets.album_strip")}
@@ -74,7 +75,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
                     />
                     <Show when={photo.is_nsfw}>
                       <span class="absolute inset-0 flex items-center justify-center
-                                   text-[0.5625rem] font-bold text-red-400 pointer-events-none">
+                                   text-[0.5625rem] font-bold text-danger-txt pointer-events-none">
                         {t("photos.nsfw")}
                       </span>
                     </Show>
@@ -89,7 +90,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
             >
               {t("widgets.view_album")}
             </A>
-          </div>
+          </Card>
         </Show>
       </Show>
     </Show>

@@ -7,14 +7,15 @@ import { MdOutlineDownload, MdOutlineShare, MdOutlineClose } from "solid-icons/m
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
-import Modal from "@/shared/views/Modal";
+import { Modal, modalPanelClass } from "@ui/Modal";
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import { bbAlt, bbcodeToInsert } from "@/shared/editor/attachments/insertHelpers";
 import { wallAttach } from "@/modules/files/api";
 import type { JfItem } from "../api";
 import { statusText } from "../share";
-import { primaryPill, ghostPill, iconBtn } from "../ui";
+import { ghostPill } from "../ui";
 import { Motion, pop } from "../anim";
+import { Button, IconButton } from "@ui/Button";
 
 export default function CaptureDialog(props: { file: File; item: JfItem | undefined; onClose: () => void }) {
   const { t } = useI18n();
@@ -52,10 +53,10 @@ export default function CaptureDialog(props: { file: File; item: JfItem | undefi
       <Show when={!body()}>
         <Modal onClose={props.onClose} label={isVideo() ? t("jellyfin.clip") : t("jellyfin.screenshot")}
           class="z-[70] flex items-center justify-center p-4 bg-black/40">
-          <Motion.div {...pop} class="w-full max-w-2xl space-y-4 p-5 rounded-3xl bg-surface shadow-2xl">
+          <Motion.div {...pop} class={`${modalPanelClass("xl")} space-y-4 p-5`}>
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-txt">{isVideo() ? t("jellyfin.clip") : t("jellyfin.screenshot")}</h2>
-              <button type="button" class={iconBtn} title={t("jellyfin.close")} onClick={props.onClose}><MdOutlineClose size={20} /></button>
+              <IconButton label={t("jellyfin.close")} onClick={props.onClose}><MdOutlineClose size={20} /></IconButton>
             </div>
             <div class="rounded-2xl overflow-hidden bg-black">
               <Show when={isVideo()} fallback={<img src={url} alt="" class="w-full max-h-[60vh] object-contain" />}>
@@ -67,9 +68,9 @@ export default function CaptureDialog(props: { file: File; item: JfItem | undefi
               <a href={url} download={props.file.name} class={ghostPill}>
                 <MdOutlineDownload size={18} /> {t("jellyfin.download")}
               </a>
-              <button type="button" class={primaryPill} disabled={busy()} onClick={() => void share()}>
+              <Button disabled={busy()} onClick={() => void share()}>
                 <MdOutlineShare size={18} /> {busy() ? t("jellyfin.share_preparing") : t("jellyfin.share")}
-              </button>
+              </Button>
             </div>
           </Motion.div>
         </Modal>

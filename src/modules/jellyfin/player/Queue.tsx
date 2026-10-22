@@ -7,6 +7,7 @@ import { createDragReorder } from "@utsukta/spa-core/lib/useDragReorder";
 import { ticksToSeconds } from "../api";
 import { queue, current, playAt, removeFromQueue, reorderQueue, type QItem } from "../store";
 import { fmtTime } from "../ui";
+import { IconButton } from "@ui/Button";
 
 export default function Queue() {
   const { t } = useI18n();
@@ -35,10 +36,14 @@ export default function Queue() {
                 </span>
                 <span class="shrink-0 text-xs text-muted tabular-nums">{fmtTime(ticksToSeconds(q.RunTimeTicks))}</span>
               </button>
-              <button type="button" title={t("jellyfin.remove_from_queue")} onClick={() => removeFromQueue(q.qid)}
-                class="p-1.5 rounded-full text-muted/50 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-txt transition-opacity max-md:opacity-100">
+              <IconButton
+                label={t("jellyfin.remove_from_queue")}
+                size="sm"
+                class="opacity-0 group-hover:opacity-100 max-md:opacity-100"
+                onClick={() => removeFromQueue(q.qid)}
+              >
                 <MdFillClose size={14} />
-              </button>
+              </IconButton>
             </li>
           );
         }}

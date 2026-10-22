@@ -42,6 +42,8 @@ import {
   MdFillStyle,
   MdFillPoll,
 } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
+import { CountBadge } from "@ui/Badge";
 
 
 const ICON_MAP: Record<string, (size: number) => JSX.Element> = {
@@ -142,14 +144,7 @@ const NavItem: Component<Props> = (props) => {
         {getNavIcon(props.icon, 20)}
       </span>
       <span class="truncate leading-tight label">{label()}</span>
-      <Show when={props.badge?.()}>
-        {(n) => (
-          <span class="ml-auto shrink-0 min-w-[1.25rem] px-1 h-5 rounded-full bg-accent text-surface
-                       text-[0.625rem] font-bold flex items-center justify-center tabular-nums label">
-            {n()}
-          </span>
-        )}
-      </Show>
+      <CountBadge n={Number(props.badge?.() ?? 0)} class="ml-auto label" />
     </>
   );
 
@@ -183,18 +178,15 @@ const NavItem: Component<Props> = (props) => {
         classList={{ "opacity-50": props.dragging }}
       >
         <div class="flex-1 min-w-0">{link()}</div>
-        <button
-          type="button"
-          aria-label={t("nav.drag_reorder")}
-          title={t("nav.drag_reorder")}
+        <IconButton
+          label={t("nav.drag_reorder")}
+          size="sm"
+          class="shrink-0 touch-none"
           onPointerDown={props.onDragHandlePointerDown}
           onKeyDown={props.onDragHandleKeyDown}
-          class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-muted/60
-                 hover:bg-elevated hover:text-txt cursor-grab active:cursor-grabbing touch-none
-                 focus:outline-none focus:ring-2 focus:ring-accent transition-colors"
         >
           <MdOutlineDrag_indicator size={16} />
-        </button>
+        </IconButton>
       </div>
     </Show>
   );

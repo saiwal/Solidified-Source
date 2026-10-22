@@ -8,13 +8,14 @@
  */
 
 import { For, Show, type Component } from "solid-js";
+import { Badge } from "@ui/Badge";
 
 const CategoryChips: Component<{ categories?: string[] }> = (props) => (
   <Show when={props.categories?.length}>
     <div class="flex flex-wrap items-center gap-1">
       <For each={props.categories}>
         {(cat) => (
-          <span class="px-1.5 py-0.5 rounded bg-elevated text-xs text-txt">{cat}</span>
+          <Badge>{cat}</Badge>
         )}
       </For>
     </div>

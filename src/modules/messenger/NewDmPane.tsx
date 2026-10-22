@@ -76,7 +76,7 @@ export default function NewDmPane(props: { base: string }) {
         />
         <Show when={blocked().length}>
           <For each={blocked()}>
-            {(r) => <p class="text-xs text-red-500">{t("editor.dm_recipient_not_permitted", { name: r.name })}</p>}
+            {(r) => <p class="text-xs text-danger-txt">{t("editor.dm_recipient_not_permitted", { name: r.name })}</p>}
           </For>
         </Show>
         <input

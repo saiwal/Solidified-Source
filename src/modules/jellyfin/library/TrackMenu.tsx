@@ -2,22 +2,22 @@
 // Play on <device>. One popover instead of a row of icon buttons, so track rows
 // stay usable at phone width.
 import { For, Show, createSignal } from "solid-js";
-import { Portal } from "solid-js/web";
 import { useQuery, useQueryClient } from "@utsukta/spa-core/lib/query";
 import {
   MdFillMore_vert, MdFillQueue_play_next, MdFillPlaylist_add, MdFillRadio, MdFillCast, MdFillQueue_music,
   MdFillArrow_back, MdFillAdd,
 } from "solid-icons/md";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createPopover } from "@/shared/stream/filters/createPopover";
 import { listPlaylists, addToPlaylist, createPlaylist, type JellyfinSession, type JfItem } from "../api";
 import { playNext, enqueue } from "../store";
 import { playTargets, playOn } from "../remote";
 import { startMix } from "./mix";
 import { jfQuery } from "./common";
 import { Motion, fade } from "../anim";
+import { IconButton } from "@ui/Button";
+import { Menu, MenuItem, useMenu } from "@ui/Menu";
+import { Input } from "@ui/Field";
 
 export default function TrackMenu(props: {
   s: JellyfinSession;
@@ -34,22 +34,24 @@ export default function TrackMenu(props: {
 }) {
   const { t } = useI18n();
   const qc = useQueryClient();
-  const pop = createPopover({ placement: "bottom-end" });
+  const [open, setOpen] = createSignal(false);
   const [panel, setPanel] = createSignal<"main" | "playlists">("main");
   const [newName, setNewName] = createSignal("");
 
   const playlists = useQuery(() => ({
     queryKey: ["jellyfin", props.s.server, props.s.userId, "playlists"],
     queryFn: () => listPlaylists(props.s),
-    enabled: pop.open() && panel() === "playlists",
+    enabled: open() && panel() === "playlists",
     ...jfQuery,
   }));
 
-  const close = () => { pop.setOpen(false); setPanel("main"); setNewName(""); };
+  const onOpenChange = (o: boolean) => {
+    setOpen(o);
+    if (!o) { setPanel("main"); setNewName(""); }
+  };
   const forPlaylist = () => props.tracks.map((x) => x.Id);
 
   const addTo = async (id: string, name: string) => {
-    close();
     try {
       await addToPlaylist(props.s, id, forPlaylist());
       await qc.invalidateQueries({ queryKey: ["jellyfin", props.s.server, props.s.userId, "playlist", id] });
@@ -59,11 +61,7 @@ export default function TrackMenu(props: {
     }
   };
 
-  const create = async (e: Event) => {
-    e.preventDefault();
-    const name = newName().trim();
-    if (!name) return;
-    close();
+  const create = async (name: string) => {
     try {
       await createPlaylist(props.s, name, forPlaylist());
       await qc.invalidateQueries({ queryKey: ["jellyfin", props.s.server, props.s.userId, "playlists"] });
@@ -73,84 +71,98 @@ export default function TrackMenu(props: {
     }
   };
 
-  const item = "w-full flex items-center gap-3 text-left px-3 py-2 rounded-xl text-sm text-txt hover:bg-elevated/70";
-
   return (
-    <>
-      <span ref={pop.ref}>
-        <button type="button" title={t("jellyfin.more")} aria-label={t("jellyfin.more")}
-          onClick={() => (pop.open() ? close() : pop.setOpen(true))}
-          class="p-1 shrink-0 text-muted hover:text-txt">
+    <Menu
+      label={t("jellyfin.more")}
+      class="w-64 max-h-80 overflow-y-auto"
+      onOpenChange={onOpenChange}
+      trigger={(p) => (
+        <IconButton label={t("jellyfin.more")} size="sm" class="shrink-0" {...p}>
           <MdFillMore_vert size={18} />
-        </button>
-      </span>
-      <Show when={pop.open()}>
-        <Portal mount={topLayer()}>
-          <div ref={pop.floating} style={pop.style()}
-            class="z-50 w-64 max-h-80 overflow-y-auto rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2">
-            <Show when={panel()} keyed>{(_panel) => <Motion.div {...fade}>
-            <Show when={panel() === "main"} fallback={
-              <>
-                <button type="button" class={`${item} text-muted`} onClick={() => setPanel("main")}>
-                  <MdFillArrow_back size={16} /> {t("jellyfin.back")}
-                </button>
-                <Show when={playlists.data} fallback={<p class="px-2.5 py-1.5 text-xs text-muted">{t("jellyfin.loading")}</p>}>
-                  <For each={playlists.data!.Items}>
-                    {(pl) => (
-                      <button type="button" class={item} onClick={() => void addTo(pl.Id, pl.Name)}>
-                        <MdFillQueue_music size={16} class="text-muted shrink-0" />
-                        <span class="truncate">{pl.Name}</span>
-                      </button>
-                    )}
-                  </For>
-                </Show>
-                <form onSubmit={create} class="flex items-center gap-1 mt-1.5 pt-2 px-2">
-                  <input value={newName()} onInput={(e) => setNewName(e.currentTarget.value)}
-                    placeholder={t("jellyfin.new_playlist")}
-                    class="flex-1 min-w-0 bg-transparent border-0 border-b border-rim focus:border-accent outline-none px-1 py-1 text-sm text-txt" />
-                  <button type="submit" title={t("jellyfin.create")} class="p-1.5 rounded-full text-muted hover:text-txt hover:bg-elevated/70">
-                    <MdFillAdd size={16} />
-                  </button>
-                </form>
-              </>
-            }>
-              <button type="button" class={item} onClick={() => { close(); playNext(props.s, props.tracks); }}>
-                <MdFillQueue_play_next size={16} class="text-muted" /> {t("jellyfin.play_next")}
-              </button>
-              <button type="button" class={item} onClick={() => { close(); enqueue(props.s, props.tracks); }}>
-                <MdFillPlaylist_add size={16} class="text-muted" /> {t("jellyfin.add_to_queue")}
-              </button>
-              <button type="button" class={item} onClick={() => setPanel("playlists")}>
-                <MdFillQueue_music size={16} class="text-muted" /> {t("jellyfin.add_to_playlist")}
-              </button>
-              <Show when={props.mixSeed}>
-                <button type="button" class={item} onClick={() => { close(); void startMix(props.s, props.mixSeed!, t); }}>
-                  <MdFillRadio size={16} class="text-muted" /> {t("jellyfin.instant_mix")}
-                </button>
-              </Show>
-              <Show when={playTargets(props.s.id).length}>
-                <p class="px-3 pt-3 pb-1 text-xs text-muted">
-                  {t("jellyfin.play_on")}
-                </p>
-                <For each={playTargets(props.s.id)}>
-                  {(r) => (
-                    <button type="button" class={item} onClick={() => {
-                      close();
-                      playOn(r, props.playOnTracks ?? props.tracks, props.start ?? 0)
-                        .then(() => toast.success(t("jellyfin.play_on_sent", { device: r.device })))
-                        .catch(() => toast.error(t("jellyfin.play_on_failed", { device: r.device })));
-                    }}>
-                      <MdFillCast size={16} class="text-muted shrink-0" />
-                      <span class="truncate">{r.device}</span>
-                    </button>
-                  )}
-                </For>
-              </Show>
-            </Show>
-            </Motion.div>}</Show>
-          </div>
-        </Portal>
+        </IconButton>
+      )}
+    >
+      <Show when={panel()} keyed>{(_panel) => <Motion.div {...fade}>
+      <Show when={panel() === "main"} fallback={
+        <>
+          <MenuItem icon={<MdFillArrow_back size={16} />} class="text-muted!" keepOpen onClick={() => setPanel("main")}>
+            {t("jellyfin.back")}
+          </MenuItem>
+          <Show when={playlists.data} fallback={<p class="px-2.5 py-1.5 text-xs text-muted">{t("jellyfin.loading")}</p>}>
+            <For each={playlists.data!.Items}>
+              {(pl) => (
+                <MenuItem icon={<MdFillQueue_music size={16} />} onClick={() => void addTo(pl.Id, pl.Name)}>
+                  <span class="truncate">{pl.Name}</span>
+                </MenuItem>
+              )}
+            </For>
+          </Show>
+          <NewPlaylistForm name={newName()} setName={setNewName} onCreate={(n) => void create(n)} />
+        </>
+      }>
+        <MenuItem icon={<MdFillQueue_play_next size={16} />} onClick={() => playNext(props.s, props.tracks)}>
+          {t("jellyfin.play_next")}
+        </MenuItem>
+        <MenuItem icon={<MdFillPlaylist_add size={16} />} onClick={() => enqueue(props.s, props.tracks)}>
+          {t("jellyfin.add_to_queue")}
+        </MenuItem>
+        <MenuItem icon={<MdFillQueue_music size={16} />} keepOpen onClick={() => setPanel("playlists")}>
+          {t("jellyfin.add_to_playlist")}
+        </MenuItem>
+        <Show when={props.mixSeed}>
+          <MenuItem icon={<MdFillRadio size={16} />} onClick={() => void startMix(props.s, props.mixSeed!, t)}>
+            {t("jellyfin.instant_mix")}
+          </MenuItem>
+        </Show>
+        <Show when={playTargets(props.s.id).length}>
+          <p class="px-3 pt-3 pb-1 text-xs text-muted">
+            {t("jellyfin.play_on")}
+          </p>
+          <For each={playTargets(props.s.id)}>
+            {(r) => (
+              <MenuItem
+                icon={<MdFillCast size={16} />}
+                onClick={() => {
+                  playOn(r, props.playOnTracks ?? props.tracks, props.start ?? 0)
+                    .then(() => toast.success(t("jellyfin.play_on_sent", { device: r.device })))
+                    .catch(() => toast.error(t("jellyfin.play_on_failed", { device: r.device })));
+                }}
+              >
+                <span class="truncate">{r.device}</span>
+              </MenuItem>
+            )}
+          </For>
+        </Show>
       </Show>
-    </>
+      </Motion.div>}</Show>
+    </Menu>
+  );
+}
+
+// Inside the menu so it can close it on submit — a form isn't a MenuItem.
+function NewPlaylistForm(props: { name: string; setName: (v: string) => void; onCreate: (name: string) => void }) {
+  const { t } = useI18n();
+  const menu = useMenu();
+  return (
+    <form
+      class="flex items-center gap-1 mt-1.5 pt-2 px-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const name = props.name.trim();
+        if (!name) return;
+        menu.close();
+        props.onCreate(name);
+      }}
+    >
+      <Input
+        class="flex-1 min-w-0"
+        value={props.name}
+        onInput={(e) => props.setName(e.currentTarget.value)}
+        placeholder={t("jellyfin.new_playlist")}
+      />
+      <IconButton label={t("jellyfin.create")} size="sm" type="submit">
+        <MdFillAdd size={16} />
+      </IconButton>
+    </form>
   );
 }

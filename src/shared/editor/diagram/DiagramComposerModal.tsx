@@ -17,8 +17,9 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { renderMermaidSvg, renderMermaidToPngFile, unwrapDiagram, DiagramRenderError } from "./renderMermaidImage";
-import { MdOutlineClose } from "solid-icons/md";
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Textarea } from "@ui/Field";
 
 export interface DiagramInsert {
   source: string;
@@ -109,20 +110,13 @@ const DiagramComposerModal: Component<Props> = (props) => {
 
   const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[80]">
-      <div class="flex flex-col w-full max-w-2xl max-h-[90vh] rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden">
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold">{t("editor.diagram_modal_title")}</span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-            aria-label={t("layout.close")}
-          >
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </header>
-
+    <Modal onClose={props.onClose} class="z-[80]">
+      <ModalPanel
+        title={t("editor.diagram_modal_title")}
+        onClose={props.onClose}
+        size="xl"
+        class="flex flex-col max-h-[90vh] text-txt overflow-hidden"
+      >
         <div class="flex flex-col gap-3 p-4 overflow-y-auto">
           <div>
             <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
@@ -138,7 +132,8 @@ const DiagramComposerModal: Component<Props> = (props) => {
                 {t("editor.diagram_syntax_help")}
               </a>
             </div>
-            <textarea
+            <Textarea
+              class="w-full resize-y font-mono"
               id={`${titleId}-src`}
               ref={textareaRef}
               value={source()}
@@ -147,8 +142,6 @@ const DiagramComposerModal: Component<Props> = (props) => {
               placeholder={SAMPLE}
               rows={7}
               spellcheck={false}
-              class="w-full resize-y rounded-lg border border-rim bg-elevated px-3 py-2 text-sm font-mono
-                     text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
             />
           </div>
 
@@ -158,34 +151,24 @@ const DiagramComposerModal: Component<Props> = (props) => {
               <div ref={previewRef} class="text-sm text-gray-500 max-w-full [&_svg]:max-w-full [&_svg]:h-auto" />
             </div>
             <Show when={previewError()}>
-              <p class="mt-1 text-xs text-red-500 font-mono whitespace-pre-wrap break-words">{previewError()}</p>
+              <p class="mt-1 text-xs text-danger-txt font-mono whitespace-pre-wrap break-words">{previewError()}</p>
             </Show>
           </div>
 
           <Show when={error()}>
-            <p class="text-xs text-red-500 break-words">{error()}</p>
+            <p class="text-xs text-danger-txt break-words">{error()}</p>
           </Show>
         </div>
 
         <footer class="flex flex-wrap items-center justify-end gap-2 px-4 py-3 border-t border-rim bg-elevated shrink-0">
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("editor.cancel_btn")}
-          </button>
-          <button
-            type="button"
-            disabled={!source().trim() || !!busy()}
-            onClick={() => void insert()}
-            class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg
-                   hover:opacity-90 active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button size="sm" disabled={!source().trim() || !!busy()} onClick={() => void insert()}>
             {insertLabel()}
-          </button>
+          </Button>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

@@ -1,10 +1,11 @@
-import { createSignal, Show, type Component, createUniqueId } from "solid-js";
+import { createSignal, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useCategoryTags } from "@/shared/editor/components/useCategoryTags";
 import CategoryTagsField from "@/shared/editor/components/CategoryTagsField";
 import { getCategories, setCategories as saveCategories } from "../api";
 import type { FileMeta } from "../api";
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
 
 interface Props {
   item: FileMeta;
@@ -61,20 +62,14 @@ const CategoriesModal: Component<Props> = (props) => {
     }
   }
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="w-full max-w-md rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim">
-          <span id={titleId} class="text-sm font-semibold text-txt truncate">
-            {t("files_mod.categories")} — <span class="font-normal text-muted">
-              {bulk() ? t("files_mod.selected_count", { count: bulk()!.length }) : props.item.filename}
-            </span>
-          </span>
-          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2" aria-label={t("layout.close")}>
-            ×
-          </button>
-        </header>
+    <Modal onClose={props.onClose} class="z-[60]">
+      <ModalPanel
+        title={<>{t("files_mod.categories")} — <span class="font-normal text-muted"> {bulk() ? t("files_mod.selected_count", { count: bulk()!.length }) : props.item.filename} </span></>}
+        onClose={props.onClose}
+        size="md"
+        class="overflow-hidden"
+      >
         <div class="p-4">
           <Show when={loaded()} fallback={<p class="text-sm text-muted">…</p>}>
             <CategoryTagsField
@@ -95,27 +90,22 @@ const CategoriesModal: Component<Props> = (props) => {
             <p class="text-xs text-muted mt-2">{t("files_mod.categories_bulk_hint")}</p>
           </Show>
           <Show when={err()}>
-            <p class="text-sm text-red-500 mt-2">{err()}</p>
+            <p class="text-sm text-danger-txt mt-2">{err()}</p>
           </Show>
         </div>
         <footer class="flex gap-2 px-4 py-3 border-t border-rim bg-elevated">
-          <button
+          <Button
+            size="sm"
             onClick={save}
             disabled={busy() || !loaded() || (!!bulk() && !tags.categoryTags().length)}
-            class="px-4 py-1.5 rounded-lg bg-accent text-accent-fg text-sm
-                   disabled:opacity-50 hover:opacity-90 transition-opacity"
           >
             {busy() ? t("files_mod.saving") : t("files_mod.save")}
-          </button>
-          <button
-            onClick={props.onClose}
-            class="px-4 py-1.5 rounded-lg border border-rim text-sm text-muted
-                   hover:bg-overlay transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("files_mod.cancel")}
-          </button>
+          </Button>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

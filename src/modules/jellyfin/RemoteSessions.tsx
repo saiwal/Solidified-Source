@@ -9,13 +9,15 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { imageUrl, ticksToSeconds } from "./api";
 import { sessionFor, servers } from "./store";
 import { remotePlaying, remotePosition, remoteCommand, transferHere, type RemoteSession } from "./remote";
-import { Art, iconBtn } from "./ui";
+import { Art } from "./ui";
 import ShareButton from "./share";
+import { IconButton } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function DeviceList(props: { onAction?: () => void }) {
   const { t } = useI18n();
   return (
-    <Show when={remotePlaying().length} fallback={<p class="px-3 py-6 text-sm text-muted text-center">{t("jellyfin.no_devices")}</p>}>
+    <Show when={remotePlaying().length} fallback={<EmptyState size="sm" class="px-3">{t("jellyfin.no_devices")}</EmptyState>}>
       <ul class="space-y-1">
         {/* Keyed by session id: each poll builds fresh objects, and keying by
             object would remount every row — closing an open Share composer. */}
@@ -59,27 +61,30 @@ function DeviceRow(props: { r: RemoteSession; multiServer: boolean; onAction?: (
       <div class="mt-1 flex items-center justify-between">
         <div class="flex items-center">
           <Show when={props.r.controllable}>
-            <button type="button" class={iconBtn} title={t("jellyfin.previous")} onClick={() => void remoteCommand(props.r, "PreviousTrack")}>
+            <IconButton
+              label={t("jellyfin.previous")}
+              onClick={() => void remoteCommand(props.r, "PreviousTrack")}
+            >
               <MdFillSkip_previous size={18} />
-            </button>
-            <button type="button" class={iconBtn} title={props.r.paused ? t("jellyfin.play") : t("jellyfin.pause")}
-              onClick={() => void remoteCommand(props.r, "PlayPause")}>
+            </IconButton>
+            <IconButton
+              label={props.r.paused ? t("jellyfin.play") : t("jellyfin.pause")}
+              onClick={() => void remoteCommand(props.r, "PlayPause")}
+            >
               <Show when={!props.r.paused} fallback={<MdFillPlay_arrow size={20} />}><MdFillPause size={20} /></Show>
-            </button>
-            <button type="button" class={iconBtn} title={t("jellyfin.next")} onClick={() => void remoteCommand(props.r, "NextTrack")}>
+            </IconButton>
+            <IconButton label={t("jellyfin.next")} onClick={() => void remoteCommand(props.r, "NextTrack")}>
               <MdFillSkip_next size={18} />
-            </button>
+            </IconButton>
           </Show>
         </div>
         <div class="flex items-center">
-          <button type="button" class={iconBtn} title={t("jellyfin.transfer_here_title", { device: props.r.device })}
-            aria-label={t("jellyfin.transfer_here")}
-            onClick={() => {
+          <IconButton label={t("jellyfin.transfer_here_title", { device: props.r.device })} onClick={() => {
               props.onAction?.();
               transferHere(props.r, watch).catch(() => toast.error(t("jellyfin.err_load")));
             }}>
             <MdOutlinePhonelink size={18} />
-          </button>
+          </IconButton>
           <ShareButton session={s()} item={item()} icon />
         </div>
       </div>

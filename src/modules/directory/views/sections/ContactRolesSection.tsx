@@ -1,7 +1,6 @@
 import {
   createSignal,
   createMemo,
-  createEffect,
   For,
   Show,
 } from "solid-js";
@@ -23,11 +22,15 @@ import { MdFillAdd, MdFillClose, MdOutlineEdit, MdFillStar, MdFillStar_border } 
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
 import RolePermissionsModal from "./RolePermissionsModal";
 import SubPageContent from "@/shared/views/SubPageContent";
-import { Portal } from "solid-js/web";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import CardShell from "@/shared/stream/CardShell";
 import { resetReveal } from "@/shared/stream/reveal";
+import { Button, IconButton } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
+import { EmptyState } from "@ui/EmptyState";
+import { Menu, MenuItem } from "@ui/Menu";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
@@ -80,24 +83,18 @@ function CreateRoleForm(props: {
   return (
     <div class="rounded-lg border border-accent/30 bg-accent/5 p-3">
       <form onSubmit={handleCreate} class="flex gap-2">
-        <input
+        <Input
+          class="flex-1"
           autofocus
           type="text"
           placeholder={t("directory.role_name_placeholder")}
           value={newName()}
           onInput={(e) => setNewName(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Escape" && props.onDone()}
-          class="flex-1 text-sm px-3 py-1.5 rounded-lg border border-rim bg-surface text-txt
-                 focus:outline-none focus:border-accent hover:border-rim-strong"
         />
-        <button
-          type="submit"
-          disabled={busy() || !newName().trim()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm font-medium
-                 disabled:opacity-50 hover:opacity-90 transition-opacity shrink-0"
-        >
+        <Button size="sm" class="shrink-0" type="submit" disabled={busy() || !newName().trim()}>
           {busy() ? t("directory.creating_role") : t("directory.create_role")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={props.onDone}
@@ -124,8 +121,6 @@ function CustomRolePill(props: {
   onBulkAssigned: () => void;
 }) {
   const { t } = useI18n();
-  const { open, setOpen, toggle, floatStyle, setTriggerRef, setPanelRef } =
-    useDropdown({ placement: "bottom-start", offset: 4 });
   const [picking, setPicking] = createSignal(false);
   const [renaming, setRenaming] = createSignal(false);
   const [newName, setNewName] = createSignal("");
@@ -133,18 +128,8 @@ function CustomRolePill(props: {
   const [renameError, setRenameError] = createSignal<string | null>(null);
   const [groups] = createQueryResource("privacy-groups", fetchGroups);
 
-  function closeMenu() {
-    setOpen(false);
-  }
-
-  // Dismissing the menu (however it happens) drops the group-picker sub-state.
-  createEffect(() => {
-    if (!open()) setPicking(false);
-  });
-
   async function handleAssignToGroup(group: PrivacyGroup) {
     if (!confirm(t("directory.assign_to_group_confirm", { role: props.label, group: group.name }))) return;
-    closeMenu();
     setBusy(true);
     try {
       await assignPermcatToGroup(props.name, group.id);
@@ -155,7 +140,6 @@ function CustomRolePill(props: {
   }
 
   function startRename() {
-    setOpen(false);
     setNewName(props.label);
     setRenameError(null);
     setRenaming(true);
@@ -186,7 +170,6 @@ function CustomRolePill(props: {
   }
 
   async function handleDelete() {
-    setOpen(false);
     if (!confirm(`Delete role "${props.label}"?`)) return;
     setBusy(true);
     try {
@@ -210,7 +193,7 @@ function CustomRolePill(props: {
             <form
               onSubmit={commitRename}
               class={`flex items-center rounded-full border overflow-hidden bg-surface ${
-                renameError() ? "border-red-400" : "border-accent"
+                renameError() ? "border-danger" : "border-accent"
               }`}
             >
               <input
@@ -220,23 +203,15 @@ function CustomRolePill(props: {
                 onKeyDown={(e) => e.key === "Escape" && setRenaming(false)}
                 class="text-sm px-3 py-1 bg-transparent text-txt w-28 focus:outline-none"
               />
-              <button
-                type="submit"
-                disabled={busy()}
-                class="px-2 py-1 text-xs text-accent hover:bg-overlay transition-colors disabled:opacity-50"
-              >
+              <Button variant="ghost" size="sm" type="submit" disabled={busy()}>
                 ✓
-              </button>
-              <button
-                type="button"
-                onClick={() => setRenaming(false)}
-                class="px-2 py-1 text-xs text-muted hover:bg-overlay transition-colors"
-              >
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setRenaming(false)}>
                 ×
-              </button>
+              </Button>
             </form>
             <Show when={renameError()}>
-              <p class="text-xs text-red-500 px-1">{renameError()}</p>
+              <p class="text-xs text-danger-txt px-1">{renameError()}</p>
             </Show>
           </div>
         }
@@ -260,88 +235,58 @@ function CustomRolePill(props: {
           <div class={`w-px self-stretch ${divider()}`} />
 
           {/* Dropdown trigger */}
-          <button
-            ref={setTriggerRef}
-            onClick={toggle}
-            disabled={busy()}
-            class={`px-1.5 py-1 transition-colors disabled:opacity-50 ${
-              props.active ? "hover:bg-white/10" : "hover:bg-surface"
-            }`}
-            aria-label="Role actions"
+          <Menu
+            label="Role actions"
+            placement="bottom-start"
+            class="max-h-64 overflow-y-auto"
+            // Dismissing the menu (however it happens) drops the group-picker sub-state.
+            onOpenChange={(o) => { if (!o) setPicking(false); }}
+            trigger={(p) => (
+              <button
+                {...p}
+                disabled={busy()}
+                class={`px-1.5 py-1 transition-colors disabled:opacity-50 ${
+                  props.active ? "hover:bg-white/10" : "hover:bg-surface"
+                }`}
+                aria-label="Role actions"
+              >
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            )}
           >
-            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
+            <Show
+              when={!picking()}
+              fallback={
+                <>
+                  <p class="px-3 py-1.5 text-xs text-muted border-b border-rim mb-1">
+                    {t("directory.assign_to_group")}
+                  </p>
+                  <Show
+                    when={(groups() ?? []).length > 0}
+                    fallback={<p class="px-3 py-1.5 text-xs text-muted">{t("directory.no_privacy_groups_short")}</p>}
+                  >
+                    <For each={groups() ?? []}>
+                      {(g) => (
+                        <MenuItem onClick={() => handleAssignToGroup(g)} disabled={busy()}>
+                          {g.name} <span class="text-muted">({g.member_count})</span>
+                        </MenuItem>
+                      )}
+                    </For>
+                  </Show>
+                </>
+              }
+            >
+              <MenuItem onClick={() => props.onEditPerms(props.name, props.label)}>{t("directory.edit_permissions")}</MenuItem>
+              <MenuItem keepOpen onClick={() => setPicking(true)}>{t("directory.assign_to_group")}</MenuItem>
+              <MenuItem onClick={startRename}>Rename</MenuItem>
+              <MenuItem danger onClick={handleDelete}>Delete</MenuItem>
+            </Show>
+          </Menu>
         </div>
       </Show>
 
-      {/* Dropdown menu */}
-      <Show when={open()}>
-      <Portal mount={topLayer()}>
-        <div
-          ref={setPanelRef}
-          style={floatStyle()}
-          class="bg-surface border border-rim rounded-lg shadow-lg z-50 py-1 min-w-[160px] max-h-64 overflow-y-auto"
-        >
-          <Show
-            when={!picking()}
-            fallback={
-              <>
-                <div class="px-3 py-1.5 text-xs text-muted border-b border-rim">
-                  {t("directory.assign_to_group")}
-                </div>
-                <Show
-                  when={(groups() ?? []).length > 0}
-                  fallback={
-                    <div class="px-3 py-1.5 text-xs text-muted">
-                      {t("directory.no_privacy_groups_short")}
-                    </div>
-                  }
-                >
-                  <For each={groups() ?? []}>
-                    {(g) => (
-                      <button
-                        onClick={() => handleAssignToGroup(g)}
-                        disabled={busy()}
-                        class="w-full text-left px-3 py-1.5 text-xs text-txt hover:bg-overlay transition-colors disabled:opacity-50"
-                      >
-                        {g.name} <span class="text-muted">({g.member_count})</span>
-                      </button>
-                    )}
-                  </For>
-                </Show>
-              </>
-            }
-          >
-            <button
-              onClick={() => { setOpen(false); props.onEditPerms(props.name, props.label); }}
-              class="w-full text-left px-3 py-1.5 text-xs text-txt hover:bg-overlay transition-colors"
-            >
-              {t("directory.edit_permissions")}
-            </button>
-            <button
-              onClick={() => setPicking(true)}
-              class="w-full text-left px-3 py-1.5 text-xs text-txt hover:bg-overlay transition-colors"
-            >
-              {t("directory.assign_to_group")}
-            </button>
-            <button
-              onClick={startRename}
-              class="w-full text-left px-3 py-1.5 text-xs text-txt hover:bg-overlay transition-colors"
-            >
-              Rename
-            </button>
-            <button
-              onClick={handleDelete}
-              class="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-overlay transition-colors"
-            >
-              Delete
-            </button>
-          </Show>
-        </div>
-      </Portal>
-      </Show>
     </div>
   );
 }
@@ -371,13 +316,9 @@ function RoleCard(props: {
 
   return (
     <>
-    <div class="rounded-lg border border-rim bg-surface flex items-center gap-3 p-3">
+    <Card class="flex items-center gap-3 p-3">
       <a href={props.conn.url} target="_blank" rel="noopener" class="shrink-0">
-        <img
-          src={props.conn.photo}
-          alt={props.conn.name}
-          class="w-11 h-11 rounded-full object-cover ring-1 ring-rim bg-overlay"
-        />
+        <Avatar src={props.conn.photo} name={props.conn.name} size={11} class="ring-1 ring-rim" />
       </a>
 
       <div class="flex-1 min-w-0">
@@ -390,13 +331,13 @@ function RoleCard(props: {
           >
             {props.conn.name}
           </a>
-          <span class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium bg-accent-muted text-accent">
+          <Badge tone="accent" class="shrink-0">
             {networkLabel()}
-          </span>
+          </Badge>
           <Show when={props.conn.is_forum}>
-            <span class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium bg-accent-muted text-accent">
+            <Badge tone="accent" class="shrink-0">
               {t("directory.forum")}
-            </span>
+            </Badge>
           </Show>
         </div>
         <p class="text-xs text-muted truncate mt-0.5">
@@ -405,13 +346,7 @@ function RoleCard(props: {
       </div>
 
       {/* Role selector */}
-      <select
-        onChange={handleRoleChange}
-        disabled={busy()}
-        class="text-xs px-2 py-1.5 rounded-lg border border-rim bg-surface text-txt
-               focus:outline-none hover:border-rim-strong transition-colors
-               disabled:opacity-50 shrink-0"
-      >
+      <Select size="sm" class="shrink-0" onChange={handleRoleChange} disabled={busy()}>
         <For each={props.roleOptions}>
           {(r) => (
             <option value={r.name} selected={r.name === (props.conn.role ?? "")}>
@@ -419,16 +354,12 @@ function RoleCard(props: {
             </option>
           )}
         </For>
-      </select>
+      </Select>
 
-      <button
-        onClick={() => setEditOpen(true)}
-        class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
-        title={t("directory.edit")}
-      >
+      <IconButton label={t("directory.edit")} size="sm" class="shrink-0" onClick={() => setEditOpen(true)}>
         <MdOutlineEdit size={14} />
-      </button>
-    </div>
+      </IconButton>
+    </Card>
 
     <Show when={editOpen()}>
       <ConnectionEditorModal
@@ -451,14 +382,14 @@ function Skeleton() {
     <div class="space-y-2 animate-pulse">
       <For each={Array(6).fill(0)}>
         {() => (
-          <div class="rounded-lg border border-rim bg-surface p-3 flex items-center gap-3">
+          <Card class="p-3 flex items-center gap-3">
             <div class="w-11 h-11 rounded-full bg-overlay shrink-0" />
             <div class="flex-1 space-y-2">
               <div class="h-3.5 bg-overlay rounded w-1/3" />
               <div class="h-3 bg-overlay rounded w-1/2" />
             </div>
             <div class="h-7 w-24 bg-overlay rounded-lg shrink-0" />
-          </div>
+          </Card>
         )}
       </For>
     </div>
@@ -595,7 +526,7 @@ export default function ContactRolesSection() {
         <Show
           when={(connections() ?? []).length > 0}
           fallback={
-            <p class="py-8 text-center text-sm text-muted">No connections found.</p>
+            <EmptyState>No connections found.</EmptyState>
           }
         >
           {/* Role filter pills — custom roles get a split button */}

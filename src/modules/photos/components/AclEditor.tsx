@@ -4,6 +4,7 @@ import type { AclEntry } from "@/shared/editor/components/AclPicker";
 import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclPayload, type AclMode } from "@/shared/editor/components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { fetchAcl, saveAcl } from "../api/api";
+import { Button } from "@ui/Button";
 
 export default function AclEditor(props: {
   nick: string;
@@ -82,7 +83,7 @@ export default function AclEditor(props: {
         />
 
         <Show when={error()}>
-          <p class="text-xs text-red-500">{error()}</p>
+          <p class="text-xs text-danger-txt">{error()}</p>
         </Show>
 
         <div class="flex items-center gap-2 pt-1">
@@ -94,12 +95,9 @@ export default function AclEditor(props: {
           >
             {saving() ? t("photos.acl_saving") : t("photos.acl_save")}
           </button>
-          <button
-            onClick={props.onClose}
-            class="px-2 py-1.5 rounded-lg text-xs text-muted hover:text-txt transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("photos.cancel")}
-          </button>
+          </Button>
         </div>
       </Show>
     </div>

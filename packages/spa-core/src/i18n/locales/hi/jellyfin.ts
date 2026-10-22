@@ -159,6 +159,7 @@ export const jellyfin: RawDictionary["jellyfin"] = {
   tab_party: "पार्टी",
   section_music: "संगीत",
   section_video: "वीडियो",
+  seasons: "सीज़न",
   add_server_plain: "सर्वर जोड़ें",
   sign_out_of: "{{server}} से साइन आउट करें",
   album_count: "{{n}} एल्बम",

@@ -21,7 +21,7 @@ import { draftSavedAt } from "../store/createComposerStore";
 import { MdOutlineArticle, MdOutlineCalendar_today, MdOutlineChat, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
 
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 // Shared modal shell for the compose surfaces (post, DM, article, note) —
 // replaces ~5 near-duplicate Portal/backdrop/dialog implementations. Opens
 // at a fixed, generous height (not shrink-to-content) so RichEditor's `fill`

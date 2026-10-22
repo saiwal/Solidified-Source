@@ -8,7 +8,7 @@
 import { Show, For, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { LANGUAGE_CODES, languageLabel } from "@utsukta/spa-core/lib/languages";
-import { underlineFieldClass } from "../lib/fieldStyles";
+import { Select } from "@ui/Field";
 
 export interface LanguageFieldProps {
   value: () => string;
@@ -27,16 +27,12 @@ const LanguageField: Component<LanguageFieldProps> = (props) => {
       <Show when={!props.hideLabel}>
         <label class="block text-xs text-muted mb-1">{t("editor.language_label")}</label>
       </Show>
-      <select
-        value={props.value()}
-        onChange={(e) => props.onInput(e.currentTarget.value)}
-        class={`w-full bg-transparent px-0 py-1.5 text-sm text-txt ${underlineFieldClass}`}
-      >
+      <Select class="w-full" value={props.value()} onChange={(e) => props.onInput(e.currentTarget.value)}>
         <option value="" disabled>{t("editor.language_placeholder")}</option>
         <For each={codes()}>
           {(code) => <option value={code}>{languageLabel(code, locale())}</option>}
         </For>
-      </select>
+      </Select>
     </div>
   );
 };

@@ -1,11 +1,11 @@
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import { createResource, createSignal, For, lazy, Show, createUniqueId } from "solid-js";
+import { createResource, createSignal, For, lazy, Show } from "solid-js";
 import { useParams, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { fetchProfile, saveProfile, uploadPhoto, type CustomProfileField } from "../api/api";
 import { fetchPhotoImage, type Photo } from "@/modules/photos/api/api";
-import { Section, Toggle, inputClass } from "@/modules/settings/store/FormHelpers";
+import { Section } from "@/modules/settings/store/FormHelpers";
 import PhotosPicker from "@/shared/editor/attachments/picker/PhotosPicker";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import RichEditor from "@/shared/editor/core/RichEditor";
@@ -13,9 +13,13 @@ import SourceToggleButton from "@/shared/editor/components/SourceToggleButton";
 import { CAPABILITIES } from "@/shared/editor/types/editor.types";
 import type { EditorTab } from "@/shared/editor/types/editor.types";
 import { isAnimatedImage } from "@utsukta/spa-core/lib/isAnimatedImage";
-import { MdOutlineClose } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Select, Textarea } from "@ui/Field";
+import { Toggle } from "@ui/Toggle";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
 // Lazy-loaded so Filerobot + React don't inflate the profile chunk
 const ImageEditor = isolate(lazy(() => import("@/shared/views/ImageEditor")));
 
@@ -249,7 +253,7 @@ export default function ProfileEditView() {
 
             {/* Cover + avatar header — same card geometry as the
                 channel.details widget (channel/views/ProfileView.tsx) */}
-            <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
+            <Card raised class="overflow-hidden">
               {/* Cover photo */}
               <div
                 class="relative w-full bg-elevated group/cover"
@@ -291,7 +295,7 @@ export default function ProfileEditView() {
                     </>
                   }>
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 text-white text-sm">
-                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <Spinner size="md" class="text-white" />
                       {t("profiles.uploading")}
                     </div>
                   </Show>
@@ -315,25 +319,23 @@ export default function ProfileEditView() {
                               opacity-100 md:opacity-0 md:group-hover/avatar:opacity-100 transition-opacity bg-black/50">
                     <Show when={avatarUploading()} fallback={
                       <>
-                        <button
-                          type="button"
+                        <IconButton
+                          label={t("profiles.upload_photo")}
+                          size="sm"
                           onClick={() => pickFile("avatar")}
-                          class="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-                          aria-label={t("profiles.upload_photo")}
                         >
                           <CameraIcon class="w-4 h-4 text-white" />
-                        </button>
-                        <button
-                          type="button"
+                        </IconButton>
+                        <IconButton
+                          label={t("profiles.choose_from_library")}
+                          size="sm"
                           onClick={() => setAvatarPickerOpen(true)}
-                          class="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-                          aria-label={t("profiles.choose_from_library")}
                         >
                           <GalleryIcon class="w-4 h-4 text-white" />
-                        </button>
+                        </IconButton>
                       </>
                     }>
-                      <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <Spinner size="lg" class="text-white" />
                     </Show>
                   </div>
                 </div>
@@ -346,19 +348,24 @@ export default function ProfileEditView() {
                   <p class="text-xs text-muted mt-0.5 italic">{p().pdesc}</p>
                 </Show>
               </div>
-            </div>
+            </Card>
 
             {/* Profile identity */}
             <Section title={t("profiles.group_basic")}>
               <Field label={t("profiles.profile_name_label")} hint={t("profiles.profile_name_hint")}>
-                <input type="text" name="profile_name" value={p().profile_name ?? ""} class={inputClass} />
+                <Input class="w-full" type="text" name="profile_name" value={p().profile_name ?? ""} />
               </Field>
               <Field label={t("profiles.fullname")}>
-                <input type="text" name="fullname" value={p().fullname ?? ""} class={inputClass} />
+                <Input class="w-full" type="text" name="fullname" value={p().fullname ?? ""} />
               </Field>
               <Field label={t("profiles.pdesc")}>
-                <input type="text" name="pdesc" value={p().pdesc ?? ""}
-                  placeholder={t("profiles.pdesc_placeholder")} class={inputClass} />
+                <Input
+                  class="w-full"
+                  type="text"
+                  name="pdesc"
+                  value={p().pdesc ?? ""}
+                  placeholder={t("profiles.pdesc_placeholder")}
+                />
               </Field>
               <Field label={t("profiles.about")} hint={t("profiles.about_hint")}>
                 <RichEditor
@@ -379,7 +386,7 @@ export default function ProfileEditView() {
                 </div>
               </Field>
               <Field label={t("profiles.keywords")} hint={t("profiles.keywords_hint")}>
-                <input type="text" name="keywords" value={p().keywords ?? ""} class={inputClass} />
+                <Input class="w-full" type="text" name="keywords" value={p().keywords ?? ""} />
               </Field>
               <Toggle
                 name="hide_friends"
@@ -399,10 +406,10 @@ export default function ProfileEditView() {
             <Section title={t("profiles.group_personal")}>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t("profiles.gender")}>
-                  <input type="text" name="gender" value={p().gender ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="gender" value={p().gender ?? ""} />
                 </Field>
                 <Field label={t("profiles.dob")} hint={t("profiles.dob_hint")}>
-                  <input type="date" name="dob_date" value={dobDateValue(p().dob)} class={inputClass} />
+                  <Input class="w-full" type="date" name="dob_date" value={dobDateValue(p().dob)} />
                   <label class="flex items-center gap-2 mt-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -415,22 +422,22 @@ export default function ProfileEditView() {
                   </label>
                 </Field>
                 <Field label={t("profiles.hometown")}>
-                  <input type="text" name="hometown" value={p().hometown ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="hometown" value={p().hometown ?? ""} />
                 </Field>
                 <Field label={t("profiles.homepage")}>
-                  <input type="url" name="homepage" value={p().homepage ?? ""} class={inputClass} />
+                  <Input class="w-full" type="url" name="homepage" value={p().homepage ?? ""} />
                 </Field>
                 <Field label={t("profiles.marital")}>
-                  <input type="text" name="marital" value={p().marital ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="marital" value={p().marital ?? ""} />
                 </Field>
                 <Field label={t("profiles.sexual")}>
-                  <input type="text" name="sexual" value={p().sexual ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="sexual" value={p().sexual ?? ""} />
                 </Field>
                 <Field label={t("profiles.politic")}>
-                  <input type="text" name="politic" value={p().politic ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="politic" value={p().politic ?? ""} />
                 </Field>
                 <Field label={t("profiles.religion")}>
-                  <input type="text" name="religion" value={p().religion ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="religion" value={p().religion ?? ""} />
                 </Field>
               </div>
             </Section>
@@ -439,16 +446,16 @@ export default function ProfileEditView() {
             <Section title={t("profiles.group_interests")}>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t("profiles.interest")}>
-                  <input type="text" name="interest" value={p().interest ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="interest" value={p().interest ?? ""} />
                 </Field>
                 <Field label={t("profiles.romance")}>
-                  <input type="text" name="romance" value={p().romance ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="romance" value={p().romance ?? ""} />
                 </Field>
                 <Field label={t("profiles.likes")}>
-                  <input type="text" name="likes" value={p().likes ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="likes" value={p().likes ?? ""} />
                 </Field>
                 <Field label={t("profiles.dislikes")}>
-                  <input type="text" name="dislikes" value={p().dislikes ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="dislikes" value={p().dislikes ?? ""} />
                 </Field>
               </div>
             </Section>
@@ -457,16 +464,16 @@ export default function ProfileEditView() {
             <Section title={t("profiles.group_culture")}>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t("profiles.music")}>
-                  <input type="text" name="music" value={p().music ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="music" value={p().music ?? ""} />
                 </Field>
                 <Field label={t("profiles.book")}>
-                  <input type="text" name="book" value={p().book ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="book" value={p().book ?? ""} />
                 </Field>
                 <Field label={t("profiles.tv")}>
-                  <input type="text" name="tv" value={p().tv ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="tv" value={p().tv ?? ""} />
                 </Field>
                 <Field label={t("profiles.film")}>
-                  <input type="text" name="film" value={p().film ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="film" value={p().film ?? ""} />
                 </Field>
               </div>
             </Section>
@@ -475,10 +482,10 @@ export default function ProfileEditView() {
             <Section title={t("profiles.group_work")}>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label={t("profiles.employment")}>
-                  <input type="text" name="employment" value={p().employment ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="employment" value={p().employment ?? ""} />
                 </Field>
                 <Field label={t("profiles.education")}>
-                  <input type="text" name="education" value={p().education ?? ""} class={inputClass} />
+                  <Input class="w-full" type="text" name="education" value={p().education ?? ""} />
                 </Field>
               </div>
             </Section>
@@ -486,10 +493,10 @@ export default function ProfileEditView() {
             {/* Contact */}
             <Section title={t("profiles.group_contact")}>
               <Field label={t("profiles.contact")}>
-                <input type="text" name="contact" value={p().contact ?? ""} class={inputClass} />
+                <Input class="w-full" type="text" name="contact" value={p().contact ?? ""} />
               </Field>
               <Field label={t("profiles.channels")}>
-                <input type="text" name="channels" value={p().channels ?? ""} class={inputClass} />
+                <Input class="w-full" type="text" name="channels" value={p().channels ?? ""} />
               </Field>
             </Section>
 
@@ -505,14 +512,9 @@ export default function ProfileEditView() {
             </Show>
 
             <div class="flex items-center gap-3 pt-2 border-t border-rim">
-              <button
-                type="submit"
-                disabled={saving()}
-                class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                       hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-              >
+              <Button type="submit" disabled={saving()}>
                 {saving() ? t("profiles.saving") : t("profiles.save")}
-              </button>
+              </Button>
               <Show when={!p().is_default}>
                 <span class="text-xs text-muted">{t("profiles.profile_name_hint")}</span>
               </Show>
@@ -541,22 +543,13 @@ function ProfilePhotoPickerModal(props: {
     setSelectedPhoto((prev) => prev?.resource_id === photo.resource_id ? null : photo);
   }
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="flex flex-col w-full max-w-3xl h-[85vh] bg-surface border border-rim rounded-xl shadow-2xl overflow-hidden">
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold text-txt">{t("profiles.photo_picker_title")}</span>
-          <button
-            type="button"
-            onClick={props.onClose}
-            class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-          
-          aria-label={t("layout.close")}>
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </header>
-
+    <Modal onClose={props.onClose} class="z-[60]">
+      <ModalPanel
+        title={t("profiles.photo_picker_title")}
+        onClose={props.onClose}
+        class="flex flex-col max-w-3xl h-[85vh] overflow-hidden"
+      >
         <div class="flex-1 overflow-hidden min-h-0 p-4">
           <PhotosPicker nick={props.nick} selected={selectedSet} onToggle={handleToggle} />
         </div>
@@ -568,25 +561,19 @@ function ProfilePhotoPickerModal(props: {
             </Show>
           </span>
           <div class="flex gap-2">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-surface transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               {t("editor.cancel_btn")}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              size="sm"
               disabled={!selectedPhoto()}
               onClick={() => { const p = selectedPhoto(); if (p) props.onSelect(p); }}
-              class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
             >
               {t("profiles.use_this_photo")}
-            </button>
+            </Button>
           </div>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 }
@@ -631,17 +618,6 @@ function UploadIcon(props: { class?: string }) {
   );
 }
 
-function Field(props: { label: string; hint?: string; children: any }) {
-  return (
-    <div class="space-y-1.5">
-      <label class="block text-sm font-medium text-txt">{props.label}</label>
-      {props.children}
-      <Show when={props.hint}>
-        <p class="text-xs text-muted">{props.hint}</p>
-      </Show>
-    </div>
-  );
-}
 
 // field_type comes from profdef; anything unrecognised falls back to a text
 // input. The checkbox gets a paired hidden input so unchecking clears the
@@ -661,14 +637,14 @@ function CustomField(props: { field: CustomProfileField }) {
               // steps — fall back rather than render an empty dropdown
               <Show
                 when={f.type === "select" && f.options.length > 0}
-                fallback={<input type="text" name={f.name} value={f.value} class={inputClass} />}
+                fallback={<Input class="w-full" type="text" name={f.name} value={f.value} />}
               >
-                <select name={f.name} value={f.value} class={inputClass}>
+                <Select class="w-full" name={f.name} value={f.value}>
                   <option value="">—</option>
                   <For each={f.options.includes(f.value) || !f.value ? f.options : [f.value, ...f.options]}>
                     {(o) => <option value={o} selected={o === f.value}>{o}</option>}
                   </For>
-                </select>
+                </Select>
               </Show>
             }
           >
@@ -685,7 +661,7 @@ function CustomField(props: { field: CustomProfileField }) {
           </Show>
         }
       >
-        <textarea name={f.name} rows={3} value={f.value} class={inputClass} />
+        <Textarea class="w-full" name={f.name} rows={3} value={f.value} />
       </Show>
     </Field>
   );
@@ -694,7 +670,7 @@ function CustomField(props: { field: CustomProfileField }) {
 function FormSkeleton() {
   return (
     <div class="space-y-8 animate-pulse">
-      <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
+      <Card raised class="overflow-hidden">
         <div class="relative w-full bg-elevated" style="aspect-ratio: 3 / 1">
           <div class="absolute -bottom-10 left-5 w-20 h-20 rounded-full ring-4 ring-surface bg-elevated" />
         </div>
@@ -702,7 +678,7 @@ function FormSkeleton() {
           <div class="h-5 w-36 rounded bg-elevated" />
           <div class="h-3 w-24 rounded bg-elevated" />
         </div>
-      </div>
+      </Card>
       {[...Array(3)].map(() => (
         <div class="space-y-3">
           <div class="h-3.5 w-24 rounded bg-elevated" />

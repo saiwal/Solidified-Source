@@ -10,13 +10,14 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchCard } from "../api";
 import CardFace from "../components/CardFace";
+import { Card } from "@ui/Card";
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }

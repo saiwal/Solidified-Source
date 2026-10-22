@@ -7,16 +7,19 @@ import { useSearchParams } from "@solidjs/router";
 import { MdFillSearch, MdFillClose, MdOutlineDevices, MdOutlineMore_horiz, MdFillCheck, MdFillAdd, MdOutlineSettings, MdOutlineLogout, MdOutlineCloud_off } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { createPopover } from "@/shared/stream/filters/createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { session, servers, isConnected, adding, setAdding, setActive, signOut, hubStored, forgetOnHub } from "../store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { remotePlaying, useRemotePolling } from "../remote";
 import { setSettingsOpen } from "../settings";
 import { useSection, PAGE_PARAMS, type Section } from "../chrome/section";
 import DeviceList from "../RemoteSessions";
+import { IconButton, iconButtonClass } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
+import { Tabs } from "@ui/Tabs";
 
 const panel = "z-50 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2";
-const menuItem = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-txt hover:bg-elevated/70 text-left";
 
 export default function JellyfinHeaderWidget() {
   const { t } = useI18n();
@@ -39,10 +42,9 @@ export default function JellyfinHeaderWidget() {
   const closeSearch = () => { setSearching(false); setInput(""); if (activeSearch()) setParams({ search: undefined }); };
 
   const devices = createPopover({ placement: "bottom-end" });
-  const more = createPopover({ placement: "bottom-end" });
 
   // Same vocabulary as the Cards header: bordered square icon buttons
-  const squareBtn = "p-1.5 rounded-lg border border-rim bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors";
+  const squareBtn = iconButtonClass("square");
 
   return (
     <div class="max-w-5xl mx-auto">
@@ -50,17 +52,16 @@ export default function JellyfinHeaderWidget() {
         <h1 class="text-xl font-bold text-txt">{isConnected() && !adding() ? session()?.name || "Jellyfin" : "Jellyfin"}</h1>
 
         <Show when={isConnected() && !adding()}>
-          <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
-            <For each={[["music", "jellyfin.section_music"] as const, ["video", "jellyfin.section_video"] as const]}>
-              {([key, label]) => (
-                <button type="button" aria-pressed={section() === key} onClick={() => go(key as Section)}
-                  class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
-                    ${section() === key ? "bg-accent text-accent-fg font-semibold" : "text-muted hover:text-txt"}`}>
-                  {t(label)}
-                </button>
-              )}
-            </For>
-          </div>
+          <Tabs
+            label={t("nav.jellyfin")}
+            class="mx-auto"
+            value={section() as Section}
+            onChange={go}
+            items={[
+              { value: "music" as Section, label: t("jellyfin.section_music") },
+              { value: "video" as Section, label: t("jellyfin.section_video") },
+            ]}
+          />
 
           <div class="flex items-center gap-1.5">
             <Show when={searching()} fallback={
@@ -72,18 +73,22 @@ export default function JellyfinHeaderWidget() {
               </button>
             }>
               <form onSubmit={submit} class="flex items-center gap-1">
-                <input ref={field} type="search" value={input()} onInput={(e) => setInput(e.currentTarget.value)}
+                <Input
+                  class="w-36"
+                  ref={field}
+                  type="search"
+                  value={input()}
+                  onInput={(e) => setInput(e.currentTarget.value)}
                   onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }}
-                  placeholder={t("jellyfin.search_placeholder")} aria-label={t("jellyfin.search")}
-                  class="w-36 px-2 py-1 text-sm rounded-lg border border-rim bg-surface text-txt outline-none focus:border-accent" />
-                <button type="submit" title={t("jellyfin.search")}
-                  class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors">
+                  placeholder={t("jellyfin.search_placeholder")}
+                  aria-label={t("jellyfin.search")}
+                />
+                <IconButton label={t("jellyfin.search")} variant="square" type="submit">
                   <MdFillSearch size={15} />
-                </button>
-                <button type="button" title={t("jellyfin.clear_search")} onClick={closeSearch}
-                  class="p-1.5 text-muted hover:text-txt transition-colors">
+                </IconButton>
+                <IconButton label={t("jellyfin.clear_search")} size="sm" onClick={closeSearch}>
                   <MdFillClose size={15} />
-                </button>
+                </IconButton>
               </form>
             </Show>
 
@@ -97,12 +102,59 @@ export default function JellyfinHeaderWidget() {
               </Show>
             </span>
 
-            <span ref={more.ref}>
-              <button type="button" class={squareBtn} title={t("jellyfin.more")} aria-label={t("jellyfin.more")}
-                aria-expanded={more.open()} onClick={() => more.setOpen(!more.open())}>
-                <MdOutlineMore_horiz size={15} />
-              </button>
-            </span>
+            <Menu
+              label={t("jellyfin.more")}
+              class="w-64"
+              trigger={(p) => (
+                <IconButton label={t("jellyfin.more")} variant="square" {...p}>
+                  <MdOutlineMore_horiz size={15} />
+                </IconButton>
+              )}
+            >
+              <For each={servers()}>
+                {(s) => (
+                  <MenuItem
+                    icon={s.id === session()?.id ? <MdFillCheck size={16} class="text-accent-txt" /> : <span />}
+                    onClick={() => {
+                      if (s.id === session()?.id) return;
+                      setActive(s.id);
+                      setParams({ ...PAGE_PARAMS, section: params.section });
+                    }}
+                  >
+                    <span class="min-w-0">
+                      <span class="block truncate">{s.name}</span>
+                      <span class="block text-xs text-muted truncate">{s.userName}</span>
+                    </span>
+                  </MenuItem>
+                )}
+              </For>
+              <MenuItem icon={<MdFillAdd size={16} />} onClick={() => setAdding(true)}>
+                {t("jellyfin.add_server_plain")}
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<MdOutlineSettings size={16} />} onClick={() => setSettingsOpen(true)}>
+                {t("jellyfin.settings")}
+              </MenuItem>
+              <MenuItem
+                icon={<MdOutlineLogout size={16} />}
+                title={t("jellyfin.disconnect_title", { user: session()?.userName ?? "", server: session()?.name ?? "" })}
+                onClick={() => { const s = session(); if (s) void signOut(s.id); }}
+              >
+                <span class="truncate">{t("jellyfin.sign_out_of", { server: session()?.name ?? "" })}</span>
+              </MenuItem>
+              <Show when={session() && hubStored().has(session()!.id)}>
+                <MenuItem
+                  icon={<MdOutlineCloud_off size={16} />}
+                  title={t("jellyfin.hub_forget_help")}
+                  onClick={() => {
+                    const s = session();
+                    if (s) forgetOnHub(s.id).then(() => toast.success(t("jellyfin.hub_forgotten"))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
+                  }}
+                >
+                  <span class="truncate">{t("jellyfin.hub_forget")}</span>
+                </MenuItem>
+              </Show>
+            </Menu>
           </div>
         </Show>
       </div>
@@ -112,53 +164,6 @@ export default function JellyfinHeaderWidget() {
           <div ref={devices.floating} style={devices.style()} class={`${panel} w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto`}>
             <p class="px-3 pt-1 pb-2 text-sm text-muted">{t("jellyfin.other_devices")}</p>
             <DeviceList onAction={() => devices.setOpen(false)} />
-          </div>
-        </Portal>
-      </Show>
-
-      <Show when={more.open()}>
-        <Portal mount={topLayer()}>
-          <div ref={more.floating} style={more.style()} class={`${panel} w-64`}>
-            <For each={servers()}>
-              {(s) => (
-                <button type="button" class={menuItem} onClick={() => {
-                  more.setOpen(false);
-                  if (s.id === session()?.id) return;
-                  setActive(s.id);
-                  setParams({ ...PAGE_PARAMS, section: params.section });
-                }}>
-                  <span class="w-4 shrink-0 text-accent-txt">{s.id === session()?.id ? <MdFillCheck size={16} /> : null}</span>
-                  <span class="min-w-0">
-                    <span class="block truncate">{s.name}</span>
-                    <span class="block text-xs text-muted truncate">{s.userName}</span>
-                  </span>
-                </button>
-              )}
-            </For>
-            <button type="button" class={menuItem} onClick={() => { more.setOpen(false); setAdding(true); }}>
-              <span class="w-4 shrink-0 text-muted"><MdFillAdd size={16} /></span> {t("jellyfin.add_server_plain")}
-            </button>
-            <div class="my-1.5 h-px bg-rim/60" />
-            <button type="button" class={menuItem} onClick={() => { more.setOpen(false); setSettingsOpen(true); }}>
-              <span class="w-4 shrink-0 text-muted"><MdOutlineSettings size={16} /></span> {t("jellyfin.settings")}
-            </button>
-            <button type="button" class={menuItem}
-              title={t("jellyfin.disconnect_title", { user: session()?.userName ?? "", server: session()?.name ?? "" })}
-              onClick={() => { more.setOpen(false); const s = session(); if (s) void signOut(s.id); }}>
-              <span class="w-4 shrink-0 text-muted"><MdOutlineLogout size={16} /></span>
-              <span class="truncate">{t("jellyfin.sign_out_of", { server: session()?.name ?? "" })}</span>
-            </button>
-            <Show when={session() && hubStored().has(session()!.id)}>
-              <button type="button" class={menuItem} title={t("jellyfin.hub_forget_help")}
-                onClick={() => {
-                  more.setOpen(false);
-                  const s = session();
-                  if (s) forgetOnHub(s.id).then(() => toast.success(t("jellyfin.hub_forgotten"))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
-                }}>
-                <span class="w-4 shrink-0 text-muted"><MdOutlineCloud_off size={16} /></span>
-                <span class="truncate">{t("jellyfin.hub_forget")}</span>
-              </button>
-            </Show>
           </div>
         </Portal>
       </Show>

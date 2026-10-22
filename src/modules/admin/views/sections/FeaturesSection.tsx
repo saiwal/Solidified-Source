@@ -5,6 +5,8 @@ import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminFeatures, saveAdminFeatures } from "../../api";
 import type { FeatureItem } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Switch } from "@ui/Toggle";
 
 export default function FeaturesSection() {
   const { t } = useI18n();
@@ -41,15 +43,9 @@ export default function FeaturesSection() {
       description={t("admin.features_desc")}
       action={
         <Show when={features()}>
-          <button
-            form="features-form"
-            type="submit"
-            disabled={saving()}
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                   hover:opacity-90 disabled:opacity-40 transition-opacity"
-          >
+          <Button form="features-form" type="submit" disabled={saving()}>
             {saving() ? t("admin.saving") : t("admin.save")}
-          </button>
+          </Button>
         </Show>
       }
     >
@@ -85,22 +81,7 @@ function FeatureRow(props: { item: FeatureItem }) {
           <p class="text-xs text-accent">{t("admin.locked_by_admin")}</p>
         </Show>
       </div>
-      <input
-        type="checkbox"
-        name={props.item.id}
-        checked={props.item.enabled}
-        disabled={props.item.locked}
-        class="appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full
-               bg-elevated border border-rim transition-colors
-               checked:bg-accent checked:border-accent
-               disabled:cursor-not-allowed
-               after:absolute after:top-1/2 after:-translate-y-1/2 after:translate-x-1
-               after:h-4 after:w-4 after:rounded-full after:bg-muted
-               after:transition-transform after:duration-150 motion-reduce:after:transition-none
-               checked:after:translate-x-6 checked:after:bg-accent-fg
-               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60
-               focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-      />
+      <Switch name={props.item.id} checked={props.item.enabled} disabled={props.item.locked} />
     </label>
   );
 }

@@ -11,6 +11,9 @@ import {
   type Album,
 } from "@/modules/photos/api/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
+import { Button, buttonClass } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { EmptyState } from "@ui/EmptyState";
 
 export function ImageEditor() {
   const { t } = useI18n();
@@ -151,8 +154,7 @@ export function ImageEditor() {
   };
 
   // ── Shared classes ─────────────────────────────────────────────────────────
-  const btnOutline =
-    "px-3 py-1.5 text-sm border border-rim rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors";
+  const btnOutline = buttonClass("ghost", "sm");
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -258,7 +260,7 @@ export function ImageEditor() {
                     when={!savedAlbum()}
                     fallback={
                       <div class="flex items-center gap-2 text-sm text-txt border border-rim rounded-xl px-4 py-3">
-                        <MdFillCheck class="text-green-500 shrink-0" />
+                        <MdFillCheck class="text-success-txt shrink-0" />
                         <span>
                           {s("tools.img_saved")}
                           {" "}
@@ -280,9 +282,9 @@ export function ImageEditor() {
                         <Show
                           when={!albumsLoading()}
                           fallback={
-                            <p class="text-sm text-muted text-center py-6">
+                            <EmptyState size="sm">
                               {s("tools.img_loading")}
-                            </p>
+                            </EmptyState>
                           }
                         >
                           <Show when={albums().length > 0}>
@@ -332,24 +334,25 @@ export function ImageEditor() {
 
                       {/* New album row */}
                       <div class="px-4 py-3 border-t border-rim flex gap-2">
-                        <input
+                        <Input
+                          class="flex-1"
                           type="text"
                           placeholder={s("tools.img_new_album_ph")}
                           value={newAlbumName()}
                           onInput={(e) => setNewAlbumName(e.currentTarget.value)}
-                          class="flex-1 bg-surface border border-rim text-txt placeholder-muted rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent"
                         />
-                        <button
+                        <Button
+                          size="sm"
+                          class="shrink-0"
                           onClick={() => saveToAlbum(newAlbumName().trim())}
                           disabled={saving() || !newAlbumName().trim()}
-                          class="px-4 py-1.5 bg-accent text-accent-fg rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity shrink-0"
                         >
                           {saving() ? s("tools.img_saving") : s("tools.img_save_to_photos")}
-                        </button>
+                        </Button>
                       </div>
 
                       <Show when={saveError()}>
-                        <p class="text-xs text-red-500 px-4 pb-3">{saveError()}</p>
+                        <p class="text-xs text-danger-txt px-4 pb-3">{saveError()}</p>
                       </Show>
                     </div>
                   </Show>
@@ -357,12 +360,9 @@ export function ImageEditor() {
 
                 {/* ── Action buttons ──────────────────────────────────────── */}
                 <div class="flex gap-3 flex-wrap">
-                  <button
-                    onClick={download}
-                    class="px-4 py-1.5 bg-accent text-accent-fg rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                  >
+                  <Button size="sm" onClick={download}>
                     {s("tools.img_download")}
-                  </button>
+                  </Button>
                   <button
                     onClick={() => {
                       const blob = resultBlob();

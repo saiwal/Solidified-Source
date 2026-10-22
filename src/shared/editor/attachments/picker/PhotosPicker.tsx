@@ -9,6 +9,7 @@ import { fetchAlbums, fetchPhotoAlbum, variantSrc } from "@/modules/photos/api/a
 import type { Photo, Album } from "@/modules/photos/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineCheck, MdOutlineImage, MdOutlineSentiment_dissatisfied } from "solid-icons/md";
+import { EmptyState } from "@ui/EmptyState";
 
 interface Props {
   nick: string;
@@ -61,7 +62,7 @@ const PhotosPicker: Component<Props> = (props) => {
           >
             <Show
               when={(albums() ?? []).length > 0}
-              fallback={<EmptyState label={t("editor.no_albums")} />}
+              fallback={<EmptyState icon={<MdOutlineSentiment_dissatisfied />}>{t("editor.no_albums")}</EmptyState>}
             >
               <div class="grid grid-cols-3 gap-2">
                 <For each={albums()}>
@@ -104,7 +105,7 @@ const PhotosPicker: Component<Props> = (props) => {
           >
             <Show
               when={(albumPhotos()?.photos ?? []).length > 0}
-              fallback={<EmptyState label={t("editor.no_album_photos")} />}
+              fallback={<EmptyState icon={<MdOutlineSentiment_dissatisfied />}>{t("editor.no_album_photos")}</EmptyState>}
             >
               <div class="grid grid-cols-3 gap-2">
                 <For each={albumPhotos()?.photos ?? []}>
@@ -170,11 +171,3 @@ function AlbumPlaceholder() {
   );
 }
 
-function EmptyState(props: { label: string }) {
-  return (
-    <div class="flex flex-col items-center justify-center py-12 text-muted">
-      <MdOutlineSentiment_dissatisfied class="w-10 h-10 mb-2 opacity-40" />
-      <p class="text-sm">{props.label}</p>
-    </div>
-  );
-}

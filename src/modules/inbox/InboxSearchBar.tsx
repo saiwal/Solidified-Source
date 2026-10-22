@@ -10,7 +10,7 @@ import { For, Show, createMemo, type Component, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createPopover } from "@/shared/stream/filters/createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import {
   OPERATORS,
   completeTrailing,
@@ -22,6 +22,7 @@ import {
   type OperatorInfo,
 } from "./query";
 import { MdOutlineClose, MdOutlineExpand_more, MdOutlineSearch } from "solid-icons/md";
+import { Button, IconButton } from "@ui/Button";
 
 /** Toggles that aren't already a row in the folder sidebar. */
 const PILLS = [
@@ -108,27 +109,23 @@ export const InboxSearchBar: Component<{
 
           <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
             <Show when={props.query}>
-              <button
-                type="button"
+              <IconButton
+                label={t("hq.clear_search")}
+                size="sm"
                 onClick={() => { props.onQuery(""); focusInput(); }}
-                title={t("hq.clear_search")}
-                aria-label={t("hq.clear_search")}
-                class="p-0.5 rounded text-muted hover:text-txt hover:bg-elevated"
               >
                 <MdOutlineClose class="w-3.5 h-3.5" />
-              </button>
+              </IconButton>
             </Show>
             <span ref={pop.ref}>
-              <button
-                type="button"
+              <IconButton
+                label={t("hq.search_tags")}
+                size="sm"
                 onClick={() => pop.setOpen(!pop.open())}
-                title={t("hq.search_tags")}
-                aria-label={t("hq.search_tags")}
                 aria-expanded={pop.open()}
-                class="p-0.5 rounded text-muted hover:text-txt hover:bg-elevated"
               >
                 <MdOutlineExpand_more class="w-4 h-4" />
-              </button>
+              </IconButton>
             </span>
           </div>
         </div>
@@ -224,13 +221,9 @@ export const InboxSearchBar: Component<{
             </div>
 
             <div class="border-t border-rim pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => { props.onQuery(""); pop.setOpen(false); }}
-                class="px-2 py-1 rounded-lg text-xs text-muted hover:bg-overlay hover:text-txt"
-              >
+              <Button variant="ghost" size="sm" onClick={() => { props.onQuery(""); pop.setOpen(false); }}>
                 {t("hq.clear_filters")}
-              </button>
+              </Button>
             </div>
           </div>
         </Portal>

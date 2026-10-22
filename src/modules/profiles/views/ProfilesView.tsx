@@ -12,6 +12,9 @@ import {
 } from "../api/api";
 import SubPageLayout from "@/shared/views/SubPageLayout";
 import { SETTINGS_ITEMS } from "@/modules/settings/index";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
 
 export default function ProfilesView() {
   const { t } = useI18n();
@@ -70,14 +73,9 @@ export default function ProfilesView() {
           <p class="text-sm text-muted">{t("profiles.desc")}</p>
         </div>
         <Show when={multiEnabled()}>
-          <button
-            onClick={handleCreate}
-            disabled={creating()}
-            class="shrink-0 px-3 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                   hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-          >
+          <Button size="sm" class="shrink-0" onClick={handleCreate} disabled={creating()}>
             {creating() ? t("profiles.creating") : t("profiles.new_profile")}
-          </button>
+          </Button>
         </Show>
       </div>
 
@@ -108,7 +106,7 @@ export default function ProfilesView() {
         </div>
 
         {/* Multiple profiles toggle */}
-        <div class="flex items-start gap-4 rounded-lg border border-rim bg-surface px-4 py-3 mt-2">
+        <Card class="flex items-start gap-4 px-4 py-3 mt-2">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-txt">{t("profiles.feature_title")}</p>
             <p class="text-xs text-muted mt-0.5 leading-relaxed">{t("profiles.feature_desc")}</p>
@@ -135,7 +133,7 @@ export default function ProfilesView() {
               ].join(" ")}
             />
           </button>
-        </div>
+        </Card>
       </Show>
     </div>
     </SubPageLayout>
@@ -151,14 +149,14 @@ function ProfileCard(props: {
   const p = props.profile;
 
   return (
-    <div class="flex items-center gap-4 rounded-xl border border-rim bg-surface px-4 py-3">
+    <Card class="flex items-center gap-4 px-4 py-3">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
           <span class="text-sm font-medium text-txt truncate">{p.profile_name}</span>
           <Show when={p.is_default}>
-            <span class="shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-medium">
+            <Badge tone="accent" class="shrink-0">
               {t("profiles.default_badge")}
-            </span>
+            </Badge>
           </Show>
         </div>
         <Show when={p.pdesc}>
@@ -175,16 +173,12 @@ function ProfileCard(props: {
           {t("profiles.edit")}
         </A>
         <Show when={props.multiEnabled && !p.is_default}>
-          <button
-            onClick={props.onDelete}
-            class="px-3 py-1.5 text-xs font-medium rounded-lg border border-rim
-                   text-error hover:bg-error/10 transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onDelete}>
             {t("profiles.delete")}
-          </button>
+          </Button>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -192,13 +186,13 @@ function Skeleton() {
   return (
     <div class="space-y-3 animate-pulse">
       {[...Array(2)].map(() => (
-        <div class="rounded-xl border border-rim bg-surface px-4 py-3 flex items-center gap-4">
+        <Card class="px-4 py-3 flex items-center gap-4">
           <div class="flex-1 space-y-1.5">
             <div class="h-4 w-32 rounded bg-elevated" />
             <div class="h-3 w-48 rounded bg-elevated" />
           </div>
           <div class="h-7 w-14 rounded-lg bg-elevated" />
-        </div>
+        </Card>
       ))}
     </div>
   );

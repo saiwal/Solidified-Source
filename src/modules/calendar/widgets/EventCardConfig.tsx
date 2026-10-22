@@ -7,6 +7,8 @@ import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchEvents } from "../api";
+import { Button } from "@ui/Button";
+import { Select } from "@ui/Field";
 
 export default function EventCardConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
@@ -19,11 +21,7 @@ export default function EventCardConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_event")}
-        <select
-          value={uri()}
-          onChange={(e) => setUri(e.currentTarget.value)}
-          class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
-        >
+        <Select size="sm" class="mt-1 w-full" value={uri()} onChange={(e) => setUri(e.currentTarget.value)}>
           <option value="">—</option>
           <For each={events() ?? []}>
             {(ev) => (
@@ -32,16 +30,11 @@ export default function EventCardConfig(props: WidgetConfigProps) {
               </option>
             )}
           </For>
-        </select>
+        </Select>
       </label>
-      <button
-        onClick={() => props.onSave({ uri: uri() })}
-        disabled={!uri()}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all disabled:opacity-40"
-      >
+      <Button size="sm" class="self-end" onClick={() => props.onSave({ uri: uri() })} disabled={!uri()}>
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

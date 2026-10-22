@@ -18,6 +18,10 @@ import IntegrationsStep from "./steps/IntegrationsStep";
 import AppearanceStep from "./steps/AppearanceStep";
 import ReviewStep from "./steps/ReviewStep";
 import SuccessStep from "./steps/SuccessStep";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { EmptyState } from "@ui/EmptyState";
 
 type StepId = "identity" | "protocols" | "integrations" | "appearance" | "review";
 
@@ -177,7 +181,7 @@ export default function NewChannelView() {
 
   return (
     <div class="min-h-[60vh] flex items-center justify-center py-8">
-      <div class="w-full max-w-lg bg-surface border border-rim rounded-2xl p-6 sm:p-8 shadow-sm">
+      <Card raised class="w-full max-w-lg p-6 sm:p-8">
 
         <Show when={!done()}>
           <div class="mb-6 text-center">
@@ -193,12 +197,12 @@ export default function NewChannelView() {
 
         <Show when={meta.loading}>
           <div class="flex justify-center py-8">
-            <div class="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <Spinner size="xl" tone="accent" label={t("ui.loading")} />
           </div>
         </Show>
 
         <Show when={meta.error}>
-          <p class="text-sm text-red-500 text-center">{t("channel_create.load_error")}</p>
+          <p class="text-sm text-danger-txt text-center">{t("channel_create.load_error")}</p>
         </Show>
 
         <Show when={!done() ? meta() : undefined}>
@@ -206,7 +210,7 @@ export default function NewChannelView() {
             <Show
               when={m().canadd}
               fallback={
-                <p class="text-sm text-muted text-center py-6">{t("channel_create.limit_reached")}</p>
+                <EmptyState size="sm">{t("channel_create.limit_reached")}</EmptyState>
               }
             >
               {/* Step progress */}
@@ -298,39 +302,21 @@ export default function NewChannelView() {
 
               {/* Nav buttons */}
               <div class="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-rim">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  disabled={stepIndex() === 0 || submitting()}
-                  class="px-4 py-2 text-sm font-medium rounded-lg border border-rim text-txt
-                         hover:bg-elevated disabled:opacity-0 disabled:pointer-events-none transition-colors"
-                >
+                <Button variant="ghost" onClick={goBack} disabled={stepIndex() === 0 || submitting()}>
                   {t("channel_create.back")}
-                </button>
+                </Button>
 
                 <Show
                   when={step() !== "review"}
                   fallback={
-                    <button
-                      type="button"
-                      onClick={handleCreate}
-                      disabled={submitting()}
-                      class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                             hover:opacity-90 disabled:opacity-50 transition-opacity"
-                    >
+                    <Button onClick={handleCreate} disabled={submitting()}>
                       {submitting() ? t("channel_create.creating") : t("channel_create.create_btn")}
-                    </button>
+                    </Button>
                   }
                 >
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    disabled={!canProceed()}
-                    class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                           hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  >
+                  <Button onClick={goNext} disabled={!canProceed()}>
                     {t("channel_create.next")}
-                  </button>
+                  </Button>
                 </Show>
               </div>
             </Show>
@@ -341,7 +327,7 @@ export default function NewChannelView() {
           <SuccessStep name={name()} nick={createdNick()} />
         </Show>
 
-      </div>
+      </Card>
     </div>
   );
 }

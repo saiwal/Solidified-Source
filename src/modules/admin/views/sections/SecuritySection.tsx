@@ -4,6 +4,9 @@ import { fetchAdminSecurity, saveAdminSecurity } from "../../api";
 import { useSectionForm } from "@/modules/settings/store/useSectionForm";
 import type { AdminSecurity } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Field, Textarea } from "@ui/Field";
+import { Toggle } from "@ui/Toggle";
 
 export default function SecuritySection() {
   const { t } = useI18n();
@@ -23,15 +26,9 @@ export default function SecuritySection() {
       description={t("admin.security_desc")}
       action={
         <Show when={data()}>
-          <button
-            form="security-form"
-            type="submit"
-            disabled={saving()}
-            class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                   hover:opacity-90 disabled:opacity-40 transition-opacity"
-          >
+          <Button form="security-form" type="submit" disabled={saving()}>
             {saving() ? t("admin.saving") : t("admin.save")}
-          </button>
+          </Button>
         </Show>
       }
     >
@@ -47,35 +44,35 @@ export default function SecuritySection() {
             <hr class="border-rim" />
 
             <Field label="Allowed email domains" hint="Comma-separated. Only these domains may register.">
-              <textarea name="allowed_email" rows={2} class={inputCls}>{d().allowed_email}</textarea>
+              <Textarea class="w-full" name="allowed_email" rows={2}>{d().allowed_email}</Textarea>
             </Field>
             <Field label="Blocked email domains" hint="Comma-separated. These domains are denied.">
-              <textarea name="not_allowed_email" rows={2} class={inputCls}>{d().not_allowed_email}</textarea>
+              <Textarea class="w-full" name="not_allowed_email" rows={2}>{d().not_allowed_email}</Textarea>
             </Field>
 
             <hr class="border-rim" />
 
             <Field label="Allowed sites (federation whitelist)" hint="One URL per line.">
-              <textarea name="whitelisted_sites" rows={3} class={inputCls}>{d().whitelisted_sites}</textarea>
+              <Textarea class="w-full" name="whitelisted_sites" rows={3}>{d().whitelisted_sites}</Textarea>
             </Field>
             <Field label="Blocked sites (federation blacklist)" hint="One URL per line.">
-              <textarea name="blacklisted_sites" rows={3} class={inputCls}>{d().blacklisted_sites}</textarea>
+              <Textarea class="w-full" name="blacklisted_sites" rows={3}>{d().blacklisted_sites}</Textarea>
             </Field>
             <Field label="Allowed channels">
-              <textarea name="whitelisted_channels" rows={2} class={inputCls}>{d().whitelisted_channels}</textarea>
+              <Textarea class="w-full" name="whitelisted_channels" rows={2}>{d().whitelisted_channels}</Textarea>
             </Field>
             <Field label="Blocked channels">
-              <textarea name="blacklisted_channels" rows={2} class={inputCls}>{d().blacklisted_channels}</textarea>
+              <Textarea class="w-full" name="blacklisted_channels" rows={2}>{d().blacklisted_channels}</Textarea>
             </Field>
 
             <hr class="border-rim" />
 
             <Toggle name="embed_sslonly" label="Only allow HTTPS embeds" checked={d().embed_sslonly} />
             <Field label="Allowed embed domains" hint="One URL per line — allow unfiltered HTML from these.">
-              <textarea name="embed_allow" rows={3} class={inputCls}>{d().embed_allow}</textarea>
+              <Textarea class="w-full" name="embed_allow" rows={3}>{d().embed_allow}</Textarea>
             </Field>
             <Field label="Blocked embed domains">
-              <textarea name="embed_deny" rows={2} class={inputCls}>{d().embed_deny}</textarea>
+              <Textarea class="w-full" name="embed_deny" rows={2}>{d().embed_deny}</Textarea>
             </Field>
 
             <hr class="border-rim" />
@@ -84,7 +81,7 @@ export default function SecuritySection() {
             <Toggle name="content_security_policy" label="Send Content Security Policy header" checked={d().content_security_policy} />
 
             <Field label="Trusted directory servers" hint="One URL per line.">
-              <textarea name="trusted_directory_servers" rows={2} class={inputCls}>{d().trusted_directory_servers}</textarea>
+              <Textarea class="w-full" name="trusted_directory_servers" rows={2}>{d().trusted_directory_servers}</Textarea>
             </Field>
 
           </form>
@@ -94,36 +91,7 @@ export default function SecuritySection() {
   );
 }
 
-const inputCls =
-  "w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm " +
-  "hover:border-rim-strong focus:outline-none focus:border-rim-strong transition-colors";
 
-function Field(props: { label: string; hint?: string; children: any }) {
-  return (
-    <div class="space-y-1.5">
-      <label class="block text-sm font-medium text-txt">{props.label}</label>
-      {props.children}
-      <Show when={props.hint}>
-        <p class="text-xs text-muted">{props.hint}</p>
-      </Show>
-    </div>
-  );
-}
-
-function Toggle(props: { name: string; label: string; checked: boolean; hint?: string }) {
-  return (
-    <div class="space-y-0.5">
-      <label class="flex items-center gap-3 cursor-pointer select-none">
-        <input type="checkbox" name={props.name} value="1" checked={props.checked} class="sr-only peer" />
-        <div class="relative w-9 h-5 bg-rim-strong rounded-full peer-checked:bg-accent transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-4 after:h-4 after:rounded-full after:bg-elevated after:transition-transform peer-checked:after:translate-x-4" />
-        <span class="text-sm text-txt">{props.label}</span>
-      </label>
-      <Show when={props.hint}>
-        <p class="ml-12 text-xs text-muted">{props.hint}</p>
-      </Show>
-    </div>
-  );
-}
 
 function Skeleton() {
   return (

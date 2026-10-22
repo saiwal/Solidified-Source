@@ -30,7 +30,7 @@ import type { MimeType } from "../types/editor.types";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import ComposerActionBar from "../components/ComposerActionBar";
-import { underlineFieldClass } from "../lib/fieldStyles";
+import { Input } from "@ui/Field";
 
 interface Props {
   nick: string;
@@ -166,7 +166,6 @@ export default function BlockComposer(props: Props) {
     autosaveExtra: () => buildDraftExtra(),
   });
 
-
   const enc = useEncrypt(() => store.body(), store.setBody);
 
   const defaultPageMime = pageMimetype();
@@ -224,12 +223,12 @@ export default function BlockComposer(props: Props) {
       meta={
         <>
           {/* Title */}
-          <input
+          <Input
+            class="w-full font-bold"
             type="text"
             placeholder={t("webpages.block_title_placeholder")}
             value={store.title()}
             onInput={(e) => onTitleChange(e.currentTarget.value)}
-            class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
 
           {/* Name — the identifier the HTML Block widget's preset dropdown looks it up by */}
@@ -286,8 +285,6 @@ export default function BlockComposer(props: Props) {
       panels={
         <>
           <MentionEmojiPopups wiring={wiring} />
-
-
 
           {/* Drafts panel */}
         </>

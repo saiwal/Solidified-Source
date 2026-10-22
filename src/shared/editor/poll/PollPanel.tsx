@@ -2,6 +2,8 @@ import { Index, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { PollState } from "./usePollState";
 import { MdOutlineClose } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
 
 export interface PollPanelProps {
   poll: PollState;
@@ -20,23 +22,22 @@ const PollPanel: Component<PollPanelProps> = (props) => {
       <Index each={poll.answers()}>
         {(ans, i) => (
           <div class="flex items-center gap-2">
-            <input
+            <Input
+              class="flex-1"
               type="text"
               value={ans()}
               placeholder={`${t("editor.poll_answer_placeholder")} ${i + 1}`}
               onInput={(e) => poll.updateAnswer(i, e.currentTarget.value)}
-              class="flex-1 bg-transparent border border-rim rounded px-2.5 py-1 text-sm
-                     text-txt placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
             />
             <Show when={poll.answers().length > 2}>
-              <button
-                type="button"
+              <IconButton
+                label={t("editor.poll_remove_answer")}
+                variant="danger"
+                size="sm"
                 onClick={() => poll.removeAnswer(i)}
-                title={t("editor.poll_remove_answer")}
-                class="p-1 rounded text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
               >
                 <MdOutlineClose class="w-3.5 h-3.5" />
-              </button>
+              </IconButton>
             </Show>
           </div>
         )}
@@ -53,26 +54,26 @@ const PollPanel: Component<PollPanelProps> = (props) => {
         </Show>
         <div class="flex items-center gap-1.5 ml-auto">
           <span class="text-xs text-muted shrink-0">{t("editor.poll_expires_label")}</span>
-          <input
+          <Input
+            size="sm"
+            class="w-14"
             type="number"
             min="1"
             max="365"
             value={poll.expireValue()}
             onInput={(e) => poll.setExpireValue(e.currentTarget.value)}
-            class="w-14 bg-transparent border border-rim rounded px-2 py-0.5 text-xs text-txt
-                   outline-none focus:border-rim-strong transition-colors"
           />
-          <select
+          <Select
+            size="sm"
+            class="cursor-pointer"
             value={poll.expireUnit()}
             onChange={(e) => poll.setExpireUnit(e.currentTarget.value)}
-            class="bg-surface border border-rim rounded px-1.5 py-0.5 text-xs text-txt
-                   outline-none focus:border-rim-strong transition-colors cursor-pointer"
           >
             <option value="Days">Days</option>
             <option value="Hours">Hours</option>
             <option value="Minutes">Minutes</option>
             <option value="Weeks">Weeks</option>
-          </select>
+          </Select>
         </div>
       </div>
     </div>

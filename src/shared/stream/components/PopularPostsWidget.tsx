@@ -29,6 +29,8 @@ import type { StreamHandlers } from "../types";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { MdOutlineChat_bubble_outline } from "solid-icons/md";
 import { openPost } from "@/shared/views/modal-host";
+import { Card, CardHeader } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,11 +152,7 @@ function PopularPostRow(props: {
                   </div>
                 }
               >
-                <img
-                  src={p.authorAvatar}
-                  class="w-4 h-4 rounded-full object-cover shrink-0"
-                  alt={p.authorName}
-                />
+                <Avatar src={p.authorAvatar} name={p.authorName} size={4} />
               </Show>
               <span class="text-xs text-muted truncate">{p.authorName}</span>
               <span class="text-xs text-subtle shrink-0">·</span>
@@ -223,13 +221,13 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
     (props.data ?? remote() ?? []).slice(0, limit());
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+    <Card class="overflow-hidden">
       {/* Header */}
-      <div class="px-4 py-3 border-b border-rim">
+      <CardHeader>
         <h2 class="text-sm font-semibold text-txt">
           {t("widgets.popular_posts")}
         </h2>
-      </div>
+      </CardHeader>
 
       {/* Loading */}
       <Show when={!props.data && remote.loading}>
@@ -260,7 +258,7 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
           </ul>
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 };
 

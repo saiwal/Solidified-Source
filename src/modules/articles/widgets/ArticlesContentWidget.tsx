@@ -11,7 +11,7 @@ import type { Post } from "@utsukta/spa-core/types/post.types";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { useIsArticlesList } from "../lib/isArticlesList";
-import { iconBtn, ghostPill } from "@/shared/views/ui";
+import { Button, IconButton } from "@ui/Button";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -87,15 +87,13 @@ function ArticleEntry(props: { post: Post; nick: string; onOpen: () => void }) {
         <Index each={props.post.tags}>
           {(tag) => <span>#{tag()}</span>}
         </Index>
-        <button
-          type="button"
+        <IconButton
+          label={t("share.action")}
+          class="ml-auto -my-2 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
           onClick={() => openShare(shareTargetForArticle(props.nick, props.post))}
-          title={t("share.action")}
-          aria-label={t("share.action")}
-          class={`${iconBtn} ml-auto -my-2 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100`}
         >
           <MdOutlineShare size={16} />
-        </button>
+        </IconButton>
       </div>
     </article>
   );
@@ -181,9 +179,9 @@ export default function ArticlesContentWidget() {
                   when={hasMore()}
                   fallback={<p class="text-xs text-muted">{t("articles.all_loaded")}</p>}
                 >
-                  <button type="button" onClick={loadMore} class={ghostPill}>
+                  <Button variant="ghost" onClick={loadMore}>
                     {t("articles.load_more")}
-                  </button>
+                  </Button>
                 </Show>
               </div>
             </Show>

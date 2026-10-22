@@ -22,7 +22,6 @@ import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
 import ComposerShell from "../components/ComposerShell";
-import { underlineFieldClass } from "../lib/fieldStyles";
 import { CAPABILITIES } from "../types/editor.types";
 import { fetchConnections, type AclEntry } from "@/modules/network/api";
 import { entryKey } from "../components/AclPicker";
@@ -44,6 +43,7 @@ import { apiError } from "@utsukta/spa-core/lib/fetch";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
 import { useEncrypt } from "../useEncrypt";
 import EncryptToggle from "../components/EncryptToggle";
+import { Input } from "@ui/Field";
 // Lazy: these panels are only ever shown once a user opts into encrypting or
 // decrypting, so their code (and the libsodium-wrappers dependency it
 // eventually triggers via postCrypto.ts) shouldn't sit in every composer's
@@ -243,7 +243,6 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     if (typeof extra.publishAt === "string") setPublishAt(extra.publishAt);
   });
 
-
   const enc = useEncrypt(() => store.body(), store.setBody);
 
   // ── Mention + emoji autocomplete ──────────────────────────────────────────
@@ -323,7 +322,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
                   <ul class="mt-1.5 space-y-0.5">
                     <For each={unpermittedRecipients()}>
                       {(r) => (
-                        <li class="text-xs text-red-500">
+                        <li class="text-xs text-danger-txt">
                           {t("editor.dm_recipient_not_permitted", { name: r.name })}
                         </li>
                       )}
@@ -334,15 +333,14 @@ const DMComposer: Component<DMComposerProps> = (props) => {
 
               {/* ── Subject ── */}
               <div>
-                <input
+                <Input
+                  class="w-full font-bold"
                   type="text"
                   placeholder={t("editor.dm_subject_placeholder")}
                   value={store.title()}
                   onInput={(e) => store.setTitle(e.currentTarget.value)}
-                  class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
                 />
               </div>
-
 
               {/* ── Editor area — fills the remaining modal height; the surface
                    inside RichEditor scrolls internally past long text while the
@@ -386,7 +384,6 @@ const DMComposer: Component<DMComposerProps> = (props) => {
           }
           panels={
             <>
-
 
             </>
           }

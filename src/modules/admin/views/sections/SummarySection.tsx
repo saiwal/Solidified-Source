@@ -3,6 +3,8 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminSummary } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
 
 export default function SummarySection() {
   const { t } = useI18n();
@@ -40,9 +42,9 @@ export default function SummarySection() {
                 <div class="flex flex-wrap gap-1.5">
                   <For each={d().plugins}>
                     {(p) => (
-                      <span class="px-2 py-0.5 text-xs rounded-full bg-elevated text-muted border border-rim">
+                      <Badge>
                         {p}
-                      </span>
+                      </Badge>
                     )}
                   </For>
                 </div>
@@ -68,12 +70,12 @@ function StatGrid(props: { label: string; stats: { label: string; value: number 
 
 function Stat(props: { label: string; value: number; accent?: boolean }) {
   return (
-    <div class="rounded-lg border border-rim bg-surface p-3 space-y-0.5">
+    <Card class="p-3 space-y-0.5">
       <p class={`text-lg font-semibold ${props.accent ? "text-accent" : "text-txt"}`}>
         {props.value.toLocaleString()}
       </p>
       <p class="text-xs text-muted">{props.label}</p>
-    </div>
+    </Card>
   );
 }
 

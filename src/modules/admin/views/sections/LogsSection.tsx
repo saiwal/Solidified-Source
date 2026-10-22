@@ -5,6 +5,10 @@ import { fetchAdminLogs, saveLogSettings } from "../../api";
 import type { AdminLogs, LogEntry, LogLevel } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { Switch } from "@ui/Toggle";
+import { EmptyState } from "@ui/EmptyState";
 
 const POLL_MS = 3000;
 const MAX_ENTRIES = 2000; // client-side cap while live-tailing
@@ -34,24 +38,22 @@ const LEVEL_META: Record<LogLevel, { severity: Severity; short: string }> = {
 };
 
 const SEVERITY_CLASSES: Record<Severity, string> = {
-  error:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  error:   "bg-danger-muted text-danger-txt",
+  warning: "bg-warning-muted text-warning-txt",
   info:    "bg-accent-muted text-accent-txt",
   debug:   "bg-elevated text-muted",
   other:   "bg-elevated text-muted",
 };
 
 const SEVERITY_ROW: Record<Severity, string> = {
-  error:   "border-l-2 border-l-red-400/60",
-  warning: "border-l-2 border-l-amber-400/60",
+  error:   "border-l-2 border-l-danger/60",
+  warning: "border-l-2 border-l-warning/60",
   info:    "",
   debug:   "opacity-70",
   other:   "opacity-60",
 };
 
 const FILTER_LEVELS = ["error", "warning", "info", "debug"] as const;
-
-const INPUT = "px-2 py-1 text-xs rounded-lg border border-rim bg-surface text-txt focus:outline-none focus:border-accent";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ function highlight(text: string, q: string): JSX.Element {
   const out: JSX.Element[] = [];
   let from = 0;
   for (let i = lower.indexOf(q); i !== -1; i = lower.indexOf(q, from)) {
-    out.push(text.slice(from, i), <mark class="bg-amber-200/70 dark:bg-amber-500/30 text-inherit rounded-sm">{text.slice(i, i + q.length)}</mark>);
+    out.push(text.slice(from, i), <mark class="bg-warning-muted/70 text-inherit rounded-sm">{text.slice(i, i + q.length)}</mark>);
     from = i + q.length;
   }
   out.push(text.slice(from));
@@ -226,15 +228,15 @@ export default function LogsSection() {
             <LogSettings meta={m()} onSaved={() => tick(true)} />
 
             <Show when={!m().debugging}>
-              <p class="text-xs text-amber-700 dark:text-amber-400">{t("admin.debugging_off")}</p>
+              <p class="text-xs text-warning-txt">{t("admin.debugging_off")}</p>
             </Show>
 
             <Show
               when={m().logfile && m().readable}
               fallback={
-                <p class="text-sm text-muted py-6 text-center">
+                <EmptyState size="sm">
                   {m().logfile ? t("admin.log_unreadable", { file: m().logfile! }) : t("admin.no_logfile")}
-                </p>
+                </EmptyState>
               }
             >
               {/* Toolbar */}
@@ -243,54 +245,52 @@ export default function LogsSection() {
                   onClick={toggleLive}
                   aria-pressed={live()}
                   class={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border transition-colors ${
-                    live() ? "border-green-500/40 text-green-700 dark:text-green-400" : "border-rim text-muted hover:bg-elevated"
+                    live() ? "border-success/40 text-success-txt" : "border-rim text-muted hover:bg-elevated"
                   }`}
                   title={live() ? t("admin.pause") : t("admin.resume")}
                 >
-                  <span class={`h-2 w-2 rounded-full ${live() ? "bg-green-500 animate-pulse" : "bg-muted"}`} />
+                  <span class={`h-2 w-2 rounded-full ${live() ? "bg-success animate-pulse" : "bg-muted"}`} />
                   {live() ? t("admin.live") : t("admin.paused")}
                 </button>
                 <Show when={pollError()}>
-                  <span class="text-xs text-red-600 dark:text-red-400">{t("admin.poll_error")}</span>
+                  <span class="text-xs text-danger-txt">{t("admin.poll_error")}</span>
                 </Show>
 
-                <input
+                <Input
+                  size="sm"
+                  class="flex-1 min-w-[10rem]"
                   type="search"
                   placeholder={t("admin.search_messages")}
                   value={params.q ?? ""}
                   onInput={(e) => setFilter({ q: e.currentTarget.value || undefined })}
-                  class={`${INPUT} flex-1 min-w-[10rem]`}
                 />
 
-                <select
+                <Select
+                  size="sm"
                   value={params.level ?? ""}
                   onChange={(e) => setFilter({ level: e.currentTarget.value || undefined })}
-                  class={INPUT}
                 >
                   <option value="">{t("admin.all_levels")} ({entries().length})</option>
                   <For each={FILTER_LEVELS}>
                     {(lv) => <option value={lv}>{t(`admin.level_${lv}`)} ({severityCounts()[lv]})</option>}
                   </For>
-                </select>
+                </Select>
 
-                <select
+                <Select
+                  size="sm"
+                  class="max-w-[12rem]"
                   value={params.file ?? ""}
                   onChange={(e) => setFilter({ file: e.currentTarget.value || undefined })}
-                  class={`${INPUT} max-w-[12rem]`}
                 >
                   <option value="">{t("admin.all_files")}</option>
                   <For each={fileCounts()}>
                     {([f, n]) => <option value={f}>{f} ({n})</option>}
                   </For>
-                </select>
+                </Select>
 
-                <button
-                  onClick={download}
-                  disabled={filtered().length === 0}
-                  class="px-2.5 py-1 text-xs rounded-lg border border-rim text-txt hover:bg-elevated disabled:opacity-50 transition-colors"
-                >
+                <Button variant="ghost" size="sm" onClick={download} disabled={filtered().length === 0}>
                   {t("admin.download")}
-                </button>
+                </Button>
               </div>
 
               {/* Active filter chips */}
@@ -327,9 +327,9 @@ export default function LogsSection() {
                   <Show
                     when={filtered().length > 0}
                     fallback={
-                      <p class="text-sm text-muted py-6 text-center">
+                      <EmptyState size="sm">
                         {entries().length === 0 ? t("admin.log_empty") : t("admin.no_filter_match")}
-                      </p>
+                      </EmptyState>
                     }
                   >
                     <For each={filtered()}>
@@ -391,52 +391,42 @@ function LogSettings(props: { meta: Meta; onSaved: () => void }) {
       <div class="px-4 pb-4 space-y-3">
         <div class="flex items-center justify-between gap-4 flex-wrap">
           <label class="flex items-center gap-3 cursor-pointer select-none">
-            <button
-              role="switch"
-              aria-checked={debugging()}
-              onClick={() => setDebugging((v) => !v)}
-              class={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${debugging() ? "bg-accent" : "bg-rim"}`}
-            >
-              <span class={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${debugging() ? "translate-x-6" : "translate-x-1"}`} />
-            </button>
+            <Switch checked={debugging()} onChange={setDebugging} />
             <span class="text-sm font-medium text-txt">{t("admin.debugging")}</span>
           </label>
 
           <label class="flex items-center gap-2 text-xs text-muted whitespace-nowrap">
             {t("admin.log_level")}
-            <select
+            <Select
+              size="sm"
               value={loglevel()}
               onChange={(e) => setLoglevel(parseInt(e.currentTarget.value))}
               disabled={!debugging()}
-              class={`${INPUT} disabled:opacity-50`}
             >
               <For each={LOG_LEVELS}>{({ key, value }) => <option value={value}>{t(`admin.${key}`)}</option>}</For>
-            </select>
+            </Select>
           </label>
         </div>
 
         <label class="flex items-center gap-2 text-xs text-muted">
           <span class="whitespace-nowrap shrink-0">{t("admin.log_file")}</span>
-          <input
+          <Input
+            size="sm"
+            class="flex-1 min-w-0 font-mono"
             type="text"
             value={logfile()}
             onInput={(e) => setLogfile(e.currentTarget.value)}
             placeholder="e.g. log/hub.log"
-            class={`${INPUT} flex-1 min-w-0 font-mono placeholder:text-muted`}
           />
         </label>
 
         <div class="flex items-center gap-3 justify-end">
           <Show when={saved()}>
-            <span class="text-xs text-green-600 dark:text-green-400">{t("admin.saved")}</span>
+            <span class="text-xs text-success-txt">{t("admin.saved")}</span>
           </Show>
-          <button
-            onClick={save}
-            disabled={saving()}
-            class="px-3 py-1.5 text-xs rounded-lg bg-accent text-accent-fg hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
+          <Button size="sm" onClick={save} disabled={saving()}>
             {saving() ? t("admin.saving") : t("admin.save_settings")}
-          </button>
+          </Button>
         </div>
       </div>
     </details>
@@ -450,7 +440,7 @@ function Chip(props: { label: string; value: string; onRemove: () => void }) {
     <span class="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-accent-muted text-accent-txt">
       <span class="opacity-70">{props.label}:</span>
       <span class="font-mono">{props.value}</span>
-      <button onClick={props.onRemove} class="px-1 rounded-full hover:bg-accent/20" aria-label="×">×</button>
+      <Button variant="ghost" size="sm" onClick={props.onRemove} aria-label="×">×</Button>
     </span>
   );
 }

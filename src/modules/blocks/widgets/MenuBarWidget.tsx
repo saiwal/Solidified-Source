@@ -15,6 +15,7 @@ import { fetchMenuTree } from "@utsukta/spa-core/lib/menus";
 import type { MenuTreeItem } from "@utsukta/spa-core/lib/menus";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
 import { MenuAccordion, MenuLink } from "./menu-shared";
+import { Card } from "@ui/Card";
 
 const topItemClass =
   "flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-txt rounded-lg " +
@@ -69,9 +70,9 @@ function TopMenu(props: {
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }

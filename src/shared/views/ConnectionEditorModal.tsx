@@ -15,7 +15,14 @@ import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { MdOutlineCheck, MdOutlineClose, MdOutlineRefresh, MdOutlineWarning } from "solid-icons/md";
 import { A } from "@solidjs/router";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Select } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
+import { EmptyState } from "@ui/EmptyState";
 interface Props {
   connection: Connection;
   authorName: string;
@@ -30,11 +37,11 @@ interface Props {
 type Tab = "settings" | "perms" | "filters";
 
 const CheckIcon = () => (
-  <MdOutlineCheck class="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+  <MdOutlineCheck class="w-3.5 h-3.5 text-success-txt shrink-0" />
 );
 
 const CrossIcon = () => (
-  <MdOutlineClose class="w-3.5 h-3.5 text-red-400 shrink-0" />
+  <MdOutlineClose class="w-3.5 h-3.5 text-danger-txt shrink-0" />
 );
 
 function FlagToggle(p: { label: string; active: boolean; onChange: (v: boolean) => void }) {
@@ -205,7 +212,7 @@ function ConnectionEditorModal(props: Props) {
   const titleId = createUniqueId();
   return (
     <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="w-full max-w-lg rounded-2xl bg-surface border border-rim shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <ModalPanel size="lg" class="overflow-hidden flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div class="flex items-center gap-3 p-4 border-b border-rim shrink-0">
@@ -218,11 +225,7 @@ function ConnectionEditorModal(props: Props) {
               </div>
             }
           >
-            <img
-              src={props.authorAvatar}
-              width="40" height="40"
-              class="w-10 h-10 rounded-full object-cover ring-1 ring-rim shrink-0"
-            />
+            <Avatar src={props.authorAvatar} size={10} class="ring-1 ring-rim" />
           </Show>
           <div class="flex-1 min-w-0">
             <a id={titleId}
@@ -233,13 +236,9 @@ function ConnectionEditorModal(props: Props) {
             </a>
             <div class="text-xs text-muted truncate">{props.connection.address}</div>
           </div>
-          <button
-            onClick={props.onClose}
-            class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
-            aria-label={t("connection.close")}
-          >
+          <IconButton label={t("connection.close")} size="sm" class="shrink-0" onClick={props.onClose}>
             <MdOutlineClose class="w-4 h-4" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Tab bar */}
@@ -270,16 +269,12 @@ function ConnectionEditorModal(props: Props) {
                 <Show
                   when={!permcats.loading}
                   fallback={
-                    <div class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-muted text-sm">
+                    <Card class="w-full px-3 py-2 text-muted text-sm">
                       {t("connection.role_loading")}
-                    </div>
+                    </Card>
                   }
                 >
-                  <select
-                    onChange={(e) => setRole(e.currentTarget.value)}
-                    class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-                           focus:outline-none hover:border-rim-strong transition-colors"
-                  >
+                  <Select class="w-full" onChange={(e) => setRole(e.currentTarget.value)}>
                     <option value="" selected={role() === ""}>{t("connection.no_role")}</option>
                     <For each={permcats()}>
                       {(pc) => (
@@ -288,7 +283,7 @@ function ConnectionEditorModal(props: Props) {
                         </option>
                       )}
                     </For>
-                  </select>
+                  </Select>
                 </Show>
               </div>
 
@@ -363,23 +358,17 @@ function ConnectionEditorModal(props: Props) {
               {/* Profile assignment — only when multi-profiles are active */}
               <Show when={extraProfiles().length > 0}>
                 <div>
-                  <label class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">
-                    {t("connection.profile_label")}
-                  </label>
-                  <select
-                    value={profileId() ?? ""}
-                    onChange={(e) => {
-                      const v = e.currentTarget.value;
-                      setProfileId(v === "" ? null : Number(v));
-                    }}
-                    class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-                           focus:outline-none hover:border-rim-strong transition-colors"
-                  >
+                  <Field label={t("connection.profile_label")} size="sm">
+                    <Select class="w-full" value={profileId() ?? ""} onChange={(e) => {
+                    const v = e.currentTarget.value;
+                    setProfileId(v === "" ? null : Number(v));
+                    }}>
                     <option value="">{t("connection.profile_default")}</option>
                     <For each={extraProfiles()}>
-                      {(p) => <option value={String(p.id)}>{p.profile_name}</option>}
+                    {(p) => <option value={String(p.id)}>{p.profile_name}</option>}
                     </For>
-                  </select>
+                    </Select>
+                  </Field>
                 </div>
               </Show>
 
@@ -391,13 +380,13 @@ function ConnectionEditorModal(props: Props) {
                   </div>
                 </Show>
                 <Show when={props.connection.pending}>
-                  <span class="text-xs px-1.5 py-0.5 rounded bg-accent-muted text-accent font-medium">
+                  <Badge tone="accent">
                     {t("connection.pending")}
-                  </span>
+                  </Badge>
                 </Show>
                 <For each={props.connection.status.filter(s => !["blocked","ignored","archived","hidden","pending"].includes(s))}>
                   {(s) => (
-                    <span class="text-xs px-1.5 py-0.5 rounded bg-overlay text-muted">{s}</span>
+                    <Badge>{s}</Badge>
                   )}
                 </For>
               </div>
@@ -410,14 +399,14 @@ function ConnectionEditorModal(props: Props) {
               when={!permsData.loading}
               fallback={
                 <div class="flex items-center justify-center gap-2 py-10 text-sm text-muted">
-                  <span class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <Spinner size="md" />
                   {t("connection.perms_loading")}
                 </div>
               }
             >
               <Show
                 when={permsData()}
-                fallback={<p class="py-10 text-center text-sm text-muted">{t("connection.perms_error")}</p>}
+                fallback={<EmptyState>{t("connection.perms_error")}</EmptyState>}
               >
                 {(data) => (
                   <table class="w-full text-xs">
@@ -465,7 +454,7 @@ function ConnectionEditorModal(props: Props) {
               when={!permsData.loading}
               fallback={
                 <div class="flex items-center justify-center gap-2 py-10 text-sm text-muted">
-                  <span class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <Spinner size="md" />
                   {t("connection.perms_loading")}
                 </div>
               }
@@ -476,7 +465,7 @@ function ConnectionEditorModal(props: Props) {
                     active while core ignores them. */}
                 <Show when={!isFeatureEnabled("connfilter")}>
                   <div class="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg
-                              bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                              bg-warning/10 text-warning-txt">
                     <MdOutlineWarning size={16} class="shrink-0" />
                     <span class="flex-1 min-w-0 text-xs">{t("filters.connfilter_off")}</span>
                     <A
@@ -517,11 +506,11 @@ function ConnectionEditorModal(props: Props) {
             class={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors
                    disabled:opacity-50 disabled:cursor-default
                    ${confirmDelete()
-                     ? "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                     ? "bg-danger/10 text-danger-txt hover:bg-danger/20"
                      : "text-muted hover:bg-overlay hover:text-accent"}`}
           >
             <Show when={deleting()}>
-              <span class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+              <Spinner size="xs" />
             </Show>
             {confirmDelete()
               ? t("connection.confirm_remove")
@@ -531,61 +520,43 @@ function ConnectionEditorModal(props: Props) {
           </button>
 
           <Show when={props.connection.pending}>
-            <button
-              onClick={handleApprove}
-              disabled={approving()}
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                     bg-accent text-accent-fg hover:opacity-80 transition-opacity
-                     disabled:opacity-50 disabled:cursor-default"
-            >
+            <Button size="sm" onClick={handleApprove} disabled={approving()}>
               <Show when={approving()}>
-                <span class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                <Spinner size="xs" />
               </Show>
               {approving() ? t("connection.approving") : t("connection.approve")}
-            </button>
+            </Button>
           </Show>
 
           <Show when={tab() === "settings"}>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleRefresh}
               disabled={refreshing()}
               title={t("connection.refresh_perms_hint")}
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border
-                     border-rim text-muted hover:border-accent hover:text-accent transition-colors
-                     disabled:opacity-50 disabled:cursor-default"
             >
               <MdOutlineRefresh class={`w-3.5 h-3.5 ${refreshing() ? "animate-spin" : ""}`} />
               {refreshing() ? t("connection.refreshing") : t("connection.refresh_perms")}
-            </button>
+            </Button>
             <Show when={refreshFailed()}>
-              <span class="text-[0.6875rem] text-red-500">{t("connection.refresh_error")}</span>
+              <span class="text-[0.6875rem] text-danger-txt">{t("connection.refresh_error")}</span>
             </Show>
           </Show>
 
           <div class="flex-1" />
 
-          <button
-            onClick={props.onClose}
-            class="px-3 py-1.5 rounded-lg text-xs border border-rim text-muted
-                   hover:bg-overlay transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("connection.cancel")}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving()}
-            class="px-3 py-1.5 rounded-lg text-xs border border-rim text-muted
-                   hover:border-accent hover:text-accent transition-colors
-                   disabled:opacity-50 disabled:cursor-default flex items-center gap-1.5"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving()}>
             <Show when={saving()}>
-              <span class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+              <Spinner size="xs" />
             </Show>
             {saving() ? t("connection.saving") : t("connection.save")}
-          </button>
+          </Button>
         </div>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 }

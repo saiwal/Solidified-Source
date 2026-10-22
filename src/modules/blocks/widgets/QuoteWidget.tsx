@@ -5,6 +5,8 @@
 import { createSignal } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { IoShuffleOutline } from "solid-icons/io";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 const QUOTES: [string, string][] = [
   ["The only way to do great work is to love what you do.", "Steve Jobs"],
@@ -44,21 +46,16 @@ export default function QuoteWidget() {
   const shuffle = () => setIndex((i) => (i + 1 + Math.floor(Math.random() * (QUOTES.length - 1))) % QUOTES.length);
 
   return (
-    <div class="bg-surface border border-rim rounded-xl px-4 py-4">
+    <Card class="px-4 py-4">
       <div class="flex items-start justify-between gap-2">
         <blockquote class="text-sm text-txt italic leading-snug">
           “{QUOTES[index()][0]}”
         </blockquote>
-        <button
-          onClick={shuffle}
-          title={t("widgets.quote_shuffle")}
-          aria-label={t("widgets.quote_shuffle")}
-          class="shrink-0 p-1 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-        >
+        <IconButton label={t("widgets.quote_shuffle")} size="sm" class="shrink-0" onClick={shuffle}>
           <IoShuffleOutline size={16} />
-        </button>
+        </IconButton>
       </div>
       <p class="text-xs text-muted mt-2">— {QUOTES[index()][1]}</p>
-    </div>
+    </Card>
   );
 }

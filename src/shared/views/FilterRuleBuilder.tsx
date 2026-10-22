@@ -6,9 +6,9 @@ import {
 } from "@utsukta/spa-core/lib/filter-dsl";
 import { MdOutlineClose, MdOutlineAdd } from "solid-icons/md";
 import SuggestInput from "./SuggestInput";
+import { Button, IconButton } from "@ui/Button";
+import { Select, Textarea } from "@ui/Field";
 
-const selectClass = `px-2 py-1.5 rounded-lg border border-rim bg-surface text-txt text-sm
-  hover:border-rim-strong focus:outline-none focus:border-rim-strong transition-colors`;
 const textClass = `flex-1 min-w-[8rem] px-2.5 py-1.5 rounded-lg border border-rim bg-surface text-txt text-sm
   placeholder:text-muted hover:border-rim-strong focus:outline-none focus:border-rim-strong transition-colors`;
 
@@ -74,31 +74,23 @@ export default function FilterRuleBuilder(props: {
       <Show
         when={!raw()}
         fallback={
-          <textarea
-            rows={props.rows ?? 4}
-            value={props.value}
-            onInput={(e) => {
+          <Textarea class="w-full resize-y font-mono" rows={props.rows ?? 4} value={props.value} onInput={(e) => {
               emitted = e.currentTarget.value;
               props.onChange(emitted);
               setLocked(!parse(emitted));
-            }}
-            class={`w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-                    placeholder:text-muted hover:border-rim-strong focus:outline-none
-                    focus:border-rim-strong transition-colors resize-y font-mono`}
-          />
+            }} />
         }
       >
         <Show when={rules().conds.length > 1}>
           <label class="flex items-center gap-2 text-xs text-muted">
             {t("filters.match_label")}
-            <select
-              class={selectClass}
+            <Select
               value={rules().join}
               onChange={(e) => emit({ ...rules(), join: e.currentTarget.value as "any" | "all" })}
             >
               <option value="any">{t("filters.match_any")}</option>
               <option value="all">{t("filters.match_all")}</option>
-            </select>
+            </Select>
           </label>
         </Show>
 
@@ -108,26 +100,21 @@ export default function FilterRuleBuilder(props: {
         <Index each={rules().conds}>
           {(c, i) => (
             <div class="flex flex-wrap items-center gap-2">
-              <select
-                class={selectClass}
+              <Select
                 value={c().field}
                 onChange={(e) => patch(i, { field: e.currentTarget.value as FilterField })}
               >
                 <For each={fields()}>
                   {(f) => <option value={f}>{t(`filters.field_${f}` as any)}</option>}
                 </For>
-              </select>
+              </Select>
 
               <Show when={FIELD_OPS[c().field].length > 1}>
-                <select
-                  class={selectClass}
-                  value={c().op}
-                  onChange={(e) => patch(i, { op: e.currentTarget.value as FilterOp })}
-                >
+                <Select value={c().op} onChange={(e) => patch(i, { op: e.currentTarget.value as FilterOp })}>
                   <For each={FIELD_OPS[c().field]}>
                     {(o) => <option value={o}>{t(`filters.op_${o}` as any)}</option>}
                   </For>
-                </select>
+                </Select>
               </Show>
 
               <Show when={c().op !== "any"}>
@@ -142,14 +129,13 @@ export default function FilterRuleBuilder(props: {
                 />
               </Show>
 
-              <button
-                type="button"
-                title={t("filters.remove")}
+              <IconButton
+                label={t("filters.remove")}
+                size="sm"
                 onClick={() => emit({ ...rules(), conds: rules().conds.filter((_, idx) => idx !== i) })}
-                class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-base transition-colors"
               >
                 <MdOutlineClose size={16} />
-              </button>
+              </IconButton>
             </div>
           )}
         </Index>
@@ -158,15 +144,14 @@ export default function FilterRuleBuilder(props: {
           <p class="text-xs text-muted">{t("filters.none")}</p>
         </Show>
 
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => emit({ ...rules(), conds: [...rules().conds, { field: fields()[0], op: FIELD_OPS[fields()[0]][0], value: "" }] })}
-          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rim text-xs
-                 text-txt hover:border-rim-strong hover:bg-base transition-colors"
         >
           <MdOutlineAdd size={14} />
           {t("filters.add_condition")}
-        </button>
+        </Button>
       </Show>
 
       <div class="flex flex-wrap items-center gap-2">

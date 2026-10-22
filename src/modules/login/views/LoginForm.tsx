@@ -4,6 +4,9 @@ import { fetchLoginToken, submitLogin, submitRmagic } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 interface LoginFormProps {
   // Path on this site to land on after login. Defaults to /hq for local
@@ -72,7 +75,7 @@ export default function LoginForm(props: LoginFormProps) {
   };
 
   return (
-    <div class="w-full max-w-lg bg-surface border border-rim rounded-2xl p-8 shadow-sm">
+    <Card raised class="w-full max-w-lg p-8">
       {/* Brand */}
       <div class="mb-6 text-center">
         <img
@@ -91,7 +94,8 @@ export default function LoginForm(props: LoginFormProps) {
           <label class="text-sm font-medium text-txt" for="login-username">
             {t("auth.email_or_username")}
           </label>
-          <input
+          <Input
+            class="w-full"
             id="login-username"
             type="text"
             autocomplete="username"
@@ -99,10 +103,6 @@ export default function LoginForm(props: LoginFormProps) {
             disabled={loading()}
             value={username()}
             onInput={(e) => setUsername(e.currentTarget.value)}
-            class="w-full px-3 py-2 rounded-lg border border-rim bg-base text-txt text-sm
-                   placeholder:text-muted
-                   focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent
-                   disabled:opacity-60 transition-colors"
             placeholder={t("auth.email_placeholder")}
           />
         </div>
@@ -116,7 +116,8 @@ export default function LoginForm(props: LoginFormProps) {
               {t("auth.forgot_password_link")}
             </A>
           </div>
-          <input
+          <Input
+            class="w-full"
             id="login-password"
             type="password"
             autocomplete="current-password"
@@ -124,10 +125,6 @@ export default function LoginForm(props: LoginFormProps) {
             disabled={loading()}
             value={password()}
             onInput={(e) => setPassword(e.currentTarget.value)}
-            class="w-full px-3 py-2 rounded-lg border border-rim bg-base text-txt text-sm
-                   placeholder:text-muted
-                   focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent
-                   disabled:opacity-60 transition-colors"
             placeholder={t("auth.password_placeholder")}
           />
         </div>
@@ -146,17 +143,9 @@ export default function LoginForm(props: LoginFormProps) {
           </label>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading() || !token()}
-          class="w-full py-2.5 px-4 rounded-lg bg-accent text-accent-fg font-medium text-sm
-                 hover:opacity-90 active:opacity-80
-                 disabled:opacity-50 disabled:cursor-not-allowed
-                 focus:outline-none focus:ring-2 focus:ring-accent/40
-                 transition-opacity"
-        >
+        <Button class="w-full" type="submit" disabled={loading() || !token()}>
           {loading() ? t("auth.signing_in") : t("auth.sign_in")}
-        </button>
+        </Button>
       </form>
 
       {/* Register link */}
@@ -185,7 +174,8 @@ export default function LoginForm(props: LoginFormProps) {
           <label class="text-sm font-medium text-txt" for="rmagic-addr">
             {t("auth.remote_address_label")}
           </label>
-          <input
+          <Input
+            class="w-full"
             id="rmagic-addr"
             name="address"
             type="text"
@@ -194,26 +184,19 @@ export default function LoginForm(props: LoginFormProps) {
             disabled={remoteLoading()}
             value={remoteAddr()}
             onInput={(e) => setRemoteAddr(e.currentTarget.value)}
-            class="w-full px-3 py-2 rounded-lg border border-rim bg-base text-txt text-sm
-                   placeholder:text-muted
-                   focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent
-                   disabled:opacity-60 transition-colors"
             placeholder={t("auth.remote_address_placeholder")}
           />
           <p class="text-xs text-muted">{t("auth.remote_login_hint")}</p>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          class="w-full"
           type="submit"
           disabled={remoteLoading() || !remoteAddr().trim()}
-          class="w-full py-2.5 px-4 rounded-lg border border-rim bg-base text-txt font-medium text-sm
-                 hover:bg-elevated active:opacity-80
-                 disabled:opacity-50 disabled:cursor-not-allowed
-                 focus:outline-none focus:ring-2 focus:ring-accent/40
-                 transition-colors"
         >
           {t("auth.remote_login_btn")}
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   );
 }

@@ -2,7 +2,7 @@ import { Show, createSignal, onMount } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchNotificationSettings, saveNotificationSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
-import { SaveBar, Group, SwitchRow } from "../../store/FormHelpers";
+import { SaveBar, Group } from "../../store/FormHelpers";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdOutlineCampaign,
@@ -23,6 +23,9 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "@utsukta/spa-core/lib/webPush";
+import { Input } from "@ui/Field";
+import { Toggle } from "@ui/Toggle";
+import { Card, CardHeader } from "@ui/Card";
 
 const NOTIFY_FIELDS = [
   "notify1","notify2","notify3","notify4","notify5",
@@ -57,9 +60,9 @@ export default function NotificationsSection() {
               title={t("settings.notif_autopost_title")}
               desc={t("settings.notif_autopost_desc")}
             >
-              <SwitchRow name="post_newfriend"     label={t("settings.notif_friend_request")} checked={!!d().post_newfriend} />
-              <SwitchRow name="post_joingroup"     label={t("settings.notif_join_forum")}     checked={!!d().post_joingroup} />
-              <SwitchRow name="post_profilechange" label={t("settings.notif_profile_change")} checked={!!d().post_profilechange} />
+              <Toggle name="post_newfriend"     label={t("settings.notif_friend_request")} checked={!!d().post_newfriend} />
+              <Toggle name="post_joingroup"     label={t("settings.notif_join_forum")}     checked={!!d().post_joingroup} />
+              <Toggle name="post_profilechange" label={t("settings.notif_profile_change")} checked={!!d().post_profilechange} />
             </Group>
 
             {/* Email notifications */}
@@ -69,15 +72,15 @@ export default function NotificationsSection() {
               desc={t("settings.notif_email_desc")}
               columns
             >
-              <SwitchRow name="notify1" label={t("settings.notif_email_conn_req")}       checked={!!d().notify1} />
-              <SwitchRow name="notify2" label={t("settings.notif_email_conn_confirmed")} checked={!!d().notify2} />
-              <SwitchRow name="notify3" label={t("settings.notif_email_wall_post")}      checked={!!d().notify3} />
-              <SwitchRow name="notify4" label={t("settings.notif_email_followup")}       checked={!!d().notify4} />
-              <SwitchRow name="notify5" label={t("settings.notif_email_private")}        checked={!!d().notify5} />
-              <SwitchRow name="notify6" label={t("settings.notif_email_friend_suggest")} checked={!!d().notify6} />
-              <SwitchRow name="notify7" label={t("settings.notif_email_tagged")}         checked={!!d().notify7} />
-              <SwitchRow name="notify8" label={t("settings.notif_email_poked")}          checked={!!d().notify8} />
-              <SwitchRow name="notify9" label={t("settings.notif_email_liked")}          checked={!!d().notify9} />
+              <Toggle name="notify1" label={t("settings.notif_email_conn_req")}       checked={!!d().notify1} />
+              <Toggle name="notify2" label={t("settings.notif_email_conn_confirmed")} checked={!!d().notify2} />
+              <Toggle name="notify3" label={t("settings.notif_email_wall_post")}      checked={!!d().notify3} />
+              <Toggle name="notify4" label={t("settings.notif_email_followup")}       checked={!!d().notify4} />
+              <Toggle name="notify5" label={t("settings.notif_email_private")}        checked={!!d().notify5} />
+              <Toggle name="notify6" label={t("settings.notif_email_friend_suggest")} checked={!!d().notify6} />
+              <Toggle name="notify7" label={t("settings.notif_email_tagged")}         checked={!!d().notify7} />
+              <Toggle name="notify8" label={t("settings.notif_email_poked")}          checked={!!d().notify8} />
+              <Toggle name="notify9" label={t("settings.notif_email_liked")}          checked={!!d().notify9} />
             </Group>
 
             {/* Visual notifications */}
@@ -87,24 +90,24 @@ export default function NotificationsSection() {
               desc={t("settings.notif_visual_desc")}
               columns
             >
-              <SwitchRow name="vnotify1"  label={t("settings.notif_visual_stream")}          checked={!!d().vnotify1} />
-              <SwitchRow name="vnotify2"  label={t("settings.notif_visual_channel")}         checked={!!d().vnotify2} />
-              <SwitchRow name="vnotify3"  label={t("settings.notif_visual_private")}         checked={!!d().vnotify3} />
-              <SwitchRow name="vnotify4"  label={t("settings.notif_visual_events")}          checked={!!d().vnotify4} />
-              <SwitchRow name="vnotify5"  label={t("settings.notif_visual_events_today")}    checked={!!d().vnotify5} />
-              <SwitchRow name="vnotify6"  label={t("settings.notif_visual_birthdays")}       checked={!!d().vnotify6} />
-              <SwitchRow name="vnotify7"  label={t("settings.notif_visual_system")}          checked={!!d().vnotify7} />
-              <SwitchRow name="vnotify8"  label={t("settings.notif_visual_system_info")}     checked={!!d().vnotify8} />
-              <SwitchRow name="vnotify9"  label={t("settings.notif_visual_system_critical")} checked={!!d().vnotify9} />
-              <SwitchRow name="vnotify10" label={t("settings.notif_visual_connections")}     checked={!!d().vnotify10} />
-              <SwitchRow name="vnotify12" label={t("settings.notif_visual_files")}           checked={!!d().vnotify12} />
-              <SwitchRow name="vnotify14" label={t("settings.notif_visual_likes")}           checked={!!d().vnotify14} />
-              <SwitchRow name="vnotify15" label={t("settings.notif_visual_forum")}           checked={!!d().vnotify15} />
+              <Toggle name="vnotify1"  label={t("settings.notif_visual_stream")}          checked={!!d().vnotify1} />
+              <Toggle name="vnotify2"  label={t("settings.notif_visual_channel")}         checked={!!d().vnotify2} />
+              <Toggle name="vnotify3"  label={t("settings.notif_visual_private")}         checked={!!d().vnotify3} />
+              <Toggle name="vnotify4"  label={t("settings.notif_visual_events")}          checked={!!d().vnotify4} />
+              <Toggle name="vnotify5"  label={t("settings.notif_visual_events_today")}    checked={!!d().vnotify5} />
+              <Toggle name="vnotify6"  label={t("settings.notif_visual_birthdays")}       checked={!!d().vnotify6} />
+              <Toggle name="vnotify7"  label={t("settings.notif_visual_system")}          checked={!!d().vnotify7} />
+              <Toggle name="vnotify8"  label={t("settings.notif_visual_system_info")}     checked={!!d().vnotify8} />
+              <Toggle name="vnotify9"  label={t("settings.notif_visual_system_critical")} checked={!!d().vnotify9} />
+              <Toggle name="vnotify10" label={t("settings.notif_visual_connections")}     checked={!!d().vnotify10} />
+              <Toggle name="vnotify12" label={t("settings.notif_visual_files")}           checked={!!d().vnotify12} />
+              <Toggle name="vnotify14" label={t("settings.notif_visual_likes")}           checked={!!d().vnotify14} />
+              <Toggle name="vnotify15" label={t("settings.notif_visual_forum")}           checked={!!d().vnotify15} />
               <Show when={d().vnotify11 !== undefined}>
-                <SwitchRow name="vnotify11" label={t("settings.notif_visual_registrations")} checked={!!d().vnotify11} />
+                <Toggle name="vnotify11" label={t("settings.notif_visual_registrations")} checked={!!d().vnotify11} />
               </Show>
               <Show when={d().vnotify13 !== undefined}>
-                <SwitchRow name="vnotify13" label={t("settings.notif_visual_pubstream")}     checked={!!d().vnotify13} />
+                <Toggle name="vnotify13" label={t("settings.notif_visual_pubstream")}     checked={!!d().vnotify13} />
               </Show>
             </Group>
 
@@ -114,9 +117,9 @@ export default function NotificationsSection() {
               title={t("settings.notif_other_title")}
               desc={t("settings.notif_other_desc")}
             >
-              <SwitchRow name="always_show_in_notices"    label={t("settings.notif_show_in_notices")}  checked={!!d().always_show_in_notices} />
-              <SwitchRow name="update_notices_per_parent" label={t("settings.notif_mark_thread_read")} checked={!!d().update_notices_per_parent} />
-              <SwitchRow name="invert_notifications_order"  label={t("settings.notif_invert_order")}     checked={!!d().invert_notifications_order} />
+              <Toggle name="always_show_in_notices"    label={t("settings.notif_show_in_notices")}  checked={!!d().always_show_in_notices} />
+              <Toggle name="update_notices_per_parent" label={t("settings.notif_mark_thread_read")} checked={!!d().update_notices_per_parent} />
+              <Toggle name="invert_notifications_order"  label={t("settings.notif_invert_order")}     checked={!!d().invert_notifications_order} />
               <DesktopNotifyRow />
               <PushNotifyRow />
               <div class="flex items-center justify-between gap-4 py-2.5">
@@ -124,15 +127,13 @@ export default function NotificationsSection() {
                   <span class="block text-sm text-txt">{t("settings.notif_event_advance_days")}</span>
                   <span class="block text-xs text-muted">{t("settings.notif_event_advance_hint")}</span>
                 </span>
-                <input
+                <Input
+                  class="w-16 shrink-0 text-center"
                   type="number"
                   name="evdays"
                   min="1"
                   max="30"
                   value={d().evdays}
-                  class="w-16 shrink-0 px-2 py-1.5 rounded-lg border border-rim bg-base text-txt
-                         text-sm text-center hover:border-rim-strong focus:outline-none
-                         focus:border-rim-strong transition-colors"
                 />
               </div>
             </Group>
@@ -165,33 +166,13 @@ function DesktopNotifyRow() {
   };
 
   return (
-    <div class="flex items-center justify-between gap-4 py-2.5">
-      <span class="min-w-0">
-        <span class="block text-sm text-txt">{t("settings.notif_desktop_title")}</span>
-        <span class="block text-xs text-muted">
-          {blocked() ? t("settings.notif_desktop_blocked") : t("settings.notif_desktop_hint")}
-        </span>
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on()}
-        onClick={toggle}
-        disabled={!supported || blocked() || busy()}
-        class={
-          "appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 " +
-          "border transition-colors disabled:opacity-50 disabled:cursor-not-allowed " +
-          "after:absolute after:top-1/2 after:left-1 after:-translate-y-1/2 " +
-          "after:h-4 after:w-4 after:rounded-full " +
-          "after:transition-transform after:duration-150 motion-reduce:after:transition-none " +
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 " +
-          "focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
-          (on()
-            ? "bg-accent border-accent after:translate-x-5 after:bg-accent-fg"
-            : "bg-elevated border-rim after:bg-muted")
-        }
-      />
-    </div>
+    <Toggle
+      label={t("settings.notif_desktop_title")}
+      hint={blocked() ? t("settings.notif_desktop_blocked") : t("settings.notif_desktop_hint")}
+      checked={on()}
+      disabled={!supported || blocked() || busy()}
+      onChange={toggle}
+    />
   );
 }
 
@@ -226,33 +207,13 @@ function PushNotifyRow() {
   };
 
   return (
-    <div class="flex items-center justify-between gap-4 py-2.5">
-      <span class="min-w-0">
-        <span class="block text-sm text-txt">{t("settings.notif_push_title")}</span>
-        <span class="block text-xs text-muted">
-          {blocked() ? t("settings.notif_desktop_blocked") : t("settings.notif_push_hint")}
-        </span>
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={subscribed()}
-        onClick={toggle}
-        disabled={!supported || blocked() || busy()}
-        class={
-          "appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full p-0 " +
-          "border transition-colors disabled:opacity-50 disabled:cursor-not-allowed " +
-          "after:absolute after:top-1/2 after:left-1 after:-translate-y-1/2 " +
-          "after:h-4 after:w-4 after:rounded-full " +
-          "after:transition-transform after:duration-150 motion-reduce:after:transition-none " +
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 " +
-          "focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
-          (subscribed()
-            ? "bg-accent border-accent after:translate-x-5 after:bg-accent-fg"
-            : "bg-elevated border-rim after:bg-muted")
-        }
-      />
-    </div>
+    <Toggle
+      label={t("settings.notif_push_title")}
+      hint={blocked() ? t("settings.notif_desktop_blocked") : t("settings.notif_push_hint")}
+      checked={subscribed()}
+      disabled={!supported || blocked() || busy()}
+      onChange={toggle}
+    />
   );
 }
 
@@ -260,14 +221,14 @@ function Skeleton() {
   return (
     <div class="space-y-5 animate-pulse">
       {[...Array(3)].map(() => (
-        <div class="rounded-xl border border-rim bg-surface">
-          <div class="flex items-center gap-3 px-4 py-3 border-b border-rim">
+        <Card>
+          <CardHeader class="flex items-center gap-3">
             <div class="h-8 w-8 rounded-lg bg-elevated" />
             <div class="space-y-1.5">
               <div class="h-3.5 w-36 rounded bg-elevated" />
               <div class="h-3 w-52 rounded bg-elevated" />
             </div>
-          </div>
+          </CardHeader>
           <div class="px-4 py-2 space-y-3">
             {[...Array(3)].map(() => (
               <div class="flex items-center justify-between">
@@ -276,7 +237,7 @@ function Skeleton() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );

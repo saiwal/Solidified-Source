@@ -1,0 +1,19 @@
+{
+  "name": "@utsukta/spa-ui",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Default (Tailwind) implementation of the @ui primitives. Themes resolve @ui/* to their own src/ui/ first and fall back here — see vite-plugin.mjs.",
+  "exports": {
+    "./vite-plugin": {
+      "types": "./vite-plugin.d.mts",
+      "default": "./vite-plugin.mjs"
+    },
+    "./*": "./src/*.tsx"
+  },
+  "peerDependencies": {
+    "@utsukta/spa-core": "*",
+    "solid-icons": "*",
+    "solid-js": "*"
+  }
+}

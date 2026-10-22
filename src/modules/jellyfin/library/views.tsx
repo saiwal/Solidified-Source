@@ -14,7 +14,7 @@ import {
   type JellyfinSession, type JfItem, type JfPage, type Sort,
 } from "../api";
 import { playList, shuffled, toggleShuffle } from "../store";
-import { Art, ghostPill, primaryPill, iconBtn } from "../ui";
+import { Art } from "../ui";
 import { useSection } from "../chrome/section";
 import { jfQuery, QueryError, Loading, Empty, BackLink, ItemGrid, Shelf, TrackList } from "./common";
 import { SkeletonShelf } from "../ui";
@@ -24,6 +24,9 @@ import TrackMenu from "./TrackMenu";
 import { startMix } from "./mix";
 import ShareButton from "../share";
 import VideoPlayer, { videoTitle } from "../video/VideoPlayer";
+import { Button, IconButton } from "@ui/Button";
+import { Select } from "@ui/Field";
+import { Tabs } from "@ui/Tabs";
 
 const key = (s: JellyfinSession, ...rest: unknown[]) => ["jellyfin", s.server, s.userId, ...rest];
 
@@ -69,19 +72,6 @@ const TAB_LABEL = {
 } as const;
 
 /** Quiet text tabs; the current one is in full colour with an accent underline. One row, scrolls sideways on a phone. */
-export function TextTabs<T extends string>(props: { tabs: T[]; current: T; label: (t: T) => string; onPick: (t: T) => void }) {
-  return (
-    <div role="tablist" class="flex gap-6 overflow-x-auto [scrollbar-width:none] -mx-1 px-1">
-      <For each={props.tabs}>{(k) => (
-        <button type="button" role="tab" aria-selected={props.current === k} onClick={() => props.onPick(k)}
-          class={`relative shrink-0 pb-2 text-sm transition-colors duration-300 ${props.current === k ? "text-txt" : "text-muted hover:text-txt"}`}>
-          {props.label(k)}
-          <span class={`absolute left-0 bottom-0 h-0.5 rounded-full bg-accent transition-all duration-300 ${props.current === k ? "w-full" : "w-0"}`} />
-        </button>
-      )}</For>
-    </div>
-  );
-}
 
 function Library(props: { s: JellyfinSession }) {
   const { t } = useI18n();
@@ -103,8 +93,14 @@ function Library(props: { s: JellyfinSession }) {
 
   return (
     <div class="space-y-8">
-      <TextTabs tabs={tabs()} current={tab()} label={label}
-        onPick={(k) => setParams({ view: k === "home" ? undefined : k, sort: undefined, dir: undefined })} />
+      <Tabs
+        variant="underline"
+        class="-mx-1 px-1"
+        label={t(section() === "music" ? "jellyfin.section_music" : "jellyfin.section_video")}
+        value={tab()}
+        onChange={(k) => setParams({ view: k === "home" ? undefined : k, sort: undefined, dir: undefined })}
+        items={tabs().map((k) => ({ value: k, label: label(k) }))}
+      />
       <Show when={`${section()}:${tab()}`} keyed>
         {(_k) => (
           <Motion.div {...fade}>
@@ -188,16 +184,14 @@ function SortControl(props: { ctl: ReturnType<typeof useSort> }) {
       <label class="flex items-center gap-2 text-sm text-muted">
         <MdOutlineSort size={18} aria-hidden="true" />
         <span class="sr-only">{t("jellyfin.sort_by")}</span>
-        <select value={c.option().id} onChange={(e) => c.pick(e.currentTarget.value)}
-          class="bg-transparent border-0 border-b border-rim focus:border-accent outline-none py-1 pr-6 text-sm text-txt">
+        <Select value={c.option().id} onChange={(e) => c.pick(e.currentTarget.value)}>
           <For each={c.options()}>{(o) => <option value={o.id}>{t(o.label)}</option>}</For>
-        </select>
+        </Select>
       </label>
       <Show when={c.option().id !== "random"}>
-        <button type="button" class={iconBtn} onClick={c.flip}
-          title={c.desc() ? t("jellyfin.sort_desc") : t("jellyfin.sort_asc")} aria-label={c.desc() ? t("jellyfin.sort_desc") : t("jellyfin.sort_asc")}>
+        <IconButton label={c.desc() ? t("jellyfin.sort_desc") : t("jellyfin.sort_asc")} onClick={c.flip}>
           <Show when={c.desc()} fallback={<MdFillArrow_upward size={18} />}><MdFillArrow_downward size={18} /></Show>
-        </button>
+        </IconButton>
       </Show>
     </div>
   );
@@ -228,9 +222,9 @@ function Paged(props: { s: JellyfinSession; kind: PagedKind }) {
         </Show>
         <Show when={q.hasNextPage}>
           <div class="text-center pt-6">
-            <button type="button" disabled={q.isFetchingNextPage} onClick={() => q.fetchNextPage()} class={ghostPill}>
+            <Button variant="ghost" disabled={q.isFetchingNextPage} onClick={() => q.fetchNextPage()}>
               {t("jellyfin.load_more")}
-            </button>
+            </Button>
           </div>
         </Show>
       </Show>
@@ -345,14 +339,14 @@ function trackActions(s: JellyfinSession, tracks: () => JfItem[], t: ReturnType<
   };
   return {
     primary: (
-      <button type="button" class={primaryPill} disabled={!tracks().length} onClick={() => playList(s, tracks())}>
+      <Button disabled={!tracks().length} onClick={() => playList(s, tracks())}>
         <MdFillPlay_arrow size={20} /> {t("jellyfin.play_all")}
-      </button>
+      </Button>
     ),
     secondary: (
-      <button type="button" class={ghostPill} disabled={!tracks().length} onClick={shufflePlay}>
+      <Button variant="ghost" disabled={!tracks().length} onClick={shufflePlay}>
         <MdFillShuffle size={18} /> {t("jellyfin.shuffle")}
-      </button>
+      </Button>
     ),
   };
 }
@@ -372,9 +366,9 @@ function ArtistDetail(props: { s: JellyfinSession; id: string }) {
         <Hero s={props.s} item={artist.data} shape="round"
           lines={[albums.data ? t("jellyfin.album_count", { n: String(albums.data.TotalRecordCount) }) : undefined]}
           primary={<Show when={artist.data}>{(it) => (
-            <button type="button" class={primaryPill} onClick={() => void startMix(props.s, it(), t)}>
+            <Button onClick={() => void startMix(props.s, it(), t)}>
               <MdFillRadio size={18} /> {t("jellyfin.instant_mix")}
-            </button>
+            </Button>
           )}</Show>} />
       </div>
       <Show when={!albums.isError} fallback={<QueryError error={albums.error} />}>
@@ -464,9 +458,11 @@ function PlayVideoButton(props: { item: JfItem }) {
   const [, setParams] = useSearchParams();
   const resumeAt = () => ticksToSeconds(props.item.UserData?.PlaybackPositionTicks);
   return (
-    <button type="button" class={primaryPill} onClick={() => setParams({ watch: props.item.Id, item: undefined, series: undefined, t: undefined })}>
+    <Button
+      onClick={() => setParams({ watch: props.item.Id, item: undefined, series: undefined, t: undefined })}
+    >
       <MdFillPlay_arrow size={20} /> {resumeAt() > 0 ? t("jellyfin.resume") : t("jellyfin.play")}
-    </button>
+    </Button>
   );
 }
 
@@ -523,8 +519,14 @@ function SeriesDetail(props: { s: JellyfinSession; id: string }) {
         </Show>
       </div>
       <Show when={(seasonList.data?.Items.length ?? 0) > 1}>
-        <TextTabs tabs={seasonList.data!.Items.map((x) => x.Id)} current={season() ?? ""}
-          label={(id) => seasonList.data!.Items.find((x) => x.Id === id)?.Name ?? ""} onPick={setSeason} />
+        <Tabs
+          variant="underline"
+          class="-mx-1 px-1"
+          label={t("jellyfin.seasons")}
+          value={season() ?? ""}
+          onChange={setSeason}
+          items={seasonList.data!.Items.map((x) => ({ value: x.Id, label: x.Name }))}
+        />
       </Show>
       <Show when={eps.data} fallback={<Show when={season()}><Loading kind="rows" /></Show>}>
         <ol class="space-y-1">

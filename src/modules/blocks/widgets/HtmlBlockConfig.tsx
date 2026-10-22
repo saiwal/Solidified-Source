@@ -10,6 +10,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchBlocks } from "@/modules/webpages/api";
+import { Button } from "@ui/Button";
+import { Input, Select, Textarea } from "@ui/Field";
 
 const MAX_HTML = 1800;
 
@@ -44,12 +46,13 @@ export default function HtmlBlockConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_title")}
-        <input
+        <Input
+          size="sm"
+          class="mt-1 w-full"
           type="text"
           value={title()}
           onInput={(e) => setTitle(e.currentTarget.value)}
           maxLength={100}
-          class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
         />
       </label>
 
@@ -86,13 +89,13 @@ export default function HtmlBlockConfig(props: WidgetConfigProps) {
         fallback={
           <label class="text-xs text-muted">
             {t("widgets.cfg_html")}
-            <textarea
+            <Textarea
+              size="sm"
+              class="mt-1 w-full font-mono resize-y"
               value={html()}
               onInput={(e) => setHtml(e.currentTarget.value)}
               maxLength={MAX_HTML}
               rows={6}
-              class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt
-                     font-mono resize-y"
             />
           </label>
         }
@@ -103,16 +106,17 @@ export default function HtmlBlockConfig(props: WidgetConfigProps) {
             when={blockOptions().length > 0}
             fallback={<p class="mt-1 text-[0.6875rem] text-muted">{t("widgets.cfg_no_blocks")}</p>}
           >
-            <select
+            <Select
+              size="sm"
+              class="mt-1 w-full"
               value={blockName()}
               onChange={(e) => setBlockName(e.currentTarget.value)}
-              class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
             >
               <option value="">—</option>
               <For each={blockOptions()}>
                 {(b) => <option value={b.name}>{b.title || b.name}</option>}
               </For>
-            </select>
+            </Select>
           </Show>
         </label>
       </Show>
@@ -123,14 +127,9 @@ export default function HtmlBlockConfig(props: WidgetConfigProps) {
             {t("widgets.cfg_html_hint")} ({html().length}/{MAX_HTML})
           </span>
         </Show>
-        <button
-          onClick={save}
-          disabled={!canSave()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all disabled:opacity-40"
-        >
+        <Button size="sm" onClick={save} disabled={!canSave()}>
           {t("widgets.cfg_save")}
-        </button>
+        </Button>
       </div>
     </div>
   );

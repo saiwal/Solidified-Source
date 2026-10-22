@@ -8,11 +8,9 @@ import {
   Match,
   type JSX,
 } from "solid-js";
-import { Portal } from "solid-js/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import {
   fetchCdavCalendars,
   createCdavCalendar,
@@ -25,32 +23,26 @@ import {
   type CdavCalendarsData,
 } from "../api/cdav";
 import { bumpCalendarRefresh } from "../store";
-import Modal from "@/shared/views/Modal";
-import { createPopover } from "@/shared/stream/filters/createPopover";
-import { primaryPill, ghostPill, SkeletonRows } from "@/shared/views/ui";
+import { Modal, modalPanelClass } from "@ui/Modal";
+import { SkeletonRows } from "@/shared/views/ui";
 import { Motion, pop } from "@/shared/views/anim";
 import {
   MdOutlineAdd, MdOutlineCalendar_today, MdOutlineDelete, MdOutlineEdit, MdOutlineExpand_more,
   MdOutlineFile_download, MdOutlineFile_upload, MdOutlineMore_horiz, MdOutlineShare,
 } from "solid-icons/md";
+import { Button, IconButton, iconButtonClass, primaryPill } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 
 // ── small shared primitives ───────────────────────────────────────────────────
 
-const fieldCls =
-  "w-full bg-transparent border-0 border-b border-rim px-0 py-1.5 text-sm text-txt " +
-  "placeholder:text-muted focus:outline-none focus:border-accent transition-colors";
-const dangerPill =
-  "inline-flex items-center gap-2 h-10 px-5 rounded-full bg-red-500 text-white text-sm font-medium " +
-  "hover:brightness-110 transition disabled:opacity-60";
-const menuPanel = "z-50 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2 w-48";
-const menuItem = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-txt hover:bg-elevated/70 text-left";
-const smallIconBtn = "p-1.5 rounded-full text-muted hover:text-txt hover:bg-elevated/70 transition-colors";
 
 function Dialog(props: { title: string; onClose: () => void; children: JSX.Element }) {
   const id = createUniqueId();
   return (
     <Modal onClose={props.onClose} labelledBy={id}>
-      <Motion.div {...pop} class="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl space-y-5">
+      <Motion.div {...pop} class={`${modalPanelClass("sm")} p-6 space-y-5`}>
         <h2 id={id} class="text-lg font-semibold text-txt">{props.title}</h2>
         {props.children}
       </Motion.div>
@@ -62,7 +54,7 @@ function DialogActions(props: { onCancel: () => void; children: JSX.Element }) {
   const { t } = useI18n();
   return (
     <div class="flex justify-end gap-2 pt-1">
-      <button type="button" onClick={props.onCancel} class={ghostPill}>{t("calendar.cancel")}</button>
+      <Button variant="ghost" onClick={props.onCancel}>{t("calendar.cancel")}</Button>
       {props.children}
     </div>
   );
@@ -110,15 +102,23 @@ function CalendarForm(props: {
   return (
     <Dialog title={props.title} onClose={props.onClose}>
       <form onSubmit={submit} class="space-y-5">
-        <input type="text" required autofocus placeholder={t("calendar.calendar_name")} aria-label={t("calendar.calendar_name")}
-          value={name()} onInput={(e) => setName(e.currentTarget.value)} class={fieldCls} />
+        <Input
+          class="w-full"
+          type="text"
+          required
+          autofocus
+          placeholder={t("calendar.calendar_name")}
+          aria-label={t("calendar.calendar_name")}
+          value={name()}
+          onInput={(e) => setName(e.currentTarget.value)}
+        />
         <label class="flex items-center gap-3 cursor-pointer">
           <input type="color" value={color()} onInput={(e) => setColor(e.currentTarget.value)}
             class="w-8 h-8 rounded-full cursor-pointer border-0 bg-transparent p-0" />
           <span class="text-sm text-muted">{t("calendar.calendar_color")}</span>
         </label>
         <DialogActions onCancel={props.onClose}>
-          <button type="submit" disabled={busy()} class={primaryPill}>{busy() ? props.busyLabel : props.submitLabel}</button>
+          <Button type="submit" disabled={busy()}>{busy() ? props.busyLabel : props.submitLabel}</Button>
         </DialogActions>
       </form>
     </Dialog>
@@ -138,16 +138,12 @@ function CalendarRow(props: {
   const [enabled, setEnabled] = createSignal(cal().enabled);
   const [dialog, setDialog] = createSignal<"" | "edit" | "share" | "delete">("");
   const [busy, setBusy] = createSignal(false);
-  const menu = createPopover({ placement: "bottom-end" });
 
   // Share form
   const [shareHash, setShareHash] = createSignal("");
   const [shareAccess, setShareAccess] = createSignal<2 | 3>(3);
 
-  function pick(name: "edit" | "share" | "delete") {
-    menu.setOpen(false);
-    setDialog(name);
-  }
+  const pick = (name: "edit" | "share" | "delete") => setDialog(name);
 
   async function handleToggle() {
     const next = !enabled();
@@ -211,36 +207,31 @@ function CalendarRow(props: {
         <span class="text-[0.625rem] text-muted shrink-0">{accessLabel(cal().access !== "read")}</span>
       </Show>
 
-      <span ref={menu.ref}>
-        <button type="button" class={`${smallIconBtn} md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 ${menu.open() ? "md:opacity-100" : ""}`}
-          title={t("calendar.more")} aria-label={t("calendar.more")} aria-expanded={menu.open()}
-          onClick={() => menu.setOpen(!menu.open())}>
-          <MdOutlineMore_horiz size={16} />
-        </button>
-      </span>
-
-      <Show when={menu.open()}>
-        <Portal mount={topLayer()}>
-          <div ref={menu.floating} style={menu.style()} class={menuPanel}>
-            <a href={cal().exportUrl} download="" class={menuItem} onClick={() => menu.setOpen(false)}>
-              <MdOutlineFile_download size={16} class="text-muted shrink-0" /> {t("calendar.export")}
-            </a>
-            <Show when={isOwned()}>
-              <button type="button" class={menuItem} onClick={() => pick("edit")}>
-                <MdOutlineEdit size={16} class="text-muted shrink-0" /> {t("calendar.edit")}
-              </button>
-              <button type="button" class={menuItem} onClick={() => pick("share")}>
-                <MdOutlineShare size={16} class="text-muted shrink-0" /> {t("calendar.share")}
-              </button>
-              <div class="my-1.5 h-px bg-rim/60" />
-              <button type="button" class={`${menuItem} hover:text-red-500`} onClick={() => pick("delete")}>
-                <MdOutlineDelete size={16} class="shrink-0" /> {t("calendar.delete_calendar")}
-              </button>
-            </Show>
-          </div>
-        </Portal>
-      </Show>
-
+      <Menu
+        label={t("calendar.more")}
+        trigger={(p, open) => (
+          <IconButton
+            label={t("calendar.more")}
+            size="sm"
+            class={`md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 ${open() ? "md:opacity-100" : ""}`}
+            {...p}
+          >
+            <MdOutlineMore_horiz size={16} />
+          </IconButton>
+        )}
+      >
+        <MenuItem icon={<MdOutlineFile_download size={16} />} href={cal().exportUrl} download="">
+          {t("calendar.export")}
+        </MenuItem>
+        <Show when={isOwned()}>
+          <MenuItem icon={<MdOutlineEdit size={16} />} onClick={() => pick("edit")}>{t("calendar.edit")}</MenuItem>
+          <MenuItem icon={<MdOutlineShare size={16} />} onClick={() => pick("share")}>{t("calendar.share")}</MenuItem>
+          <MenuSeparator />
+          <MenuItem icon={<MdOutlineDelete size={16} />} danger onClick={() => pick("delete")}>
+            {t("calendar.delete_calendar")}
+          </MenuItem>
+        </Show>
+      </Menu>
       <Show when={dialog() === "edit"}>
         <CalendarForm
           title={t("calendar.edit_calendar")} name={cal().displayname} color={cal().color}
@@ -265,7 +256,7 @@ function CalendarRow(props: {
                     <span class="text-sm text-txt flex-1 truncate">{s.name}</span>
                     <span class="text-xs text-muted">{accessLabel(s.access === 3)}</span>
                     <button type="button" onClick={() => handleUnshare(s.hash)}
-                      class="text-xs text-muted hover:text-red-500 transition-colors">
+                      class="text-xs text-muted hover:text-danger-txt transition-colors">
                       {t("calendar.remove_sharee")}
                     </button>
                   </div>
@@ -275,21 +266,29 @@ function CalendarRow(props: {
           </Show>
 
           <form onSubmit={handleShare} class="space-y-5">
-            <select value={shareHash()} onChange={(e) => setShareHash(e.currentTarget.value)} class={fieldCls}
-              aria-label={t("calendar.select_channel")}>
+            <Select
+              class="w-full"
+              value={shareHash()}
+              onChange={(e) => setShareHash(e.currentTarget.value)}
+              aria-label={t("calendar.select_channel")}
+            >
               <option value="">{t("calendar.select_channel")}</option>
               <For each={props.localChannels ?? []}>
                 {(ch) => <option value={ch.hash}>{ch.name}</option>}
               </For>
-            </select>
-            <select value={shareAccess()} onChange={(e) => setShareAccess(Number(e.currentTarget.value) as 2 | 3)} class={fieldCls}>
+            </Select>
+            <Select
+              class="w-full"
+              value={shareAccess()}
+              onChange={(e) => setShareAccess(Number(e.currentTarget.value) as 2 | 3)}
+            >
               <option value="3">{t("calendar.access_read_write")}</option>
               <option value="2">{t("calendar.access_read_only")}</option>
-            </select>
+            </Select>
             <DialogActions onCancel={() => setDialog("")}>
-              <button type="submit" disabled={busy() || !shareHash()} class={primaryPill}>
+              <Button type="submit" disabled={busy() || !shareHash()}>
                 {busy() ? t("calendar.sharing") : t("calendar.share")}
-              </button>
+              </Button>
             </DialogActions>
           </form>
         </Dialog>
@@ -299,9 +298,9 @@ function CalendarRow(props: {
         <Dialog title={t("calendar.delete_calendar")} onClose={() => setDialog("")}>
           <p class="text-sm text-muted">{t("calendar.delete_confirm")}</p>
           <DialogActions onCancel={() => setDialog("")}>
-            <button type="button" onClick={handleDelete} disabled={busy()} class={dangerPill}>
+            <Button variant="danger" onClick={handleDelete} disabled={busy()}>
               {busy() ? t("calendar.deleting") : t("calendar.delete_calendar")}
-            </button>
+            </Button>
           </DialogActions>
         </Dialog>
       </Show>
@@ -355,7 +354,7 @@ function ChannelCalendarRow(props: { cal: CdavCalendar }) {
       <a
         href={props.cal.exportUrl}
         download=""
-        class={`${smallIconBtn} md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100`}
+        class={`${iconButtonClass("default", "sm")} md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100`}
         title={t("calendar.export_ical")}
         aria-label={t("calendar.export_ical")}
       >
@@ -421,13 +420,17 @@ function ImportDialog(props: {
 
   return (
     <Dialog title={t("calendar.import_ical")} onClose={props.onClose}>
-      <select value={target()} onChange={(e) => setTarget(e.currentTarget.value)} class={fieldCls}
-        aria-label={t("calendar.calendar_label")}>
+      <Select
+        class="w-full"
+        value={target()}
+        onChange={(e) => setTarget(e.currentTarget.value)}
+        aria-label={t("calendar.calendar_label")}
+      >
         <option value="channel_calendar">{props.channelCal.displayname}</option>
         <For each={props.writable}>
           {(cal) => <option value={`${cal.id}:${cal.instanceId}`}>{cal.displayname}</option>}
         </For>
-      </select>
+      </Select>
       <DialogActions onCancel={props.onClose}>
         <label class={`${primaryPill} cursor-pointer ${importing() ? "opacity-60 pointer-events-none" : ""}`}>
           <MdOutlineFile_upload size={18} />
@@ -448,20 +451,18 @@ export default function CdavCalendarWidget() {
   const [data, { refetch }] = createQueryResource<CdavCalendarsData>("cdav-calendars", fetchCdavCalendars);
 
   return (
-    <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden pb-2">
+    <Card raised class="overflow-hidden pb-2">
       {/* Header */}
       <div class="pl-4 pr-2 pt-3 flex items-center gap-2">
         <MdOutlineCalendar_today class="w-4 h-4 text-muted shrink-0" />
         <h3 class="text-sm font-semibold text-txt flex-1">{t("calendar.calendar_actions")}</h3>
         <Show when={data()?.has_cdav}>
-          <button type="button" class={smallIconBtn} onClick={() => setDialog("import")}
-            title={t("calendar.import_ical")} aria-label={t("calendar.import_ical")}>
+          <IconButton label={t("calendar.import_ical")} size="sm" onClick={() => setDialog("import")}>
             <MdOutlineFile_upload size={16} />
-          </button>
-          <button type="button" class={smallIconBtn} onClick={() => setDialog("create")}
-            title={t("calendar.create_calendar")} aria-label={t("calendar.create_calendar")}>
+          </IconButton>
+          <IconButton label={t("calendar.create_calendar")} size="sm" onClick={() => setDialog("create")}>
             <MdOutlineAdd size={16} />
-          </button>
+          </IconButton>
         </Show>
       </div>
 
@@ -524,6 +525,6 @@ export default function CdavCalendarWidget() {
           }}
         />
       </Show>
-    </div>
+    </Card>
   );
 }

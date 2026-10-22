@@ -5,6 +5,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineOpen_in_new } from "solid-icons/md";
 import CardShell from "@/shared/stream/CardShell";
 import { resetReveal } from "@/shared/stream/reveal";
+import { Input, Select } from "@ui/Field";
 
 const ACCESS_STYLES: Record<string, string> = {
   free:   'bg-accent-muted text-accent',
@@ -127,40 +128,31 @@ export default function PubsitesView() {
 
       {/* Filters */}
       <div class="flex flex-col sm:flex-row gap-2">
-        <input
+        <Input
+          class="flex-1"
           type="search"
           placeholder={t("directory.search_hubs")}
           value={filter()}
           onInput={(e) => setFilter(e.currentTarget.value)}
-          class="flex-1 px-3 py-2 text-sm rounded-lg border border-rim
-                 bg-surface text-txt
-                 placeholder:text-muted focus:outline-none focus:ring-2
-                 focus:ring-accent/40 focus:border-accent transition"
         />
-        <select
+        <Select
           value={accessFilter()}
           onChange={(e) => { resetReveal(); setAccessFilter(e.currentTarget.value); }}
-          class="px-3 py-2 text-sm rounded-lg border border-rim
-                 bg-surface text-txt
-                 focus:outline-none focus:ring-2 focus:ring-accent/40 transition"
         >
           <option value="all">{t("directory.all_access")}</option>
           <option value="free">{t("directory.access_free")}</option>
           <option value="tiered">{t("directory.access_tiered")}</option>
           <option value="paid">{t("directory.access_paid")}</option>
-        </select>
-        <select
+        </Select>
+        <Select
           value={registerFilter()}
           onChange={(e) => { resetReveal(); setRegisterFilter(e.currentTarget.value); }}
-          class="px-3 py-2 text-sm rounded-lg border border-rim
-                 bg-surface text-txt
-                 focus:outline-none focus:ring-2 focus:ring-accent/40 transition"
         >
           <option value="all">{t("directory.all_registration")}</option>
           <option value="open">{t("directory.reg_open")}</option>
           <option value="approve">{t("directory.reg_approve")}</option>
           <option value="closed">{t("directory.reg_closed")}</option>
-        </select>
+        </Select>
       </div>
 
       {/* Stats row */}

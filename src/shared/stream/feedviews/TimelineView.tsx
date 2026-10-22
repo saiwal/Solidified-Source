@@ -11,6 +11,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillPush_pin, MdOutlineFavorite_border } from "solid-icons/md";
 import CardShell from "../CardShell";
+import { EmptyState } from "@ui/EmptyState";
 
 type Entry =
   | { kind: "day"; key: string; label: string }
@@ -185,7 +186,7 @@ export default function TimelineView(props: { posts: ThreadNode[]; handlers: Str
 
   return (
     <div class="max-w-3xl mx-auto">
-      <Show when={entries().length > 0} fallback={<p class="text-center py-16 text-muted text-sm">{t("network.all_caught_up")}</p>}>
+      <Show when={entries().length > 0} fallback={<EmptyState>{t("network.all_caught_up")}</EmptyState>}>
         <div class="relative">
           {/* the continuous rail — a single line behind every day marker and card */}
           <div

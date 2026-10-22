@@ -11,6 +11,7 @@ import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { parseNetworkParams } from "../api";
+import { IconButton } from "@ui/Button";
 void helpable;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -64,16 +65,15 @@ export default function StreamFilters() {
 
         {/* ── Left: refresh + order ── */}
         <div class="flex items-center gap-1 min-w-0">
-          <button
+          <IconButton
+            label={t("network.refresh")}
+            size="sm"
+            class="shrink-0"
             onClick={softRefresh}
             disabled={loading() || refreshing()}
-            title={t("network.refresh")}
-            class="p-1.5 rounded-lg hover:bg-elevated transition-colors
-                   disabled:opacity-40 text-muted hover:text-txt shrink-0
-                   flex items-center justify-center"
           >
             <MdFillRefresh size={17} class={(loading() || refreshing()) ? "animate-spin" : ""} />
-          </button>
+          </IconButton>
 
           <SortSelect
             order={order()} range={range()} onChange={setOrderAndApply}

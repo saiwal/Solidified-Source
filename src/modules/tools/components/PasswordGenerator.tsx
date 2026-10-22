@@ -1,5 +1,7 @@
 import { createSignal, createMemo } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -12,9 +14,9 @@ function entropy(charsetSize: number, length: number): number {
 }
 
 function strengthLabel(bits: number): { labelKey: string; color: string; width: string } {
-  if (bits < 40) return { labelKey: "tools.pw_weak",        color: "bg-red-400",    width: "w-1/4" };
-  if (bits < 60) return { labelKey: "tools.pw_fair",        color: "bg-amber-400",  width: "w-2/4" };
-  if (bits < 80) return { labelKey: "tools.pw_strong",      color: "bg-green-400",  width: "w-3/4" };
+  if (bits < 40) return { labelKey: "tools.pw_weak",        color: "bg-danger",    width: "w-1/4" };
+  if (bits < 60) return { labelKey: "tools.pw_fair",        color: "bg-warning",  width: "w-2/4" };
+  if (bits < 80) return { labelKey: "tools.pw_strong",      color: "bg-success",  width: "w-3/4" };
   return              { labelKey: "tools.pw_very_strong",  color: "bg-accent",     width: "w-full" };
 }
 
@@ -105,17 +107,14 @@ export function PasswordGenerator() {
   return (
     <div class="flex flex-col gap-5 max-w-sm w-full mx-auto">
       {/* Password display */}
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3 flex items-center gap-3">
+      <Card class="px-4 py-3 flex items-center gap-3">
         <span class="font-mono text-txt text-base flex-1 break-all select-all">
           {password() || <span class="text-muted">{t("tools.pw_select_charset")}</span>}
         </span>
-        <button
-          onClick={() => copy(password())}
-          class="shrink-0 text-xs border border-rim text-muted hover:bg-elevated hover:text-txt rounded-lg px-3 py-1.5 transition-colors"
-        >
+        <Button variant="ghost" size="sm" class="shrink-0" onClick={() => copy(password())}>
           {copied() ? t("tools.pw_copied") : t("tools.pw_copy")}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* Strength bar */}
       {password() && (
@@ -147,7 +146,7 @@ export function PasswordGenerator() {
       </div>
 
       {/* Options */}
-      <div class="grid grid-cols-2 gap-3 bg-surface border border-rim rounded-xl p-4">
+      <Card class="grid grid-cols-2 gap-3 p-4">
         <CheckBox label={t("tools.pw_lowercase")} checked={lower()} onChange={setLower} />
         <CheckBox label={t("tools.pw_uppercase")} checked={upper()} onChange={setUpper} />
         <CheckBox label={t("tools.pw_digits")}    checked={digits()} onChange={setDigits} />
@@ -155,22 +154,19 @@ export function PasswordGenerator() {
         <div class="col-span-2">
           <CheckBox label={t("tools.pw_no_ambiguous")} checked={noAmbiguous()} onChange={setNoAmbiguous} />
         </div>
-      </div>
+      </Card>
 
       {/* Generate button */}
-      <button
-        onClick={regen}
-        class="bg-accent text-accent-fg rounded-xl py-3 font-medium hover:opacity-90 active:scale-95 transition-all"
-      >
+      <Button class="active:scale-95" onClick={regen}>
         {t("tools.pw_generate")}
-      </button>
+      </Button>
 
       {/* History */}
       {history().length > 1 && (
         <div class="flex flex-col gap-1.5">
           <p class="text-xs text-muted">{t("tools.pw_recent")}</p>
           {history().slice(1).map((pw) => (
-            <div class="flex items-center gap-2 bg-surface border border-rim rounded-lg px-3 py-2">
+            <Card class="flex items-center gap-2 px-3 py-2">
               <span class="font-mono text-xs text-muted flex-1 truncate">{pw}</span>
               <button
                 onClick={() => copy(pw)}
@@ -178,7 +174,7 @@ export function PasswordGenerator() {
               >
                 {t("tools.pw_copy")}
               </button>
-            </div>
+            </Card>
           ))}
         </div>
       )}

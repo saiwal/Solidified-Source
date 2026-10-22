@@ -5,7 +5,6 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
-import { SwitchRow, inputClass } from "../../store/FormHelpers";
 import {
   fetchBlockedChannels,
   fetchBlockSettings,
@@ -17,6 +16,11 @@ import {
   type BlockSettings,
   type BlockUnit,
 } from "@utsukta/spa-core/lib/blocklist-api";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { Toggle } from "@ui/Toggle";
+import { Card } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 const UNITS: BlockUnit[] = ["minutes", "hours", "days", "weeks", "months", "years"];
 
@@ -99,62 +103,57 @@ export default function BlockedChannelsSection() {
       <Show when={installed()} fallback={<p class="text-sm text-muted">{t("blocklist.app_required")}</p>}>
         <Show when={settings()}>
           {(s) => (
-            <div class="bg-surface border border-rim rounded-2xl px-4 divide-y divide-rim">
-              <SwitchRow
+            <Card class="px-4 divide-y divide-rim">
+              <Toggle
                 name="block_reshares"
                 label={t("blocklist.block_reshares") as string}
                 hint={t("blocklist.block_reshares_desc") as string}
                 checked={s().block_reshares}
                 onChange={(v) => void handleSetting("block_reshares", v)}
               />
-              <SwitchRow
+              <Toggle
                 name="block_incoming"
                 label={t("blocklist.block_incoming") as string}
                 hint={t("blocklist.block_incoming_desc") as string}
                 checked={s().block_incoming}
                 onChange={(v) => void handleSetting("block_incoming", v)}
               />
-            </div>
+            </Card>
           )}
         </Show>
 
         <form onSubmit={handleAdd} class="flex flex-wrap gap-2">
-          <input
+          <Input
+            class="w-full flex-1 min-w-48"
             type="text"
             value={addr()}
             onInput={(e) => setAddr(e.currentTarget.value)}
             placeholder={t("blocklist.add_placeholder") as string}
-            class={`${inputClass} flex-1 min-w-48`}
           />
           <label class="flex items-center gap-1.5 text-xs text-muted">
             {t("blocklist.block_for")}
-            <input
+            <Input
+              class="w-full w-16"
               type="number"
               min="0"
               max="99"
               value={amount()}
               onInput={(e) => setAmount(Math.max(0, Math.min(99, Number(e.currentTarget.value) || 0)))}
-              class={`${inputClass} w-16`}
               aria-label={t("blocklist.duration_amount") as string}
             />
-            <select
+            <Select
+              class="w-full w-auto"
               value={unit()}
               onChange={(e) => setUnit(e.currentTarget.value as BlockUnit)}
               disabled={amount() === 0}
-              class={`${inputClass} w-auto disabled:opacity-50`}
               aria-label={t("blocklist.duration_unit") as string}
             >
               <For each={UNITS}>{(u) => <option value={u}>{t(`blocklist.unit_${u}`)}</option>}</For>
-            </select>
+            </Select>
           </label>
-          <button
-            type="submit"
-            disabled={!addr().trim() || adding()}
-            class="text-xs px-3 py-2 rounded-lg bg-accent text-accent-fg hover:opacity-90
-                   transition-opacity disabled:opacity-50"
-          >
+          <Button size="sm" type="submit" disabled={!addr().trim() || adding()}>
             {adding() ? t("blocklist.blocking") : t("blocklist.block")}
-          </button>
+          </Button>
         </form>
         <p class="text-xs text-muted -mt-2">{t("blocklist.forever_hint")}</p>
 
@@ -171,7 +170,7 @@ export default function BlockedChannelsSection() {
           </div>
         </Show>
 
-        <div class="bg-surface border border-rim rounded-2xl overflow-hidden divide-y divide-rim">
+        <Card class="overflow-hidden divide-y divide-rim">
           <For each={channels()}>
             {(c) => (
               <div class="flex items-center gap-3 px-4 py-3">
@@ -184,7 +183,7 @@ export default function BlockedChannelsSection() {
                     </div>
                   }
                 >
-                  <img src={c.photo} width="32" height="32" class="w-8 h-8 rounded-full object-cover shrink-0" />
+                  <Avatar src={c.photo} size={8} />
                 </Show>
                 <div class="min-w-0 flex-1">
                   <div class="text-sm text-txt truncate">{c.name}</div>
@@ -193,17 +192,13 @@ export default function BlockedChannelsSection() {
                     <Show when={c.until}>{(u) => <> · {untilLabel(u())}</>}</Show>
                   </div>
                 </div>
-                <button
-                  onClick={() => void handleRemove(c.hash)}
-                  class="text-[0.6875rem] px-2.5 py-1 rounded-lg border border-rim text-muted
-                         hover:border-red-500 hover:text-red-500 transition-colors shrink-0"
-                >
+                <Button variant="ghost" size="sm" onClick={() => void handleRemove(c.hash)}>
                   {t("blocklist.unblock")}
-                </button>
+                </Button>
               </div>
             )}
           </For>
-        </div>
+        </Card>
       </Show>
     </SubPageContent>
   );

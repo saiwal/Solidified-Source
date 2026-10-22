@@ -6,6 +6,9 @@ import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createBookmark } from "@/modules/bookmarks/api";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 /** Only http(s): these values arrive in a link anyone can craft. */
 function httpUrl(v: string | string[] | undefined): string {
@@ -48,7 +51,7 @@ export default function RbmarkView() {
 
   return (
     <div class="max-w-lg mx-auto p-4">
-      <div class="bg-surface border border-rim rounded-2xl p-4 space-y-3">
+      <Card class="p-4 space-y-3">
         <h1 class="text-sm font-semibold text-txt">
           {ischat ? t("bookmarks.rbmark_chat_heading") : t("bookmarks.rbmark_heading")}
         </h1>
@@ -58,21 +61,17 @@ export default function RbmarkView() {
             when={!saved()}
             fallback={<p class="text-sm text-txt">{ischat ? t("bookmarks.rbmark_chat_saved") : t("bookmarks.added")}</p>}
           >
-            <input
+            <Input
+              class="w-full"
               type="text"
-              class="w-full text-sm bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt"
               aria-label={t("bookmarks.field_title") as string}
               value={title()}
               onInput={(e) => setTitle(e.currentTarget.value)}
             />
             <p class="text-xs text-muted break-all">{url}</p>
-            <button
-              onClick={() => void save()}
-              disabled={saving()}
-              class="text-xs px-3 py-1.5 rounded-lg bg-accent text-accent-fg font-medium disabled:opacity-50"
-            >
+            <Button size="sm" onClick={() => void save()} disabled={saving()}>
               {saving() ? t("bookmarks.saving") : t("bookmarks.save")}
-            </button>
+            </Button>
           </Show>
         </Show>
 
@@ -81,7 +80,7 @@ export default function RbmarkView() {
             {ischat ? t("bookmarks.rbmark_back_room") : t("bookmarks.rbmark_back")}
           </a>
         </Show>
-      </div>
+      </Card>
     </div>
   );
 }

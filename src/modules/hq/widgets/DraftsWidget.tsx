@@ -7,6 +7,8 @@ import { openComposer, type ComposerKind } from "@/shared/views/modal-host";
 import { useAuth, channelKey } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 const DRAFT_TYPES = "post,article,card,webpage,wiki,note,dm";
 const SHOWN_TYPES = ["post", "article", "card", "webpage", "wiki", "note", "dm"];
@@ -206,7 +208,7 @@ export default function DraftsWidget() {
 
   return (
     <>
-      <div data-tour="hq.drafts" class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden"
+      <Card raised class="flex flex-col overflow-hidden" data-tour="hq.drafts"
         style={{ "max-height": "480px" }}>
 
         {/* Header */}
@@ -219,15 +221,9 @@ export default function DraftsWidget() {
               <span class="text-xs text-muted tabular-nums">{entries().length}</span>
             </Show>
             {/* Refresh */}
-            <button
-              type="button"
-              title={t("hq.retry")}
-              onClick={loadAll}
-              disabled={loading()}
-              class="p-0.5 rounded text-muted hover:text-txt transition-colors disabled:opacity-40"
-            >
+            <IconButton label={t("hq.retry")} size="sm" onClick={loadAll} disabled={loading()}>
               <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -285,7 +281,7 @@ export default function DraftsWidget() {
                           title={t("hq.delete_draft")}
                           onClick={() => void deleteDraft(entry.scope, entry.draft.id)}
                           class="p-0.5 -m-0.5 rounded text-muted/70 opacity-100 md:opacity-0 md:group-hover:opacity-100
-                                 hover:text-red-500 focus-visible:opacity-100 transition-all"
+                                 hover:text-danger-txt focus-visible:opacity-100 transition-all"
                         >
                           <Show
                             when={!isDeleting()}
@@ -310,7 +306,7 @@ export default function DraftsWidget() {
             </For>
           </div>
         </Show>
-      </div>
+      </Card>
 
     </>
   );

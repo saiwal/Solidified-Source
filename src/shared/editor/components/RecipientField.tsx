@@ -15,6 +15,8 @@ import type { AclEntry } from "@/modules/network/api";
 import { entryKey } from "./AclPicker";
 import { useConnectionSearch } from "./useConnectionSearch";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 export interface RecipientFieldProps {
   /** Currently-selected recipients (resolved — full name/photo, not just a key). */
@@ -67,7 +69,7 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
         <span class="text-sm text-muted shrink-0">{props.label ?? t("editor.to_label")}</span>
         <For each={props.entries()}>
           {(entry) => (
-            <span class="flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-elevated text-txt">
+            <Badge>
               <Show
                 when={entry.photo}
                 fallback={
@@ -76,7 +78,7 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
                   </span>
                 }
               >
-                <img src={entry.photo} alt="" class="w-4 h-4 rounded-full shrink-0 object-cover" />
+                <Avatar src={entry.photo} size={4} />
               </Show>
               {entry.name}
               <button
@@ -86,7 +88,7 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
               >
                 ×
               </button>
-            </span>
+            </Badge>
           )}
         </For>
         <input
@@ -123,7 +125,7 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
                       </span>
                     }
                   >
-                    <img src={c.photo} alt="" class="w-6 h-6 rounded-full shrink-0 object-cover bg-elevated" />
+                    <Avatar src={c.photo} size={6} />
                   </Show>
                   <span class="flex flex-col min-w-0 flex-1">
                     <span class="truncate text-xs font-medium text-txt">{c.name}</span>

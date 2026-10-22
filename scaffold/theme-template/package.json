@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@utsukta/spa-core": "*",
+    "@utsukta/spa-ui": "*",
     "@solid-primitives/i18n": "^2.2.1",
     "@solid-primitives/media": "^2.3.5",
     "@solidjs/router": "^0.16.1",

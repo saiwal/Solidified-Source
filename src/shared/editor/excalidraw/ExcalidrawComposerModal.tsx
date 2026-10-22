@@ -14,7 +14,8 @@ import { bbAlt } from "../attachments/insertHelpers";
 import { defaultSceneName, openSceneFromCloud } from "@/modules/excalidraw/scene-io";
 import { MdOutlineClose } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
 const FilePickerModal = lazy(() => import("../attachments/picker/FilePickerModal"));
 const SaveToCloudDialog = lazy(() => import("@/modules/excalidraw/SaveToCloudDialog"));
 
@@ -92,16 +93,15 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
   return (
     <>
       <Modal onClose={props.onClose} labelledBy={titleId} class={`z-[80] ${maximized() ? "p-0!" : ""}`}>
-        <div
-          class="flex flex-col w-full rounded-xl border border-rim bg-surface shadow-2xl text-txt overflow-hidden transition-all"
+        <ModalPanel class="flex flex-col text-txt overflow-hidden transition-all"
+         
           classList={
             maximized()
               ? { "max-w-none": true, "h-full": true, "rounded-none": true }
               : { "max-w-3xl": true, "h-[80vh]": true }
-          }
-        >
+          }>
           <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-            <span class="text-sm font-semibold">{t("editor.excalidraw_modal_title")}</span>
+            <span id={titleId} class="text-sm font-semibold">{t("editor.excalidraw_modal_title")}</span>
             <div class="flex items-center gap-1">
               <button
                 type="button"
@@ -122,14 +122,9 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
                   </svg>
                 </Show>
               </button>
-              <button
-                type="button"
-                onClick={props.onClose}
-                class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
-              
-              aria-label={t("layout.close")}>
+              <IconButton label={t("layout.close")} size="sm" onClick={props.onClose}>
                 <MdOutlineClose class="w-4 h-4" />
-              </button>
+              </IconButton>
             </div>
           </header>
 
@@ -138,56 +133,36 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
           </div>
 
           <Show when={error()}>
-            <p class="px-4 text-xs text-red-500">{error()}</p>
+            <p class="px-4 text-xs text-danger-txt">{error()}</p>
           </Show>
           <Show when={status()}>
             <p class="px-4 text-xs text-muted">{status()}</p>
           </Show>
 
           <footer class="flex items-center gap-2 px-4 py-3 border-t border-rim bg-elevated shrink-0">
-            <button
-              type="button"
-              onClick={() => setPickerOpen(true)}
-              class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-surface transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setPickerOpen(true)}>
               {t("editor.excalidraw_open")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSaveOpen(true)}
-              class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-surface transition-colors
-                     disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSaveOpen(true)}>
               {t("editor.excalidraw_save_cloud")}
-            </button>
+            </Button>
             <div class="flex-1" />
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-txt hover:bg-elevated transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               {t("editor.cancel_btn")}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               disabled={inserting() || uploading()}
               onClick={() => void insert("file")}
-              class="px-3 py-1.5 rounded-lg text-sm border border-rim text-muted hover:text-txt hover:bg-surface
-                     transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {t("editor.excalidraw_insert_file_btn")}
-            </button>
-            <button
-              type="button"
-              disabled={inserting() || uploading()}
-              onClick={() => void insert("image")}
-              class="px-4 py-1.5 rounded-lg text-sm font-semibold bg-accent text-accent-fg
-                     hover:opacity-90 active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+            </Button>
+            <Button size="sm" disabled={inserting() || uploading()} onClick={() => void insert("image")}>
               {insertLabel()}
-            </button>
+            </Button>
           </footer>
-        </div>
+        </ModalPanel>
       </Modal>
 
       <Show when={saveOpen() && exportApi()}>

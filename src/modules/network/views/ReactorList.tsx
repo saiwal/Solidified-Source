@@ -4,6 +4,7 @@ import { Show, For } from 'solid-js';
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDislikes, fetchLikes, fetchRepeats } from '../api';
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Avatar } from "@ui/Avatar";
 
 interface Props {
   mid: string;
@@ -26,7 +27,7 @@ export default function ReactorList(props: Props) {
       <For each={data()?.reactions ?? []}>
         {(r) => (
           <div class="flex items-center gap-2 py-1">
-            <img src={r.photo} class="w-6 h-6 rounded-full" alt="" />
+            <Avatar src={r.photo} size={6} />
             <span class="text-sm">{r.name}</span>
           </div>
         )}

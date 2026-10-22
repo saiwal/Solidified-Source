@@ -14,6 +14,7 @@ import { Art, iconBtn } from "../ui";
 import { Motion, Presence, slideUp } from "../anim";
 import { openPlayer } from "../chrome/player-ui";
 import { MdOutlineGroups } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
 
 export default function PlayerBar() {
   const { t } = useI18n();
@@ -51,23 +52,26 @@ export default function PlayerBar() {
                   class={`mx-1 inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent text-accent-fg hover:brightness-110 transition ${loading() ? "animate-pulse" : ""}`}>
                   <Show when={playing()} fallback={<MdFillPlay_arrow size={24} />}><MdFillPause size={24} /></Show>
                 </button>
-                <button type="button" class={iconBtn} title={t("jellyfin.next")} onClick={next} disabled={!hasNext()}>
+                <IconButton label={t("jellyfin.next")} onClick={next} disabled={!hasNext()}>
                   <MdFillSkip_next size={22} />
-                </button>
+                </IconButton>
               </div>
 
               <div class="hidden md:flex items-center gap-1 w-36">
-                <button type="button" class={iconBtn} title={muted() ? t("jellyfin.unmute") : t("jellyfin.mute")} onClick={() => setMuted(!muted())}>
+                <IconButton
+                  label={muted() ? t("jellyfin.unmute") : t("jellyfin.mute")}
+                  onClick={() => setMuted(!muted())}
+                >
                   <Show when={muted() || volume() === 0} fallback={<MdFillVolume_up size={18} />}><MdFillVolume_off size={18} /></Show>
-                </button>
+                </IconButton>
                 <input type="range" min="0" max="1" step="0.05" value={muted() ? 0 : volume()}
                   onInput={(e) => setVolume(Number(e.currentTarget.value))} aria-label={t("jellyfin.volume")}
                   class="flex-1 min-w-0 h-1 accent-[var(--color-accent)]" />
               </div>
 
-              <button type="button" class={iconBtn} title={t("jellyfin.open_player")} onClick={() => openPlayer()}>
+              <IconButton label={t("jellyfin.open_player")} onClick={() => openPlayer()}>
                 <MdFillKeyboard_arrow_up size={22} />
-              </button>
+              </IconButton>
             </div>
           </Motion.div>
         )}

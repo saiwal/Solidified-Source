@@ -25,6 +25,8 @@ import { fetchCards, fetchKanban, saveKanbanBoards, moveCard, renameDeck, rename
          type KanbanBoardDef } from "../api";
 import { UNFILED } from "../lib/kanban";
 import { createKanbanDrag, type Column } from "../lib/useKanbanDrag";
+import { Button, IconButton } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function KanbanBoard(props: { nick: string }) {
   const { t } = useI18n();
@@ -215,33 +217,26 @@ export default function KanbanBoard(props: { nick: string }) {
         </For>
 
         <Show when={isOwner()}>
-          <button
-            type="button"
-            title={t("cards.kanban_add_board")}
-            onClick={addBoard}
-            class="px-2 py-2 text-muted hover:text-txt transition-colors"
-          >
+          <IconButton label={t("cards.kanban_add_board")} onClick={addBoard}>
             <MdOutlineAdd size={16} />
-          </button>
+          </IconButton>
 
           <div class="ml-auto flex items-center gap-0.5 pl-2">
-            <button
-              type="button"
-              title={t("cards.kanban_rename_board")}
+            <IconButton
+              label={t("cards.kanban_rename_board")}
+              size="sm"
               onClick={() => void doRenameBoard(activeBoard())}
-              class="p-1.5 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
             >
               <MdOutlineEdit size={14} />
-            </button>
+            </IconButton>
             <Show when={boards().length > 1}>
-              <button
-                type="button"
-                title={t("cards.kanban_remove_board")}
+              <IconButton
+                label={t("cards.kanban_remove_board")}
+                size="sm"
                 onClick={() => removeBoard(activeBoard())}
-                class="p-1.5 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
               >
                 <MdOutlineClose size={14} />
-              </button>
+              </IconButton>
             </Show>
           </div>
         </Show>
@@ -265,34 +260,31 @@ export default function KanbanBoard(props: { nick: string }) {
                   <span class="text-xs text-muted">{col.items.length}</span>
                   <Show when={isOwner()}>
                     <div class="ml-auto flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        title={t("cards.kanban_add_card")}
+                      <IconButton
+                        label={t("cards.kanban_add_card")}
+                        size="sm"
                         onClick={() => setComposeIn(col.key)}
-                        class="p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
                       >
                         <MdOutlineAdd size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   </Show>
                   <Show when={isOwner() && col.key}>
                     <div class="flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        title={t("cards.kanban_rename_column")}
+                      <IconButton
+                        label={t("cards.kanban_rename_column")}
+                        size="sm"
                         onClick={() => void doRenameColumn(col.key)}
-                        class="p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
                       >
                         <MdOutlineEdit size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        title={t("cards.kanban_remove_column")}
+                      </IconButton>
+                      <IconButton
+                        label={t("cards.kanban_remove_column")}
+                        size="sm"
                         onClick={() => removeColumn(col.key)}
-                        class="p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
                       >
                         <MdOutlineClose size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   </Show>
                 </div>
@@ -301,9 +293,9 @@ export default function KanbanBoard(props: { nick: string }) {
                   <For
                     each={col.items}
                     fallback={
-                      <p class="text-xs text-muted text-center py-6 border border-dashed border-rim rounded-xl">
+                      <EmptyState size="sm" class="border border-dashed border-rim rounded-xl">
                         {t("cards.kanban_empty_column")}
-                      </p>
+                      </EmptyState>
                     }
                   >
                     {(card) => (
@@ -392,15 +384,10 @@ function NoBoards(props: { owner: boolean; onCreate: () => void }) {
       <MdOutlineView_kanban class="text-3xl text-muted mx-auto" />
       <p>{t("cards.kanban_no_boards")}</p>
       <Show when={props.owner}>
-        <button
-          type="button"
-          onClick={props.onCreate}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rim
-                 text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onCreate}>
           <MdOutlineAdd size={16} />
           {t("cards.kanban_add_board")}
-        </button>
+        </Button>
       </Show>
     </div>
   );

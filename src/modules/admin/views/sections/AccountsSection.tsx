@@ -1,13 +1,17 @@
 import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 import {
   fetchAdminAccounts, adminAccountAction, adminPendingAction,
   fetchAdminServiceClasses, setAccountServiceClass, setAccountExpires, setAccountPassword,
 } from "../../api";
 import type { AdminAccount } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Field, Input, Select } from "@ui/Field";
+import { CardHeader } from "@ui/Card";
+import { Badge } from "@ui/Badge";
 
 export default function AccountsSection() {
   const { t } = useI18n();
@@ -32,7 +36,7 @@ export default function AccountsSection() {
   return (
     <SubPageContent title={t("admin.accounts_title")} description={t("admin.accounts_desc")} wide>
       <Show when={result.error}>
-        <div class="rounded-lg border border-red-300 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 mb-4">
+        <div class="rounded-lg border border-danger/40 bg-danger-muted px-4 py-3 text-sm text-danger-txt mb-4">
           Error: {String(result.error?.message ?? result.error)}
         </div>
       </Show>
@@ -46,9 +50,9 @@ export default function AccountsSection() {
               <section class="space-y-3">
                 <h3 class="text-sm font-semibold text-txt flex items-center gap-2">
                   Pending registrations
-                  <span class="px-1.5 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                  <Badge tone="warning">
                     {r().pending.length}
-                  </span>
+                  </Badge>
                 </h3>
 
                 <div class="rounded-lg border border-rim overflow-x-auto">
@@ -80,34 +84,33 @@ export default function AccountsSection() {
                             <td class="px-3 py-2">
                               <div class="flex flex-wrap gap-1">
                                 <Show when={reg.unverified}>
-                                  <span class="px-1.5 py-0.5 text-xs rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                  <Badge tone="warning">
                                     Unverified
-                                  </span>
+                                  </Badge>
                                 </Show>
                                 <Show when={reg.expired}>
-                                  <span class="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                  <Badge tone="danger">
                                     Expired
-                                  </span>
+                                  </Badge>
                                 </Show>
                               </div>
                             </td>
                             <td class="px-3 py-2">
                               <div class="flex items-center gap-1.5">
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   onClick={() => pendingAct(reg.reg_id, "approve")}
-                                  class="px-2 py-1 text-xs rounded border border-green-300 text-green-700
-                                         hover:bg-green-50 dark:border-green-700 dark:text-green-400
-                                         dark:hover:bg-green-900/20 transition-colors"
                                 >
                                   Approve
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
                                   onClick={() => pendingAct(reg.reg_id, "deny")}
-                                  class="px-2 py-1 text-xs rounded border border-red-300 text-red-600
-                                         hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                 >
                                   Deny
-                                </button>
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -171,9 +174,9 @@ export default function AccountsSection() {
                           <td class="px-3 py-2 text-muted hidden lg:table-cell">{fmtDate(acc.account_expires)}</td>
                           <td class="px-3 py-2">
                             <Show when={Number(acc.blocked) > 0}>
-                              <span class="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                              <Badge tone="danger">
                                 {t("admin.blocked_badge")}
-                              </span>
+                              </Badge>
                             </Show>
                           </td>
                           <td class="px-3 py-2">
@@ -187,23 +190,23 @@ export default function AccountsSection() {
               </div>
 
               <div class="flex items-center gap-2">
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   disabled={page() === 0}
                   onClick={() => setPage((p) => p - 1)}
-                  class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
-                         hover:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {t("admin.page_prev")}
-                </button>
+                </Button>
                 <span class="text-sm text-muted">{t("admin.page_label")} {page() + 1}</span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   disabled={!r().meta.has_more}
                   onClick={() => setPage((p) => p + 1)}
-                  class="px-3 py-1.5 text-sm rounded-lg border border-rim text-txt
-                         hover:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {t("admin.page_next")}
-                </button>
+                </Button>
               </div>
             </section>
 
@@ -224,25 +227,19 @@ function AccountActions(props: {
   const isBlocked = () => Number(props.account.blocked) > 0;
   return (
     <div class="flex flex-wrap items-center gap-1.5">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => props.onAct(props.account.account_id, isBlocked() ? "unblock" : "block")}
-        class="px-2 py-1 text-xs rounded border border-rim text-txt hover:bg-elevated transition-colors"
       >
         {isBlocked() ? t("admin.unblock") : t("admin.block")}
-      </button>
-      <button
-        onClick={() => setEditing(true)}
-        class="px-2 py-1 text-xs rounded border border-rim text-txt hover:bg-elevated transition-colors"
-      >
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
         {t("admin.edit")}
-      </button>
-      <button
-        onClick={() => props.onAct(props.account.account_id, "delete")}
-        class="px-2 py-1 text-xs rounded border border-red-300 text-red-600
-               hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-      >
+      </Button>
+      <Button variant="danger" size="sm" onClick={() => props.onAct(props.account.account_id, "delete")}>
         {t("admin.delete")}
-      </button>
+      </Button>
       <Show when={editing()}>
         <AccountEditModal
           account={props.account}
@@ -315,47 +312,45 @@ function AccountEditModal(props: {
   return (
     <Modal onClose={props.onClose} labelledBy={titleId} class="z-50">
       <div class="w-full max-w-sm rounded-xl border border-rim bg-base shadow-xl">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-rim">
+        <CardHeader class="flex items-center justify-between">
           <h3 id={titleId} class="text-sm font-semibold text-txt">{t("admin.edit_account_title")}</h3>
           <button onClick={props.onClose} aria-label={t("layout.close")}
                     class="text-muted hover:text-txt text-lg leading-none">×</button>
-        </div>
+        </CardHeader>
 
         <form onSubmit={onSubmit} class="p-4 space-y-4">
           <div class="space-y-1">
-            <label class="text-sm font-medium text-txt">{t("admin.service_class_label")}</label>
-            <select
+            <Field label={t("admin.service_class_label")}>
+              <Select
+              class="w-full"
               value={serviceClass()}
               onChange={(e) => setServiceClass(e.currentTarget.value)}
-              class="w-full px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
-                     focus:outline-none focus:border-accent"
-            >
+              >
               <option value="">{t("admin.unrestricted_label")}</option>
               <For each={classes()?.classes ?? []}>
-                {(c) => (
-                  <option value={c.name}>
-                    {c.name}{c.properties.price ? ` (${c.properties.price.toFixed(2)}/mo)` : ""}
-                  </option>
-                )}
+              {(c) => (
+              <option value={c.name}>
+              {c.name}{c.properties.price ? ` (${c.properties.price.toFixed(2)}/mo)` : ""}
+              </option>
+              )}
               </For>
-            </select>
+              </Select>
+            </Field>
           </div>
 
           <div class="space-y-1">
             <label class="text-sm font-medium text-txt">{t("admin.expires_label")}</label>
             <div class="flex items-center gap-2">
-              <input
+              <Input
+                class="flex-1"
                 type="date"
                 value={expires()}
                 onInput={(e) => setExpires(e.currentTarget.value)}
-                class="flex-1 px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
-                       focus:outline-none focus:border-accent"
               />
               <Show when={expires()}>
-                <button type="button" onClick={() => setExpires("")}
-                  class="px-2 py-1.5 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors">
+                <Button variant="ghost" size="sm" onClick={() => setExpires("")}>
                   {t("admin.clear_expiry")}
-                </button>
+                </Button>
               </Show>
             </div>
             <p class="text-xs text-muted">{t("admin.expires_hint")}</p>
@@ -374,10 +369,9 @@ function AccountEditModal(props: {
                 class="flex-1 px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
                        focus:outline-none focus:border-accent"
               />
-              <button type="button" onClick={() => setShowPassword((v) => !v)}
-                class="px-2 py-1.5 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors">
+              <Button variant="ghost" size="sm" onClick={() => setShowPassword((v) => !v)}>
                 {showPassword() ? t("admin.hide_password") : t("admin.show_password")}
-              </button>
+              </Button>
             </div>
             <Show when={newPassword()}>
               <input
@@ -390,26 +384,22 @@ function AccountEditModal(props: {
                        focus:outline-none focus:border-accent"
               />
             </Show>
-            <button type="button" onClick={generatePassword}
-              class="px-2 py-1.5 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors">
+            <Button variant="ghost" size="sm" onClick={generatePassword}>
               {t("admin.generate_password")}
-            </button>
+            </Button>
           </div>
 
           <Show when={error()}>
-            <p class="text-xs text-red-600 dark:text-red-400">{error()}</p>
+            <p class="text-xs text-danger-txt">{error()}</p>
           </Show>
 
           <div class="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={props.onClose}
-              class="px-3 py-1.5 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors">
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               Cancel
-            </button>
-            <button type="submit" disabled={saving()}
-              class="px-4 py-1.5 text-xs rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-50 transition-opacity">
+            </Button>
+            <Button size="sm" type="submit" disabled={saving()}>
               {saving() ? t("admin.saving") : t("admin.save")}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

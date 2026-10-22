@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, For, lazy, type Component, createUniqueId } from "solid-js";
+import { createSignal, createMemo, Show, For, lazy, type Component } from "solid-js";
 import {
   MdOutlineContent_copy,
   MdOutlineIos_share,
@@ -15,7 +15,9 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchLockview, grantGuest, revokeGuest } from "@utsukta/spa-core/lib/lockview-api";
 import { saveToken, newTokenValue, fetchTokens } from "@/modules/directory/tokens/api";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Select, Textarea } from "@ui/Field";
 const PostComposer = lazy(() => import("@/shared/editor/composers/PostComposer"));
 
 interface Props {
@@ -231,28 +233,19 @@ const ShareModal: Component<Props> = (props) => {
   const rowBtn =
     "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-txt hover:bg-elevated transition-colors";
 
-  const titleId = createUniqueId();
   return (
     <>
       {/* Hidden, not closed, while composing: ComposerModal is z-50 and this
           overlay is z-[60], so leaving both up buries the composer behind our
           backdrop. Closing the composer drops back to the share popup. */}
       <Show when={!composerOpen()}>
-        <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-          <div class="w-full max-w-md rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
-            <header class="flex items-center justify-between px-4 py-3 border-b border-rim">
-              <span id={titleId} class="text-sm font-semibold text-txt truncate">
-                {t("share.title")} — <span class="font-normal text-muted">{props.target.title}</span>
-              </span>
-              <button
-                onClick={props.onClose}
-                aria-label={t("share.close") as string}
-                class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2"
-              >
-                ×
-              </button>
-            </header>
-
+        <Modal onClose={props.onClose} class="z-[60]">
+          <ModalPanel
+            title={<>{t("share.title")} — <span class="font-normal text-muted">{props.target.title}</span></>}
+            onClose={props.onClose}
+            size="md"
+            class="overflow-hidden"
+          >
             <div class="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
               {/* Link */}
               <CopyRow
@@ -277,7 +270,7 @@ const ShareModal: Component<Props> = (props) => {
                     <span>{t("share.share_as_post")}</span>
                   </button>
                   <Show when={props.target.restricted}>
-                    <p class="px-2 pb-1 text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                    <p class="px-2 pb-1 text-[0.6875rem] text-warning-txt">
                       {t("share.restricted_warning")}
                     </p>
                   </Show>
@@ -300,34 +293,31 @@ const ShareModal: Component<Props> = (props) => {
               <Show when={emailOpen()}>
                 <form class="space-y-2 rounded-lg border border-rim p-3" onSubmit={sendFromSite}>
                   <div class="space-y-1">
-                    <label class="block text-xs text-muted">{t("share.email_to")}</label>
-                    <input
+                    <Field label={t("share.email_to")} hint={t("share.email_to_hint")} size="sm">
+                      <Input
+                      class="w-full"
                       type="text"
                       required
                       value={to()}
                       onInput={(e) => setTo(e.currentTarget.value)}
                       placeholder={t("share.email_to_placeholder") as string}
-                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                    />
-                    <p class="text-[0.6875rem] text-muted">{t("share.email_to_hint")}</p>
+                      />
+                    </Field>
                   </div>
                   <div class="space-y-1">
-                    <label class="block text-xs text-muted">{t("share.email_note")}</label>
-                    <textarea
+                    <Field label={t("share.email_note")} size="sm">
+                      <Textarea
+                      class="w-full resize-y"
                       rows={3}
                       maxlength={1000}
                       value={note()}
                       onInput={(e) => setNote(e.currentTarget.value)}
-                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt resize-y"
-                    />
+                      />
+                    </Field>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={sending()}
-                    class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
-                  >
+                  <Button size="sm" type="submit" disabled={sending()}>
                     {sending() ? t("share.email_sending") : t("share.email_send")}
-                  </button>
+                  </Button>
                 </form>
               </Show>
 
@@ -339,10 +329,10 @@ const ShareModal: Component<Props> = (props) => {
                     {t("share.guest_access_title")}
                   </label>
                   <Show when={guests().length > 0 || otherGuests().length > 0}>
-                    <select
+                    <Select
+                      class="w-full"
                       value={selectedId() ?? ""}
                       onChange={(e) => selectGuest(e.currentTarget.value)}
-                      class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
                     >
                       <option value="">{t("share.use_plain_link")}</option>
                       <For each={guests()}>
@@ -355,24 +345,19 @@ const ShareModal: Component<Props> = (props) => {
                           </For>
                         </optgroup>
                       </Show>
-                    </select>
+                    </Select>
                   </Show>
                   <Show when={needsApply()}>
                     <div class="flex justify-end">
-                      <button
-                        type="button"
-                        disabled={granting()}
-                        onClick={() => pickGuest(String(selectedId()))}
-                        class="px-2.5 py-1 rounded-md bg-accent text-accent-fg text-xs disabled:opacity-60"
-                      >
+                      <Button size="sm" disabled={granting()} onClick={() => pickGuest(String(selectedId()))}>
                         {t("share.guest_add_apply")}
-                      </button>
+                      </Button>
                     </div>
                   </Show>
                   <Show when={activeGuest()}>
                     {(g) => (
                       <>
-                        <p class="text-[0.6875rem] text-amber-600 dark:text-amber-500">
+                        <p class="text-[0.6875rem] text-warning-txt">
                           {t("share.guest_access_warning")}
                         </p>
                         <div class="flex justify-end">
@@ -380,7 +365,7 @@ const ShareModal: Component<Props> = (props) => {
                             type="button"
                             disabled={granting()}
                             onClick={() => revoke(g().id)}
-                            class="px-2.5 py-1 rounded-md text-xs text-red-600 dark:text-red-400 hover:underline disabled:opacity-60"
+                            class="px-2.5 py-1 rounded-md text-xs text-danger-txt hover:underline disabled:opacity-60"
                           >
                             {t("share.guest_remove")}
                           </button>
@@ -404,55 +389,50 @@ const ShareModal: Component<Props> = (props) => {
                     >
                       <form class="space-y-2 pt-1" onSubmit={createGuest}>
                         <div class="space-y-1">
-                          <label class="block text-xs text-muted">{t("share.guest_new_name")}</label>
-                          <input
+                          <Field label={t("share.guest_new_name")} size="sm">
+                            <Input
+                            class="w-full"
                             type="text"
                             required
                             value={newGuestName()}
                             onInput={(e) => setNewGuestName(e.currentTarget.value)}
-                            class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                          />
+                            />
+                          </Field>
                         </div>
                         <div class="space-y-1">
-                          <label class="block text-xs text-muted">{t("share.guest_new_expires")}</label>
-                          <input
+                          <Field label={t("share.guest_new_expires")} size="sm">
+                            <Input
+                            class="w-full"
                             type="date"
                             value={newGuestExpires()}
                             onInput={(e) => setNewGuestExpires(e.currentTarget.value)}
-                            class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                          />
+                            />
+                          </Field>
                         </div>
                         <Show when={roles().length > 0}>
                           <div class="space-y-1">
-                            <label class="block text-xs text-muted">{t("guest_access.role")}</label>
-                            <select
+                            <Field label={t("guest_access.role")} size="sm">
+                              <Select
+                              class="w-full"
                               value={newGuestRole()}
                               onChange={(e) => setNewGuestRole(e.currentTarget.value)}
-                              class="w-full px-3 py-1.5 rounded-lg border border-rim bg-elevated text-sm text-txt"
-                            >
+                              >
                               <option value="" />
                               <For each={roles()}>
-                                {(r) => <option value={r.name}>{r.label}</option>}
+                              {(r) => <option value={r.name}>{r.label}</option>}
                               </For>
-                            </select>
+                              </Select>
+                            </Field>
                           </div>
                         </Show>
                         <p class="text-[0.6875rem] text-muted">{t("share.guest_new_hint")}</p>
                         <div class="flex gap-2">
-                          <button
-                            type="submit"
-                            disabled={creating()}
-                            class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-sm disabled:opacity-60"
-                          >
+                          <Button size="sm" type="submit" disabled={creating()}>
                             {creating() ? t("share.guest_new_creating") : t("share.guest_new_create")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setNewGuestOpen(false)}
-                            class="px-3 py-1.5 rounded-lg border border-rim text-sm text-muted"
-                          >
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setNewGuestOpen(false)}>
                             {t("share.close")}
-                          </button>
+                          </Button>
                         </div>
                       </form>
                     </Show>
@@ -473,7 +453,7 @@ const ShareModal: Component<Props> = (props) => {
                 )}
               </For>
             </div>
-          </div>
+          </ModalPanel>
         </Modal>
       </Show>
 
@@ -509,14 +489,14 @@ function CopyRow(props: {
           onClick={(e) => (e.currentTarget as HTMLInputElement).select()}
           class={`flex-1 min-w-0 px-3 py-1.5 rounded-lg border border-rim bg-elevated text-xs text-txt ${props.mono ? "font-mono" : ""}`}
         />
-        <button
-          type="button"
+        <IconButton
+          label={props.copyLabel}
+          size="sm"
+          class="shrink-0"
           onClick={() => props.onCopy(props.value)}
-          title={props.copyLabel}
-          class="px-3 py-1.5 rounded-lg border border-rim text-xs text-muted hover:bg-elevated transition-colors shrink-0"
         >
           <MdOutlineContent_copy size={15} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

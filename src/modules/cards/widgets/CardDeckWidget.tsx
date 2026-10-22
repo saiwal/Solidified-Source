@@ -15,6 +15,8 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDeckDetail } from "../api";
 import { cardPath } from "@/shared/lib/shareLinks";
+import { IconButton } from "@ui/Button";
+import { Card, CardHeader } from "@ui/Card";
 
 interface DeckItem {
   name: string;
@@ -65,10 +67,10 @@ export default function CardDeckWidget() {
   }
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-rim">
+    <Card class="overflow-hidden">
+      <CardHeader>
         <h3 class="text-sm font-semibold text-txt">{t("widgets.card_deck")}</h3>
-      </div>
+      </CardHeader>
 
       <Show when={!data.loading}>
         <Show
@@ -88,14 +90,14 @@ export default function CardDeckWidget() {
                       {deck.name}
                     </span>
                     <span class="text-xs text-muted shrink-0">{deck.count}</span>
-                    <button
-                      type="button"
+                    <IconButton
+                      label={t("cards.shuffle")}
+                      size="sm"
+                      class="shrink-0"
                       onClick={(e) => void shuffle(e, deck.name)}
-                      title={t("cards.shuffle")}
-                      class="p-1 rounded text-muted hover:text-accent hover:bg-surface transition-colors shrink-0"
                     >
                       <MdOutlineShuffle size={15} />
-                    </button>
+                    </IconButton>
                   </A>
                 </li>
               )}
@@ -103,6 +105,6 @@ export default function CardDeckWidget() {
           </ul>
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 }

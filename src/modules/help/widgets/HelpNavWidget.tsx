@@ -5,6 +5,7 @@ import { useLocation, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchNav, type NavNode } from "../api";
 import { MdOutlineChevron_right } from "solid-icons/md";
+import { Card } from "@ui/Card";
 
 function NavItem(props: {
   node: NavNode;
@@ -121,7 +122,7 @@ export default function HelpNavWidget() {
   );
 
   return (
-    <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+    <Card raised class="overflow-hidden">
       {/* Header */}
       <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
         <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,6 +152,6 @@ export default function HelpNavWidget() {
           )}
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 }

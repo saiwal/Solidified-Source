@@ -5,6 +5,10 @@ import { isDirectoryAdmin, setEntryCensored } from "../people/store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdOutlineBlock } from "solid-icons/md";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 interface Props {
   entry: DirectoryEntry;
@@ -44,19 +48,13 @@ const DirectoryCard: Component<Props> = (props) => {
     }
   }
   return (
-    <div
-      class="flex flex-col rounded-xl border border-rim bg-surface overflow-hidden hover:shadow-md hover:-translate-y-px transition-all duration-200 cursor-pointer group"
-      onClick={() => props.onSelect(e())}
-    >
+    <Card class="flex flex-col overflow-hidden hover:shadow-md hover:-translate-y-px transition-all duration-200 cursor-pointer group"
+     
+      onClick={() => props.onSelect(e())}>
       {/* ── Avatar + identity row ── */}
       <div class="flex items-center gap-3 p-4 pb-3">
         <div class="shrink-0">
-          <img
-            src={e().photo}
-            alt={e().name}
-            class="w-11 h-11 rounded-full object-cover bg-overlay ring-1 ring-rim"
-            loading="lazy"
-          />
+          <Avatar src={e().photo} name={e().name} size={11} class="ring-1 ring-rim" />
         </div>
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1.5 min-w-0">
@@ -78,13 +76,13 @@ const DirectoryCard: Component<Props> = (props) => {
       {/* ── Public forum badge ── */}
       <Show when={e().public_forum}>
         <div class="mx-4 mb-2">
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-accent-muted text-accent border border-accent/30">
+          <Badge tone="accent">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
               <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
             </svg>
             {t("directory.public_forum")}
-          </span>
+          </Badge>
         </div>
       </Show>
 
@@ -112,9 +110,9 @@ const DirectoryCard: Component<Props> = (props) => {
           <div class="flex flex-wrap gap-1">
             <For each={e().keywords.slice(0, 4)}>
               {(kw) => (
-                <span class="inline-block px-1.5 py-0.5 rounded text-xs bg-overlay text-muted">
+                <Badge>
                   {kw}
-                </span>
+                </Badge>
               )}
             </For>
           </div>
@@ -148,13 +146,14 @@ const DirectoryCard: Component<Props> = (props) => {
               </a>
             }
           >
-            <button
+            <Button
+              size="sm"
+              class="w-full flex-1"
               onClick={handleAdd}
               disabled={connectState() === "pending"}
-              class="w-full flex-1 text-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent text-accent-fg hover:opacity-80 transition-opacity disabled:opacity-60"
             >
               {t("directory.connect")}
-            </button>
+            </Button>
           </Show>
         </Show>
         <Show when={e().ignore_url && !e().is_connected}>
@@ -173,8 +172,8 @@ const DirectoryCard: Component<Props> = (props) => {
             title={t("directory.mark_unsafe")}
             class={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
               e().censored === 1
-                ? "border-red-500 bg-red-500/15 text-red-600 dark:text-red-400"
-                : "border-red-300/60 dark:border-red-800/50 text-red-600/80 dark:text-red-400/80 hover:bg-red-500/10"
+                ? "border-danger bg-danger/15 text-danger-txt"
+                : "border-danger/60 text-danger-txt/80 hover:bg-danger/10"
             }`}
           >
             {t("directory.unsafe")}
@@ -185,15 +184,15 @@ const DirectoryCard: Component<Props> = (props) => {
             title={t("directory.mark_spam")}
             class={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 ${
               e().censored > 1
-                ? "border-red-500 bg-red-500/15 text-red-600 dark:text-red-400"
-                : "border-red-300/60 dark:border-red-800/50 text-red-600/80 dark:text-red-400/80 hover:bg-red-500/10"
+                ? "border-danger bg-danger/15 text-danger-txt"
+                : "border-danger/60 text-danger-txt/80 hover:bg-danger/10"
             }`}
           >
             {t("directory.spam")}
           </button>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 };
 

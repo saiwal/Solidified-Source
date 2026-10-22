@@ -3,6 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import ExcalidrawCanvas, { type ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
 import { openSceneFromCloud } from "@/modules/excalidraw/scene-io";
+import { buttonClass } from "@ui/Button";
 
 const FilePickerModal = lazy(() => import("@/shared/editor/attachments/picker/FilePickerModal"));
 const SaveToCloudDialog = lazy(() => import("@/modules/excalidraw/SaveToCloudDialog"));
@@ -36,9 +37,7 @@ export function ExcalidrawTool() {
     URL.revokeObjectURL(url);
   };
 
-  const btn =
-    "border border-rim text-muted hover:bg-elevated hover:text-txt rounded-xl px-5 py-2 text-sm " +
-    "transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+  const btn = buttonClass("ghost");
 
   return (
     <div class="flex flex-col gap-3 h-[75vh]">
@@ -46,7 +45,7 @@ export function ExcalidrawTool() {
         <ExcalidrawCanvas onReady={setExportApi} />
       </div>
       <Show when={error()}>
-        <p class="text-xs text-red-500">{error()}</p>
+        <p class="text-xs text-danger-txt">{error()}</p>
       </Show>
       <Show when={status()}>
         <p class="text-xs text-muted">{status()}</p>

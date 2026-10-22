@@ -3,7 +3,6 @@ import {
   createSignal, createEffect, createMemo, createUniqueId,
   Show, For
 } from "solid-js";
-import { Portal } from "solid-js/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -36,11 +35,9 @@ import {
   MdOutlineTranslate,
   MdOutlineMore_horiz,
 } from "solid-icons/md";
-import Modal from "@/shared/views/Modal";
-import { iconBtn, ghostPill, BackLink } from "@/shared/views/ui";
+import { Modal, modalPanelClass } from "@ui/Modal";
+import { BackLink } from "@/shared/views/ui";
 import { Motion, pop, slideDown } from "@/shared/views/anim";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { createPopover } from "@/shared/stream/filters/createPopover";
 import { apiToggleLike, apiToggleDislike, apiDeleteItem, apiEditItem } from "@utsukta/spa-core/lib/item-api";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
@@ -52,6 +49,8 @@ import AttachmentList from "@/shared/stream/components/AttachmentList";
 import ActionBtn from "@/shared/stream/components/ActionBtn";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
+import { Button, IconButton } from "@ui/Button";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -73,15 +72,14 @@ function DeleteDialog(props: { uuid: string; onDeleted: () => void; onCancel: ()
 
   return (
     <Modal onClose={props.onCancel} labelledBy={id}>
-      <Motion.div {...pop} class="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl space-y-5">
+      <Motion.div {...pop} class={`${modalPanelClass("sm")} p-6 space-y-5`}>
         <h2 id={id} class="text-lg font-semibold text-txt">{t("articles.delete_article")}</h2>
         <p class="text-sm text-muted">{t("articles.delete_confirm")}</p>
         <div class="flex justify-end gap-2">
-          <button type="button" onClick={props.onCancel} class={ghostPill}>{t("articles.cancel")}</button>
-          <button type="button" onClick={confirm} disabled={deleting()}
-            class="inline-flex items-center h-10 px-5 rounded-full bg-red-500 text-white text-sm font-medium hover:brightness-110 transition disabled:opacity-60">
+          <Button variant="ghost" onClick={props.onCancel}>{t("articles.cancel")}</Button>
+          <Button variant="danger" onClick={confirm} disabled={deleting()}>
             {deleting() ? t("articles.deleting") : t("articles.delete")}
-          </button>
+          </Button>
         </div>
       </Motion.div>
     </Modal>
@@ -376,8 +374,6 @@ export default function ArticleView() {
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";
-  const more = createPopover({ placement: "bottom-end" });
-  const menuItem = "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-txt hover:bg-elevated/70 text-left";
   const fmtDate = (iso: string) =>
     new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(locale(), { year: "numeric", month: "long", day: "numeric" });
 
@@ -431,36 +427,31 @@ export default function ArticleView() {
 
                   {/* Share + owner actions; reactions and Comment live with the comments below */}
                   <div class="flex items-center gap-1 -mr-2">
-                    <button type="button" onClick={shareArticle} class={iconBtn}
-                      title={t("share.action")} aria-label={t("share.action")}>
+                    <IconButton label={t("share.action")} onClick={shareArticle}>
                       <MdOutlineShare size={18} />
-                    </button>
+                    </IconButton>
 
                     <Show when={isOwner()}>
-                      <span ref={more.ref}>
-                        <button type="button" class={iconBtn} aria-expanded={more.open()}
-                          title={t("articles.more")} aria-label={t("articles.more")}
-                          onClick={() => more.setOpen(!more.open())}>
-                          <MdOutlineMore_horiz size={18} />
-                        </button>
-                      </span>
-                      <Show when={more.open()}>
-                        <Portal mount={topLayer()}>
-                          <div ref={more.floating} style={more.style()}
-                            class="z-50 w-56 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2">
-                            <button type="button" class={menuItem} onClick={() => { more.setOpen(false); openEditor(d().article); }}>
-                              <BiRegularEdit size={16} class="text-muted shrink-0" /> {t("articles.edit_article")}
-                            </button>
-                            <button type="button" class={menuItem} onClick={() => { more.setOpen(false); openTranslation(d().article); }}>
-                              <MdOutlineTranslate size={16} class="text-muted shrink-0" /> {t("articles.add_translation")}
-                            </button>
-                            <div class="my-1.5 h-px bg-rim/60" />
-                            <button type="button" class={`${menuItem} hover:text-red-500`} onClick={() => { more.setOpen(false); setConfirmDelete(true); }}>
-                              <BiRegularTrash size={16} class="shrink-0" /> {t("articles.delete_article")}
-                            </button>
-                          </div>
-                        </Portal>
-                      </Show>
+                      <Menu
+                        label={t("articles.more")}
+                        class="w-56"
+                        trigger={(p) => (
+                          <IconButton label={t("articles.more")} {...p}>
+                            <MdOutlineMore_horiz size={18} />
+                          </IconButton>
+                        )}
+                      >
+                        <MenuItem icon={<BiRegularEdit size={16} />} onClick={() => openEditor(d().article)}>
+                          {t("articles.edit_article")}
+                        </MenuItem>
+                        <MenuItem icon={<MdOutlineTranslate size={16} />} onClick={() => openTranslation(d().article)}>
+                          {t("articles.add_translation")}
+                        </MenuItem>
+                        <MenuSeparator />
+                        <MenuItem icon={<BiRegularTrash size={16} />} danger onClick={() => setConfirmDelete(true)}>
+                          {t("articles.delete_article")}
+                        </MenuItem>
+                      </Menu>
                     </Show>
                   </div>
                   </div>

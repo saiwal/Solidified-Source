@@ -17,6 +17,8 @@ import formatPostDate from "@utsukta/spa-core/lib/date";
 import { MdFillCheck, MdFillPush_pin, MdOutlineContent_copy, MdOutlineFavorite_border } from "solid-icons/md";
 import { BiRegularRss } from "solid-icons/bi";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
+import { IconButton } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 function eventOf(post: ThreadNode) {
   return post.eventData ?? (post.body.includes("[event-summary]") ? parseEventData(post.body) : undefined);
@@ -423,14 +425,14 @@ export function Masthead(props: {
           >
             {issueLine(props.founded)}
           </span>
-          <button
+          <IconButton
+            label={t("channel.rss_feed")}
+            size="sm"
+            class="normal-case"
             onClick={() => openFeedModal(nick())}
-            title={t("channel.rss_feed")}
-            aria-label={t("channel.rss_feed")}
-            class="p-1 rounded-full border border-rim text-muted hover:text-accent hover:border-accent transition-colors normal-case tracking-normal"
           >
             <BiRegularRss size={12} />
-          </button>
+          </IconButton>
         </div>
       </div>
     </header>
@@ -506,7 +508,7 @@ export default function NewspaperView(props: {
 
   return (
     <div class="max-w-6xl mx-auto">
-      <Show when={lead()} fallback={<p class="text-center py-16 text-muted text-sm">{t("network.all_caught_up")}</p>}>
+      <Show when={lead()} fallback={<EmptyState>{t("network.all_caught_up")}</EmptyState>}>
         {/* Lead story */}
         <div class="pb-8 border-b-2 border-txt/80">
           <LeadStory post={lead()} onOpen={() => open(lead())} handlers={props.handlers} />

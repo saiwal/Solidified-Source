@@ -22,6 +22,9 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchRooms } from "../api";
 import { isChatUnread, isRemoteChatUnread, markRemoteChatSeen } from "../unread";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 /**
  * Unread dot for a bookmarked room. On this hub it reads the channel's room
@@ -144,13 +147,15 @@ export function BookmarkedRoomsList(props: {
               </button>
               {parts.unread}
               {parts.push}
-              <button
+              <IconButton
+                label={t("chat.unbookmark") as string}
+                variant="danger"
+                size="sm"
+                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
                 onClick={parts.remove}
-                class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-red-500 transition-all shrink-0"
-                title={t("chat.unbookmark") as string}
               >
                 <MdOutlineDelete class="w-3.5 h-3.5" />
-              </button>
+              </IconButton>
             </div>
           );
         }}
@@ -163,7 +168,7 @@ export default function BookmarkedRoomsWidget() {
   const { t } = useI18n();
   return (
     <Show when={isLocalUser()}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+      <Card raised class="overflow-hidden">
 
         {/* Header */}
         <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
@@ -183,11 +188,11 @@ export default function BookmarkedRoomsWidget() {
 
         {/* Empty */}
         <Show when={!loading() && bookmarks().length === 0}>
-          <p class="px-4 py-6 text-xs text-muted text-center">{t("chat.no_bookmarks")}</p>
+          <EmptyState size="sm" class="px-4">{t("chat.no_bookmarks")}</EmptyState>
         </Show>
 
         <BookmarkedRoomsList />
-      </div>
+      </Card>
     </Show>
   );
 }

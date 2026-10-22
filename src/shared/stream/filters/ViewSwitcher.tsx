@@ -9,7 +9,8 @@ import {
 } from "solid-icons/md";
 import type { ViewMode } from "@/shared/stream/types";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createPopover } from "./createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
+import { Button } from "@ui/Button";
 
 type IconType = Component<{ size?: number; class?: string }>;
 
@@ -47,17 +48,17 @@ export default function ViewSwitcher(props: {
         when={wide()}
         fallback={
           <>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               title={t(`network.${current().key}` as any)}
               aria-expanded={open()}
               aria-haspopup="listbox"
               onClick={() => setOpen(!open())}
-              class="flex items-center gap-1 px-2 py-1.5 rounded-lg border border-rim
-                     bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors"
             >
               <CurrentIcon />
               <MdFillKeyboard_arrow_down size={14} />
-            </button>
+            </Button>
 
             <Show when={open()}>
               <Portal mount={topLayer()}>

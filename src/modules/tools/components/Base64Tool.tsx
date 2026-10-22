@@ -1,5 +1,7 @@
 import { createSignal } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Field, Textarea } from "@ui/Field";
 
 type Mode = "encode" | "decode";
 
@@ -45,9 +47,6 @@ export function Base64Tool() {
     setMode((m) => (m === "encode" ? "decode" : "encode"));
   };
 
-  const textareaCls =
-    "bg-surface border border-rim text-txt hover:border-rim-strong focus:outline-none rounded-xl px-4 py-3 text-sm font-mono w-full resize-none";
-
   return (
     <div class="flex flex-col gap-5 max-w-lg w-full mx-auto">
       {/* Mode toggle */}
@@ -68,16 +67,15 @@ export function Base64Tool() {
 
       {/* Input */}
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted">
-          {mode() === "encode" ? t("tools.base64_plain") : t("tools.base64_input")}
-        </label>
-        <textarea
-          class={textareaCls}
+        <Field label={mode() === "encode" ? t("tools.base64_plain") : t("tools.base64_input")}>
+          <Textarea
+          class="font-mono w-full resize-none"
           rows={5}
           value={input()}
           onInput={(e) => setInput(e.currentTarget.value)}
           placeholder={mode() === "encode" ? "Enter text to encode…" : "Enter Base64 to decode…"}
-        />
+          />
+        </Field>
       </div>
 
       {/* Output */}
@@ -88,27 +86,15 @@ export function Base64Tool() {
               {mode() === "encode" ? t("tools.base64_output") : t("tools.base64_decoded")}
             </label>
             <div class="flex gap-2">
-              <button
-                onClick={swap}
-                class="text-xs border border-rim text-muted hover:bg-elevated hover:text-txt rounded-lg px-3 py-1 transition-colors"
-                title={t("tools.base64_use_input")}
-              >
+              <Button variant="ghost" size="sm" onClick={swap} title={t("tools.base64_use_input")}>
                 {t("tools.base64_use_input")}
-              </button>
-              <button
-                onClick={copyOutput}
-                class="text-xs border border-rim text-muted hover:bg-elevated hover:text-txt rounded-lg px-3 py-1 transition-colors"
-              >
+              </Button>
+              <Button variant="ghost" size="sm" onClick={copyOutput}>
                 {copied() ? t("tools.base64_copied") : t("tools.base64_copy")}
-              </button>
+              </Button>
             </div>
           </div>
-          <textarea
-            class={`${textareaCls} bg-elevated cursor-default`}
-            rows={5}
-            readonly
-            value={output()}
-          />
+          <Textarea class="font-mono w-full resize-none cursor-default" rows={5} readonly value={output()} />
         </div>
       )}
 

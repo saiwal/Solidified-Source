@@ -1,10 +1,12 @@
-import { createSignal, createMemo, For, Show, type Component, createUniqueId } from "solid-js";
+import { createSignal, createMemo, For, Show, type Component } from "solid-js";
 import { MdFillFolder } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { listFolderMeta, moveItem, copyItem } from "../api";
 import type { FileMeta } from "../api";
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 type Mode = "move" | "copy";
 interface BreadcrumbEntry { name: string; hash: string; }
@@ -83,23 +85,14 @@ const MoveCopyModal: Component<Props> = (props) => {
     props.onDone(failed);
   }
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="flex flex-col w-full max-w-md h-[70vh] rounded-xl border border-rim bg-surface shadow-2xl overflow-hidden">
-        <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
-          <span id={titleId} class="text-sm font-semibold text-txt truncate">
-            {t("files_mod.move_or_copy")} — <span class="font-normal text-muted">
-              {props.items.length === 1
-                ? props.items[0].filename
-                : t("files_mod.selected_count", { count: props.items.length })}
-            </span>
-          </span>
-          <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none shrink-0 ml-2" aria-label={t("layout.close")}>
-            ×
-          </button>
-        </header>
-
+    <Modal onClose={props.onClose} class="z-[60]">
+      <ModalPanel
+        title={<>{t("files_mod.move_or_copy")} — <span class="font-normal text-muted"> {props.items.length === 1 ? props.items[0].filename : t("files_mod.selected_count", { count: props.items.length })} </span></>}
+        onClose={props.onClose}
+        size="md"
+        class="flex flex-col h-[70vh] overflow-hidden"
+      >
         {/* Move / Copy toggle */}
         <div class="flex border-b border-rim shrink-0 px-4 pt-2 gap-2">
           <ToggleButton active={mode() === "move"} label={t("files_mod.move_action") as string} onClick={() => setMode("move")} />
@@ -133,10 +126,10 @@ const MoveCopyModal: Component<Props> = (props) => {
 
         {/* Folder listing */}
         <div class="flex-1 overflow-y-auto min-h-0 p-2 space-y-0.5">
-          <Show when={!items.loading} fallback={<p class="text-center text-sm text-muted py-8">…</p>}>
+          <Show when={!items.loading} fallback={<EmptyState>…</EmptyState>}>
             <Show
               when={folders().length > 0}
-              fallback={<p class="text-center text-sm text-muted py-8">{t("files_mod.folder_empty")}</p>}
+              fallback={<EmptyState>{t("files_mod.folder_empty")}</EmptyState>}
             >
               <For each={folders()}>
                 {(folder) => (
@@ -154,7 +147,7 @@ const MoveCopyModal: Component<Props> = (props) => {
         </div>
 
         <Show when={err()}>
-          <p class="px-4 pb-2 text-sm text-red-500">{err()}</p>
+          <p class="px-4 pb-2 text-sm text-danger-txt">{err()}</p>
         </Show>
 
         <footer class="flex items-center justify-between px-4 py-3 border-t border-rim bg-elevated shrink-0">
@@ -166,25 +159,15 @@ const MoveCopyModal: Component<Props> = (props) => {
               : t("files_mod.choose_destination")}
           </span>
           <div class="flex gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="px-3 py-1.5 text-sm rounded-lg border border-rim text-muted hover:bg-surface transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               {t("files_mod.cancel")}
-            </button>
-            <button
-              type="button"
-              disabled={disableSubmit()}
-              onClick={submit}
-              class="px-4 py-1.5 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-            >
+            </Button>
+            <Button size="sm" disabled={disableSubmit()} onClick={submit}>
               {busy() ? t("files_mod.saving") : (mode() === "move" ? t("files_mod.move_here") : t("files_mod.copy_here"))}
-            </button>
+            </Button>
           </div>
         </footer>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 };

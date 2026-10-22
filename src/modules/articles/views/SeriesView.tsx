@@ -6,12 +6,15 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import Modal from "@/shared/views/Modal";
-import { iconBtn, primaryPill, ghostPill, SkeletonRows, BackLink } from "@/shared/views/ui";
+import { Modal, modalPanelClass } from "@ui/Modal";
+import { SkeletonRows, BackLink } from "@/shared/views/ui";
 import { Motion, pop } from "@/shared/views/anim";
 import { fetchSeriesDetail, renameSeries, reorderSeries } from "../api";
 import { articlePath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { EmptyState } from "@ui/EmptyState";
 
 function RenameDialog(props: { name: string; onClose: () => void; onRename: (to: string) => Promise<void> }) {
   const { t } = useI18n();
@@ -34,14 +37,20 @@ function RenameDialog(props: { name: string; onClose: () => void; onRename: (to:
 
   return (
     <Modal onClose={props.onClose} labelledBy={id}>
-      <Motion.form {...pop} onSubmit={submit} class="w-full max-w-sm rounded-3xl bg-surface p-6 shadow-2xl space-y-5">
+      <Motion.form {...pop} onSubmit={submit} class={`${modalPanelClass("sm")} p-6 space-y-5`}>
         <h2 id={id} class="text-lg font-semibold text-txt">{t("articles.series_rename")}</h2>
-        <input type="text" required autofocus value={to()} onInput={(e) => setTo(e.currentTarget.value)}
+        <Input
+          class="w-full"
+          type="text"
+          required
+          autofocus
+          value={to()}
+          onInput={(e) => setTo(e.currentTarget.value)}
           aria-label={t("articles.series_rename_prompt")}
-          class="w-full bg-transparent border-0 border-b border-rim px-0 py-1.5 text-sm text-txt focus:outline-none focus:border-accent transition-colors" />
+        />
         <div class="flex justify-end gap-2">
-          <button type="button" onClick={props.onClose} class={ghostPill}>{t("articles.cancel")}</button>
-          <button type="submit" disabled={busy()} class={primaryPill}>{t("articles.rename")}</button>
+          <Button variant="ghost" onClick={props.onClose}>{t("articles.cancel")}</Button>
+          <Button type="submit" disabled={busy()}>{t("articles.rename")}</Button>
         </div>
       </Motion.form>
     </Modal>
@@ -105,17 +114,16 @@ export default function SeriesView() {
             </Show>
           </div>
           <Show when={isOwner()}>
-            <button type="button" onClick={() => setRenaming(true)} class={iconBtn}
-              title={t("articles.series_rename")} aria-label={t("articles.series_rename")}>
+            <IconButton label={t("articles.series_rename")} onClick={() => setRenaming(true)}>
               <MdOutlineEdit size={18} />
-            </button>
+            </IconButton>
           </Show>
         </div>
 
         <Show when={!data.loading} fallback={<SkeletonRows count={5} />}>
           <Show
             when={order().length > 0}
-            fallback={<p class="text-sm text-muted py-8 text-center">{t("articles.series_no_series")}</p>}
+            fallback={<EmptyState>{t("articles.series_no_series")}</EmptyState>}
           >
             <ol class="space-y-0.5 -mx-3">
               <For each={order()}>
@@ -130,14 +138,20 @@ export default function SeriesView() {
                     </A>
                     <Show when={isOwner()}>
                       <div class="flex items-center shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
-                        <button type="button" disabled={i() === 0} onClick={() => move(i(), -1)} class={iconBtn}
-                          title={t("articles.move_up")} aria-label={t("articles.move_up")}>
+                        <IconButton
+                          label={t("articles.move_up")}
+                          disabled={i() === 0}
+                          onClick={() => move(i(), -1)}
+                        >
                           <MdFillKeyboard_arrow_up size={18} />
-                        </button>
-                        <button type="button" disabled={i() === order().length - 1} onClick={() => move(i(), 1)} class={iconBtn}
-                          title={t("articles.move_down")} aria-label={t("articles.move_down")}>
+                        </IconButton>
+                        <IconButton
+                          label={t("articles.move_down")}
+                          disabled={i() === order().length - 1}
+                          onClick={() => move(i(), 1)}
+                        >
                           <MdFillKeyboard_arrow_down size={18} />
-                        </button>
+                        </IconButton>
                       </div>
                     </Show>
                   </li>

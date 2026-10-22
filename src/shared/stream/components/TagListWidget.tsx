@@ -17,6 +17,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { fetchTags, type TagItem, type TagWidgetProps } from "./TagWidget";
+import { Button } from "@ui/Button";
+import { Card, CardHeader } from "@ui/Card";
 
 function ListSkeleton() {
   const widths = [55, 75, 40, 65, 50];
@@ -58,10 +60,10 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
   const hiddenCount = () => tags().length - max();
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-rim">
+    <Card class="overflow-hidden">
+      <CardHeader>
         <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.tags")}</h3>
-      </div>
+      </CardHeader>
 
       <Show when={!props.data && remote.loading}>
         <ListSkeleton />
@@ -126,19 +128,15 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
           </ul>
 
           <Show when={tags().length > max()}>
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              class="w-full px-4 py-2 text-xs text-muted hover:text-txt
-                     border-t border-rim text-center transition-colors"
-            >
+            <Button variant="ghost" size="sm" class="w-full" onClick={() => setExpanded((v) => !v)}>
               {expanded()
                 ? t("ui.show_less")
                 : t("widgets.show_more_tags", { count: hiddenCount() })}
-            </button>
+            </Button>
           </Show>
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 };
 

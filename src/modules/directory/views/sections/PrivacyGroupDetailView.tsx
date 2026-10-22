@@ -28,6 +28,10 @@ import {
 } from "../../groups/store";
 import { fetchAvailableContacts } from "../../groups/api";
 import type { GroupContact } from "../../groups/api";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 // ── Contact pill ──────────────────────────────────────────────────────────────
 
@@ -163,8 +167,8 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
       when={!detailLoading()}
       fallback={
         <div class="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4 animate-pulse">
-          <div class="bg-surface border border-rim rounded-xl h-44" />
-          <div class="bg-surface border border-rim rounded-xl h-72" />
+          <Card class="h-44" />
+          <Card class="h-72" />
         </div>
       }
     >
@@ -175,25 +179,19 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
               title={detail().group.name}
               description={t("directory.group_edit_desc")}
               action={
-                <button
-                  onClick={saveEdit}
-                  disabled={editBusy()}
-                  class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-accent-fg
-                         text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
-                >
+                <Button onClick={saveEdit} disabled={editBusy()}>
                   <MdFillSave size={15} />
                   {editBusy() ? t("directory.saving") : t("directory.save")}
-                </button>
+                </Button>
               }
             >
               <div class="space-y-3">
-                <input
+                <Input
+                  class="w-full"
                   type="text"
                   value={name()}
                   onInput={(e) => setName(e.currentTarget.value)}
                   placeholder={t("directory.group_name_input")}
-                  class="w-full bg-surface border border-rim text-txt rounded-lg px-3 py-2 text-sm
-                         hover:border-rim-strong focus:outline-none focus:border-accent"
                 />
 
                 <label class="flex items-center gap-2 text-sm text-muted cursor-pointer select-none">
@@ -236,7 +234,7 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
                   <button
                     onClick={handleDelete}
                     disabled={deleteBusy()}
-                    class="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600
+                    class="flex items-center gap-1.5 text-sm text-danger-txt hover:text-danger-txt
                            disabled:opacity-50 transition-colors"
                   >
                     <MdFillDelete size={15} />
@@ -250,13 +248,13 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
               title={`${t("directory.members_title")} (${detail().members.length})`}
               description={t("directory.members_desc")}
               action={
-                <input
+                <Input
+                  size="sm"
+                  class="w-36"
                   type="search"
                   placeholder={t("directory.search_placeholder")}
                   value={search()}
                   onInput={(e) => setSearch(e.currentTarget.value)}
-                  class="bg-surface border border-rim text-txt text-xs rounded-lg px-2.5 py-1.5 w-36
-                         hover:border-rim-strong focus:outline-none focus:border-accent"
                 />
               }
             >
@@ -264,9 +262,9 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
                 <For
                   each={filtered()}
                   fallback={
-                    <p class="text-muted text-sm col-span-2 py-6 text-center">
+                    <EmptyState size="sm" class="col-span-2">
                       {t("directory.no_connections_found")}
-                    </p>
+                    </EmptyState>
                   }
                 >
                   {(contact) => (

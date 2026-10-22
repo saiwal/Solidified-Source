@@ -7,6 +7,7 @@ import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
+import { Button } from "@ui/Button";
 
 export default function ChannelNewspaperConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
@@ -49,13 +50,9 @@ export default function ChannelNewspaperConfig(props: WidgetConfigProps) {
           </div>
         </Show>
       </fieldset>
-      <button
-        onClick={() => props.onSave({ categories: picked() })}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all"
-      >
+      <Button size="sm" class="self-end" onClick={() => props.onSave({ categories: picked() })}>
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

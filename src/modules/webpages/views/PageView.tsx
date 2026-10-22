@@ -15,6 +15,7 @@ import { setCurrentPageTemplateId, setCurrentPageChrome } from "../store";
 import { templateChrome, pageTemplateChrome } from "@utsukta/spa-core/store/widget-templates";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { cardClass } from "@ui/Card";
 
 // Renders a Hubzilla webpage inline in the SPA by fetching its body via the
 // JSON API, via the shared renderBody() helper (bbcode/html/markdown).
@@ -90,7 +91,7 @@ export default function PageView() {
 
       {/* Error */}
       <Show when={detail.error}>
-        <div class="p-4 rounded-xl border border-red-300 bg-red-50 text-red-700 text-sm">
+        <div class="p-4 rounded-xl border border-danger/40 bg-danger-muted text-danger-txt text-sm">
           {detail.error?.message ?? t("webpages.load_failed")}
         </div>
       </Show>
@@ -101,7 +102,7 @@ export default function PageView() {
           {/* ── TOC — sticky sidebar on xl+, sticky collapsed launcher below xl ── */}
           <ArticleToc entries={toc()} activeId={activeId()} label={t("webpages.on_this_page")} />
 
-          <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl bg-surface rounded-xl border border-rim p-6 space-y-4">
+          <article class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-4`}>
             <div class="flex items-start gap-3">
               <Show when={detail()!.title}>
                 <h1 class="flex-1 text-2xl font-bold text-txt">{detail()!.title}</h1>

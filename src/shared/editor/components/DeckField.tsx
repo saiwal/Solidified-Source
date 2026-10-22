@@ -7,8 +7,8 @@
 
 import { Show, createSignal, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { underlineFieldClass } from "../lib/fieldStyles";
 import SuggestPopup from "./SuggestPopup";
+import { Input } from "@ui/Field";
 
 export interface DeckFieldProps {
   name: () => string;
@@ -35,7 +35,8 @@ const DeckField: Component<DeckFieldProps> = (props) => {
         <Show when={!props.hideLabel}>
           <label class="block text-xs text-muted mb-1">{t("editor.deck_label")}</label>
         </Show>
-        <input
+        <Input
+          class="w-full"
           ref={setInputEl}
           type="text"
           placeholder={t("editor.deck_placeholder")}
@@ -44,7 +45,6 @@ const DeckField: Component<DeckFieldProps> = (props) => {
           onKeyDown={props.onKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
         />
         <Show when={showSuggestions()}>
           <SuggestPopup
@@ -59,17 +59,10 @@ const DeckField: Component<DeckFieldProps> = (props) => {
         <Show when={!props.hideLabel}>
           <label class="block text-xs text-muted mb-1">{t("editor.deck_order_label")}</label>
         </Show>
-        <input
-          type="number"
-          min="1"
-          placeholder={t("editor.deck_order_placeholder")}
-          value={props.order() ?? ""}
-          onInput={(e) => {
+        <Input class="w-full" type="number" min="1" placeholder={t("editor.deck_order_placeholder")} value={props.order() ?? ""} onInput={(e) => {
             const v = e.currentTarget.value;
             props.onOrderInput(v === "" ? null : Number(v));
-          }}
-          class={`w-full px-0 py-1.5 text-sm text-txt placeholder:text-muted ${underlineFieldClass}`}
-        />
+          }} />
       </div>
     </div>
   );

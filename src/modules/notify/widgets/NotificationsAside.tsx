@@ -51,6 +51,9 @@ import {
   type ManagedChannel,
 } from "@/modules/manage/api";
 import { openPost } from "@/shared/views/modal-host";
+import { Button, IconButton } from "@ui/Button";
+import { Input, Textarea } from "@ui/Field";
+import { Avatar } from "@ui/Avatar";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -281,11 +284,7 @@ function NotifRow(props: {
                hover:bg-elevated flex-1 min-w-0"
       >
         <Show when={props.n.photo}>
-          <img
-            src={props.n.photo}
-            alt={props.n.name ?? ""}
-            class="w-7 h-7 rounded-full shrink-0 mt-0.5 object-cover"
-          />
+          <Avatar src={props.n.photo} name={props.n.name ?? ""} size={7} class="mt-0.5" />
         </Show>
         <div class="min-w-0 flex-1">
           <p class="text-xs text-txt leading-snug">
@@ -303,15 +302,14 @@ function NotifRow(props: {
       </a>
 
       <Show when={props.n.b64mid}>
-        <button
+        <IconButton
+          label={t("notify.mark_read")}
+          size="sm"
+          class="shrink-0 mt-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100"
           onClick={handleDismiss}
-          title={t("notify.mark_read")}
-          class="shrink-0 mt-1.5 p-0.5 rounded text-subtle
-                 hover:text-muted hover:bg-elevated transition-colors
-                 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
         >
           <MdFillClose class="w-3.5 h-3.5" />
-        </button>
+        </IconButton>
       </Show>
     </div>
     </Show>
@@ -520,13 +518,9 @@ function StreamSection(props: {
                 (supportsMarkRead(props.id) && props.bucket.count > 0))
             }
           >
-            <button
-              onClick={() => props.onClearAll(props.id)}
-              title={t("ui.mark_all_read")}
-              class="p-0.5 rounded text-subtle hover:text-txt hover:bg-elevated transition-colors"
-            >
+            <IconButton label={t("ui.mark_all_read")} size="sm" onClick={() => props.onClearAll(props.id)}>
               <MdFillDone_all class="w-3.5 h-3.5" />
-            </button>
+            </IconButton>
           </Show>
           <button
             onClick={() => props.onToggle()}
@@ -554,15 +548,13 @@ function StreamSection(props: {
           <Show when={fetchable()}>
             <div class="flex items-center gap-1 px-1 pb-1">
               <form onSubmit={submitFilter} class="flex-1 min-w-0 relative">
-                <input
+                <Input
+                  class="w-full"
                   type="search"
                   value={filterText()}
                   onInput={(e) => setFilterText(e.currentTarget.value)}
                   placeholder={t("notify.filter_name")}
                   aria-label={t("notify.filter_name")}
-                  class="w-full text-[0.6875rem] rounded-md bg-surface border border-rim
-                         px-2 py-1 pr-6 text-txt placeholder:text-subtle
-                         focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <Show when={filterText() || nquery()}>
                   <button
@@ -662,11 +654,7 @@ function NoticeRow(props: {
              hover:bg-elevated"
     >
       <Show when={props.entry.author_img}>
-        <img
-          src={props.entry.author_img}
-          alt={props.entry.author_name}
-          class="w-7 h-7 rounded-full shrink-0 mt-0.5 object-cover"
-        />
+        <Avatar src={props.entry.author_img} name={props.entry.author_name} size={7} class="mt-0.5" />
       </Show>
       <div class="min-w-0 flex-1">
         <p class="text-xs text-txt leading-snug">
@@ -789,11 +777,7 @@ function OtherChannelsSection(props: { channels: ManagedChannel[] }) {
                      transition-colors hover:bg-surface disabled:opacity-50"
             >
               <Show when={c.photo}>
-                <img
-                  src={c.photo}
-                  alt={c.channel_name}
-                  class="w-7 h-7 rounded-full shrink-0 object-cover"
-                />
+                <Avatar src={c.photo} name={c.channel_name} size={7} />
               </Show>
               <div class="min-w-0 flex-1">
                 <p class="text-xs text-txt font-semibold truncate">
@@ -894,30 +878,32 @@ function AnnouncementsSection(props: {
       </div>
       <Show when={props.isAdmin}>
         <div class="border-t border-rim p-2 flex flex-col gap-1.5 bg-surface">
-          <input
+          <Input
+            size="sm"
+            class="w-full"
             type="text"
             value={title()}
             maxLength={120}
             placeholder={t("widgets.cfg_announcement_title")}
             onInput={(e) => setTitle(e.currentTarget.value)}
-            class="w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
           />
-          <textarea
+          <Textarea
+            size="sm"
+            class="w-full resize-y"
             value={body()}
             maxLength={1000}
             rows={2}
             placeholder={t("widgets.cfg_announcement_body")}
             onInput={(e) => setBody(e.currentTarget.value)}
-            class="w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt resize-y"
           />
-          <button
+          <Button
+            size="sm"
+            class="self-end"
             onClick={post}
             disabled={posting() || (!title().trim() && !body().trim())}
-            class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                   hover:brightness-110 transition-all disabled:opacity-40"
           >
             {t("widgets.post_announcement")}
-          </button>
+          </Button>
         </div>
       </Show>
     </div>
@@ -932,10 +918,10 @@ function StatusDot(props: { status: ConnStatus }) {
   const { t } = useI18n();
   const cls = () =>
     ({
-      connecting: "text-yellow-400 animate-pulse",
-      live: "text-green-400",
+      connecting: "text-warning-txt animate-pulse",
+      live: "text-success-txt",
       polling: "text-accent animate-pulse",
-      error: "text-red-400",
+      error: "text-danger-txt",
     })[props.status];
   const title = () =>
     ({
@@ -1465,25 +1451,15 @@ export default function NotificationsAside() {
               </button>
             </Show>
             <Show when={booted() && hasAnyCount()}>
-              <button
-                onClick={markAllRead}
-                title={t("ui.mark_all_read")}
-                class="p-1 rounded text-subtle hover:text-txt hover:bg-elevated transition-colors"
-              >
+              <IconButton label={t("ui.mark_all_read")} size="sm" onClick={markAllRead}>
                 <MdFillDone_all class="w-4 h-4" />
-              </button>
+              </IconButton>
             </Show>
-            <button
-              onClick={manualRefresh}
-              disabled={refreshing()}
-              title={t("ui.refresh")}
-              class="p-1 rounded text-subtle hover:text-txt hover:bg-elevated
-                     transition-colors disabled:opacity-40"
-            >
+            <IconButton label={t("ui.refresh")} size="sm" onClick={manualRefresh} disabled={refreshing()}>
               <MdFillRefresh
                 class={`w-4 h-4 ${refreshing() ? "animate-spin" : ""}`}
               />
-            </button>
+            </IconButton>
           </div>
         </div>
 

@@ -2,18 +2,9 @@ import { For } from "solid-js";
 import { A } from "@solidjs/router";
 import { MdFillArrow_back } from "solid-icons/md";
 
-// The quiet control vocabulary from design-guidelines.md. Secondary actions
-// are bare icons; the one primary action on a screen is a filled pill. No
-// outlined boxes: space and tone do the grouping.
-export const iconBtn =
-  "inline-flex items-center justify-center p-2 rounded-full text-muted hover:text-txt hover:bg-elevated/70 " +
-  "transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-accent";
-export const primaryPill =
-  "inline-flex items-center gap-2 h-10 px-5 rounded-full bg-accent text-accent-fg text-sm font-medium " +
-  "hover:brightness-110 transition disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-export const ghostPill =
-  "inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm text-muted hover:text-txt hover:bg-elevated/70 " +
-  "transition-colors disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-accent";
+// The quiet control vocabulary from design-guidelines.md, kept as strings for
+// call sites not yet on <Button>/<IconButton> (@ui/Button is the one source).
+export { iconBtn, primaryPill, ghostPill } from "@ui/Button";
 
 const bar = "rounded bg-elevated animate-pulse motion-reduce:animate-none";
 

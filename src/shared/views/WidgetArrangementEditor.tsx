@@ -13,6 +13,8 @@ import {
   MdFillRefresh,
   MdFillSettings,
 } from "solid-icons/md";
+import { Button } from "@ui/Button";
+import { Select } from "@ui/Field";
 
 // A layout entry resolved against the registry: the widget definition plus
 // the instance key/config it is mounted with. Singleton widgets use their
@@ -112,17 +114,17 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
         <div class="flex items-center shrink-0">
           <Show when={props.onSetSpan}>
             {(onSetSpan) => (
-              <select
+              <Select
+                class="mr-1"
                 value={String(props.entry.span ?? 12)}
                 onChange={(e) => onSetSpan()(props.index(), Number(e.currentTarget.value))}
                 aria-label={t("widgets.widget_width")}
                 title={t("widgets.widget_width")}
-                class="mr-1 bg-surface border border-rim rounded-md px-1 py-0.5 text-[0.625rem] text-muted"
               >
                 <For each={SPAN_OPTIONS}>
                   {(span) => <option value={String(span)}>{t(SPAN_LABELS[span])}</option>}
                 </For>
-              </select>
+              </Select>
             )}
           </Show>
           <Show when={ConfigForm}>
@@ -243,15 +245,10 @@ const WidgetPickerFooter: Component<WidgetPickerFooterProps> = (props) => {
 
       <Show when={props.onReset}>
         {(onReset) => (
-          <button
-            onClick={() => onReset()()}
-            class="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl
-                   text-xs font-medium text-muted
-                   hover:text-txt hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" class="w-full" onClick={() => onReset()()}>
             <MdFillRefresh size={14} />
             {t("widgets.reset_layout")}
-          </button>
+          </Button>
         )}
       </Show>
     </div>

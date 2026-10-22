@@ -7,6 +7,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { getLyrics, type JellyfinSession } from "./api";
 import { position } from "./store";
 import { jfQuery } from "./library/common";
+import { IconButton } from "@ui/Button";
 
 const TICKS = 10_000_000;
 
@@ -61,16 +62,22 @@ export default function Lyrics(props: { s: JellyfinSession; itemId: string }) {
       <Show when={lines().length} fallback={<p class="text-sm text-muted">{t("jellyfin.no_lyrics")}</p>}>
         <div class="relative">
           <div class="absolute top-0 right-0 z-10 flex gap-0.5 rounded-full bg-surface/70 backdrop-blur p-0.5">
-            <button type="button" title={t("jellyfin.lyrics_smaller")} aria-label={t("jellyfin.lyrics_smaller")}
-              disabled={size() === 0} onClick={() => setSize(size() - 1)}
-              class="p-1.5 rounded-full text-muted hover:text-txt hover:bg-elevated/70 disabled:opacity-40">
+            <IconButton
+              label={t("jellyfin.lyrics_smaller")}
+              size="sm"
+              disabled={size() === 0}
+              onClick={() => setSize(size() - 1)}
+            >
               <MdFillText_decrease size={16} />
-            </button>
-            <button type="button" title={t("jellyfin.lyrics_larger")} aria-label={t("jellyfin.lyrics_larger")}
-              disabled={size() === SIZES.length - 1} onClick={() => setSize(size() + 1)}
-              class="p-1.5 rounded-full text-muted hover:text-txt hover:bg-elevated/70 disabled:opacity-40">
+            </IconButton>
+            <IconButton
+              label={t("jellyfin.lyrics_larger")}
+              size="sm"
+              disabled={size() === SIZES.length - 1}
+              onClick={() => setSize(size() + 1)}
+            >
               <MdFillText_increase size={16} />
-            </button>
+            </IconButton>
           </div>
           <div ref={box} class="relative max-h-[60vh] lg:max-h-[calc(86vh-10rem)] overflow-y-auto px-10 py-3 text-center space-y-3 [mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)]">
             {/* Room above and below so the first and last lines can sit in the middle too */}

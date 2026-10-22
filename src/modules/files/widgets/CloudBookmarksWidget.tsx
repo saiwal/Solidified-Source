@@ -4,6 +4,8 @@ import { useNavigate } from "@solidjs/router";
 import { MdOutlineBookmark_border, MdOutlineDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useCloudBookmarks } from "../bookmarks";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 /** Bookmarks pointing into a /cloud/ — folders open in the file view, files preview.
  *  Renders nothing until there is at least one, so an empty sidebar slot (or one
@@ -18,7 +20,7 @@ export default function CloudBookmarksWidget() {
 
   return (
     <Show when={bm.enabled() && bm.list().length > 0}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+      <Card raised class="overflow-hidden">
         <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
           <MdOutlineBookmark_border class="w-4 h-4 text-accent shrink-0" />
           <h3 class="text-sm font-semibold text-txt flex-1">{t("files_mod.bookmarked_files")}</h3>
@@ -36,19 +38,20 @@ export default function CloudBookmarksWidget() {
                   <span class="block text-xs text-txt truncate">{b.title}</span>
                   <span class="block text-[0.6875rem] text-muted truncate">{where(b.path)}</span>
                 </button>
-                <button
+                <IconButton
+                  label={t("files_mod.unbookmark") as string}
+                  variant="danger"
+                  size="sm"
+                  class="opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
                   onClick={() => void bm.remove(b.id)}
-                  class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded text-muted hover:text-red-500 transition-all shrink-0"
-                  title={t("files_mod.unbookmark") as string}
-                  aria-label={t("files_mod.unbookmark") as string}
                 >
                   <MdOutlineDelete class="w-3.5 h-3.5" />
-                </button>
+                </IconButton>
               </div>
             )}
           </For>
         </div>
-      </div>
+      </Card>
     </Show>
   );
 }

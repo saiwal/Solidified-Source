@@ -11,6 +11,8 @@ import {
   MdOutlineDelete,
   MdOutlineSync,
 } from "solid-icons/md";
+import { Button, IconButton } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 export default function LocationsSection() {
   const { t } = useI18n();
@@ -57,23 +59,16 @@ export default function LocationsSection() {
       title={t("settings.title_locations")}
       description={t("settings.desc_locations")}
       action={
-        <button
-          type="button"
-          disabled={mutation.isPending}
-          onClick={() => run("sync")}
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                 border border-rim text-muted hover:bg-elevated hover:text-txt
-                 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
+        <Button variant="ghost" size="sm" disabled={mutation.isPending} onClick={() => run("sync")}>
           <MdOutlineSync size={14} />
           {isBusy(undefined, "sync") ? t("settings.locations_syncing") : t("settings.locations_sync_now")}
-        </button>
+        </Button>
       }
     >
       <Show when={!query.isPending} fallback={<Skeleton />}>
         <Show
           when={locations().length > 0}
-          fallback={<p class="text-sm text-muted text-center py-8">{t("settings.locations_empty")}</p>}
+          fallback={<EmptyState>{t("settings.locations_empty")}</EmptyState>}
         >
           <div class="divide-y divide-rim">
             <For each={locations()}>
@@ -102,36 +97,29 @@ export default function LocationsSection() {
                     <Show
                       when={confirmDropId() === loc.id}
                       fallback={
-                        <button
-                          type="button"
-                          title={t("settings.locations_drop")}
+                        <IconButton
+                          label={t("settings.locations_drop")}
+                          variant="danger"
+                          size="sm"
                           disabled={!!isBusy(loc.id)}
                           onClick={() => requestDrop(loc)}
-                          class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg
-                                 text-muted hover:bg-red-500/10 hover:text-red-600
-                                 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           <MdOutlineDelete size={16} />
-                        </button>
+                        </IconButton>
                       }
                     >
                       <div class="shrink-0 flex items-center gap-1.5">
-                        <button
-                          type="button"
+                        <Button
+                          variant="danger"
+                          size="sm"
                           disabled={!!isBusy(loc.id, "drop")}
                           onClick={() => run("drop", loc.id)}
-                          class="px-2.5 py-1 text-xs font-medium rounded-lg bg-red-600 text-white
-                                 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           {isBusy(loc.id, "drop") ? t("settings.locations_syncing") : t("settings.locations_drop_confirm")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDropId(null)}
-                          class="px-2.5 py-1 text-xs font-medium rounded-lg border border-rim text-muted hover:bg-elevated"
-                        >
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmDropId(null)}>
                           {t("settings.locations_drop_cancel")}
-                        </button>
+                        </Button>
                       </div>
                     </Show>
                   </Show>

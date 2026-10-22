@@ -13,6 +13,7 @@ import {
 } from "../syncplay";
 import { Motion, Presence, slideDown } from "../anim";
 import { ghostPill } from "../ui";
+import { Button } from "@ui/Button";
 
 const DmThread = lazy(() => import("@/modules/messenger/DmPane").then((m) => ({ default: m.DmThread })));
 
@@ -96,10 +97,10 @@ export default function PartyBar(props: {
     <>
       <Show when={party() && props.mode !== "start"} fallback={
         <Show when={!party() && props.mode !== "panel" && props.s && auth()?.isLocal}>
-          <button type="button" disabled={starting()} onClick={() => void start()} class={ghostPill}>
+          <Button variant="ghost" disabled={starting()} onClick={() => void start()}>
             <MdFillGroups size={16} />
             {starting() ? t("jellyfin.party_starting") : props.kind === "video" ? t("jellyfin.party_watch") : t("jellyfin.party_listen")}
-          </button>
+          </Button>
         </Show>
       }>
         {(_on) => { const p = () => party()!; return (

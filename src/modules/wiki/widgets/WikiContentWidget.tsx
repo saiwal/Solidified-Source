@@ -10,8 +10,10 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { MdFillLock, MdFillLock_open, MdFillDelete } from "solid-icons/md";
 import { useIsWikiList } from "../lib/isWikiList";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
 import CardShell from "@/shared/stream/CardShell";
+import { Button, IconButton } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 type SortField = "name" | "format";
 type SortDir   = "asc"  | "desc";
 
@@ -173,12 +175,12 @@ export default function WikiContentWidget() {
 
         {/* Permission denied */}
         <Show when={!wikisLoading() && wikisError() === "permission"}>
-          <p class="text-muted text-sm text-center py-8">You don't have permission to view these wikis.</p>
+          <EmptyState>You don't have permission to view these wikis.</EmptyState>
         </Show>
 
         {/* Empty */}
         <Show when={!wikisLoading() && !wikisError() && wikis().length === 0}>
-          <p class="text-muted text-sm text-center py-8">No wikis yet.</p>
+          <EmptyState>No wikis yet.</EmptyState>
         </Show>
 
         {/* Column headers + list */}
@@ -252,15 +254,14 @@ export default function WikiContentWidget() {
                         </div>
                       </div>
 
-                      <button
-                        type="button"
+                      <IconButton
+                        label={t("wiki.delete_wiki") as string}
+                        variant="danger"
+                        size="sm"
                         onClick={() => setConfirmDelete(wiki.url_name)}
-                        title={t("wiki.delete_wiki") as string}
-                        class="p-1.5 rounded-lg border border-rim text-muted hover:text-red-400
-                               hover:border-red-400/40 transition-colors"
                       >
                         <MdFillDelete size={13} />
-                      </button>
+                      </IconButton>
                     </div>
                   </Show>
                 </div></CardShell>
@@ -272,36 +273,31 @@ export default function WikiContentWidget() {
         {/* Delete wiki confirmation modal */}
         <Show when={confirmDelete() !== null}>
           <Modal onClose={() => setConfirmDelete(null)} bare labelledBy="wiki-del-wiki-msg" class="fixed inset-0 w-full h-full z-50 flex items-center justify-center bg-black/50">
-            <div class="bg-surface border border-rim rounded-xl p-6 space-y-4 max-w-sm w-full mx-4">
+            <ModalPanel size="sm" class="p-6 space-y-4 mx-4">
               <p id="wiki-del-wiki-msg" class="text-txt text-sm">
                 {t("wiki.delete_wiki")} <strong>{confirmDelete()}</strong>{t("wiki.delete_wiki_confirm")}
               </p>
               <div class="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(null)}
-                  class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>
                   {t("wiki.cancel")}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={() => handleDeleteWiki(confirmDelete()!)}
                   disabled={deletingWiki()}
-                  class="text-sm border border-rim text-red-400 hover:bg-elevated px-3 py-1.5 rounded-lg
-                         disabled:opacity-50"
                 >
                   {deletingWiki() ? t("wiki.deleting_wiki") : t("wiki.delete_wiki")}
-                </button>
+                </Button>
               </div>
-            </div>
+            </ModalPanel>
           </Modal>
         </Show>
 
         {/* Privacy / ACL modal */}
         <Show when={aclWikiUrl() !== null}>
           <Modal onClose={() => setAclWikiUrl(null)} bare labelledBy="wiki-acl-title" class="fixed inset-0 w-full h-full z-50 flex items-end sm:items-center justify-center bg-black/50">
-            <div class="bg-surface border border-rim rounded-xl p-5 space-y-4 w-full max-w-sm mx-4 mb-4 sm:mb-0">
+            <ModalPanel size="sm" class="p-5 space-y-4 mx-4 mb-4 sm:mb-0">
               <div class="flex items-center justify-between">
                 <h2 id="wiki-acl-title" class="text-sm font-semibold text-txt">{t("wiki.privacy_editor_title")}</h2>
                 <button
@@ -329,13 +325,9 @@ export default function WikiContentWidget() {
               </Show>
 
               <div class="flex gap-2 justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={() => setAclWikiUrl(null)}
-                  class="text-sm border border-rim text-muted hover:bg-elevated px-3 py-1.5 rounded-lg"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setAclWikiUrl(null)}>
                   {t("wiki.cancel")}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={handleSaveAcl}
@@ -346,7 +338,7 @@ export default function WikiContentWidget() {
                   {aclSaving() ? "…" : t("wiki.save")}
                 </button>
               </div>
-            </div>
+            </ModalPanel>
           </Modal>
         </Show>
       </div>

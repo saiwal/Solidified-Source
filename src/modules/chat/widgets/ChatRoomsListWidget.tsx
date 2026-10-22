@@ -10,6 +10,7 @@ import { openChat } from "@/shared/views/modal-host";
 import { MdFillPeople } from "solid-icons/md";
 import { fetchRooms } from "../api";
 import { isChatUnread } from "../unread";
+import { Card } from "@ui/Card";
 
 export default function ChatRoomsListWidget() {
   const { t } = useI18n();
@@ -19,7 +20,7 @@ export default function ChatRoomsListWidget() {
   return (
     // Hidden where the channel has no chatrooms app (or the fetch failed).
     <Show when={data.error ? null : data()?.chatrooms_installed !== false}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+      <Card raised class="overflow-hidden">
         {/* Same header as the other HQ sidebar widgets (ScheduledPostsWidget). */}
         <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between">
           <h3 class="text-xs font-medium uppercase tracking-wider text-muted">{t("chat.chatrooms")}</h3>
@@ -58,7 +59,7 @@ export default function ChatRoomsListWidget() {
             )}
           </For>
         </div>
-      </div>
+      </Card>
     </Show>
   );
 }

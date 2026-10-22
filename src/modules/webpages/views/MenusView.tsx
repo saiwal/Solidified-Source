@@ -18,9 +18,9 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import {
   MdFillAdd, MdFillClose, MdFillDelete, MdFillLock, MdOutlineEdit_note, MdOutlineMenu,
 } from "solid-icons/md";
-
-const inputClass =
-  "w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-sm text-txt";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card, CardHeader } from "@ui/Card";
 
 // ── Menu name/desc form (create + rename) ─────────────────────────────────────
 
@@ -48,39 +48,37 @@ function MenuForm(props: {
   };
 
   return (
-    <div class="bg-surface border border-rim rounded-xl p-3 space-y-2">
+    <Card class="p-3 space-y-2">
       <div class="flex flex-col sm:flex-row gap-2">
-        <input
-          type="text" value={name()} maxLength={60} class={inputClass}
+        <Input
+          class="w-full"
+          type="text"
+          value={name()}
+          maxLength={60}
           placeholder={t("webpages.menu_name") as string}
           onInput={(e) => setName(e.currentTarget.value)}
         />
-        <input
-          type="text" value={desc()} maxLength={100} class={inputClass}
+        <Input
+          class="w-full"
+          type="text"
+          value={desc()}
+          maxLength={100}
           placeholder={t("webpages.menu_desc") as string}
           onInput={(e) => setDesc(e.currentTarget.value)}
         />
       </div>
       <Show when={error()}>
-        <p class="text-xs text-red-500">{error()}</p>
+        <p class="text-xs text-danger-txt">{error()}</p>
       </Show>
       <div class="flex items-center justify-end gap-2">
-        <button
-          onClick={props.onCancel}
-          class="px-3 py-1.5 rounded-lg text-xs text-muted hover:text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onCancel}>
           {t("webpages.cancel")}
-        </button>
-        <button
-          onClick={submit}
-          disabled={busy() || !name().trim()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all disabled:opacity-40"
-        >
+        </Button>
+        <Button size="sm" onClick={submit} disabled={busy() || !name().trim()}>
           {t("webpages.save")}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -177,18 +175,26 @@ function ItemForm(props: {
   return (
     <div class="bg-elevated/50 border border-rim rounded-lg p-3 space-y-2">
       <div class="flex flex-col sm:flex-row gap-2">
-        <input
-          type="text" value={label()} maxLength={100} class={inputClass}
+        <Input
+          class="w-full"
+          type="text"
+          value={label()}
+          maxLength={100}
           placeholder={t("webpages.item_label") as string}
           onInput={(e) => setLabel(e.currentTarget.value)}
         />
-        <input
-          type="text" value={link()} maxLength={190} class={inputClass}
+        <Input
+          class="w-full"
+          type="text"
+          value={link()}
+          maxLength={190}
           placeholder="https://… / menu:name"
           onInput={(e) => setLink(e.currentTarget.value)}
         />
-        <input
-          type="number" value={order()} class={`${inputClass} sm:w-20`}
+        <Input
+          class="w-full"
+          type="number"
+          value={order()}
           title={t("webpages.item_order") as string}
           onInput={(e) => setOrder(parseInt(e.currentTarget.value, 10) || 0)}
         />
@@ -212,23 +218,15 @@ function ItemForm(props: {
         />
       </div>
       <Show when={error()}>
-        <p class="text-xs text-red-500">{error()}</p>
+        <p class="text-xs text-danger-txt">{error()}</p>
       </Show>
       <div class="flex items-center justify-end gap-2">
-        <button
-          onClick={props.onCancel}
-          class="px-3 py-1.5 rounded-lg text-xs text-muted hover:text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onCancel}>
           {t("webpages.cancel")}
-        </button>
-        <button
-          onClick={submit}
-          disabled={busy() || !label().trim() || !link().trim()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all disabled:opacity-40"
-        >
+        </Button>
+        <Button size="sm" onClick={submit} disabled={busy() || !label().trim() || !link().trim()}>
           {t("webpages.save")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -279,14 +277,10 @@ export default function MenusView() {
             {t("webpages.back")}
           </A>
         </div>
-        <button
-          onClick={() => setCreating(!creating())}
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent
-                 text-accent-fg text-sm hover:opacity-90 transition-opacity shrink-0"
-        >
+        <Button size="sm" class="shrink-0" onClick={() => setCreating(!creating())}>
           <MdFillAdd size={16} />
           {t("webpages.new_menu")}
-        </button>
+        </Button>
       </div>
 
       <Show when={creating()}>
@@ -350,20 +344,21 @@ export default function MenusView() {
                     {m.item_count} {t("webpages.items_label")}
                   </span>
                   <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                    <button
+                    <IconButton
+                      label={t("webpages.edit") as string}
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); setRenamingId(m.id); }}
-                      class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-                      title={t("webpages.edit") as string}
                     >
                       <MdOutlineEdit_note size={14} />
-                    </button>
-                    <button
+                    </IconButton>
+                    <IconButton
+                      label={t("webpages.delete") as string}
+                      variant="danger"
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); handleDeleteMenu(m); }}
-                      class="p-1.5 rounded text-muted hover:text-red-500 hover:bg-overlay transition-colors"
-                      title={t("webpages.delete") as string}
                     >
                       <MdFillDelete size={14} />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               </Show>
@@ -375,23 +370,24 @@ export default function MenusView() {
       {/* Item editor for the selected menu */}
       <Show when={selectedId() && raw()}>
         {(_) => (
-          <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-            <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-rim">
+          <Card class="overflow-hidden">
+            <CardHeader class="flex items-center justify-between gap-3">
               <h2 class="text-sm font-semibold text-txt truncate">
                 {raw()!.menu.desc || raw()!.menu.name}
                 <span class="ml-2 text-xs font-normal text-muted font-mono">{raw()!.menu.name}</span>
               </h2>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                class="shrink-0"
                 onClick={() => { setAddingItem(!addingItem()); setEditingItemId(null); }}
-                class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
-                       hover:text-txt hover:bg-elevated transition-colors shrink-0"
               >
                 <Show when={addingItem()} fallback={<MdFillAdd size={12} />}>
                   <MdFillClose size={12} />
                 </Show>
                 {t("webpages.add_item")}
-              </button>
-            </div>
+              </Button>
+            </CardHeader>
 
             <div class="p-3 space-y-2">
               <Show when={addingItem()}>
@@ -449,20 +445,21 @@ export default function MenusView() {
                             </Show>
                           </div>
                           <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                            <button
+                            <IconButton
+                              label={t("webpages.edit") as string}
+                              size="sm"
                               onClick={() => { setEditingItemId(it.id); setAddingItem(false); }}
-                              class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-                              title={t("webpages.edit") as string}
                             >
                               <MdOutlineEdit_note size={14} />
-                            </button>
-                            <button
+                            </IconButton>
+                            <IconButton
+                              label={t("webpages.delete") as string}
+                              variant="danger"
+                              size="sm"
                               onClick={() => handleDeleteItem(it)}
-                              class="p-1.5 rounded text-muted hover:text-red-500 hover:bg-overlay transition-colors"
-                              title={t("webpages.delete") as string}
                             >
                               <MdFillDelete size={14} />
-                            </button>
+                            </IconButton>
                           </div>
                         </div>
                       </Show>
@@ -473,7 +470,7 @@ export default function MenusView() {
 
               <p class="px-1 pt-1 text-[0.6875rem] text-muted">{t("webpages.submenu_hint")}</p>
             </div>
-          </div>
+          </Card>
         )}
       </Show>
     </div>

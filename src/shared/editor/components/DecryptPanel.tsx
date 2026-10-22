@@ -2,6 +2,8 @@ import { Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { useEncrypt } from "../useEncrypt";
 import { getPayloadHint, extractCryptPayload } from "@utsukta/spa-core/lib/postCrypto";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 type EncryptState = ReturnType<typeof useEncrypt>;
 
@@ -21,37 +23,25 @@ const DecryptPanel: Component<{ enc: EncryptState; body: () => string }> = (prop
         <p class="text-xs text-muted">{t("editor.decrypt_hint_prefix")} {hint()}</p>
       </Show>
       <div class="flex flex-col gap-0.5">
-        <input
+        <Input
           type="password"
           autofocus
           placeholder={t("editor.decrypt_passphrase")}
           value={e.decryptPassword()}
           onInput={(ev) => e.setDecryptPassword(ev.currentTarget.value)}
           onKeyDown={(ev) => { if (ev.key === "Enter") void e.doDecrypt(); }}
-          class="bg-transparent border border-rim rounded px-2.5 py-1 text-sm text-txt
-                 placeholder:text-muted outline-none focus:border-rim-strong transition-colors"
         />
       </div>
       <Show when={e.decryptError()}>
-        <p class="text-red-400 text-xs">{e.decryptError()}</p>
+        <p class="text-danger-txt text-xs">{e.decryptError()}</p>
       </Show>
       <div class="flex gap-2 pt-1">
-        <button
-          type="button"
-          disabled={e.decrypting()}
-          onClick={() => void e.doDecrypt()}
-          class="px-3 py-1 rounded-md text-xs font-semibold bg-accent text-accent-fg
-                 hover:opacity-90 disabled:opacity-40 transition-opacity"
-        >
+        <Button size="sm" disabled={e.decrypting()} onClick={() => void e.doDecrypt()}>
           {e.decrypting() ? t("editor.decrypt_decrypting") : t("editor.decrypt_btn")}
-        </button>
-        <button
-          type="button"
-          onClick={() => e.resetDecrypt()}
-          class="px-3 py-1 rounded-md text-xs text-muted hover:text-txt hover:bg-elevated transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => e.resetDecrypt()}>
           {t("editor.decrypt_cancel")}
-        </button>
+        </Button>
       </div>
     </div>
   );

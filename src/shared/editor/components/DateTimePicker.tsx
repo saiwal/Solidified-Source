@@ -5,6 +5,7 @@ import { MdOutlineSchedule } from "solid-icons/md";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { ComposerMenuContext, composerTriggerClass } from "./buttons";
+import { Button } from "@ui/Button";
 
 interface Props {
   /** "" or local "YYYY-MM-DDTHH:mm" (same contract as <input type="datetime-local">) */
@@ -233,7 +234,7 @@ export default function DateTimePicker(props: Props) {
           title={t("editor.dtp_clear")}
           onClick={() => props.onChange("")}
           class="absolute right-1 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded
-                 text-muted hover:text-red-500 bg-surface"
+                 text-muted hover:text-danger-txt bg-surface"
         >
           ×
         </button>
@@ -361,22 +362,13 @@ export default function DateTimePicker(props: Props) {
           {/* Footer actions */}
           <div class="flex flex-col justify-end gap-1">
             <Show when={props.value}>
-              <button
-                type="button"
-                onClick={() => props.onChange("")}
-                class="px-2 py-1 text-[0.6875rem] rounded border border-rim text-muted
-                       hover:text-red-500 hover:border-red-400/50 transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={() => props.onChange("")}>
                 {t("editor.dtp_clear")}
-              </button>
+              </Button>
             </Show>
-            <button
-              type="button"
-              onClick={toggle}
-              class="px-2 py-1 text-[0.6875rem] rounded bg-accent text-accent-fg hover:opacity-90 transition-opacity"
-            >
+            <Button size="sm" onClick={toggle}>
               {t("editor.dtp_done")}
-            </button>
+            </Button>
           </div>
         </div>
         </Portal>

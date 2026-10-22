@@ -32,12 +32,15 @@ import { decryptPayload, getPayloadHint } from "@utsukta/spa-core/lib/postCrypto
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { Dynamic, Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { createPopover } from "@/shared/stream/filters/createPopover";
+import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclPayload, fetchAclNames, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { ComposerFrameContext, openChat } from "@/shared/views/modal-host";
 import { alertNewMessage, chatNotifyMode, cycleChatNotify } from "../notify";
 import { markChatSeen } from "../unread";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Avatar } from "@ui/Avatar";
 
 /** Chat timestamps are UTC "YYYY-MM-DD HH:MM:SS". */
 const chatDate = (created: string) => new Date(created.replace(" ", "T") + "Z");
@@ -165,16 +168,15 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 		form.innerHTML = `
 			<span class="text-[0.6875rem] text-muted">🔒 ${DOMPurify.sanitize(hint || "Enter passphrase")}</span>
 			<div class="flex items-center gap-1.5">
-				<input type="password" placeholder="Passphrase" autofocus
-					class="hz-decrypt-input flex-1 bg-surface border border-rim rounded px-2 py-0.5 text-xs text-txt outline-none focus:border-rim-strong" />
-				<button type="submit" class="px-2 py-0.5 rounded bg-accent text-accent-fg text-xs font-semibold hover:opacity-90 whitespace-nowrap">
+				<Input size="sm" class="hz-decrypt-input flex-1" type="password" placeholder="Passphrase" autofocus />
+				<Button size="sm" type="submit">
 					Decrypt
-				</button>
-				<button type="button" class="hz-decrypt-cancel px-1.5 py-0.5 rounded text-muted hover:text-txt text-xs">
+				</Button>
+				<Button variant="ghost" size="sm" class="hz-decrypt-cancel">
 					✕
-				</button>
+				</Button>
 			</div>
-			<span class="hz-decrypt-error text-[0.6875rem] text-red-400 hidden"></span>
+			<span class="hz-decrypt-error text-[0.6875rem] text-danger-txt hidden"></span>
 		`;
 
 		btn.replaceWith(form);
@@ -286,7 +288,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 			class={`flex items-center gap-1 shrink-0 text-xs px-1.5 py-0.5 rounded-full border ${
 				isRestricted()
 					? "border-accent/40 bg-accent/10 text-accent"
-					: "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+					: "border-success/30 bg-success/10 text-success-txt"
 			}`}
 		>
 			<Show when={isRestricted()} fallback={<MdFillLock_open size={11} />}>
@@ -400,27 +402,24 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 				</Show>
 				{/* Esc/backdrop only minimize (still joined); this closes the window,
 				    and the session's cleanup leaves the room. */}
-				<button
-					onClick={props.onClose}
-					title={t("chat.leave") as string}
-					aria-label={t("chat.leave") as string}
-					class="p-1.5 rounded-lg transition-colors hover:bg-elevated text-muted hover:text-txt"
-				>
+				<IconButton label={t("chat.leave") as string} size="sm" onClick={props.onClose}>
 					<MdOutlineLogout class="w-4 h-4" />
-				</button>
+				</IconButton>
 				{/* Who's here — a floating dropdown rather than a side column, which
 				    left no room for messages in a docked window or on a phone. */}
 				<div ref={presencePop.ref}>
-					<button
-						onClick={() => presencePop.setOpen(!presencePop.open())}
-						aria-haspopup="true"
-						aria-expanded={presencePop.open()}
-						title={`${presenceCount()} ${t("chat.online_count")}`}
-						class="flex items-center gap-1 text-xs text-muted hover:text-txt rounded-lg px-1.5 py-1 hover:bg-elevated transition-colors tabular-nums"
+					<Button
+					  variant="ghost"
+					  size="sm"
+					  class="tabular-nums"
+					  onClick={() => presencePop.setOpen(!presencePop.open())}
+					  aria-haspopup="true"
+					  aria-expanded={presencePop.open()}
+					  title={`${presenceCount()} ${t("chat.online_count")}`}
 					>
 						<MdFillPeople class="w-4 h-4" />
 						{presenceCount()}
-					</button>
+					</Button>
 				</div>
 				<Show when={presencePop.open()}>
 					<Portal mount={topLayer()}>
@@ -445,17 +444,13 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 														</div>
 													}
 												>
-													<img
-														src={member.avatar}
-														alt={member.name}
-														class="w-6 h-6 rounded-full object-cover"
-													/>
+													<Avatar src={member.avatar} name={member.name} size={6} />
 												</Show>
 												<span
 													class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-surface"
 													classList={{
-														"bg-green-500": member.status === "online",
-														"bg-yellow-500": member.status !== "online",
+														"bg-success": member.status === "online",
+														"bg-warning": member.status !== "online",
 													}}
 												/>
 											</div>
@@ -488,24 +483,15 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 						{aclMode() === "custom" && t("chat.visibility_private")}
 					</p>
 					<Show when={aclError()}>
-						<p class="text-xs text-red-500">{aclError()}</p>
+						<p class="text-xs text-danger-txt">{aclError()}</p>
 					</Show>
 					<div class="flex justify-end gap-2">
-						<button
-							type="button"
-							onClick={() => setAclEditing(false)}
-							class="text-xs px-2.5 py-1 rounded-md text-muted hover:text-txt transition-colors"
-						>
+						<Button variant="ghost" size="sm" onClick={() => setAclEditing(false)}>
 							{t("chat.cancel")}
-						</button>
-						<button
-							type="button"
-							onClick={() => void saveAcl()}
-							disabled={aclSaving()}
-							class="text-xs px-2.5 py-1 rounded-md bg-accent text-accent-fg hover:opacity-90 transition-opacity disabled:opacity-50"
-						>
+						</Button>
+						<Button size="sm" onClick={() => void saveAcl()} disabled={aclSaving()}>
 							{t("chat.save")}
-						</button>
+						</Button>
 					</div>
 				</div>
 			</Show>
@@ -546,22 +532,23 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 							Custom
 						</button>
 						<Show when={expireCustomMode()}>
-							<input
-								type="number"
-								min="1"
-								max="10080"
-								value={expireCustomInput()}
-								onInput={(e) => setExpireCustomInput(e.currentTarget.value)}
-								placeholder="min"
-								class="w-16 bg-surface border border-accent text-txt text-xs rounded-md px-2 py-1 focus:outline-none"
+							<Input
+							  size="sm"
+							  class="w-16"
+							  type="number"
+							  min="1"
+							  max="10080"
+							  value={expireCustomInput()}
+							  onInput={(e) => setExpireCustomInput(e.currentTarget.value)}
+							  placeholder="min"
 							/>
-							<button
-								onClick={() => void handleSetExpire(parseInt(expireCustomInput()) || 0)}
-								disabled={expireUpdating()}
-								class="text-xs px-2.5 py-1 rounded-md bg-accent text-accent-fg hover:opacity-90 transition-opacity disabled:opacity-50"
+							<Button
+							  size="sm"
+							  onClick={() => void handleSetExpire(parseInt(expireCustomInput()) || 0)}
+							  disabled={expireUpdating()}
 							>
 								Set
-							</button>
+							</Button>
 						</Show>
 					</div>
 					<button
@@ -647,11 +634,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 															</div>
 														}
 													>
-														<img
-															src={msg.author_avatar}
-															alt={msg.author_name}
-															class="w-7 h-7 rounded-full object-cover"
-														/>
+														<Avatar src={msg.author_avatar} name={msg.author_name} size={7} />
 													</Show>
 												</div>
 											</Show>

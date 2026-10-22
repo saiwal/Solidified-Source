@@ -9,6 +9,8 @@ import {
 } from "../../api";
 import HookSettingsForm from "./HookSettingsForm";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Switch } from "@ui/Toggle";
+import { Badge } from "@ui/Badge";
 
 export default function ThemesSection() {
   const { t } = useI18n();
@@ -35,16 +37,16 @@ export default function ThemesSection() {
                         <div class="flex items-center gap-2 flex-wrap">
                           <p class="text-sm font-medium text-txt font-mono">{theme.name}</p>
                           <Show when={theme.current}>
-                            <span class="px-1.5 py-0.5 text-xs rounded-full bg-accent/10 text-accent">{t("admin.default_badge")}</span>
+                            <Badge tone="accent">{t("admin.default_badge")}</Badge>
                           </Show>
                           <Show when={theme.mobile}>
-                            <span class="px-1.5 py-0.5 text-xs rounded-full bg-elevated text-muted">{t("admin.mobile_badge")}</span>
+                            <Badge>{t("admin.mobile_badge")}</Badge>
                           </Show>
                           <Show when={theme.experimental}>
-                            <span class="px-1.5 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{t("admin.experimental_badge")}</span>
+                            <Badge tone="warning">{t("admin.experimental_badge")}</Badge>
                           </Show>
                           <Show when={!theme.compatible}>
-                            <span class="px-1.5 py-0.5 text-xs rounded-full border border-red-300 text-red-600">{t("admin.incompatible_badge")}</span>
+                            <span class="px-1.5 py-0.5 text-xs rounded-full border border-danger/40 text-danger-txt">{t("admin.incompatible_badge")}</span>
                           </Show>
                         </div>
                         <Show when={theme.description}>
@@ -68,20 +70,12 @@ export default function ThemesSection() {
                             {t("admin.settings_label")}
                           </button>
                         </Show>
-                        <input
-                          type="checkbox"
+                        <Switch
                           checked={theme.allowed}
-                          onChange={() => onToggle(theme.name)}
-                          aria-label={theme.allowed ? "Disable" : "Allow"}
-                          class="appearance-none relative h-6 w-11 shrink-0 cursor-pointer rounded-full
-                                 bg-elevated border border-rim transition-colors
-                                 checked:bg-accent checked:border-accent
-                                 after:absolute after:top-1/2 after:-translate-y-1/2 after:translate-x-1
-                                 after:h-4 after:w-4 after:rounded-full after:bg-muted
-                                 after:transition-transform after:duration-150 motion-reduce:after:transition-none
-                                 checked:after:translate-x-6 checked:after:bg-accent-fg
-                                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60
-                                 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                          // void: the refetch lands after the toggle resolves, so re-syncing on
+                          // settle would flick the switch back until it does.
+                          onChange={() => void onToggle(theme.name)}
+                          label={theme.allowed ? "Disable" : "Allow"}
                         />
                       </div>
                     </div>

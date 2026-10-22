@@ -12,6 +12,7 @@ import { For, Show, type Component } from "solid-js";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { MentionEntry } from "./useMention";
+import { Avatar } from "@ui/Avatar";
 
 export interface MentionPopupProps {
   query: string;
@@ -64,11 +65,7 @@ const MentionPopup: Component<MentionPopupProps> = (props) => {
                   </span>
                 }
               >
-                <img
-                  src={entry.photo}
-                  alt=""
-                  class="w-7 h-7 rounded-full shrink-0 object-cover bg-elevated"
-                />
+                <Avatar src={entry.photo} size={7} />
               </Show>
               <span class="flex flex-col min-w-0">
                 <span class="text-xs font-medium truncate text-txt leading-tight">

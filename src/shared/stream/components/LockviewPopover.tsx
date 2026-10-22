@@ -113,7 +113,7 @@ const LockviewPopover: Component<{
                         </button>
                       )}
                     </For>
-                    <p class="px-3 py-1.5 text-[0.625rem] text-amber-600 dark:text-amber-500">
+                    <p class="px-3 py-1.5 text-[0.625rem] text-warning-txt">
                       {t("share.guest_access_warning")}
                     </p>
                   </div>

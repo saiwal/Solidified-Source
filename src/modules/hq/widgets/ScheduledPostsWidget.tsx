@@ -5,6 +5,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 
 import { openPost } from "@/shared/views/modal-host";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 type ScheduledPost = {
   iid: number;
@@ -70,7 +72,7 @@ export default function ScheduledPostsWidget() {
 
   return (
     <Show when={posts().length > 0}>
-      <div class="bg-surface border border-rim rounded-2xl shadow-sm flex flex-col overflow-hidden"
+      <Card raised class="flex flex-col overflow-hidden"
         style={{ "max-height": "480px" }}>
         {/* Header */}
         <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
@@ -114,29 +116,27 @@ export default function ScheduledPostsWidget() {
                     {publishAt(post.created)}
                   </span>
                   <div class="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); void act(post.uuid, "publish"); }}
-                      class="px-2 py-0.5 text-[0.625rem] rounded border border-rim text-muted
-                             hover:text-txt hover:border-rim-strong transition-colors"
                     >
                       {t("hq.publish_now")}
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); void act(post.uuid, "delete"); }}
-                      class="px-2 py-0.5 text-[0.625rem] rounded border border-rim text-muted
-                             hover:text-red-500 hover:border-red-400/50 transition-colors"
                     >
                       {t("hq.cancel_scheduled")}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
             )}
           </For>
         </div>
-      </div>
+      </Card>
 
     </Show>
   );

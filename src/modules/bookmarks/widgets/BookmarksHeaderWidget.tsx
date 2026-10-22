@@ -5,6 +5,9 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { fetchAllBookmarks, createBookmark, type BookmarkMenu } from "../api";
 import { resetChatBookmarks } from "@/modules/chat/bookmarks";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 export default function BookmarksHeaderWidget() {
   const { t } = useI18n();
@@ -57,35 +60,32 @@ export default function BookmarksHeaderWidget() {
         <Show when={!menus.loading && totalCount() > 0}>
           <span class="text-xs text-muted tabular-nums">{totalCount()}</span>
         </Show>
-        <button
-          onClick={() => setOpen(!open())}
-          class="ml-auto text-xs px-3 py-1.5 rounded-lg border border-rim text-muted
-                 hover:text-txt hover:border-rim-strong transition-colors"
-        >
+        <Button variant="ghost" size="sm" class="ml-auto" onClick={() => setOpen(!open())}>
           {t("bookmarks.add")}
-        </button>
+        </Button>
       </div>
 
       <Show when={open()}>
-        <div class="bg-surface border border-rim rounded-2xl p-4 space-y-2">
+        <Card class="p-4 space-y-2">
           <div class="text-xs font-medium text-muted">{t("bookmarks.add_title")}</div>
-          <input
+          <Input
+            class="w-full"
             type="url"
-            class="w-full text-sm bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt"
             placeholder={t("bookmarks.field_url") as string}
             value={url()}
             onInput={(e) => setUrl(e.currentTarget.value)}
           />
-          <input
+          <Input
+            class="w-full"
             type="text"
-            class="w-full text-sm bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt"
             placeholder={t("bookmarks.field_title") as string}
             value={title()}
             onInput={(e) => setTitle(e.currentTarget.value)}
           />
           <div class="flex flex-wrap items-center gap-2">
-            <select
-              class="text-xs bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt min-w-0 flex-1"
+            <Select
+              size="sm"
+              class="min-w-0 flex-1"
               value={String(folder())}
               onChange={(e) => setFolder(parseInt(e.currentTarget.value, 10))}
               disabled={!!newFolder().trim()}
@@ -94,31 +94,25 @@ export default function BookmarksHeaderWidget() {
               <For each={(menus() ?? []).filter((m) => !m.system)}>
                 {(m) => <option value={String(m.id)}>{m.label}</option>}
               </For>
-            </select>
-            <input
+            </Select>
+            <Input
+              size="sm"
+              class="min-w-0 flex-1"
               type="text"
-              class="text-xs bg-elevated border border-rim rounded-lg px-2 py-1.5 text-txt min-w-0 flex-1"
               placeholder={t("bookmarks.new_folder") as string}
               value={newFolder()}
               onInput={(e) => setNewFolder(e.currentTarget.value)}
             />
           </div>
           <div class="flex items-center gap-2 pt-1">
-            <button
-              onClick={() => void save()}
-              disabled={saving()}
-              class="text-xs px-3 py-1.5 rounded-lg bg-accent text-accent-fg font-medium disabled:opacity-50"
-            >
+            <Button size="sm" onClick={() => void save()} disabled={saving()}>
               {saving() ? t("bookmarks.saving") : t("bookmarks.save")}
-            </button>
-            <button
-              onClick={() => setOpen(false)}
-              class="text-xs px-3 py-1.5 rounded-lg border border-rim text-muted hover:text-txt transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
               {t("bookmarks.cancel")}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </Show>
     </div>
   );

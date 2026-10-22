@@ -14,6 +14,7 @@ import {
   MdFillAdd, MdFillDelete, MdFillLock, MdFillLock_open, MdOutlineEdit_note,
   MdOutlineView_module,
 } from "solid-icons/md";
+import { IconButton } from "@ui/Button";
 
 function formatDate(s: string): string {
   if (!s) return "—";
@@ -58,13 +59,14 @@ function BlockRow(props: { block: Block; nick: string; onDelete: (iid: number) =
         >
           <MdOutlineEdit_note size={14} />
         </A>
-        <button
+        <IconButton
+          label={t("webpages.delete") as string}
+          variant="danger"
+          size="sm"
           onClick={() => props.onDelete(props.block.iid)}
-          class="p-1.5 rounded text-muted hover:text-red-500 hover:bg-overlay transition-colors"
-          title={t("webpages.delete") as string}
         >
           <MdFillDelete size={14} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

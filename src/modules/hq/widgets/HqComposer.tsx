@@ -18,6 +18,9 @@ import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
 import { useMentionEmojiWiring } from "@/shared/editor/mention/useMentionEmojiWiring";
 import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button, IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 void motion;
 
 const DRAFT_KEY = () => channelKey("hz_hq_draft");
@@ -274,7 +277,7 @@ function HqComposer() {
   ];
 
   return (
-    <div ref={rootEl} data-tour="hq.composer" class="bg-surface border border-rim rounded-2xl p-3.5 shadow-sm flex flex-col gap-3 max-w-5xl mx-auto">
+    <Card raised class="p-3.5 flex flex-col gap-3 max-w-5xl mx-auto" ref={rootEl} data-tour="hq.composer">
 
       {/* Body area — two lines tall until the text outgrows them */}
       <div ref={wiring.wrapperRef} class="flex gap-2.5 items-start">
@@ -288,12 +291,7 @@ function HqComposer() {
               </div>
             }
           >
-            <img
-              src={viewer()!.avatar}
-              alt={viewer()!.name}
-              class="w-9 h-9 rounded-full object-cover shrink-0 select-none"
-              loading="lazy"
-            />
+            <Avatar src={viewer()!.avatar} name={viewer()!.name} size={9} class="select-none" />
           </Show>
         </Show>
 
@@ -370,42 +368,32 @@ function HqComposer() {
             onClear={() => { setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>()); }}
           />
 
-          <button
-            type="button"
-            title={t("editor.clear_composer")}
-            aria-label={t("editor.clear_composer")}
+          <IconButton
+            label={t("editor.clear_composer")}
+            variant="danger"
+            size="sm"
+            class="ml-auto"
             onClick={resetComposer}
-            class="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-muted
-                   hover:bg-elevated hover:text-red-500 transition-colors"
           >
             <MdOutlineCleaning_services class="w-4 h-4" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
-            title={t("editor.open_full_composer")}
-            aria-label={t("editor.open_full_composer")}
-            onClick={() => openFull()}
-            class="flex h-8 w-8 items-center justify-center rounded-full text-muted
-                   hover:bg-elevated hover:text-txt transition-colors"
-          >
+          <IconButton label={t("editor.open_full_composer")} size="sm" onClick={() => openFull()}>
             <MdOutlineOpen_in_full class="w-4 h-4" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
+          <Button
+            size="sm"
             onClick={handleSubmit}
             disabled={submitting() || attach.uploading() || !body().trim()}
-            class="px-4 py-1 rounded-lg text-xs font-semibold bg-accent text-accent-fg
-                   hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
           >
             {submitting() ? t("editor.posting") : t("editor.post_btn")}
-          </button>
+          </Button>
         </div>
       </Show>
 
       {/* Mention + emoji popups */}
       <MentionEmojiPopups wiring={wiring} />
-    </div>
+    </Card>
   );
 }

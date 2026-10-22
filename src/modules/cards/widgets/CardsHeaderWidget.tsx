@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useSearchParams } from "@solidjs/router";
@@ -12,6 +12,9 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useIsCardsList } from "../lib/isCardsList";
 import { boardView, setBoardView } from "../lib/kanban";
 import { fetchKanban } from "../api";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Tabs } from "@ui/Tabs";
 
 export default function CardsHeaderWidget() {
   const { t, locale } = useI18n();
@@ -77,24 +80,16 @@ export default function CardsHeaderWidget() {
           <h1 class="text-xl font-bold text-txt">{owner() === null ? t("cards.title_mine") : t("cards.title_of", { name: owner()! })}</h1>
 
           <Show when={kanban()?.enabled}>
-            <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
-              <For each={[["board", "cards.view_board"] as const,
-                          ["kanban", "cards.view_kanban"] as const]}>
-                {([view, key]) => (
-                  <button
-                    type="button"
-                    aria-pressed={boardView() === view}
-                    onClick={() => setBoardView(view)}
-                    class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
-                      ${boardView() === view
-                        ? "bg-accent text-accent-fg font-semibold"
-                        : "text-muted hover:text-txt"}`}
-                  >
-                    {t(key)}
-                  </button>
-                )}
-              </For>
-            </div>
+            <Tabs
+              label={t("nav.cards")}
+              class="mx-auto"
+              value={boardView()}
+              onChange={setBoardView}
+              items={[
+                { value: "board", label: t("cards.view_board") },
+                { value: "kanban", label: t("cards.view_kanban") },
+              ]}
+            />
           </Show>
 
           <div class="flex items-center gap-1.5">
@@ -115,14 +110,14 @@ export default function CardsHeaderWidget() {
               }
             >
               <form onSubmit={submitSearch} class="flex items-center gap-1">
-                <input
+                <Input
+                  class="w-36"
                   type="search"
                   value={searchInput()}
                   onInput={(e) => setSearchInput(e.currentTarget.value)}
                   placeholder={t("cards.search_placeholder")}
                   autofocus
                   onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
-                  class="w-36 px-2 py-1 text-sm rounded-lg border border-rim bg-surface text-txt outline-none focus:border-accent"
                 />
                 <button
                   type="submit"
@@ -141,16 +136,10 @@ export default function CardsHeaderWidget() {
             </Show>
 
             <Show when={role() === "owner"}>
-              <button
-                type="button"
-                onClick={openCard}
-                class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-                       rounded-lg bg-accent text-accent-fg hover:opacity-90
-                       transition-opacity"
-              >
+              <Button size="sm" onClick={openCard}>
                 <BiRegularEdit class="w-4 h-4" />
                 {t("cards.new_card")}
-              </button>
+              </Button>
             </Show>
           </div>
         </div>

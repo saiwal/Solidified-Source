@@ -11,6 +11,10 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillLocation_on, MdFillPublic } from "solid-icons/md";
 import { fetchProfile } from "../api";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 
 export default function ContactCardWidget() {
@@ -41,18 +45,14 @@ export default function ContactCardWidget() {
 
   return (
     <Show when={!data.loading && profile()}>
-      <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+      <Card class="overflow-hidden">
         {/* Cover + avatar */}
         <div class="relative bg-gradient-to-br from-accent to-accent-txt" style="aspect-ratio: 3 / 1;">
           <Show when={profile()!.channel_cover}>
             <img src={profile()!.channel_cover} alt="" class="absolute inset-0 w-full h-full object-cover" />
           </Show>
           <div class="absolute -bottom-7 left-4">
-            <img
-              src={profile()!.channel_photo_l}
-              alt={profile()!.channel_name}
-              class="w-14 h-14 rounded-full ring-4 ring-surface object-cover bg-overlay"
-            />
+            <Avatar src={profile()!.channel_photo_l} name={profile()!.channel_name} size={14} class="ring-4 ring-surface" />
           </div>
         </div>
 
@@ -64,9 +64,9 @@ export default function ContactCardWidget() {
           </Show>
 
           <Show when={profile()!.is_remote}>
-            <span class="inline-flex items-center gap-1 mt-2 px-2 py-0.5 text-[0.625rem] rounded-full bg-elevated text-muted border border-rim">
+            <Badge size="sm" class="mt-2">
               <MdFillPublic size={10} /> {t("channel.remote_channel")}
-            </span>
+            </Badge>
           </Show>
 
           <Show when={profile()!.location || profile()!.gender || profile()!.marital}>
@@ -101,9 +101,9 @@ export default function ContactCardWidget() {
             <div class="flex flex-wrap gap-1 mt-3">
               <For each={profile()!.keywords.slice(0, 8)}>
                 {(kw) => (
-                  <span class="text-[0.625rem] px-1.5 py-0.5 rounded-full bg-elevated text-muted">
+                  <Badge size="sm">
                     {kw}
-                  </span>
+                  </Badge>
                 )}
               </For>
             </div>
@@ -117,13 +117,9 @@ export default function ContactCardWidget() {
           >
             <div class="mt-3 pt-3 border-t border-rim flex items-center gap-2">
               <Show when={viewerRole() !== "owner" && viewerRole() !== "anonymous" && !profile()!.is_connected && profile()!.connect_url}>
-                <button
-                  onClick={handleConnect}
-                  disabled={connecting()}
-                  class="text-[0.625rem] px-2.5 py-1 rounded-full bg-accent text-accent-fg font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                >
+                <Button size="sm" onClick={handleConnect} disabled={connecting()}>
                   {connecting() ? t("directory.connecting") : t("ui.connect")}
-                </button>
+                </Button>
               </Show>
               <Show when={!profile()!.is_remote}>
                 <A
@@ -136,7 +132,7 @@ export default function ContactCardWidget() {
             </div>
           </Show>
         </div>
-      </div>
+      </Card>
     </Show>
   );
 }

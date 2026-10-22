@@ -5,6 +5,8 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive } from "@utsukta/spa-core/module-registry";
+import { Card } from "@ui/Card";
+import { EmptyState } from "@ui/EmptyState";
 
 // ── Types & API ───────────────────────────────────────────────────────────────
 
@@ -88,7 +90,7 @@ export default function ChannelActivitiesWidget() {
   );
 
   return (
-    <div class="bg-surface border border-rim rounded-2xl shadow-sm overflow-hidden">
+    <Card raised class="overflow-hidden">
       <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between">
         <h3 class="text-xs font-medium uppercase tracking-wider text-muted">
           {t("hq.channel_activities")}
@@ -112,9 +114,9 @@ export default function ChannelActivitiesWidget() {
       </Show>
 
       <Show when={!data.loading && sections().length === 0}>
-        <p class="px-4 py-6 text-xs text-muted text-center">
+        <EmptyState size="sm" class="px-4">
           {t("hq.ca_empty")}
-        </p>
+        </EmptyState>
       </Show>
 
       <Show when={!data.loading && sections().length > 0}>
@@ -178,7 +180,7 @@ export default function ChannelActivitiesWidget() {
           </div>
         </div>
       </Show>
-    </div>
+    </Card>
   );
 }
 

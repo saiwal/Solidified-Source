@@ -70,7 +70,10 @@ import WopiEditorOverlay from "@/shared/views/WopiEditorOverlay";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
 
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { EmptyState } from "@ui/EmptyState";
 type ModalKind = "rename" | "moveCopy" | "categories";
 
 type ViewMode   = "list" | "grid";
@@ -254,25 +257,16 @@ const PermissionsPanel: Component<{
       </Show>
 
       <Show when={err()}>
-        <p class="text-sm text-red-500">{err()}</p>
+        <p class="text-sm text-danger-txt">{err()}</p>
       </Show>
 
       <div class="flex gap-2 pt-1">
-        <button
-          onClick={save}
-          disabled={busy()}
-          class="px-4 py-1.5 rounded-lg bg-accent text-accent-fg text-sm
-                 disabled:opacity-50 hover:opacity-90 transition-opacity"
-        >
+        <Button size="sm" onClick={save} disabled={busy()}>
           {busy() ? t("files_mod.saving") : t("files_mod.save")}
-        </button>
-        <button
-          onClick={props.onClose}
-          class="px-4 py-1.5 rounded-lg border border-rim text-sm text-muted
-                 hover:bg-overlay transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" size="sm" onClick={props.onClose}>
           {t("files_mod.cancel")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -516,7 +510,7 @@ function ToolButton(props: { label: string; active?: boolean; danger?: boolean; 
       onClick={props.onClick}
       class={`p-1.5 rounded-lg transition-colors disabled:opacity-40
               ${props.active ? "bg-accent text-accent-fg"
-                : props.danger ? "bg-elevated text-muted hover:bg-red-500/15 hover:text-red-500"
+                : props.danger ? "bg-elevated text-muted hover:bg-danger/15 hover:text-danger-txt"
                 : "bg-elevated text-muted hover:bg-accent/15 hover:text-txt"}`}
     >
       {props.children}
@@ -1008,15 +1002,9 @@ export default function FilesContentWidget() {
         <Show when={selectedItems().length > 0}>
           <div class="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-lg border border-accent/40 bg-accent/10 text-xs text-txt">
             <span class="font-medium tabular-nums">{t("files_mod.selected_count", { count: selectedItems().length })}</span>
-            <button
-              type="button"
-              onClick={clearSelection}
-              title={t("files_mod.clear_selection") as string}
-              aria-label={t("files_mod.clear_selection") as string}
-              class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-            >
+            <IconButton label={t("files_mod.clear_selection") as string} size="sm" onClick={clearSelection}>
               <MdOutlineClose size={14} />
-            </button>
+            </IconButton>
           </div>
         </Show>
 
@@ -1024,15 +1012,14 @@ export default function FilesContentWidget() {
         <Show when={cat()}>
           <div class="flex items-center gap-1 min-w-0 pl-2.5 pr-1 py-1 rounded-lg border border-accent/40 bg-accent/10 text-xs text-txt">
             <span class="font-medium truncate">{t("files_mod.category_filter", { name: cat() })}</span>
-            <button
-              type="button"
+            <IconButton
+              label={t("files_mod.clear_filter") as string}
+              size="sm"
+              class="shrink-0"
               onClick={() => setParams({ cat: undefined })}
-              title={t("files_mod.clear_filter") as string}
-              aria-label={t("files_mod.clear_filter") as string}
-              class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
             >
               <MdOutlineClose size={14} />
-            </button>
+            </IconButton>
           </div>
         </Show>
 
@@ -1125,15 +1112,14 @@ export default function FilesContentWidget() {
               class="flex-1 min-w-0 bg-transparent text-txt placeholder:text-muted focus:outline-none"
             />
             <Show when={query()}>
-              <button
-                type="button"
+              <IconButton
+                label={t("files_mod.clear_filter") as string}
+                size="sm"
+                class="shrink-0"
                 onClick={() => setQuery("")}
-                title={t("files_mod.clear_filter") as string}
-                aria-label={t("files_mod.clear_filter") as string}
-                class="p-0.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
               >
                 <MdOutlineClose size={14} />
-              </button>
+              </IconButton>
             </Show>
           </label>
         </Show>
@@ -1149,38 +1135,27 @@ export default function FilesContentWidget() {
         </div>
       </Show>
       <Show when={canWrite() && uploadErr()}>
-        <p class="text-sm text-red-500">{uploadErr()}</p>
+        <p class="text-sm text-danger-txt">{uploadErr()}</p>
       </Show>
 
       {/* ── New folder form ── */}
       <Show when={canWrite() && showNewFolder()}>
         <form onSubmit={handleCreateFolder} class="flex gap-2">
-          <input
+          <Input
+            class="flex-1"
             type="text"
             autofocus
             placeholder={t("files_mod.folder_name_placeholder") as string}
             value={folderName()}
             onInput={(e) => setFolderName(e.currentTarget.value)}
-            class="flex-1 px-3 py-2 rounded-lg border border-rim bg-surface text-sm text-txt
-                   placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
           />
-          <button
-            type="submit"
-            disabled={folderBusy() || !folderName().trim()}
-            class="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-accent-fg
-                   text-sm disabled:opacity-50 hover:opacity-90 transition-opacity"
-          >
+          <Button type="submit" disabled={folderBusy() || !folderName().trim()}>
             <MdFillAdd size={14} />
             {folderBusy() ? t("files_mod.creating") : t("files_mod.create")}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setShowNewFolder(false); setFolderName(""); }}
-            class="px-3 py-2 rounded-lg border border-rim text-sm text-muted
-                   hover:bg-elevated transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" onClick={() => { setShowNewFolder(false); setFolderName(""); }}>
             {t("files_mod.cancel")}
-          </button>
+          </Button>
         </form>
       </Show>
 
@@ -1237,7 +1212,7 @@ export default function FilesContentWidget() {
           when={!files.error && !(cat() && catHits.error)}
           fallback={
             <div class="py-10 text-center space-y-2">
-              <p class="text-sm text-red-500">{t("files_mod.load_failed")}</p>
+              <p class="text-sm text-danger-txt">{t("files_mod.load_failed")}</p>
               <p class="text-xs text-muted">{String(files.error ?? catHits.error)}</p>
               <button onClick={() => refetch()} class="text-xs text-accent hover:underline">
                 {t("files_mod.retry")}
@@ -1247,9 +1222,9 @@ export default function FilesContentWidget() {
         >
           <Show
             when={sortedFiles().length > 0}
-            fallback={<p class="py-12 text-center text-sm text-muted">
+            fallback={<EmptyState>
               {query().trim() || cat() ? t("files_mod.no_matches") : t("files_mod.folder_empty")}
-            </p>}
+            </EmptyState>}
           >
             <Show
               when={viewMode() === "list"}

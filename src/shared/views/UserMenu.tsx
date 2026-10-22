@@ -4,6 +4,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import NavItem from "./NavItem";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { MdOutlineExpand_more } from "solid-icons/md";
+import { Avatar } from "@ui/Avatar";
 void helpable;
 
 interface NavUtilitiesProps {
@@ -41,12 +42,7 @@ const Usermenu = (props: NavUtilitiesProps) => {
             `}
           >
             <div class="relative shrink-0">
-              <img
-                src={props.viewer!.avatar}
-                alt={props.viewer!.name}
-                class="w-9 h-9 rounded-lg object-cover select-none"
-                loading="lazy"
-              />
+              <Avatar src={props.viewer!.avatar} name={props.viewer!.name} size={9} shape="rounded" class="select-none" />
             </div>
             <span class="flex-1 text-sm font-medium text-txt truncate text-left">
               {props.viewer!.name}

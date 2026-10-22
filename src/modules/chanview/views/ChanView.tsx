@@ -29,6 +29,11 @@ import {
   MdOutlineCheck,
   MdOutlineMail,
 } from "solid-icons/md";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 interface RemotePost {
   id: string;
@@ -282,16 +287,16 @@ export default function ChanView() {
       </Show>
 
       <Show when={(xchan.error || (xchan() === null && !xchan.loading)) && !fallback()}>
-        <div class="rounded-2xl bg-surface border border-rim p-8 text-center text-muted text-sm">
+        <Card class="p-8 text-center text-muted text-sm">
           {t("ui.not_found_title")}
-        </div>
+        </Card>
       </Show>
 
       <Show when={x()}>
         {(xdata) => {
           const b = badge();
           return (
-            <div class="rounded-2xl overflow-hidden bg-surface border border-rim shadow-sm">
+            <Card raised class="overflow-hidden">
               {/* Cover / header band */}
               <div
                 class="relative bg-gradient-to-br from-accent/60 to-accent-txt/60"
@@ -309,11 +314,7 @@ export default function ChanView() {
                       </div>
                     }
                   >
-                    <img
-                      src={xdata().photo}
-                      alt={xdata().name}
-                      class="w-20 h-20 rounded-full ring-4 ring-surface object-cover bg-overlay"
-                    />
+                    <Avatar src={xdata().photo} name={xdata().name} size={20} class="ring-4 ring-surface" />
                   </Show>
                 </div>
               </div>
@@ -357,20 +358,15 @@ export default function ChanView() {
                   {/* Action button */}
                   <div class="shrink-0 flex gap-2">
                     <Show when={canConnect()}>
-                      <button
-                        onClick={handleConnect}
-                        disabled={connectState().tag === "loading"}
-                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
-                               bg-accent text-accent-fg hover:opacity-90 transition-opacity disabled:opacity-60"
-                      >
+                      <Button size="sm" onClick={handleConnect} disabled={connectState().tag === "loading"}>
                         <Show when={connectState().tag === "loading"}>
-                          <span class="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin" />
+                          <Spinner size="sm" />
                         </Show>
                         <Show when={connectState().tag !== "loading"}>
                           <MdOutlinePerson_add size={16} />
                         </Show>
                         <span>{t("ui.connect")}</span>
-                      </button>
+                      </Button>
                     </Show>
 
                     <Show when={connectState().tag === "done"}>
@@ -381,33 +377,24 @@ export default function ChanView() {
                     </Show>
 
                     <Show when={canEdit()}>
-                      <button
-                        onClick={handleEditOpen}
-                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
-                               border border-rim text-muted hover:border-accent hover:text-accent transition-colors"
-                      >
+                      <Button variant="ghost" size="sm" onClick={handleEditOpen}>
                         <MdOutlineEdit size={16} />
                         <span>{t("ui.edit_connection")}</span>
-                      </button>
+                      </Button>
                     </Show>
 
                     <Show when={canEdit() && xdata().xchan_hash}>
-                      <button
-                        onClick={() =>
+                      <Button variant="ghost" size="sm" onClick={() =>
                           openDm({
                             xid: x()!.xchan_hash,
                             name: x()!.name,
                             nick: x()!.address,
                             photo: x()!.photo,
                           })
-                        }
-                        title={t("ui.send_dm")}
-                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
-                               border border-rim text-muted hover:border-accent hover:text-accent transition-colors"
-                      >
+                        } title={t("ui.send_dm")}>
                         <MdOutlineMail size={16} />
                         <span>{t("ui.send_dm")}</span>
-                      </button>
+                      </Button>
                     </Show>
 
                     <Show when={xdata().local_nick}>
@@ -486,9 +473,9 @@ export default function ChanView() {
                   <div class="mt-3 flex flex-wrap gap-1.5">
                     <For each={xdata().keywords}>
                       {(kw) => (
-                        <span class="px-2 py-0.5 text-xs rounded-full bg-overlay text-muted">
+                        <Badge>
                           #{kw}
-                        </span>
+                        </Badge>
                       )}
                     </For>
                   </div>
@@ -509,7 +496,7 @@ export default function ChanView() {
                 </Show>
 
               </div>
-            </div>
+            </Card>
           );
         }}
       </Show>
@@ -523,9 +510,9 @@ export default function ChanView() {
           </h2>
           {/* MessageList scrolls and paginates internally, so it needs a
               container that doesn't grow with its content. */}
-          <div class="rounded-2xl overflow-hidden bg-surface border border-rim flex flex-col max-h-[26rem]">
+          <Card class="overflow-hidden flex flex-col max-h-[26rem]">
             <MessageList type="direct" xchan={hashFilter()} />
-          </div>
+          </Card>
         </div>
       </Show>
 
@@ -584,7 +571,7 @@ function RemotePostCard(props: { post: RemotePost }) {
   };
 
   return (
-    <div class="rounded-xl bg-surface border border-rim px-4 py-3 text-sm">
+    <Card class="px-4 py-3 text-sm">
       <Show when={post.summary}>
         <p class="text-xs font-medium text-muted mb-1 italic">{post.summary}</p>
       </Show>
@@ -607,7 +594,7 @@ function RemotePostCard(props: { post: RemotePost }) {
           </a>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 }
 

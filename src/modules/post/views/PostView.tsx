@@ -24,6 +24,7 @@ import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { unblockChannel } from "@utsukta/spa-core/lib/blocklist-api";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
+import { Button } from "@ui/Button";
 
 function flatNodes(posts: Post[]): ThreadNode[] {
   return posts.map((p) => ({ ...p, children: [] }));
@@ -274,7 +275,7 @@ export default function PostView() {
 
       <Show when={node.error}>
         <div class="bg-surface rounded-2xl p-6 text-center">
-          <p class="text-sm text-red-500">
+          <p class="text-sm text-danger-txt">
             {t("post.load_error")}: {node.error?.message}
           </p>
         </div>
@@ -316,14 +317,9 @@ function BlockedPlaceholder(props: { authorHash?: string; onUnblocked: () => voi
   return (
     <div class="bg-surface rounded-2xl p-6 text-center space-y-3">
       <p class="text-sm text-muted">{t("blocklist.permalink_blocked")}</p>
-      <button
-        onClick={handleUnblock}
-        disabled={unblocking()}
-        class="text-xs px-3 py-1.5 rounded-lg border border-rim text-muted
-               hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
-      >
+      <Button variant="ghost" size="sm" onClick={handleUnblock} disabled={unblocking()}>
         {unblocking() ? t("blocklist.unblocking") : t("blocklist.unblock")}
-      </button>
+      </Button>
     </div>
   );
 }

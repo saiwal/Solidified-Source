@@ -7,6 +7,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { useToc } from "@utsukta/spa-core/lib/useToc";
 import ArticleToc from "@/shared/views/ArticleToc";
 import { fetchTopic, fetchHelpSearch } from "../api";
+import { Card } from "@ui/Card";
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
@@ -132,8 +133,8 @@ export default function HelpContentWidget() {
             </Show>
 
             <Show when={topicData.error}>
-              <div class="bg-surface border border-rim rounded-xl p-8 text-center space-y-3">
-                <p class="text-sm text-red-500">
+              <Card class="p-8 text-center space-y-3">
+                <p class="text-sm text-danger-txt">
                   {topicData.error?.message ?? "Page not found."}
                 </p>
                 <A
@@ -142,7 +143,7 @@ export default function HelpContentWidget() {
                 >
                   ← Back
                 </A>
-              </div>
+              </Card>
             </Show>
 
             <Show when={!topicData.loading && topicData()}>

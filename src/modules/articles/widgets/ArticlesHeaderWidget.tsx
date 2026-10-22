@@ -1,7 +1,7 @@
 // Same layout as the Cards header: title left, Articles | Series switcher in
 // the middle, search + New article on the right. Shown on the list and on the
 // series index; the filter line only on the list.
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, Show } from "solid-js";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useNavigate, useSearchParams } from "@solidjs/router";
@@ -12,8 +12,11 @@ import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config"
 import { openComposer } from "@/shared/views/modal-host";
 import { resetPosts, loadArticles } from "../store";
 import { useArticlesSection } from "../lib/isArticlesList";
+import { Button, IconButton, iconButtonClass } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Tabs } from "@ui/Tabs";
 
-const squareBtn = "p-1.5 rounded-lg border border-rim bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors";
+const squareBtn = iconButtonClass("square");
 
 export default function ArticlesHeaderWidget() {
   const { t, locale } = useI18n();
@@ -80,21 +83,13 @@ export default function ArticlesHeaderWidget() {
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <h1 class="text-xl font-bold text-txt">{owner() === null ? t("articles.title_mine") : t("articles.title_of", { name: owner()! })}</h1>
 
-          <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
-            <For each={SECTIONS}>
-              {([key, label, suffix]) => (
-                <button
-                  type="button"
-                  aria-pressed={section() === key}
-                  onClick={() => navigate(`/articles/${nick()}${suffix}`)}
-                  class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
-                    ${section() === key ? "bg-accent text-accent-fg font-semibold" : "text-muted hover:text-txt"}`}
-                >
-                  {t(label)}
-                </button>
-              )}
-            </For>
-          </div>
+          <Tabs
+            label={t("nav.articles")}
+            class="mx-auto"
+            value={section()!}
+            onChange={(key) => navigate(`/articles/${nick()}${SECTIONS.find(([k]) => k === key)![2]}`)}
+            items={SECTIONS.map(([key, label]) => ({ value: key, label: t(label) }))}
+          />
 
           <div class="flex items-center gap-1.5">
             <Show when={section() === "list"}>
@@ -116,7 +111,8 @@ export default function ArticlesHeaderWidget() {
                 }
               >
                 <form onSubmit={submitSearch} class="flex items-center gap-1">
-                  <input
+                  <Input
+                    class="w-36"
                     type="search"
                     value={searchInput()}
                     onInput={(e) => setSearchInput(e.currentTarget.value)}
@@ -124,40 +120,22 @@ export default function ArticlesHeaderWidget() {
                     aria-label={t("articles.search")}
                     autofocus
                     onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
-                    class="w-36 px-2 py-1 text-sm rounded-lg border border-rim bg-surface text-txt outline-none focus:border-accent"
                   />
-                  <button
-                    type="submit"
-                    title={t("articles.search")}
-                    aria-label={t("articles.search")}
-                    class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors"
-                  >
+                  <IconButton label={t("articles.search")} variant="square" type="submit">
                     <MdFillSearch size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    title={t("articles.cancel")}
-                    aria-label={t("articles.cancel")}
-                    onClick={() => setSearchOpen(false)}
-                    class="p-1.5 text-muted hover:text-txt transition-colors"
-                  >
+                  </IconButton>
+                  <IconButton label={t("articles.cancel")} size="sm" onClick={() => setSearchOpen(false)}>
                     <MdFillClose size={15} />
-                  </button>
+                  </IconButton>
                 </form>
               </Show>
             </Show>
 
             <Show when={role() === "owner"}>
-              <button
-                type="button"
-                onClick={openArticle}
-                class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-                       rounded-lg bg-accent text-accent-fg hover:opacity-90
-                       transition-opacity"
-              >
+              <Button size="sm" onClick={openArticle}>
                 <BiRegularEdit class="w-4 h-4" />
                 {t("articles.new_article")}
-              </button>
+              </Button>
             </Show>
           </div>
         </div>
@@ -179,14 +157,10 @@ export default function ArticlesHeaderWidget() {
                 {new Date(activeDbegin() + "T00:00:00").toLocaleDateString(locale(), { month: "long", day: "numeric", year: "numeric" })}
               </span>
             </Show>
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-muted hover:text-txt hover:bg-elevated/70 transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
               <MdFillClose size={12} />
               {t("articles.clear")}
-            </button>
+            </Button>
           </div>
         </Show>
       </div>

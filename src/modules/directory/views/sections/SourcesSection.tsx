@@ -27,9 +27,12 @@ import {
   saveSource,
   type Source,
 } from "../../sources/api";
-
-const inputClass =
-  "w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-sm text-txt";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Textarea } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
+import { EmptyState } from "@ui/EmptyState";
 
 // ── Channel picker ────────────────────────────────────────────────────────────
 
@@ -59,20 +62,20 @@ const ChannelPicker: Component<{
               ? t("sources.all_connections")
               : props.name || props.value}
           </span>
-          <button
+          <IconButton
+            label={t("sources.change_channel")}
+            class="ml-auto shrink-0"
             onClick={() => props.onSelect("", null)}
-            class="ml-auto text-muted hover:text-txt transition-colors shrink-0"
-            title={t("sources.change_channel")}
           >
             <MdFillClose size={14} />
-          </button>
+          </IconButton>
         </div>
       }
     >
       <div class="space-y-2">
-        <input
+        <Input
+          class="w-full"
           type="text"
-          class={inputClass}
           autocomplete="off"
           placeholder={t("sources.search_connections")}
           value={search.query()}
@@ -170,25 +173,15 @@ const SourceForm: Component<{
       </div>
 
       <div class="space-y-1">
-        <label class="text-xs font-medium text-txt">{t("sources.words_label")}</label>
-        <textarea
-          rows={3}
-          class={inputClass}
-          value={words()}
-          onInput={(e) => setWords(e.currentTarget.value)}
-        />
-        <p class="text-xs text-muted">{t("sources.words_help")}</p>
+        <Field label={t("sources.words_label")} hint={t("sources.words_help")} size="sm">
+          <Textarea class="w-full" rows={3} value={words()} onInput={(e) => setWords(e.currentTarget.value)} />
+        </Field>
       </div>
 
       <div class="space-y-1">
-        <label class="text-xs font-medium text-txt">{t("sources.tags_label")}</label>
-        <input
-          type="text"
-          class={inputClass}
-          value={tags()}
-          onInput={(e) => setTags(e.currentTarget.value)}
-        />
-        <p class="text-xs text-muted">{t("sources.tags_help")}</p>
+        <Field label={t("sources.tags_label")} hint={t("sources.tags_help")} size="sm">
+          <Input class="w-full" type="text" value={tags()} onInput={(e) => setTags(e.currentTarget.value)} />
+        </Field>
       </div>
 
       <label class="flex items-start gap-2 cursor-pointer select-none">
@@ -205,24 +198,16 @@ const SourceForm: Component<{
       </label>
 
       <Show when={error()}>
-        <p class="text-xs text-red-500">{error()}</p>
+        <p class="text-xs text-danger-txt">{error()}</p>
       </Show>
 
       <div class="flex items-center justify-end gap-2">
-        <button
-          onClick={props.onCancel}
-          class="px-3 py-1.5 rounded-lg text-xs text-muted hover:text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onCancel}>
           {t("sources.cancel")}
-        </button>
-        <button
-          onClick={submit}
-          disabled={busy() || !xchan()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all disabled:opacity-40"
-        >
+        </Button>
+        <Button size="sm" onClick={submit} disabled={busy() || !xchan()}>
           {t("sources.save")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -243,7 +228,7 @@ const SourceRow: Component<{
     props.source.tags.split(",").map((s) => s.trim()).filter(Boolean);
 
   return (
-    <div class="group bg-surface border border-rim rounded-xl px-4 py-3 space-y-2">
+    <Card class="group px-4 py-3 space-y-2">
       <div class="flex items-center gap-3">
         <Show
           when={props.source.photo}
@@ -253,11 +238,7 @@ const SourceRow: Component<{
             </span>
           }
         >
-          <img
-            src={props.source.photo!}
-            alt=""
-            class="w-9 h-9 rounded-full object-cover bg-overlay shrink-0"
-          />
+          <Avatar src={props.source.photo!} size={9} />
         </Show>
 
         <div class="flex-1 min-w-0">
@@ -268,20 +249,12 @@ const SourceRow: Component<{
         </div>
 
         <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-          <button
-            onClick={props.onEdit}
-            class="text-muted hover:text-accent transition-colors"
-            title={t("sources.edit")}
-          >
+          <IconButton label={t("sources.edit")} onClick={props.onEdit}>
             <MdFillEdit size={17} />
-          </button>
-          <button
-            onClick={props.onDelete}
-            class="text-muted hover:text-red-500 transition-colors"
-            title={t("sources.delete")}
-          >
+          </IconButton>
+          <IconButton label={t("sources.delete")} variant="danger" onClick={props.onDelete}>
             <MdFillDelete size={17} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -289,7 +262,7 @@ const SourceRow: Component<{
         <div class="flex flex-wrap items-center gap-1.5 pl-12">
           <For each={categories()}>
             {(c) => (
-              <span class="text-xs bg-elevated text-muted rounded-full px-2 py-0.5">{c}</span>
+              <Badge>{c}</Badge>
             )}
           </For>
           <Show when={props.source.resend}>
@@ -301,17 +274,17 @@ const SourceRow: Component<{
       {/* Core's UI hides this, so a source that silently imports nothing is the
           classic support question. Surface it. */}
       <Show when={!props.source.republish_granted}>
-        <p class="flex items-start gap-1.5 pl-12 text-xs text-amber-500">
+        <p class="flex items-start gap-1.5 pl-12 text-xs text-warning-txt">
           <MdFillWarning size={13} class="mt-0.5 shrink-0" />
           <span>
             {t("sources.no_republish")}{" "}
-            <A href="/directory/connections" class="underline hover:text-amber-400">
+            <A href="/directory/connections" class="underline hover:text-warning-txt">
               {t("sources.review_connection")}
             </A>
           </span>
         </p>
       </Show>
-    </div>
+    </Card>
   );
 };
 
@@ -375,7 +348,7 @@ const SourcesSection: Component = () => {
           when={(sources() ?? []).length > 0}
           fallback={
             <Show when={!creating()}>
-              <p class="text-muted text-sm text-center py-10">{t("sources.no_sources")}</p>
+              <EmptyState>{t("sources.no_sources")}</EmptyState>
             </Show>
           }
         >

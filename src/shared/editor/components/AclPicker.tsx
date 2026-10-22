@@ -26,6 +26,10 @@ import { MdFillCheck, MdFillLock, MdFillPerson, MdOutlineExpand_more, MdOutlineG
 void motion;
 
 import { entryKey, type AclMode } from "./acl-mode";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -176,14 +180,14 @@ const AclPicker: Component<AclPickerProps> = (props) => {
   return (
     <div class="shrink-0">
       {/* Trigger — shows the active mode */}
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
+        class="wide:py-1"
         ref={setTriggerRef}
-        type="button"
         data-tour={props.dataTour}
         onClick={toggle}
         title={current().label()}
-        class="flex items-center gap-1 px-2.5 py-1.5 wide:py-1 rounded-md text-xs border border-rim
-               text-muted hover:border-rim-strong hover:text-txt transition-all"
       >
         {current().icon()}
         <span class="hidden wide:inline">{current().label()}</span>
@@ -193,7 +197,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
           <span class="tabular-nums wide:hidden">{totalSelected()}</span>
         </Show>
         <MdOutlineExpand_more class={`w-3 h-3 transition-transform ${open() ? "rotate-180" : "rotate-0"}`} />
-      </button>
+      </Button>
 
       {/* Dropdown — Portal to escape the host modal's stacking context. The
           z has to clear every modal that can contain this picker (the deepest
@@ -239,14 +243,13 @@ const AclPicker: Component<AclPickerProps> = (props) => {
           <Show when={props.mode === "custom"}>
           {/* Search */}
           <div class="px-3 py-2 border-b border-rim shrink-0">
-            <input
+            <Input
+              size="sm"
+              class="w-full"
               type="text"
               placeholder={t("editor.acl_search_placeholder")}
               value={query()}
               onInput={(e) => setQuery(e.currentTarget.value)}
-              class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-rim
-                     bg-elevated text-txt
-                     placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent/50"
             />
           </div>
 
@@ -259,14 +262,14 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                   return (
                     <span
                       class="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-                                 bg-green-50 dark:bg-green-500/10 border border-green-300 dark:border-green-600
-                                 text-green-700 dark:text-green-300"
+                                 bg-success-muted border border-success/40
+                                 text-success-txt"
                     >
                       <MdFillCheck class="w-3 h-3 shrink-0" /> {conn?.name ?? key.slice(0, 14) + "…"}
                       <button
                         type="button"
                         onClick={() => conn && props.onToggle(conn, "allow")}
-                        class="hover:text-green-900 dark:hover:text-green-100 leading-none"
+                        class="hover:text-success-txt leading-none"
                       >
                         ✕
                       </button>
@@ -280,14 +283,14 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                   return (
                     <span
                       class="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-                                 bg-red-50 dark:bg-red-500/10 border border-red-300 dark:border-red-600
-                                 text-red-700 dark:text-red-300"
+                                 bg-danger-muted border border-danger/40
+                                 text-danger-txt"
                     >
                       ✕ {conn?.name ?? key.slice(0, 14) + "…"}
                       <button
                         type="button"
                         onClick={() => conn && props.onToggle(conn, "deny")}
-                        class="hover:text-red-900 dark:hover:text-red-100 leading-none"
+                        class="hover:text-danger-txt leading-none"
                       >
                         ✕
                       </button>
@@ -295,13 +298,9 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                   );
                 }}
               </For>
-              <button
-                type="button"
-                onClick={props.onClear}
-                class="px-2 py-0.5 rounded-full text-xs text-muted hover:text-red-500 transition-colors border border-rim"
-              >
+              <Button variant="ghost" size="sm" onClick={props.onClear}>
                 {t("editor.acl_clear_all")}
-              </button>
+              </Button>
             </div>
           </Show>
 
@@ -310,12 +309,12 @@ const AclPicker: Component<AclPickerProps> = (props) => {
             <span class="text-[0.625rem] text-muted">
               {t("editor.acl_legend")}
             </span>
-            <span class="flex items-center gap-1 text-[0.625rem] text-green-600 dark:text-green-400 ml-auto">
-              <span class="w-2 h-2 rounded-full bg-green-400 inline-block" />{" "}
+            <span class="flex items-center gap-1 text-[0.625rem] text-success-txt ml-auto">
+              <span class="w-2 h-2 rounded-full bg-success inline-block" />{" "}
               {t("editor.acl_allowed")}
             </span>
-            <span class="flex items-center gap-1 text-[0.625rem] text-red-500 dark:text-red-400">
-              <span class="w-2 h-2 rounded-full bg-red-400 inline-block" />{" "}
+            <span class="flex items-center gap-1 text-[0.625rem] text-danger-txt">
+              <span class="w-2 h-2 rounded-full bg-danger inline-block" />{" "}
               {t("editor.acl_denied")}
             </span>
           </div>
@@ -341,9 +340,9 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                       class={
                         "flex-1 flex items-center gap-2.5 px-3 py-1.5 text-left transition-colors min-w-0 " +
                         (isAllowed()
-                          ? "bg-green-50 dark:bg-green-500/10"
+                          ? "bg-success-muted"
                           : isDenied()
-                            ? "bg-red-50 dark:bg-red-500/10"
+                            ? "bg-danger-muted"
                             : "hover:bg-elevated")
                       }
                     >
@@ -358,11 +357,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                           </span>
                         }
                       >
-                        <img
-                          src={c.photo}
-                          alt=""
-                          class="w-6 h-6 rounded-full shrink-0 object-cover bg-elevated"
-                        />
+                        <Avatar src={c.photo} size={6} />
                       </Show>
 
                       <span class="flex flex-col min-w-0 flex-1">
@@ -377,10 +372,9 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                               omits the key), so key off the guest: address that
                               atoken_xchan() always builds. */}
                           <Show when={c.nick?.startsWith("guest:")}>
-                            <span class="shrink-0 px-1 py-px rounded text-[0.5625rem] font-medium
-                                         bg-amber-500/15 text-amber-600 dark:text-amber-500">
+                            <Badge tone="warning" size="sm" class="shrink-0">
                               {t("share.guest_access_title")}
-                            </span>
+                            </Badge>
                           </Show>
                         </span>
                         <Show when={c.link}>
@@ -391,7 +385,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                       </span>
 
                       <Show when={isAllowed()}>
-                        <MdFillCheck class="text-green-500 w-3.5 h-3.5 shrink-0" />
+                        <MdFillCheck class="text-success-txt w-3.5 h-3.5 shrink-0" />
                       </Show>
                     </button>
 
@@ -404,8 +398,8 @@ const AclPicker: Component<AclPickerProps> = (props) => {
                         class={
                           "shrink-0 w-6 h-6 rounded flex items-center justify-center text-xs transition-colors " +
                           (isDenied()
-                            ? "bg-red-100 dark:bg-red-500/20 text-red-500 dark:text-red-400"
-                            : "text-muted/50 hover:bg-red-500/10 hover:text-red-400")
+                            ? "bg-danger-muted text-danger-txt"
+                            : "text-muted/50 hover:bg-danger/10 hover:text-danger-txt")
                         }
                       >
                         ✕

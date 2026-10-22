@@ -1,7 +1,7 @@
 import { createSignal, createUniqueId, For, Show, batch } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
-import Modal from "@/shared/views/Modal";
+import { Modal } from "@ui/Modal";
 import {
   fetchAdminProfileFields,
   saveProfileFieldLayout,
@@ -10,6 +10,9 @@ import {
   deleteProfileField,
 } from "../../api";
 import type { ProfdefField } from "../../types";
+import { Button } from "@ui/Button";
+import { Field, Input, Select, Textarea } from "@ui/Field";
+import { Card, CardHeader } from "@ui/Card";
 
 // "tags" is ours, not core's: stored as a plain comma-separated string like
 // every other profext value, rendered as chips on the profile.
@@ -70,44 +73,38 @@ export default function ProfileFieldsSection() {
             </div>
 
             {/* Layout form */}
-            <div class="rounded-lg border border-rim bg-surface p-4 space-y-4">
+            <Card class="p-4 space-y-4">
               <div class="space-y-1">
-                <label class="text-sm font-medium text-txt">Basic Profile Fields</label>
-                <textarea
+                <Field label="Basic Profile Fields">
+                  <Textarea
+                  class="w-full resize-y font-mono"
                   value={basic()}
                   onInput={(e) => setBasic(e.currentTarget.value)}
                   rows={3}
-                  class="w-full px-3 py-2 text-sm rounded-lg border border-rim bg-surface text-txt
-                         placeholder:text-muted focus:outline-none focus:border-accent resize-y font-mono"
-                />
+                  />
+                </Field>
               </div>
 
               <div class="space-y-1">
-                <label class="text-sm font-medium text-txt">Advanced Profile Fields</label>
-                <textarea
+                <Field label="Advanced Profile Fields" hint="(In addition to basic fields)">
+                  <Textarea
+                  class="w-full resize-y font-mono"
                   value={advanced()}
                   onInput={(e) => setAdvanced(e.currentTarget.value)}
                   rows={3}
-                  class="w-full px-3 py-2 text-sm rounded-lg border border-rim bg-surface text-txt
-                         placeholder:text-muted focus:outline-none focus:border-accent resize-y font-mono"
-                />
-                <p class="text-xs text-muted">(In addition to basic fields)</p>
+                  />
+                </Field>
               </div>
 
               <div class="flex items-center gap-3 justify-end">
                 <Show when={layoutSaved()}>
-                  <span class="text-xs text-green-600 dark:text-green-400">Saved</span>
+                  <span class="text-xs text-success-txt">Saved</span>
                 </Show>
-                <button
-                  onClick={onSaveLayout}
-                  disabled={layoutSaving()}
-                  class="px-4 py-1.5 text-sm rounded-lg bg-accent text-accent-fg
-                         hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                >
+                <Button size="sm" onClick={onSaveLayout} disabled={layoutSaving()}>
                   {layoutSaving() ? "Saving…" : "Submit"}
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
             {/* Custom fields */}
             <div class="space-y-2">
@@ -146,13 +143,9 @@ function CreateButton(props: { onCreated: () => void }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        class="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-accent text-accent-fg
-               hover:opacity-90 transition-opacity"
-      >
+      <Button size="sm" onClick={() => setOpen(true)}>
         + Create Custom Field
-      </button>
+      </Button>
       <Show when={open()}>
         <FieldModal
           title="New Profile Field"
@@ -190,21 +183,12 @@ function CustomFieldRow(props: { field: ProfdefField; onChanged: () => void }) {
         <span class="text-sm font-mono text-txt w-32 shrink-0 truncate">{props.field.field_name}</span>
         <span class="text-sm text-muted flex-1 truncate">{props.field.field_desc || "—"}</span>
         <div class="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onDelete}
-            disabled={deleting()}
-            class="flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-600
-                   hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20
-                   disabled:opacity-50 transition-colors"
-          >
+          <Button variant="danger" size="sm" onClick={onDelete} disabled={deleting()}>
             🗑 Delete
-          </button>
-          <button
-            onClick={() => setEditing(true)}
-            class="px-2 py-1 text-xs rounded border border-rim text-muted hover:bg-elevated transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
             ✏
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -257,79 +241,76 @@ function FieldModal(props: {
   return (
     <Modal onClose={props.onClose} labelledBy={titleId} class="z-50">
       <div class="w-full max-w-md rounded-xl border border-rim bg-base shadow-xl">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-rim">
+        <CardHeader class="flex items-center justify-between">
           <h3 id={titleId} class="text-sm font-semibold text-txt">{props.title}</h3>
           <button onClick={props.onClose} aria-label="Close"
                     class="text-muted hover:text-txt text-lg leading-none">×</button>
-        </div>
+        </CardHeader>
 
         <form onSubmit={onSubmit} class="p-4 space-y-4">
           <FormField label="Field nickname" hint="System name of field">
-            <input
+            <Input
+              class="w-full"
               type="text"
               value={form().field_name}
               onInput={(e) => set("field_name")(e.currentTarget.value)}
-              class={inputCls}
               placeholder="e.g. my_custom_field"
             />
           </FormField>
 
           <FormField label="Input type">
-            <select
+            <Select
+              class="w-full"
               value={form().field_type}
               onChange={(e) => set("field_type")(e.currentTarget.value)}
-              class={inputCls}
             >
               <For each={FIELD_TYPES}>
                 {(t) => <option value={t}>{t}</option>}
               </For>
-            </select>
+            </Select>
           </FormField>
 
           <FormField label="Field Name" hint="Label on profile pages">
-            <input
+            <Input
+              class="w-full"
               type="text"
               value={form().field_desc}
               onInput={(e) => set("field_desc")(e.currentTarget.value)}
-              class={inputCls}
             />
           </FormField>
 
           <Show when={form().field_type === "select"}>
             <FormField label="Choices" hint="One per line — what the dropdown offers">
-              <textarea
+              <Textarea
+                class="w-full"
                 rows={4}
                 value={form().field_inputs}
                 onInput={(e) => set("field_inputs")(e.currentTarget.value)}
-                class={inputCls}
                 placeholder={"Apprentice\nJourneyman\nMaster"}
               />
             </FormField>
           </Show>
 
           <FormField label="Help text" hint="Additional info (optional)">
-            <input
+            <Input
+              class="w-full"
               type="text"
               value={form().field_help}
               onInput={(e) => set("field_help")(e.currentTarget.value)}
-              class={inputCls}
             />
           </FormField>
 
           <Show when={error()}>
-            <p class="text-xs text-red-600 dark:text-red-400">{error()}</p>
+            <p class="text-xs text-danger-txt">{error()}</p>
           </Show>
 
           <div class="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={props.onClose}
-              class="px-3 py-1.5 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors">
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
               Cancel
-            </button>
-            <button type="submit" disabled={saving()}
-              class="px-4 py-1.5 text-xs rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-50 transition-opacity">
+            </Button>
+            <Button size="sm" type="submit" disabled={saving()}>
               {saving() ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -348,10 +329,6 @@ function FormField(props: { label: string; hint?: string; children: any }) {
     </div>
   );
 }
-
-const inputCls =
-  "w-full px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt " +
-  "placeholder:text-muted focus:outline-none focus:border-accent";
 
 function Skeleton() {
   return (

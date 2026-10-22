@@ -30,6 +30,8 @@ import { setCurrentPageTemplateId } from "../store";
 import { editingWidgets, setEditingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import TemplateNameForm from "@/shared/views/TemplateNameForm";
 import { MdFillAdd, MdOutlineDashboard, MdOutlineEdit, MdFillCheck } from "solid-icons/md";
+import { Button } from "@ui/Button";
+import { Select } from "@ui/Field";
 
 function templateWidgetCount(tpl: { slots: Partial<Record<string, unknown[]>> } | undefined): number {
   if (!tpl) return 0;
@@ -107,14 +109,10 @@ export default function LayoutTemplatesView() {
             {t("webpages.back")}
           </A>
         </div>
-        <button
-          onClick={() => setCreating(!creating())}
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent
-                 text-accent-fg text-sm hover:opacity-90 transition-opacity shrink-0"
-        >
+        <Button size="sm" class="shrink-0" onClick={() => setCreating(!creating())}>
           <MdFillAdd size={16} />
           {t("webpages.new_template")}
-        </button>
+        </Button>
       </div>
 
       <p class="text-xs text-muted">{t("webpages.layout_templates_desc")}</p>
@@ -126,15 +124,12 @@ export default function LayoutTemplatesView() {
               {t("webpages.editing_template_notice").replace("{{name}}", tpl(id())?.name ?? "")}
               <Show when={tpl(id())?.chrome === "zen"}>
                 {" "}
-                <span class="text-amber-500">{t("webpages.zen_chrome_notice")}</span>
+                <span class="text-warning-txt">{t("webpages.zen_chrome_notice")}</span>
               </Show>
             </span>
-            <button
-              onClick={() => editTemplate(id())}
-              class="px-2 py-1 rounded-md text-xs font-medium text-accent hover:bg-elevated transition-colors shrink-0"
-            >
+            <Button variant="ghost" size="sm" class="shrink-0" onClick={() => editTemplate(id())}>
               {t("webpages.done_editing_template")}
-            </button>
+            </Button>
           </div>
         )}
       </Show>
@@ -188,7 +183,7 @@ export default function LayoutTemplatesView() {
                       <span class="text-xs shrink-0">
                         <Show
                           when={templateUsageCount(id) > 0}
-                          fallback={<span class="text-amber-500">{t("webpages.template_unused")}</span>}
+                          fallback={<span class="text-warning-txt">{t("webpages.template_unused")}</span>}
                         >
                           <span class="text-muted">
                             · {templateUsageCount(id)} {t("webpages.template_pages_label")}
@@ -196,20 +191,15 @@ export default function LayoutTemplatesView() {
                         </Show>
                       </span>
                     </div>
-                    <select
-                      value={tpl(id)?.chrome ?? "default"}
-                      onChange={(e) =>
+                    <Select size="sm" class="shrink-0" value={tpl(id)?.chrome ?? "default"} onChange={(e) =>
                         void setTemplateChrome(id, e.currentTarget.value as "default" | "zen" | "focus" | "wide" | "compact")
-                      }
-                      class="bg-elevated border border-rim rounded-lg px-2 py-1 text-xs text-txt shrink-0"
-                      title={t("webpages.chrome_mode_hint")}
-                    >
+                      } title={t("webpages.chrome_mode_hint")}>
                       <option value="default">{t("webpages.chrome_mode_default")}</option>
                       <option value="compact">{t("webpages.chrome_mode_compact")}</option>
                       <option value="wide">{t("webpages.chrome_mode_wide")}</option>
                       <option value="focus">{t("webpages.chrome_mode_focus")}</option>
                       <option value="zen">{t("webpages.chrome_mode_zen")}</option>
-                    </select>
+                    </Select>
                     <div class="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => editTemplate(id)}
@@ -226,18 +216,16 @@ export default function LayoutTemplatesView() {
                           <MdFillCheck size={14} />
                         </Show>
                       </button>
-                      <button
-                        onClick={() => setRenamingId(id)}
-                        class="px-2 py-1 rounded-md text-xs text-muted hover:text-txt hover:bg-elevated transition-colors"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setRenamingId(id)}>
                         {t("webpages.rename")}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => void handleDelete(id, tpl(id)?.name ?? "")}
-                        class="px-2 py-1 rounded-md text-xs text-muted hover:text-red-500 hover:bg-elevated transition-colors"
                       >
                         {t("webpages.delete")}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </Show>

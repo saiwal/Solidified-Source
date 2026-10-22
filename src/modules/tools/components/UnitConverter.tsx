@@ -1,5 +1,6 @@
 import { createSignal, For, createMemo } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Field, Input, Select } from "@ui/Field";
 
 type Category = {
   label: string;
@@ -100,7 +101,6 @@ export function UnitConverter() {
     setToIdx(tmp);
   };
 
-  const selectCls = "bg-surface border border-rim text-txt hover:border-rim-strong focus:outline-none rounded-xl px-3 py-2 text-sm w-full";
   const inputCls = "bg-surface border border-rim text-txt hover:border-rim-strong focus:outline-none rounded-xl px-4 py-3 text-sm font-mono w-full";
 
   return (
@@ -125,15 +125,16 @@ export function UnitConverter() {
 
       {/* From */}
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted">{t("tools.unit_from")}</label>
-        <select class={selectCls} value={fromIdx()} onInput={(e) => setFromIdx(Number(e.currentTarget.value))}>
+        <Field label={t("tools.unit_from")}>
+          <Select class="w-full" value={fromIdx()} onInput={(e) => setFromIdx(Number(e.currentTarget.value))}>
           <For each={units()}>
-            {(u, i) => <option value={i()}>{u.label}</option>}
+          {(u, i) => <option value={i()}>{u.label}</option>}
           </For>
-        </select>
-        <input
+          </Select>
+        </Field>
+        <Input
+          class="font-mono w-full"
           type="number"
-          class={inputCls}
           value={inputVal()}
           onInput={(e) => setInputVal(e.currentTarget.value)}
           placeholder="0"
@@ -151,12 +152,13 @@ export function UnitConverter() {
 
       {/* To */}
       <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted">{t("tools.unit_to")}</label>
-        <select class={selectCls} value={toIdx()} onInput={(e) => setToIdx(Number(e.currentTarget.value))}>
+        <Field label={t("tools.unit_to")}>
+          <Select class="w-full" value={toIdx()} onInput={(e) => setToIdx(Number(e.currentTarget.value))}>
           <For each={units()}>
-            {(u, i) => <option value={i()}>{u.label}</option>}
+          {(u, i) => <option value={i()}>{u.label}</option>}
           </For>
-        </select>
+          </Select>
+        </Field>
         <div class={`${inputCls} bg-elevated text-txt cursor-default`}>
           {result() !== "" ? result() : <span class="text-muted">—</span>}
         </div>

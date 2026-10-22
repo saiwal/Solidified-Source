@@ -1,8 +1,8 @@
 import { createSignal, Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-
-const inputClass =
-  "w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-sm text-txt";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 // Name entry form for creating or renaming a layout template — used by both
 // the Layout Templates management screen and the inline "+ New template"
@@ -30,31 +30,26 @@ export default function TemplateNameForm(props: {
   };
 
   return (
-    <div class="bg-surface border border-rim rounded-xl p-3 space-y-2">
-      <input
-        type="text" value={name()} maxLength={60} class={inputClass}
+    <Card class="p-3 space-y-2">
+      <Input
+        class="w-full"
+        type="text"
+        value={name()}
+        maxLength={60}
         placeholder={t("webpages.template_name_placeholder") as string}
         onInput={(e) => setName(e.currentTarget.value)}
       />
       <Show when={error()}>
-        <p class="text-xs text-red-500">{error()}</p>
+        <p class="text-xs text-danger-txt">{error()}</p>
       </Show>
       <div class="flex items-center justify-end gap-2">
-        <button
-          onClick={props.onCancel}
-          class="px-3 py-1.5 rounded-lg text-xs text-muted hover:text-txt hover:bg-elevated transition-colors"
-        >
+        <Button variant="ghost" size="sm" onClick={props.onCancel}>
           {t("webpages.cancel")}
-        </button>
-        <button
-          onClick={submit}
-          disabled={busy() || !name().trim()}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all disabled:opacity-40"
-        >
+        </Button>
+        <Button size="sm" onClick={submit} disabled={busy() || !name().trim()}>
           {t("webpages.save")}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

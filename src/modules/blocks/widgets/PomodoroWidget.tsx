@@ -7,6 +7,8 @@ import { createSignal, onCleanup, onMount } from "solid-js";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 type Phase = "work" | "break";
 
@@ -83,7 +85,7 @@ export default function PomodoroWidget(props: WidgetProps) {
   };
 
   return (
-    <div class="bg-surface border border-rim rounded-xl px-4 py-4 text-center">
+    <Card class="px-4 py-4 text-center">
       <p
         class="text-xs font-medium mb-1"
         classList={{
@@ -104,21 +106,13 @@ export default function PomodoroWidget(props: WidgetProps) {
       </div>
 
       <div class="mt-3 flex items-center justify-center gap-2">
-        <button
-          onClick={startPause}
-          class="px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-                 hover:brightness-110 transition-all"
-        >
+        <Button size="sm" onClick={startPause}>
           {running() ? t("widgets.pomo_pause") : t("widgets.pomo_start")}
-        </button>
-        <button
-          onClick={reset}
-          class="px-3 py-1.5 rounded-lg bg-elevated border border-rim text-xs font-medium
-                 text-muted hover:text-txt transition-colors"
-        >
+        </Button>
+        <Button variant="ghost" size="sm" onClick={reset}>
           {t("widgets.pomo_reset")}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

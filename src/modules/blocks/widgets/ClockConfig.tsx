@@ -4,6 +4,8 @@
 import { createSignal, For, Show } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
 
 function timezones(): string[] {
   try {
@@ -77,35 +79,51 @@ export default function ClockConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_mode")}
-        <select value={mode()} onChange={(e) => setMode(e.currentTarget.value)} class={inputClass}>
+        <Select size="sm" class="mt-1 w-full" value={mode()} onChange={(e) => setMode(e.currentTarget.value)}>
           <option value="clock">{t("widgets.clock_mode_clock")}</option>
           <option value="countdown">{t("widgets.clock_mode_countdown")}</option>
           <option value="world">{t("widgets.clock_mode_world")}</option>
-        </select>
+        </Select>
       </label>
 
       <Show when={mode() !== "world"}>
         <label class="text-xs text-muted">
           {t("widgets.cfg_label")}
-          <input type="text" value={label()} maxLength={60}
-                 onInput={(e) => setLabel(e.currentTarget.value)} class={inputClass} />
+          <Input
+            size="sm"
+            class="mt-1 w-full"
+            type="text"
+            value={label()}
+            maxLength={60}
+            onInput={(e) => setLabel(e.currentTarget.value)}
+          />
         </label>
       </Show>
 
       <Show when={mode() === "clock"}>
         <label class="text-xs text-muted">
           {t("widgets.cfg_timezone")}
-          <select value={timezone()} onChange={(e) => setTimezone(e.currentTarget.value)} class={inputClass}>
+          <Select
+            size="sm"
+            class="mt-1 w-full"
+            value={timezone()}
+            onChange={(e) => setTimezone(e.currentTarget.value)}
+          >
             <For each={timezones()}>{(tz) => <option value={tz}>{tz}</option>}</For>
-          </select>
+          </Select>
         </label>
       </Show>
 
       <Show when={mode() === "countdown"}>
         <label class="text-xs text-muted">
           {t("widgets.cfg_target")}
-          <input type="datetime-local" value={target()}
-                 onInput={(e) => setTarget(e.currentTarget.value)} class={inputClass} />
+          <Input
+            size="sm"
+            class="mt-1 w-full"
+            type="datetime-local"
+            value={target()}
+            onInput={(e) => setTarget(e.currentTarget.value)}
+          />
         </label>
       </Show>
 
@@ -129,14 +147,15 @@ export default function ClockConfig(props: WidgetConfigProps) {
                 >
                   <For each={timezones()}>{(tz) => <option value={tz}>{tz}</option>}</For>
                 </select>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => removeZone(i())}
                   disabled={zones().length <= 1}
-                  class="px-2 py-1.5 text-xs text-muted hover:text-txt disabled:opacity-30"
                   aria-label={t("widgets.remove_widget")}
                 >
                   ✕
-                </button>
+                </Button>
               </div>
             )}
           </For>
@@ -150,14 +169,9 @@ export default function ClockConfig(props: WidgetConfigProps) {
         </div>
       </Show>
 
-      <button
-        onClick={save}
-        disabled={!valid()}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all disabled:opacity-40"
-      >
+      <Button size="sm" class="self-end" onClick={save} disabled={!valid()}>
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

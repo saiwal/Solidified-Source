@@ -13,6 +13,8 @@ import AttachmentBar from "../attachments/AttachmentBar";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, missingVideoEmbeds, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
+import { Button } from "@ui/Button";
+import { Avatar } from "@ui/Avatar";
 
 /** Ids of the stored comment — lets the optimistic node be replied to. */
 export interface CreatedComment { iid: number; mid: string; uuid: string }
@@ -106,12 +108,7 @@ export default function CommentComposer(props: Props) {
               </div>
             }
           >
-            <img
-              src={viewer()!.avatar}
-              alt={viewer()!.name}
-              class="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 select-none hidden wide:block"
-              loading="lazy"
-            />
+            <Avatar src={viewer()!.avatar} name={viewer()!.name} size={7} class="mt-0.5 select-none hidden wide:block" />
           </Show>
         </Show>
 
@@ -160,23 +157,17 @@ export default function CommentComposer(props: Props) {
 
       <div class="flex justify-end gap-2 pl-9">
         <Show when={store.body().trim()}>
-          <button
-            type="button"
-            onClick={store.reset}
-            class="px-3 py-1 text-xs rounded-lg border border-rim text-muted hover:bg-elevated transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={store.reset}>
             {t("editor.cancel_btn")}
-          </button>
+          </Button>
         </Show>
-        <button
-          type="button"
+        <Button
+          size="sm"
           onClick={() => store.submit()}
           disabled={store.submitting() || attach.uploading() || !store.body().trim()}
-          class="px-3 py-1 text-xs font-medium rounded-lg bg-accent text-accent-fg
-                 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
           {store.submitting() ? t("editor.sending") : t("editor.reply_btn")}
-        </button>
+        </Button>
       </div>
 
       <MentionEmojiPopups wiring={wiring} />

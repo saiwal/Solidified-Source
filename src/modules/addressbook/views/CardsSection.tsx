@@ -18,6 +18,10 @@ import {
   type CardsResponse,
 } from "../api";
 import CardEditorModal from "./CardEditorModal";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { cardClass } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 interface Props {
   book: Addressbook;
@@ -65,22 +69,17 @@ export default function CardsSection(props: Props) {
       description={t("addressbook.contact_count", { count: String(cards().length) }) as string}
       wide
       action={
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          class="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-sm text-accent-fg"
-        >
+        <Button size="sm" onClick={() => setCreating(true)}>
           <MdOutlineAdd class="w-4 h-4" />
           {t("addressbook.new_contact")}
-        </button>
+        </Button>
       }
     >
       <Show when={cards().length > 0}>
         <label class="relative block">
           <MdOutlineSearch class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
-            class="w-full rounded-lg border border-rim bg-surface pl-9 pr-3 py-2 text-sm text-txt
-                   placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+          <Input
+            class="w-full"
             value={query()}
             onInput={(e) => setQuery(e.currentTarget.value)}
             placeholder={t("addressbook.search_placeholder") as string}
@@ -134,7 +133,7 @@ function CardRow(props: { card: Card; onEdit: () => void; onDelete: () => void }
   const primary = () => c().emails[0]?.value ?? c().tels[0]?.value ?? "";
 
   return (
-    <li class="flex items-center gap-3 rounded-lg border border-rim bg-surface p-3">
+    <li class={`${cardClass()} flex items-center gap-3 p-3`}>
       <Show
         when={c().photo}
         fallback={
@@ -143,12 +142,7 @@ function CardRow(props: { card: Card; onEdit: () => void; onDelete: () => void }
           </span>
         }
       >
-        <img
-          src={c().photo}
-          alt={c().fn}
-          class="w-11 h-11 rounded-full object-cover bg-overlay ring-1 ring-rim shrink-0"
-          loading="lazy"
-        />
+        <Avatar src={c().photo} name={c().fn} size={11} class="ring-1 ring-rim" />
       </Show>
 
       <div class="flex-1 min-w-0">
@@ -162,16 +156,17 @@ function CardRow(props: { card: Card; onEdit: () => void; onDelete: () => void }
       </div>
 
       <div class="flex items-center gap-1 shrink-0">
-        <button type="button" onClick={props.onEdit}
-                aria-label={t("addressbook.edit_contact") as string}
-                class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors">
+        <IconButton label={t("addressbook.edit_contact") as string} size="sm" onClick={props.onEdit}>
           <MdOutlineEdit class="w-4 h-4" />
-        </button>
-        <button type="button" onClick={props.onDelete}
-                aria-label={t("addressbook.delete_contact") as string}
-                class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-red-500 transition-colors">
+        </IconButton>
+        <IconButton
+          label={t("addressbook.delete_contact") as string}
+          variant="danger"
+          size="sm"
+          onClick={props.onDelete}
+        >
           <MdOutlineDelete class="w-4 h-4" />
-        </button>
+        </IconButton>
       </div>
     </li>
   );

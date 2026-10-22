@@ -26,6 +26,9 @@ import {
 import { THEMES, type ThemeId } from "@utsukta/spa-core/types/theme.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdFillEdit } from "solid-icons/md";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Select } from "@ui/Field";
+import { Tabs } from "@ui/Tabs";
 
 /** The vars beyond base/txt/accent, shown in the "Advanced" disclosure. */
 const ADVANCED_VARS = THEME_VARS.filter(
@@ -94,12 +97,7 @@ export default function DisplaySection() {
           {/* Hubzilla theme */}
           <Show when={data()!.themes.length > 0}>
             <Field label={t("settings.theme")} hint={t("settings.theme_hint")}>
-              <select
-                name="theme"
-                class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt
-                       hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                       transition-colors text-sm"
-              >
+              <Select class="w-full" name="theme">
                 <For each={data()!.themes}>
                   {(th) => (
                     <option value={th} selected={th === data()!.theme}>
@@ -107,24 +105,18 @@ export default function DisplaySection() {
                     </option>
                   )}
                 </For>
-              </select>
+              </Select>
             </Field>
           </Show>
 
           {/* SPA color scheme */}
           <Field label={t("settings.color_scheme")}>
             <div class="flex items-center gap-2">
-              <select
-                name="color_scheme"
-                class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-rim bg-surface text-txt
-                       hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                       transition-colors text-sm"
-                onChange={(e) => {
+              <Select class="flex-1 min-w-0" name="color_scheme" onChange={(e) => {
                   const scheme = e.currentTarget.value as ThemeId;
                   setPreviewScheme(scheme);
                   initTheme(scheme);
-                }}
-              >
+                }}>
                 <For each={[...THEMES].sort((a, b) => a.label.localeCompare(b.label))}>
                   {(th) => (
                     <option value={th.id} selected={th.id === previewScheme()}>
@@ -132,22 +124,15 @@ export default function DisplaySection() {
                     </option>
                   )}
                 </For>
-              </select>
+              </Select>
               <Show when={previewScheme() !== "custom"}>
-                <button
-                  type="button"
-                  title={t("settings.color_scheme_edit")}
-                  aria-label={t("settings.color_scheme_edit")}
-                  class="p-2 rounded-lg border border-rim bg-surface text-txt
-                         hover:border-rim-strong transition-colors"
-                  onClick={() => {
+                <IconButton label={t("settings.color_scheme_edit")} variant="square" onClick={() => {
                     updateCustomColors(colorsFromAppliedTheme());
                     switchTheme("custom");
                     setPreviewScheme("custom");
-                  }}
-                >
+                  }}>
                   <MdFillEdit class="w-4 h-4" />
-                </button>
+                </IconButton>
               </Show>
             </div>
           </Field>
@@ -238,16 +223,7 @@ export default function DisplaySection() {
             label={t("settings.items_per_page")}
             hint={t("settings.items_per_page_hint")}
           >
-            <input
-              type="number"
-              name="itemspage"
-              min="1"
-              max="30"
-              value={data()!.itemspage}
-              class="w-24 px-3 py-2 rounded-lg border border-rim bg-surface text-txt
-                     hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                     transition-colors text-sm"
-            />
+            <Input class="w-24" type="number" name="itemspage" min="1" max="30" value={data()!.itemspage} />
           </Field>
 
           {/* Update interval */}
@@ -255,15 +231,13 @@ export default function DisplaySection() {
             label={t("settings.stream_refresh")}
             hint={t("settings.stream_refresh_hint")}
           >
-            <input
+            <Input
+              class="w-24"
               type="number"
               name="update_interval"
               min="10"
               max="3600"
               value={data()!.update_interval}
-              class="w-24 px-3 py-2 rounded-lg border border-rim bg-surface text-txt
-                     hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                     transition-colors text-sm"
             />
           </Field>
 
@@ -297,17 +271,11 @@ export default function DisplaySection() {
           </Field>
 
           <Field label={t("settings.font_family")}>
-            <select
-              name="font_family"
-              class="w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt
-                     hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                     transition-colors text-sm"
-              onChange={(e) => {
+            <Select class="w-full" name="font_family" onChange={(e) => {
                 const fam = e.currentTarget.value as FontFamily;
                 setPreviewFamily(fam);
                 applyTypography(previewSize(), fam);
-              }}
-            >
+              }}>
               <optgroup label={t("settings.font_group_standard")}>
                 <option value="system"    selected={previewFamily() === "system"}>System (default)</option>
                 <option value="serif"     selected={previewFamily() === "serif"}>Serif — Georgia</option>
@@ -343,7 +311,7 @@ export default function DisplaySection() {
                 <option value="opendyslexic" selected={previewFamily() === "opendyslexic"}>OpenDyslexic — easier to read</option>
                 <option value="atkinson-hyperlegible" selected={previewFamily() === "atkinson-hyperlegible"}>Atkinson Hyperlegible — low vision</option>
               </optgroup>
-            </select>
+            </Select>
           </Field>
 
 
@@ -493,7 +461,8 @@ export default function DisplaySection() {
 
           {/* Post height */}
           <Field label={t("settings.post_height")} hint={t("settings.post_height_hint")}>
-            <input
+            <Input
+              class="w-32"
               type="number"
               name="post_height"
               min="0"
@@ -501,9 +470,6 @@ export default function DisplaySection() {
               step="10"
               value={postHeight()}
               onChange={(e) => setPostHeight(e.currentTarget.valueAsNumber)}
-              class="w-32 px-3 py-2 rounded-lg border border-rim bg-surface text-txt
-                     hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                     transition-colors text-sm"
             />
           </Field>
 
@@ -548,15 +514,9 @@ export default function DisplaySection() {
 
           {/* Feedback + submit */}
           <div class="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving()}
-              class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                     hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed
-                     transition-opacity"
-            >
+            <Button type="submit" disabled={saving()}>
               {saving() ? t("settings.saving") : t("settings.save")}
-            </button>
+            </Button>
 
           </div>
 
@@ -624,19 +584,15 @@ function BackgroundPicker() {
       <input type="hidden" name="bg_url" value={bgUrl()} />
       <input type="hidden" name="bg_fit" value={bgFit()} />
       <div class="space-y-3">
-        {/* Tabs */}
-        <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit">
-          {(["background", "pattern"] as BgKind[]).map((k) => (
-            <button
-              type="button"
-              onClick={() => switchKind(k)}
-              class={`px-3 py-1.5 text-sm rounded-md transition-colors
-                ${kind() === k ? "bg-accent text-accent-fg" : "text-muted hover:text-txt"}`}
-            >
-              {k === "pattern" ? t("settings.bg_tab_pattern") : t("settings.bg_tab_background")}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          label={t("settings.bg_image_url")}
+          value={kind()}
+          onChange={switchKind}
+          items={[
+            { value: "background" as BgKind, label: t("settings.bg_tab_background") },
+            { value: "pattern" as BgKind, label: t("settings.bg_tab_pattern") },
+          ]}
+        />
 
         {/* Preset grid */}
         <div class="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-64 overflow-y-auto pr-0.5">
@@ -673,29 +629,22 @@ function BackgroundPicker() {
         {/* Custom URL */}
         <div class="flex items-center gap-2">
           <span class="text-xs text-muted shrink-0">{t("settings.bg_custom_url")}</span>
-          <input
+          <Input
+            class="flex-1"
             type="url"
             placeholder="https://example.com/image.jpg"
             value={customUrlVal()}
             onInput={(e) => setCustomUrlVal(e.currentTarget.value)}
             onBlur={(e) => applyCustomUrl(e.currentTarget.value)}
             onKeyDown={(e) => e.key === "Enter" && applyCustomUrl((e.currentTarget as HTMLInputElement).value)}
-            class="flex-1 px-3 py-1.5 rounded-lg border border-rim bg-surface text-txt
-                   hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                   transition-colors text-sm"
           />
         </div>
 
         {/* Clear */}
         <Show when={bgUrl()}>
-          <button
-            type="button"
-            onClick={() => { setBgUrl(""); setCustomUrlVal(""); }}
-            class="text-xs px-3 py-1.5 rounded-lg border border-rim bg-surface text-muted
-                   hover:text-txt hover:border-rim-strong transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={() => { setBgUrl(""); setCustomUrlVal(""); }}>
             {t("settings.bg_clear")}
-          </button>
+          </Button>
         </Show>
       </div>
     </Field>
@@ -704,21 +653,6 @@ function BackgroundPicker() {
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
-function Field(props: {
-  label: string;
-  hint?: string;
-  children: any;
-}) {
-  return (
-    <div class="space-y-1.5">
-      <label class="block text-sm font-medium text-txt">{props.label}</label>
-      {props.children}
-      <Show when={props.hint}>
-        <p class="text-xs text-muted">{props.hint}</p>
-      </Show>
-    </div>
-  );
-}
 
 function ColorSwatch(props: {
   label: string;
@@ -750,7 +684,9 @@ function ColorSwatch(props: {
           onInput={(e) => props.onChange(e.currentTarget.value)}
           class="w-9 h-9 shrink-0 aspect-square rounded-lg border border-rim bg-surface cursor-pointer p-0.5"
         />
-        <input
+        <Input
+          size="sm"
+          class="w-24 font-mono"
           type="text"
           value={props.value}
           onBlur={(e) => {
@@ -766,9 +702,6 @@ function ColorSwatch(props: {
             }
           }}
           maxLength={7}
-          class="w-24 px-2 py-1.5 rounded-lg border border-rim bg-surface text-txt text-xs
-                 font-mono hover:border-rim-strong focus:outline-none focus:border-rim-strong
-                 transition-colors"
         />
       </div>
       <Show when={props.hint}>

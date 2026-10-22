@@ -5,8 +5,8 @@
 import { createSignal } from "solid-js";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { SwitchRow } from "../../store/FormHelpers";
 import ConfigModal from "./ConfigModal";
+import { Toggle } from "@ui/Toggle";
 
 async function saveKanban(enabled: boolean): Promise<void> {
   const res = await apiFetch("/spa/settings/integrations", {
@@ -52,7 +52,7 @@ export default function CardsConfigModal(props: {
       onSave={handleSave}
       onClose={props.onClose}
     >
-      <SwitchRow
+      <Toggle
         name="kanban"
         label={t("settings.integ_kanban")}
         hint={t("settings.integ_kanban_desc")}

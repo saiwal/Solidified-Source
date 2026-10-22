@@ -4,6 +4,7 @@ import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
 import { zid } from "@utsukta/spa-core/lib/zid";
 import { MdOutlineArticle, MdOutlineAttach_file, MdOutlineExpand_more, MdOutlineOpen_in_new } from "solid-icons/md";
+import { Button } from "@ui/Button";
 
 function safeDecode(s: string): string {
   try { return decodeURIComponent(s); } catch { return s; }
@@ -58,16 +59,11 @@ export default function AttachmentList(props: { attachments: StreamAttachment[];
   return (
     <div class="mt-2">
       {/* Toggle button */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-rim bg-elevated
-               text-xs text-muted hover:text-txt hover:bg-overlay transition-colors"
-      >
+      <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)}>
         <PaperclipIcon />
         <span>{label()}</span>
         <ChevronIcon open={open()} />
-      </button>
+      </Button>
 
       {/* Dropdown content */}
       <Show when={open()}>

@@ -87,7 +87,7 @@ const HookSettingsForm: Component<{
         when={form()}
         fallback={
           <Show when={form.error} fallback={loading()}>
-            <p class="text-xs text-red-500">{String(form.error?.message ?? form.error)}</p>
+            <p class="text-xs text-danger-txt">{String(form.error?.message ?? form.error)}</p>
           </Show>
         }
       >

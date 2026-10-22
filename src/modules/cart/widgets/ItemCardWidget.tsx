@@ -11,6 +11,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillAdd_shopping_cart, MdFillShopping_cart } from "solid-icons/md";
 import { fetchCatalog, addItem, type CatalogItem } from "../api";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 // One catalog fetch per channel per session, shared by every card instance
 const catalogCache = new Map<string, Promise<CatalogItem[]>>();
@@ -30,9 +32,9 @@ function cachedCatalog(nick: string): Promise<CatalogItem[]> {
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <div class="bg-surface border border-rim rounded-xl px-4 py-3">
+      <Card class="px-4 py-3">
         <p class="text-xs text-muted">{props.text}</p>
-      </div>
+      </Card>
     </Show>
   );
 }
@@ -78,7 +80,7 @@ export default function ItemCardWidget(props: WidgetProps) {
       <Show when={!catalog.loading}>
         <Show when={item()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(it) => (
-            <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+            <Card class="overflow-hidden">
               <Show when={it().photo_url}>
                 <img
                   src={it().photo_url!}
@@ -93,15 +95,10 @@ export default function ItemCardWidget(props: WidgetProps) {
                 <Show
                   when={added()}
                   fallback={
-                    <button
-                      onClick={() => void onAdd()}
-                      class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg
-                             bg-accent text-accent-fg text-xs font-medium
-                             hover:brightness-110 transition-all"
-                    >
+                    <Button size="sm" onClick={() => void onAdd()}>
                       <MdFillAdd_shopping_cart size={14} />
                       {t("cart.add_to_cart")}
-                    </button>
+                    </Button>
                   }
                 >
                   <A
@@ -115,7 +112,7 @@ export default function ItemCardWidget(props: WidgetProps) {
                   </A>
                 </Show>
               </div>
-            </div>
+            </Card>
           )}
         </Show>
       </Show>

@@ -6,6 +6,8 @@ import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchAlbums } from "../api/api";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
 
 export default function PhotoSlideshowConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
@@ -19,10 +21,11 @@ export default function PhotoSlideshowConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_album")}
-        <select
+        <Select
+          size="sm"
+          class="mt-1 w-full"
           value={album()}
           onChange={(e) => setAlbum(e.currentTarget.value)}
-          class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
         >
           <option value="">{t("widgets.cfg_all_albums")}</option>
           <For each={albums() ?? []}>
@@ -32,26 +35,27 @@ export default function PhotoSlideshowConfig(props: WidgetConfigProps) {
               </option>
             )}
           </For>
-        </select>
+        </Select>
       </label>
       <label class="text-xs text-muted">
         {t("widgets.cfg_interval")}
-        <input
+        <Input
+          size="sm"
+          class="mt-1 w-full"
           type="number"
           min="2"
           max="600"
           value={secs()}
           onInput={(e) => setSecs(Number(e.currentTarget.value))}
-          class="mt-1 w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt"
         />
       </label>
-      <button
+      <Button
+        size="sm"
+        class="self-end"
         onClick={() => props.onSave({ album: album(), interval: Math.max(2, secs() || 10) })}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all"
       >
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -31,6 +31,9 @@ import { MdFillSearch, MdFillClose, MdFillCreate } from "solid-icons/md";
 import { useAuth, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { openComposer } from "@/shared/views/modal-host";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { Button, IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { EmptyState } from "@ui/EmptyState";
 
 // Toolbar/search/pagination/composer chrome shared by `channel.feed` and its
 // alternate-layout widgets (newspaper/timeline/scrapbook) — only the post
@@ -184,13 +187,9 @@ export default function ChannelFeedShell(props: {
         <div class="flex items-center justify-end gap-1.5 shrink-0">
           {props.viewSwitcher}
           <Show when={canPostWall() && auth()?.isLocal}>
-            <button
-              title={t("channel.compose")}
-              onClick={openCompose}
-              class="p-1.5 rounded-lg border border-rim bg-surface text-muted hover:bg-elevated hover:text-txt transition-colors"
-            >
+            <IconButton label={t("channel.compose")} variant="square" onClick={openCompose}>
               <MdFillCreate size={15} />
-            </button>
+            </IconButton>
           </Show>
           <Show
             when={searchOpen()}
@@ -208,14 +207,14 @@ export default function ChannelFeedShell(props: {
             }
           >
             <form onSubmit={submitSearch} class="flex items-center gap-1">
-              <input
+              <Input
+                class="w-36"
                 type="search"
                 value={searchInput()}
                 onInput={(e) => setSearchInput(e.currentTarget.value)}
                 placeholder={t("channel.search_placeholder")}
                 autofocus
                 onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
-                class="w-36 px-2 py-1 text-sm rounded-lg border border-rim bg-surface text-txt outline-none focus:border-accent"
               />
               <button
                 type="submit"
@@ -263,33 +262,25 @@ export default function ChannelFeedShell(props: {
       </Show>
 
       <Show when={newPosts().length > 0}>
-        <button
-          onClick={flushNewPosts}
-          class="w-full mb-3 py-2 text-sm font-medium rounded-xl
-                 bg-accent text-accent-fg border border-accent hover:opacity-90 transition-opacity"
-        >
+        <Button class="w-full mb-3" onClick={flushNewPosts}>
           ↑ {newPosts().length} {newPosts().length === 1 ? t("channel.new_post") : t("channel.new_posts")}
-        </button>
+        </Button>
       </Show>
 
       <props.body />
 
       <Show when={!loading() && hasMore() && !loadingMore() && scrollStyle() === "load_more"}>
         <div class="flex justify-center py-4">
-          <button
-            onClick={loadMore}
-            class="px-4 py-2 text-sm font-medium rounded-lg border border-rim
-                   bg-surface text-muted hover:bg-overlay transition-colors"
-          >
+          <Button variant="ghost" onClick={loadMore}>
             {t("channel.load_more")}
-          </button>
+          </Button>
         </div>
       </Show>
 
       <div ref={sentinel} class="h-1" />
 
       <Show when={!hasMore() && posts().length > 0}>
-        <p class="text-center text-xs text-muted py-6">{t("channel.all_caught_up")}</p>
+        <EmptyState size="sm">{t("channel.all_caught_up")}</EmptyState>
       </Show>
 
     </>

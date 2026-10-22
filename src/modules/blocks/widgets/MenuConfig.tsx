@@ -7,9 +7,8 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMyMenus } from "@utsukta/spa-core/lib/menus";
-
-const inputClass =
-  "w-full bg-elevated border border-rim rounded-lg px-2 py-1.5 text-xs text-txt";
+import { Button } from "@ui/Button";
+import { Input, Select } from "@ui/Field";
 
 export default function MenuConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
@@ -28,11 +27,7 @@ export default function MenuConfig(props: WidgetConfigProps) {
     <div class="flex flex-col gap-2">
       <label class="text-xs text-muted">
         {t("widgets.cfg_menu")}
-        <select
-          value={menu()}
-          onChange={(e) => setMenu(e.currentTarget.value)}
-          class={`mt-1 ${inputClass}`}
-        >
+        <Select size="sm" class="mt-1 w-full" value={menu()} onChange={(e) => setMenu(e.currentTarget.value)}>
           <option value="">—</option>
           <For each={menus() ?? []}>
             {(m) => (
@@ -41,7 +36,7 @@ export default function MenuConfig(props: WidgetConfigProps) {
               </option>
             )}
           </For>
-        </select>
+        </Select>
       </label>
       <Show when={!menus.loading && (menus() ?? []).length === 0}>
         <p class="text-[0.625rem] text-muted">{t("widgets.cfg_no_menus")}</p>
@@ -49,23 +44,19 @@ export default function MenuConfig(props: WidgetConfigProps) {
 
       <label class="text-xs text-muted">
         {t("widgets.cfg_title")}
-        <input
+        <Input
+          size="sm"
+          class="mt-1 w-full"
           type="text"
           value={title()}
           maxLength={60}
           onInput={(e) => setTitle(e.currentTarget.value)}
-          class={`mt-1 ${inputClass}`}
         />
       </label>
 
-      <button
-        onClick={save}
-        disabled={!menu()}
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all disabled:opacity-40"
-      >
+      <Button size="sm" class="self-end" onClick={save} disabled={!menu()}>
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

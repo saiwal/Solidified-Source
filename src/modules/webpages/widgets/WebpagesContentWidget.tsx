@@ -18,6 +18,8 @@ import {
 import { useIsWebpagesList } from '../lib/isWebpagesList';
 import { MdOutlineOpen_in_new } from "solid-icons/md";
 import CardShell from "@/shared/stream/CardShell";
+import { IconButton, buttonClass } from "@ui/Button";
+import { EmptyState } from "@ui/EmptyState";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -88,13 +90,13 @@ function PageRow(props: {
         </a>
 
         {/* Share */}
-        <button
+        <IconButton
+          label={t('share.action') as string}
+          size="sm"
           onClick={() => openShare(shareTargetForWebpage(props.nick, props.page))}
-          class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
-          title={t('share.action') as string}
         >
           <MdOutlineShare size={14} />
-        </button>
+        </IconButton>
 
         <Show when={props.isOwner}>
           {/* Edit */}
@@ -107,13 +109,14 @@ function PageRow(props: {
           </A>
 
           {/* Delete */}
-          <button
+          <IconButton
+            label={t('webpages.delete') as string}
+            variant="danger"
+            size="sm"
             onClick={() => props.onDelete(props.page.iid)}
-            class="p-1.5 rounded text-muted hover:text-red-500 hover:bg-overlay transition-colors"
-            title={t('webpages.delete') as string}
           >
             <MdFillDelete size={14} />
-          </button>
+          </IconButton>
         </Show>
       </div>
     </div>
@@ -145,23 +148,6 @@ function Skeleton() {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function EmptyState(props: { nick: string; isOwner: boolean }) {
-  const { t } = useI18n();
-  return (
-    <div class="py-16 flex flex-col items-center gap-4 text-center">
-      <MdOutlineDescription class="w-10 h-10 text-muted" />
-      <p class="text-sm text-muted">{t('webpages.no_webpages')}</p>
-      <Show when={props.isOwner}>
-        <A
-          href={`/webpages/${props.nick}/new`}
-          class="px-4 py-1.5 rounded-lg bg-accent text-accent-fg text-sm hover:opacity-90 transition-opacity"
-        >
-          {t('webpages.create_first')}
-        </A>
-      </Show>
-    </div>
-  );
-}
 
 // ── WebpagesContentWidget ─────────────────────────────────────────────────────
 
@@ -201,7 +187,18 @@ export default function WebpagesContentWidget() {
         <Show when={!loading()} fallback={<Skeleton />}>
           <Show
             when={pages().length > 0}
-            fallback={<EmptyState nick={nick()} isOwner={isOwner()} />}
+            fallback={
+              <EmptyState
+                icon={<MdOutlineDescription />}
+                action={
+                  <Show when={isOwner()}>
+                    <A href={`/webpages/${nick()}/new`} class={buttonClass("primary", "sm")}>{t("webpages.create_first")}</A>
+                  </Show>
+                }
+              >
+                {t("webpages.no_webpages")}
+              </EmptyState>
+            }
           >
             <div class="space-y-0.5">
               <For each={pages()}>

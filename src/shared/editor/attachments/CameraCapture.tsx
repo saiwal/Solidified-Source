@@ -7,9 +7,10 @@ import {
 import { useI18n } from "@utsukta/spa-core/i18n";
 import SharedImageEditor from "@/shared/views/ImageEditor";
 import { VideoEditor } from "@/modules/tools/components/VideoEditor";
-import { MdOutlineChevron_left, MdOutlineClose, MdOutlineRefresh, MdOutlineVideocam } from "solid-icons/md";
+import { MdOutlineChevron_left, MdOutlineRefresh, MdOutlineVideocam } from "solid-icons/md";
 
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button, IconButton } from "@ui/Button";
 type Mode  = "photo" | "video" | "audio";
 type Stage = "initializing" | "streaming" | "captured" | "editing" | "editing-video" | "error";
 
@@ -285,23 +286,16 @@ const CameraCapture: Component<Props> = (props) => {
       <Show when={stage() !== "editing" && stage() !== "editing-video"}>
         {/* the centering wrapper is folded into the dialog itself, so a click
             landing on it is a backdrop click the <Modal> can see */}
-        <Modal onClose={props.onClose} bare labelledBy="camera-title"
+        <Modal onClose={props.onClose} bare
                class="fixed inset-0 w-full h-full z-[1000] overflow-y-auto bg-black/80 backdrop-blur-sm
                       flex min-h-full items-center justify-center p-4">
-            <div class="relative bg-surface border border-rim rounded-2xl shadow-2xl flex flex-col w-full max-w-md overflow-hidden">
-
+            <ModalPanel
+              title={String(t("editor.cam_title"))}
+              onClose={props.onClose}
+              size="md"
+              class="relative flex flex-col overflow-hidden"
+            >
               {/* Header */}
-              <div class="flex items-center justify-between px-4 py-3 border-b border-rim">
-                <h2 id="camera-title" class="text-sm font-semibold text-txt">{String(t("editor.cam_title"))}</h2>
-                <button
-                  type="button"
-                  onClick={props.onClose}
-                  aria-label={String(t("editor.cancel_btn"))}
-                  class="p-1 rounded-lg text-muted hover:text-txt hover:bg-elevated transition-colors"
-                >
-                  <MdOutlineClose class="w-4 h-4" />
-                </button>
-              </div>
 
               {/* Mode switcher */}
               <Show when={stage() !== "captured"}>
@@ -347,11 +341,11 @@ const CameraCapture: Component<Props> = (props) => {
                   <div class="absolute inset-0 flex flex-col items-center justify-center gap-5">
                     <div class="relative flex items-center justify-center">
                       <Show when={recording()}>
-                        <div class="absolute w-24 h-24 rounded-full bg-red-500/20 animate-ping" />
+                        <div class="absolute w-24 h-24 rounded-full bg-danger/20 animate-ping" />
                       </Show>
                       <div class={
                         "w-20 h-20 rounded-full flex items-center justify-center transition-colors " +
-                        (recording() ? "bg-red-500/30" : "bg-white/10")
+                        (recording() ? "bg-danger/30" : "bg-white/10")
                       }>
                         <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
@@ -386,7 +380,7 @@ const CameraCapture: Component<Props> = (props) => {
                 {/* Captured audio preview */}
                 <Show when={stage() === "captured" && capturedUrl() && mode() === "audio"}>
                   <div class="absolute inset-0 flex flex-col items-center justify-center gap-5 px-6">
-                    <svg class="w-12 h-12 text-green-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-12 h-12 text-success-txt shrink-0" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                       <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
                     </svg>
@@ -404,25 +398,21 @@ const CameraCapture: Component<Props> = (props) => {
                 {/* Error overlay */}
                 <Show when={stage() === "error"}>
                   <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center">
-                    <MdOutlineVideocam class="w-10 h-10 text-red-400" />
+                    <MdOutlineVideocam class="w-10 h-10 text-danger-txt" />
                     <p class="text-sm text-white/80">{String(t("editor.cam_error_access"))}</p>
                     <Show when={errorMsg()}>
                       <p class="text-xs text-white/50">{errorMsg()}</p>
                     </Show>
-                    <button
-                      type="button"
-                      onClick={() => startCamera(mode())}
-                      class="mt-1 px-4 py-1.5 bg-accent text-accent-fg text-sm rounded-lg hover:opacity-90 transition-opacity"
-                    >
+                    <Button size="sm" class="mt-1" onClick={() => startCamera(mode())}>
                       {String(t("editor.cam_retry"))}
-                    </button>
+                    </Button>
                   </div>
                 </Show>
 
                 {/* Recording indicator */}
                 <Show when={recording() && mode() !== "audio"}>
                   <div class="absolute top-3 left-3 flex items-center gap-1.5 bg-black/60 rounded-full px-2 py-0.5">
-                    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <div class="w-2 h-2 rounded-full bg-danger animate-pulse" />
                     <span class="text-xs text-white font-medium">{String(t("editor.cam_recording"))}</span>
                   </div>
                 </Show>
@@ -513,18 +503,15 @@ const CameraCapture: Component<Props> = (props) => {
                         {String(t("editor.cam_capture"))}
                       </button>
                     </Show>
-                    <button
-                      type="button"
+                    <IconButton
+                      label={String(t("editor.cam_use_native"))}
                       onClick={() => nativeInputRef?.click()}
-                      aria-label={String(t("editor.cam_use_native"))}
-                      title={String(t("editor.cam_use_native"))}
-                      class="p-2 rounded-xl border border-rim text-muted hover:bg-elevated hover:text-txt transition-colors"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke-width="2"/>
                         <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>
                       </svg>
-                    </button>
+                    </IconButton>
                     <button type="button" onClick={props.onClose} class={btnOutline}>
                       {String(t("editor.cancel_btn"))}
                     </button>
@@ -554,7 +541,7 @@ const CameraCapture: Component<Props> = (props) => {
 
               </div>
 
-            </div>
+            </ModalPanel>
       </Modal>
       </Show>
     </>

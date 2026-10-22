@@ -6,6 +6,9 @@ import { MdOutlineMovie, MdFillCheck, MdFillFolder } from "solid-icons/md";
 import { grabFrame } from "@/shared/editor/attachments/videoPoster";
 
 import { FFmpegWorker, FFMPEG_BASE } from "@/shared/lib/ffmpeg-client";
+import { buttonClass } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { CardHeader } from "@ui/Card";
 
 // ── Format detection ──────────────────────────────────────────────────────────
 const VIDEO_EXTS = new Set([
@@ -410,8 +413,8 @@ export function VideoEditor(props: VideoEditorProps = {}) {
   };
 
   // ── CSS shortcuts ─────────────────────────────────────────────────────────────
-  const btnPrimary = "px-4 py-1.5 rounded-lg text-sm font-medium bg-accent text-accent-fg hover:opacity-90 disabled:opacity-50 transition-opacity";
-  const btnOutline = "px-4 py-1.5 rounded-lg text-sm font-medium border border-rim text-muted hover:bg-elevated hover:text-txt transition-colors disabled:opacity-50";
+  const btnPrimary = buttonClass("primary", "sm");
+  const btnOutline = buttonClass("ghost", "sm");
   const chip       = "px-3 py-1.5 text-xs rounded-lg border transition-colors";
   const chipOn     = "bg-accent text-accent-fg border-accent";
   const chipOff    = "border-rim text-muted hover:bg-elevated hover:text-txt";
@@ -597,7 +600,7 @@ export function VideoEditor(props: VideoEditorProps = {}) {
               <p class="text-sm text-muted text-center animate-pulse">{s("tools.vid_loading_ffmpeg")}</p>
             </Show>
             <Show when={loadError()}>
-              <p class="text-sm text-red-500">{loadError()}</p>
+              <p class="text-sm text-danger-txt">{loadError()}</p>
             </Show>
 
             {/* Progress bar */}
@@ -611,7 +614,7 @@ export function VideoEditor(props: VideoEditorProps = {}) {
             </Show>
 
             <Show when={processError()}>
-              <p class="text-sm text-red-500 px-1">{processError()}</p>
+              <p class="text-sm text-danger-txt px-1">{processError()}</p>
             </Show>
 
             {/* Action buttons */}
@@ -702,7 +705,7 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                         when={!savedPath()}
                         fallback={
                           <div class="flex items-center gap-2 text-sm text-txt border border-rim rounded-xl px-4 py-3">
-                            <MdFillCheck class="text-green-500 shrink-0" />
+                            <MdFillCheck class="text-success-txt shrink-0" />
                             <span>{s("tools.vid_saved")} <strong>{savedPath()}</strong></span>
                           </div>
                         }
@@ -711,17 +714,17 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                           <div class="px-4 py-3 border-b border-rim bg-elevated">
                             <h3 class="text-sm font-medium text-txt">{s("tools.vid_save_to_files")}</h3>
                           </div>
-                          <div class="px-4 py-3 border-b border-rim">
+                          <CardHeader>
                             <label class="flex flex-col gap-1.5">
                               <span class="text-xs text-muted">{s("tools.vid_filename")}</span>
-                              <input
+                              <Input
+                                class="w-full"
                                 type="text"
                                 value={saveFileName()}
                                 onInput={(e) => setSaveFileName(e.currentTarget.value)}
-                                class="w-full px-3 py-1.5 text-sm rounded-lg border border-rim bg-base text-txt focus:outline-none focus:border-accent"
                               />
                             </label>
-                          </div>
+                          </CardHeader>
                           <div class="max-h-48 overflow-y-auto">
                             <Show when={!foldersLoading()}
                               fallback={<p class="text-sm text-muted text-center py-4">{s("tools.vid_loading")}</p>}
@@ -750,7 +753,7 @@ export function VideoEditor(props: VideoEditorProps = {}) {
                             </div>
                           </Show>
                           <Show when={saveError()}>
-                            <p class="text-xs text-red-500 px-4 pb-3">{saveError()}</p>
+                            <p class="text-xs text-danger-txt px-4 pb-3">{saveError()}</p>
                           </Show>
                         </div>
                       </Show>

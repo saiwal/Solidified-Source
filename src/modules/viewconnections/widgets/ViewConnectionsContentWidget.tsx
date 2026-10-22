@@ -9,6 +9,10 @@ import { fetchConnections, fetchProfile, type ChannelConn } from "@/modules/chan
 import { connectToChannel } from "@/modules/directory/connections/api";
 import { PlatformIcon } from "@/shared/stream/components/PlatformIcons";
 import { reveal } from "@/shared/stream/reveal";
+import { Button } from "@ui/Button";
+import { cardClass } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
+import { EmptyState } from "@ui/EmptyState";
 
 const PAGE = 60;
 
@@ -35,18 +39,10 @@ function ConnectionCard(props: { conn: ChannelConn }) {
     <article
       // Slides up as it scrolls into view, staggered — same entrance as stream cards.
       ref={(el) => reveal(el, () => `conn:${props.conn.url}`)}
-      class="group relative flex flex-col items-center text-center min-w-0 rounded-2xl bg-surface border border-rim
-             px-3 pt-5 pb-3 transition-all duration-200
-             hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-black/5"
+      class={`${cardClass()} group relative flex flex-col items-center text-center min-w-0 px-3 pt-5 pb-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-black/5`}
     >
       <div class="relative">
-        <img
-          src={props.conn.photo}
-          alt=""
-          loading="lazy"
-          class="w-18 h-18 rounded-full object-cover bg-elevated ring-1 ring-rim ring-offset-4 ring-offset-surface
-                 transition-all group-hover:ring-accent/60"
-        />
+        <Avatar src={props.conn.photo} size={18} class="ring-1 ring-rim ring-offset-4 ring-offset-surface transition-all group-hover:ring-accent/60" />
         <span class="absolute -bottom-0.5 -right-0.5 grid place-items-center w-6 h-6 rounded-full bg-surface border border-rim">
           <PlatformIcon url={props.conn.url} network={props.conn.network} size={14} />
         </span>
@@ -85,17 +81,10 @@ function ConnectionCard(props: { conn: ChannelConn }) {
                 </span>
               }
             >
-              <button
-                type="button"
-                onClick={connect}
-                disabled={busy()}
-                class="relative z-10 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
-                       border border-accent/50 text-accent hover:bg-accent hover:text-accent-fg
-                       transition-colors disabled:opacity-50"
-              >
+              <Button variant="ghost" size="sm" class="relative z-10" onClick={connect} disabled={busy()}>
                 <MdOutlinePerson_add size={14} />
                 {busy() ? t("directory.connecting") : t("directory.connect")}
-              </button>
+              </Button>
             </Show>
           </div>
         </div>
@@ -195,7 +184,7 @@ export default function ViewConnectionsContentWidget() {
       >
         <Show
           when={conns().length > 0}
-          fallback={<p class="py-16 text-center text-sm text-muted">{t("directory.no_connections")}</p>}
+          fallback={<EmptyState>{t("directory.no_connections")}</EmptyState>}
         >
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             <For each={conns()}>{(conn) => <ConnectionCard conn={conn} />}</For>
@@ -204,15 +193,9 @@ export default function ViewConnectionsContentWidget() {
           <Show when={total() > conns().length}>
             <div class="mt-8 flex flex-col items-center gap-2">
               <p class="text-xs text-muted tabular-nums">{conns().length} / {total()}</p>
-              <button
-                type="button"
-                onClick={loadMore}
-                disabled={loadingMore()}
-                class="px-5 py-2 rounded-full text-sm font-medium border border-rim bg-surface text-txt
-                       hover:border-accent/50 hover:text-accent transition-colors disabled:opacity-50"
-              >
+              <Button variant="ghost" onClick={loadMore} disabled={loadingMore()}>
                 {t("channel.load_more")}
-              </button>
+              </Button>
             </div>
           </Show>
         </Show>

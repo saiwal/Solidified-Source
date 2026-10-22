@@ -43,4 +43,16 @@ export interface CustomThemeColors {
   accentMuted?: string;
   accentTxt?: string;
   accentFg?: string;
+  danger?: string;
+  dangerMuted?: string;
+  dangerTxt?: string;
+  dangerFg?: string;
+  success?: string;
+  successMuted?: string;
+  successTxt?: string;
+  successFg?: string;
+  warning?: string;
+  warningMuted?: string;
+  warningTxt?: string;
+  warningFg?: string;
 }

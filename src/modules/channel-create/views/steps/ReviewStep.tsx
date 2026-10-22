@@ -2,6 +2,7 @@ import { Show } from "solid-js";
 import type { ChannelRole } from "../../api/api";
 import { THEMES, type ThemeId } from "@utsukta/spa-core/types/theme.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Card } from "@ui/Card";
 
 export default function ReviewStep(props: {
   name: string;
@@ -29,7 +30,7 @@ export default function ReviewStep(props: {
     <div class="space-y-4">
       <p class="text-sm text-muted">{t("channel_create.review_desc")}</p>
 
-      <div class="rounded-lg border border-rim bg-surface px-3">
+      <Card class="px-3">
         <Row label={t("channel_create.name_label")} value={props.name} />
         <Row label={t("channel_create.nick_label")} value={`${props.nickname}${props.nickhub}`} />
         <Show when={props.role}>
@@ -52,7 +53,7 @@ export default function ReviewStep(props: {
           }
         />
         <Row label={t("channel_create.color_scheme_label")} value={schemeLabel()} />
-      </div>
+      </Card>
     </div>
   );
 }

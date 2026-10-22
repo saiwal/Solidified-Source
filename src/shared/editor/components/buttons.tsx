@@ -154,7 +154,7 @@ export const IconButton: Component<IconButtonProps> = (props) => (
     class={
       "p-1.5 rounded-md text-muted transition-colors " +
       (props.variant === "danger"
-        ? "hover:text-red-500 hover:bg-red-500/10"
+        ? "hover:text-danger-txt hover:bg-danger/10"
         : "hover:text-txt hover:bg-elevated")
     }
   >

@@ -11,6 +11,8 @@ import {
   type TypedAddress,
   type TypedValue,
 } from "../api";
+import { Button, IconButton } from "@ui/Button";
+import { Field, Input, Select, Textarea } from "@ui/Field";
 
 /** vCard ADR components, in spec order. */
 const ADR_KEYS = [
@@ -31,7 +33,6 @@ const ADR_KEYS = [
 const fieldClass =
   "rounded-lg border border-rim bg-surface px-3 py-1.5 text-sm text-txt " +
   "placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent";
-const inputClass = `w-full ${fieldClass}`;
 
 interface Row { type: string; label: string; value: string }
 interface AdrRow { type: string; label: string; parts: string[] }
@@ -135,29 +136,32 @@ export default function CardEditorModal(props: Props) {
       onClose={props.onClose}
       footer={
         <div class="flex justify-end gap-2">
-          <button type="button" onClick={props.onClose}
-                  class="rounded-lg border border-rim px-3 py-1.5 text-sm text-muted hover:text-txt">
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("addressbook.cancel")}
-          </button>
-          <button type="submit" form="card-editor" disabled={busy() || !fn().trim()}
-                  class="rounded-lg bg-accent px-4 py-1.5 text-sm text-accent-fg disabled:opacity-50">
+          </Button>
+          <Button size="sm" type="submit" form="card-editor" disabled={busy() || !fn().trim()}>
             {busy() ? t("addressbook.saving") : t("addressbook.save")}
-          </button>
+          </Button>
         </div>
       }
     >
       <form id="card-editor" onSubmit={save} class="space-y-6 px-5 py-4">
-        <Field label={t("addressbook.name") as string}>
-          <input class={inputClass} value={fn()} onInput={(e) => setFn(e.currentTarget.value)}
-                 autofocus required />
+        <Field size="sm" label={t("addressbook.name") as string}>
+          <Input
+            class="w-full"
+            value={fn()}
+            onInput={(e) => setFn(e.currentTarget.value)}
+            autofocus
+            required
+          />
         </Field>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <Field label={t("addressbook.organization") as string}>
-            <input class={inputClass} value={org()} onInput={(e) => setOrg(e.currentTarget.value)} />
+          <Field size="sm" label={t("addressbook.organization") as string}>
+            <Input class="w-full" value={org()} onInput={(e) => setOrg(e.currentTarget.value)} />
           </Field>
-          <Field label={t("addressbook.job_title") as string}>
-            <input class={inputClass} value={title()} onInput={(e) => setTitle(e.currentTarget.value)} />
+          <Field size="sm" label={t("addressbook.job_title") as string}>
+            <Input class="w-full" value={title()} onInput={(e) => setTitle(e.currentTarget.value)} />
           </Field>
         </div>
 
@@ -174,9 +178,8 @@ export default function CardEditorModal(props: Props) {
 
         <AdrGroup rows={adrs()} setRows={setAdrs} />
 
-        <Field label={t("addressbook.note") as string}>
-          <textarea class={`${inputClass} min-h-24`} value={note()}
-                    onInput={(e) => setNote(e.currentTarget.value)} />
+        <Field size="sm" label={t("addressbook.note") as string}>
+          <Textarea class="w-full min-h-24" value={note()} onInput={(e) => setNote(e.currentTarget.value)} />
         </Field>
       </form>
     </ComposerModal>
@@ -185,14 +188,6 @@ export default function CardEditorModal(props: Props) {
 
 // ── Pieces ───────────────────────────────────────────────────────────────────
 
-function Field(props: { label: string; children: any }) {
-  return (
-    <label class="block space-y-1">
-      <span class="text-xs font-medium text-muted">{props.label}</span>
-      {props.children}
-    </label>
-  );
-}
 
 /**
  * The raw vCard TYPE values core writes. Anything else on an incoming card
@@ -221,15 +216,11 @@ function TypeSelect(props: {
   };
 
   return (
-    <select
-      class={`${fieldClass} w-32 shrink-0`}
-      value={props.value}
-      onChange={(e) => props.onChange(e.currentTarget.value)}
-    >
+    <Select class="w-32 shrink-0" value={props.value} onChange={(e) => props.onChange(e.currentTarget.value)}>
       <For each={options()}>
         {(o) => <option value={o.value}>{o.label}</option>}
       </For>
-    </select>
+    </Select>
   );
 }
 
@@ -256,11 +247,15 @@ function RowGroup(props: {
                    onInput={(e) => patch(i, { value: e.currentTarget.value })} />
             <TypeSelect value={row().type} label={row().label} withCell={props.withCell}
                         onChange={(v) => patch(i, { type: v })} />
-            <button type="button" aria-label={t("addressbook.remove_field") as string}
-                    onClick={() => props.setRows(props.rows.filter((_, n) => n !== i))}
-                    class="shrink-0 p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-red-500">
+            <IconButton
+              label={t("addressbook.remove_field") as string}
+              variant="danger"
+              size="sm"
+              class="shrink-0"
+              onClick={() => props.setRows(props.rows.filter((_, n) => n !== i))}
+            >
               <MdOutlineClose class="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
         )}
       </Index>
@@ -295,19 +290,25 @@ function AdrGroup(props: { rows: AdrRow[]; setRows: (rows: AdrRow[]) => void }) 
                           onChange={(v) => props.setRows(
                             props.rows.map((r, n) => (n === i ? { ...r, type: v } : r)),
                           )} />
-              <button type="button" aria-label={t("addressbook.remove_field") as string}
-                      onClick={() => props.setRows(props.rows.filter((_, n) => n !== i))}
-                      class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-red-500">
+              <IconButton
+                label={t("addressbook.remove_field") as string}
+                variant="danger"
+                size="sm"
+                onClick={() => props.setRows(props.rows.filter((_, n) => n !== i))}
+              >
                 <MdOutlineClose class="w-4 h-4" />
-              </button>
+              </IconButton>
             </div>
             <div class="grid gap-2 sm:grid-cols-2">
               <For each={ADR_KEYS}>
                 {(key, part) => (
-                  <input class={inputClass} value={row().parts[part()] ?? ""}
-                         placeholder={t(`addressbook.${key}`) as string}
-                         aria-label={t(`addressbook.${key}`) as string}
-                         onInput={(e) => patchPart(i, part(), e.currentTarget.value)} />
+                  <Input
+                    class="w-full"
+                    value={row().parts[part()] ?? ""}
+                    placeholder={t(`addressbook.${key}`) as string}
+                    aria-label={t(`addressbook.${key}`) as string}
+                    onInput={(e) => patchPart(i, part(), e.currentTarget.value)}
+                  />
                 )}
               </For>
             </div>

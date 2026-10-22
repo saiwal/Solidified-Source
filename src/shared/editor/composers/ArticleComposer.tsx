@@ -39,6 +39,7 @@ import DateTimePicker from "../components/DateTimePicker";
 import ComposerShell from "../components/ComposerShell";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { createWysiwygAvailable } from "../core/wysiwygSafe";
+import { Input } from "@ui/Field";
 
 interface Props {
   profileUid: number;
@@ -322,12 +323,12 @@ export default function ArticleComposer(props: Props) {
       meta={
         <>
           {/* Title */}
-          <input
+          <Input
+            class="w-full font-bold"
             type="text"
             placeholder={t("editor.article_title_placeholder")}
             value={store.title()}
             onInput={(e) => onTitleChange(e.currentTarget.value)}
-            class={`w-full px-0 py-1.5 text-sm font-bold text-txt placeholder:text-muted ${underlineFieldClass}`}
           />
 
           {/* Summary */}

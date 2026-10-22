@@ -3,6 +3,10 @@ import { useParams, A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchResetTokenState, confirmPasswordReset } from "../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
 
 export default function ResetPasswordView() {
   const { t } = useI18n();
@@ -37,14 +41,9 @@ export default function ResetPasswordView() {
     }
   };
 
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-rim bg-base text-txt text-sm " +
-    "placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent " +
-    "disabled:opacity-60 transition-colors";
-
   return (
     <div class="min-h-[60vh] flex items-center justify-center py-8">
-      <div class="w-full max-w-md bg-surface border border-rim rounded-2xl p-8 shadow-sm">
+      <Card raised class="w-full max-w-md p-8">
         <div class="mb-6 text-center">
           <div
             class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-txt mb-4
@@ -58,7 +57,7 @@ export default function ResetPasswordView() {
 
         <Show when={state.loading}>
           <div class="flex justify-center py-8">
-            <div class="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <Spinner size="xl" tone="accent" label={t("ui.loading")} />
           </div>
         </Show>
 
@@ -88,7 +87,7 @@ export default function ResetPasswordView() {
 
               <Match when={s().valid && done()}>
                 <div class="flex justify-center py-8">
-                  <div class="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+                  <Spinner size="xl" tone="accent" label={t("ui.loading")} />
                 </div>
               </Match>
 
@@ -98,7 +97,8 @@ export default function ResetPasswordView() {
                     <label class="text-sm font-medium text-txt" for="reset-password">
                       {t("auth.reset_new_password_label")}
                     </label>
-                    <input
+                    <Input
+                      class="w-full"
                       id="reset-password"
                       type="password"
                       autocomplete="new-password"
@@ -106,7 +106,6 @@ export default function ResetPasswordView() {
                       disabled={loading()}
                       value={password()}
                       onInput={(e) => setPassword(e.currentTarget.value)}
-                      class={inputClass}
                       placeholder={t("auth.password_placeholder")}
                     />
                   </div>
@@ -115,7 +114,8 @@ export default function ResetPasswordView() {
                     <label class="text-sm font-medium text-txt" for="reset-password2">
                       {t("auth.reset_confirm_password_label")}
                     </label>
-                    <input
+                    <Input
+                      class="w-full"
                       id="reset-password2"
                       type="password"
                       autocomplete="new-password"
@@ -123,32 +123,23 @@ export default function ResetPasswordView() {
                       disabled={loading()}
                       value={password2()}
                       onInput={(e) => setPassword2(e.currentTarget.value)}
-                      class={inputClass}
                       placeholder={t("auth.password_placeholder")}
                     />
                   </div>
 
                   <Show when={error()}>
-                    <p class="text-sm text-red-500 text-center">{error()}</p>
+                    <p class="text-sm text-danger-txt text-center">{error()}</p>
                   </Show>
 
-                  <button
-                    type="submit"
-                    disabled={loading() || !password() || !password2()}
-                    class="w-full py-2.5 px-4 rounded-lg bg-accent text-accent-fg font-medium text-sm
-                           hover:opacity-90 active:opacity-80
-                           disabled:opacity-50 disabled:cursor-not-allowed
-                           focus:outline-none focus:ring-2 focus:ring-accent/40
-                           transition-opacity"
-                  >
+                  <Button class="w-full" type="submit" disabled={loading() || !password() || !password2()}>
                     {loading() ? t("auth.reset_submitting") : t("auth.reset_submit")}
-                  </button>
+                  </Button>
                 </form>
               </Match>
             </Switch>
           )}
         </Show>
-      </div>
+      </Card>
     </div>
   );
 }

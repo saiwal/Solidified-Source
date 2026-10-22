@@ -2,6 +2,7 @@ import { createSignal, Show } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Input } from "@ui/Field";
 
 export default function NotepadHeaderWidget() {
   const { t, locale } = useI18n();
@@ -61,17 +62,9 @@ export default function NotepadHeaderWidget() {
             }
           >
             <form onSubmit={submitSearch} class="flex items-center gap-1">
-              <input
-                type="search"
-                value={searchInput()}
-                onInput={(e) => setSearchInput(e.currentTarget.value)}
-                placeholder={t("notepad.search_placeholder")}
-                autofocus
-                onKeyDown={(e) => {
+              <Input class="w-40" type="search" value={searchInput()} onInput={(e) => setSearchInput(e.currentTarget.value)} placeholder={t("notepad.search_placeholder")} autofocus onKeyDown={(e) => {
                   if (e.key === "Escape") setSearchOpen(false);
-                }}
-                class="w-40 px-2 py-1 text-sm rounded-lg border border-rim bg-surface text-txt outline-none focus:border-accent"
-              />
+                }} />
               <button
                 type="submit"
                 class="p-1.5 rounded-lg border border-rim bg-elevated text-txt hover:bg-overlay transition-colors"

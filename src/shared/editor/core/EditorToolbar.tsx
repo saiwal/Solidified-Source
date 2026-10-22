@@ -21,6 +21,7 @@ import { normalizeMime } from "@utsukta/spa-core/lib/mimetypes";
 import type { DiagramInsert } from "../diagram/DiagramComposerModal";
 import { diagramKind } from "../diagram/renderMermaidImage";
 import { spell, bbcodeTokensWork, linkText, type Kind } from "./markup";
+import { Spinner } from "@ui/Spinner";
 
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
 const DiagramComposerModal = lazy(() => import("../diagram/DiagramComposerModal"));
@@ -1012,7 +1013,7 @@ export default function EditorToolbar(props: Props) {
       <Suspense
         fallback={
           <div class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60">
-            <span class="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <Spinner size="2xl" class="text-white" />
           </div>
         }
       >

@@ -15,7 +15,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import ClipStrip from "./ClipStrip";
 import CaptureDialog from "./CaptureDialog";
 import { screenshot, fileStem } from "./capture";
-import { Art, primaryPill, ghostPill, iconBtn } from "../ui";
+import { Art, iconBtn } from "../ui";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   getItem, playbackInfo, withApiKey, directVideoUrl, reportVideo, stopEncoding, nextEpisode, ticksToSeconds, episodes, imageUrl,
@@ -32,6 +32,8 @@ import {
 import PartyBar from "../party/PartyBar";
 import { Motion, fade } from "../anim";
 import type Hls from "hls.js/light";
+import { Button, IconButton } from "@ui/Button";
+import { Select } from "@ui/Field";
 
 interface Loaded {
   playSessionId: string;
@@ -279,7 +281,6 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
     }
   };
 
-  const select = "bg-transparent border-0 border-b border-rim focus:border-accent outline-none py-1 pr-6 text-sm text-txt max-w-44";
   const partyMedia = () => ({ ids: [props.id], index: 0, startSec: video?.currentTime ?? 0 });
   const partyTitle = () => (item.data ? videoTitle(item.data) : "");
 
@@ -297,16 +298,16 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
             <Show when={ended() && next()}>
               {(n) => (
                 <Motion.div {...fade} class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                  <button type="button" onClick={goNext} class={primaryPill}>
+                  <Button onClick={goNext}>
                     <MdFillSkip_next size={20} /> {t("jellyfin.next_episode", { name: videoTitle(n()) })}
-                  </button>
+                  </Button>
                 </Motion.div>
               )}
             </Show>
           </div>
 
           <Show when={error()}>
-            <p class="text-sm text-red-500">{t("jellyfin.err_video")}</p>
+            <p class="text-sm text-danger-txt">{t("jellyfin.err_video")}</p>
           </Show>
 
           <Show when={!item.isError} fallback={<QueryError error={item.error} />}>
@@ -330,47 +331,53 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
           <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
             <Show when={next()}>
               {(n) => (
-                <button type="button" onClick={goNext} title={videoTitle(n())} class={`${primaryPill} max-w-full`}>
+                <Button class="max-w-full" onClick={goNext} title={videoTitle(n())}>
                   <MdFillSkip_next size={20} class="shrink-0" />
                   <span class="truncate">{t("jellyfin.next_episode", { name: videoTitle(n()) })}</span>
-                </button>
+                </Button>
               )}
             </Show>
             <Show when={streams("Subtitle").length}>
               <label class="flex items-center gap-2 text-sm text-muted">
                 {t("jellyfin.subtitles")}
-                <select class={select} value={subValue()} onChange={(e) => pickSubtitle(e.currentTarget.value)}>
+                <Select
+                  class="max-w-44"
+                  value={subValue()}
+                  onChange={(e) => pickSubtitle(e.currentTarget.value)}
+                >
                   <option value="-1">{t("jellyfin.off")}</option>
                   <For each={streams("Subtitle")}>
                     {(m) => <option value={String(m.Index)}>{label(m)}{m.IsTextSubtitleStream ? "" : ` (${t("jellyfin.burned_in")})`}</option>}
                   </For>
-                </select>
+                </Select>
               </label>
             </Show>
             <Show when={audioTracks().length > 1}>
               <label class="flex items-center gap-2 text-sm text-muted">
                 {t("jellyfin.audio_track")}
-                <select class={select} value={audioValue()}
-                  onChange={(e) => void reload(video.currentTime, { audioIndex: Number(e.currentTarget.value), burnedSubtitle: loaded()?.burnedSubtitle })}>
+                <Select
+                  class="max-w-44"
+                  value={audioValue()}
+                  onChange={(e) => void reload(video.currentTime, { audioIndex: Number(e.currentTarget.value), burnedSubtitle: loaded()?.burnedSubtitle })}
+                >
                   <For each={audioTracks()}>{(m) => <option value={String(m.Index)}>{label(m)}</option>}</For>
-                </select>
+                </Select>
               </label>
             </Show>
             <Show when={resumedFrom() > 0}>
-              <button type="button" class={ghostPill} onClick={() => {
+              <Button variant="ghost" onClick={() => {
                 setResumedFrom(0);
                 if (partyHere()) partyRequest.seek(0);
                 else void load(0, { audioIndex: loaded()?.audioIndex, burnedSubtitle: loaded()?.burnedSubtitle });
               }}>
                 <MdFillReplay size={18} /> {t("jellyfin.start_over")}
-              </button>
+              </Button>
             </Show>
             <PartyBar mode="start" s={props.s} kind="video" title={partyTitle()} media={partyMedia} />
             <span class="flex items-center">
-              <button type="button" class={iconBtn} title={t("jellyfin.screenshot")} aria-label={t("jellyfin.screenshot")}
-                disabled={!loaded()} onClick={() => void shoot()}>
+              <IconButton label={t("jellyfin.screenshot")} disabled={!loaded()} onClick={() => void shoot()}>
                 <MdOutlinePhoto_camera size={20} />
-              </button>
+              </IconButton>
               <button type="button" class={`${iconBtn} ${clipping() ? "!text-accent-txt" : ""}`} aria-pressed={clipping()}
                 title={t("jellyfin.clip")} aria-label={t("jellyfin.clip")} disabled={!loaded()} onClick={() => setClipping(!clipping())}>
                 <MdOutlineContent_cut size={20} />

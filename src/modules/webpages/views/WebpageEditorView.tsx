@@ -49,7 +49,7 @@ export default function WebpageEditorView() {
 
       {/* Error */}
       <Show when={page.error}>
-        <div class="m-4 p-4 rounded-xl border border-red-300 bg-red-50 text-red-700 text-sm">
+        <div class="m-4 p-4 rounded-xl border border-danger/40 bg-danger-muted text-danger-txt text-sm">
           {page.error?.message ?? t("webpages.load_failed")}
         </div>
       </Show>

@@ -1,10 +1,11 @@
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import { createSignal, createMemo, For, Show, createUniqueId } from "solid-js";
+import { createSignal, createMemo, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPermcatDetail, updatePermcatPerms } from "../../connections/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineClose } from "solid-icons/md";
-import Modal from "@/shared/views/Modal";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Button } from "@ui/Button";
+import { Spinner } from "@ui/Spinner";
 
 interface Props {
   name: string;
@@ -62,26 +63,16 @@ function RolePermissionsModal(props: Props) {
     }
   }
 
-  const titleId = createUniqueId();
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-[60]">
-      <div class="w-full max-w-md rounded-2xl bg-surface border border-rim shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <Modal onClose={props.onClose} class="z-[60]">
+      <ModalPanel
+        title={t("directory.role_perms_title")}
+        description={props.label}
+        onClose={props.onClose}
+        size="md"
+        class="overflow-hidden flex flex-col max-h-[85vh]"
+      >
         {/* Header */}
-        <div class="flex items-center gap-3 p-4 border-b border-rim shrink-0">
-          <div class="flex-1 min-w-0">
-            <div id={titleId} class="font-semibold text-sm text-txt truncate">
-              {t("directory.role_perms_title")}
-            </div>
-            <div class="text-xs text-muted truncate">{props.label}</div>
-          </div>
-          <button
-            onClick={props.onClose}
-            class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
-            aria-label={t("directory.cancel")}
-          >
-            <MdOutlineClose class="w-4 h-4" />
-          </button>
-        </div>
 
         {/* Body */}
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
@@ -91,7 +82,7 @@ function RolePermissionsModal(props: Props) {
             when={!detail.loading}
             fallback={
               <div class="flex items-center justify-center gap-2 py-10 text-sm text-muted">
-                <span class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <Spinner size="md" />
                 {t("directory.role_perms_loading")}
               </div>
             }
@@ -110,7 +101,7 @@ function RolePermissionsModal(props: Props) {
                     <label for={`perm-${perm.key}`} class="flex-1 min-w-0 cursor-pointer">
                       <div class="text-sm text-txt leading-snug">{perm.label}</div>
                       <Show when={perm.inherited}>
-                        <div class="text-[0.625rem] text-red-500 mt-0.5">
+                        <div class="text-[0.625rem] text-danger-txt mt-0.5">
                           {t("directory.role_perms_inherited")}
                         </div>
                       </Show>
@@ -122,34 +113,24 @@ function RolePermissionsModal(props: Props) {
           </Show>
 
           <Show when={error()}>
-            <p class="text-xs text-red-500">{error()}</p>
+            <p class="text-xs text-danger-txt">{error()}</p>
           </Show>
         </div>
 
         {/* Footer */}
         <div class="flex items-center gap-2 px-4 py-3 border-t border-rim shrink-0">
           <div class="flex-1" />
-          <button
-            onClick={props.onClose}
-            class="px-3 py-1.5 rounded-lg text-xs border border-rim text-muted
-                   hover:bg-overlay transition-colors"
-          >
+          <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("directory.cancel")}
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving() || detail.loading}
-            class="px-3 py-1.5 rounded-lg text-xs border border-rim text-muted
-                   hover:border-accent hover:text-accent transition-colors
-                   disabled:opacity-50 disabled:cursor-default flex items-center gap-1.5"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleSave} disabled={saving() || detail.loading}>
             <Show when={saving()}>
-              <span class="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+              <Spinner size="xs" />
             </Show>
             {saving() ? t("directory.saving") : t("directory.save")}
-          </button>
+          </Button>
         </div>
-      </div>
+      </ModalPanel>
     </Modal>
   );
 }

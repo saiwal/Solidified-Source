@@ -10,6 +10,9 @@ import {
   type PendingItem,
 } from "../api";
 import { refreshPendingModeration } from "../store";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Avatar } from "@ui/Avatar";
 
 function relativeTime(when?: string): string {
   if (!when) return "";
@@ -58,11 +61,7 @@ function PendingRow(props: { item: PendingItem; onResolved: (iid: number) => voi
   return (
     <div class="flex items-start gap-3 px-4 py-3">
       <Show when={props.item.author.photo?.src}>
-        <img
-          src={props.item.author.photo?.src}
-          alt={props.item.author.name ?? ""}
-          class="w-8 h-8 rounded-full shrink-0 object-cover"
-        />
+        <Avatar src={props.item.author.photo?.src} name={props.item.author.name ?? ""} size={8} />
       </Show>
       <div class="min-w-0 flex-1">
         <p class="text-sm text-txt leading-snug">
@@ -81,13 +80,9 @@ function PendingRow(props: { item: PendingItem; onResolved: (iid: number) => voi
         <p class="text-xs text-muted mt-1">{relativeTime(props.item.created)}</p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <button
-          onClick={approve}
-          disabled={busy()}
-          class="text-xs px-2 py-1 rounded bg-accent text-accent-fg hover:opacity-80 disabled:opacity-50 transition-opacity"
-        >
+        <Button size="sm" onClick={approve} disabled={busy()}>
           {t("directory.approve")}
-        </button>
+        </Button>
         <button
           onClick={reject}
           disabled={busy()}
@@ -148,11 +143,11 @@ export default function ModerateView() {
       </Show>
 
       <Show when={!entries.loading && (entries() ?? []).length > 0}>
-        <div class="bg-surface border border-rim rounded-2xl overflow-hidden shadow-sm divide-y divide-rim">
+        <Card raised class="overflow-hidden divide-y divide-rim">
           <For each={entries()}>
             {(item) => <PendingRow item={item} onResolved={removeFromList} />}
           </For>
-        </div>
+        </Card>
       </Show>
     </div>
   );

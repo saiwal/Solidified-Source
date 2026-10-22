@@ -1,6 +1,8 @@
 import { For, Show } from "solid-js";
 import type { ChannelRole } from "../../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Input } from "@ui/Field";
+import { Badge } from "@ui/Badge";
 
 const ROLE_HINTS: Record<string, string> = {
   personal: "channel_create.role_hint_personal",
@@ -37,7 +39,7 @@ export default function IdentityStep(props: {
       <Show when={props.usageMessage}>
         <p
           class={`text-xs rounded-lg px-3 py-2 ${
-            props.canadd ? "bg-elevated text-muted" : "bg-red-500/10 text-red-500"
+            props.canadd ? "bg-elevated text-muted" : "bg-danger/10 text-danger-txt"
           }`}
         >
           {props.usageMessage}
@@ -49,12 +51,12 @@ export default function IdentityStep(props: {
         <label class="text-sm font-medium text-txt" for="nc-name">
           {t("channel_create.name_label")}
         </label>
-        <input
+        <Input
+          class="w-full"
           id="nc-name"
           type="text"
           value={props.name}
           onInput={(e) => props.setName(e.currentTarget.value)}
-          class={inputClass}
           placeholder={t("channel_create.name_ph")}
         />
         <p class="text-xs text-muted">{t("channel_create.name_hint")}</p>
@@ -74,15 +76,15 @@ export default function IdentityStep(props: {
             class={inputClass + " rounded-r-none flex-1"}
             placeholder={t("channel_create.nick_ph")}
           />
-          <span class="px-3 flex items-center bg-elevated border border-l-0 border-rim rounded-r-lg text-xs text-muted whitespace-nowrap">
+          <Badge class="rounded-r-lg whitespace-nowrap">
             {props.nickhub}
-          </span>
+          </Badge>
         </div>
         <Show when={props.nickname && !props.checking}>
           <Show
             when={props.available}
             fallback={
-              <p class="text-xs text-amber-500">
+              <p class="text-xs text-warning-txt">
                 {t("channel_create.nick_taken")}{" "}
                 <Show when={props.suggestion}>
                   <button
@@ -97,7 +99,7 @@ export default function IdentityStep(props: {
               </p>
             }
           >
-            <p class="text-xs text-emerald-500">{t("channel_create.nick_available")}</p>
+            <p class="text-xs text-success-txt">{t("channel_create.nick_available")}</p>
           </Show>
         </Show>
         <Show when={props.checking}>

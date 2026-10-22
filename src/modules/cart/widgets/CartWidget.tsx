@@ -4,6 +4,7 @@ import { MdFillShopping_cart, MdFillStore, MdFillReceipt_long } from 'solid-icon
 import { cartCount, cartItems, nick, sellerOrders } from '../store';
 import { useI18n } from '@utsukta/spa-core/i18n';
 import { useViewerRole } from '@utsukta/spa-core/store/site-config';
+import { Badge } from "@ui/Badge";
 
 export default function CartWidget() {
   const { t } = useI18n();
@@ -23,9 +24,9 @@ export default function CartWidget() {
               <MdFillShopping_cart size={18} class="text-accent" />
               <span class="text-sm font-semibold text-txt">{t('cart.cart_label')}</span>
             </div>
-            <span class="text-xs font-bold bg-accent-muted text-accent-txt rounded-full px-2 py-0.5">
+            <Badge tone="accent">
               {cartCount()} {cartCount() === 1 ? t('cart.item_singular') : t('cart.item_plural')}
-            </span>
+            </Badge>
           </div>
 
           <div class="flex flex-col gap-1">
@@ -70,7 +71,7 @@ export default function CartWidget() {
                 <span class="text-muted flex items-center gap-1">
                   <MdFillReceipt_long size={12} /> {t('cart.order_unpaid')}
                 </span>
-                <span class="font-semibold text-yellow-600 dark:text-yellow-400">{unpaidCount()}</span>
+                <span class="font-semibold text-warning-txt">{unpaidCount()}</span>
               </div>
             </Show>
             <Show when={unfulfilledCount() > 0}>

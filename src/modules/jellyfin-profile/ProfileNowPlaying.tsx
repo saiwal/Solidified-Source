@@ -7,6 +7,7 @@ import { MdFillMusic_note } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
+import { cardClass } from "@ui/Card";
 
 interface NowPlaying {
   track: { title: string; artist: string; album: string; cover: string };
@@ -36,7 +37,7 @@ export default function ProfileNowPlaying() {
   return (
     <Show when={q.data}>
       {(np) => (
-        <section class="flex items-center gap-3 p-3 rounded-xl border border-rim bg-surface">
+        <section class={`${cardClass()} flex items-center gap-3 p-3`}>
           <Show when={np().track.cover}
             fallback={<div class="w-12 h-12 shrink-0 rounded-lg bg-elevated flex items-center justify-center text-muted"><MdFillMusic_note size={22} /></div>}>
             <img src={np().track.cover} alt="" class="w-12 h-12 shrink-0 rounded-lg object-cover bg-elevated" />

@@ -71,7 +71,6 @@ const Layout: ParentComponent = (props) => {
         <main ref={setMainRef} class="flex-1 overflow-y-auto p-4 pb-20 lg:pb-4">
           <Show when={!hidesWidgetSlots()}>
             <Slot name="header" moduleId={activeModuleId()} />
-            <Slot name="gridTop" moduleId={activeModuleId()} />
             <Slot name="contentTop" moduleId={activeModuleId()} />
           </Show>
 

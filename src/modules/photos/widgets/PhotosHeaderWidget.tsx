@@ -1,9 +1,9 @@
-import { For } from "solid-js";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { albums, tab, switchTab } from "../store/store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
+import { Tabs } from "@ui/Tabs";
 
 export default function PhotosHeaderWidget() {
   const { t } = useI18n();
@@ -38,19 +38,13 @@ export default function PhotosHeaderWidget() {
         {owner() === null ? t("photos.title_mine") : t("photos.title_of", { name: owner()! })}
       </h1>
 
-      <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
-        <For each={tabs()}>{(s) => (
-          <button
-            onClick={() => pick(s.id)}
-            class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
-              ${tab() === s.id
-                ? "bg-accent text-accent-fg font-semibold"
-                : "text-muted hover:text-txt"}`}
-          >
-            {s.label}
-          </button>
-        )}</For>
-      </div>
+      <Tabs
+        label={t("nav.photos")}
+        class="mx-auto"
+        value={tab()}
+        onChange={pick}
+        items={tabs().map((s) => ({ value: s.id, label: s.label }))}
+      />
     </div>
   );
 }

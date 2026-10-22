@@ -26,6 +26,16 @@ export function normalizeHex(value: unknown): string | null {
 const mix = (a: string, b: string, pct: string) => `color-mix(in srgb, ${a}, ${b} ${pct})`;
 const tint = (c: CustomThemeColors) => (c.isDark ? "white" : "black");
 
+function statusVars<N extends "danger" | "success" | "warning">(name: N, light: string, dark: string) {
+  const hue = (c: CustomThemeColors) => c[name] ?? (c.isDark ? dark : light);
+  return [
+    { key: name, css: `--color-${name}`, derive: hue },
+    { key: `${name}Muted`, css: `--color-${name}-muted`, derive: (c: CustomThemeColors) => mix(hue(c), c.base, "84%") },
+    { key: `${name}Txt`, css: `--color-${name}-txt`, derive: (c: CustomThemeColors) => mix(hue(c), tint(c), "15%") },
+    { key: `${name}Fg`, css: `--color-${name}-fg`, derive: () => "#ffffff" },
+  ] as const;
+}
+
 /** Every `--color-*` var a theme defines, with the formula used when it isn't overridden. */
 export const THEME_VARS = [
   { key: "base", css: "--color-base", derive: (c: CustomThemeColors) => c.base },
@@ -44,6 +54,11 @@ export const THEME_VARS = [
   { key: "accentMuted", css: "--color-accent-muted", derive: (c) => mix(c.accent, c.base, "82%") },
   { key: "accentTxt", css: "--color-accent-txt", derive: (c) => mix(c.accent, tint(c), "15%") },
   { key: "accentFg", css: "--color-accent-fg", derive: () => "#ffffff" },
+  // Status hues are fixed (no base knob of their own), so a custom theme only
+  // needs to pick light/dark; muted/txt follow the same formulas as accent.
+  ...statusVars("danger", "#dc2626", "#f87171"),
+  ...statusVars("success", "#16a34a", "#4ade80"),
+  ...statusVars("warning", "#d97706", "#fbbf24"),
 ] as const satisfies readonly {
   key: keyof CustomThemeColors;
   css: string;
@@ -58,9 +73,15 @@ export type DerivedColorKey = Exclude<
 
 /** Which overrides stop being valid when one of the base knobs changes. */
 const DEPENDENTS: Partial<Record<keyof CustomThemeColors, DerivedColorKey[]>> = {
-  base: ["surface", "elevated", "overlay", "muted", "subtle", "rim", "rimStrong", "accentMuted"],
+  base: [
+    "surface", "elevated", "overlay", "muted", "subtle", "rim", "rimStrong",
+    "accentMuted", "dangerMuted", "successMuted", "warningMuted",
+  ],
   txt: ["muted", "subtle", "rim", "rimStrong"],
   accent: ["accentMuted", "accentTxt"],
+  danger: ["dangerMuted", "dangerTxt"],
+  success: ["successMuted", "successTxt"],
+  warning: ["warningMuted", "warningTxt"],
   // isDark deliberately absent: it only flips the light/dark tint used by the
   // formulas, so unset vars re-derive on their own and explicit colors stay.
 };

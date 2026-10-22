@@ -17,6 +17,22 @@
   --color-accent-muted: #dde2fd;
   --color-accent-txt: #2a3ebf;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #dc2626;
+  --color-danger-muted: #ebcec9;
+  --color-danger-txt: #ae2423;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #16a34a;
+  --color-success-muted: #cbe2cf;
+  --color-success-txt: #186d37;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #d97706;
+  --color-warning-muted: #ebdbc4;
+  --color-warning-txt: #8d530e;
+  --color-warning-fg: #111111;
 }
 
 /* ── Dark ────────────────────────────────────────────────────── */
@@ -37,6 +53,22 @@
   --color-accent-muted: #1e2352;
   --color-accent-txt: #b0baff;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #f87171;
+  --color-danger-muted: #3c2629;
+  --color-danger-txt: #f87171;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #4ade80;
+  --color-success-muted: #20382b;
+  --color-success-txt: #4ade80;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #fbbf24;
+  --color-warning-muted: #3c331c;
+  --color-warning-txt: #fbbf24;
+  --color-warning-fg: #111111;
 }
 
 /* ── Nord ────────────────────────────────────────────────────── */
@@ -59,6 +91,22 @@
   --color-accent-fg: #ffffff;
 
 	/* --radius-xl: 4px; */
+
+  /* danger */
+  --color-danger: #bf616a;
+  --color-danger-muted: #453b47;
+  --color-danger-txt: #d9b3ba;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #a3be8c;
+  --color-success-muted: #414a4c;
+  --color-success-txt: #aac396;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #ebcb8b;
+  --color-warning-muted: #4c4c4c;
+  --color-warning-txt: #ebcb8b;
+  --color-warning-fg: #111111;
 }
 
 /* ── Dracula ─────────────────────────────────────────────────── */
@@ -79,6 +127,22 @@
   --color-accent-muted: #2e1f4a;
   --color-accent-txt: #caa9fa;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #ff5555;
+  --color-danger-muted: #4a313b;
+  --color-danger-txt: #fc9d9a;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #50fa7b;
+  --color-success-muted: #2e4b41;
+  --color-success-txt: #50fa7b;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #f1fa8c;
+  --color-warning-muted: #484b44;
+  --color-warning-txt: #f1fa8c;
+  --color-warning-fg: #111111;
 }
 
 /* ── Monokai ─────────────────────────────────────────────────── */
@@ -99,6 +163,22 @@
   --color-accent-muted: #1e2a10;
   --color-accent-txt: #b8f04a;
   --color-accent-fg: #1e2019;
+
+  /* danger */
+  --color-danger: #f92672;
+  --color-danger-muted: #49282f;
+  --color-danger-txt: #f982aa;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #a6e22e;
+  --color-success-muted: #3b4624;
+  --color-success-txt: #a6e22e;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #e6db74;
+  --color-warning-muted: #46452f;
+  --color-warning-txt: #e6db74;
+  --color-warning-fg: #111111;
 }
 
 /* ── Gruvbox Dark ────────────────────────────────────────────── */
@@ -119,6 +199,22 @@
   --color-accent-muted: #3a2e0a;
   --color-accent-txt: #fabd2f;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #fb4934;
+  --color-danger-muted: #4a2d2a;
+  --color-danger-txt: #f58064;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #b8bb26;
+  --color-success-muted: #3f4028;
+  --color-success-txt: #b8bb26;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #fabd2f;
+  --color-warning-muted: #4a4029;
+  --color-warning-txt: #fabd2f;
+  --color-warning-fg: #111111;
 }
 
 /* ── Gruvbox Light ───────────────────────────────────────────── */
@@ -139,6 +235,22 @@
   --color-accent-muted: #f0e0a0;
   --color-accent-txt: #b57614;
   --color-accent-fg: #3c3836;
+
+  /* danger */
+  --color-danger: #cc241d;
+  --color-danger-muted: #ecc6a3;
+  --color-danger-txt: #a12a24;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #98971a;
+  --color-success-muted: #e4d9a2;
+  --color-success-txt: #63602a;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #d79921;
+  --color-warning-muted: #eed9a3;
+  --color-warning-txt: #745b2e;
+  --color-warning-fg: #111111;
 }
 
 /* ── Catppuccin Latte (light) ────────────────────────────────── */
@@ -159,6 +271,22 @@
   --color-accent-muted: #d4e0fb;
   --color-accent-txt: #1e66f5;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #d20f39;
+  --color-danger-muted: #eacdd7;
+  --color-danger-txt: #af2045;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #40a02b;
+  --color-success-muted: #d3e4d5;
+  --color-success-txt: #486b54;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #df8e1d;
+  --color-warning-muted: #ece1d2;
+  --color-warning-txt: #756154;
+  --color-warning-fg: #111111;
 }
 
 /* ── Catppuccin Mocha (dark) ─────────────────────────────────── */
@@ -179,6 +307,22 @@
   --color-accent-muted: #1a2550;
   --color-accent-txt: #b4befe;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #f38ba8;
+  --color-danger-muted: #402f42;
+  --color-danger-txt: #f38ba8;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #a6e3a1;
+  --color-success-muted: #343e40;
+  --color-success-txt: #a6e3a1;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #f9e2af;
+  --color-warning-muted: #413d43;
+  --color-warning-txt: #f9e2af;
+  --color-warning-fg: #111111;
 }
 
 /* ── Solarized Light ─────────────────────────────────────────── */
@@ -199,6 +343,22 @@
   --color-accent-muted: #d4eaf8;
   --color-accent-txt: #1a6fa8;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #dc322f;
+  --color-danger-muted: #f8d7c6;
+  --color-danger-txt: #b92a27;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #859900;
+  --color-success-muted: #eae7bf;
+  --color-success-txt: #5d6b00;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #b58900;
+  --color-warning-muted: #f1e5bf;
+  --color-warning-txt: #7f6000;
+  --color-warning-fg: #111111;
 }
 
 /* ── Solarized Dark ──────────────────────────────────────────── */
@@ -219,6 +379,22 @@
   --color-accent-muted: #0a2e2c;
   --color-accent-txt: #3dd6cb;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #dc322f;
+  --color-danger-muted: #232c35;
+  --color-danger-txt: #eb8c8b;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #859900;
+  --color-success-muted: #153d2d;
+  --color-success-txt: #9dad33;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #b58900;
+  --color-warning-muted: #1d3a2d;
+  --color-warning-txt: #c4a133;
+  --color-warning-fg: #111111;
 }
 
 /* ── Tokyo Night ─────────────────────────────────────────────── */
@@ -239,6 +415,22 @@
   --color-accent-muted: #1a2050;
   --color-accent-txt: #a9b8f8;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #f7768e;
+  --color-danger-muted: #3d2a37;
+  --color-danger-txt: #f7768e;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #9ece6a;
+  --color-success-muted: #2f3831;
+  --color-success-txt: #9ece6a;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #e0af68;
+  --color-warning-muted: #3a3331;
+  --color-warning-txt: #e0af68;
+  --color-warning-fg: #111111;
 }
 
 /* ── One Dark ────────────────────────────────────────────── */
@@ -259,6 +451,22 @@
   --color-accent-muted: #1c2a3a;
   --color-accent-txt: #8fc7ff;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #e06c75;
+  --color-danger-muted: #45363e;
+  --color-danger-txt: #b5a5b2;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #98c379;
+  --color-success-muted: #3a443f;
+  --color-success-txt: #98c379;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #e5c07b;
+  --color-warning-muted: #46443f;
+  --color-warning-txt: #e5c07b;
+  --color-warning-fg: #111111;
 }
 
 /* ── CyberPunk ────────────────────────────────────────────── */
@@ -279,6 +487,22 @@
   --color-accent-muted: #2a0030;
   --color-accent-txt: #ff66e0;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #ff003c;
+  --color-danger-muted: #310816;
+  --color-danger-txt: #f83c6f;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #00ff9f;
+  --color-success-muted: #083126;
+  --color-success-txt: #00ff9f;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #fcee0a;
+  --color-warning-muted: #312e0e;
+  --color-warning-txt: #fcee0a;
+  --color-warning-fg: #111111;
 }
 
 /* ── Rose Pine ────────────────────────────────────────────── */
@@ -299,6 +523,22 @@
   --color-accent-muted: #3a1f2a;
   --color-accent-txt: #f6a6c1;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #eb6f92;
+  --color-danger-muted: #3b2536;
+  --color-danger-txt: #eb6f92;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #9ccfd8;
+  --color-success-muted: #2e3441;
+  --color-success-txt: #9ccfd8;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #f6c177;
+  --color-warning-muted: #3c3231;
+  --color-warning-txt: #f6c177;
+  --color-warning-fg: #111111;
 }
 /* ── Pastel Soft ────────────────────────────────────────────── */
 [data-theme="pastel-soft"] {
@@ -318,6 +558,22 @@
   --color-accent-muted: #e4e8ff;
   --color-accent-txt: #4a5af0;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #e05f6f;
+  --color-danger-muted: #f3dfe5;
+  --color-danger-txt: #9c4d5b;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #4fa36b;
+  --color-success-muted: #dceae4;
+  --color-success-txt: #407055;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #d4943a;
+  --color-warning-muted: #f1e7dc;
+  --color-warning-txt: #80613a;
+  --color-warning-fg: #111111;
 }
 /* ── Warm Paper ────────────────────────────────────────────── */
 [data-theme="warm-paper"] {
@@ -337,6 +593,22 @@
   --color-accent-muted: #f3ddd6;
   --color-accent-txt: #a65a45;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #b3412e;
+  --color-danger-muted: #f1dcd6;
+  --color-danger-txt: #ac402e;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #5b8a3a;
+  --color-success-muted: #e3e8d8;
+  --color-success-txt: #516f35;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #b7791f;
+  --color-warning-muted: #f2e5d4;
+  --color-warning-txt: #8a5e23;
+  --color-warning-fg: #111111;
 }
 /* ── Mint Fresh ────────────────────────────────────────────── */
 [data-theme="mint"] {
@@ -356,6 +628,22 @@
   --color-accent-muted: #d5f5ec;
   --color-accent-txt: #1d9e80;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #d64545;
+  --color-danger-muted: #eededb;
+  --color-danger-txt: #aa4241;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #2f9e6b;
+  --color-success-muted: #d3ece1;
+  --color-success-txt: #287453;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #c98a1a;
+  --color-warning-muted: #ebe9d4;
+  --color-warning-txt: #7b6526;
+  --color-warning-fg: #111111;
 }
 /* ── Sakura ────────────────────────────────────────────── */
 [data-theme="sakura"] {
@@ -375,6 +663,22 @@
   --color-accent-muted: #ffdbe4;
   --color-accent-txt: #e05578;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #d1495b;
+  --color-danger-muted: #f8dadf;
+  --color-danger-txt: #aa3e4e;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #5a9e6f;
+  --color-success-muted: #e5e8e2;
+  --color-success-txt: #4e6e54;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #c98b2a;
+  --color-warning-muted: #f6e5d7;
+  --color-warning-txt: #8d5e29;
+  --color-warning-fg: #111111;
 }
 /* ── Latte Cream ────────────────────────────────────────────── */
 [data-theme="latte-cream"] {
@@ -394,6 +698,22 @@
   --color-accent-muted: #f2e6d2;
   --color-accent-txt: #a67c3d;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #b84a3a;
+  --color-danger-muted: #f4e0da;
+  --color-danger-txt: #aa4738;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #6a8d3a;
+  --color-success-muted: #e7ebda;
+  --color-success-txt: #597134;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #b8862b;
+  --color-warning-muted: #f4ead7;
+  --color-warning-txt: #846328;
+  --color-warning-fg: #111111;
 }
 /* ── High Contrast (dark) ────────────────────────────────────── */
 [data-theme="high-contrast"] {
@@ -413,6 +733,22 @@
   --color-accent-muted: #2a2a00;
   --color-accent-txt: #ffff00;
   --color-accent-fg: #000000;
+
+  /* danger */
+  --color-danger: #ff5c5c;
+  --color-danger-muted: #290f0f;
+  --color-danger-txt: #ff5c5c;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #3dff7a;
+  --color-success-muted: #0a2914;
+  --color-success-txt: #3dff7a;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #ffd000;
+  --color-warning-muted: #292100;
+  --color-warning-txt: #ffd000;
+  --color-warning-fg: #111111;
 }
 
 /* ── High Contrast (light) ───────────────────────────────────── */
@@ -433,6 +769,22 @@
   --color-accent-muted: #e6e6ff;
   --color-accent-txt: #0000aa;
   --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #b00000;
+  --color-danger-muted: #f2d6d6;
+  --color-danger-txt: #b00000;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #006b1f;
+  --color-success-muted: #d6e7db;
+  --color-success-txt: #006b1f;
+  --color-success-fg: #ffffff;
+  /* warning */
+  --color-warning: #8a5a00;
+  --color-warning-muted: #ece5d6;
+  --color-warning-txt: #8a5a00;
+  --color-warning-fg: #ffffff;
 }
 
 /* ── Matrix ─────────────────────────────────────────────────── */
@@ -453,4 +805,20 @@
   --color-accent-muted: #003311;
   --color-accent-txt:   #66ff99;
   --color-accent-fg:    #050805;
+
+  /* danger */
+  --color-danger: #ff4141;
+  --color-danger-muted: #311713;
+  --color-danger-txt: #ff4141;
+  --color-danger-fg: #111111;
+  /* success */
+  --color-success: #00ff41;
+  --color-success-muted: #083513;
+  --color-success-txt: #00ff41;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #e6ff00;
+  --color-warning-muted: #2d3508;
+  --color-warning-txt: #e6ff00;
+  --color-warning-fg: #111111;
 }

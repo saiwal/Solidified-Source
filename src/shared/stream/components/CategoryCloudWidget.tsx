@@ -13,6 +13,8 @@ import {
   type CategoryItem,
   type CategoryWidgetProps,
 } from "./CategoryWidget";
+import { Button } from "@ui/Button";
+import { Card, CardHeader } from "@ui/Card";
 
 function CloudSkeleton() {
   const widths = [52, 70, 44, 80, 58, 64];
@@ -46,10 +48,10 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
   const visible = () => (expanded() ? categories() : categories().slice(0, max()));
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-rim">
+    <Card class="overflow-hidden">
+      <CardHeader>
         <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.categories")}</h3>
-      </div>
+      </CardHeader>
 
       <Show when={!props.data && remote.loading}>
         <CloudSkeleton />
@@ -90,17 +92,13 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
           </div>
 
           <Show when={categories().length > max()}>
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              class="w-full px-4 py-2 text-xs text-muted hover:text-txt
-                     border-t border-rim text-center transition-colors"
-            >
+            <Button variant="ghost" size="sm" class="w-full" onClick={() => setExpanded((v) => !v)}>
               {expanded() ? t("ui.show_less") : t("widgets.show_more_categories")}
-            </button>
+            </Button>
           </Show>
         </Show>
       </Show>
-    </div>
+    </Card>
   );
 };
 

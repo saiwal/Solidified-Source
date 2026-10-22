@@ -8,7 +8,8 @@
 import { Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { slugify } from "../lib/slugify";
-import { underlineFieldClass } from "../lib/fieldStyles";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
 
 export interface SlugFieldProps {
   value: () => string;
@@ -31,21 +32,21 @@ const SlugField: Component<SlugFieldProps> = (props) => {
         <label class="block text-xs text-muted mb-1">{props.label ?? t("editor.slug_label")}</label>
       </Show>
       <div class="flex items-center gap-1.5">
-        <input
+        <Input
+          class="flex-1 font-mono"
           type="text"
           placeholder={props.placeholder ?? t("editor.slug_placeholder")}
           value={props.value()}
           onInput={(e) => props.onInput(e.currentTarget.value)}
-          class={`flex-1 px-0 py-1.5 text-sm font-mono text-txt ${underlineFieldClass}`}
         />
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           title={t("editor.generate_slug")}
           onClick={() => props.onInput(slugify(props.title()))}
-          class="px-1 text-muted hover:text-txt transition-colors text-sm leading-none"
         >
           ↻
-        </button>
+        </Button>
       </div>
     </div>
   );

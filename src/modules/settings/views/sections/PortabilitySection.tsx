@@ -5,6 +5,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 interface PortabilityMeta {
   export_enabled: boolean;
@@ -72,7 +74,7 @@ export default function PortabilitySection() {
             when={m().export_enabled}
             fallback={<div class="text-sm text-muted">{t("settings.portability_not_installed")}</div>}
           >
-            <div class="rounded-xl border border-rim bg-surface p-5 space-y-4">
+            <Card class="p-5 space-y-4">
               <div>
                 <h3 class="text-sm font-semibold text-txt">{t("settings.portability_export_title")}</h3>
                 <p class="text-xs text-muted mt-1">{t("settings.portability_export_desc")}</p>
@@ -99,20 +101,15 @@ export default function PortabilitySection() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleDownload}
-                class="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-accent-fg
-                       hover:opacity-90 transition-opacity"
-              >
+              <Button onClick={handleDownload}>
                 {t("settings.portability_download_btn")}
-              </button>
-            </div>
+              </Button>
+            </Card>
           </Show>
         )}
       </Show>
 
-      <div class="rounded-xl border border-rim bg-surface p-5 space-y-2">
+      <Card class="p-5 space-y-2">
         <h3 class="text-sm font-semibold text-txt">{t("settings.portability_import_title")}</h3>
         <p class="text-xs text-muted">{t("settings.portability_import_desc")}</p>
         <A
@@ -122,7 +119,7 @@ export default function PortabilitySection() {
         >
           {t("settings.portability_import_btn")}
         </A>
-      </div>
+      </Card>
     </SubPageContent>
   );
 }

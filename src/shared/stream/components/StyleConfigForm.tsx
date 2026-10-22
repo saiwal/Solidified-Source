@@ -5,6 +5,7 @@
 import { createSignal, For, Show } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
 
 export interface StyleOption {
   value: string;
@@ -60,17 +61,13 @@ export default function StyleConfigForm(props: StyleConfigFormProps) {
         </label>
       </Show>
 
-      <button
-        onClick={() =>
+      <Button size="sm" class="self-end" onClick={() =>
           props.onSave(
             props.rainbow ? { style: style(), rainbow: rainbow() } : { style: style() },
           )
-        }
-        class="self-end px-3 py-1.5 rounded-lg bg-accent text-accent-fg text-xs font-medium
-               hover:brightness-110 transition-all"
-      >
+        }>
         {t("widgets.cfg_save")}
-      </button>
+      </Button>
     </div>
   );
 }

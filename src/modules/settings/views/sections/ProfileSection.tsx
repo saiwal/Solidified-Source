@@ -5,6 +5,7 @@ import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { useSectionForm } from "../../store/useSectionForm";
 import { SaveBar } from "../../store/FormHelpers";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Field, Input, Textarea } from "@ui/Field";
 
 interface ProfileData {
   name: string;
@@ -57,43 +58,42 @@ export default function ProfileSection() {
         <form onSubmit={handleSubmit} class="space-y-5">
 
           <Field label={t("settings.display_name")}>
-            <input type="text" name="name" value={data()!.name}
-              class={input} />
+            <Input class="w-full" type="text" name="name" value={data()!.name} />
           </Field>
 
           <Field label={t("settings.short_description")}>
-            <input type="text" name="pdesc" value={data()!.pdesc}
+            <Input
+              class="w-full"
+              type="text"
+              name="pdesc"
+              value={data()!.pdesc}
               placeholder={t("settings.short_description_placeholder")}
-              class={input} />
+            />
           </Field>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label={t("settings.hometown")}>
-              <input type="text" name="hometown" value={data()!.hometown} class={input} />
+              <Input class="w-full" type="text" name="hometown" value={data()!.hometown} />
             </Field>
             <Field label={t("settings.gender")}>
-              <input type="text" name="gender" value={data()!.gender} class={input} />
+              <Input class="w-full" type="text" name="gender" value={data()!.gender} />
             </Field>
             <Field label={t("settings.birthday")} hint={t("settings.birthday_hint")}>
-              <input type="text" name="birthday" value={data()!.birthday} class={input} />
+              <Input class="w-full" type="text" name="birthday" value={data()!.birthday} />
             </Field>
             <Field label={t("settings.homepage")}>
-              <input type="url" name="homepage" value={data()!.homepage} class={input} />
+              <Input class="w-full" type="url" name="homepage" value={data()!.homepage} />
             </Field>
           </div>
 
           <Field label={t("settings.about")} hint={t("settings.about_hint")}>
-            <textarea
-              name="about"
-              rows="4"
-              class={`${input} resize-y`}
-            >
+            <Textarea class="w-full resize-y" name="about" rows="4">
               {data()!.about}
-            </textarea>
+            </Textarea>
           </Field>
 
           <Field label={t("settings.keywords")} hint={t("settings.keywords_hint")}>
-            <input type="text" name="keywords" value={data()!.keywords} class={input} />
+            <Input class="w-full" type="text" name="keywords" value={data()!.keywords} />
           </Field>
 
           <label class="flex items-center gap-3 cursor-pointer">
@@ -126,21 +126,6 @@ export default function ProfileSection() {
   );
 }
 
-const input = `w-full px-3 py-2 rounded-lg border border-rim bg-surface text-txt text-sm
-  placeholder:text-muted hover:border-rim-strong focus:outline-none
-  focus:border-rim-strong transition-colors`;
-
-function Field(props: { label: string; hint?: string; children: any }) {
-  return (
-    <div class="space-y-1.5">
-      <label class="block text-sm font-medium text-txt">{props.label}</label>
-      {props.children}
-      <Show when={props.hint}>
-        <p class="text-xs text-muted">{props.hint}</p>
-      </Show>
-    </div>
-  );
-}
 
 function Skeleton() {
   return (

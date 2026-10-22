@@ -18,6 +18,9 @@ import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { parseTemplate, sniffTemplate, type CardTemplate } from "@/shared/editor/lib/cardTemplates";
 import { bbcodeExcerpt as excerpt } from "@utsukta/spa-core/lib/bbcode";
+import { IconButton } from "@ui/Button";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
 
 const TEMPLATE_ICON: Record<string, (s: number) => ReturnType<typeof MdOutlineNotes>> = {
   quote:      (s) => <MdOutlineFormat_quote size={s} />,
@@ -56,7 +59,7 @@ export default function CardFace(props: { card: Post; nick: string }) {
     [...(props.card.categories ?? []), ...(props.card.tags ?? []).map((x) => `#${x}`)].slice(0, 4);
 
   return (
-    <div class="overflow-hidden rounded-2xl border border-rim bg-surface shadow-sm flex flex-col">
+    <Card raised class="overflow-hidden flex flex-col">
       {/* Cover, when the body carries one (link thumbnails, freeform photos) */}
       <Show when={cover()}>
         <img src={cover()} alt="" loading="lazy" class="w-full h-36 object-cover" />
@@ -67,10 +70,10 @@ export default function CardFace(props: { card: Post; nick: string }) {
         <div class="flex items-center gap-2 text-muted">
           <span class="shrink-0">{(TEMPLATE_ICON[template()] ?? TEMPLATE_ICON.freeform)(15)}</span>
           <Show when={deck()}>
-            <span class="px-1.5 py-0.5 rounded text-[0.625rem] font-medium bg-accent/15 text-accent">
+            <Badge tone="accent" size="sm">
               {deck()!.name}
               <Show when={deck()!.order != null}> · {deck()!.order}</Show>
-            </span>
+            </Badge>
           </Show>
         </div>
 
@@ -135,7 +138,7 @@ export default function CardFace(props: { card: Post; nick: string }) {
           <div class="flex flex-wrap gap-1">
             <For each={terms()}>
               {(term) => (
-                <span class="px-1.5 py-0.5 rounded text-[0.625rem] bg-elevated text-muted">{term}</span>
+                <Badge size="sm">{term}</Badge>
               )}
             </For>
           </div>
@@ -149,16 +152,16 @@ export default function CardFace(props: { card: Post; nick: string }) {
           >
             {t("cards.read_full_card")}
           </A>
-          <button
-            type="button"
+          <IconButton
+            label={t("share.action")}
+            size="sm"
+            class="ml-auto shrink-0"
             onClick={() => openShare(shareTargetForCard(props.nick, props.card))}
-            title={t("share.action")}
-            class="ml-auto shrink-0 p-1 rounded text-muted hover:text-txt hover:bg-elevated transition-colors"
           >
             <MdOutlineShare size={15} />
-          </button>
+          </IconButton>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

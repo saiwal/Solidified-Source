@@ -116,7 +116,7 @@ export default function EventCard(props: {
             label="Attend"
             count={attendCount()}
             active={attending()}
-            activeClass="bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/40"
+            activeClass="bg-success/15 text-success-txt border-success/40"
             onClick={() => rsvp("accept")}
             disabled={pending()}
           />
@@ -124,7 +124,7 @@ export default function EventCard(props: {
             label="Maybe"
             count={maybeCount()}
             active={maybe()}
-            activeClass="bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/40"
+            activeClass="bg-warning/15 text-warning-txt border-warning/40"
             onClick={() => rsvp("tentativeaccept")}
             disabled={pending()}
           />
@@ -132,7 +132,7 @@ export default function EventCard(props: {
             label="Decline"
             count={declineCount()}
             active={declining()}
-            activeClass="bg-red-500/15 text-red-500 border-red-500/40"
+            activeClass="bg-danger/15 text-danger-txt border-danger/40"
             onClick={() => rsvp("reject")}
             disabled={pending()}
           />
@@ -143,13 +143,13 @@ export default function EventCard(props: {
       <Show when={!canRsvp() && (attendCount() > 0 || declineCount() > 0 || maybeCount() > 0)}>
         <div class="flex items-center gap-3 text-xs text-muted">
           <Show when={attendCount() > 0}>
-            <span class="text-green-600 dark:text-green-400">{attendCount()} attending</span>
+            <span class="text-success-txt">{attendCount()} attending</span>
           </Show>
           <Show when={maybeCount() > 0}>
-            <span class="text-yellow-600 dark:text-yellow-400">{maybeCount()} maybe</span>
+            <span class="text-warning-txt">{maybeCount()} maybe</span>
           </Show>
           <Show when={declineCount() > 0}>
-            <span class="text-red-500">{declineCount()} declined</span>
+            <span class="text-danger-txt">{declineCount()} declined</span>
           </Show>
         </div>
       </Show>

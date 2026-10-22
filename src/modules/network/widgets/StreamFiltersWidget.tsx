@@ -30,10 +30,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts, saveSortPref } from "../store";
 import { fetchFolders, fetchConnectionPage, CONN_PAGE_SIZE, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
-import { Portal } from "solid-js/web";
-import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useAuth, isFeedContactsEnabled } from "@utsukta/spa-core/store/auth-store";
-import { createPopover } from "@/shared/stream/filters/createPopover";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { addSavedSearch } from "../saved-searches";
@@ -48,6 +45,12 @@ const isUrl = (val: string) => val.startsWith("https://");
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { fetchGroups, type PrivacyGroup } from "@/modules/directory/groups/api";
+import { IconButton } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Badge, CountBadge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
+import { Menu, MenuItem } from "@ui/Menu";
 
 const CHIPS = [
   { key: "star",  labelKey: "network.starred",         Icon: MdFillStar          },
@@ -118,11 +121,7 @@ function ConnFilterList(props: {
               >
                 <props.Icon size={13} class="shrink-0" />
                 <span class="flex-1 truncate">{c.name}</span>
-                <Show when={c.unseen > 0}>
-                  <span class="shrink-0 min-w-[1.25rem] px-1.5 rounded-full bg-accent text-accent-fg text-[10px] leading-4 text-center font-medium">
-                    {c.unseen > 99 ? "99+" : c.unseen}
-                  </span>
-                </Show>
+                <CountBadge n={c.unseen} />
               </button>
               {props.extra?.(c)}
             </div>
@@ -152,10 +151,7 @@ function ConnFilterList(props: {
 function ForumPostMenu(props: { forum: ForumConnection }) {
   const { t } = useI18n();
   const auth = useAuth();
-  const { open, setOpen, ref, floating, style } = createPopover({ placement: "bottom-end" });
-
   const compose = (membersOnly: boolean) => {
-    setOpen(false);
     const f = props.forum;
     // One scope per audience: openComposer focuses an open composer with the
     // same scope, so a shared one made "Public" resurface a members-only draft.
@@ -182,40 +178,19 @@ function ForumPostMenu(props: { forum: ForumConnection }) {
     });
   };
 
-  const ITEM_CLS = "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left text-txt hover:bg-elevated transition-colors";
-
   return (
-    <div class="shrink-0" ref={ref}>
-      <button
-        onClick={() => setOpen(!open())}
-        aria-label={t("network.post_to_forum", { name: props.forum.name })}
-        title={t("network.post_to_forum", { name: props.forum.name })}
-        aria-haspopup="menu"
-        aria-expanded={open()}
-        class="p-1.5 rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
-      >
-        <MdFillEdit size={13} />
-      </button>
-      <Show when={open()}>
-        <Portal mount={topLayer()}>
-          <div
-            ref={floating}
-            style={style()}
-            role="menu"
-            class="z-50 w-44 p-1 rounded-lg border border-rim bg-surface shadow-lg"
-          >
-            <button role="menuitem" class={ITEM_CLS} onClick={() => compose(false)}>
-              <MdFillPublic size={14} class="shrink-0" />
-              <span>{t("network.forum_post_public")}</span>
-            </button>
-            <button role="menuitem" class={ITEM_CLS} onClick={() => compose(true)}>
-              <MdFillLock size={14} class="shrink-0" />
-              <span>{t("network.forum_post_members")}</span>
-            </button>
-          </div>
-        </Portal>
-      </Show>
-    </div>
+    <Menu
+      label={t("network.post_to_forum", { name: props.forum.name })}
+      class="w-48"
+      trigger={(p) => (
+        <IconButton label={t("network.post_to_forum", { name: props.forum.name })} size="sm" {...p}>
+          <MdFillEdit size={13} />
+        </IconButton>
+      )}
+    >
+      <MenuItem icon={<MdFillPublic size={14} />} onClick={() => compose(false)}>{t("network.forum_post_public")}</MenuItem>
+      <MenuItem icon={<MdFillLock size={14} />} onClick={() => compose(true)}>{t("network.forum_post_members")}</MenuItem>
+    </Menu>
   );
 }
 
@@ -481,15 +456,13 @@ export default function StreamFiltersWidget() {
   }
 
   return (
-    <div class="bg-surface border border-rim rounded-xl overflow-hidden">
+    <Card class="overflow-hidden">
       <div class="px-4 py-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold text-txt">{t("network.filters")}</h2>
         <Show when={hasAnyFilter()}>
-          <button onClick={clearAll} title={t("network.clear_filters")} aria-label={t("network.clear_filters")}
-            class="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted
-                   hover:text-accent hover:bg-elevated transition-colors">
+          <IconButton label={t("network.clear_filters")} size="sm" onClick={clearAll}>
             <MdFillFilter_alt_off size={12} />
-          </button>
+          </IconButton>
         </Show>
       </div>
       <div class="px-3 py-2 space-y-1">
@@ -498,16 +471,15 @@ export default function StreamFiltersWidget() {
           <Show
             when={!importing()}
             fallback={
-              <span class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg
-                           border border-accent bg-accent-muted text-accent">
+              <Badge tone="accent">
                 <MdFillRefresh size={13} class="animate-spin shrink-0" />
                 {t("network.fetching_post")}
-              </span>
+              </Badge>
             }
           >
             <div class="relative">
               <span class="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                classList={{ "text-green-500": isUrl(search()), "text-muted": !isUrl(search()) }}>
+                classList={{ "text-success-txt": isUrl(search()), "text-muted": !isUrl(search()) }}>
                 <MdFillSearch size={13} />
               </span>
               <input
@@ -522,7 +494,7 @@ export default function StreamFiltersWidget() {
                   }
                 }}
                 classList={{
-                  "border-green-500 focus:ring-green-500": isUrl(search()),
+                  "border-success focus:ring-success": isUrl(search()),
                   "pr-7": hasSaveableSearch(),
                 }}
                 class={`${INPUT_CLS} pl-6`}
@@ -579,23 +551,21 @@ export default function StreamFiltersWidget() {
               <Show
                 when={!(cid() || gid())}
                 fallback={
-                  <span class="flex items-center gap-1 px-2 py-1 text-xs rounded-lg
-                               border border-accent bg-accent-muted text-accent">
+                  <Badge tone="accent">
                     <MdFillPerson size={13} class="shrink-0" />
                     <span class="truncate">{xchanLabel() || cid() || gid()}</span>
-                    <button onClick={clearConnection} title={t("network.remove")}
-                      class="shrink-0 hover:opacity-70 transition-opacity">
+                    <IconButton label={t("network.remove")} class="shrink-0" onClick={clearConnection}>
                       <MdFillClose size={12} />
-                    </button>
-                  </span>
+                    </IconButton>
+                  </Badge>
                 }
               >
-                <input
+                <Input
+                  class="w-full"
                   type="text"
                   placeholder={t("network.connection_placeholder")}
                   value={connInput()}
                   onInput={(e) => setConnInput(e.currentTarget.value)}
-                  class={INPUT_CLS}
                 />
                 <Show when={suggestions().length > 0}>
                   <ul class="mt-1 max-h-56 overflow-y-auto rounded-lg border border-rim bg-surface py-1">
@@ -608,8 +578,7 @@ export default function StreamFiltersWidget() {
                                    text-sm text-left hover:bg-elevated transition-colors text-txt"
                           >
                             <Show when={c.photo}>
-                              <img src={c.photo} alt=""
-                                class="w-6 h-6 rounded-full shrink-0 object-cover bg-elevated" />
+                              <Avatar src={c.photo} size={6} />
                             </Show>
                             <span class="flex flex-col min-w-0">
                               <span class="truncate font-medium text-txt">{c.name}</span>
@@ -762,12 +731,12 @@ export default function StreamFiltersWidget() {
               <div class="pl-6 pt-1 pb-0.5 space-y-0.5">
                 <Show when={forumTotal() > CONN_PAGE_SIZE}>
                   <div class="pr-2 pb-1">
-                    <input
+                    <Input
+                      class="w-full"
                       type="text"
                       placeholder={t("network.forum_placeholder")}
                       value={forumInput()}
                       onInput={(e) => setForumInput(e.currentTarget.value)}
-                      class={INPUT_CLS}
                     />
                   </div>
                 </Show>
@@ -810,14 +779,14 @@ export default function StreamFiltersWidget() {
           </button>
           <Show when={tagOpen()}>
             <div class="pl-6 pr-2 pt-1 pb-1">
-              <input
+              <Input
+                class="w-full"
                 type="text"
                 placeholder={t("network.tag_placeholder")}
                 value={tag()}
                 onInput={(e) => sp({ tag: e.currentTarget.value || undefined })}
                 onBlur={applyNow}
                 onKeyDown={(e) => e.key === "Enter" && applyNow()}
-                class={INPUT_CLS}
               />
             </div>
           </Show>
@@ -843,15 +812,21 @@ export default function StreamFiltersWidget() {
             <div class="pl-6 pr-2 pt-1 pb-1 space-y-2">
               <label class="flex flex-col gap-1">
                 <span class="text-xs text-muted">{t("network.date_from")}</span>
-                <input type="date" value={dbegin()}
+                <Input
+                  class="w-full"
+                  type="date"
+                  value={dbegin()}
                   onChange={(e) => { sp({ dbegin: e.currentTarget.value || undefined }); setTimeout(applyNow, 0); }}
-                  class={INPUT_CLS} />
+                />
               </label>
               <label class="flex flex-col gap-1">
                 <span class="text-xs text-muted">{t("network.date_to")}</span>
-                <input type="date" value={dend()}
+                <Input
+                  class="w-full"
+                  type="date"
+                  value={dend()}
                   onChange={(e) => { sp({ dend: e.currentTarget.value || undefined }); setTimeout(applyNow, 0); }}
-                  class={INPUT_CLS} />
+                />
               </label>
             </div>
           </Show>
@@ -893,6 +868,6 @@ export default function StreamFiltersWidget() {
           </div>
         </Show>
       </div>
-    </div>
+    </Card>
   );
 }

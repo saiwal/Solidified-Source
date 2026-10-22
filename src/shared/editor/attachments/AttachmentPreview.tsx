@@ -4,6 +4,8 @@ import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { Attachment } from "./types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineArticle, MdOutlineClose, MdOutlineWarning_amber } from "solid-icons/md";
+import { Button } from "@ui/Button";
+import { Textarea } from "@ui/Field";
 
 interface Props {
   attachment: Attachment;
@@ -63,7 +65,7 @@ const AttachmentPreview: Component<Props> = (props) => {
       class={
         "relative flex flex-col items-center gap-1 p-1.5 rounded-lg border text-center w-20 shrink-0 " +
         (isError()
-          ? "border-red-500/40 bg-red-500/5"
+          ? "border-danger/40 bg-danger/5"
           : "border-rim bg-surface hover:bg-elevated transition-colors")
       }
       title={a().filename}
@@ -96,8 +98,8 @@ const AttachmentPreview: Component<Props> = (props) => {
 
         {/* Error overlay */}
         <Show when={isError()}>
-          <div class="absolute inset-0 flex items-center justify-center rounded-lg bg-red-900/40">
-            <MdOutlineWarning_amber class="w-5 h-5 text-red-400" />
+          <div class="absolute inset-0 flex items-center justify-center rounded-lg bg-danger/40">
+            <MdOutlineWarning_amber class="w-5 h-5 text-danger-txt" />
           </div>
         </Show>
       </div>
@@ -116,7 +118,7 @@ const AttachmentPreview: Component<Props> = (props) => {
           class={
             "text-[0.625rem] px-1.5 py-0.5 rounded w-full truncate transition-colors " +
             (hasAlt()
-              ? "bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/25"
+              ? "bg-success/15 text-success-txt hover:bg-success/25"
               : "bg-elevated text-muted hover:text-txt hover:bg-surface border border-rim")
           }
         >
@@ -138,13 +140,9 @@ const AttachmentPreview: Component<Props> = (props) => {
 
       {/* Poster frame — for ready videos */}
       <Show when={!isUploading() && !isError() && a().isVideo && props.onPickPoster}>
-        <button
-          type="button"
-          onClick={() => props.onPickPoster!()}
-          class="text-[0.625rem] px-1.5 py-0.5 rounded bg-elevated text-muted hover:text-txt hover:bg-surface border border-rim transition-colors w-full truncate"
-        >
+        <Button variant="ghost" size="sm" class="w-full truncate" onClick={() => props.onPickPoster!()}>
           {t("editor.poster_btn")}
-        </button>
+        </Button>
       </Show>
 
       {/* Remove button */}
@@ -153,7 +151,7 @@ const AttachmentPreview: Component<Props> = (props) => {
         title={t("editor.remove_attachment")}
         onClick={props.onRemove}
         class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-surface border border-rim
-               flex items-center justify-center text-muted hover:text-red-400 hover:border-red-400
+               flex items-center justify-center text-muted hover:text-danger-txt hover:border-danger
                transition-colors shadow-sm"
       >
         <MdOutlineClose class="w-2.5 h-2.5" />
@@ -182,15 +180,14 @@ const AttachmentPreview: Component<Props> = (props) => {
               {t("editor.alt_text_desc")}
             </p>
 
-            <textarea
+            <Textarea
+              size="sm"
+              class="w-full resize-none"
               rows={3}
               placeholder={t("editor.alt_text_placeholder")}
               value={a().altText ?? ""}
               onInput={(e) => props.onAltTextChange(e.currentTarget.value)}
               autofocus
-              class="w-full text-xs rounded-lg border border-rim bg-elevated text-txt
-                     placeholder:text-muted/60 p-2 outline-none resize-none
-                     focus:border-accent transition-colors"
             />
           </div>
         </Portal>

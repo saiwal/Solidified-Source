@@ -3,6 +3,7 @@ import { createSignal, Show } from "solid-js";
 import { useLocation, useNavigate, useSearchParams, A } from "@solidjs/router";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Input } from "@ui/Field";
 
 export default function HelpChooserWidget() {
   const { t } = useI18n();
@@ -55,12 +56,12 @@ export default function HelpChooserWidget() {
       </div>
 
       <form onSubmit={submitSearch} class="flex items-center gap-1">
-        <input
+        <Input
+          class="w-40"
           type="search"
           value={query()}
           onInput={(e) => setQuery(e.currentTarget.value)}
           placeholder={t("help.search_placeholder")}
-          class="w-40 px-2 py-1 text-sm rounded-lg border border-rim bg-surface text-txt outline-none focus:border-accent"
         />
         <button
           type="submit"

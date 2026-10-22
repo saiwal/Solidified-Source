@@ -1388,6 +1388,18 @@ export type RawDictionary = {
     color_accentMuted:       string;
     color_accentTxt:         string;
     color_accentFg:          string;
+    color_danger:            string;
+    color_dangerMuted:       string;
+    color_dangerTxt:         string;
+    color_dangerFg:          string;
+    color_success:           string;
+    color_successMuted:      string;
+    color_successTxt:        string;
+    color_successFg:         string;
+    color_warning:           string;
+    color_warningMuted:      string;
+    color_warningTxt:        string;
+    color_warningFg:         string;
     items_per_page:          string;
     items_per_page_hint:     string;
     stream_refresh:          string;
@@ -2880,6 +2892,7 @@ export type RawDictionary = {
     tab_party: string;
     section_music: string;
     section_video: string;
+    seasons: string;
     add_server_plain: string;
     sign_out_of: string;
     party_watch: string;

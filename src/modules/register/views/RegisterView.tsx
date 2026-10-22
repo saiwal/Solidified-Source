@@ -5,6 +5,11 @@ import { fetchRegisterConfig, submitRegister } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
+import { Button } from "@ui/Button";
+import { Input } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Spinner } from "@ui/Spinner";
+import { Badge } from "@ui/Badge";
 
 export default function RegisterView() {
   const { t } = useI18n();
@@ -71,7 +76,7 @@ export default function RegisterView() {
 
   return (
     <div class="min-h-[60vh] flex items-center justify-center py-8">
-      <div class="w-full max-w-lg bg-surface border border-rim rounded-2xl p-8 shadow-sm">
+      <Card raised class="w-full max-w-lg p-8">
 
         {/* Brand */}
         <div class="mb-6 text-center">
@@ -87,12 +92,12 @@ export default function RegisterView() {
 
         <Show when={config.loading}>
           <div class="flex justify-center py-8">
-            <div class="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+            <Spinner size="xl" tone="accent" label={t("ui.loading")} />
           </div>
         </Show>
 
         <Show when={config.error}>
-          <p class="text-sm text-red-500 text-center">{t("auth.load_form_error")}</p>
+          <p class="text-sm text-danger-txt text-center">{t("auth.load_form_error")}</p>
         </Show>
 
         <Show when={config()}>
@@ -174,7 +179,8 @@ export default function RegisterView() {
                         <label class={labelClass} for="reg-name">
                           {t("auth.register_name_label")}
                         </label>
-                        <input
+                        <Input
+                          class="w-full"
                           id="reg-name"
                           type="text"
                           autocomplete="name"
@@ -182,7 +188,6 @@ export default function RegisterView() {
                           disabled={loading()}
                           value={name()}
                           onInput={(e) => setName(e.currentTarget.value)}
-                          class={inputClass}
                           placeholder={t("auth.register_name_ph")}
                         />
                       </div>
@@ -204,9 +209,9 @@ export default function RegisterView() {
                             class={inputClass + " rounded-r-none flex-1"}
                             placeholder={t("auth.register_nick_ph")}
                           />
-                          <span class="px-3 flex items-center bg-elevated border border-l-0 border-rim rounded-r-lg text-xs text-muted whitespace-nowrap">
+                          <Badge class="rounded-r-lg whitespace-nowrap">
                             {cfg().nickhub}
-                          </span>
+                          </Badge>
                         </div>
                       </div>
                     </Show>
@@ -216,7 +221,8 @@ export default function RegisterView() {
                       <label class={labelClass} for="reg-email">
                         {t("auth.register_email_label")}
                       </label>
-                      <input
+                      <Input
+                        class="w-full"
                         id="reg-email"
                         type="email"
                         autocomplete="email"
@@ -224,7 +230,6 @@ export default function RegisterView() {
                         disabled={loading()}
                         value={email()}
                         onInput={(e) => setEmail(e.currentTarget.value)}
-                        class={inputClass}
                         placeholder="you@example.com"
                       />
                       <p class="text-xs text-muted">
@@ -239,7 +244,8 @@ export default function RegisterView() {
                       <label class={labelClass} for="reg-pass">
                         {t("auth.register_pass_label")}
                       </label>
-                      <input
+                      <Input
+                        class="w-full"
                         id="reg-pass"
                         type="password"
                         autocomplete="new-password"
@@ -247,7 +253,6 @@ export default function RegisterView() {
                         disabled={loading()}
                         value={password()}
                         onInput={(e) => setPassword(e.currentTarget.value)}
-                        class={inputClass}
                         placeholder="••••••••"
                       />
                     </div>
@@ -257,7 +262,8 @@ export default function RegisterView() {
                       <label class={labelClass} for="reg-pass2">
                         {t("auth.register_pass2_label")}
                       </label>
-                      <input
+                      <Input
+                        class="w-full"
                         id="reg-pass2"
                         type="password"
                         autocomplete="new-password"
@@ -265,7 +271,6 @@ export default function RegisterView() {
                         disabled={loading()}
                         value={password2()}
                         onInput={(e) => setPassword2(e.currentTarget.value)}
-                        class={inputClass}
                         placeholder="••••••••"
                       />
                     </div>
@@ -286,14 +291,14 @@ export default function RegisterView() {
                           <label class={labelClass} for="reg-invite">
                             {t("auth.register_invite_label")}
                           </label>
-                          <input
+                          <Input
+                            class="w-full"
                             id="reg-invite"
                             type="text"
                             required={cfg().invite_only}
                             disabled={loading()}
                             value={inviteCode()}
                             onInput={(e) => setInviteCode(e.currentTarget.value)}
-                            class={inputClass}
                             placeholder={t("auth.register_invite_ph")}
                           />
                         </div>
@@ -364,17 +369,9 @@ export default function RegisterView() {
                     </Show>
 
                     {/* Submit */}
-                    <button
-                      type="submit"
-                      disabled={loading()}
-                      class="w-full py-2.5 px-4 rounded-lg bg-accent text-accent-fg font-medium text-sm
-                             hover:opacity-90 active:opacity-80
-                             disabled:opacity-50 disabled:cursor-not-allowed
-                             focus:outline-none focus:ring-2 focus:ring-accent/40
-                             transition-opacity"
-                    >
+                    <Button class="w-full" type="submit" disabled={loading()}>
                       {loading() ? t("auth.registering") : t("auth.register_submit")}
-                    </button>
+                    </Button>
                   </form>
 
                   {/* Sign-in link */}
@@ -389,7 +386,7 @@ export default function RegisterView() {
             </Switch>
           )}
         </Show>
-      </div>
+      </Card>
     </div>
   );
 }
