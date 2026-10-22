@@ -56,8 +56,33 @@ function templateThemeSlug(): Plugin {
   };
 }
 
+/**
+ * Fail the build if the colour schemes didn't make it into the CSS. theme.css
+ * is an @import, and CSS silently drops an @import placed after any other
+ * statement — that once shipped a build where every preset scheme had no
+ * colours (only "custom", injected at runtime, still worked).
+ */
+function assertThemeCss(): Plugin {
+  return {
+    name: "assert-theme-css",
+    enforce: "post",
+    // writeBundle, not generateBundle: Vite adds the CSS assets late, so an
+    // earlier hook sees none and would fail every build.
+    writeBundle(opts, bundle) {
+      const css = Object.values(bundle)
+        .filter((f) => f.type === "asset" && f.fileName.endsWith(".css"))
+        .map((f) => String((f as { source: string | Uint8Array }).source))
+        .join("");
+      if (!/\[data-theme=["']?dark/.test(css) || !css.includes("--color-surface:")) {
+        this.error(`theme.css is missing from the CSS bundle in ${opts.dir} — is an @import below another statement in index.css?`);
+      }
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
+    assertThemeCss(),
     uiShadow({ themeUiDir: path.resolve(__dirname, "src/ui") }),
     solid(),
     viteStaticCopy({

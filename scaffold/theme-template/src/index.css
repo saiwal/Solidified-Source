@@ -15,11 +15,12 @@
  * `var(--color-*)` references to your own framework's tokens.
  */
 @import "tailwindcss";
-/* The @ui primitives' default implementation (src/ui/README.md). Tailwind
-   only scans this theme by default, so name it or its classes never exist. */
-@source "../../spa-ui/src";
 @import "./styles/theme.css";
 @import "./styles/fonts.css";
+/* After every @import: CSS drops an @import that follows any other statement,
+   which is how theme.css once vanished from the build. The @ui primitives'
+   defaults are scanned explicitly so their classes exist. */
+@source "../../spa-ui/src";
 @plugin "@tailwindcss/typography";
 
 @keyframes toast-in {

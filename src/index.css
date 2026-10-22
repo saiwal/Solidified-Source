@@ -1,11 +1,12 @@
 @import "tailwindcss";
-/* The @ui primitives' default implementation — scanned explicitly so its
-   classes exist even when no file of this theme mentions them. */
-@source "../packages/spa-ui/src";
 @import "./styles/theme.css";
 @import "./styles/fonts.css";
 @import "plyr/dist/plyr.css";
 @import "shepherd.js/dist/css/shepherd.css";
+/* After every @import: CSS drops an @import that follows any other statement,
+   which is how theme.css once vanished from the build. The @ui primitives'
+   defaults are scanned explicitly so their classes exist. */
+@source "../packages/spa-ui/src";
 @plugin "@tailwindcss/typography";
 
 @keyframes toast-in {
