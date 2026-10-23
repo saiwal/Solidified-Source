@@ -34,9 +34,14 @@ try {
   assert(hintId && sw.includes(`aria-describedby="${hintId}"`), "toggle hint describes the switch");
   const tabs = [...out.matchAll(/<button[^>]*role="tab"[^>]*>/g)].map((m) => m[0]);
   assert.match(out, /role="tablist"[^>]*aria-label="Views"/, "tablist is named");
-  assert.equal(tabs.length, 2, "one tab per item");
+  assert.equal(tabs.length, 4, "one tab per item, across both tablists");
   assert(/aria-selected="false"/.test(tabs[0]) && /tabindex="-1"/.test(tabs[0]), "unselected tab is out of the Tab order");
   assert(/aria-selected="true"/.test(tabs[1]) && /tabindex="0"/.test(tabs[1]), "selected tab is the Tab stop");
+  const linked = [...out.matchAll(/<button[^>]*role="tab"[^>]*>.*?<\/button>/g)].map((m) => m[0]).slice(2);
+  assert(/id="t-tab-b"/.test(linked[1]) && /aria-controls="t-panel-b"/.test(linked[1]), "a tab with an id controls its panel");
+  assert(!/aria-controls/.test(tabs[0]), "a tab without an id controls nothing");
+  assert.match(linked[0], /hz-count[^>]*>3</, "a tab shows its count");
+  assert.match(out, /role="tabpanel"[^>]*id="t-panel-b"[^>]*aria-labelledby="t-tab-b"|aria-labelledby="t-tab-b"[^>]*id="t-panel-b"[^>]*role="tabpanel"/s, "panel is labelled by its tab");
   const bubble = (id) => out.match(new RegExp(`<i[^>]*id="${id}"[^>]*>(.*?)</i>`))?.[1] ?? "";
   assert(!/hz-count/.test(bubble("c0")), "a zero count renders nothing");
   assert.match(bubble("c5"), />5</, "a count shows its number");

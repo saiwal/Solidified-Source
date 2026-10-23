@@ -73,6 +73,11 @@ Reference: `jellyfin/widgets/JellyfinHeaderWidget.tsx`, `cards/widgets/CardsHead
   for destructive items; `keepOpen` for items that swap to a sub-panel;
   `useMenu().close()` for a form inside the menu. Value pickers (sort, view,
   language) are not menus.
+- **Right-click menu**: `<ContextMenu label menu={<>…MenuItems…</>}>region</ContextMenu>`
+  (`@ui/Menu`) opens the same panel at the pointer, at the focused element for
+  the menu key / Shift+F10, and on a touch long-press. It adds no box around the
+  region. It is a shortcut only: every action in it must also be in a ⋯ menu
+  or on a button, since nothing tells a user it's there.
 - `flex-wrap` on the row, so an open search field drops to its own line at
   phone width instead of overflowing.
 
@@ -84,6 +89,10 @@ Quiet text tabs with an accent underline that slides to the current one. Use
 one row with `overflow-x-auto`, so it scrolls sideways on a phone and never
 wraps. Mark tabs with `role="tab"` and `aria-selected`. Use them for views
 within a section and for seasons; use the segmented switcher only in the header.
+
+`<Tabs>` items take an optional `icon` and `count` (a bubble, hidden at 0).
+Give the Tabs an `id` and wrap the content in `<TabPanel tabs={id}
+value={current}>` (`@ui/Tabs`) so screen readers link each tab to what it shows.
 
 ### Detail pages
 
