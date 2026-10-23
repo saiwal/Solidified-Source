@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 import type { ThemeId, CustomThemeColors } from "../types/theme.types";
 import { apiFetch } from "./fetch";
 import { THEME_VARS, buildCustomThemeCSS, normalizeHex, DEFAULT_CUSTOM_COLORS } from "./theme-colors";
+import { withThemeTransition } from "./theme-transition";
 
 export { THEME_VARS, buildCustomThemeCSS, withColorChange, normalizeHex, DEFAULT_CUSTOM_COLORS } from "./theme-colors";
 export type { DerivedColorKey } from "./theme-colors";
@@ -100,6 +101,12 @@ export function applyTheme(id: ThemeId) {
   document.documentElement.classList.toggle("dark", DARK_THEMES.has(id));
 }
 
+/**
+ * Applies a *stored* scheme — at boot (auth-store) or when the settings form
+ * loads. Deliberately unanimated: this is a load, not a switch, and animating
+ * it would fade a scheme in on every login. UI that previews a picker value
+ * wraps this in withThemeTransition itself (DisplaySection).
+ */
 export function initTheme(id: ThemeId, customColorsJson?: string) {
   setTheme(id);
   if (id === "custom") {
@@ -121,12 +128,17 @@ export function initTheme(id: ThemeId, customColorsJson?: string) {
 
 export function useTheme() {
   const switchTheme = (id: ThemeId) => {
-    setTheme(id);
-    if (id === "custom") {
-      applyCustomThemeColors(customColors());
-    } else {
-      applyTheme(id);
-    }
+    // The signal moves inside the transition too: the scheme's own highlight in
+    // the picker is part of the frame being cross-faded, so moving it outside
+    // would make that one detail jump while everything else dissolves.
+    withThemeTransition(() => {
+      setTheme(id);
+      if (id === "custom") {
+        applyCustomThemeColors(customColors());
+      } else {
+        applyTheme(id);
+      }
+    });
     localStorage.setItem(STORAGE_KEY, id);
     apiFetch("/spa/settings/display", {
       method: "POST",
@@ -137,6 +149,8 @@ export function useTheme() {
   const updateCustomColors = (colors: CustomThemeColors) => {
     // Inject the CSS before the signal fires: subscribers read back resolved
     // var values (see resolvedColor) and would otherwise see the old palette.
+    // No transition here on purpose: this runs on every tick of a colour
+    // picker drag, so a fade would chase the cursor.
     if (theme() === "custom") {
       applyCustomThemeColors(colors);
     }

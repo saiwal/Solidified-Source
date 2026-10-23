@@ -581,7 +581,7 @@ function StreamGroup(props: {
         <Show
           when={notifications().length > 0}
           fallback={
-            <EmptyState size="sm" class="py-4">
+            <EmptyState size="sm" class="py-2">
               {t("ui.nothing_new")}
             </EmptyState>
           }
@@ -737,7 +737,7 @@ function NoticesGroup(props: {
         <Show
           when={(props.entries ?? []).length > 0}
           fallback={
-            <EmptyState size="sm" class="py-4">
+            <EmptyState size="sm" class="py-2">
               {t("ui.nothing_new")}
             </EmptyState>
           }
@@ -893,7 +893,7 @@ function AnnouncementsGroup(props: {
         <Show
           when={props.list.length > 0}
           fallback={
-            <EmptyState size="sm" class="py-4">
+            <EmptyState size="sm" class="py-2">
               {t("widgets.no_announcements")}
             </EmptyState>
           }
@@ -1544,7 +1544,7 @@ export default function NotificationsAside() {
           <Show
             when={activeBuckets().length > 0}
             fallback={
-              <EmptyState size="sm" class="py-5">
+              <EmptyState size="sm" class="py-2">
                 {t("ui.no_notifications")}
               </EmptyState>
             }

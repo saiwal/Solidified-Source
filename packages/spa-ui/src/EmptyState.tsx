@@ -8,7 +8,7 @@ export function EmptyState(props: EmptyStateProps) {
     <div
       class={
         `hz-empty flex flex-col items-center justify-center text-center text-muted ` +
-        `${sm() ? "gap-2 py-6 text-xs" : "gap-3 py-12 text-sm"} ${props.class ?? ""}`
+        `${sm() ? "gap-2 py-2 text-xs" : "gap-3 py-12 text-sm"} ${props.class ?? ""}`
       }
     >
       <Show when={props.icon}>

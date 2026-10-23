@@ -24,6 +24,7 @@ import {
   type DerivedColorKey,
 } from "@utsukta/spa-core/lib/useTheme";
 import { THEMES, type ThemeId } from "@utsukta/spa-core/types/theme.types";
+import { withThemeTransition } from "@utsukta/spa-core/lib/theme-transition";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdFillEdit } from "solid-icons/md";
 import { Button, IconButton } from "@ui/Button";
@@ -114,8 +115,13 @@ export default function DisplaySection() {
             <div class="flex items-center gap-2">
               <Select class="flex-1 min-w-0" name="color_scheme" onChange={(e) => {
                   const scheme = e.currentTarget.value as ThemeId;
-                  setPreviewScheme(scheme);
-                  initTheme(scheme);
+                  // A live preview of the value being picked, so it cross-fades
+                  // like the picker does; initTheme's other caller (auth-store)
+                  // is a load and stays instant.
+                  withThemeTransition(() => {
+                    setPreviewScheme(scheme);
+                    initTheme(scheme);
+                  });
                 }}>
                 <For each={[...THEMES].sort((a, b) => a.label.localeCompare(b.label))}>
                   {(th) => (
