@@ -32,6 +32,7 @@ import {
 } from "solid-icons/md";
 import { Button, IconButton, iconButtonClass, primaryPill } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
+import { ColorSwatch } from "@ui/ColorSwatch";
 import { Card } from "@ui/Card";
 import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 
@@ -112,11 +113,7 @@ function CalendarForm(props: {
           value={name()}
           onInput={(e) => setName(e.currentTarget.value)}
         />
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input type="color" value={color()} onInput={(e) => setColor(e.currentTarget.value)}
-            class="w-8 h-8 rounded-full cursor-pointer border-0 bg-transparent p-0" />
-          <span class="text-sm text-muted">{t("calendar.calendar_color")}</span>
-        </label>
+        <ColorSwatch value={color()} onChange={setColor} label={t("calendar.calendar_color")} />
         <DialogActions onCancel={props.onClose}>
           <Button type="submit" disabled={busy()}>{busy() ? props.busyLabel : props.submitLabel}</Button>
         </DialogActions>

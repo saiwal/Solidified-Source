@@ -5,10 +5,9 @@ import {
   untrack,
   For,
   Show,
-  Switch,
-  Match,
   createMemo,
   onCleanup,
+  type JSX,
 } from "solid-js";
 import { createStore, reconcile, unwrap, produce } from "solid-js/store";
 import { useNavigate } from "@solidjs/router";
@@ -20,7 +19,7 @@ import {
   channelKey,
 } from "@utsukta/spa-core/store/auth-store";
 import { useIsAdmin } from "@utsukta/spa-core/store/site-config";
-import { MdFillApp_registration, MdFillClose, MdFillDone_all, MdFillEvent, MdFillForum, MdFillHome, MdFillInsert_drive_file, MdFillMail, MdFillNotifications, MdFillOpen_in_new, MdFillPeople, MdFillPublic, MdFillRefresh, MdFillWifi, MdOutlineAnnouncement, MdOutlineCampaign, MdOutlineExpand_more } from "solid-icons/md";
+import { MdFillApp_registration, MdFillClose, MdFillEvent, MdFillForum, MdFillHome, MdFillInsert_drive_file, MdFillMail, MdFillNotifications, MdFillPeople, MdFillPublic, MdFillRefresh, MdFillWifi, MdOutlineAnnouncement, MdOutlineCampaign, MdOutlineDelete, MdOutlineExpand_more } from "solid-icons/md";
 import DOMPurify from "dompurify";
 import {
   DISPLAY_ORDER,
@@ -55,9 +54,20 @@ import {
 } from "@/modules/manage/api";
 import { openPost } from "@/shared/views/modal-host";
 import { Button, IconButton } from "@ui/Button";
-import { Input, Textarea } from "@ui/Field";
+import { Card } from "@ui/Card";
+import { Badge } from "@ui/Badge";
+import { EmptyState } from "@ui/EmptyState";
+import { ErrorState } from "@ui/ErrorState";
+import { Field, Input, Textarea } from "@ui/Field";
+import { SearchField } from "@ui/SearchField";
+import { Skeleton } from "@ui/Skeleton";
+import { LoadMore } from "@ui/LoadMore";
+import { Banner } from "@ui/Banner";
+import { Modal, ModalPanel } from "@ui/Modal";
 import { Avatar } from "@ui/Avatar";
-import { Tabs, TabPanel } from "@ui/Tabs";
+import { Collapsible } from "@ui/Collapsible";
+import { ListRow } from "@ui/ListRow";
+import type { CollapsibleTriggerProps } from "@utsukta/spa-core/types/ui.types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -223,6 +233,52 @@ function decodeHtmlEntities(str: string): string {
   return ta.value;
 }
 
+// ── Shared group chrome ───────────────────────────────────────────────────────
+// One flat header row for every group (buckets and the fixed panels alike), so
+// the panel reads as a single list instead of a stack of bordered cards.
+const GROUP_HEADER =
+  "hz-notify-group w-full flex items-center gap-2 px-2 py-2 rounded-lg " +
+  "text-left text-txt hover:bg-elevated/50 transition-colors " +
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const GROUP_CHEVRON = "w-4 h-4 shrink-0 text-subtle transition-transform duration-200";
+
+function RowSkeletons(props: { count?: number }) {
+  return (
+    <div class="space-y-1 px-2 py-1.5" aria-hidden="true">
+      <For each={Array.from({ length: props.count ?? 3 })}>
+        {() => <Skeleton class="h-9 w-full" rounded="lg" />}
+      </For>
+    </div>
+  );
+}
+
+function GroupHeader(props: {
+  trigger: CollapsibleTriggerProps;
+  icon: JSX.Element;
+  label: string;
+  /** Pre-formatted unread count; omitted at zero. */
+  count?: string;
+  /** Accent dot for "something here" without a count (announcements). */
+  dot?: boolean;
+  open: boolean;
+}) {
+  return (
+    <button type="button" {...props.trigger} class={GROUP_HEADER}>
+      <span class="shrink-0 text-muted" aria-hidden="true">{props.icon}</span>
+      <span class="flex-1 min-w-0 truncate text-xs font-semibold">{props.label}</span>
+      <Show when={props.dot}>
+        <span class="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+      </Show>
+      <Show when={props.count}>
+        <Badge tone="accent" size="sm" class="tabular-nums">{props.count}</Badge>
+      </Show>
+      <MdOutlineExpand_more
+        aria-hidden="true"
+        class={`${GROUP_CHEVRON} ${props.open ? "" : "-rotate-90"}`}
+      />
+    </button>
+  );
+}
 
 // ── NotifRow ──────────────────────────────────────────────────────────────────
 
@@ -280,15 +336,15 @@ function NotifRow(props: {
 
   return (
     <Show when={!hidden()}>
-    <div class="flex items-start gap-1 group">
+    <div class="flex items-start gap-0.5 pr-2 group">
       <a
         href={resolveNotifyPath(props.n.notify_link)}
         onClick={handleClick}
-        class="flex gap-2 items-start px-2 py-1.5 rounded-lg transition-colors
-               hover:bg-elevated flex-1 min-w-0"
+        class="flex gap-2.5 items-start px-2 py-2 rounded-lg transition-colors
+               hover:bg-elevated/50 flex-1 min-w-0"
       >
         <Show when={props.n.photo}>
-          <Avatar src={props.n.photo} name={props.n.name ?? ""} size={7} class="mt-0.5" />
+          <Avatar src={props.n.photo} name={props.n.name ?? ""} size={7} class="mt-0.5 shrink-0" />
         </Show>
         <div class="min-w-0 flex-1">
           <p class="text-xs text-txt leading-snug">
@@ -299,7 +355,7 @@ function NotifRow(props: {
           </p>
           <div class="flex items-center gap-1.5 mt-0.5">
             <Show when={props.n.when}>
-              <p class="text-[0.625rem] text-muted">{when()}</p>
+              <p class="text-[0.6875rem] text-muted tabular-nums">{when()}</p>
             </Show>
           </div>
         </div>
@@ -309,7 +365,7 @@ function NotifRow(props: {
         <IconButton
           label={t("notify.mark_read")}
           size="sm"
-          class="shrink-0 mt-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+          class="shrink-0 mt-1 opacity-60 hover:opacity-100"
           onClick={handleDismiss}
         >
           <MdFillClose class="w-3.5 h-3.5" />
@@ -320,9 +376,9 @@ function NotifRow(props: {
   );
 }
 
-// ── StreamSection ─────────────────────────────────────────────────────────────
+// ── StreamGroup ───────────────────────────────────────────────────────────────
 
-function StreamSection(props: {
+function StreamGroup(props: {
   id: string;
   bucket: StreamBucket;
   label: string;
@@ -448,178 +504,145 @@ function StreamSection(props: {
 
   // Only skeleton an empty section. Blanking a populated list into three
   // pulsing bars on every refetch was a visible strobe plus a height collapse.
+  // `!hasOpened()` covers the first open, where the load effect has not run yet.
   const isLoading = () =>
-    fetchable() && open() && loading() && allRows().length === 0;
+    fetchable() &&
+    open() &&
+    allRows().length === 0 &&
+    (loading() || !hasOpened());
 
   const dismissibleMids = () =>
     notifications()
       .map((n) => n.b64mid)
       .filter((m): m is string => !!m);
 
-  const onScroll = (e: Event) => {
-    const el = e.currentTarget as HTMLDivElement;
-    if (loading() || nextOffset() <= 0) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) void load("more");
-  };
-
-  const submitFilter = (e: Event) => {
-    e.preventDefault();
-    // Escalate to core's server-side xchan search, which reaches rows past the
-    // pages we hold; until Enter it is a local filter over what's loaded.
+  // Escalate to core's server-side xchan search, which reaches rows past the
+  // pages we hold; until Enter it is a local filter over what's loaded.
+  const submitFilter = () => {
     setNquery(filterText().trim());
     void load("reset");
   };
 
-  const clearFilter = () => {
-    setFilterText("");
-    if (nquery()) {
-      setNquery("");
-      void load("reset");
-    }
-  };
+  // Clearing the field (the SearchField's × or deleting the text) also drops
+  // the server-side query, so the list returns to everything we had paged.
+  createEffect(() => {
+    if (filterText() !== "" || !nquery()) return;
+    setNquery("");
+    void load("reset");
+  });
 
   return (
-    <div class="border border-rim rounded-xl overflow-hidden">
-      {/* Header — a row, not one big button: the actions in it are links and
-          buttons, which are invalid inside a <button> and get hoisted out of it
-          by the parser. Two toggle targets flank them instead. */}
-      <div
-        class="w-full flex items-center justify-between gap-1.5 px-3 py-2
-               bg-surface hover:bg-elevated transition-colors"
-      >
-        <button
-          onClick={() => props.onToggle()}
-          aria-expanded={open()}
-          class="flex items-center gap-1.5 min-w-0 flex-1 text-left
-                 text-xs font-semibold text-txt"
-        >
-          <meta.Icon class="w-3.5 h-3.5 shrink-0" />
-          <span class="truncate">{props.label}</span>
-        </button>
-
-        <span class="flex items-center gap-1.5 shrink-0">
-          {/* The destination used to be the section title, which sits under the
-              pointer for the whole width of the row and got hit by mistake.
-              It has its own small target now. */}
-          <Show when={props.href}>
-            <a
-              href={props.href}
-              title={t("hq.view_all")}
-              aria-label={t("hq.view_all")}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(props.href!);
-              }}
-              class="p-0.5 rounded text-subtle hover:text-txt hover:bg-elevated transition-colors"
-            >
-              <MdFillOpen_in_new class="w-3.5 h-3.5" />
-            </a>
-          </Show>
-          <Show
-            when={
-              open() &&
-              (dismissibleMids().length > 0 ||
-                (supportsMarkRead(props.id) && props.bucket.count > 0))
-            }
+    <Collapsible
+      open={open()}
+      onOpenChange={() => props.onToggle()}
+      panelClass="pb-1"
+      header={(trigger) => (
+        <GroupHeader
+          trigger={trigger}
+          icon={<meta.Icon class="w-4 h-4" />}
+          label={props.label}
+          count={
+            props.bucket.count > 0
+              ? formatCount(props.bucket.count, props.countLimit)
+              : undefined
+          }
+          open={open()}
+        />
+      )}
+    >
+      {/* Filters — core offers these on exactly the fetchable buckets */}
+      <Show when={fetchable()}>
+        <div class="flex items-center gap-1 px-2 pb-1.5">
+          <SearchField
+            class="flex-1 min-w-0"
+            size="sm"
+            value={filterText()}
+            onInput={setFilterText}
+            label={t("notify.filter_name")}
+            clearLabel={t("notify.clear_filter")}
+            onSearch={() => submitFilter()}
+          />
+          <IconButton
+            label={t("notify.filter_starters")}
+            size="sm"
+            pressed={startersOnly()}
+            class="shrink-0"
+            onClick={() => setStartersOnly((v) => !v)}
           >
-            <IconButton label={t("ui.mark_all_read")} size="sm" onClick={() => props.onClearAll(props.id)}>
-              <MdFillDone_all class="w-3.5 h-3.5" />
-            </IconButton>
-          </Show>
-          <button
-            onClick={() => props.onToggle()}
-            aria-expanded={open()}
-            aria-label={props.label}
-            class="flex items-center gap-1.5"
-          >
-            <Show when={props.bucket.count > 0}>
-              <span
-                class="text-[0.625rem] font-bold bg-accent text-accent-fg rounded-full
-                       px-1.5 py-0.5 min-w-[18px] text-center leading-none"
-              >
-                {formatCount(props.bucket.count, props.countLimit)}
-              </span>
-            </Show>
-            <MdOutlineExpand_more class={`w-3 h-3 text-subtle transition-transform ${open() ? "" : "-rotate-90"}`} />
-          </button>
-        </span>
-      </div>
-
-      {/* Body */}
-      <Show when={open()}>
-        <div class="px-1 py-1 space-y-0.5 bg-elevated">
-          {/* Filters — core offers these on exactly the fetchable buckets */}
-          <Show when={fetchable()}>
-            <div class="flex items-center gap-1 px-1 pb-1">
-              <form onSubmit={submitFilter} class="flex-1 min-w-0 relative">
-                <Input
-                  class="w-full"
-                  type="search"
-                  value={filterText()}
-                  onInput={(e) => setFilterText(e.currentTarget.value)}
-                  placeholder={t("notify.filter_name")}
-                  aria-label={t("notify.filter_name")}
-                />
-                <Show when={filterText() || nquery()}>
-                  <button
-                    type="button"
-                    onClick={clearFilter}
-                    title={t("notify.clear_filter")}
-                    class="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded
-                           text-subtle hover:text-txt"
-                  >
-                    <MdFillClose class="w-3 h-3" />
-                  </button>
-                </Show>
-              </form>
-              <IconButton
-                label={t("notify.filter_starters")}
-                size="sm"
-                pressed={startersOnly()}
-                class="shrink-0"
-                onClick={() => setStartersOnly((v) => !v)}
-              >
-                <MdFillForum class="w-3 h-3" />
-              </IconButton>
-            </div>
-          </Show>
-
-          <Show when={isLoading()}>
-            <div class="space-y-1 px-2 py-1">
-              <For each={[1, 2, 3]}>
-                {() => <div class="h-8 rounded bg-surface animate-pulse" />}
-              </For>
-            </div>
-          </Show>
-          <Show when={!isLoading()}>
-            <Show
-              when={notifications().length > 0}
-              fallback={
-                <p class="text-[0.6875rem] text-muted text-center py-3">
-                  {t("ui.nothing_new")}
-                </p>
-              }
-            >
-              <div class="max-h-80 overflow-y-auto" onScroll={onScroll}>
-                <For each={notifications()}>
-                  {(n) => (
-                    <NotifRow
-                      n={n}
-                      onDismiss={props.onDismiss}
-                      onNotifySeen={props.onNotifySeen}
-                      onOpenModal={props.onOpenModal}
-                    />
-                  )}
-                </For>
-                <Show when={loading()}>
-                  <div class="h-8 mx-2 my-1 rounded bg-surface animate-pulse" />
-                </Show>
-              </div>
-            </Show>
-          </Show>
+            <MdFillForum class="w-3.5 h-3.5" />
+          </IconButton>
         </div>
       </Show>
-    </div>
+
+      <Show when={isLoading()}>
+        <RowSkeletons />
+      </Show>
+      <Show when={!isLoading()}>
+        <Show
+          when={notifications().length > 0}
+          fallback={
+            <EmptyState size="sm" class="py-4">
+              {t("ui.nothing_new")}
+            </EmptyState>
+          }
+        >
+          <div class="space-y-0.5">
+            <For each={notifications()}>
+              {(n) => (
+                <NotifRow
+                  n={n}
+                  onDismiss={props.onDismiss}
+                  onNotifySeen={props.onNotifySeen}
+                  onOpenModal={props.onOpenModal}
+                />
+              )}
+            </For>
+            <Show when={loading()}>
+              <div class="px-2 py-1">
+                <Skeleton class="h-9 w-full" rounded="lg" />
+              </div>
+            </Show>
+            <LoadMore
+              auto
+              hasMore={nextOffset() > 0}
+              loading={loading()}
+              onClick={() => void load("more")}
+              label={t("ui.show_more")}
+            />
+          </div>
+        </Show>
+      </Show>
+
+      <div class="flex items-center gap-2 px-2 pt-1">
+        <Show when={props.href}>
+          <a
+            href={props.href}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(props.href!);
+            }}
+            class="text-[0.6875rem] text-accent-txt hover:underline"
+          >
+            {t("hq.view_all")}
+          </a>
+        </Show>
+        <Show
+          when={
+            notifications().length > 0 &&
+            (dismissibleMids().length > 0 ||
+              (supportsMarkRead(props.id) && props.bucket.count > 0))
+          }
+        >
+          <button
+            type="button"
+            onClick={() => props.onClearAll(props.id)}
+            class="ml-auto text-[0.6875rem] text-muted hover:text-txt transition-colors"
+          >
+            {t("ui.mark_all_read")}
+          </button>
+        </Show>
+      </div>
+    </Collapsible>
   );
 }
 
@@ -650,18 +673,18 @@ function NoticeRow(props: {
     <a
       href={resolveNotifyPath(props.entry.href)}
       onClick={handleClick}
-      class="flex gap-2 items-start px-2 py-1.5 rounded-lg transition-colors
-             hover:bg-elevated"
+      class="flex gap-2.5 items-start px-2 py-2 rounded-lg transition-colors
+             hover:bg-elevated/50"
     >
       <Show when={props.entry.author_img}>
-        <Avatar src={props.entry.author_img} name={props.entry.author_name} size={7} class="mt-0.5" />
+        <Avatar src={props.entry.author_img} name={props.entry.author_name} size={7} class="mt-0.5 shrink-0" />
       </Show>
       <div class="min-w-0 flex-1">
         <p class="text-xs text-txt leading-snug">
           <span class="font-semibold">{props.entry.author_name} </span>
           <span>{decodeHtmlEntities(props.entry.summary)}</span>
         </p>
-        <p class="text-[0.625rem] text-muted mt-0.5">
+        <p class="text-[0.6875rem] text-muted mt-0.5 tabular-nums">
           {relativeTime(props.entry.created, t)}
         </p>
       </div>
@@ -669,73 +692,76 @@ function NoticeRow(props: {
   );
 }
 
-// ── NoticesSection ────────────────────────────────────────────────────────────
+// ── NoticesGroup ─────────────────────────────────────────────────────────────
+// HQ's notice feed. It keeps its own group rather than a header tab: it is
+// loaded lazily the first time the group is opened (no extra request on boot),
+// and it closes like every other group so only one list is on screen at a time.
 
-function NoticesSection(props: {
+function NoticesGroup(props: {
   open: boolean;
+  onToggle: () => void;
+  entries: HqNoticeEntry[] | undefined;
+  loading: boolean;
+  error: Error | undefined;
+  onRetry: () => void;
   onOpenModal: (uuid: string) => void;
 }) {
   const { t } = useI18n();
-  const [entries, { refetch }] = createQueryResource(
-    "hq-notices",
-    () => (props.open ? true : null),
-    fetchNotices,
-  );
 
   return (
-    <div class="border border-rim rounded-xl overflow-hidden">
-      <div class="px-1 py-1 space-y-0.5 bg-elevated">
-        <Show when={entries.loading}>
-          <div class="space-y-1 px-2 py-1">
-            <For each={[1, 2, 3]}>
-              {() => <div class="h-8 rounded bg-surface animate-pulse" />}
+    <Collapsible
+      open={props.open}
+      onOpenChange={() => props.onToggle()}
+      panelClass="pb-1"
+      header={(trigger) => (
+        <GroupHeader
+          trigger={trigger}
+          icon={<MdOutlineCampaign class="w-4 h-4" />}
+          label={t("hq.msg_tab_notices")}
+          open={props.open}
+        />
+      )}
+    >
+      <Show when={props.loading || (!props.entries && !props.error)}>
+        <RowSkeletons />
+      </Show>
+      <Show when={!props.loading && props.error}>
+        <ErrorState
+          class="py-4"
+          message={props.error!.message}
+          retry={props.onRetry}
+          retryLabel={t("hq.retry")}
+        />
+      </Show>
+      <Show when={!props.loading && !props.error && props.entries}>
+        <Show
+          when={(props.entries ?? []).length > 0}
+          fallback={
+            <EmptyState size="sm" class="py-4">
+              {t("ui.nothing_new")}
+            </EmptyState>
+          }
+        >
+          <div class="space-y-0.5">
+            <For each={props.entries}>
+              {(entry) => <NoticeRow entry={entry} onOpen={props.onOpenModal} />}
             </For>
           </div>
         </Show>
-        <Show when={!entries.loading && entries.error}>
-          <div class="flex flex-col items-center gap-1 py-3 text-[0.6875rem] text-muted">
-            <span>{entries.error?.message}</span>
-            <button
-              onClick={() => refetch()}
-              class="text-accent hover:underline"
-            >
-              {t("hq.retry")}
-            </button>
-          </div>
-        </Show>
-        <Show when={!entries.loading && !entries.error}>
-          <Show
-            when={(entries() ?? []).length > 0}
-            fallback={
-              <p class="text-[0.6875rem] text-muted text-center py-3">
-                {t("hq.no_messages")}
-              </p>
-            }
-          >
-            <div class="max-h-80 overflow-y-auto">
-              <For each={entries()}>
-                {(entry) => (
-                  <NoticeRow entry={entry} onOpen={props.onOpenModal} />
-                )}
-              </For>
-            </div>
-          </Show>
-        </Show>
-      </div>
-      <div class="border-t border-rim py-1.5 text-center bg-surface">
-        <a href="/notifications" class="text-[0.6875rem] text-accent hover:underline">
-          {t("hq.view_all")}
-        </a>
-      </div>
-    </div>
+      </Show>
+    </Collapsible>
   );
 }
 
-// ── OtherChannelsSection ──────────────────────────────────────────────────────
+// ── OtherChannelsGroup ────────────────────────────────────────────────────────
 // Mirrors Zotlabs\Widget\Channel_activities::get_channels_activity(): the other
 // channels of this account that have pending intros or unseen alerts.
 
-function OtherChannelsSection(props: { channels: ManagedChannel[] }) {
+function OtherChannelsGroup(props: {
+  channels: ManagedChannel[];
+  open: boolean;
+  onToggle: () => void;
+}) {
   const { t } = useI18n();
   const [switching, setSwitching] = createSignal<number | null>(null);
 
@@ -752,6 +778,8 @@ function OtherChannelsSection(props: { channels: ManagedChannel[] }) {
     return parts.join(", ");
   };
 
+  const total = () => props.channels.reduce((n, c) => n + c.intros + c.notices, 0);
+
   // Hard nav, not router navigate: change_channel() swapped the session channel,
   // so every SPA store (auth, nav, streams) is scoped to the old one.
   const go = async (c: ManagedChannel) => {
@@ -766,59 +794,73 @@ function OtherChannelsSection(props: { channels: ManagedChannel[] }) {
   };
 
   return (
-    <div class="border border-rim rounded-xl overflow-hidden">
-      <div class="px-1 py-1 space-y-0.5 bg-elevated max-h-80 overflow-y-auto">
+    <Collapsible
+      open={props.open}
+      onOpenChange={() => props.onToggle()}
+      panelClass="pb-1"
+      header={(trigger) => (
+        <GroupHeader
+          trigger={trigger}
+          icon={<MdFillPeople class="w-4 h-4" />}
+          label={t("notify.other_channels")}
+          count={total() > 0 ? String(total()) : undefined}
+          open={props.open}
+        />
+      )}
+    >
+      <div class="space-y-0.5">
         <For each={props.channels}>
           {(c) => (
-            <button
-              onClick={() => go(c)}
-              disabled={switching() !== null}
-              class="w-full flex gap-2 items-center px-2 py-1.5 rounded-lg text-left
-                     transition-colors hover:bg-surface disabled:opacity-50"
-            >
-              <Show when={c.photo}>
-                <Avatar src={c.photo} name={c.channel_name} size={7} />
-              </Show>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs text-txt font-semibold truncate">
-                  {c.channel_name}
-                </p>
-                <p class="text-[0.625rem] text-muted truncate">
-                  {c.channel_address}
-                </p>
-              </div>
-              <span class="text-[0.625rem] text-accent shrink-0">
-                {footer(c)}
-              </span>
-            </button>
+            <ListRow
+              leading={
+                <Show when={c.photo}>
+                  <Avatar src={c.photo} name={c.channel_name} size={7} />
+                </Show>
+              }
+              title={c.channel_name}
+              subtitle={c.channel_address}
+              trailing={<span class="text-[0.6875rem] text-accent-txt tabular-nums">{footer(c)}</span>}
+              onClick={() => switching() === null && go(c)}
+              class={`rounded-lg ${switching() !== null ? "opacity-50 pointer-events-none" : ""}`}
+            />
           )}
         </For>
       </div>
-    </div>
+    </Collapsible>
   );
 }
 
-// ── AnnouncementsSection ──────────────────────────────────────────────────────
+// ── AnnouncementsGroup ────────────────────────────────────────────────────────
 
-function AnnouncementsSection(props: {
+function AnnouncementsGroup(props: {
   list: Announcement[];
   loading: boolean;
   isAdmin: boolean;
-  onCreate: (title: string, body: string) => Promise<void>;
+  open: boolean;
+  onToggle: () => void;
+  hasNew: boolean;
+  onCreate: (title: string, body: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<void>;
 }) {
   const { t, locale } = useI18n();
+  const formId = createUniqueId();
   const [title, setTitle] = createSignal("");
   const [body, setBody] = createSignal("");
   const [posting, setPosting] = createSignal(false);
+  const [composerOpen, setComposerOpen] = createSignal(false);
+
+  const closeComposer = () => setComposerOpen(false);
 
   const post = async () => {
-    if (!title().trim() && !body().trim()) return;
+    if (posting() || (!title().trim() && !body().trim())) return;
     setPosting(true);
     try {
-      await props.onCreate(title().trim(), body().trim());
-      setTitle("");
-      setBody("");
+      const ok = await props.onCreate(title().trim(), body().trim());
+      if (ok) {
+        setTitle("");
+        setBody("");
+        setComposerOpen(false);
+      }
     } finally {
       setPosting(false);
     }
@@ -830,83 +872,128 @@ function AnnouncementsSection(props: {
   };
 
   return (
-    <div class="border border-rim rounded-xl overflow-hidden">
-      <div class="px-1 py-1 space-y-0.5 bg-elevated">
-        <Show when={props.loading}>
-          <div class="space-y-1 px-2 py-1">
-            <For each={[1, 2, 3]}>
-              {() => <div class="h-8 rounded bg-surface animate-pulse" />}
-            </For>
-          </div>
-        </Show>
-        <Show when={!props.loading}>
-          <Show
-            when={props.list.length > 0}
-            fallback={
-              <p class="text-[0.6875rem] text-muted text-center py-3">
-                {t("widgets.no_announcements")}
-              </p>
-            }
-          >
-            <div class="max-h-80 overflow-y-auto">
-              <For each={props.list}>
-                {(a) => (
-                  <div class="px-2 py-1.5 border-b border-rim last:border-0">
-                    <div class="flex items-start justify-between gap-2">
-                      <Show when={a.title}>
-                        <p class="text-xs font-semibold text-txt">{a.title}</p>
-                      </Show>
-                      <Show when={props.isAdmin}>
-                        <button
-                          onClick={() => props.onDelete(a.id)}
-                          class="shrink-0 text-[0.625rem] text-muted hover:text-txt"
-                        >
-                          {t("widgets.delete_announcement")}
-                        </button>
-                      </Show>
-                    </div>
+    <Collapsible
+      open={props.open}
+      onOpenChange={() => props.onToggle()}
+      panelClass="pb-1"
+      header={(trigger) => (
+        <GroupHeader
+          trigger={trigger}
+          icon={<MdOutlineAnnouncement class="w-4 h-4" />}
+          label={t("widgets.site_announcements")}
+          dot={props.hasNew}
+          open={props.open}
+        />
+      )}
+    >
+      <Show when={props.loading}>
+        <RowSkeletons />
+      </Show>
+      <Show when={!props.loading}>
+        <Show
+          when={props.list.length > 0}
+          fallback={
+            <EmptyState size="sm" class="py-4">
+              {t("widgets.no_announcements")}
+            </EmptyState>
+          }
+        >
+          <div class="space-y-0.5">
+            <For each={props.list}>
+              {(a) => (
+                <div class="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-elevated/50">
+                  <div class="min-w-0 flex-1">
+                    <Show when={a.title}>
+                      <p class="text-xs font-semibold text-txt">{a.title}</p>
+                    </Show>
                     <Show when={a.body}>
                       <p class="text-xs text-muted mt-0.5 whitespace-pre-wrap">{a.body}</p>
                     </Show>
-                    <p class="text-[0.625rem] text-subtle mt-1">{fmtDate(a.created)}</p>
+                    <p class="text-[0.6875rem] text-subtle mt-1 tabular-nums">{fmtDate(a.created)}</p>
                   </div>
-                )}
-              </For>
-            </div>
-          </Show>
+                  <Show when={props.isAdmin}>
+                    <IconButton
+                      label={t("widgets.delete_announcement")}
+                      size="sm"
+                      variant="danger"
+                      class="shrink-0 opacity-60 hover:opacity-100"
+                      onClick={() => void props.onDelete(a.id)}
+                    >
+                      <MdOutlineDelete class="w-3.5 h-3.5" />
+                    </IconButton>
+                  </Show>
+                </div>
+              )}
+            </For>
+          </div>
         </Show>
-      </div>
+      </Show>
+
       <Show when={props.isAdmin}>
-        <div class="border-t border-rim p-2 flex flex-col gap-1.5 bg-surface">
-          <Input
-            size="sm"
-            class="w-full"
-            type="text"
-            value={title()}
-            maxLength={120}
-            placeholder={t("widgets.cfg_announcement_title")}
-            onInput={(e) => setTitle(e.currentTarget.value)}
-          />
-          <Textarea
-            size="sm"
-            class="w-full resize-y"
-            value={body()}
-            maxLength={1000}
-            rows={2}
-            placeholder={t("widgets.cfg_announcement_body")}
-            onInput={(e) => setBody(e.currentTarget.value)}
-          />
-          <Button
-            size="sm"
-            class="self-end"
-            onClick={post}
-            disabled={posting() || (!title().trim() && !body().trim())}
-          >
+        <div class="px-2 pt-1">
+          <Button variant="ghost" size="sm" class="w-full" onClick={() => setComposerOpen(true)}>
             {t("widgets.post_announcement")}
           </Button>
         </div>
       </Show>
-    </div>
+
+      <Show when={composerOpen()}>
+        <Modal onClose={closeComposer}>
+          <ModalPanel
+            size="md"
+            title={t("widgets.site_announcements")}
+            onClose={closeComposer}
+            footer={
+              <>
+                <Button variant="ghost" size="sm" onClick={closeComposer}>
+                  {t("layout.close")}
+                </Button>
+                <Button
+                  type="submit"
+                  form={formId}
+                  size="sm"
+                  disabled={posting() || (!title().trim() && !body().trim())}
+                >
+                  {t("widgets.post_announcement")}
+                </Button>
+              </>
+            }
+          >
+            <form
+              id={formId}
+              class="px-4 py-4 space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void post();
+              }}
+            >
+              <Field label={t("widgets.cfg_announcement_title")}>
+                <Input
+                  class="w-full"
+                  type="text"
+                  autofocus
+                  value={title()}
+                  maxLength={120}
+                  onInput={(e) => setTitle(e.currentTarget.value)}
+                />
+              </Field>
+              <Field
+                label={t("widgets.cfg_announcement_body")}
+                hint={`${body().length}/1000`}
+              >
+                <Textarea
+                  class="w-full resize-y"
+                  value={body()}
+                  maxLength={1000}
+                  rows={5}
+                  onInput={(e) => setBody(e.currentTarget.value)}
+                />
+              </Field>
+            </form>
+          </ModalPanel>
+        </Modal>
+      </Show>
+    </Collapsible>
   );
 }
 
@@ -915,10 +1002,6 @@ function AnnouncementsSection(props: {
 type ConnStatus = "connecting" | "live" | "polling" | "error";
 
 // ── Main widget ───────────────────────────────────────────────────────────────
-
-// The widget's header views. "notifications" is the accordion list below; the
-// other three are the auxiliary panels the old icon toggles used to stack.
-type PanelView = "notifications" | "notices" | "channels" | "announcements";
 
 export default function NotificationsAside() {
   const { t } = useI18n();
@@ -931,6 +1014,7 @@ export default function NotificationsAside() {
     })[connStatus()];
   const auth = useAuth();
   const isAdmin = useIsAdmin();
+  const navigate = useNavigate();
 
   // A store, not a signal: snapshots are merged with reconcile() keyed on _k so
   // rows that didn't change keep their identity. Replacing the array wholesale
@@ -963,14 +1047,17 @@ export default function NotificationsAside() {
     key.startsWith("forum_")
       ? `/network?pf=1&cid=${key.slice("forum_".length)}`
       : KNOWN_META[key]?.href;
-  const [notices, setNotices] = createSignal<HzNotification[]>([]);
+  // Transient notice/info rows carried on the counts payload — rendered as
+  // status banners above the groups, not as a notification category.
+  const [systemNotices, setSystemNotices] = createSignal<HzNotification[]>([]);
   const [connStatus, setConnStatus] = createSignal<ConnStatus>("connecting");
   const [booted, setBooted] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
-  const [view, setView] = createSignal<PanelView>("notifications");
-  const [openSection, setOpenSection] = createSignal<string | null>(null);
-  // One id per widget instance: the header tabs link to the panel showing them.
-  const tabsId = createUniqueId();
+  // One group open at a time, shared by the buckets and the fixed panels, so
+  // the sidebar never grows a second scroll context.
+  const [openGroup, setOpenGroup] = createSignal<string | null>(null);
+  // Names the widget's region and visible heading; one id per instance.
+  const titleId = createUniqueId();
 
   const [announcements, { refetch: refetchAnnouncements, mutate: mutateAnnouncements }] =
     createQueryResource(
@@ -978,6 +1065,15 @@ export default function NotificationsAside() {
       () => (booted() && auth()?.isLocal ? true : null),
       fetchAnnouncements,
     );
+
+  // HQ's notice feed. Disabled until its group is opened, so a user who never
+  // looks at notices pays no /hq request on boot; the cached result makes
+  // reopening free for staleTime.
+  const [noticesFeed, { refetch: refetchNotices }] = createQueryResource(
+    "hq-notices",
+    () => (booted() && auth()?.isLoggedIn && openGroup() === "notices" ? true : null),
+    fetchNotices,
+  );
 
   const [seenAnnouncementId, setSeenAnnouncementId] = createSignal(getLastSeenAnnouncementId());
 
@@ -1001,27 +1097,29 @@ export default function NotificationsAside() {
     return !!list?.length && list[0].id !== seenAnnouncementId();
   });
 
-  // Opening the announcements view is what marks them seen, as the old toggle
-  // did on its "open" half.
-  const selectView = (next: PanelView) => {
-    setView(next);
-    if (next !== "announcements") return;
-    const list = announcements();
-    if (list?.length) {
-      setLastSeenAnnouncementId(list[0].id);
-      setSeenAnnouncementId(list[0].id);
-    }
-  };
+  const toggleGroup = (key: string) =>
+    setOpenGroup((cur) => (cur === key ? null : key));
 
-  const createAnnouncement = async (title: string, body: string) => {
+  // Opening the announcements group is what marks them seen, as the old toggle
+  // did on its "open" half. An effect rather than an onClick because the list
+  // can land after the group is already open.
+  createEffect(() => {
+    if (openGroup() !== "announcements") return;
+    const list = announcements();
+    if (!list?.length || list[0].id === seenAnnouncementId()) return;
+    setLastSeenAnnouncementId(list[0].id);
+    setSeenAnnouncementId(list[0].id);
+  });
+
+  const createAnnouncement = async (title: string, body: string): Promise<boolean> => {
     const res = await apiFetch("/spa/announcements", {
       method: "POST",
       body: JSON.stringify({ action: "create", title, body }),
     });
-    if (res.ok) {
-      const json = await res.json();
-      mutateAnnouncements(json.data as Announcement[]);
-    }
+    if (!res.ok) return false;
+    const json = await res.json();
+    mutateAnnouncements(json.data as Announcement[]);
+    return true;
   };
 
   const deleteAnnouncement = async (id: string) => {
@@ -1115,7 +1213,7 @@ export default function NotificationsAside() {
     bootApplied = true;
     const nn = raw["notice"] as { notifications: HzNotification[] } | undefined;
     const ni = raw["info"] as { notifications: HzNotification[] } | undefined;
-    setNotices([...(nn?.notifications ?? []), ...(ni?.notifications ?? [])]);
+    setSystemNotices([...(nn?.notifications ?? []), ...(ni?.notifications ?? [])]);
   };
 
   const doFetchCounts = async () => {
@@ -1288,6 +1386,9 @@ export default function NotificationsAside() {
     try {
       await doFetchCounts();
       refetchManage();
+      // Refresh whatever group is on screen, not just the counts.
+      if (openGroup() === "notices") refetchNotices();
+      if (openGroup() === "announcements") refetchAnnouncements();
     } finally {
       setRefreshing(false);
     }
@@ -1366,225 +1467,197 @@ export default function NotificationsAside() {
   const hasAnyCount = createMemo(() =>
     panelKeys().some((k) => (buckets[k]?.count ?? 0) > 0),
   );
-  createEffect(() => {
-    const total = panelKeys().reduce(
-      (sum, k) => sum + (buckets[k]?.count ?? 0),
-      0,
-    );
-    setNotifCount(total);
-  });
 
-  // Icon-only header tabs: the sr-only label is the tab's accessible name, and
-  // the SVG <title> gives pointer users the same text as a tooltip.
-  const tabItem = (value: PanelView, label: string, Icon: any, dot = false) => ({
-    value,
-    label: <span class="sr-only">{label}</span>,
-    icon: (
-      <span class="relative inline-flex">
-        <Icon class="w-4 h-4" title={label} />
-        <Show when={dot}>
-          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
-        </Show>
-      </span>
-    ),
-  });
+  // One total feeds the shell's own badge (sidebar toggle / mobile nav); the
+  // panel header leaves it out on purpose — a 14px title plus a bubble cannot
+  // fit the 256px sidebar once a locale like German spells it out, and the
+  // per-group counts already say where the unread rows are.
+  const totalUnread = createMemo(() =>
+    panelKeys().reduce((sum, k) => sum + (buckets[k]?.count ?? 0), 0),
+  );
+  createEffect(() => setNotifCount(totalUnread()));
 
-  // The header views. The auxiliary ones exist only while they have something
-  // to show, and keep the accent dot the old icon button carried while closed.
-  const headerTabs = createMemo(() => {
-    const items = [
-      tabItem("notifications", t("ui.notifications_title"), MdFillNotifications),
-    ];
-    if (booted() && auth()?.isLoggedIn) {
-      items.push(tabItem("notices", t("hq.msg_tab_notices"), MdOutlineCampaign));
-    }
-    if (otherChannels().length > 0) {
-      items.push(
-        tabItem(
-          "channels",
-          t("notify.other_channels"),
-          MdFillHome,
-          view() !== "channels",
-        ),
-      );
-    }
-    if (
-      booted() &&
-      auth()?.isLocal &&
-      (hasNewAnnouncements() || view() === "announcements" || isAdmin())
-    ) {
-      items.push(
-        tabItem(
-          "announcements",
-          t("widgets.site_announcements"),
-          MdOutlineAnnouncement,
-          hasNewAnnouncements() && view() !== "announcements",
-        ),
-      );
-    }
-    return items;
-  });
-
-  // A selected auxiliary view can lose its tab when its data clears; fall back
-  // to the main list rather than showing a panel no tab points at.
-  createEffect(() => {
-    const current = view();
-    if (!headerTabs().some((tab) => tab.value === current)) {
-      setView("notifications");
-    }
-  });
+  const statusDotClass = () =>
+    connStatus() === "live"
+      ? "bg-success"
+      : connStatus() === "polling"
+        ? "bg-warning"
+        : connStatus() === "error"
+          ? "bg-danger"
+          : "bg-subtle";
 
   return (
-    <>
+    <Card raised role="region" aria-labelledby={titleId} class="overflow-hidden">
+      <div class="px-3.5 pt-3.5 pb-2.5 flex items-center gap-2">
+        {/* Status leads the heading, the way the other sidebar widgets label
+            themselves: quiet uppercase, dot first, one action at the far right. */}
+        <Show when={booted() && auth()?.isLoggedIn}>
+          <span
+            class={`w-1.5 h-1.5 shrink-0 rounded-full ${statusDotClass()}`}
+            title={connLabel()}
+            aria-hidden="true"
+          />
+        </Show>
+        <h3
+          id={titleId}
+          title={t("ui.notifications_title")}
+          class="min-w-0 flex-1 truncate text-xs font-medium uppercase tracking-wider text-muted"
+        >
+          {t("ui.notifications_title")}
+        </h3>
+        <Show when={booted() && auth()?.isLoggedIn}>
+          <IconButton
+            label={`${t("ui.refresh")} · ${connLabel()}`}
+            size="sm"
+            onClick={manualRefresh}
+            disabled={refreshing()}
+          >
+            <MdFillRefresh class={`w-4 h-4 ${refreshing() ? "animate-spin" : ""}`} />
+          </IconButton>
+        </Show>
+      </div>
 
-      <div class="space-y-3">
-        {/* Header — the view tabs on the left, the actions on the right. The
-            title stays for screen readers only, and the connection status
-            rides on the refresh button. */}
-        <h3 class="sr-only">{t("ui.notifications_title")}</h3>
-        <div class="flex items-center gap-2">
-          <Show when={booted() && auth()?.isLoggedIn}>
-            <Tabs
-              id={tabsId}
-              variant="segmented"
-              label={t("ui.notifications_title")}
-              value={view()}
-              onChange={selectView}
-              items={headerTabs()}
+      <Show when={!booted()}>
+        <div class="p-2 space-y-1.5" role="status" aria-label={t("ui.loading")}>
+          <For each={[1, 2, 3]}>
+            {() => <Skeleton class="h-9 w-full" rounded="lg" />}
+          </For>
+        </div>
+      </Show>
+
+      <Show when={!auth.loading && !auth()?.isLoggedIn}>
+        <EmptyState size="sm" icon={<MdFillNotifications />}>
+          {t("ui.sign_in_notifs")}
+        </EmptyState>
+      </Show>
+
+      <Show when={booted() && auth()?.isLoggedIn}>
+        <div class="px-1.5 pb-1.5">
+          <Show when={systemNotices().length > 0}>
+            <div class="space-y-1 px-1 pb-1.5">
+              <For each={systemNotices()}>
+                {(n) => <Banner tone="info">{n.message}</Banner>}
+              </For>
+            </div>
+          </Show>
+
+          <Show
+            when={activeBuckets().length > 0}
+            fallback={
+              <EmptyState size="sm" class="py-5">
+                {t("ui.no_notifications")}
+              </EmptyState>
+            }
+          >
+            <For each={activeBuckets()}>
+              {(key) => (
+                <StreamGroup
+                  id={key}
+                  bucket={buckets[key]}
+                  label={sectionLabel(key)}
+                  href={sectionHref(key)}
+                  countLimit={notifyCountLimit()}
+                  open={openGroup() === key}
+                  onToggle={() => toggleGroup(key)}
+                  onDismiss={(mid) => markSeen([mid])}
+                  onNotifySeen={async (nid) => {
+                    await markNotifySeen(nid);
+                    try {
+                      await doFetchCounts();
+                    } catch {
+                      /* silent */
+                    }
+                  }}
+                  onClearAll={async (key) => {
+                    // Buckets core has no markRead branch for (files,
+                    // intros, register) fall through its switch and
+                    // clear nothing, so route those through sse_rmids
+                    // on the rows we hold instead of zeroing a count
+                    // the server will hand straight back.
+                    if (!supportsMarkRead(key)) {
+                      const mids = (unwrap(buckets)[key]?.notifications ?? [])
+                        .map((n) => n.b64mid)
+                        .filter((m): m is string => !!m);
+                      await markSeen(mids);
+                      return;
+                    }
+                    setBuckets(key, { count: 0, notifications: [], offset: -1 });
+                    try {
+                      await markAllSeen(key);
+                      await doFetchCounts();
+                    } catch {
+                      /* silent */
+                    }
+                  }}
+                  onOpenModal={(uuid) => openPost(uuid)}
+                />
+              )}
+            </For>
+          </Show>
+
+          <NoticesGroup
+            open={openGroup() === "notices"}
+            onToggle={() => toggleGroup("notices")}
+            entries={noticesFeed()}
+            loading={noticesFeed.loading}
+            error={noticesFeed.error}
+            onRetry={() => refetchNotices()}
+            onOpenModal={openPost}
+          />
+
+          <Show when={otherChannels().length > 0}>
+            <OtherChannelsGroup
+              channels={otherChannels()}
+              open={openGroup() === "channels"}
+              onToggle={() => toggleGroup("channels")}
             />
           </Show>
-          <div class="flex items-center gap-1 ml-auto">
-            <Show when={booted() && hasAnyCount()}>
-              <IconButton label={t("ui.mark_all_read")} size="sm" onClick={markAllRead}>
-                <MdFillDone_all class="w-4 h-4" />
-              </IconButton>
-            </Show>
-            <IconButton
-              label={`${t("ui.refresh")} · ${connLabel()}`}
-              size="sm"
-              onClick={manualRefresh}
-              disabled={refreshing()}
+
+          <Show
+            when={
+              auth()?.isLocal &&
+              (isAdmin() || (announcements()?.length ?? 0) > 0)
+            }
+          >
+            <AnnouncementsGroup
+              list={announcements() ?? []}
+              loading={announcements.loading}
+              isAdmin={isAdmin()}
+              open={openGroup() === "announcements"}
+              onToggle={() => toggleGroup("announcements")}
+              hasNew={hasNewAnnouncements()}
+              onCreate={createAnnouncement}
+              onDelete={deleteAnnouncement}
+            />
+          </Show>
+
+          <div class="mt-1 border-t border-rim/60 px-2 pb-0.5 pt-2 flex items-center gap-2">
+            <a
+              href="/notifications"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/notifications");
+              }}
+              class="text-[0.6875rem] text-accent-txt hover:underline"
             >
-              <MdFillRefresh
-                class={`w-4 h-4 ${refreshing() ? "animate-spin" : ""}`}
-              />
-            </IconButton>
+              {t("hq.view_all")}
+            </a>
+            {/* The header keeps one action (refresh); the global clear lives
+                here so the title can spell itself out in every locale at the
+                sidebar's 256px, and next to "View all" it is where a reader
+                already looks to leave the panel. */}
+            <Show when={hasAnyCount()}>
+              <button
+                type="button"
+                onClick={markAllRead}
+                class="ml-auto text-[0.6875rem] text-muted hover:text-txt transition-colors"
+              >
+                {t("ui.mark_all_read")}
+              </button>
+            </Show>
           </div>
         </div>
-
-        <Show when={!auth.loading && !auth()?.isLoggedIn}>
-          <p class="text-xs text-muted text-center py-4">
-            {t("ui.sign_in_notifs")}
-          </p>
-        </Show>
-
-        <Show when={!booted()}>
-          <div class="space-y-2">
-            <For each={[1, 2, 3]}>
-              {() => <div class="h-10 rounded-xl bg-elevated animate-pulse" />}
-            </For>
-          </div>
-        </Show>
-
-        <Show when={booted() && auth()?.isLoggedIn}>
-          <TabPanel tabs={tabsId} value={view()}>
-            <Switch>
-              <Match when={view() === "notices"}>
-                <NoticesSection open onOpenModal={openPost} />
-              </Match>
-              <Match when={view() === "channels"}>
-                <OtherChannelsSection channels={otherChannels()} />
-              </Match>
-              <Match when={view() === "announcements"}>
-                <AnnouncementsSection
-                  list={announcements() ?? []}
-                  loading={announcements.loading}
-                  isAdmin={isAdmin()}
-                  onCreate={createAnnouncement}
-                  onDelete={deleteAnnouncement}
-                />
-              </Match>
-              {/* The main view keeps the accordion stack exactly as it was. */}
-              <Match when={view() === "notifications"}>
-                <div class="space-y-3">
-                  <Show when={notices().length > 0}>
-                    <div class="space-y-1">
-                      <For each={notices()}>
-                        {(n) => (
-                          <div class="text-xs text-accent-txt bg-accent-muted rounded-lg px-3 py-2">
-                            {n.message}
-                          </div>
-                        )}
-                      </For>
-                    </div>
-                  </Show>
-
-                  <Show when={booted() && activeBuckets().length > 0}>
-                    <div class="space-y-2">
-                      <For each={activeBuckets()}>
-                        {(key) => (
-                          <StreamSection
-                            id={key}
-                            bucket={buckets[key]}
-                            label={sectionLabel(key)}
-                            href={sectionHref(key)}
-                            countLimit={notifyCountLimit()}
-                            open={openSection() === key}
-                            onToggle={() =>
-                              setOpenSection((cur) => (cur === key ? null : key))
-                            }
-                            onDismiss={(mid) => markSeen([mid])}
-                            onNotifySeen={async (nid) => {
-                              await markNotifySeen(nid);
-                              try {
-                                await doFetchCounts();
-                              } catch {
-                                /* silent */
-                              }
-                            }}
-                            onClearAll={async (key) => {
-                              // Buckets core has no markRead branch for (files,
-                              // intros, register) fall through its switch and
-                              // clear nothing, so route those through sse_rmids
-                              // on the rows we hold instead of zeroing a count
-                              // the server will hand straight back.
-                              if (!supportsMarkRead(key)) {
-                                const mids = (unwrap(buckets)[key]?.notifications ?? [])
-                                  .map((n) => n.b64mid)
-                                  .filter((m): m is string => !!m);
-                                await markSeen(mids);
-                                return;
-                              }
-                              setBuckets(key, { count: 0, notifications: [], offset: -1 });
-                              try {
-                                await markAllSeen(key);
-                                await doFetchCounts();
-                              } catch {
-                                /* silent */
-                              }
-                            }}
-                            onOpenModal={(uuid) => openPost(uuid)}
-                          />
-                        )}
-                      </For>
-                    </div>
-                  </Show>
-
-                  {/* Other channels now have their own tab, so they no longer
-                      suppress the main view's empty state. */}
-                  <Show when={activeBuckets().length === 0 && notices().length === 0}>
-                    <p class="flex items-center justify-center gap-1.5 py-1.5 text-[0.6875rem] text-subtle">
-                      <MdFillNotifications class="w-3.5 h-3.5 shrink-0" />
-                      {t("ui.no_notifications")}
-                    </p>
-                  </Show>
-                </div>
-              </Match>
-            </Switch>
-          </TabPanel>
-        </Show>
-
-      </div>
-    </>
+      </Show>
+    </Card>
   );
 }

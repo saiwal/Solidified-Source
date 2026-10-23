@@ -12,6 +12,7 @@ import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
 import { MdOutlineNotifications_none } from "solid-icons/md";
 import { Card } from "@ui/Card";
 import { Avatar } from "@ui/Avatar";
+import { ErrorState } from "@ui/ErrorState";
 
 
 export default function NotificationsListView() {
@@ -93,15 +94,11 @@ export default function NotificationsListView() {
 
       {/* Error state */}
       <Show when={!entries.loading && entries.error}>
-        <div class="flex flex-col items-center gap-2 py-16 text-muted">
-          <p class="text-sm">{entries.error?.message}</p>
-          <button
-            onClick={() => refetch()}
-            class="text-xs text-accent hover:underline"
-          >
-            {t("notify.retry")}
-          </button>
-        </div>
+        <ErrorState
+          message={String(entries.error?.message ?? entries.error)}
+          retry={() => refetch()}
+          retryLabel={t("notify.retry")}
+        />
       </Show>
 
       {/* Empty state */}

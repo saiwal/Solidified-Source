@@ -14,14 +14,16 @@ import {
   type CategoryWidgetProps,
 } from "./CategoryWidget";
 import { Button } from "@ui/Button";
+import { Chip } from "@ui/Chip";
+import { Skeleton } from "@ui/Skeleton";
 import { Card, CardHeader } from "@ui/Card";
 
 function CloudSkeleton() {
   const widths = [52, 70, 44, 80, 58, 64];
   return (
-    <div class="px-4 py-3 flex flex-wrap gap-1.5 animate-pulse">
+    <div class="px-4 py-3 flex flex-wrap gap-1.5">
       <For each={widths}>
-        {(w) => <div class="h-6 bg-elevated rounded-full" style={{ width: `${w}px` }} />}
+        {(w) => <Skeleton rounded="full" class="h-6" style={{ width: `${w}px` }} />}
       </For>
     </div>
   );
@@ -72,20 +74,18 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
                 const weight = cat.count / maxCount();
                 const size = Math.round(11 + weight * 6);
                 return (
-                  <button
-                    onClick={() => props.onCategoryClick?.(cat.slug)}
+                  <Chip
+                    size="sm"
+                    tone="accent"
+                    rainbow={!!props.rainbow}
+                    selected={isActive()}
                     style={{ "font-size": `${size}px`, ...rainbowStyle(cat.name, props.rainbow) }}
-                    class="inline-flex items-center px-2 py-0.5 rounded-full
-                           transition-colors leading-tight"
-                    classList={{
-                      "bg-accent text-accent-fg": isActive(),
-                      "rainbow-pill": !isActive() && !!props.rainbow,
-                      "bg-accent-muted text-accent hover:bg-accent hover:text-base": !isActive() && !props.rainbow,
-                    }}
+                    class={`leading-tight ${props.rainbow ? "" : "hover:bg-accent hover:text-accent-fg"}`}
+                    onClick={() => props.onCategoryClick?.(cat.slug)}
                     title={`${cat.count} post${cat.count !== 1 ? "s" : ""}`}
                   >
                     {cat.name}
-                  </button>
+                  </Chip>
                 );
               }}
             </For>

@@ -31,7 +31,7 @@ import {
 } from "./modal-host";
 import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 import { MdOutlineClose } from "solid-icons/md";
-import { createPopover } from "@utsukta/spa-core/lib/createPopover";
+import { Popover } from "@ui/Popover";
 import { Button, IconButton } from "@ui/Button";
 import { CountBadge } from "@ui/Badge";
 
@@ -166,50 +166,43 @@ function MinimizedItem(props: { entry: ComposerEntry; class: string; onRestore?:
 
 /**
  * The oldest minimized entries, folded into one "+N" pill. Its own component so
- * createPopover's document listeners only exist while there is an overflow.
- * The panel portals next to the strip — both live in the same top layer.
+ * Popover's document listeners only exist while there is an overflow. The panel
+ * portals to the top layer, next to the strip.
  */
-function OverflowPill(props: { entries: ComposerEntry[]; mount: Element }) {
+function OverflowPill(props: { entries: ComposerEntry[] }) {
   const { t } = useI18n();
-  const pop = createPopover({ placement: "top-start" });
   return (
-    <div ref={pop.ref} class="shrink-0">
-      <Button
-        variant="ghost"
-        size="sm"
-        class="rounded-t-lg"
-        aria-haspopup="true"
-        aria-expanded={pop.open()}
-        aria-label={t("editor.minimized_more", { count: String(props.entries.length) })}
-        onClick={() => pop.setOpen(!pop.open())}
-      >
-        <span class="flex items-center gap-1.5">
-          +{props.entries.length}
-          <UnreadBadge count={props.entries.reduce((n, e) => n + e.unread(), 0)} />
-        </span>
-      </Button>
-      <Show when={pop.open()}>
-        <Portal mount={props.mount}>
-          <div
-            ref={pop.floating}
-            style={pop.style()}
-            class="z-50 w-64 max-w-[calc(100vw-1rem)] max-h-72 overflow-y-auto rounded-lg border
-                   border-rim bg-elevated shadow-lg py-1"
-          >
-            {/* Newest first, like the strip reads from the right. */}
-            <For each={[...props.entries].reverse()}>
-              {(entry) => (
-                <MinimizedItem
-                  entry={entry}
-                  class="px-3 py-1 hover:bg-surface"
-                  onRestore={() => pop.setOpen(false)}
-                />
-              )}
-            </For>
-          </div>
-        </Portal>
-      </Show>
-    </div>
+    <Popover
+      placement="top-start"
+      class="w-64 max-w-[calc(100vw-1rem)] max-h-72 overflow-y-auto"
+      trigger={(trigger) => (
+        <Button
+          {...trigger}
+          variant="ghost"
+          size="sm"
+          class="rounded-t-lg"
+          aria-label={t("editor.minimized_more", { count: String(props.entries.length) })}
+        >
+          <span class="flex items-center gap-1.5">
+            +{props.entries.length}
+            <UnreadBadge count={props.entries.reduce((n, e) => n + e.unread(), 0)} />
+          </span>
+        </Button>
+      )}
+    >
+      {(close) => (
+        /* Newest first, like the strip reads from the right. */
+        <For each={[...props.entries].reverse()}>
+          {(entry) => (
+            <MinimizedItem
+              entry={entry}
+              class="px-3 py-1 hover:bg-surface"
+              onRestore={close}
+            />
+          )}
+        </For>
+      )}
+    </Popover>
   );
 }
 
@@ -316,7 +309,7 @@ export default function ModalHost(props: {
             aria-label={t("editor.minimized_composers")}
           >
             <Show when={overflow().length > 0}>
-              <OverflowPill entries={overflow()} mount={mount} />
+              <OverflowPill entries={overflow()} />
             </Show>
             <For each={visiblePills()}>
               {(entry) => (

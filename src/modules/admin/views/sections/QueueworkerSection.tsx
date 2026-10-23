@@ -2,10 +2,33 @@ import { createSignal, createEffect, For, Show, batch } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminQueueworker, saveQueueworkerSettings } from "../../api";
-import type { QueueworkerSettings } from "../../types";
+import type { QueueworkerSettings, WorkerJob } from "../../types";
 import { Button } from "@ui/Button";
 import { Field, Input } from "@ui/Field";
 import { Card } from "@ui/Card";
+import { DataTable } from "@ui/DataTable";
+import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
+
+const JOB_COLUMNS: DataTableColumn<WorkerJob>[] = [
+  { key: "id", header: "ID", class: "text-xs font-mono text-muted", cell: (job) => job.id },
+  {
+    key: "cmd",
+    header: "Command",
+    class: "text-xs font-mono text-txt",
+    cell: (job) => <span class="block max-w-[10rem] truncate">{job.cmd || "—"}</span>,
+  },
+  { key: "priority", header: "Priority", class: "text-xs text-muted", cell: (job) => job.priority },
+  {
+    key: "status",
+    header: "Status",
+    class: "text-xs hidden sm:table-cell",
+    cell: (job) => (
+      <Show when={job.reservation_id} fallback={<span class="text-muted">queued</span>}>
+        <span class="text-warning-txt">active</span>
+      </Show>
+    ),
+  },
+];
 
 export default function QueueworkerSection() {
   const [data, { refetch }] = createQueryResource("admin-queueworker", fetchAdminQueueworker);
@@ -140,37 +163,12 @@ export default function QueueworkerSection() {
                 <p class="text-xs font-semibold text-muted uppercase tracking-wider">
                   Queued jobs ({d().jobs.length})
                 </p>
-                <div class="rounded-lg border border-rim overflow-x-auto">
-                  <table class="w-full text-xs">
-                    <thead>
-                      <tr class="border-b border-rim bg-elevated">
-                        <th class="px-3 py-2 text-left font-medium text-muted">ID</th>
-                        <th class="px-3 py-2 text-left font-medium text-muted">Command</th>
-                        <th class="px-3 py-2 text-left font-medium text-muted">Priority</th>
-                        <th class="px-3 py-2 text-left font-medium text-muted hidden sm:table-cell">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <For each={d().jobs}>
-                        {(job) => (
-                          <tr class="border-b border-rim last:border-0 hover:bg-elevated/50 transition-colors">
-                            <td class="px-3 py-2 font-mono text-muted">{job.id}</td>
-                            <td class="px-3 py-2 font-mono text-txt truncate max-w-[10rem]">{job.cmd || "—"}</td>
-                            <td class="px-3 py-2 text-muted">{job.priority}</td>
-                            <td class="px-3 py-2 hidden sm:table-cell">
-                              <Show
-                                when={job.reservation_id}
-                                fallback={<span class="text-muted">queued</span>}
-                              >
-                                <span class="text-warning-txt">active</span>
-                              </Show>
-                            </td>
-                          </tr>
-                        )}
-                      </For>
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  columns={JOB_COLUMNS}
+                  rows={d().jobs}
+                  rowKey={(job) => job.id}
+                  class="rounded-lg border border-rim"
+                />
               </div>
             </Show>
 

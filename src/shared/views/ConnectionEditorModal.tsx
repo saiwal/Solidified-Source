@@ -16,7 +16,8 @@ import { MdOutlineCheck, MdOutlineClose, MdOutlineRefresh, MdOutlineWarning } fr
 import { A } from "@solidjs/router";
 
 import { Modal, ModalPanel } from "@ui/Modal";
-import { Button, IconButton } from "@ui/Button";
+import { Button, IconButton, buttonClass } from "@ui/Button";
+import { Banner } from "@ui/Banner";
 import { Field, Select } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
@@ -452,19 +453,21 @@ function ConnectionEditorModal(props: Props) {
                     feature is on, so without the warning these rules look
                     active while core ignores them. */}
                 <Show when={!isFeatureEnabled("connfilter")}>
-                  <div class="flex flex-wrap items-center gap-2 px-3 py-2 rounded-lg
-                              bg-warning/10 text-warning-txt">
-                    <MdOutlineWarning size={16} class="shrink-0" />
-                    <span class="flex-1 min-w-0 text-xs">{t("filters.connfilter_off")}</span>
-                    <A
-                      href="/settings/features"
-                      onClick={props.onClose}
-                      class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium
-                             bg-overlay text-muted hover:bg-elevated hover:text-txt transition-colors"
-                    >
-                      {t("filters.connfilter_enable")}
-                    </A>
-                  </div>
+                  <Banner
+                    tone="warning"
+                    icon={<MdOutlineWarning size={16} />}
+                    actions={
+                      <A
+                        href="/settings/features"
+                        onClick={props.onClose}
+                        class={buttonClass("ghost", "sm")}
+                      >
+                        {t("filters.connfilter_enable")}
+                      </A>
+                    }
+                  >
+                    <span class="text-xs">{t("filters.connfilter_off")}</span>
+                  </Banner>
                 </Show>
                 <div>
                   <label class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">

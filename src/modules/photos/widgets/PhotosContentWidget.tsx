@@ -55,6 +55,7 @@ import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
 import { EmptyState } from "@ui/EmptyState";
 import { Menu, MenuItem } from "@ui/Menu";
+import { FileDropZone } from "@ui/FileDropZone";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -854,7 +855,7 @@ function AlbumGrid() {
 
   const sel = createPhotoSelection(() => nick() ?? '', sortedPhotos);
 
-  async function handleFiles(files: FileList) {
+  async function handleFiles(files: FileList | File[]) {
     const n      = nick() ?? '';
     const folder = datum() ?? '';
     const album  = albumName();
@@ -1040,7 +1041,16 @@ function AlbumGrid() {
       <SelectionBar sel={sel} folder={datum()} />
 
       <Show when={photos().length === 0}>
-        <EmptyState>{t("photos.no_photos")}</EmptyState>
+        <Show when={canWrite()} fallback={<EmptyState>{t("photos.no_photos")}</EmptyState>}>
+          <FileDropZone
+            onFiles={(files) => void handleFiles(files)}
+            accept="image/*"
+            multiple
+            label={t("photos.upload")}
+            hint={t("photos.drop_to_upload")}
+            class="mx-auto max-w-md"
+          />
+        </Show>
       </Show>
 
       {/* Share composer — Show forces remount so initialBody is captured correctly */}

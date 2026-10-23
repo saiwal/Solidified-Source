@@ -27,7 +27,8 @@ void motion;
 
 import { entryKey, type AclMode } from "./acl-mode";
 import { Button, IconButton } from "@ui/Button";
-import { Input } from "@ui/Field";
+import { RemovableChip } from "@ui/Chip";
+import { SearchField } from "@ui/SearchField";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 
@@ -243,13 +244,14 @@ const AclPicker: Component<AclPickerProps> = (props) => {
           <Show when={props.mode === "custom"}>
           {/* Search */}
           <div class="px-3 py-2 border-b border-rim shrink-0">
-            <Input
+            <SearchField
               size="sm"
               class="w-full"
-              type="text"
-              placeholder={t("editor.acl_search_placeholder")}
               value={query()}
-              onInput={(e) => setQuery(e.currentTarget.value)}
+              onInput={setQuery}
+              label={t("editor.acl_search_placeholder")}
+              clearLabel={t("ui.clear")}
+              placeholder={t("editor.acl_search_placeholder")}
             />
           </div>
 
@@ -259,42 +261,32 @@ const AclPicker: Component<AclPickerProps> = (props) => {
               <For each={[...props.allowEntries]}>
                 {(key) => {
                   const conn = resolvedCache().get(key);
+                  const name = () => conn?.name ?? key.slice(0, 14) + "…";
                   return (
-                    <span
-                      class="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-                                 bg-success-muted border border-success/40
-                                 text-success-txt"
+                    <RemovableChip
+                      tone="success"
+                      icon={<MdFillCheck class="w-3 h-3" />}
+                      removeLabel={`${t("ui.remove")} ${name()}`}
+                      onRemove={() => conn && props.onToggle(conn, "allow")}
                     >
-                      <MdFillCheck class="w-3 h-3 shrink-0" /> {conn?.name ?? key.slice(0, 14) + "…"}
-                      <button
-                        type="button"
-                        onClick={() => conn && props.onToggle(conn, "allow")}
-                        class="hover:text-success-txt leading-none"
-                      >
-                        ✕
-                      </button>
-                    </span>
+                      {name()}
+                    </RemovableChip>
                   );
                 }}
               </For>
               <For each={[...props.denyEntries]}>
                 {(key) => {
                   const conn = resolvedCache().get(key);
+                  const name = () => conn?.name ?? key.slice(0, 14) + "…";
                   return (
-                    <span
-                      class="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-                                 bg-danger-muted border border-danger/40
-                                 text-danger-txt"
+                    <RemovableChip
+                      tone="danger"
+                      icon={<span class="font-bold">✕</span>}
+                      removeLabel={`${t("ui.remove")} ${name()}`}
+                      onRemove={() => conn && props.onToggle(conn, "deny")}
                     >
-                      ✕ {conn?.name ?? key.slice(0, 14) + "…"}
-                      <button
-                        type="button"
-                        onClick={() => conn && props.onToggle(conn, "deny")}
-                        class="hover:text-danger-txt leading-none"
-                      >
-                        ✕
-                      </button>
-                    </span>
+                      {name()}
+                    </RemovableChip>
                   );
                 }}
               </For>

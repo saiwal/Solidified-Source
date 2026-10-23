@@ -17,6 +17,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { Button } from "@ui/Button";
+import { Chip } from "@ui/Chip";
+import { Skeleton } from "@ui/Skeleton";
 import { Card, CardHeader } from "@ui/Card";
 
 // ---------------------------------------------------------------------------
@@ -53,11 +55,12 @@ export async function fetchTags(params: {
 function TagSkeleton() {
   const widths = [60, 80, 45, 70, 55, 90, 50, 65];
   return (
-    <div class="px-4 py-3 flex flex-wrap gap-1.5 animate-pulse">
+    <div class="px-4 py-3 flex flex-wrap gap-1.5">
       <For each={widths}>
         {(w) => (
-          <div
-            class="h-6 bg-elevated rounded-full"
+          <Skeleton
+            rounded="full"
+            class="h-6"
             style={{ width: `${w}px` }}
           />
         )}
@@ -140,21 +143,19 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
                 const weight = tag.count / maxCount();
                 const size = Math.round(11 + weight * 6);
                 return (
-                  <button
-                    onClick={() => props.onTagClick?.(tag.name)}
+                  <Chip
+                    size="sm"
+                    tone="accent"
+                    rainbow={!!props.rainbow}
+                    selected={isActive()}
                     style={{ "font-size": `${size}px`, ...rainbowStyle(tag.name, props.rainbow) }}
-                    class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full
-                           transition-colors leading-tight"
-                    classList={{
-                      "bg-accent text-accent-fg": isActive(),
-                      "rainbow-pill": !isActive() && !!props.rainbow,
-                      "bg-accent-muted text-accent hover:bg-accent hover:text-base": !isActive() && !props.rainbow,
-                    }}
+                    class={`leading-tight ${props.rainbow ? "" : "hover:bg-accent hover:text-accent-fg"}`}
+                    onClick={() => props.onTagClick?.(tag.name)}
                     title={`${tag.count} post${tag.count !== 1 ? "s" : ""}`}
                   >
                     <span>#</span>
                     <span>{tag.name}</span>
-                  </button>
+                  </Chip>
                 );
               }}
             </For>

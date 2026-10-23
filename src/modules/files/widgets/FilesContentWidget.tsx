@@ -74,6 +74,7 @@ import { Modal } from "@ui/Modal";
 import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { EmptyState } from "@ui/EmptyState";
+import { ErrorState } from "@ui/ErrorState";
 type ModalKind = "rename" | "moveCopy" | "categories";
 
 type ViewMode   = "list" | "grid";
@@ -1206,13 +1207,12 @@ export default function FilesContentWidget() {
         <Show
           when={!files.error && !(cat() && catHits.error)}
           fallback={
-            <div class="py-10 text-center space-y-2">
-              <p class="text-sm text-danger-txt">{t("files_mod.load_failed")}</p>
-              <p class="text-xs text-muted">{String(files.error ?? catHits.error)}</p>
-              <button onClick={() => refetch()} class="text-xs text-accent hover:underline">
-                {t("files_mod.retry")}
-              </button>
-            </div>
+            <ErrorState
+              message={t("files_mod.load_failed")}
+              detail={String(files.error ?? catHits.error)}
+              retry={() => refetch()}
+              retryLabel={t("files_mod.retry")}
+            />
           }
         >
           <Show

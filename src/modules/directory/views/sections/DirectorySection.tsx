@@ -13,9 +13,13 @@ import type { DirectoryEntry } from "../../people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import CardShell from "@/shared/stream/CardShell";
 import { Button } from "@ui/Button";
-import { Input, Select } from "@ui/Field";
+import { Select } from "@ui/Field";
+import { SearchField } from "@ui/SearchField";
 import { EmptyState } from "@ui/EmptyState";
 import { Tabs } from "@ui/Tabs";
+import { Chip } from "@ui/Chip";
+import { Skeleton, SkeletonText } from "@ui/Skeleton";
+import { LoadMore } from "@ui/LoadMore";
 
 type Order = "date" | "rdate" | "alphabetic" | "ralpha";
 
@@ -46,11 +50,12 @@ export default function DirectorySection() {
 
       {/* ── Search row ── */}
       <form onSubmit={handleSearch} class="flex gap-2">
-        <Input
+        <SearchField
           class="flex-1"
-          type="text"
           value={searchInput()}
-          onInput={(e) => setSearchInput(e.currentTarget.value)}
+          onInput={setSearchInput}
+          label={t("directory.search")}
+          clearLabel={t("ui.clear")}
           placeholder="Name, address, or keyword…"
         />
         <Button class="shrink-0" type="submit">
@@ -93,24 +98,20 @@ export default function DirectorySection() {
         <span class="hidden sm:block w-px h-5 bg-rim" />
 
         {/* Forums chip */}
-        <Button
-          variant="ghost"
-          size="sm"
-          pressed={pubforums() === 1}
+        <Chip
+          selected={pubforums() === 1}
           onClick={() => setPubforums(pubforums() === 1 ? 0 : 1)}
         >
           {t("directory.filter_forums_only")}
-        </Button>
+        </Chip>
 
         {/* Safe mode chip */}
-        <Button
-          variant="ghost"
-          size="sm"
-          pressed={safe() === 1}
+        <Chip
+          selected={safe() === 1}
           onClick={() => setSafe(safe() === 1 ? 0 : 1)}
         >
           {t("directory.filter_safe_mode")}
-        </Button>
+        </Chip>
       </div>
 
       {/* ── Skeleton ── */}
@@ -133,13 +134,12 @@ export default function DirectorySection() {
           </div>
         </Show>
 
-        <Show when={hasMore() && !loadingMore()}>
-          <div class="flex justify-center py-4">
-            <Button variant="ghost" onClick={loadMoreDirectory}>
-              {t("directory.load_more")}
-            </Button>
-          </div>
-        </Show>
+        <LoadMore
+          hasMore={hasMore() && !loadingMore()}
+          loading={loadingMore()}
+          label={t("directory.load_more")}
+          onClick={loadMoreDirectory}
+        />
 
         <Show when={loadingMore()}>
           <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
@@ -160,16 +160,15 @@ export default function DirectorySection() {
 
 function CardSkeleton() {
   return (
-    <div class="rounded-xl border border-rim bg-surface p-4 space-y-3 animate-pulse">
+    <div class="rounded-xl border border-rim bg-surface p-4 space-y-3">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-full bg-overlay shrink-0" />
+        <Skeleton rounded="full" tone="overlay" class="w-12 h-12" />
         <div class="flex-1 space-y-2">
-          <div class="h-4 bg-overlay rounded w-3/4" />
-          <div class="h-3 bg-overlay rounded w-1/2" />
+          <Skeleton tone="overlay" class="h-4 w-3/4" />
+          <Skeleton tone="overlay" class="h-3 w-1/2" />
         </div>
       </div>
-      <div class="h-3 bg-overlay rounded w-full" />
-      <div class="h-3 bg-overlay rounded w-2/3" />
+      <SkeletonText lines={2} tone="overlay" />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import SubPageContent from "@/shared/views/SubPageContent";
 import CardShell from "@/shared/stream/CardShell";
 import { resetReveal } from "@/shared/stream/reveal";
 import { Button, IconButton } from "@ui/Button";
+import { Chip } from "@ui/Chip";
 import { Input, Select } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
@@ -531,19 +532,13 @@ export default function ContactRolesSection() {
                   <Show
                     when={!pill.system && pill.name !== null && pill.name !== ""}
                     fallback={
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        pressed={selected() === pill.name}
+                      <Chip
+                        selected={selected() === pill.name}
+                        count={pill.count}
                         onClick={() => { resetReveal(); setActiveRole(pill.name); }}
                       >
                         {pill.label}
-                        <span class={`text-xs font-medium tabular-nums ${
-                          selected() === pill.name ? "opacity-80" : "text-muted"
-                        }`}>
-                          {pill.count}
-                        </span>
-                      </Button>
+                      </Chip>
                     }
                   >
                     <CustomRolePill

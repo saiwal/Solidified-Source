@@ -28,6 +28,9 @@ export const ui: RawDictionary["ui"] = {
   write_reply:            "उत्तर लिखें…",
   reply_btn:              "जवाब दें",
   cancel_btn:             "रद्द करें",
+  remove:                 "हटाएँ",
+  clear:                  "साफ़ करें",
+  copied:                 "कॉपी किया गया",
   // Siteinfo
   siteinfo_about:         "इस साइट के बारे में",
   siteinfo_admin:         "प्रशासक",

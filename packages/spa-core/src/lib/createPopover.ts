@@ -35,12 +35,16 @@ export function createPopover(options: { placement?: Placement } = {}) {
   };
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
 
-  document.addEventListener("pointerdown", onPointer);
-  document.addEventListener("keydown", onKey);
-  onCleanup(() => {
-    document.removeEventListener("pointerdown", onPointer);
-    document.removeEventListener("keydown", onKey);
-  });
+  // SSR-safe: the primitive is renderable in the ui.check fixture, which has
+  // no document. The client path is unchanged.
+  if (typeof document !== "undefined") {
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    onCleanup(() => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    });
+  }
 
   // Solid runs render effects (the panel's ref) before user effects, so
   // floatEl is assigned by the time this fires after open() flips true.

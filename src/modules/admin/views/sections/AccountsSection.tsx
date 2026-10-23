@@ -1,17 +1,20 @@
-import { createSignal, createUniqueId, For, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { MdOutlineClose } from "solid-icons/md";
 import SubPageContent from "@/shared/views/SubPageContent";
-import { Modal } from "@ui/Modal";
 import {
   fetchAdminAccounts, adminAccountAction, adminPendingAction,
   fetchAdminServiceClasses, setAccountServiceClass, setAccountExpires, setAccountPassword,
 } from "../../api";
 import type { AdminAccount } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Field, Input, Select } from "@ui/Field";
-import { CardHeader } from "@ui/Card";
+import { MenuItem, MenuSeparator } from "@ui/Menu";
+import { MenuButton } from "@ui/MenuButton";
+import { Sheet } from "@ui/Sheet";
 import { Badge } from "@ui/Badge";
+import { Banner } from "@ui/Banner";
 
 export default function AccountsSection() {
   const { t } = useI18n();
@@ -36,9 +39,9 @@ export default function AccountsSection() {
   return (
     <SubPageContent title={t("admin.accounts_title")} description={t("admin.accounts_desc")} wide>
       <Show when={result.error}>
-        <div class="rounded-lg border border-danger/40 bg-danger-muted px-4 py-3 text-sm text-danger-txt mb-4">
+        <Banner tone="danger" role="alert" class="mb-4">
           Error: {String(result.error?.message ?? result.error)}
-        </div>
+        </Banner>
       </Show>
 
       <Show when={result()} fallback={<Skeleton />}>
@@ -226,20 +229,19 @@ function AccountActions(props: {
   const [editing, setEditing] = createSignal(false);
   const isBlocked = () => Number(props.account.blocked) > 0;
   return (
-    <div class="flex flex-wrap items-center gap-1.5">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => props.onAct(props.account.account_id, isBlocked() ? "unblock" : "block")}
-      >
-        {isBlocked() ? t("admin.unblock") : t("admin.block")}
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-        {t("admin.edit")}
-      </Button>
-      <Button variant="danger" size="sm" onClick={() => props.onAct(props.account.account_id, "delete")}>
-        {t("admin.delete")}
-      </Button>
+    <div class="flex items-center">
+      <MenuButton label={t("admin.col_actions")} size="sm" variant="ghost" menuClass="w-48">
+        <MenuItem onClick={() => props.onAct(props.account.account_id, isBlocked() ? "unblock" : "block")}>
+          {isBlocked() ? t("admin.unblock") : t("admin.block")}
+        </MenuItem>
+        <MenuItem onClick={() => setEditing(true)}>
+          {t("admin.edit")}
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem danger onClick={() => props.onAct(props.account.account_id, "delete")}>
+          {t("admin.delete")}
+        </MenuItem>
+      </MenuButton>
       <Show when={editing()}>
         <AccountEditModal
           account={props.account}
@@ -260,7 +262,6 @@ function AccountEditModal(props: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const titleId = createUniqueId();
   const { t } = useI18n();
   const [classes] = createQueryResource("admin-service-classes", fetchAdminServiceClasses);
   const [serviceClass, setServiceClass] = createSignal(props.account.account_service_class || "");
@@ -310,15 +311,20 @@ function AccountEditModal(props: {
   }
 
   return (
-    <Modal onClose={props.onClose} labelledBy={titleId} class="z-50">
-      <div class="w-full max-w-sm rounded-xl border border-rim bg-base shadow-xl">
-        <CardHeader class="flex items-center justify-between">
-          <h3 id={titleId} class="text-sm font-semibold text-txt">{t("admin.edit_account_title")}</h3>
-          <button onClick={props.onClose} aria-label={t("layout.close")}
-                    class="text-muted hover:text-txt text-lg leading-none">×</button>
-        </CardHeader>
+    <Sheet
+      onClose={props.onClose}
+      label={t("admin.edit_account_title")}
+      side="right"
+      class="p-4 space-y-4"
+    >
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-txt">{t("admin.edit_account_title")}</h3>
+        <IconButton label={t("layout.close")} size="sm" onClick={props.onClose}>
+          <MdOutlineClose size={16} />
+        </IconButton>
+      </div>
 
-        <form onSubmit={onSubmit} class="p-4 space-y-4">
+      <form onSubmit={onSubmit} class="space-y-4">
           <div class="space-y-1">
             <Field label={t("admin.service_class_label")}>
               <Select
@@ -360,28 +366,28 @@ function AccountEditModal(props: {
             <label class="text-sm font-medium text-txt block pt-3">{t("admin.reset_password_label")}</label>
             <p class="text-xs text-muted">{t("admin.reset_password_hint")}</p>
             <div class="flex items-center gap-2">
-              <input
+              <Input
+                class="flex-1"
                 type={showPassword() ? "text" : "password"}
                 value={newPassword()}
                 onInput={(e) => setNewPassword(e.currentTarget.value)}
                 placeholder={t("admin.new_password_label")}
+                aria-label={t("admin.new_password_label")}
                 autocomplete="new-password"
-                class="flex-1 px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
-                       focus:outline-none focus:border-accent"
               />
               <Button variant="ghost" size="sm" onClick={() => setShowPassword((v) => !v)}>
                 {showPassword() ? t("admin.hide_password") : t("admin.show_password")}
               </Button>
             </div>
             <Show when={newPassword()}>
-              <input
+              <Input
+                class="w-full"
                 type={showPassword() ? "text" : "password"}
                 value={confirmPassword()}
                 onInput={(e) => setConfirmPassword(e.currentTarget.value)}
                 placeholder={t("admin.confirm_password_label")}
+                aria-label={t("admin.confirm_password_label")}
                 autocomplete="new-password"
-                class="w-full px-3 py-1.5 text-sm rounded-lg border border-rim bg-surface text-txt
-                       focus:outline-none focus:border-accent"
               />
             </Show>
             <Button variant="ghost" size="sm" onClick={generatePassword}>
@@ -402,8 +408,7 @@ function AccountEditModal(props: {
             </Button>
           </div>
         </form>
-      </div>
-    </Modal>
+    </Sheet>
   );
 }
 

@@ -1,7 +1,7 @@
 // solidified's implementation of the field contract (spa-core types/ui.types.ts):
-// one bordered-box look for text inputs, selects and textareas. No default
-// width — the call site says w-full / w-36 / flex-1, so a width class never has
-// to fight one baked in here. Every field also carries `hz-input` hook classes.
+// one underlined look for text inputs, selects and textareas. No default width —
+// the call site says w-full / w-36 / flex-1, so a width class never has to fight
+// one baked in here. Every field also carries `hz-input` hook classes.
 //
 // <Field> wraps a label, hint and error around one of these. It hands its id
 // down through context, so the label's `for`, the control's id and its
@@ -43,13 +43,16 @@ function fieldAttrs() {
   };
 }
 
-const SIZE: Record<FieldSize, string> = { md: "px-3 py-2 text-sm", sm: "px-2 py-1.5 text-xs" };
+const SIZE: Record<FieldSize, string> = { md: "px-0 py-2 text-sm", sm: "px-0 py-1.5 text-xs" };
 
+// Underline, not a box: only the bottom rule carries the field, and focus turns
+// it into a 2px accent line via an inset shadow (no layout shift). Corners no
+// longer apply; a field is a line, not a surface.
 export function inputClass(size: FieldSize = "md"): string {
   return (
-    `hz-input hz-input-${size} rounded-lg border border-rim bg-elevated text-txt placeholder:text-muted ` +
-    `focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 ` +
-    `aria-invalid:border-danger aria-invalid:focus:ring-danger/30 disabled:opacity-60 transition-colors ${SIZE[size]}`
+    `hz-input hz-input-${size} rounded-none border-x-0 border-t-0 border-b border-rim bg-transparent text-txt placeholder:text-muted ` +
+    `focus:outline-none focus:border-accent focus:shadow-[inset_0_-2px_0_0_var(--color-accent)] ` +
+    `aria-invalid:border-danger disabled:opacity-60 transition-colors ${SIZE[size]}`
   );
 }
 

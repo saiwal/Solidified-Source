@@ -25,11 +25,10 @@ import {
   MdFillPublic,
   MdOutlineArrow_back,
   MdFillOpen_in_new,
-  MdOutlineContent_copy,
-  MdOutlineCheck,
   MdOutlineMail,
 } from "solid-icons/md";
-import { Button, IconButton } from "@ui/Button";
+import { Button } from "@ui/Button";
+import { CopyButton } from "@ui/CopyButton";
 import { Card } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
@@ -174,7 +173,6 @@ export default function ChanView() {
   const [editConn, setEditConn] = createSignal<Connection | null>(null);
   const [editOpen, setEditOpen] = createSignal(false);
   const [disconnected, setDisconnected] = createSignal(false);
-  const [addressCopied, setAddressCopied] = createSignal(false);
   // Handed to ModalHost so a half-written DM survives navigation. The scope
   // carries the recipient, so DMs to two different people are two composers
   // with two drafts rather than one that overwrites the other.
@@ -199,13 +197,6 @@ export default function ChanView() {
         }],
       },
     });
-
-  function copyAddress(address: string) {
-    navigator.clipboard.writeText(address).then(() => {
-      setAddressCopied(true);
-      setTimeout(() => setAddressCopied(false), 1500);
-    });
-  }
 
   const x = () => xchan() ?? fallback();
   const isConnected = () => !disconnected() && (x()?.is_connected ?? false);
@@ -330,19 +321,13 @@ export default function ChanView() {
                     <Show when={xdata().address}>
                       <p class="flex items-center gap-1 text-sm text-muted mt-0.5">
                         <span class="truncate">@{xdata().address}</span>
-                        <IconButton
+                        <CopyButton
+                          value={xdata().address}
                           label={t("ui.copy_address")}
+                          copiedLabel={t("ui.copied")}
                           size="sm"
                           class="shrink-0"
-                          onClick={() => copyAddress(xdata().address)}
-                        >
-                          <Show
-                            when={addressCopied()}
-                            fallback={<MdOutlineContent_copy size={13} />}
-                          >
-                            <MdOutlineCheck size={13} class="text-accent" />
-                          </Show>
-                        </IconButton>
+                        />
                       </p>
                     </Show>
                     <Show when={xdata().pdesc}>

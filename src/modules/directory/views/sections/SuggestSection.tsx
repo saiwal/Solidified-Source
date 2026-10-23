@@ -8,7 +8,7 @@ import DirectoryEntryModal from "../DirectoryEntryModal";
 import type { DirectoryEntry } from "../../people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import CardShell from "@/shared/stream/CardShell";
-import { Button } from "@ui/Button";
+import { LoadMore } from "@ui/LoadMore";
 import { EmptyState } from "@ui/EmptyState";
 
 export default function SuggestSection() {
@@ -44,13 +44,12 @@ export default function SuggestSection() {
           </div>
         </Show>
 
-        <Show when={hasMore() && !loadingMore()}>
-          <div class="flex justify-center py-4">
-            <Button variant="ghost" onClick={loadMoreDirectory}>
-              {t("directory.load_more")}
-            </Button>
-          </div>
-        </Show>
+        <LoadMore
+          hasMore={hasMore() && !loadingMore()}
+          loading={loadingMore()}
+          label={t("directory.load_more")}
+          onClick={loadMoreDirectory}
+        />
 
         <Show when={loadingMore()}>
           <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">

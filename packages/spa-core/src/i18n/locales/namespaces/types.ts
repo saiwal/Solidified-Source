@@ -204,6 +204,9 @@ export type RawDictionary = {
     write_reply:             string;
     reply_btn:               string;
     cancel_btn:              string;
+    remove:                  string;
+    clear:                   string;
+    copied:                  string;
     // Siteinfo
     siteinfo_about:          string;
     siteinfo_admin:          string;

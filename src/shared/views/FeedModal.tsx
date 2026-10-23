@@ -4,18 +4,18 @@
 // module; tag and articles-only feeds point at the SPA's own /spa/feed
 // (core's /feed has no tag or article-type filter — see Handlers/Feed.php).
 
-import { createSignal, createMemo, For, Show, type Component } from "solid-js";
+import { createMemo, For, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories, type CategoryItem } from "@/shared/stream/components/CategoryWidget";
 import { fetchTags, type TagItem } from "@/shared/stream/components/TagWidget";
-import { MdOutlineContent_copy as MdOutlineContentCopy, MdOutlineCheck } from "solid-icons/md";
 import { BiRegularLinkExternal, BiRegularRss } from "solid-icons/bi";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { EmptyState } from "@ui/EmptyState";
-import { IconButton } from "@ui/Button";
+import { CopyButton } from "@ui/CopyButton";
+import { iconButtonClass } from "@ui/Button";
 
 interface Props {
   channelNick: string;
@@ -33,16 +33,6 @@ function feedRow(label: string, url: string): FeedRow {
 
 const FeedRowItem: Component<{ row: FeedRow; variant?: "all" }> = (props) => {
   const { t } = useI18n();
-  const [copied, setCopied] = createSignal(false);
-
-  function copy(e: MouseEvent) {
-    e.preventDefault();
-    navigator.clipboard.writeText(props.row.url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }
-
   const isAll = props.variant === "all";
 
   return (
@@ -69,20 +59,17 @@ const FeedRowItem: Component<{ row: FeedRow; variant?: "all" }> = (props) => {
         rel="noopener noreferrer"
         title={t("widgets.open_feed")}
         aria-label={t("widgets.open_feed")}
-        class="p-1 rounded text-muted hover:text-accent hover:bg-surface transition-colors shrink-0"
+        class={`${iconButtonClass()} shrink-0`}
       >
         <BiRegularLinkExternal size={15} />
       </a>
-      <IconButton
+      <CopyButton
+        value={props.row.url}
         label={t("widgets.copy_feed_url")}
+        copiedLabel={t("ui.copied")}
         size="sm"
         class="shrink-0"
-        onClick={copy}
-      >
-        <Show when={copied()} fallback={<MdOutlineContentCopy size={15} />}>
-          <MdOutlineCheck size={15} class="text-accent" />
-        </Show>
-      </IconButton>
+      />
     </li>
   );
 };

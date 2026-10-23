@@ -11,7 +11,7 @@ export default function QuickComposeWidget() {
           (post, dm, webpage, wiki, article, card, event) and 7 x 40px + gaps
           overflows a 360px masonry cell, where flex-wrap left a single
           centred orphan on a second row. */}
-      <div class="flex gap-3 py-1 px-1 overflow-x-auto snap-x">
+      <div class="flex flex-wrap gap-2 py-1 px-1">
         <For each={actions()}>
           {(action) => (
             <button

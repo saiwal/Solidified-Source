@@ -39,6 +39,7 @@ import {
 } from "@/modules/hq/widgets/MessageList";
 import { Badge, CountBadge } from "@ui/Badge";
 import { buttonClass } from "@ui/Button";
+import { ProgressBar } from "@ui/ProgressBar";
 
 const FOLDER_PREFIX = "folder/";
 
@@ -279,20 +280,14 @@ export default function InboxView() {
             unknown), then fills as message bodies are stored. */}
         <Show when={syncProgress()}>
           {(p) => (
-            <div
-              role="progressbar"
-              aria-label={t("hq.syncing_offline")}
-              aria-valuemin={0}
-              aria-valuemax={p().total || undefined}
-              aria-valuenow={p().total ? p().done : undefined}
-              class="shrink-0 h-0.5 bg-overlay overflow-hidden"
-            >
-              <div
-                class="h-full bg-accent transition-[width] duration-300"
-                classList={{ "w-full animate-pulse": !p().total }}
-                style={p().total ? { width: `${(p().done / p().total) * 100}%` } : undefined}
-              />
-            </div>
+            <ProgressBar
+              label={t("hq.syncing_offline")}
+              value={p().done}
+              max={p().total || undefined}
+              indeterminate={!p().total}
+              size="xs"
+              class="shrink-0"
+            />
           )}
         </Show>
 

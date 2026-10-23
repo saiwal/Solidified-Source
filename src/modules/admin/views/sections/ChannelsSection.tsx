@@ -9,6 +9,7 @@ import { Input } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { EmptyState } from "@ui/EmptyState";
+import { Banner } from "@ui/Banner";
 
 export default function ChannelsSection() {
   const { t } = useI18n();
@@ -39,9 +40,9 @@ export default function ChannelsSection() {
   return (
     <SubPageContent title={t("admin.channels_title")} description={t("admin.channels_desc")}>
       <Show when={result.error}>
-        <div class="rounded-lg border border-danger/40 bg-danger-muted px-4 py-3 text-sm text-danger-txt">
+        <Banner tone="danger" role="alert">
           Error: {String(result.error?.message ?? result.error)}
-        </div>
+        </Banner>
       </Show>
 
       <Show when={result()} fallback={<Skeleton />}>

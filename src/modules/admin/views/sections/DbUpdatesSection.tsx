@@ -1,8 +1,11 @@
-import { For, Show } from "solid-js";
+import { Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminDbUpdates } from "../../api";
+import type { DbUpdate } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { DataTable } from "@ui/DataTable";
+import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
 
 export default function DbUpdatesSection() {
   const { t } = useI18n();
@@ -20,40 +23,27 @@ export default function DbUpdatesSection() {
             </Show>
 
             <Show when={list().length > 0}>
-              <div class="rounded-lg border border-rim overflow-x-auto">
-                <table class="w-full text-xs">
-                  <thead>
-                    <tr class="border-b border-rim bg-elevated">
-                      <For each={Object.keys(list()[0] ?? {})}>
-                        {(col) => (
-                          <th class="px-3 py-2 text-left font-medium text-muted">{col}</th>
-                        )}
-                      </For>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <For each={list()}>
-                      {(row) => (
-                        <tr class="border-b border-rim last:border-0 hover:bg-elevated/50 transition-colors">
-                          <For each={Object.values(row)}>
-                            {(v) => (
-                              <td class="px-3 py-2 text-txt truncate max-w-[12rem]">
-                                {String(v ?? "—")}
-                              </td>
-                            )}
-                          </For>
-                        </tr>
-                      )}
-                    </For>
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={dbColumns(list()[0])}
+                rows={list()}
+                rowKey={(row) => Object.values(row).join("|")}
+                class="rounded-lg border border-rim"
+              />
             </Show>
           </div>
         )}
       </Show>
     </SubPageContent>
   );
+}
+
+function dbColumns(sample: DbUpdate | undefined): DataTableColumn<DbUpdate>[] {
+  return Object.keys(sample ?? {}).map((key) => ({
+    key,
+    header: key,
+    class: "text-xs max-w-[12rem] truncate",
+    cell: (row) => String(row[key] ?? "—"),
+  }));
 }
 
 function Skeleton() {
