@@ -281,7 +281,7 @@ function MasonryCard(props: {
         {/* end !eventData */}
         {/* Actions */}
         <div
-          class="flex items-center gap-3 mt-3 pt-3 border-t border-rim"
+          class="flex items-center gap-1 mt-3 pt-3 border-t border-rim"
           onClick={(e) => e.stopPropagation()}
         >
           <Show when={canInteract()}>
@@ -351,7 +351,7 @@ function SkeletonMasonryCard(props: { index: number }) {
       <div
         class={`${SKELETON_HEIGHTS[props.index % SKELETON_HEIGHTS.length]} bg-accent-muted rounded-lg`}
       />
-      <div class="flex items-center gap-3 mt-3 pt-3 border-t border-rim">
+      <div class="flex items-center gap-1 mt-3 pt-3 border-t border-rim">
         <div class="h-2.5 bg-accent-muted rounded w-6" />
         <div class="h-2.5 bg-accent-muted rounded w-6" />
       </div>
