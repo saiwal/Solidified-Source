@@ -3,14 +3,13 @@
 // (NowPlayingPanel) and other devices' playback (RemoteSessions).
 import { createSignal, Show } from "solid-js";
 import { MdOutlineShare } from "solid-icons/md";
-import { iconBtn } from "./ui";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth, currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import { bbAlt, bbcodeToInsert } from "@/shared/editor/attachments/insertHelpers";
 import { wallAttach } from "@/modules/files/api";
 import { fetchCover, type JellyfinSession, type JfItem } from "./api";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 
 /** Status line for the Share button, before the cover is prepended. */
 export function statusText(t: JfItem, tr: ReturnType<typeof useI18n>["t"]): string {
@@ -92,11 +91,10 @@ export default function ShareButton(props: { session: JellyfinSession | null; it
           <MdOutlineShare size={18} /> {preparing() ? t("jellyfin.share_preparing") : t("jellyfin.share")}
         </Button>
       }>
-        <button type="button" onClick={() => void share()} disabled={preparing() || !props.session}
-          title={t("jellyfin.share")} aria-label={t("jellyfin.share")}
-          class={`${iconBtn} ${preparing() ? "animate-pulse" : ""}`}>
+        <IconButton label={t("jellyfin.share")} disabled={preparing() || !props.session}
+          class={preparing() ? "animate-pulse" : ""} onClick={() => void share()}>
           <MdOutlineShare size={20} />
-        </button>
+        </IconButton>
       </Show>
       <Show when={composing()}>
         {(body) => (

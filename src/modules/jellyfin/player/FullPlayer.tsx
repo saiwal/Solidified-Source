@@ -15,7 +15,7 @@ import {
   toggle, next, prev, seek, stop, setVolume, setMuted, cycleRepeat, toggleShuffle,
 } from "../store";
 import { party } from "../syncplay";
-import { fmtTime, Art, iconBtn } from "../ui";
+import { fmtTime, Art } from "../ui";
 import { Motion, fade, pop } from "../anim";
 import ShareButton from "../share";
 import Lyrics from "../Lyrics";
@@ -73,9 +73,13 @@ export default function FullPlayer() {
           <Ambient src={currentSession() && current() ? imageUrl(currentSession()!, current()!, 600) : null} />
 
           <div class="relative h-full overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <button type="button" class={`${iconBtn} absolute top-3 right-3 z-10`} title={t("jellyfin.close")} onClick={() => setFullOpen(false)}>
+            <IconButton
+              label={t("jellyfin.close")}
+              class="absolute top-3 right-3 z-10"
+              onClick={() => setFullOpen(false)}
+            >
               <MdFillKeyboard_arrow_down size={26} />
-            </button>
+            </IconButton>
 
             {/* ── the music ── */}
             <Show when={current()}>

@@ -217,13 +217,9 @@ export default function ChannelFeedShell(props: {
               <IconButton label={t("channel.search")} variant="outline" type="submit">
                 <MdFillSearch size={15} />
               </IconButton>
-              <button
-                type="button"
-                onClick={clearSearch}
-                class="p-1.5 text-muted hover:text-txt transition-colors"
-              >
+              <IconButton label={t("ui.cancel_btn")} size="sm" onClick={clearSearch}>
                 <MdFillClose size={15} />
-              </button>
+              </IconButton>
             </form>
           </Show>
         </div>

@@ -119,13 +119,9 @@ export default function CardsHeaderWidget() {
                 <IconButton label={t("cards.search")} variant="outline" type="submit">
                   <MdFillSearch size={15} />
                 </IconButton>
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(false)}
-                  class="p-1.5 text-muted hover:text-txt transition-colors"
-                >
+                <IconButton label={t("cards.cancel")} size="sm" onClick={() => setSearchOpen(false)}>
                   <MdFillClose size={15} />
-                </button>
+                </IconButton>
               </form>
             </Show>
 

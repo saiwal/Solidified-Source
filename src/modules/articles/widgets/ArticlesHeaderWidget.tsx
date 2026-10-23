@@ -12,11 +12,9 @@ import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config"
 import { openComposer } from "@/shared/views/modal-host";
 import { resetPosts, loadArticles } from "../store";
 import { useArticlesSection } from "../lib/isArticlesList";
-import { Button, IconButton, iconButtonClass } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
-
-const squareBtn = iconButtonClass("outline");
 
 export default function ArticlesHeaderWidget() {
   const { t, locale } = useI18n();
@@ -96,18 +94,17 @@ export default function ArticlesHeaderWidget() {
               <Show
                 when={searchOpen()}
                 fallback={
-                  <button
-                    type="button"
-                    title={t("articles.search")}
-                    aria-label={t("articles.search")}
+                  <IconButton
+                    label={t("articles.search")}
+                    variant="outline"
+                    class="relative"
                     onClick={() => { setSearchInput(activeSearch()); setSearchOpen(true); }}
-                    class={`relative ${squareBtn}`}
                   >
                     <MdFillSearch size={15} />
                     <Show when={activeSearch()}>
                       <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent" />
                     </Show>
-                  </button>
+                  </IconButton>
                 }
               >
                 <form onSubmit={submitSearch} class="flex items-center gap-1">

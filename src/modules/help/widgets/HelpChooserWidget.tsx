@@ -68,13 +68,9 @@ export default function HelpChooserWidget() {
           <MdFillSearch size={15} />
         </IconButton>
         <Show when={currentQuery()}>
-          <button
-            type="button"
-            onClick={clearSearch}
-            class="p-1.5 text-muted hover:text-txt transition-colors"
-          >
+          <IconButton label={t("ui.cancel_btn")} size="sm" onClick={clearSearch}>
             <MdFillClose size={15} />
-          </button>
+          </IconButton>
         </Show>
       </form>
     </div>

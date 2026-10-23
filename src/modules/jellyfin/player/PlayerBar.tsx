@@ -10,7 +10,7 @@ import {
   toggle, next, prev, volume, muted, setVolume, setMuted,
 } from "../store";
 import { party, partyKind } from "../syncplay";
-import { Art, iconBtn } from "../ui";
+import { Art } from "../ui";
 import { Motion, Presence, slideUp } from "../anim";
 import { openPlayer } from "../chrome/player-ui";
 import { MdOutlineGroups } from "solid-icons/md";
@@ -45,9 +45,9 @@ export default function PlayerBar() {
               </button>
 
               <div class="flex items-center">
-                <button type="button" class={`${iconBtn} hidden sm:inline-flex`} title={t("jellyfin.previous")} onClick={prev}>
+                <IconButton label={t("jellyfin.previous")} class="hidden sm:inline-flex" onClick={prev}>
                   <MdFillSkip_previous size={22} />
-                </button>
+                </IconButton>
                 <button type="button" onClick={toggle} title={playing() ? t("jellyfin.pause") : t("jellyfin.play")}
                   class={`mx-1 inline-flex items-center justify-center w-10 h-10 rounded-full bg-accent text-accent-fg hover:brightness-110 transition ${loading() ? "animate-pulse" : ""}`}>
                   <Show when={playing()} fallback={<MdFillPlay_arrow size={24} />}><MdFillPause size={24} /></Show>

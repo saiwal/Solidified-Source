@@ -27,7 +27,7 @@ import type { StreamHandlers } from "@/shared/stream/types";
 import { toggleVerb, repeatItem } from "@/shared/stream/store/actions-store";
 import { MdFillPublic, MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useScrollStyle } from "@utsukta/spa-core/store/scroll-style";
-import { Button, iconButtonClass } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 
 // ── iid lookup from the pubstream flat posts signal ────────────────────────
@@ -65,8 +65,6 @@ function usePubstreamHandlers(tag: () => string): StreamHandlers {
     },
   };
 }
-
-const ICON_BTN = iconButtonClass("outline");
 
 export default function PubstreamContentWidget() {
   const { t } = useI18n();
@@ -151,9 +149,9 @@ export default function PubstreamContentWidget() {
             <Show
               when={searchOpen() || !!tag()}
               fallback={
-                <button onClick={openSearch} title={t("pubstream.filter_by_tag")} class={ICON_BTN}>
+                <IconButton label={t("pubstream.filter_by_tag")} variant="outline" onClick={openSearch}>
                   <MdFillSearch size={15} />
-                </button>
+                </IconButton>
               }
             >
               <div class="flex items-center gap-1">
@@ -169,9 +167,9 @@ export default function PubstreamContentWidget() {
                   placeholder={t("pubstream.filter_by_tag")}
                 />
                 <Show when={tag()}>
-                  <button onClick={clearTag} title={t("pubstream.clear")} class={ICON_BTN}>
+                  <IconButton label={t("pubstream.clear")} variant="outline" onClick={clearTag}>
                     <MdFillClose size={13} />
-                  </button>
+                  </IconButton>
                 </Show>
               </div>
             </Show>

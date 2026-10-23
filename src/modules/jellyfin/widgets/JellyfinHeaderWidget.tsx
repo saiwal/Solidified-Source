@@ -14,7 +14,7 @@ import { remotePlaying, useRemotePolling } from "../remote";
 import { setSettingsOpen } from "../settings";
 import { useSection, PAGE_PARAMS, type Section } from "../chrome/section";
 import DeviceList from "../RemoteSessions";
-import { IconButton, iconButtonClass } from "@ui/Button";
+import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 import { Tabs } from "@ui/Tabs";
@@ -42,9 +42,6 @@ export default function JellyfinHeaderWidget() {
   const closeSearch = () => { setSearching(false); setInput(""); if (activeSearch()) setParams({ search: undefined }); };
 
   const devices = createPopover({ placement: "bottom-end" });
-
-  // Same vocabulary as the Cards header: bordered square icon buttons
-  const squareBtn = iconButtonClass("outline");
 
   return (
     <div class="max-w-5xl mx-auto">
@@ -95,10 +92,14 @@ export default function JellyfinHeaderWidget() {
             </Show>
 
             <span ref={devices.ref} class="relative">
-              <button type="button" class={squareBtn} title={t("jellyfin.other_devices")} aria-label={t("jellyfin.other_devices")}
-                aria-expanded={devices.open()} onClick={() => devices.setOpen(!devices.open())}>
+              <IconButton
+                label={t("jellyfin.other_devices")}
+                variant="outline"
+                aria-expanded={devices.open()}
+                onClick={() => devices.setOpen(!devices.open())}
+              >
                 <MdOutlineDevices size={15} />
-              </button>
+              </IconButton>
               <Show when={remotePlaying().length}>
                 <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-accent pointer-events-none" />
               </Show>

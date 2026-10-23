@@ -64,17 +64,17 @@ export default function NotepadHeaderWidget() {
               <IconButton label={t("notepad.search")} variant="outline" type="submit">
                 <MdFillSearch size={15} />
               </IconButton>
-              <button
-                type="button"
+              <IconButton
+                label={t("notepad.cancel")}
+                size="sm"
                 onClick={() => {
                   setSearchInput("");
                   setSearchParams({ search: undefined });
                   setSearchOpen(false);
                 }}
-                class="p-1.5 text-muted hover:text-txt transition-colors"
               >
                 <MdFillClose size={15} />
-              </button>
+              </IconButton>
             </form>
           </Show>
         </div>
