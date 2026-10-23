@@ -225,9 +225,9 @@ const PermissionsPanel: Component<{
               : first.filename
           }</span>
         </p>
-        <button onClick={props.onClose} class="text-muted hover:text-txt text-lg leading-none" aria-label={t("layout.close")}>
+        <IconButton label={t("layout.close")} size="sm" onClick={props.onClose}>
           ×
-        </button>
+        </IconButton>
       </div>
 
       <Show when={mixed}>

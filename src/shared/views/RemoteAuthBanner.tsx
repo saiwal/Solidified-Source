@@ -44,7 +44,7 @@ const RemoteAuthBanner: Component<Props> = (props) => {
           <Show when={props.homeUrl}>
             <a
               href={props.homeUrl}
-              class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-full text-xs font-medium
+              class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-lg text-xs font-medium
                    bg-warning-muted hover:bg-warning
                    transition-colors"
             >
@@ -66,7 +66,7 @@ const RemoteAuthBanner: Component<Props> = (props) => {
           </span>
           <A
             href={loginHref()}
-            class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-full text-xs font-medium
+            class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-lg text-xs font-medium
                    bg-warning-muted hover:bg-warning
                    transition-colors"
           >

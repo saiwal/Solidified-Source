@@ -95,13 +95,14 @@ function CreateRoleForm(props: {
         <Button size="sm" class="shrink-0" type="submit" disabled={busy() || !newName().trim()}>
           {busy() ? t("directory.creating_role") : t("directory.create_role")}
         </Button>
-        <button
-          type="button"
+        <IconButton
+          label={t("layout.close")}
+          size="sm"
+          class="shrink-0"
           onClick={props.onDone}
-          class="p-1.5 rounded-lg text-muted hover:text-txt hover:bg-overlay transition-colors shrink-0"
         >
           <MdFillClose size={16} />
-        </button>
+        </IconButton>
       </form>
     </div>
   );

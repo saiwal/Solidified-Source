@@ -247,7 +247,7 @@ export default function InboxView() {
                   type="button"
                   onClick={() => void doEmptyTrash()}
                   disabled={emptying() || trashCount() === 0}
-                  class="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium transition-colors
+                  class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
                          bg-overlay text-muted hover:bg-elevated hover:text-danger-txt
                          disabled:opacity-40 disabled:hover:bg-overlay disabled:hover:text-muted"
                 >

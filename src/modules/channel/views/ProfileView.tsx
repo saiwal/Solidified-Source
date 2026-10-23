@@ -13,7 +13,7 @@ import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import { IconButton } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
@@ -114,6 +114,7 @@ export default function ProfileView(props: { full?: boolean }) {
 // ─── Copy-to-clipboard address badge ────────────────────────────────────────
 
 function AddressRow(props: { address: string }) {
+  const { t } = useI18n();
   const [copied, setCopied] = createSignal(false);
 
   function copy() {
@@ -126,12 +127,7 @@ function AddressRow(props: { address: string }) {
   return (
     <span class="inline-flex items-center gap-1 text-sm text-muted">
       <span>@{props.address}</span>
-      <button
-        onClick={copy}
-        title="Copy address"
-        class="p-0.5 rounded hover:bg-overlay transition-colors text-muted hover:text-txt"
-        aria-label="Copy address to clipboard"
-      >
+      <IconButton label={t("ui.copy_address")} size="sm" onClick={copy}>
         <Show
           when={copied()}
           fallback={
@@ -145,7 +141,7 @@ function AddressRow(props: { address: string }) {
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         </Show>
-      </button>
+      </IconButton>
     </span>
   );
 }
@@ -611,7 +607,7 @@ function FollowButton(props: { p: ChannelProfile; isVisitor: boolean }) {
     }
   }
 
-  const base = "shrink-0 px-4 py-1.5 text-sm font-medium rounded-full border transition-colors";
+  const base = "shrink-0 px-4 py-1.5 text-sm font-medium rounded-lg border transition-colors";
   const connectedCls = "border-rim text-muted cursor-default";
   // Same treatment the connections list gives its "Pending" badge.
   const pendingCls = "border-transparent bg-accent-muted text-accent cursor-default";
@@ -654,13 +650,9 @@ function FollowButton(props: { p: ChannelProfile; isVisitor: boolean }) {
           </Show>
         }
       >
-        <button
-          onClick={handleConnect}
-          disabled={state() === "pending"}
-          class={`${base} ${connectCls} disabled:opacity-60`}
-        >
+        <Button size="sm" onClick={handleConnect} disabled={state() === "pending"}>
           {t("channel.connect")}
-        </button>
+        </Button>
       </Show>
     </Show>
   );

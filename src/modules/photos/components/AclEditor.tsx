@@ -87,14 +87,9 @@ export default function AclEditor(props: {
         </Show>
 
         <div class="flex items-center gap-2 pt-1">
-          <button
-            onClick={handleSave}
-            disabled={saving()}
-            class="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
-                   transition-opacity disabled:opacity-40"
-          >
+          <Button size="sm" onClick={handleSave} disabled={saving()}>
             {saving() ? t("photos.acl_saving") : t("photos.acl_save")}
-          </button>
+          </Button>
           <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("photos.cancel")}
           </Button>

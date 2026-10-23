@@ -103,11 +103,10 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
           <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
             <span id={titleId} class="text-sm font-semibold">{t("editor.excalidraw_modal_title")}</span>
             <div class="flex items-center gap-1">
-              <button
-                type="button"
+              <IconButton
+                label={maximized() ? t("editor.excalidraw_restore") : t("editor.excalidraw_maximize")}
+                size="sm"
                 onClick={() => setMaximized((v) => !v)}
-                title={maximized() ? t("editor.excalidraw_restore") : t("editor.excalidraw_maximize")}
-                class="p-1.5 rounded-md text-muted hover:text-txt hover:bg-elevated transition-colors"
               >
                 <Show
                   when={!maximized()}
@@ -121,7 +120,7 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
                     <path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4" />
                   </svg>
                 </Show>
-              </button>
+              </IconButton>
               <IconButton label={t("layout.close")} size="sm" onClick={props.onClose}>
                 <MdOutlineClose class="w-4 h-4" />
               </IconButton>

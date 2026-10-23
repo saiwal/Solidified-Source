@@ -256,7 +256,7 @@ function MasonryCard(props: {
               >
                 <button
                   class="flex items-center gap-1 text-xs text-accent hover:text-accent-txt
-                             bg-overlay/90 px-2 py-0.5 rounded-full border border-accent/50 transition-colors"
+                             bg-overlay/90 px-2 py-0.5 rounded-lg border border-accent/50 transition-colors"
                 >
                   <MdOutlineExpand_more class="w-3 h-3" />
                   {t("ui.show_more")}

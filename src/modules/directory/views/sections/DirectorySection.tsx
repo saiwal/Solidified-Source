@@ -15,6 +15,7 @@ import CardShell from "@/shared/stream/CardShell";
 import { Button } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
 import { EmptyState } from "@ui/EmptyState";
+import { Tabs } from "@ui/Tabs";
 
 type Order = "date" | "rdate" | "alphabetic" | "ralpha";
 
@@ -60,8 +61,13 @@ export default function DirectorySection() {
       {/* ── Filter bar ── */}
       <div class="flex flex-wrap items-center gap-2">
 
-        {/* Sort */}
-        <Select value={order()} onChange={(e) => setOrder(e.currentTarget.value as Order)}>
+        {/* Sort — sm + h-8 so it lines up with the chips and the scope tabs */}
+        <Select
+          size="sm"
+          class="h-8"
+          value={order()}
+          onChange={(e) => setOrder(e.currentTarget.value as Order)}
+        >
           <option value="date">{t("directory.sort_newest")}</option>
           <option value="rdate">{t("directory.sort_oldest")}</option>
           <option value="alphabetic">{t("directory.sort_az")}</option>
@@ -71,16 +77,17 @@ export default function DirectorySection() {
         {/* Divider */}
         <span class="hidden sm:block w-px h-5 bg-rim" />
 
-        {/* Scope toggle */}
-        <div class="flex rounded-lg border border-rim overflow-hidden text-sm">
-          <Button variant="ghost" size="sm" pressed={globalDir() === 1} onClick={() => setGlobalDir(1)}>
-            {t("directory.global_dir")}
-          </Button>
-          <div class="w-px bg-rim" />
-          <Button variant="ghost" size="sm" pressed={globalDir() === 0} onClick={() => setGlobalDir(0)}>
-            {t("directory.local_dir")}
-          </Button>
-        </div>
+        {/* Scope — the standard segmented switcher, 32px like the sm buttons */}
+        <Tabs
+          variant="segmented"
+          label={t("directory.filter_scope")}
+          value={globalDir() === 1 ? "global" : "local"}
+          onChange={(v) => setGlobalDir(v === "global" ? 1 : 0)}
+          items={[
+            { value: "global", label: t("directory.global_dir") },
+            { value: "local", label: t("directory.local_dir") },
+          ]}
+        />
 
         {/* Divider */}
         <span class="hidden sm:block w-px h-5 bg-rim" />

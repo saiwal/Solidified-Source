@@ -276,12 +276,12 @@ export default function DraftsWidget() {
                         {scopeLabel(entry.scope)}
                       </span>
                       <div class="flex items-center gap-2.5">
-                        <button
-                          type="button"
-                          title={t("hq.delete_draft")}
+                        <IconButton
+                          label={t("hq.delete_draft")}
+                          variant="danger"
+                          size="sm"
+                          class="-m-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => void deleteDraft(entry.scope, entry.draft.id)}
-                          class="p-0.5 -m-0.5 rounded text-muted/70 opacity-100 md:opacity-0 md:group-hover:opacity-100
-                                 hover:text-danger-txt focus-visible:opacity-100 transition-all"
                         >
                           <Show
                             when={!isDeleting()}
@@ -291,7 +291,7 @@ export default function DraftsWidget() {
                           >
                             <MdFillDelete size={12} />
                           </Show>
-                        </button>
+                        </IconButton>
                         <span
                           class="text-[0.625rem] text-muted/60 tabular-nums shrink-0"
                           title={new Date(entry.draft.created).toLocaleString()}

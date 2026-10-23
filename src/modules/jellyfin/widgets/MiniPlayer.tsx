@@ -12,6 +12,7 @@ import { imageUrl, type JellyfinSession, type JfItem } from "../api";
 import { currentSession, sessionFor, current, hasNext, playing, loading, toggle, next, prev, syncFromHub } from "../store";
 import { remotePlaying, remoteCommand, useRemotePolling } from "../remote";
 import { Art } from "../ui";
+import { IconButton } from "@ui/Button";
 import { Motion, slideUp } from "../anim";
 import { openPlayer } from "../chrome/player-ui";
 // Imported here, in the always-mounted widget, so a reload rejoins its party
@@ -102,7 +103,6 @@ function Row(props: {
   onNext: () => void;
 }) {
   const { t } = useI18n();
-  const btn = "p-1 rounded-full text-txt hover:bg-elevated disabled:opacity-40 transition-colors shrink-0";
 
   return (
     <Motion.div {...slideUp} class="flex w-full items-center gap-2 p-1.5 pr-2 rounded-2xl bg-surface ring-1 ring-rim/40">
@@ -120,23 +120,27 @@ function Row(props: {
         </span>
       </A>
       <Show when={props.controllable}>
-        <button type="button" class={btn} title={t("jellyfin.previous")} onClick={() => props.onPrev()}>
+        <IconButton label={t("jellyfin.previous")} size="sm" onClick={() => props.onPrev()}>
           <MdFillSkip_previous size={20} />
-        </button>
-        <button
-          type="button"
+        </IconButton>
+        <IconButton
+          label={props.playing ? t("jellyfin.pause") : t("jellyfin.play")}
+          size="sm"
+          class={props.loading ? "animate-pulse" : ""}
           onClick={() => props.onToggle()}
-          title={props.playing ? t("jellyfin.pause") : t("jellyfin.play")}
-          class={`${btn} ${props.loading ? "animate-pulse" : ""}`}
         >
           <Show when={props.playing} fallback={<MdFillPlay_arrow size={24} />}>
             <MdFillPause size={24} />
           </Show>
-        </button>
-        <button type="button" class={btn} title={t("jellyfin.next")} onClick={() => props.onNext()}
-          disabled={!props.hasNext}>
+        </IconButton>
+        <IconButton
+          label={t("jellyfin.next")}
+          size="sm"
+          disabled={!props.hasNext}
+          onClick={() => props.onNext()}
+        >
           <MdFillSkip_next size={20} />
-        </button>
+        </IconButton>
       </Show>
     </Motion.div>
   );

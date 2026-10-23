@@ -5,7 +5,7 @@ import { isDirectoryAdmin, setEntryCensored } from "../people/store";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdOutlineBlock } from "solid-icons/md";
-import { Button } from "@ui/Button";
+import { Button, iconButtonClass } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
@@ -160,7 +160,8 @@ const DirectoryCard: Component<Props> = (props) => {
          <a
             href={e().ignore_url!}
             title={t("directory.ignore")}
-            class="p-1.5 rounded-lg border border-rim text-muted hover:text-txt hover:bg-overlay transition-colors"
+            aria-label={t("directory.ignore")}
+            class={iconButtonClass("outline")}
           >
             <MdOutlineBlock class="w-3.5 h-3.5" />
           </a>

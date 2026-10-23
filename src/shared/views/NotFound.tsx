@@ -1,5 +1,6 @@
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
 
 export default function NotFound() {
   const { t } = useI18n();
@@ -12,12 +13,9 @@ export default function NotFound() {
       <p class="text-muted max-w-sm">
         {t("ui.not_found_desc")}
       </p>
-      <button
-        onClick={() => navigate("/hq", { replace: true })}
-        class="mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-      >
+      <Button class="mt-2" onClick={() => navigate("/hq", { replace: true })}>
         {t("ui.go_home")}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -459,7 +459,7 @@ function ConnectionEditorModal(props: Props) {
                     <A
                       href="/settings/features"
                       onClick={props.onClose}
-                      class="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium
+                      class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium
                              bg-overlay text-muted hover:bg-elevated hover:text-txt transition-colors"
                     >
                       {t("filters.connfilter_enable")}

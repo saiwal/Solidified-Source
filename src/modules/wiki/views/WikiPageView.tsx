@@ -71,14 +71,14 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
                 {currentWiki()!.name}
               </span>
             </Show>
-            <button
-              type="button"
+            <IconButton
+              label={t("layout.close")}
+              size="sm"
+              class="shrink-0"
               onClick={() => setOpen(false)}
-              aria-label="Close page list"
-              class="p-1 rounded text-muted hover:bg-elevated hover:text-txt transition-colors shrink-0"
             >
               ✕
-            </button>
+            </IconButton>
           </div>
 
           <Show when={pagesLoading()}>
@@ -122,14 +122,9 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
                       onInput={(e) => setNewPageInput(e.currentTarget.value)}
                     />
                     <div class="flex gap-1">
-                      <button
-                        type="submit"
-                        disabled={!newPageInput().trim()}
-                        class="flex-1 text-xs bg-accent-muted text-accent px-2 py-1 rounded-md
-                               hover:bg-elevated disabled:opacity-50 transition-colors"
-                      >
+                      <Button type="submit" size="sm" class="flex-1" disabled={!newPageInput().trim()}>
                         {t("wiki.create_page")}
-                      </button>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -406,14 +401,9 @@ export default function WikiPageView() {
                       onInput={(e) => setNewPageInput(e.currentTarget.value)}
                     />
                     <div class="flex gap-1">
-                      <button
-                        type="submit"
-                        disabled={!newPageInput().trim()}
-                        class="flex-1 text-xs bg-accent-muted text-accent px-2 py-1 rounded-md
-                               hover:bg-elevated disabled:opacity-50 transition-colors"
-                      >
+                      <Button type="submit" size="sm" class="flex-1" disabled={!newPageInput().trim()}>
                         {t("wiki.create_page")}
-                      </button>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -543,14 +533,13 @@ export default function WikiPageView() {
                 value={newPageName()}
                 onInput={(e) => setNewPageName(e.currentTarget.value)}
               />
-              <button
+              <Button
                 type="submit"
+                size="sm"
                 disabled={renameBusy() || !newPageName().trim()}
-                class="text-sm bg-accent-muted text-accent px-3 py-1.5 rounded-lg
-                       hover:bg-elevated disabled:opacity-50 transition-colors"
               >
                 {renameBusy() ? t("wiki.renaming") : t("wiki.rename_save")}
-              </button>
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => setRenaming(false)}>
                 {t("wiki.cancel")}
               </Button>

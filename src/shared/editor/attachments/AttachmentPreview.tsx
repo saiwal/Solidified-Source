@@ -4,7 +4,7 @@ import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { Attachment } from "./types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineArticle, MdOutlineClose, MdOutlineWarning_amber } from "solid-icons/md";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Textarea } from "@ui/Field";
 
 interface Props {
@@ -167,13 +167,9 @@ const AttachmentPreview: Component<Props> = (props) => {
           >
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold text-txt">{t("editor.alt_text_label")}</span>
-              <button
-                type="button"
-                onClick={() => setAltOpen(false)}
-                class="p-0.5 rounded text-muted hover:text-txt transition-colors"
-              >
+              <IconButton label={t("layout.close")} size="sm" onClick={() => setAltOpen(false)}>
                 <MdOutlineClose class="w-3.5 h-3.5" />
-              </button>
+              </IconButton>
             </div>
 
             <p class="text-[0.6875rem] text-muted leading-snug">

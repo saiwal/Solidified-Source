@@ -8,7 +8,7 @@ import {
 import type { ManagedChannel, ManagedDelegate } from "../api";
 import { buildDelegateSwitchUrl } from "../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
@@ -69,16 +69,14 @@ const ChannelCard: Component<{
       {/* Actions */}
       <div class="flex items-center gap-1 shrink-0">
         <Show when={!props.channel.is_default}>
-          <button
-            onClick={() => props.onSetDefault(props.channel.channel_id)}
+          <IconButton
+            label={t("manage.make_default")}
+            size="sm"
             disabled={props.disabled}
-            title={t("manage.make_default")}
-            class="p-1.5 rounded text-subtle hover:text-txt
-                   hover:bg-elevated disabled:opacity-40
-                   transition-colors text-xs"
+            onClick={() => props.onSetDefault(props.channel.channel_id)}
           >
             ☆
-          </button>
+          </IconButton>
         </Show>
         <Show when={!props.channel.is_current}>
           <Button

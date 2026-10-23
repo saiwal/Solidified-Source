@@ -313,7 +313,7 @@ export default function LogsSection() {
                 <Show when={unseen() > 0}>
                   <button
                     onClick={jumpToTop}
-                    class="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 text-xs rounded-full bg-accent text-accent-fg shadow"
+                    class="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 text-xs rounded-lg bg-accent text-accent-fg shadow"
                   >
                     ↑ {t("admin.new_entries", { n: String(unseen()) })}
                   </button>

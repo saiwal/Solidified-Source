@@ -143,7 +143,7 @@ export default function ViewConnectionsContentWidget() {
         </div>
         <A
           href={`/channel/${nick()}`}
-          class="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+          class="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
                  bg-black/35 text-white backdrop-blur-sm hover:bg-black/50 transition-colors"
         >
           <MdOutlineArrow_back size={14} /> {t("ui.back")}

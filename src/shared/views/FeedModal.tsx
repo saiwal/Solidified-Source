@@ -15,6 +15,7 @@ import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { EmptyState } from "@ui/EmptyState";
+import { IconButton } from "@ui/Button";
 
 interface Props {
   channelNick: string;
@@ -72,16 +73,16 @@ const FeedRowItem: Component<{ row: FeedRow; variant?: "all" }> = (props) => {
       >
         <BiRegularLinkExternal size={15} />
       </a>
-      <button
+      <IconButton
+        label={t("widgets.copy_feed_url")}
+        size="sm"
+        class="shrink-0"
         onClick={copy}
-        title={t("widgets.copy_feed_url")}
-        aria-label={t("widgets.copy_feed_url")}
-        class="p-1 rounded text-muted hover:text-accent hover:bg-surface transition-colors shrink-0"
       >
         <Show when={copied()} fallback={<MdOutlineContentCopy size={15} />}>
           <MdOutlineCheck size={15} class="text-accent" />
         </Show>
-      </button>
+      </IconButton>
     </li>
   );
 };

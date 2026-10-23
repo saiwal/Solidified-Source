@@ -124,7 +124,7 @@ export default function ContactCardWidget() {
               <Show when={!profile()!.is_remote}>
                 <A
                   href={`/profile/${profile()!.channel_address}`}
-                  class="text-[0.625rem] px-2.5 py-1 rounded-full bg-elevated text-muted border border-rim hover:text-accent hover:border-accent transition-colors"
+                  class="text-[0.625rem] px-2.5 py-1 rounded-lg bg-elevated text-muted border border-rim hover:text-accent hover:border-accent transition-colors"
                 >
                   {t("channel.more_details")}
                 </A>

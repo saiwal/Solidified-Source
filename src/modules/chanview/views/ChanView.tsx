@@ -29,7 +29,7 @@ import {
   MdOutlineCheck,
   MdOutlineMail,
 } from "solid-icons/md";
-import { Button } from "@ui/Button";
+import { Button, IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
@@ -330,11 +330,11 @@ export default function ChanView() {
                     <Show when={xdata().address}>
                       <p class="flex items-center gap-1 text-sm text-muted mt-0.5">
                         <span class="truncate">@{xdata().address}</span>
-                        <button
+                        <IconButton
+                          label={t("ui.copy_address")}
+                          size="sm"
+                          class="shrink-0"
                           onClick={() => copyAddress(xdata().address)}
-                          title={t("ui.copy_address")}
-                          aria-label={t("ui.copy_address")}
-                          class="p-0.5 rounded hover:bg-overlay transition-colors text-muted hover:text-txt shrink-0"
                         >
                           <Show
                             when={addressCopied()}
@@ -342,7 +342,7 @@ export default function ChanView() {
                           >
                             <MdOutlineCheck size={13} class="text-accent" />
                           </Show>
-                        </button>
+                        </IconButton>
                       </p>
                     </Show>
                     <Show when={xdata().pdesc}>
@@ -370,7 +370,7 @@ export default function ChanView() {
                     </Show>
 
                     <Show when={connectState().tag === "done"}>
-                      <span class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
+                      <span class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium
                                    border border-rim text-muted cursor-default">
                         {t("ui.connected_check")}
                       </span>
@@ -401,7 +401,7 @@ export default function ChanView() {
                       <a
                         href={`/channel/${xdata().local_nick}`}
                         rel="external"
-                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
+                        class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium
                                border border-rim text-muted hover:border-accent hover:text-accent transition-colors"
                       >
                         {t("ui.view_channel")}

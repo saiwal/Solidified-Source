@@ -402,12 +402,12 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) saveEdit();
                         }} ref={(el) => requestAnimationFrame(() => el.focus())} rows={3} />
                       <div class="flex justify-end gap-2 mt-1 text-xs">
-                        <button type="button" onClick={() => setEditing(null)} class="px-2 py-0.5 rounded hover:underline">
+                        <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
                           {t("messenger.cancel")}
-                        </button>
-                        <button type="button" onClick={saveEdit} disabled={busy()} class="px-2 py-0.5 rounded bg-surface text-txt font-medium disabled:opacity-50">
+                        </Button>
+                        <Button size="sm" onClick={saveEdit} disabled={busy()}>
                           {t("messenger.save")}
-                        </button>
+                        </Button>
                       </div>
                     </Show>
                   </div>

@@ -9,6 +9,7 @@
 import { createSignal, Show, For } from "solid-js";
 import { MdOutlineToc } from "solid-icons/md";
 import type { TocEntry } from "@utsukta/spa-core/lib/useToc";
+import { useI18n } from "@utsukta/spa-core/i18n";
 import { IconButton } from "@ui/Button";
 
 function indentClass(level: number, minLevel: number): string {
@@ -67,6 +68,7 @@ function FixedToc(props: { entries: TocEntry[]; activeId: string; label: string 
 // ── below-xl floating collapsed launcher ────────────────────────────────────
 
 function FloatingToc(props: { entries: TocEntry[]; activeId: string; label: string }) {
+  const { t } = useI18n();
   const [open, setOpen] = createSignal(false);
 
   return (
@@ -89,14 +91,9 @@ function FloatingToc(props: { entries: TocEntry[]; activeId: string; label: stri
               <span class="text-xs font-semibold uppercase tracking-wide text-muted">
                 {props.label}
               </span>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close table of contents"
-                class="p-1 rounded text-muted hover:bg-elevated hover:text-txt transition-colors"
-              >
+              <IconButton label={t("layout.close")} size="sm" onClick={() => setOpen(false)}>
                 ✕
-              </button>
+              </IconButton>
             </div>
             <div class="space-y-0.5">
               <TocLinks

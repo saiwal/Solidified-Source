@@ -6,7 +6,7 @@ import { connectToChannel } from "../connections/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdOutlineBlock, MdOutlineClose } from "solid-icons/md";
-import { Button, IconButton } from "@ui/Button";
+import { Button, IconButton, iconButtonClass } from "@ui/Button";
 import { Badge } from "@ui/Badge";
 
 interface Props {
@@ -205,7 +205,8 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                <a
                   href={e()!.ignore_url!}
                   title={t("directory.ignore")}
-                  class="p-2 rounded-lg border border-rim text-muted hover:text-txt hover:bg-overlay transition-colors"
+                  aria-label={t("directory.ignore")}
+                  class={iconButtonClass("outline")}
                 >
                   <MdOutlineBlock class="w-4 h-4" />
                 </a>

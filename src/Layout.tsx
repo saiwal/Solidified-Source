@@ -25,6 +25,7 @@ import FeedModalHost from "@/shared/views/FeedModalHost";
 import ShareModalHost from "@/shared/views/ShareModalHost";
 import ModalHost from "@/shared/views/ModalHost";
 import { useI18n } from "@utsukta/spa-core/i18n";
+import { Button } from "@ui/Button";
 import { usePWA } from "@/pwa";
 import DOMPurify from "dompurify";
 void motion;
@@ -369,12 +370,9 @@ const Layout: ParentComponent = (props) => {
                       </h1>
                       <p class="text-muted max-w-sm">{t("ui.error_desc")}</p>
                       <div class="flex gap-3 mt-2">
-                        <button
-                          onClick={reset}
-                          class="px-4 py-2 rounded-lg border border-rim hover:bg-elevated transition-colors text-sm"
-                        >
+                        <Button variant="ghost" class="border border-rim" onClick={reset}>
                           {t("ui.try_again")}
-                        </button>
+                        </Button>
                         <a
                           href="/hq"
                           class="px-4 py-2 rounded-lg bg-accent text-accent-fg hover:opacity-90 transition-opacity text-sm"

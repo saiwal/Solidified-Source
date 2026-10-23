@@ -280,9 +280,9 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           (props.icon ? "p-2.5 " : "px-5 py-1.5 text-sm font-semibold ") +
           "bg-accent text-accent-fg hover:opacity-90 " +
           "active:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed " +
-          // rounded-3xl like Button, so the split pill matches the rest and
+          // rounded-lg like Button, so the split button matches the rest and
           // follows the corner-radius setting.
-          (props.menu ? "rounded-l-3xl" : "rounded-3xl")
+          (props.menu ? "rounded-l-lg" : "rounded-lg")
         }
       >
         {props.children}
@@ -296,7 +296,7 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           aria-expanded={open()}
           onClick={() => setOpen(!open())}
           class={
-            (props.icon ? "pl-1.5 pr-2 rounded-r-3xl" : "px-2 rounded-r-3xl") +
+            (props.icon ? "pl-1.5 pr-2 rounded-r-lg" : "px-2 rounded-r-lg") +
             " border-l border-accent-fg/25 bg-accent text-accent-fg hover:opacity-90 active:opacity-80 transition-opacity"
           }
         >

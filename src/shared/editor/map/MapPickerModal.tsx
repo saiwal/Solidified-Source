@@ -131,14 +131,9 @@ const MapPickerModal: Component<Props> = (props) => {
           <Button variant="ghost" size="sm" onClick={props.onClose}>
             {t("ui.cancel_btn")}
           </Button>
-          <button
-            type="button"
-            onClick={insert}
-            disabled={!coord()}
-            class="px-3 py-1.5 text-sm rounded-lg bg-accent text-white disabled:opacity-50"
-          >
+          <Button size="sm" onClick={insert} disabled={!coord()}>
             {t("editor.map_insert")}
-          </button>
+          </Button>
         </div>
       </ModalPanel>
     </Modal>

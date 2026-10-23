@@ -173,14 +173,9 @@ export default function WikiHeaderWidget() {
                 onClear={() => { setCreateAllowKeys(new Set<string>()); setCreateDenyKeys(new Set<string>()); }}
               />
             </div>
-            <button
-              type="submit"
-              disabled={busy()}
-              class="bg-accent-muted text-accent px-4 py-2 rounded-lg text-sm
-                     hover:bg-elevated disabled:opacity-50 transition-colors"
-            >
+            <Button type="submit" disabled={busy()}>
               {busy() ? t("wiki.creating") : t("wiki.create_wiki")}
-            </button>
+            </Button>
           </form>
         </Show>
       </div>

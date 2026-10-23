@@ -48,7 +48,7 @@ import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
 import CardShell from "@/shared/stream/CardShell";
-import { Button, IconButton } from "@ui/Button";
+import { Button, IconButton, iconButtonClass } from "@ui/Button";
 import { Input, Select, Textarea } from "@ui/Field";
 import { Card, cardClass } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
@@ -159,15 +159,15 @@ function SortToolbar(props: {
           </Button>
         )}
       </For>
-      <button
+      <IconButton
+        label={props.dir === 'asc' ? t("photos.sort_asc") : t("photos.sort_desc")}
+        size="sm"
         onClick={() => props.onDir(props.dir === 'asc' ? 'desc' : 'asc')}
-        title={props.dir === 'asc' ? t("photos.sort_asc") : t("photos.sort_desc")}
-        class="p-1.5 rounded-md text-muted hover:text-txt transition-colors"
       >
         <Show when={props.dir === 'asc'} fallback={<MdFillArrow_downward size={16} />}>
           <MdFillArrow_upward size={16} />
         </Show>
-      </button>
+      </IconButton>
 
       <div class="flex items-center gap-1 ml-auto">
         <IconButton
@@ -676,14 +676,13 @@ function AlbumsView(props: { auto: boolean }) {
           <Show when={createError()}>
             <span class="text-xs text-danger-txt">{createError()}</span>
           </Show>
-          <button
+          <Button
             type="submit"
+            size="sm"
             disabled={creating() || !newName().trim()}
-            class="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
-                   transition-opacity disabled:opacity-40"
           >
             {creating() ? t("photos.album_creating") : t("photos.album_create")}
-          </button>
+          </Button>
         </form>
       </Show>
 
@@ -1592,11 +1591,9 @@ function ImageView() {
                   autofocus
                   placeholder={t("photos.title_ph")}
                 />
-                <button type="submit" disabled={titleSaving()}
-                  class="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
-                         transition-opacity disabled:opacity-40 flex-shrink-0">
+                <Button type="submit" size="sm" class="flex-shrink-0" disabled={titleSaving()}>
                   {titleSaving() ? t("photos.title_saving") : t("photos.title_save")}
-                </button>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1638,11 +1635,9 @@ function ImageView() {
                   placeholder={t("photos.description_ph")}
                 />
                 <div class="flex items-center gap-2">
-                  <button type="submit" disabled={descSaving()}
-                    class="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
-                           transition-opacity disabled:opacity-40">
+                  <Button type="submit" size="sm" disabled={descSaving()}>
                     {descSaving() ? t("photos.description_saving") : t("photos.description_save")}
-                  </button>
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => setDescEditing(false)}>
                     {t("photos.cancel")}
                   </Button>
@@ -1723,8 +1718,8 @@ function ImageView() {
               href={photoDownloadUrl(nick(), d()?.resource_id ?? "")}
               download={d()?.filename}
               title={t("photos.download")}
-              class="ml-auto flex items-center px-2 py-1.5 rounded-lg text-sm font-medium
-                     transition-colors hover:bg-overlay text-muted hover:text-txt"
+              aria-label={t("photos.download")}
+              class={`ml-auto ${iconButtonClass()}`}
             >
               <MdOutlineDownload size={17} />
             </a>
@@ -1819,14 +1814,13 @@ function ImageView() {
                 class="flex-1 bg-transparent text-sm text-txt placeholder:text-muted
                        outline-none disabled:opacity-50"
               />
-              <button
+              <Button
                 type="submit"
+                size="sm"
                 disabled={renaming() || !renameInput().trim()}
-                class="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium
-                       transition-opacity disabled:opacity-40"
               >
                 {renaming() ? t("photos.renaming") : t("photos.rename")}
-              </button>
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => setRenameOpen(false)}>
                 {t("photos.cancel")}
               </Button>

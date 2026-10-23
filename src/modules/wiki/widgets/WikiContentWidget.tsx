@@ -325,15 +325,9 @@ export default function WikiContentWidget() {
                 <Button variant="ghost" size="sm" onClick={() => setAclWikiUrl(null)}>
                   {t("wiki.cancel")}
                 </Button>
-                <button
-                  type="button"
-                  onClick={handleSaveAcl}
-                  disabled={aclSaving() || aclLoading()}
-                  class="text-sm bg-accent-muted text-accent hover:bg-elevated border border-rim
-                         px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                >
+                <Button size="sm" onClick={handleSaveAcl} disabled={aclSaving() || aclLoading()}>
                   {aclSaving() ? "…" : t("wiki.save")}
-                </button>
+                </Button>
               </div>
             </ModalPanel>
           </Modal>

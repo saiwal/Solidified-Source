@@ -83,13 +83,9 @@ function PendingRow(props: { item: PendingItem; onResolved: (iid: number) => voi
         <Button size="sm" onClick={approve} disabled={busy()}>
           {t("directory.approve")}
         </Button>
-        <button
-          onClick={reject}
-          disabled={busy()}
-          class="text-xs px-2 py-1 rounded bg-elevated text-txt hover:opacity-80 disabled:opacity-50 transition-opacity"
-        >
+        <Button variant="ghost" size="sm" onClick={reject} disabled={busy()}>
           {t("moderate.reject")}
-        </button>
+        </Button>
       </div>
     </div>
   );
