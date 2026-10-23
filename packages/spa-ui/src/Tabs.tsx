@@ -1,10 +1,13 @@
 // solidified's implementation of the tabs contract (spa-core types/ui.types.ts).
 // Selection follows focus (automatic activation): the arrow keys pick the next
 // tab, and only the selected tab sits in the Tab order.
-import { For } from "solid-js";
-import type { TabsProps } from "@utsukta/spa-core/types/ui.types";
+import { For, Show } from "solid-js";
+import type { TabPanelProps, TabsProps } from "@utsukta/spa-core/types/ui.types";
+import { CountBadge } from "@ui/Badge";
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const tabId = (tabs: string, value: string) => `${tabs}-tab-${value}`;
+const panelId = (tabs: string, value: string) => `${tabs}-panel-${value}`;
 
 export function Tabs<T extends string>(props: TabsProps<T>) {
   let list!: HTMLDivElement;
@@ -46,17 +49,24 @@ export function Tabs<T extends string>(props: TabsProps<T>) {
               role="tab"
               aria-selected={on()}
               tabIndex={on() ? 0 : -1}
+              id={props.id ? tabId(props.id, item.value) : undefined}
+              aria-controls={props.id ? panelId(props.id, item.value) : undefined}
               onClick={() => props.onChange(item.value)}
               class={
                 segmented()
-                  ? `hz-tab px-3 py-1 text-xs text-center rounded-md font-medium transition-colors ${focus} ` +
+                  ? `hz-tab inline-flex items-center justify-center gap-1.5 px-3 py-1 text-xs rounded-md font-medium transition-colors ${focus} ` +
                     `${props.stretch ? "flex-1 " : ""}` +
                     (on() ? "bg-accent text-accent-fg font-semibold" : "text-muted hover:text-txt")
-                  : `hz-tab relative shrink-0 pb-2 text-sm transition-colors duration-300 ${focus} ` +
+                  : `hz-tab relative shrink-0 inline-flex items-center gap-1.5 pb-2 text-sm transition-colors duration-300 ${focus} ` +
                     (on() ? "text-txt" : "text-muted hover:text-txt")
               }
             >
+              <Show when={item.icon}>
+                <span class="shrink-0" aria-hidden="true">{item.icon}</span>
+              </Show>
               {item.label}
+              {/* On the selected segmented tab the bubble would vanish into the accent fill; invert it. */}
+              <CountBadge n={item.count ?? 0} class={on() && segmented() ? "bg-accent-fg! text-accent!" : ""} />
               {!segmented() && (
                 <span
                   class={`absolute left-0 bottom-0 h-0.5 rounded-full bg-accent transition-all duration-300 ${on() ? "w-full" : "w-0"}`}
@@ -66,6 +76,20 @@ export function Tabs<T extends string>(props: TabsProps<T>) {
           );
         }}
       </For>
+    </div>
+  );
+}
+
+export function TabPanel<T extends string>(props: TabPanelProps<T>) {
+  return (
+    <div
+      role="tabpanel"
+      id={panelId(props.tabs, props.value)}
+      aria-labelledby={tabId(props.tabs, props.value)}
+      tabIndex={0}
+      class={`hz-tabpanel rounded-md ${focus} ${props.class ?? ""}`}
+    >
+      {props.children}
     </div>
   );
 }

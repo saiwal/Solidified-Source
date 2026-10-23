@@ -4,6 +4,7 @@ import {
   createSignal,
   createMemo,
   createEffect,
+  createUniqueId,
   untrack,
   onMount,
   onCleanup,
@@ -90,6 +91,7 @@ import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
 import { Menu, MenuItem } from "@ui/Menu";
+import { Tabs, TabPanel } from "@ui/Tabs";
 
 export type { StreamHandlers as PostActions };
 
@@ -2347,28 +2349,36 @@ function PostStats(props: {
   } | null;
 }) {
   const { t } = useI18n();
+  // Unique per card: several post cards can have their statistics open at once.
+  const tabsId = createUniqueId();
+  type StatTab = "likes" | "dislikes" | "repeats";
+  // Only categories with activity get a tab; all empty falls back to "no activity".
   const tabs = () => {
     const d = props.data;
-    if (!d) return [];
-    return [
-      { key: "likes" as const, label: t("post.likes"), count: d.likes.length },
-      {
-        key: "dislikes" as const,
-        label: t("post.dislikes"),
-        count: d.dislikes.length,
-      },
-      {
-        key: "repeats" as const,
-        label: t("post.repeats"),
-        count: d.repeats.length,
-      },
-    ].filter((tab) => tab.count > 0);
+    if (!d) return [] as { value: StatTab; label: string; count: number }[];
+    return (
+      [
+        { value: "likes" as const, label: t("post.likes"), count: d.likes.length },
+        {
+          value: "dislikes" as const,
+          label: t("post.dislikes"),
+          count: d.dislikes.length,
+        },
+        {
+          value: "repeats" as const,
+          label: t("post.repeats"),
+          count: d.repeats.length,
+        },
+      ] satisfies { value: StatTab; label: string; count: number }[]
+    ).filter((tab) => tab.count > 0);
   };
 
-  const [tab, setTab] = createSignal<"likes" | "dislikes" | "repeats">("likes");
+  const [tab, setTab] = createSignal<StatTab>("likes");
 
+  // The data arrives after the panel opens, and a refresh can drop the category
+  // currently selected — always land on the first one that still has activity.
   createEffect(() => {
-    const first = tabs()[0]?.key;
+    const first = tabs()[0]?.value;
     if (first) setTab(first);
   });
 
@@ -2390,30 +2400,18 @@ function PostStats(props: {
             <div class="text-xs text-muted">{t("post.no_activity")}</div>
           }
         >
-          <div class="flex border-b border-rim mb-3">
-            <For each={tabs()}>
-              {(t) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  pressed={tab() === t.key}
-                  class="-mb-px"
-                  onClick={() => setTab(t.key)}
-                >
-                  {t.label}
-                  <span
-                    class={`ml-1.5 px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold
-                    ${tab() === t.key ? "bg-accent text-accent-fg" : "bg-overlay text-muted"}`}
-                  >
-                    {t.count}
-                  </span>
-                </Button>
-              )}
-            </For>
-          </div>
-          <div class="flex flex-wrap gap-1.5">
+          <Tabs
+            id={tabsId}
+            variant="underline"
+            class="mb-3 border-b border-rim"
+            label={t("post.post_statistics")}
+            value={tab()}
+            onChange={setTab}
+            items={tabs()}
+          />
+          <TabPanel tabs={tabsId} value={tab()} class="flex flex-wrap gap-1.5">
             <For each={actors()}>{(a) => <StatActorChip actor={a} />}</For>
-          </div>
+          </TabPanel>
         </Show>
       </Show>
     </div>

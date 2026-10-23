@@ -3,7 +3,7 @@
 import { renderToString } from "solid-js/web";
 import { Field, Input, Select } from "./Field";
 import { Toggle } from "./Toggle";
-import { Tabs } from "./Tabs";
+import { TabPanel, Tabs } from "./Tabs";
 import { CountBadge } from "./Badge";
 
 export const html = () =>
@@ -16,5 +16,7 @@ export const html = () =>
       <Toggle name="opt" label="Opt" hint="Opt hint" checked />
       <i id="c0"><CountBadge n={0} /></i><i id="c5"><CountBadge n={5} /></i><i id="c150"><CountBadge n={150} /></i>
       <Tabs label="Views" value="b" onChange={() => {}} items={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />
+      <Tabs id="t" label="Linked" value="b" onChange={() => {}} items={[{ value: "a", label: "A", count: 3 }, { value: "b", label: "B" }]} />
+      <TabPanel tabs="t" value="b">panel</TabPanel>
     </div>
   ));

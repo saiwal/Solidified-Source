@@ -156,6 +156,26 @@ export interface MenuProps {
   children: JSX.Element;
 }
 
+/**
+ * A right-click menu over a region, with Menu's panel semantics. Must open at
+ * the pointer on contextmenu, at the focused element for the keyboard's menu
+ * key / Shift+F10, and on a touch long-press (iOS never fires contextmenu).
+ * Every action in it must also be reachable another way — it is a shortcut.
+ */
+export interface ContextMenuProps {
+  /** Accessible name of the panel. */
+  label: string;
+  /** The panel's MenuItems / MenuSeparators. */
+  menu: JSX.Element;
+  /** Panel classes — usually a width (w-60). */
+  class?: string;
+  /** Leave the browser's own menu alone (e.g. while editing text). */
+  disabled?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** The region; it gets no wrapper box of its own (display: contents). */
+  children: JSX.Element;
+}
+
 export interface MenuItemProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: JSX.Element;
   danger?: boolean;
@@ -173,6 +193,10 @@ export interface MenuItemProps extends JSX.ButtonHTMLAttributes<HTMLButtonElemen
 export interface TabItem<T extends string> {
   value: T;
   label: JSX.Element;
+  /** Decorative, before the label. */
+  icon?: JSX.Element;
+  /** A count bubble after the label; nothing at 0. */
+  count?: number;
 }
 
 /**
@@ -192,6 +216,20 @@ export interface TabsProps<T extends string> {
   stretch?: boolean;
   /** Container classes — alignment such as mx-auto. */
   class?: string;
+  /** Page-unique id; links each tab to the <TabPanel tabs={id}> showing it. */
+  id?: string;
+}
+
+/**
+ * The content under a Tabs. Must render role="tabpanel", labelled by its tab.
+ * One panel whose contents follow the selection: pass the shown tab as value.
+ */
+export interface TabPanelProps<T extends string> {
+  /** The id given to the Tabs. */
+  tabs: string;
+  value: T;
+  class?: string;
+  children: JSX.Element;
 }
 
 export type SpinnerSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";

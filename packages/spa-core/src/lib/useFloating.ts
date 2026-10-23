@@ -1,6 +1,6 @@
 import { createSignal, onCleanup } from "solid-js";
 import { computePosition, autoUpdate, flip, shift, offset } from "@floating-ui/dom";
-import type { Placement } from "@floating-ui/dom";
+import type { Placement, ReferenceElement } from "@floating-ui/dom";
 
 export interface UseFloatingOptions {
   placement?: Placement;
@@ -37,7 +37,8 @@ export function useFloating(options: UseFloatingOptions = {}) {
 
   let stopUpdate: (() => void) | undefined;
 
-  function mount(reference: Element, floating: HTMLElement) {
+  // A virtual reference ({ getBoundingClientRect }) anchors to a point — ContextMenu.
+  function mount(reference: ReferenceElement, floating: HTMLElement) {
     stopUpdate?.();
     setPositioned(false);
     stopUpdate = autoUpdate(reference, floating, async () => {

@@ -1,6 +1,6 @@
 import { createSignal, createEffect, onCleanup, type JSX } from "solid-js";
 import { useFloating } from "./useFloating";
-import type { Placement } from "@floating-ui/dom";
+import type { Placement, ReferenceElement } from "@floating-ui/dom";
 
 // Open/close state + placement for a dropdown panel. Shared by SortSelect and
 // ViewSwitcher, which both collapse into one on narrow screens.
@@ -24,12 +24,13 @@ export function createPopover(options: { placement?: Placement } = {}) {
 
   // The anchor doubles as the dismissal boundary; the portalled panel lives
   // outside it, so clicks in there have to be excluded separately.
-  let anchorEl: HTMLElement | undefined;
+  // A virtual anchor (a point) has no area, so every click outside the panel dismisses.
+  let anchorEl: ReferenceElement | undefined;
   let floatEl: HTMLElement | undefined;
 
   const onPointer = (e: PointerEvent) => {
     const target = e.target as Node;
-    if (anchorEl?.contains(target) || floatEl?.contains(target)) return;
+    if ((anchorEl instanceof Node && anchorEl.contains(target)) || floatEl?.contains(target)) return;
     setOpen(false);
   };
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
@@ -71,7 +72,7 @@ export function createPopover(options: { placement?: Placement } = {}) {
     open,
     setOpen,
     style,
-    ref: (el: HTMLElement) => { anchorEl = el; },
+    ref: (el: ReferenceElement) => { anchorEl = el; },
     floating: (el: HTMLElement) => { floatEl = el; },
   };
 }

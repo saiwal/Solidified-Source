@@ -1,9 +1,12 @@
 import {
   createSignal,
   createEffect,
+  createUniqueId,
   untrack,
   For,
   Show,
+  Switch,
+  Match,
   createMemo,
   onCleanup,
 } from "solid-js";
@@ -17,7 +20,7 @@ import {
   channelKey,
 } from "@utsukta/spa-core/store/auth-store";
 import { useIsAdmin } from "@utsukta/spa-core/store/site-config";
-import { MdFillApp_registration, MdFillCircle, MdFillClose, MdFillDone_all, MdFillEvent, MdFillForum, MdFillHome, MdFillInsert_drive_file, MdFillMail, MdFillNotifications, MdFillOpen_in_new, MdFillPeople, MdFillPublic, MdFillRefresh, MdFillWifi, MdFillWifi_off, MdOutlineAnnouncement, MdOutlineCampaign, MdOutlineExpand_more } from "solid-icons/md";
+import { MdFillApp_registration, MdFillClose, MdFillDone_all, MdFillEvent, MdFillForum, MdFillHome, MdFillInsert_drive_file, MdFillMail, MdFillNotifications, MdFillOpen_in_new, MdFillPeople, MdFillPublic, MdFillRefresh, MdFillWifi, MdOutlineAnnouncement, MdOutlineCampaign, MdOutlineExpand_more } from "solid-icons/md";
 import DOMPurify from "dompurify";
 import {
   DISPLAY_ORDER,
@@ -54,6 +57,7 @@ import { openPost } from "@/shared/views/modal-host";
 import { Button, IconButton } from "@ui/Button";
 import { Input, Textarea } from "@ui/Field";
 import { Avatar } from "@ui/Avatar";
+import { Tabs, TabPanel } from "@ui/Tabs";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -906,33 +910,15 @@ function AnnouncementsSection(props: {
   );
 }
 
-// ── Connection dot ────────────────────────────────────────────────────────────
+// ── Connection status ─────────────────────────────────────────────────────────
 
 type ConnStatus = "connecting" | "live" | "polling" | "error";
 
-function StatusDot(props: { status: ConnStatus }) {
-  const { t } = useI18n();
-  const cls = () =>
-    ({
-      connecting: "text-warning-txt animate-pulse",
-      live: "text-success-txt",
-      polling: "text-accent animate-pulse",
-      error: "text-danger-txt",
-    })[props.status];
-  const title = () =>
-    ({
-      connecting: t("notify.conn_connecting"),
-      live: t("notify.conn_live"),
-      polling: t("notify.conn_polling"),
-      error: t("notify.conn_disconnected"),
-    })[props.status];
-
-  const IconComponent =
-    props.status === "error" ? MdFillWifi_off : MdFillCircle;
-  return <IconComponent class={`w-2 h-2 shrink-0 ${cls()}`} title={title()} />;
-}
-
 // ── Main widget ───────────────────────────────────────────────────────────────
+
+// The widget's header views. "notifications" is the accordion list below; the
+// other three are the auxiliary panels the old icon toggles used to stack.
+type PanelView = "notifications" | "notices" | "channels" | "announcements";
 
 export default function NotificationsAside() {
   const { t } = useI18n();
@@ -981,10 +967,10 @@ export default function NotificationsAside() {
   const [connStatus, setConnStatus] = createSignal<ConnStatus>("connecting");
   const [booted, setBooted] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
-  const [showNotices, setShowNotices] = createSignal(false);
-  const [showAnnouncements, setShowAnnouncements] = createSignal(false);
-  const [showOtherChannels, setShowOtherChannels] = createSignal(false);
+  const [view, setView] = createSignal<PanelView>("notifications");
   const [openSection, setOpenSection] = createSignal<string | null>(null);
+  // One id per widget instance: the header tabs link to the panel showing them.
+  const tabsId = createUniqueId();
 
   const [announcements, { refetch: refetchAnnouncements, mutate: mutateAnnouncements }] =
     createQueryResource(
@@ -1015,18 +1001,16 @@ export default function NotificationsAside() {
     return !!list?.length && list[0].id !== seenAnnouncementId();
   });
 
-  const toggleAnnouncements = () => {
-    setShowAnnouncements((v) => {
-      const next = !v;
-      if (next) {
-        const list = announcements();
-        if (list?.length) {
-          setLastSeenAnnouncementId(list[0].id);
-          setSeenAnnouncementId(list[0].id);
-        }
-      }
-      return next;
-    });
+  // Opening the announcements view is what marks them seen, as the old toggle
+  // did on its "open" half.
+  const selectView = (next: PanelView) => {
+    setView(next);
+    if (next !== "announcements") return;
+    const list = announcements();
+    if (list?.length) {
+      setLastSeenAnnouncementId(list[0].id);
+      setSeenAnnouncementId(list[0].id);
+    }
   };
 
   const createAnnouncement = async (title: string, body: string) => {
@@ -1390,59 +1374,86 @@ export default function NotificationsAside() {
     setNotifCount(total);
   });
 
+  // Icon-only header tabs: the sr-only label is the tab's accessible name, and
+  // the SVG <title> gives pointer users the same text as a tooltip.
+  const tabItem = (value: PanelView, label: string, Icon: any, dot = false) => ({
+    value,
+    label: <span class="sr-only">{label}</span>,
+    icon: (
+      <span class="relative inline-flex">
+        <Icon class="w-4 h-4" title={label} />
+        <Show when={dot}>
+          <span class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
+        </Show>
+      </span>
+    ),
+  });
+
+  // The header views. The auxiliary ones exist only while they have something
+  // to show, and keep the accent dot the old icon button carried while closed.
+  const headerTabs = createMemo(() => {
+    const items = [
+      tabItem("notifications", t("ui.notifications_title"), MdFillNotifications),
+    ];
+    if (booted() && auth()?.isLoggedIn) {
+      items.push(tabItem("notices", t("hq.msg_tab_notices"), MdOutlineCampaign));
+    }
+    if (otherChannels().length > 0) {
+      items.push(
+        tabItem(
+          "channels",
+          t("notify.other_channels"),
+          MdFillHome,
+          view() !== "channels",
+        ),
+      );
+    }
+    if (
+      booted() &&
+      auth()?.isLocal &&
+      (hasNewAnnouncements() || view() === "announcements" || isAdmin())
+    ) {
+      items.push(
+        tabItem(
+          "announcements",
+          t("widgets.site_announcements"),
+          MdOutlineAnnouncement,
+          hasNewAnnouncements() && view() !== "announcements",
+        ),
+      );
+    }
+    return items;
+  });
+
+  // A selected auxiliary view can lose its tab when its data clears; fall back
+  // to the main list rather than showing a panel no tab points at.
+  createEffect(() => {
+    const current = view();
+    if (!headerTabs().some((tab) => tab.value === current)) {
+      setView("notifications");
+    }
+  });
+
   return (
     <>
 
       <div class="space-y-3">
-        {/* Header */}
-        {/* One evenly spaced icon toolbar; the title stays for screen readers
-            only, and the connection status rides on the refresh button. */}
+        {/* Header — the view tabs on the left, the actions on the right. The
+            title stays for screen readers only, and the connection status
+            rides on the refresh button. */}
         <h3 class="sr-only">{t("ui.notifications_title")}</h3>
-        <div class="flex items-center justify-between">
-            <Show when={booted() && auth()?.isLoggedIn}>
-              <IconButton
-                label={t("hq.msg_tab_notices")}
-                size="sm"
-                pressed={showNotices()}
-                onClick={() => setShowNotices((v) => !v)}
-              >
-                <MdOutlineCampaign class="w-4 h-4" />
-              </IconButton>
-            </Show>
-            <Show when={otherChannels().length > 0}>
-              <IconButton
-                label={t("notify.other_channels")}
-                size="sm"
-                pressed={showOtherChannels()}
-                class="relative"
-                onClick={() => setShowOtherChannels((v) => !v)}
-              >
-                <MdFillHome class="w-4 h-4" />
-                <Show when={!showOtherChannels()}>
-                  <span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
-                </Show>
-              </IconButton>
-            </Show>
-            <Show
-              when={
-                booted() &&
-                auth()?.isLocal &&
-                (hasNewAnnouncements() || showAnnouncements() || isAdmin())
-              }
-            >
-              <IconButton
-                label={t("widgets.site_announcements")}
-                size="sm"
-                pressed={showAnnouncements()}
-                class="relative"
-                onClick={toggleAnnouncements}
-              >
-                <MdOutlineAnnouncement class="w-4 h-4" />
-                <Show when={!showAnnouncements() && hasNewAnnouncements()}>
-                  <span class="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
-                </Show>
-              </IconButton>
-            </Show>
+        <div class="flex items-center gap-2">
+          <Show when={booted() && auth()?.isLoggedIn}>
+            <Tabs
+              id={tabsId}
+              variant="segmented"
+              label={t("ui.notifications_title")}
+              value={view()}
+              onChange={selectView}
+              items={headerTabs()}
+            />
+          </Show>
+          <div class="flex items-center gap-1 ml-auto">
             <Show when={booted() && hasAnyCount()}>
               <IconButton label={t("ui.mark_all_read")} size="sm" onClick={markAllRead}>
                 <MdFillDone_all class="w-4 h-4" />
@@ -1451,36 +1462,15 @@ export default function NotificationsAside() {
             <IconButton
               label={`${t("ui.refresh")} · ${connLabel()}`}
               size="sm"
-              class="relative"
               onClick={manualRefresh}
               disabled={refreshing()}
             >
               <MdFillRefresh
                 class={`w-4 h-4 ${refreshing() ? "animate-spin" : ""}`}
               />
-              <span class="absolute bottom-0.5 right-0.5 inline-flex rounded-full bg-surface p-px">
-                <StatusDot status={connStatus()} />
-              </span>
             </IconButton>
+          </div>
         </div>
-
-        <Show when={showNotices()}>
-          <NoticesSection open={showNotices()} onOpenModal={openPost} />
-        </Show>
-
-        <Show when={showOtherChannels() && otherChannels().length > 0}>
-          <OtherChannelsSection channels={otherChannels()} />
-        </Show>
-
-        <Show when={showAnnouncements()}>
-          <AnnouncementsSection
-            list={announcements() ?? []}
-            loading={announcements.loading}
-            isAdmin={isAdmin()}
-            onCreate={createAnnouncement}
-            onDelete={deleteAnnouncement}
-          />
-        </Show>
 
         <Show when={!auth.loading && !auth()?.isLoggedIn}>
           <p class="text-xs text-muted text-center py-4">
@@ -1496,81 +1486,102 @@ export default function NotificationsAside() {
           </div>
         </Show>
 
-        <Show when={notices().length > 0}>
-          <div class="space-y-1">
-            <For each={notices()}>
-              {(n) => (
-                <div class="text-xs text-accent-txt bg-accent-muted rounded-lg px-3 py-2">
-                  {n.message}
-                </div>
-              )}
-            </For>
-          </div>
-        </Show>
-
-        <Show when={booted() && activeBuckets().length > 0}>
-          <div class="space-y-2">
-            <For each={activeBuckets()}>
-              {(key) => (
-                <StreamSection
-                  id={key}
-                  bucket={buckets[key]}
-                  label={sectionLabel(key)}
-                  href={sectionHref(key)}
-                  countLimit={notifyCountLimit()}
-                  open={openSection() === key}
-                  onToggle={() =>
-                    setOpenSection((cur) => (cur === key ? null : key))
-                  }
-                  onDismiss={(mid) => markSeen([mid])}
-                  onNotifySeen={async (nid) => {
-                    await markNotifySeen(nid);
-                    try {
-                      await doFetchCounts();
-                    } catch {
-                      /* silent */
-                    }
-                  }}
-                  onClearAll={async (key) => {
-                    // Buckets core has no markRead branch for (files, intros,
-                    // register) fall through its switch and clear nothing, so
-                    // route those through sse_rmids on the rows we hold instead
-                    // of zeroing a count the server will hand straight back.
-                    if (!supportsMarkRead(key)) {
-                      const mids = (unwrap(buckets)[key]?.notifications ?? [])
-                        .map((n) => n.b64mid)
-                        .filter((m): m is string => !!m);
-                      await markSeen(mids);
-                      return;
-                    }
-                    setBuckets(key, { count: 0, notifications: [], offset: -1 });
-                    try {
-                      await markAllSeen(key);
-                      await doFetchCounts();
-                    } catch {
-                      /* silent */
-                    }
-                  }}
-                  onOpenModal={(uuid) => openPost(uuid)}
+        <Show when={booted() && auth()?.isLoggedIn}>
+          <TabPanel tabs={tabsId} value={view()}>
+            <Switch>
+              <Match when={view() === "notices"}>
+                <NoticesSection open onOpenModal={openPost} />
+              </Match>
+              <Match when={view() === "channels"}>
+                <OtherChannelsSection channels={otherChannels()} />
+              </Match>
+              <Match when={view() === "announcements"}>
+                <AnnouncementsSection
+                  list={announcements() ?? []}
+                  loading={announcements.loading}
+                  isAdmin={isAdmin()}
+                  onCreate={createAnnouncement}
+                  onDelete={deleteAnnouncement}
                 />
-              )}
-            </For>
-          </div>
-        </Show>
+              </Match>
+              {/* The main view keeps the accordion stack exactly as it was. */}
+              <Match when={view() === "notifications"}>
+                <div class="space-y-3">
+                  <Show when={notices().length > 0}>
+                    <div class="space-y-1">
+                      <For each={notices()}>
+                        {(n) => (
+                          <div class="text-xs text-accent-txt bg-accent-muted rounded-lg px-3 py-2">
+                            {n.message}
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </Show>
 
-        <Show
-          when={
-            booted() &&
-            auth()?.isLoggedIn &&
-            activeBuckets().length === 0 &&
-            notices().length === 0 &&
-            otherChannels().length === 0
-          }
-        >
-          <p class="flex items-center justify-center gap-1.5 py-1.5 text-[0.6875rem] text-subtle">
-            <MdFillNotifications class="w-3.5 h-3.5 shrink-0" />
-            {t("ui.no_notifications")}
-          </p>
+                  <Show when={booted() && activeBuckets().length > 0}>
+                    <div class="space-y-2">
+                      <For each={activeBuckets()}>
+                        {(key) => (
+                          <StreamSection
+                            id={key}
+                            bucket={buckets[key]}
+                            label={sectionLabel(key)}
+                            href={sectionHref(key)}
+                            countLimit={notifyCountLimit()}
+                            open={openSection() === key}
+                            onToggle={() =>
+                              setOpenSection((cur) => (cur === key ? null : key))
+                            }
+                            onDismiss={(mid) => markSeen([mid])}
+                            onNotifySeen={async (nid) => {
+                              await markNotifySeen(nid);
+                              try {
+                                await doFetchCounts();
+                              } catch {
+                                /* silent */
+                              }
+                            }}
+                            onClearAll={async (key) => {
+                              // Buckets core has no markRead branch for (files,
+                              // intros, register) fall through its switch and
+                              // clear nothing, so route those through sse_rmids
+                              // on the rows we hold instead of zeroing a count
+                              // the server will hand straight back.
+                              if (!supportsMarkRead(key)) {
+                                const mids = (unwrap(buckets)[key]?.notifications ?? [])
+                                  .map((n) => n.b64mid)
+                                  .filter((m): m is string => !!m);
+                                await markSeen(mids);
+                                return;
+                              }
+                              setBuckets(key, { count: 0, notifications: [], offset: -1 });
+                              try {
+                                await markAllSeen(key);
+                                await doFetchCounts();
+                              } catch {
+                                /* silent */
+                              }
+                            }}
+                            onOpenModal={(uuid) => openPost(uuid)}
+                          />
+                        )}
+                      </For>
+                    </div>
+                  </Show>
+
+                  {/* Other channels now have their own tab, so they no longer
+                      suppress the main view's empty state. */}
+                  <Show when={activeBuckets().length === 0 && notices().length === 0}>
+                    <p class="flex items-center justify-center gap-1.5 py-1.5 text-[0.6875rem] text-subtle">
+                      <MdFillNotifications class="w-3.5 h-3.5 shrink-0" />
+                      {t("ui.no_notifications")}
+                    </p>
+                  </Show>
+                </div>
+              </Match>
+            </Switch>
+          </TabPanel>
         </Show>
 
       </div>
