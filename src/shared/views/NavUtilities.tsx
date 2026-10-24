@@ -25,12 +25,64 @@ interface NavUtilitiesProps {
   moduleId?: string;
 }
 
-export default function NavUtilities(props: NavUtilitiesProps) {
+/**
+ * The utility icon row (language, theme, edit-layout, feed, help, site info).
+ * Split out of the sidebar component so the mobile app drawer can put the
+ * same controls directly under the user row.
+ */
+export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
   const { t } = useI18n();
   const viewerRole = useViewerRole();
   const isOwner = () => viewerRole() === "owner";
   const pageNick = usePageNick();
   const showFeedIcon = () => !isOwner() && CHANNEL_CONTEXT_MODULES.includes(props.moduleId ?? "");
+  return (
+    <div class={props.class ?? "mt-3 pt-2 border-t border-rim flex items-center gap-[2px] px-[4px] justify-evenly"}>
+      <div use:helpable="nav.language">
+        <LanguageSwitcher />
+      </div>
+      <div use:helpable="nav.theme">
+        <ThemeToggle />
+      </div>
+      <Show when={isOwner()}>
+        <IconButton
+          label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
+          pressed={editingWidgets()}
+          class="p-[8px]"
+          onClick={() => setEditingWidgets(!editingWidgets())}
+          data-tour="nav.edit_layout"
+        >
+          <Show when={editingWidgets()} fallback={<MdOutlineEdit size={18} />}>
+            <MdFillCheck size={18} />
+          </Show>
+        </IconButton>
+      </Show>
+      <Show when={showFeedIcon()}>
+        <IconButton
+          label={t("widgets.rss_feeds")}
+          class="p-[8px]"
+          onClick={() => openFeedModal(pageNick())}
+        >
+          <BiRegularRss size={18} />
+        </IconButton>
+      </Show>
+      <div use:helpable="nav.help_mode">
+        <HelpTrigger />
+      </div>
+      <div use:helpable="nav.siteinfo">
+        <A
+          href="/siteinfo"
+          title={t("ui.site_info")}
+          class="inline-flex items-center justify-center p-[8px] rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
+        >
+          <BiRegularInfoCircle size={18} />
+        </A>
+      </div>
+    </div>
+  );
+}
+
+export default function NavUtilities(props: NavUtilitiesProps) {
   return (
     <>
       <Usermenu
@@ -39,49 +91,7 @@ export default function NavUtilities(props: NavUtilitiesProps) {
         actionsOpen={props.actionsOpen}
         onUserMenuToggle={props.onUserMenuToggle}
       />
-
-      <div class="mt-3 pt-2 border-t border-rim flex items-center gap-[2px] px-[4px] justify-evenly">
-        <div use:helpable="nav.language">
-          <LanguageSwitcher />
-        </div>
-        <div use:helpable="nav.theme">
-          <ThemeToggle />
-        </div>
-        <Show when={isOwner()}>
-          <IconButton
-            label={editingWidgets() ? t("widgets.done_editing") : t("widgets.edit_layout")}
-            pressed={editingWidgets()}
-            class="p-[8px]"
-            onClick={() => setEditingWidgets(!editingWidgets())}
-            data-tour="nav.edit_layout"
-          >
-            <Show when={editingWidgets()} fallback={<MdOutlineEdit size={18} />}>
-              <MdFillCheck size={18} />
-            </Show>
-          </IconButton>
-        </Show>
-        <Show when={showFeedIcon()}>
-          <IconButton
-            label={t("widgets.rss_feeds")}
-            class="p-[8px]"
-            onClick={() => openFeedModal(pageNick())}
-          >
-            <BiRegularRss size={18} />
-          </IconButton>
-        </Show>
-        <div use:helpable="nav.help_mode">
-          <HelpTrigger />
-        </div>
-        <div use:helpable="nav.siteinfo">
-          <A
-            href="/siteinfo"
-            title={t("ui.site_info")}
-            class="inline-flex items-center justify-center p-[8px] rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
-          >
-            <BiRegularInfoCircle size={18} />
-          </A>
-        </div>
-      </div>
+      <NavUtilityIcons moduleId={props.moduleId} />
     </>
   );
 }

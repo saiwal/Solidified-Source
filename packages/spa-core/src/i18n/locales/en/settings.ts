@@ -280,6 +280,12 @@ export const settings: RawDictionary["settings"] = {
   notif_desktop_blocked:   "Blocked in your browser's site settings.",
   notif_push_title:       "Push notifications",
   notif_push_hint:        "Get notified about new activity even when Hubzilla isn't open in a tab.",
+  notif_push_err_permission: "Notification permission wasn't granted. Allow notifications for this site in your browser, then try again.",
+  notif_push_err_unsupported: "This browser doesn't support push notifications. On iPhone/iPad, add the site to your home screen first.",
+  notif_push_err_no_worker: "The app's service worker isn't running (blocked by the browser or an extension, or the site isn't on HTTPS).",
+  notif_push_err_server_key: "The hub couldn't provide a push key. Ask your hub admin to check the server log.",
+  notif_push_err_push_service: "Your browser's push service refused the subscription. Some browsers (e.g. Brave, de-Googled Chromium, private windows) have push turned off.",
+  notif_push_err_server_save: "The hub couldn't save this subscription. Try again, or reload the page.",
   // Integrations
   integ_search_placeholder: "Search apps…",
   integ_tab_all:            "All",

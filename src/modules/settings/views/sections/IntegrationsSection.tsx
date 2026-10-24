@@ -14,6 +14,7 @@ import CardsConfigModal from "./CardsConfigModal";
 import { getFrontendToggleableModules, frontendFeatureEnabled } from "@utsukta/spa-core/module-registry";
 import { disabledFrontendModules, setFrontendModuleEnabled } from "@utsukta/spa-core/store/disabled-frontend-modules";
 import { IconButton } from "@ui/Button";
+import { FavoriteStar } from "@/shared/views/FavoriteStar";
 import { Input } from "@ui/Field";
 import { Switch } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
@@ -224,7 +225,17 @@ export default function IntegrationsSection() {
                 // controls it got ~130px at 360px. From sm up it sits under
                 // the label as before, icon and controls centred across both.
                 <div class="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-3 py-3">
-                  <div class="col-start-1 row-start-1 sm:row-end-3">{row.icon}</div>
+                  <div class="col-start-1 row-start-1 sm:row-end-3 flex items-center gap-1">
+                    {/* Favorite = pinned; same "can the nav show it" rule as the Nav
+                        toggle. A spacer keeps icons aligned on rows without one. */}
+                    <Show
+                      when={row.app?.installed && appNavigable(row.app.url)}
+                      fallback={<span class="w-7 shrink-0" />}
+                    >
+                      <FavoriteStar on={row.app!.pinned} target={{ name: row.app!.name }} />
+                    </Show>
+                    {row.icon}
+                  </div>
 
                   <p class="col-start-2 row-start-1 min-w-0 text-sm font-medium text-txt leading-snug">
                     {row.label}

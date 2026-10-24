@@ -20,9 +20,10 @@ import {
 import {
   isPushSupported,
   getCurrentPushSubscription,
-  subscribeToPush,
+  trySubscribeToPush,
   unsubscribeFromPush,
 } from "@utsukta/spa-core/lib/webPush";
+import { toast } from "@utsukta/spa-core/store/toast";
 import { Input } from "@ui/Field";
 import { Toggle } from "@ui/Toggle";
 import { Card, CardHeader } from "@ui/Card";
@@ -198,8 +199,13 @@ function PushNotifyRow() {
       } else {
         let perm = Notification.permission;
         if (perm === "default") perm = await Notification.requestPermission();
-        if (perm !== "granted") return;
-        setSubscribed(await subscribeToPush());
+        if (perm !== "granted") {
+          toast.error(t("settings.notif_push_err_permission"), 8000);
+          return;
+        }
+        const failure = await trySubscribeToPush();
+        setSubscribed(failure === null);
+        if (failure) toast.error(t(`settings.notif_push_err_${failure}`), 8000);
       }
     } finally {
       setBusy(false);

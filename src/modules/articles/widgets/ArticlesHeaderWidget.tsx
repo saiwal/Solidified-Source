@@ -15,6 +15,7 @@ import { useArticlesSection } from "../lib/isArticlesList";
 import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
+import PageActions from "@/shared/views/layout/PageActions";
 
 export default function ArticlesHeaderWidget() {
   const { t, locale } = useI18n();
@@ -128,12 +129,9 @@ export default function ArticlesHeaderWidget() {
               </Show>
             </Show>
 
-            <Show when={role() === "owner"}>
-              <Button size="sm" onClick={openArticle}>
-                <BiRegularEdit class="w-4 h-4" />
-                {t("articles.new_article")}
-              </Button>
-            </Show>
+            <PageActions actions={[
+              { label: t("articles.new_article"), icon: BiRegularEdit, onClick: openArticle, primary: true, show: role() === "owner" },
+            ]} />
           </div>
         </div>
 

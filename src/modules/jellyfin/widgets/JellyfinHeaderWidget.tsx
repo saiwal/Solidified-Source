@@ -1,10 +1,10 @@
 // Same layout as the Cards header: the title (the server's name), the
 // Music / Video switcher in the middle, and search, other devices and a ⋯
 // for servers, settings and signing out on the right.
-import { createSignal, createEffect, Show, For } from "solid-js";
+import { createSignal, createEffect, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { useSearchParams } from "@solidjs/router";
-import { MdFillSearch, MdFillClose, MdOutlineDevices, MdOutlineMore_horiz, MdFillCheck, MdFillAdd, MdOutlineSettings, MdOutlineLogout, MdOutlineCloud_off } from "solid-icons/md";
+import { MdFillSearch, MdFillClose, MdOutlineDevices, MdFillCheck, MdFillAdd, MdOutlineSettings, MdOutlineLogout, MdOutlineCloud_off } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
@@ -16,8 +16,8 @@ import { useSection, PAGE_PARAMS, type Section } from "../chrome/section";
 import DeviceList from "../RemoteSessions";
 import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
-import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 import { Tabs } from "@ui/Tabs";
+import PageActions from "@/shared/views/layout/PageActions";
 
 const panel = "z-50 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2";
 
@@ -105,59 +105,38 @@ export default function JellyfinHeaderWidget() {
               </Show>
             </span>
 
-            <Menu
-              label={t("jellyfin.more")}
-              class="w-64"
-              trigger={(p) => (
-                <IconButton label={t("jellyfin.more")} variant="outline" {...p}>
-                  <MdOutlineMore_horiz size={15} />
-                </IconButton>
-              )}
-            >
-              <For each={servers()}>
-                {(s) => (
-                  <MenuItem
-                    icon={s.id === session()?.id ? <MdFillCheck size={16} class="text-accent-txt" /> : <span />}
-                    onClick={() => {
-                      if (s.id === session()?.id) return;
-                      setActive(s.id);
-                      setParams({ ...PAGE_PARAMS, section: params.section });
-                    }}
-                  >
-                    <span class="min-w-0">
-                      <span class="block truncate">{s.name}</span>
-                      <span class="block text-xs text-muted truncate">{s.userName}</span>
-                    </span>
-                  </MenuItem>
-                )}
-              </For>
-              <MenuItem icon={<MdFillAdd size={16} />} onClick={() => setAdding(true)}>
-                {t("jellyfin.add_server_plain")}
-              </MenuItem>
-              <MenuSeparator />
-              <MenuItem icon={<MdOutlineSettings size={16} />} onClick={() => setSettingsOpen(true)}>
-                {t("jellyfin.settings")}
-              </MenuItem>
-              <MenuItem
-                icon={<MdOutlineLogout size={16} />}
-                title={t("jellyfin.disconnect_title", { user: session()?.userName ?? "", server: session()?.name ?? "" })}
-                onClick={() => { const s = session(); if (s) void signOut(s.id); }}
-              >
-                <span class="truncate">{t("jellyfin.sign_out_of", { server: session()?.name ?? "" })}</span>
-              </MenuItem>
-              <Show when={session() && hubStored().has(session()!.id)}>
-                <MenuItem
-                  icon={<MdOutlineCloud_off size={16} />}
-                  title={t("jellyfin.hub_forget_help")}
-                  onClick={() => {
-                    const s = session();
-                    if (s) forgetOnHub(s.id).then(() => toast.success(t("jellyfin.hub_forgotten"))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
-                  }}
-                >
-                  <span class="truncate">{t("jellyfin.hub_forget")}</span>
-                </MenuItem>
-              </Show>
-            </Menu>
+            <PageActions actions={[
+              ...servers().map((s) => ({
+                label: `${s.name} · ${s.userName}`,
+                icon: s.id === session()?.id ? MdFillCheck : undefined,
+                onClick: () => {
+                  if (s.id === session()?.id) return;
+                  setActive(s.id);
+                  setParams({ ...PAGE_PARAMS, section: params.section });
+                },
+                overflow: true,
+              })),
+              { label: t("jellyfin.add_server_plain"), icon: MdFillAdd, onClick: () => setAdding(true), overflow: true },
+              { label: t("jellyfin.settings"), icon: MdOutlineSettings, onClick: () => setSettingsOpen(true), overflow: true },
+              {
+                label: t("jellyfin.sign_out_of", { server: session()?.name ?? "" }),
+                title: t("jellyfin.disconnect_title", { user: session()?.userName ?? "", server: session()?.name ?? "" }),
+                icon: MdOutlineLogout,
+                onClick: () => { const s = session(); if (s) void signOut(s.id); },
+                overflow: true,
+              },
+              {
+                label: t("jellyfin.hub_forget"),
+                title: t("jellyfin.hub_forget_help"),
+                icon: MdOutlineCloud_off,
+                onClick: () => {
+                  const s = session();
+                  if (s) forgetOnHub(s.id).then(() => toast.success(t("jellyfin.hub_forgotten"))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
+                },
+                overflow: true,
+                show: !!session() && hubStored().has(session()!.id),
+              },
+            ]} />
           </div>
         </Show>
       </div>

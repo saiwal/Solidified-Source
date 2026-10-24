@@ -1,4 +1,5 @@
-import { For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { MdOutlineExpand_more } from "solid-icons/md";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
@@ -11,10 +12,36 @@ import NavItem from "../NavItem";
 import Slot from "../Slot";
 import NavUtilities from "../NavUtilities";
 import ChannelSwitcher from "../ChannelSwitcher";
+import { moduleIdForPath } from "@utsukta/spa-core/module-registry";
+import { createDragReorder } from "@utsukta/spa-core/lib/useDragReorder";
+import { commitNavOrder } from "@utsukta/spa-core/store/nav-order";
+import { Collapsible } from "@ui/Collapsible";
 import BrandBlock from "./BrandBlock";
+import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
+import { FavoriteStar } from "../FavoriteStar";
+import { categoryApps, favoriteTarget, groupNavItems, pinnedNavItems } from "./app-categories";
+
+// Which rail groups are expanded — a per-browser convenience, so best-effort.
+const GROUPS_KEY = "hz-nav-groups";
+function readOpenGroups(): Set<string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(GROUPS_KEY) ?? "[]");
+    return new Set(Array.isArray(v) ? v.filter((x) => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+function writeOpenGroups(open: Set<string>): void {
+  try {
+    localStorage.setItem(GROUPS_KEY, JSON.stringify([...open]));
+  } catch {
+    // private mode / storage full
+  }
+}
 
 /**
- * Desktop navigation rail (lg and up): brand, primary nav, the leftBottom slot,
+ * Desktop navigation rail (lg and up): brand, primary nav (favorites, then the
+ * other apps in collapsible categories), the leftBottom slot,
  * the avatar-anchored action-items overlay and the nav utilities footer.
  *
  * Kept out of Layout.tsx so it can be changed without touching the mobile
@@ -41,7 +68,78 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     isLocalUser,
     activeModuleId,
     hidesNavChrome,
+    navItems,
+    viewerRole,
   } = props.chrome;
+
+  // In your own context the rail is favorites (always shown) + the other apps
+  // in collapsible categories. Visiting a channel it stays the flat list of
+  // that channel's tabs (+ site apps): those are sections of one channel, not
+  // apps to categorise. In edit-layout mode the favorites are what's dragged —
+  // the server's nav_order only ever sorts pinned apps anyway.
+  const grouped = () => viewerRole() === "owner";
+  const favorites = createMemo(() => pinnedNavItems(navItems(), navData()?.pinned ?? [], navData()?.pinned_paths));
+  const favDrag = createDragReorder(favorites, (i) => i.path, (order) =>
+    commitNavOrder(navItems(), order),
+  );
+  const groups = createMemo(() => {
+    const fav = new Set(favorites().map((i) => i.path));
+    return groupNavItems(
+      navItems().filter((i) => !fav.has(i.path)),
+      categoryApps(navData()),
+    );
+  });
+
+  // A grouped-mode nav entry with a hover/focus star to (un)favorite it.
+  const RailItem = (p: { item: NavItemDef; favorite: boolean }) => {
+    const draggable = () => p.favorite && editingWidgets();
+    return (
+      <div
+        use:helpable={navItemHelpTarget(p.item)}
+        ref={p.favorite ? favDrag.registerRef(p.item.path) : undefined}
+        class="group/fav relative"
+        classList={{ "rounded-xl border border-dashed border-accent/50": draggable() }}
+      >
+        <NavItem
+          href={p.item.href}
+          label={p.item.label}
+          icon={p.item.icon}
+          badge={p.item.badge}
+          draggable={draggable()}
+          dragging={favDrag.draggingKey() === p.item.path}
+          onDragHandlePointerDown={(e) => {
+            e.preventDefault();
+            favDrag.beginDrag(p.item);
+          }}
+        />
+        {/* The drag handle takes this corner while editing. */}
+        <Show when={!draggable()}>
+          <FavoriteStar
+            on={p.favorite}
+            target={favoriteTarget(p.item, [...(navData()?.pinned ?? []), ...(navData()?.featured ?? [])])}
+            size={14}
+            class="absolute right-1 top-1/2 -translate-y-1/2 bg-elevated opacity-0 group-hover/fav:opacity-100 focus-visible:opacity-100"
+          />
+        </Show>
+      </div>
+    );
+  };
+
+  const [openGroups, setOpenGroups] = createSignal(readOpenGroups());
+  const setGroupOpen = (id: string, open: boolean) => {
+    const next = new Set(openGroups());
+    if (open) next.add(id);
+    else next.delete(id);
+    setOpenGroups(next);
+    writeOpenGroups(next);
+  };
+  // Navigating into an app opens its group, so the active item is never
+  // hidden; closing it again afterwards is up to the user.
+  createEffect(() => {
+    const id = activeModuleId();
+    const group = groups().find((g) => g.items.some((i) => moduleIdForPath(i.path) === id));
+    if (group && !openGroups().has(group.id)) setGroupOpen(group.id, true);
+  });
 
   return (
     <Show when={!hidesNavChrome()}>
@@ -60,37 +158,85 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
             to the avatar, instead of being appended to scrollable content
             that may already be scrolled out of view. */}
         <div class="flex-1 min-h-0 flex flex-col overflow-y-auto">
-          {/* Primary nav — reorderable via drag handle while in edit-layout mode */}
-          <nav aria-label="Primary" data-tour="nav.primary" class="flex flex-col gap-0.5">
-            <For each={desktopNavDrag.displayItems()}>
-              {(item) => (
-                <div
-                  ref={desktopNavDrag.registerRef(item.path)}
-                  classList={{
-                    "rounded-xl border border-dashed border-accent/50":
-                      editingWidgets(),
-                  }}
-                  use:helpable={navItemHelpTarget(item)}
-                >
-                  <Show when={item.separatorBefore}>
-                    <hr class="my-1.5 mx-2 border-rim" />
-                  </Show>
-                  <NavItem
-                    href={item.href}
-                    label={item.label}
-                    icon={item.icon}
-                    badge={item.badge}
-                    draggable={editingWidgets()}
-                    dragging={desktopNavDrag.draggingKey() === item.path}
-                    onDragHandlePointerDown={(e) => {
-                      e.preventDefault();
-                      desktopNavDrag.beginDrag(item);
-                    }}
-                  />
-                </div>
-              )}
-            </For>
-          </nav>
+          <Show
+            when={grouped()}
+            fallback={
+              <>
+              {/* Primary nav — reorderable via drag handle while in edit-layout mode */}
+              <nav aria-label="Primary" data-tour="nav.primary" class="flex flex-col gap-0.5">
+                <For each={desktopNavDrag.displayItems()}>
+                  {(item) => (
+                    <div
+                      ref={desktopNavDrag.registerRef(item.path)}
+                      classList={{
+                        "rounded-xl border border-dashed border-accent/50":
+                          editingWidgets(),
+                      }}
+                      use:helpable={navItemHelpTarget(item)}
+                    >
+                      <Show when={item.separatorBefore}>
+                        <hr class="my-1.5 mx-2 border-rim" />
+                      </Show>
+                      <NavItem
+                        href={item.href}
+                        label={item.label}
+                        icon={item.icon}
+                        badge={item.badge}
+                        draggable={editingWidgets()}
+                        dragging={desktopNavDrag.draggingKey() === item.path}
+                        onDragHandlePointerDown={(e) => {
+                          e.preventDefault();
+                          desktopNavDrag.beginDrag(item);
+                        }}
+                      />
+                    </div>
+                  )}
+                </For>
+              </nav>
+              </>
+            }
+          >
+            <nav aria-label="Primary" data-tour="nav.primary" class="flex flex-col gap-0.5">
+              <For each={favDrag.displayItems()}>
+                {(item) => <RailItem item={item} favorite />}
+              </For>
+
+              <div class={`flex flex-col gap-1 ${favorites().length ? "mt-3" : ""}`}>
+                <For each={groups()}>
+                  {(group) => (
+                    <Collapsible
+                      open={openGroups().has(group.id)}
+                      onOpenChange={(open) => setGroupOpen(group.id, open)}
+                      panelClass="flex flex-col gap-0.5 pt-0.5"
+                      header={(trigger) => (
+                        <button
+                          type="button"
+                          {...trigger}
+                          class="w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[0.625rem] font-semibold uppercase tracking-widest text-muted hover:text-txt hover:bg-elevated transition-colors"
+                        >
+                          <span class="flex-1 min-w-0 truncate text-left">{t(group.labelKey)}</span>
+                          {/* A collapsed group would hide its apps' unread badges. */}
+                          <Show when={!openGroups().has(group.id) && group.items.some((i) => (i.badge?.() ?? 0) > 0)}>
+                            <span class="w-1.5 h-1.5 rounded-full bg-accent" />
+                          </Show>
+                          <span aria-hidden="true" class="flex">
+                            <MdOutlineExpand_more
+                              size={14}
+                              class={`transition-transform duration-200 ease-out ${openGroups().has(group.id) ? "rotate-180" : "rotate-0"}`}
+                            />
+                          </span>
+                        </button>
+                      )}
+                    >
+                      <For each={group.items}>
+                        {(item) => <RailItem item={item} favorite={false} />}
+                      </For>
+                    </Collapsible>
+                  )}
+                </For>
+              </div>
+            </nav>
+          </Show>
         </div>
 
         <Show when={isLocalUser()}>

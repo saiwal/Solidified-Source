@@ -1,7 +1,7 @@
 // Same layout as the Cards header: title left, Month/Week/Day/List switcher in
 // the middle, New event + ⋯ (iCal export/import) on the right.
-import { createSignal, Show } from "solid-js";
-import { MdOutlineAdd, MdOutlineMore_horiz, MdOutlineFile_download, MdOutlineFile_upload } from "solid-icons/md";
+import { createSignal } from "solid-js";
+import { MdOutlineAdd, MdOutlineFile_download, MdOutlineFile_upload } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -9,9 +9,8 @@ import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { openEvent } from "@/shared/views/modal-host";
 import { importCalendar } from "../api";
 import { viewType, setViewType, bumpCalendarRefresh, type ViewType } from "../store";
-import { Button, IconButton } from "@ui/Button";
-import { Menu, MenuItem } from "@ui/Menu";
 import { Tabs } from "@ui/Tabs";
+import PageActions from "@/shared/views/layout/PageActions";
 
 const VIEWS: ViewType[] = ["month", "week", "day", "list"];
 const VIEW_LABEL = {
@@ -63,40 +62,14 @@ export default function CalendarHeaderWidget() {
           items={VIEWS.map((v) => ({ value: v, label: t(VIEW_LABEL[v]) }))}
         />
 
-        <div class="flex items-center gap-1.5">
-          <Show when={canCreate()}>
-            <Button size="sm" onClick={() => openEvent({ onCreated: bumpCalendarRefresh })}>
-              <MdOutlineAdd class="w-4 h-4" />
-              {t("calendar.new_event")}
-            </Button>
-          </Show>
-
-          <Menu
-            label={t("calendar.more")}
-            class="w-60"
-            trigger={(p) => (
-              <IconButton label={t("calendar.more")} variant="outline" {...p}>
-                <MdOutlineMore_horiz size={15} />
-              </IconButton>
-            )}
-          >
-            <MenuItem
-              icon={<MdOutlineFile_download size={16} />}
-              href={`/spa/cal/${encodeURIComponent(nick())}?export=ical`}
-              download={`${nick()}-calendar.ics`}
-            >
-              {t("calendar.export_ical")}
-            </MenuItem>
-            {/* Import lands in the viewer's own channel calendar, so only offer it there */}
-            <Show when={role() === "owner"}>
-              <MenuItem icon={<MdOutlineFile_upload size={16} />} disabled={importing()} onClick={() => fileInput.click()}>
-                {importing() ? t("calendar.importing") : t("calendar.import_ical")}
-              </MenuItem>
-            </Show>
-          </Menu>
-          {/* Outside the menu: it has to outlive the menu closing while the file picker is open. */}
-          <input ref={fileInput} type="file" accept=".ics,.ical,text/calendar" class="hidden" onChange={handleImport} />
-        </div>
+        <PageActions actions={[
+          { label: t("calendar.new_event"), icon: MdOutlineAdd, onClick: () => openEvent({ onCreated: bumpCalendarRefresh }), primary: true, show: canCreate() },
+          { label: t("calendar.export_ical"), icon: MdOutlineFile_download, href: `/spa/cal/${encodeURIComponent(nick())}?export=ical`, download: `${nick()}-calendar.ics`, overflow: true },
+          // Import lands in the viewer's own channel calendar, so only offer it there
+          { label: importing() ? t("calendar.importing") : t("calendar.import_ical"), icon: MdOutlineFile_upload, onClick: () => fileInput.click(), disabled: importing(), overflow: true, show: role() === "owner" },
+        ]} />
+        {/* Outside the actions: it has to outlive the menu/sheet closing while the file picker is open. */}
+        <input ref={fileInput} type="file" accept=".ics,.ical,text/calendar" class="hidden" onChange={handleImport} />
       </div>
     </div>
   );

@@ -212,6 +212,13 @@ class Nav
                 'url'      => $url,
                 'photo'    => $app['photo'] ?? '',
                 'requires' => $app['requires'] ?? '',
+                // Core's app categories (.apd "categories:" / term rows) minus
+                // its nav_pinned_app/nav_featured_app markers; the mobile app
+                // drawer groups apps it has no curated category for by these.
+                'categories' => array_values(array_filter(
+                    array_map('trim', explode(',', (string) ($app['categories'] ?? ''))),
+                    fn($c) => $c !== '' && !str_starts_with($c, 'nav_')
+                )),
             ];
         };
 
@@ -427,6 +434,11 @@ class Nav
             'channels'         => $channels,
             'nav_channel_select' => $nav_channel_select,
             'pinned'           => $pinned,
+            // Favorites that aren't Hubzilla apps (SPA-only modules like
+            // messenger/inbox): nav paths in pconfig spa/pinned_paths.
+            'pinned_paths'     => $is_owner
+                ? (json_decode((string) get_pconfig($uid, 'spa', 'pinned_paths', '[]'), true) ?: [])
+                : [],
             'featured'         => $featured,
             'system_apps'      => $system_apps,
             'channel_tabs'     => $channel_tabs,

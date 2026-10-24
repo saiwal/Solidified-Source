@@ -1,4 +1,4 @@
-import { type ParentComponent, Show, ErrorBoundary, Suspense } from "solid-js";
+import { type ParentComponent, Show, ErrorBoundary, Suspense, createEffect } from "solid-js";
 import { useLayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
@@ -21,6 +21,7 @@ import { Button } from "@ui/Button";
 import { usePWA } from "@/pwa";
 import DesktopMenu from "./shared/views/layout/DesktopMenu";
 import MobileMenu from "./shared/views/layout/MobileMenu";
+import { setMobileNavAvailable } from "./shared/views/layout/PageActions";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const Layout: ParentComponent = (props) => {
@@ -54,6 +55,14 @@ const Layout: ParentComponent = (props) => {
     isLocalUser,
     showsTemplateNotice,
   } = chrome;
+
+  // Header actions are portaled into the mobile actions sheet; if the nav
+  // chrome is hidden on mobile there is no sheet, so let PageActions fall
+  // back to rendering them inline in the page header. Set it once before the
+  // first render too, so mobile doesn't flash the actions inline while waiting
+  // for the effect.
+  setMobileNavAvailable(!hidesNavChrome());
+  createEffect(() => setMobileNavAvailable(!hidesNavChrome()));
 
   return (
     <div class="fixed inset-0 bg-base text-txt hz-app-root">
@@ -225,7 +234,7 @@ const Layout: ParentComponent = (props) => {
           {/* ═══════════════════════════════════════════════════════
               RIGHT SIDEBAR
           ═══════════════════════════════════════════════════════ */}
-          {/* Off-canvas drawers (this and #more-drawer) are only translated
+          {/* Off-canvas drawers (this and #app-drawer) are only translated
               off-screen, so their contents stay tabbable when closed. `inert`
               hides them from AT *and* pulls them out of the tab order;
               `aria-hidden` alone did only the first, so focus could land

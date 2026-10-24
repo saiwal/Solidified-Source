@@ -1,64 +1,49 @@
-import { For, Show } from "solid-js";
-import { A } from "@solidjs/router";
+import { createEffect, createMemo, createSignal, For, lazy, on, Show, Suspense } from "solid-js";
+import { A, useLocation } from "@solidjs/router";
 import {
   MdFillChevron_right,
-  MdFillMore_horiz,
+  MdFillEdit,
+  MdFillGrid_view,
+  MdOutlineBolt,
+  MdOutlineCheck,
+  MdOutlineClose,
+  MdOutlinePerson,
+  MdOutlineStar,
 } from "solid-icons/md";
-import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
+import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
-import { useI18n } from "@utsukta/spa-core/i18n";
-import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
-import { motion } from "solid-motionone";
-void motion;
+import { getModule } from "@utsukta/spa-core/module-registry";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { notifyCountLimit } from "@utsukta/spa-core/store/auth-store";
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
+import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
 import { formatCount } from "@/modules/notify/rows";
+import { Avatar } from "@ui/Avatar";
+import { IconButton } from "@ui/Button";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 import { getNavIcon } from "../NavItem";
-import { ChannelSwitcherTiles } from "../ChannelSwitcher";
-import NavUtilities from "../NavUtilities";
-import BrandBlock from "./BrandBlock";
+import { switchToChannel } from "../ChannelSwitcher";
+import AppDrawer, { TileFace, tileClass } from "./AppDrawer";
+import { pinnedNavItems } from "./app-categories";
+import { hasPageActions, pageActions } from "./PageActions";
 
-// ── Mobile bottom tab ─────────────────────────────────────────────────────────
-function MobileTab(props: {
-  href: string | (() => string);
-  label: string | (() => string);
-  icon?: string;
-  badge?: () => number | undefined;
-}) {
-  const href = () =>
-    typeof props.href === "function" ? props.href() : props.href;
-  const label = () =>
-    typeof props.label === "function" ? props.label() : props.label;
-
-  return (
-    <A
-      href={href()}
-      end={href() === "/"}
-      class="flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
-             text-muted hover:text-txt hover:bg-elevated
-             transition-colors min-w-0"
-      activeClass="!text-txt"
-    >
-      <span aria-hidden="true" class="relative flex items-center">
-        {getNavIcon(props.icon, 22)}
-        {/* A dot, not a count: at tab-bar size a number is unreadable. */}
-        <Show when={props.badge?.()}>
-          <span class="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-accent" />
-        </Show>
-      </span>
-      <span class="text-[0.625rem] font-medium leading-tight truncate max-w-[52px]">
-        {label()}
-      </span>
-    </A>
-  );
+function labelOf(item: NavItemDef): string {
+  return typeof item.label === "function" ? item.label() : item.label;
 }
 
+function hrefOf(item: NavItemDef): string {
+  return typeof item.href === "function" ? item.href() : item.href;
+}
+
+// Loaded only when the actions sheet falls back to it (no page actions on
+// this page), so the compose widget stays out of the shell bundle.
+const QuickCompose = lazy(() => import("@/modules/hq/widgets/QuickComposeWidget"));
+
 /**
- * Mobile navigation (below lg): the "More" bottom-sheet drawer and the bottom
- * tab bar. Both live here so mobile nav can be changed without touching the
- * desktop rail.
+ * Mobile navigation (below lg): the app drawer and the bottom bar that opens
+ * it. The bar holds the app drawer, a quick menu of the user's pinned apps,
+ * the current module's contextual actions and the right-panel toggle.
  *
  * Receives the shared layout chrome rather than calling useLayoutChrome()
  * itself — that hook owns singleton state (focus restoration, drag reorder,
@@ -66,300 +51,410 @@ function MobileTab(props: {
  */
 export default function MobileMenu(props: { chrome: LayoutChrome }) {
   const { t } = useI18n();
+  const location = useLocation();
   const {
     hidesNavChrome,
-    overflowItems,
     moreOpen,
     setMoreOpen,
-    setMorePanelRef,
-    moreDrawerDrag,
-    navData,
-    actionsOpen,
-    setActionsOpen,
-    actionItems,
-    channelSwitcherActive,
-    channelMenuOpen,
-    setChannelMenuOpen,
-    navChannels,
-    navViewer,
-    navActions,
-    activeModuleId,
-    closeAll,
-    reducedMotion,
-    bottomTabDrag,
     setMoreButtonRef,
-    hidesRightSidebar,
-    rightOpen,
+    navData,
+    navItems,
+    navViewer,
+    actionItems,
     setRightOpen,
+    rightOpen,
+    hidesRightSidebar,
     setPanelButtonRef,
+    activeModuleId,
+    viewerRole,
+    channelSwitcherActive,
+    navChannels,
   } = props.chrome;
 
+  const favorites = createMemo(() => pinnedNavItems(navItems(), navData()?.pinned ?? [], navData()?.pinned_paths));
+  const isAuthenticated = () =>
+    !!(navViewer()?.is_local || navViewer()?.is_remote || navViewer()?.is_admin);
+
+  // Quick compose is self-targeted (new post/message/article on your own
+  // channel), so the fallback is for the owner only. The bar button stays
+  // visible on their pages even when the module has no header actions.
+  const canCompose = () => viewerRole() === "owner";
+  const showActionsButton = () => hasPageActions() || canCompose();
+
+  // ── Bottom sheet: contextual actions or favorites ──────────────────────────
+  // One sheet, two contents, so only one can ever be up.
+  const [sheet, setSheet] = createSignal<"actions" | "favorites" | null>(null);
+  const sheetOpen = () => sheet() !== null;
+  const [sheetRef, setSheetRef] = createSignal<HTMLElement>();
+  let sheetButtonRef: HTMLButtonElement | undefined;
+  let favButtonRef: HTMLButtonElement | undefined;
+
+  createEffect(() => {
+    const el = sheetRef();
+    if (el) el.inert = !sheetOpen();
+  });
+  // Move focus into the sheet on open and back to its trigger on close, the
+  // same pattern useLayoutChrome uses for the drawers.
+  createEffect(
+    on(
+      sheet,
+      (open, prevOpen) => {
+        if (open) {
+          requestAnimationFrame(() =>
+            sheetRef()
+              ?.querySelector<HTMLElement>("button, a, input, select, textarea")
+              ?.focus({ preventScroll: true }),
+          );
+        } else if (prevOpen) {
+          (prevOpen === "favorites" ? favButtonRef : sheetButtonRef)?.focus({ preventScroll: true });
+        }
+      },
+      { defer: true },
+    ),
+  );
+  // A navigation invalidates the current page's actions, so don't leave the
+  // sheet floating over the next page.
+  createEffect(
+    on(
+      () => location.pathname,
+      () => setSheet(null),
+      { defer: true },
+    ),
+  );
+  createEffect(() => {
+    if (sheet() === "actions" && !showActionsButton()) setSheet(null);
+    if (sheet() === "favorites" && favorites().length === 0) setSheet(null);
+  });
+
+  const toggleDrawer = () => {
+    const next = !moreOpen();
+    setMoreOpen(next);
+    setRightOpen(false);
+    setSheet(null);
+  };
+  const toggleSheet = (kind: "actions" | "favorites") => {
+    setSheet((cur) => (cur === kind ? null : kind));
+    setMoreOpen(false);
+    setRightOpen(false);
+  };
+  const togglePanel = () => {
+    const next = !rightOpen();
+    setRightOpen(next);
+    setMoreOpen(false);
+    setSheet(null);
+  };
+
+  const moduleLabel = () => {
+    const label = getModule(activeModuleId())?.navItem?.label;
+    return typeof label === "function" ? label() : (label ?? t("layout.actions"));
+  };
+
+  const sheetTitle = () =>
+    sheet() === "favorites"
+      ? t("layout.favorites")
+      : hasPageActions()
+        ? moduleLabel()
+        : t("layout.quick_compose");
+
   return (
-    <>
+    <Show when={!hidesNavChrome()}>
+      <AppDrawer chrome={props.chrome} />
+
       {/* ═══════════════════════════════════════════════════════
-          MOBILE — "More" bottom sheet drawer
+          MOBILE — contextual actions for the current module
       ═══════════════════════════════════════════════════════ */}
-      <Show when={!hidesNavChrome()}>
-        <nav
-          id="more-drawer"
-          ref={setMorePanelRef}
-          aria-label={t("layout.more")}
-          class={`
-            fixed left-0 right-0 z-40 lg:hidden
-            bg-surface border-t border-rim
-            rounded-t-2xl shadow-2xl px-0 pt-0 pb-3
-            transform transition-transform duration-300 ease-in-out
-            max-h-[72vh] overflow-y-auto overscroll-contain
-            ${moreOpen() ? "translate-y-0 bottom-16" : "translate-y-full bottom-16"}
-          `}
-        >
-          <div class="mx-auto mt-3 mb-4 w-9 h-1 rounded-full bg-rim" />
-
-          {/* Brand */}
-          <div class="flex items-center justify-center px-4 pb-3 mb-1 border-b border-rim">
-            <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
-          </div>
-
-          {/* ── Nav tiles — reorderable via drag ── */}
-          <Show when={overflowItems().length > 0}>
-            <p class="px-4 pb-2 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-              {t("layout.navigation")}
+      <div
+        id="page-actions-sheet"
+        ref={setSheetRef}
+        role="dialog"
+        aria-label={sheetTitle()}
+        class={`
+          fixed left-0 right-0 z-40 lg:hidden bottom-16
+          bg-surface border-t border-rim
+          rounded-t-2xl shadow-2xl
+          transform transition-transform duration-300 ease-in-out
+          max-h-[70vh] overflow-y-auto overscroll-contain
+          ${sheetOpen() ? "translate-y-0" : "translate-y-full"}
+        `}
+      >
+        <div class="mx-auto mt-3 mb-3 w-9 h-1 rounded-full bg-rim" />
+        <div class="flex items-start gap-2 px-4 pb-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-txt truncate">
+              {sheetTitle()}
             </p>
-            <div class="grid grid-cols-4 md:grid-cols-10 gap-1.5 px-2.5 pb-4">
-              <For each={moreDrawerDrag.displayItems()}>
+          </div>
+          <IconButton label={t("layout.close")} onClick={() => setSheet(null)}>
+            <MdOutlineClose size={18} />
+          </IconButton>
+        </div>
+        {/* Favorites as drawer tiles; otherwise the header's PageActions as
+            rows, falling back to quick compose on pages without them. */}
+        <Show
+          when={sheet() !== "favorites"}
+          fallback={
+            <div class="grid grid-cols-4 gap-1 px-3 pb-5">
+              <For each={favorites()}>
                 {(item) => (
-                  <>
-                  <Show when={item.separatorBefore}>
-                    <hr class="col-span-full my-1 border-rim" />
-                  </Show>
-                  <div
-                    ref={moreDrawerDrag.registerRef(item.path)}
-                    onPointerDown={
-                      editingWidgets()
-                        ? moreDrawerDrag.onTilePointerDown(item)
-                        : undefined
-                    }
-                    classList={{
-                      "opacity-50":
-                        moreDrawerDrag.draggingKey() === item.path,
-                      "touch-none rounded-xl border border-dashed border-accent/50":
-                        editingWidgets(),
-                    }}
-                    use:helpable={navItemHelpTarget(item)}
+                  <A
+                    href={hrefOf(item)}
+                    onClick={() => setSheet(null)}
+                    activeClass="hz-active !text-accent-txt"
+                    class={tileClass}
                   >
-                    <A
-                      href={
-                        typeof item.href === "function"
-                          ? item.href()
-                          : item.href
-                      }
-                      onClick={closeAll}
-                      class="flex flex-col items-center gap-1.5 py-2.5 px-1
-                             rounded-xl bg-elevated border border-rim
-                             text-txt text-xs font-medium leading-tight text-center
-                             hover:brightness-95 transition-all"
-                    >
-                      <span aria-hidden="true" class="text-muted">
-                        {getNavIcon(item.icon, 20)}
-                      </span>
-                      <span class="truncate w-full text-center">
-                        {typeof item.label === "function"
-                          ? item.label()
-                          : item.label}
-                      </span>
-                    </A>
-                  </div>
-                  </>
+                    <TileFace icon={getNavIcon(item.icon, 24)} label={labelOf(item)} />
+                  </A>
                 )}
               </For>
             </div>
-          </Show>
-
-          {/* Action items — toggled by avatar click for authenticated users */}
-          <Show when={actionsOpen() && actionItems().length > 0}>
-            {/* Channel-switcher subsection — its own labeled group, kept
-                visually distinct from the actions grid below it. */}
-            <Show when={channelSwitcherActive() && channelMenuOpen()}>
-              <p class="px-4 pb-2 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-                {t("nav.channels")}
-              </p>
-              <div
-                use:motion={{
-                  initial: { opacity: 0, y: 8 },
-                  animate: { opacity: 1, y: 0 },
-                  transition: {
-                    duration: reducedMotion ? 0 : 0.2,
-                    easing: [0.25, 0.46, 0.45, 0.94],
-                  },
-                }}
-                class="grid grid-cols-4 md:grid-cols-10 gap-1.5 px-2.5 pb-4"
-              >
-                <ChannelSwitcherTiles
-                  channels={navChannels()}
-                  currentNick={navViewer()?.nick}
-                  onNavigate={closeAll}
-                />
+          }
+        >
+        <Show
+          when={hasPageActions()}
+          fallback={
+            <Show when={sheet() === "actions"}>
+              <div class="px-4 pb-5">
+                <Suspense fallback={<div class="h-10" />}>
+                  <QuickCompose />
+                </Suspense>
               </div>
             </Show>
-            <p class="px-4 pb-2 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-              {t("layout.more")}
-            </p>
-            <div
-              use:motion={{
-                initial: { opacity: 0, y: 14 },
-                animate: { opacity: 1, y: 0 },
-                transition: {
-                  duration: reducedMotion ? 0 : 0.2,
-                  easing: [0.25, 0.46, 0.45, 0.94],
-                },
+          }
+        >
+          <div class="grid grid-cols-4 gap-1 px-3 pb-5">
+            <For each={pageActions()}>
+              {(a) => {
+                const body = <TileFace icon={a.icon?.({ size: 24 })} label={a.label} />;
+                const cls = `${tileClass} disabled:opacity-60 disabled:pointer-events-none ${a.primary ? "!text-accent-txt font-semibold" : ""}`;
+                return a.href ? (
+                  <a
+                    href={a.href}
+                    download={a.download}
+                    title={a.title}
+                    class={cls}
+                    onClick={() => setSheet(null)}
+                  >
+                    {body}
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    title={a.title}
+                    disabled={a.disabled}
+                    class={cls}
+                    onClick={() => {
+                      setSheet(null);
+                      a.onClick?.();
+                    }}
+                  >
+                    {body}
+                  </button>
+                );
               }}
-              class="grid grid-cols-4 md:grid-cols-10 gap-1.5 px-2.5 pb-4"
-            >
-              <For each={actionItems()}>
-                {(item) => (
-                  <div use:helpable={navItemHelpTarget(item)}>
-                    <Show
-                      when={channelSwitcherActive() && item.path === "/manage"}
-                      fallback={
-                        <A
-                          href={
-                            typeof item.href === "function"
-                              ? item.href()
-                              : item.href
-                          }
-                          onClick={closeAll}
-                          class="flex flex-col items-center gap-1.5 py-2.5 px-1
-                                 rounded-xl bg-elevated border border-rim
-                                 text-txt text-xs font-medium leading-tight text-center
-                                 hover:brightness-95 transition-all"
-                        >
-                          <span aria-hidden="true" class="text-muted">
-                            {getNavIcon(item.icon, 20)}
-                          </span>
-                          <span class="truncate w-full text-center">
-                            {typeof item.label === "function"
-                              ? item.label()
-                              : item.label}
-                          </span>
-                        </A>
-                      }
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setChannelMenuOpen((o) => !o)}
-                        aria-expanded={channelMenuOpen()}
-                        class={`flex flex-col items-center gap-1.5 py-2.5 px-1 w-full
-                               rounded-xl border text-xs font-medium leading-tight text-center
-                               transition-all cursor-pointer
-                               ${
-                                 channelMenuOpen()
-                                   ? "border-accent bg-accent/10 text-accent"
-                                   : "bg-elevated border-rim text-txt hover:brightness-95"
-                               }`}
-                      >
-                        <span aria-hidden="true" class={channelMenuOpen() ? "" : "text-muted"}>
-                          {getNavIcon(item.icon, 20)}
-                        </span>
-                        <span class="truncate w-full text-center">
-                          {typeof item.label === "function"
-                            ? item.label()
-                            : item.label}
-                        </span>
-                      </button>
-                    </Show>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
+            </For>
+          </div>
+        </Show>
+        </Show>
+      </div>
 
-          <NavUtilities
-            viewer={navViewer()}
-            actions={navActions()}
-            actionsOpen={actionsOpen()}
-            onUserMenuToggle={() => setActionsOpen((o) => !o)}
-            moduleId={activeModuleId()}
-          />
-        </nav>
+      {/* Backdrop for the actions sheet — the drawer's backdrop lives in
+          Layout.tsx because it also covers the right sidebar. */}
+      <Show when={sheetOpen()}>
+        <div
+          aria-hidden="true"
+          class="fixed inset-0 z-30 lg:hidden bg-black/25"
+          onClick={() => setSheet(null)}
+        />
       </Show>
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE — Bottom Tab Bar
+          MOBILE — Bottom Bar
       ═══════════════════════════════════════════════════════ */}
-      <Show when={!hidesNavChrome()}>
-        <nav
-          aria-label={t("layout.navigation")}
-          data-tour="nav.bottom"
-          // z-[55], above the composer dock's minimized pills (z-50, which
-          // sit just over this bar at bottom-16): if they ever overlap, the
-          // pill's edge gets clipped rather than a nav button becoming
-          // untappable. Still below the nested-picker band (z-[60]).
-          class="fixed bottom-0 left-0 right-0 z-[55] h-16 lg:hidden
-                 bg-surface border-t border-rim
-                 flex items-center px-2 gap-1"
-        >
-          <For each={bottomTabDrag.displayItems()}>
-            {(item) => (
-              <div
-                ref={bottomTabDrag.registerRef(item.path)}
-                onPointerDown={
-                  editingWidgets()
-                    ? bottomTabDrag.onTilePointerDown(item)
-                    : undefined
-                }
-                classList={{
-                  "opacity-50": bottomTabDrag.draggingKey() === item.path,
-                  "touch-none rounded-xl border border-dashed border-accent/50":
-                    editingWidgets(),
-                }}
-                class="flex-1 min-w-0 flex"
-                use:helpable={navItemHelpTarget(item)}
-              >
-                <MobileTab
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  badge={item.badge}
-                />
-              </div>
-            )}
-          </For>
-
-          {/* <Show when={moreItems().length > 0}> */}
-          <button
-            ref={setMoreButtonRef}
-            onClick={() => {
-              setMoreOpen((o) => !o);
-              setRightOpen(false);
-            }}
-            aria-expanded={moreOpen()}
-            aria-controls="more-drawer"
-            use:helpable="nav.more_drawer"
-            class={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
-                      text-[0.625rem] font-medium transition-colors min-w-0
+      <nav
+        aria-label={t("layout.navigation")}
+        data-tour="nav.bottom"
+        // z-[55], above the composer dock's minimized pills (z-50, which
+        // sit just over this bar at bottom-16): if they ever overlap, the
+        // pill's edge gets clipped rather than a nav button becoming
+        // untappable. Still below the nested-picker band (z-[60]).
+        class="fixed bottom-0 left-0 right-0 z-[55] h-16 lg:hidden
+               bg-surface border-t border-rim
+               flex items-center px-2 gap-1"
+      >
+        {/* Account menu */}
+        <Menu
+          label={t("layout.account")}
+          placement="top-start"
+          class="w-56"
+          onOpenChange={(open) => {
+            if (!open) return;
+            setMoreOpen(false);
+            setSheet(null);
+            setRightOpen(false);
+          }}
+          trigger={(triggerProps, open) => (
+            <button
+              {...triggerProps}
+              data-tour="nav.user_menu"
+              use:helpable="nav.account_menu"
+              class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
+                      text-[0.625rem] font-medium transition-colors
                       ${
-                        moreOpen()
+                        open()
                           ? "text-txt bg-elevated"
                           : "text-muted hover:bg-elevated"
                       }`}
-          >
-            <MdFillMore_horiz size={22} />
-            <span>{t("layout.more")}</span>
-          </button>
-          {/* </Show> */}
+            >
+              <span aria-hidden="true" class="flex items-center justify-center h-[22px]">
+                <Show
+                  when={isAuthenticated()}
+                  fallback={<MdOutlinePerson size={22} />}
+                >
+                  <Avatar
+                    src={navViewer()!.avatar}
+                    name={navViewer()!.name}
+                    size={6}
+                    shape="rounded"
+                    class="select-none"
+                  />
+                </Show>
+              </span>
+              <span class="max-w-full truncate">{t("layout.account")}</span>
+            </button>
+          )}
+        >
+          <Show when={isAuthenticated()}>
+            <p
+              role="presentation"
+              class="px-3 pt-1 pb-1 text-sm font-semibold text-txt truncate"
+            >
+              {navViewer()!.name}
+            </p>
+          </Show>
+          <For each={actionItems()}>
+            {(item) => (
+              <Show
+                when={channelSwitcherActive() && item.path === "/manage"}
+                fallback={
+                  <MenuItem href={hrefOf(item)} icon={getNavIcon(item.icon, 16)}>
+                    <span class="min-w-0 flex-1 truncate">{labelOf(item)}</span>
+                  </MenuItem>
+                }
+              >
+                {/* The desktop rail expands Manage into the channel switcher;
+                    a menu can't nest an accordion, so the same entries sit
+                    flat in its place. */}
+                <MenuSeparator />
+                <For each={navChannels()}>
+                  {(ch) => {
+                    const isCurrent = () => ch.nick === navViewer()?.nick;
+                    return (
+                      <MenuItem
+                        icon={getNavIcon("person", 16)}
+                        disabled={isCurrent()}
+                        aria-current={isCurrent() ? "true" : undefined}
+                        onClick={() => void switchToChannel(ch.id)}
+                      >
+                        <span class={`min-w-0 flex-1 truncate ${isCurrent() ? "font-medium" : ""}`}>{ch.name}</span>
+                        <Show when={isCurrent()}>
+                          <MdOutlineCheck size={14} class="shrink-0 text-accent-txt" />
+                        </Show>
+                      </MenuItem>
+                    );
+                  }}
+                </For>
+                <MenuItem href="/new_channel" icon={getNavIcon("register", 16)}>
+                  <span class="min-w-0 flex-1 truncate">{t("nav.new_channel")}</span>
+                </MenuItem>
+                <MenuItem href="/manage" icon={getNavIcon("manage", 16)}>
+                  <span class="min-w-0 flex-1 truncate">{t("nav.manage_channels")}</span>
+                </MenuItem>
+                <MenuSeparator />
+              </Show>
+            )}
+          </For>
+        </Menu>
 
-          <Show when={!hidesRightSidebar()}>
+        {/* Favorites quick menu */}
+        <Show when={favorites().length > 0}>
+          <button
+            ref={favButtonRef}
+            onClick={() => toggleSheet("favorites")}
+            aria-expanded={sheet() === "favorites"}
+            aria-controls="page-actions-sheet"
+            use:helpable="nav.favorites"
+            class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
+                    text-[0.625rem] font-medium transition-colors
+                    ${
+                      sheet() === "favorites"
+                        ? "text-txt bg-elevated"
+                        : "text-muted hover:bg-elevated"
+                    }`}
+          >
+            <span aria-hidden="true" class="flex">
+              <MdOutlineStar size={22} />
+            </span>
+            <span class="max-w-full truncate">{t("layout.favorites")}</span>
+          </button>
+        </Show>
+
+        {/* App drawer */}
+        <button
+          ref={setMoreButtonRef}
+          onClick={toggleDrawer}
+          aria-expanded={moreOpen()}
+          aria-controls="app-drawer"
+          use:helpable="nav.apps"
+          class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
+                  text-[0.625rem] font-medium transition-colors
+                  ${
+                    moreOpen()
+                      ? "text-txt bg-elevated"
+                      : "text-muted hover:bg-elevated"
+                  }`}
+        >
+          <span aria-hidden="true" class="flex">
+            <MdFillGrid_view size={22} />
+          </span>
+          <span class="max-w-full truncate">{t("layout.apps")}</span>
+        </button>
+
+        {/* Current page's header actions, or quick compose when it has none */}
+        <Show when={showActionsButton()}>
+          <button
+            ref={sheetButtonRef}
+            onClick={() => toggleSheet("actions")}
+            aria-expanded={sheet() === "actions"}
+            aria-controls="page-actions-sheet"
+            use:helpable="nav.actions"
+            class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
+                    text-[0.625rem] font-medium transition-colors
+                    ${
+                      sheet() === "actions"
+                        ? "text-txt bg-elevated"
+                        : "text-muted hover:bg-elevated"
+                    }`}
+          >
+            <span aria-hidden="true" class="flex">
+              <Show when={hasPageActions()} fallback={<MdFillEdit size={22} />}>
+                <MdOutlineBolt size={22} />
+              </Show>
+            </span>
+            <span class="max-w-full truncate">
+              {hasPageActions() ? moduleLabel() : t("layout.compose")}
+            </span>
+          </button>
+        </Show>
+
+        <Show when={!hidesRightSidebar()}>
           <button
             ref={setPanelButtonRef}
-            onClick={() => {
-              setRightOpen((o) => !o);
-              setMoreOpen(false);
-            }}
+            onClick={togglePanel}
             aria-expanded={rightOpen()}
             aria-controls="right-sidebar"
             aria-label={rightOpen() ? "Close panel" : "Open panel"}
             use:helpable="nav.panel"
-            class={`flex-none px-2 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
+            class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                     text-[0.625rem] font-medium transition-colors
                     ${
                       rightOpen()
@@ -384,11 +479,10 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
                 </span>
               </Show>
             </span>
-            <span>{t("layout.panel")}</span>
+            <span class="max-w-full truncate">{t("layout.panel")}</span>
           </button>
-          </Show>
-        </nav>
-      </Show>
-    </>
+        </Show>
+      </nav>
+    </Show>
   );
 }

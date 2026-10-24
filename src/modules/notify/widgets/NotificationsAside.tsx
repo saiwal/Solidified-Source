@@ -586,7 +586,7 @@ function StreamGroup(props: {
             </EmptyState>
           }
         >
-          <div class="space-y-0.5">
+          <div class="space-y-0.5 max-h-80 overflow-y-auto overscroll-contain">
             <For each={notifications()}>
               {(n) => (
                 <NotifRow
@@ -742,7 +742,7 @@ function NoticesGroup(props: {
             </EmptyState>
           }
         >
-          <div class="space-y-0.5">
+          <div class="space-y-0.5 max-h-80 overflow-y-auto overscroll-contain">
             <For each={props.entries}>
               {(entry) => <NoticeRow entry={entry} onOpen={props.onOpenModal} />}
             </For>
@@ -1541,14 +1541,7 @@ export default function NotificationsAside() {
             </div>
           </Show>
 
-          <Show
-            when={activeBuckets().length > 0}
-            fallback={
-              <EmptyState size="sm" class="py-2">
-                {t("ui.no_notifications")}
-              </EmptyState>
-            }
-          >
+          <Show when={activeBuckets().length > 0}>
             <For each={activeBuckets()}>
               {(key) => (
                 <StreamGroup

@@ -69,6 +69,8 @@ export interface NavApp {
   /** Raw photo value from Hubzilla — real URL or "icon:*" string */
   photo: string;
   requires: string;
+  /** Core's app categories ("Networking", "Productivity"…), nav_* markers removed. */
+  categories: string[];
 }
 
 export interface NavChannelTab {
@@ -101,6 +103,8 @@ export interface NavApiResponse {
   nav_channel_select: boolean;
   /** User-ordered pinned apps (nav_pinned_app) — primary sidebar nav */
   pinned: NavApp[];
+  /** Favorited nav paths with no app behind them (SPA-only modules) — owner only */
+  pinned_paths: string[];
   /** User's featured app selection (nav_featured_app) — empty for non-local users */
   featured: NavApp[];
   /** Full built-in system app list (syslist / get_system_apps) — available to all users */
@@ -192,6 +196,7 @@ export function normaliseApp(raw: {
   url: string;
   photo: string;
   requires: string;
+  categories?: string[];
 }): NavApp {
   return {
     name: raw.name,
@@ -202,6 +207,7 @@ export function normaliseApp(raw: {
     bi_icon: biIconName(raw.photo),
     photo: raw.photo,
     requires: raw.requires ?? "",
+    categories: raw.categories ?? [],
   };
 }
 
@@ -232,6 +238,7 @@ export async function fetchNavApi(channelNick?: string): Promise<NavApiResponse>
     channels:         raw.channels ?? [],
     nav_channel_select: raw.nav_channel_select ?? false,
     pinned,
+    pinned_paths:     raw.pinned_paths ?? [],
     featured,
     system_apps,
     channel_tabs:     raw.channel_tabs ?? [],

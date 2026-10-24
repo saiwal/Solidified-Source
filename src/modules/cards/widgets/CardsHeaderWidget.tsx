@@ -12,9 +12,10 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useIsCardsList } from "../lib/isCardsList";
 import { boardView, setBoardView } from "../lib/kanban";
 import { fetchKanban } from "../api";
-import { Button, IconButton } from "@ui/Button";
+import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
+import PageActions from "@/shared/views/layout/PageActions";
 
 export default function CardsHeaderWidget() {
   const { t, locale } = useI18n();
@@ -125,12 +126,9 @@ export default function CardsHeaderWidget() {
               </form>
             </Show>
 
-            <Show when={role() === "owner"}>
-              <Button size="sm" onClick={openCard}>
-                <BiRegularEdit class="w-4 h-4" />
-                {t("cards.new_card")}
-              </Button>
-            </Show>
+            <PageActions actions={[
+              { label: t("cards.new_card"), icon: BiRegularEdit, onClick: openCard, primary: true, show: role() === "owner" },
+            ]} />
           </div>
         </div>
 

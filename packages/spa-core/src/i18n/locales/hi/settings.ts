@@ -279,6 +279,12 @@ export const settings: RawDictionary["settings"] = {
   notif_desktop_blocked:   "आपके ब्राउज़र की साइट सेटिंग्स में अवरुद्ध है।",
   notif_push_title:       "पुश सूचनाएं",
   notif_push_hint:        "जब Hubzilla किसी टैब में खुला न हो तब भी नई गतिविधि की सूचना पाएं।",
+  notif_push_err_permission: "सूचना की अनुमति नहीं मिली। अपने ब्राउज़र में इस साइट के लिए सूचनाएं अनुमत करें, फिर दोबारा प्रयास करें।",
+  notif_push_err_unsupported: "यह ब्राउज़र पुश सूचनाओं का समर्थन नहीं करता। iPhone/iPad पर पहले साइट को होम स्क्रीन पर जोड़ें।",
+  notif_push_err_no_worker: "ऐप का सर्विस वर्कर नहीं चल रहा (ब्राउज़र या किसी एक्सटेंशन ने रोका है, या साइट HTTPS पर नहीं है)।",
+  notif_push_err_server_key: "हब पुश कुंजी नहीं दे सका। अपने हब एडमिन से सर्वर लॉग जांचने को कहें।",
+  notif_push_err_push_service: "आपके ब्राउज़र की पुश सेवा ने सदस्यता अस्वीकार कर दी। कुछ ब्राउज़रों (जैसे Brave, बिना Google वाला Chromium, निजी विंडो) में पुश बंद रहता है।",
+  notif_push_err_server_save: "हब यह सदस्यता सहेज नहीं सका। दोबारा प्रयास करें, या पेज रीलोड करें।",
   // Integrations
   integ_search_placeholder: "ऐप्स खोजें…",
   integ_tab_all:            "सभी",

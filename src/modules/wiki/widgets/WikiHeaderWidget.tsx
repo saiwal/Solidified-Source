@@ -7,9 +7,11 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
 import { useIsWikiList } from "../lib/isWikiList";
+import { MdOutlineAdd, MdOutlineClose } from "solid-icons/md";
 import { Button } from "@ui/Button";
 import { Field, Input, Select } from "@ui/Field";
 import { cardClass } from "@ui/Card";
+import PageActions from "@/shared/views/layout/PageActions";
 
 export default function WikiHeaderWidget() {
   const nick = usePageNick();
@@ -103,15 +105,14 @@ export default function WikiHeaderWidget() {
       <div class="space-y-4 max-w-5xl mx-auto p-4 pb-0">
         <div class="flex items-center justify-between">
           <h1 class="text-xl font-semibold text-txt">{owner() === null ? t("wiki.title_mine") : t("wiki.title_of", { name: owner()! })}</h1>
-          <Show when={canCreate()}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => creating() ? resetCreateForm() : setCreating(true)}
-            >
-              {creating() ? t("wiki.cancel") : t("wiki.new_wiki")}
-            </Button>
-          </Show>
+          <PageActions actions={[
+            {
+              label: creating() ? t("wiki.cancel") : t("wiki.new_wiki"),
+              icon: creating() ? MdOutlineClose : MdOutlineAdd,
+              onClick: () => creating() ? resetCreateForm() : setCreating(true),
+              show: canCreate(),
+            },
+          ]} />
         </div>
 
         {/* Create form */}

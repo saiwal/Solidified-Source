@@ -5,9 +5,11 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { fetchAllBookmarks, createBookmark, type BookmarkMenu } from "../api";
 import { resetChatBookmarks } from "@/modules/chat/bookmarks";
+import { MdOutlineBookmark_add } from "solid-icons/md";
 import { Button } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
 import { Card } from "@ui/Card";
+import PageActions from "@/shared/views/layout/PageActions";
 
 export default function BookmarksHeaderWidget() {
   const { t } = useI18n();
@@ -60,9 +62,9 @@ export default function BookmarksHeaderWidget() {
         <Show when={!menus.loading && totalCount() > 0}>
           <span class="text-xs text-muted tabular-nums">{totalCount()}</span>
         </Show>
-        <Button variant="ghost" size="sm" class="ml-auto" onClick={() => setOpen(!open())}>
-          {t("bookmarks.add")}
-        </Button>
+        <PageActions class="ml-auto" actions={[
+          { label: t("bookmarks.add"), icon: MdOutlineBookmark_add, onClick: () => setOpen(!open()) },
+        ]} />
       </div>
 
       <Show when={open()}>

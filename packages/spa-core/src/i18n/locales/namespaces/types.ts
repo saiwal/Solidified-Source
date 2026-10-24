@@ -175,6 +175,20 @@ export type RawDictionary = {
     back:               string;
     section_navigation: string;
     account:            string;
+    apps:               string;
+    actions:            string;
+    compose:            string;
+    quick_compose:      string;
+    favorites:          string;
+    search_apps:        string;
+    search_results:     string;
+    clear_search:       string;
+    no_app_matches:     string;
+    social:             string;
+    productivity:       string;
+    system:             string;
+    add_favorite:       string;
+    remove_favorite:    string;
   };
   ui: {
     show_more:               string;
@@ -1565,6 +1579,12 @@ export type RawDictionary = {
     notif_desktop_blocked:   string;
     notif_push_title:       string;
     notif_push_hint:        string;
+    notif_push_err_permission: string;
+    notif_push_err_unsupported: string;
+    notif_push_err_no_worker: string;
+    notif_push_err_server_key: string;
+    notif_push_err_push_service: string;
+    notif_push_err_server_save: string;
     // Integrations
     integ_search_placeholder: string;
     integ_tab_all:            string;

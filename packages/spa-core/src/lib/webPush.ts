@@ -28,26 +28,49 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
   return reg.pushManager.getSubscription();
 }
 
-export async function subscribeToPush(): Promise<boolean> {
-  if (!isPushSupported()) return false;
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      const publicKey = await fetchVapidPublicKey();
+/** Which step of subscribing failed — each has a different fix for the user/admin. */
+export type PushFailure = "unsupported" | "no_worker" | "server_key" | "push_service" | "server_save";
+
+/** Subscribe this browser; resolves null on success, else the failing step. */
+export async function trySubscribeToPush(): Promise<PushFailure | null> {
+  if (!isPushSupported()) return "unsupported";
+  // `ready` never settles when the SW didn't register (blocked, non-HTTPS, sw not deployed).
+  const reg = await Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((r) => setTimeout(() => r(null), 10_000)),
+  ]);
+  if (!reg) return "no_worker";
+  let sub = await reg.pushManager.getSubscription().catch(() => null);
+  if (!sub) {
+    let publicKey: string;
+    try {
+      publicKey = await fetchVapidPublicKey();
+    } catch {
+      return "server_key";
+    }
+    try {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: base64UrlToUint8Array(publicKey) as BufferSource,
       });
+    } catch (e) {
+      console.warn("[push] subscribe failed:", e);
+      return "push_service";
     }
+  }
+  try {
     const res = await apiFetch("/spa/push-subscription", {
       method: "POST",
       body: JSON.stringify({ subscription: sub.toJSON() }),
     });
-    return res.ok;
+    return res.ok ? null : "server_save";
   } catch {
-    return false;
+    return "server_save";
   }
+}
+
+export async function subscribeToPush(): Promise<boolean> {
+  return (await trySubscribeToPush()) === null;
 }
 
 export async function unsubscribeFromPush(): Promise<void> {
