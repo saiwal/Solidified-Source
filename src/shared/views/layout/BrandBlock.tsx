@@ -4,7 +4,8 @@ import DOMPurify from "dompurify";
 
 // ── Brand / site banner ────────────────────────────────────────────────────────
 // Shared by the desktop rail and the mobile "more" drawer so both show the same
-// banner/logo treatment.
+// banner/logo treatment: logo, a short rule, then the site name (or the product
+// name when the hub never set a banner).
 export default function BrandBlock(props: { banner?: string; logoUrl?: string }) {
   return (
     <A href="/" class="flex items-center gap-3 select-none">

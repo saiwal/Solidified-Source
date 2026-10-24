@@ -53,4 +53,5 @@ export const nav: RawDictionary["nav"] = {
   new_channel:     "नया चैनल",
   manage_channels: "चैनल प्रबंधित करें",
   moderate:        "मॉडरेशन कतार",
+  visiting:        "अतिथि",
 };

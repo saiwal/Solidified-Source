@@ -163,6 +163,8 @@ export type RawDictionary = {
     new_channel:     string;
     manage_channels: string;
     moderate:        string;
+    /** Badge on the visited channel's cover — the card is not your own. */
+    visiting:        string;
   };
   layout: {
     title:              string;

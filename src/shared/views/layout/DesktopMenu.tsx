@@ -1,4 +1,5 @@
-import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
+import { A } from "@solidjs/router";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
@@ -16,6 +17,8 @@ import { moduleIdForPath } from "@utsukta/spa-core/module-registry";
 import { createDragReorder } from "@utsukta/spa-core/lib/useDragReorder";
 import { commitNavOrder } from "@utsukta/spa-core/store/nav-order";
 import { Collapsible } from "@ui/Collapsible";
+import { Avatar } from "@ui/Avatar";
+import { IconButton } from "@ui/Button";
 import BrandBlock from "./BrandBlock";
 import CoverCard from "./CoverCard";
 import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
@@ -24,6 +27,8 @@ import { categoryApps, favoriteTarget, groupNavItems, pinnedNavItems } from "./a
 
 // Which rail groups are expanded — a per-browser convenience, so best-effort.
 const GROUPS_KEY = "hz-nav-groups";
+// Depth of the scroll region's edge fade, in px (see the mask in DesktopMenu).
+const NAV_SCROLL_FADE = 12;
 function readOpenGroups(): Set<string> {
   try {
     const v = JSON.parse(localStorage.getItem(GROUPS_KEY) ?? "[]");
@@ -41,9 +46,11 @@ function writeOpenGroups(open: Set<string>): void {
 }
 
 /**
- * Desktop navigation rail (lg and up): brand, primary nav (favorites, then the
- * other apps in collapsible categories), a cover header (own account menu, or
- * the visited channel), the leftBottom slot and the nav utilities footer.
+ * Desktop navigation rail (lg and up): a cover header (own account menu, or
+ * the visited channel), the primary nav (favorites, then the other apps in
+ * collapsible categories), the leftBottom slot, then one footer block — the
+ * account/visitor actions plus the brand logo and utility icons sharing a
+ * single row.
  *
  * Kept out of Layout.tsx so it can be changed without touching the mobile
  * menu. Receives the shared layout chrome rather than calling
@@ -142,7 +149,9 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
   });
 
   // The account/visitor action items: an overlay under the user's own cover
-  // card, or an inline list at the bottom wherever that card isn't shown.
+  // card or, on someone else's channel, under a single "Account" footer entry
+  // whose menu opens upward. Visitors with no card of their own (anonymous or
+  // remote-auth) keep the inline list, since they only have one or two items.
   const ActionList = () => (
     <For each={actionItems()}>
       {(item) => (
@@ -166,6 +175,57 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
   );
   // Your own card on your own pages; anywhere else nothing of yours shows.
   const ownCard = () => !!navViewer()?.is_local && !navData()?.subject;
+  // A logged-in user on someone else's channel: Admin / Take me Home / Logout
+  // collapse into one entry showing who they belong to.
+  const accountEntry = () => !ownCard() && isLocalUser() && actionItems().length > 0;
+  // Anonymous and remote-auth visitors have no local identity to fold away.
+  const visitorActions = () => !ownCard() && !isLocalUser() && actionItems().length > 0;
+
+  // Scroll-region edge fades: only an edge with hidden content fades, so a
+  // short list (a channel with three tabs) isn't dimmed for no reason.
+  // Geometry is re-read on scroll, on resize, and whenever the rendered nav
+  // changes (a group opening, favorites arriving, edit mode's drag handles).
+  let navScrollEl: HTMLDivElement | undefined;
+  let navScrollObserver: ResizeObserver | undefined;
+  const [fadeTop, setFadeTop] = createSignal(false);
+  const [fadeBottom, setFadeBottom] = createSignal(false);
+  const syncScrollFades = () => {
+    const el = navScrollEl;
+    if (!el) return;
+    const max = el.scrollHeight - el.clientHeight;
+    setFadeTop(el.scrollTop > 1);
+    setFadeBottom(max > 1 && el.scrollTop < max - 1);
+  };
+  const scrollMask = () => {
+    const edge = (on: boolean) => (on ? `${NAV_SCROLL_FADE}px` : "0");
+    if (!fadeTop() && !fadeBottom()) {
+      return { "mask-image": "none", "-webkit-mask-image": "none" };
+    }
+    // A stop repeated at the same position is a hard edge, so a side that
+    // isn't fading stays fully opaque instead of fading 0px.
+    const value =
+      `linear-gradient(to bottom, transparent 0, #000 ${edge(fadeTop())}, ` +
+      `#000 calc(100% - ${edge(fadeBottom())}), transparent 100%)`;
+    return { "mask-image": value, "-webkit-mask-image": value };
+  };
+  // Bound through the ref rather than onMount so the observer follows the
+  // element if chrome mode hides and re-shows the rail.
+  const bindScrollEl = (el: HTMLDivElement) => {
+    navScrollEl = el;
+    navScrollObserver?.disconnect();
+    navScrollObserver = new ResizeObserver(syncScrollFades);
+    navScrollObserver.observe(el);
+    requestAnimationFrame(syncScrollFades);
+  };
+  onCleanup(() => navScrollObserver?.disconnect());
+  createEffect(() => {
+    // Read the nav's rendered inputs so the geometry is re-measured after
+    // they change; rAF waits for the DOM commit.
+    navItems();
+    openGroups();
+    editingWidgets();
+    requestAnimationFrame(syncScrollFades);
+  });
 
   return (
     <Show when={!hidesNavChrome()}>
@@ -174,14 +234,19 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
         class="hidden lg:flex flex-col w-[224px] shrink-0 relative z-20
                bg-surface border-r border-rim py-3 px-2"
       >
-        {/* Full-bleed cover header over the rail's padding: the visited
-            channel (static) for anyone but its owner, else the signed-in
-            user's own card, which opens their account menu. */}
+        {/* Brand: centred lockup with its own rule under it, above the cover. */}
+        <div class="flex items-center justify-center px-2 pb-4 pt-2 mb-2 border-b border-rim">
+          <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
+        </div>
+
+        {/* Full-bleed cover header under the masthead: the visited channel
+            (static) for anyone but its owner, else the signed-in user's own
+            card, which opens their account menu. */}
         <Show
           when={navData()?.subject}
           fallback={
             <Show when={ownCard()}>
-              <div class="relative -mx-2 -mt-3 mb-2">
+              <div class="relative -mx-2 mb-2">
                 <CoverCard
                   who={navViewer()!}
                   open={actionsOpen()}
@@ -206,14 +271,21 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
           }
         >
           {(subject) => (
-            <div class="-mx-2 -mt-3 mb-2">
-              <CoverCard who={subject()} />
+            <div class="-mx-2 mb-2">
+              <CoverCard who={subject()} channelHref={`/channel/${subject().nick}`} />
             </div>
           )}
         </Show>
 
-        {/* Scrollable region: primary nav only. */}
-        <div class="flex-1 min-h-0 flex flex-col overflow-y-auto">
+        {/* Scrollable region: primary nav only. `nav-rail-scroll` hides the
+            thin scrollbar until the rail is hovered/focused; the inline mask
+            fades whichever edge still has hidden rows. */}
+        <div
+          ref={bindScrollEl}
+          onScroll={syncScrollFades}
+          style={scrollMask()}
+          class="nav-rail-scroll flex-1 min-h-0 flex flex-col overflow-y-auto"
+        >
           <Show
             when={grouped()}
             fallback={
@@ -301,21 +373,100 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
           </div>
         </Show>
 
-        {/* Visitors' menu (Take me Home / Logout, or Sign In / Register —
-            the full account menu for a local user on someone else's
-            channel), as plain items: no avatar or name of their own. */}
-        <Show when={!ownCard() && actionItems().length > 0}>
-          <div class="mt-2 pt-2 border-t border-rim flex flex-col gap-0.5">
+        {/* One footer block, one rule, one row. The brand now lives in the
+            masthead at the top, so the bottom is only the account/visitor
+            actions (when they exist) and the utility strip. */}
+        <div class="mt-2 border-t border-rim pt-1.5 flex flex-col gap-0.5">
+          <Show when={accountEntry()}>
+            <div class="relative">
+              {/* Your own identity, not a generic "Account" label: visiting
+                  someone else's channel hides your cover card, so this row is
+                  the only place the rail says who the actions belong to. The
+                  name (and avatar) link to your channel; the chevron opens the
+                  account menu — the same overlay the own cover opens down. */}
+              <div
+                class={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm
+                        transition-colors duration-150 ${actionsOpen() ? "bg-elevated" : ""}`}
+              >
+                <Show
+                  when={navViewer()?.nick}
+                  fallback={
+                    <span class="flex min-w-0 flex-1 items-center gap-3 text-muted">
+                      <Avatar
+                        src={navViewer()?.avatar}
+                        name={navViewer()?.name}
+                        size={6}
+                        class="shrink-0"
+                      />
+                      <span class="min-w-0 truncate leading-tight">
+                        {navViewer()?.name || t("layout.account")}
+                      </span>
+                    </span>
+                  }
+                >
+                  <A
+                    href={`/channel/${navViewer()!.nick}`}
+                    class="group flex min-w-0 flex-1 items-center gap-3 text-muted
+                           transition-colors hover:text-txt"
+                  >
+                    <Avatar
+                      src={navViewer()?.avatar}
+                      name={navViewer()?.name}
+                      size={6}
+                      class="shrink-0"
+                    />
+                    <span class="min-w-0 truncate leading-tight text-left group-hover:underline group-hover:underline-offset-2">
+                      {navViewer()?.name || t("layout.account")}
+                    </span>
+                  </A>
+                </Show>
+                <div class="shrink-0" use:helpable="nav.account_menu">
+                  <IconButton
+                    label={t("layout.account")}
+                    size="sm"
+                    aria-expanded={actionsOpen()}
+                    class={actionsOpen() ? "text-txt" : ""}
+                    onClick={() => setActionsOpen((o) => !o)}
+                  >
+                    <MdOutlineExpand_more
+                      size={16}
+                      class={`transition-transform duration-200 ease-out
+                              ${actionsOpen() ? "rotate-180" : "rotate-0"}`}
+                    />
+                  </IconButton>
+                </div>
+              </div>
+              <Show when={actionsOpen()}>
+                <div
+                  class="absolute inset-x-0 bottom-full z-30 mb-1.5 max-h-[60vh] overflow-y-auto
+                         flex flex-col gap-0.5 p-1.5
+                         bg-surface border border-rim rounded-xl shadow-xl"
+                  use:motion={{
+                    initial: { opacity: 0, y: 8 },
+                    animate: { opacity: 1, y: 0 },
+                    transition: { duration: reducedMotion ? 0 : 0.18, easing: "ease-out" },
+                  }}
+                >
+                  <ActionList />
+                </div>
+              </Show>
+            </div>
+          </Show>
+
+          {/* Visitors' inline menu (Sign In / Remote Auth / Register). */}
+          <Show when={visitorActions()}>
             <ActionList />
-          </div>
-        </Show>
+          </Show>
 
-        {/* Brand, quietly above the footer row. */}
-        <div class="mt-3 flex justify-center opacity-80 hover:opacity-100 transition-opacity">
-          <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
+          {/* Utility strip. The 4px inset keeps the first and last glyphs on
+              the same 18px edge as the masthead, cover identity and nav icons;
+              the controls get a tighter hit area than their standalone default
+              so all five fit. */}
+          <NavUtilityIcons
+            moduleId={activeModuleId()}
+            class="flex items-center justify-between px-1 [&_a]:p-1.5 [&_button]:p-1.5"
+          />
         </div>
-
-        <NavUtilityIcons moduleId={activeModuleId()} />
       </aside>
     </Show>
   );
