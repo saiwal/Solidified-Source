@@ -43,6 +43,7 @@ export const photos: RawDictionary["photos"] = {
   upload_failed:        "कुछ फ़ोटो अपलोड नहीं हो सकीं।",
   delete_album:         "एल्बम हटाएं",
   confirm_delete_album: "इस एल्बम और सभी फ़ोटो को हटाएं? यह पूर्ववत नहीं किया जा सकता।",
+  confirm_delete_photo: "इस फ़ोटो को हटाएं? यह पूर्ववत नहीं किया जा सकता।",
   delete_photo:         "हटाएं",
   delete_error:         "हटाया नहीं जा सका।",
   select:               "चुनें",

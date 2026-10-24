@@ -19,6 +19,7 @@ import {
   MdFillWarning,
 } from "solid-icons/md";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
 import { useConnectionSearch } from "@/shared/editor/components/useConnectionSearch";
 import {
   ALL_CONNECTIONS,
@@ -308,15 +309,11 @@ const SourcesSection: Component = () => {
       title={t("sources.title")}
       description={t("sources.description")}
       action={
-        <Button
-          variant="ghost"
-          size="sm"
-          pressed={creating()}
-          onClick={() => { setEditingId(null); setCreating((v) => !v); }}
-        >
-          <MdFillAdd size={15} />
-          {t("sources.new_source")}
-        </Button>
+        <PageActions actions={[{
+          label: creating() ? t("sources.cancel") : t("sources.new_source"),
+          icon: creating() ? MdFillClose : MdFillAdd,
+          onClick: () => { setEditingId(null); setCreating((v) => !v); },
+        }]} />
       }
     >
       <p class="text-xs text-muted">{t("sources.import_desc")}</p>

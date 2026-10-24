@@ -1,10 +1,8 @@
-import { createEffect, createMemo, createSignal, For, lazy, on, Show, Suspense } from "solid-js";
+import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
 import { A, useLocation } from "@solidjs/router";
 import {
   MdFillChevron_right,
-  MdFillEdit,
   MdFillGrid_view,
-  MdOutlineBolt,
   MdOutlineCheck,
   MdOutlineClose,
   MdOutlinePerson,
@@ -13,7 +11,6 @@ import {
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
-import { getModule } from "@utsukta/spa-core/module-registry";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { notifyCountLimit } from "@utsukta/spa-core/store/auth-store";
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
@@ -26,7 +23,6 @@ import { getNavIcon } from "../NavItem";
 import { switchToChannel } from "../ChannelSwitcher";
 import AppDrawer, { TileFace, tileClass } from "./AppDrawer";
 import { pinnedNavItems } from "./app-categories";
-import { hasPageActions, pageActions } from "./PageActions";
 
 function labelOf(item: NavItemDef): string {
   return typeof item.label === "function" ? item.label() : item.label;
@@ -35,10 +31,6 @@ function labelOf(item: NavItemDef): string {
 function hrefOf(item: NavItemDef): string {
   return typeof item.href === "function" ? item.href() : item.href;
 }
-
-// Loaded only when the actions sheet falls back to it (no page actions on
-// this page), so the compose widget stays out of the shell bundle.
-const QuickCompose = lazy(() => import("@/modules/hq/widgets/QuickComposeWidget"));
 
 /**
  * Mobile navigation (below lg): the app drawer and the bottom bar that opens
@@ -65,8 +57,6 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
     rightOpen,
     hidesRightSidebar,
     setPanelButtonRef,
-    activeModuleId,
-    viewerRole,
     channelSwitcherActive,
     navChannels,
   } = props.chrome;
@@ -75,65 +65,46 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
   const isAuthenticated = () =>
     !!(navViewer()?.is_local || navViewer()?.is_remote || navViewer()?.is_admin);
 
-  // Quick compose is self-targeted (new post/message/article on your own
-  // channel), so the fallback is for the owner only. The bar button stays
-  // visible on their pages even when the module has no header actions.
-  const canCompose = () => viewerRole() === "owner";
-  const showActionsButton = () => hasPageActions() || canCompose();
-
-  // ── Bottom sheet: contextual actions or favorites ──────────────────────────
-  // One sheet, two contents, so only one can ever be up.
-  const [sheet, setSheet] = createSignal<"actions" | "favorites" | null>(null);
-  const sheetOpen = () => sheet() !== null;
+  // ── Favorites sheet ──────────────────────────────────────────────────────
+  // Page actions live in the floating column and the title row's ⋮
+  // (FloatingActions / PageActions), so this sheet only ever holds favorites.
+  const [favOpen, setFavOpen] = createSignal(false);
   const [sheetRef, setSheetRef] = createSignal<HTMLElement>();
-  let sheetButtonRef: HTMLButtonElement | undefined;
   let favButtonRef: HTMLButtonElement | undefined;
 
   createEffect(() => {
     const el = sheetRef();
-    if (el) el.inert = !sheetOpen();
+    if (el) el.inert = !favOpen();
   });
   // Move focus into the sheet on open and back to its trigger on close, the
   // same pattern useLayoutChrome uses for the drawers.
   createEffect(
     on(
-      sheet,
-      (open, prevOpen) => {
+      favOpen,
+      (open) => {
         if (open) {
           requestAnimationFrame(() =>
             sheetRef()
               ?.querySelector<HTMLElement>("button, a, input, select, textarea")
               ?.focus({ preventScroll: true }),
           );
-        } else if (prevOpen) {
-          (prevOpen === "favorites" ? favButtonRef : sheetButtonRef)?.focus({ preventScroll: true });
+        } else {
+          favButtonRef?.focus({ preventScroll: true });
         }
       },
       { defer: true },
     ),
   );
-  // A navigation invalidates the current page's actions, so don't leave the
-  // sheet floating over the next page.
-  createEffect(
-    on(
-      () => location.pathname,
-      () => setSheet(null),
-      { defer: true },
-    ),
-  );
-  createEffect(() => {
-    if (sheet() === "actions" && !showActionsButton()) setSheet(null);
-    if (sheet() === "favorites" && favorites().length === 0) setSheet(null);
-  });
+  createEffect(on(() => location.pathname, () => setFavOpen(false), { defer: true }));
 
   const toggleDrawer = () => {
     const next = !moreOpen();
     setMoreOpen(next);
     setRightOpen(false);
-    setSheet(null);
+    setFavOpen(false);
   };
-  const toggleSheet = (kind: "actions" | "favorites") => {
-    setSheet((cur) => (cur === kind ? null : kind));
+  const toggleFavorites = () => {
+    setFavOpen((o) => !o);
     setMoreOpen(false);
     setRightOpen(false);
   };
@@ -141,129 +112,65 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
     const next = !rightOpen();
     setRightOpen(next);
     setMoreOpen(false);
-    setSheet(null);
+    setFavOpen(false);
   };
-
-  const moduleLabel = () => {
-    const label = getModule(activeModuleId())?.navItem?.label;
-    return typeof label === "function" ? label() : (label ?? t("layout.actions"));
-  };
-
-  const sheetTitle = () =>
-    sheet() === "favorites"
-      ? t("layout.favorites")
-      : hasPageActions()
-        ? moduleLabel()
-        : t("layout.quick_compose");
 
   return (
     <Show when={!hidesNavChrome()}>
       <AppDrawer chrome={props.chrome} />
 
       {/* ═══════════════════════════════════════════════════════
-          MOBILE — contextual actions for the current module
+          MOBILE — favorites sheet
       ═══════════════════════════════════════════════════════ */}
       <div
-        id="page-actions-sheet"
+        id="favorites-sheet"
         ref={setSheetRef}
         role="dialog"
-        aria-label={sheetTitle()}
+        aria-label={t("layout.favorites")}
         class={`
           fixed left-0 right-0 z-40 lg:hidden bottom-16
           bg-surface border-t border-rim
           rounded-t-2xl shadow-2xl
           transform transition-transform duration-300 ease-in-out
           max-h-[70vh] overflow-y-auto overscroll-contain
-          ${sheetOpen() ? "translate-y-0" : "translate-y-full"}
+          ${favOpen() ? "translate-y-0" : "translate-y-full"}
         `}
       >
         <div class="mx-auto mt-3 mb-3 w-9 h-1 rounded-full bg-rim" />
         <div class="flex items-start gap-2 px-4 pb-3">
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold text-txt truncate">
-              {sheetTitle()}
-            </p>
-          </div>
-          <IconButton label={t("layout.close")} onClick={() => setSheet(null)}>
+          <p class="min-w-0 flex-1 text-sm font-semibold text-txt truncate">{t("layout.favorites")}</p>
+          <IconButton label={t("layout.close")} onClick={() => setFavOpen(false)}>
             <MdOutlineClose size={18} />
           </IconButton>
         </div>
-        {/* Favorites as drawer tiles; otherwise the header's PageActions as
-            rows, falling back to quick compose on pages without them. */}
         <Show
-          when={sheet() !== "favorites"}
-          fallback={
-            <div class="grid grid-cols-4 gap-1 px-3 pb-5">
-              <For each={favorites()}>
-                {(item) => (
-                  <A
-                    href={hrefOf(item)}
-                    onClick={() => setSheet(null)}
-                    activeClass="hz-active !text-accent-txt"
-                    class={tileClass}
-                  >
-                    <TileFace icon={getNavIcon(item.icon, 24)} label={labelOf(item)} />
-                  </A>
-                )}
-              </For>
-            </div>
-          }
-        >
-        <Show
-          when={hasPageActions()}
-          fallback={
-            <Show when={sheet() === "actions"}>
-              <div class="px-4 pb-5">
-                <Suspense fallback={<div class="h-10" />}>
-                  <QuickCompose />
-                </Suspense>
-              </div>
-            </Show>
-          }
+          when={favorites().length > 0}
+          fallback={<p class="px-4 pb-6 text-sm text-muted">{t("layout.no_favorites")}</p>}
         >
           <div class="grid grid-cols-4 gap-1 px-3 pb-5">
-            <For each={pageActions()}>
-              {(a) => {
-                const body = <TileFace icon={a.icon?.({ size: 24 })} label={a.label} />;
-                const cls = `${tileClass} disabled:opacity-60 disabled:pointer-events-none ${a.primary ? "!text-accent-txt font-semibold" : ""}`;
-                return a.href ? (
-                  <a
-                    href={a.href}
-                    download={a.download}
-                    title={a.title}
-                    class={cls}
-                    onClick={() => setSheet(null)}
-                  >
-                    {body}
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    title={a.title}
-                    disabled={a.disabled}
-                    class={cls}
-                    onClick={() => {
-                      setSheet(null);
-                      a.onClick?.();
-                    }}
-                  >
-                    {body}
-                  </button>
-                );
-              }}
+            <For each={favorites()}>
+              {(item) => (
+                <A
+                  href={hrefOf(item)}
+                  onClick={() => setFavOpen(false)}
+                  activeClass="hz-active !text-accent-txt"
+                  class={tileClass}
+                >
+                  <TileFace icon={getNavIcon(item.icon, 24)} label={labelOf(item)} />
+                </A>
+              )}
             </For>
           </div>
         </Show>
-        </Show>
       </div>
 
-      {/* Backdrop for the actions sheet — the drawer's backdrop lives in
-          Layout.tsx because it also covers the right sidebar. */}
-      <Show when={sheetOpen()}>
+      {/* Backdrop for the sheet — the drawer's backdrop lives in Layout.tsx
+          because it also covers the right sidebar. */}
+      <Show when={favOpen()}>
         <div
           aria-hidden="true"
           class="fixed inset-0 z-30 lg:hidden bg-black/25"
-          onClick={() => setSheet(null)}
+          onClick={() => setFavOpen(false)}
         />
       </Show>
 
@@ -289,7 +196,7 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
           onOpenChange={(open) => {
             if (!open) return;
             setMoreOpen(false);
-            setSheet(null);
+            setFavOpen(false);
             setRightOpen(false);
           }}
           trigger={(triggerProps, open) => (
@@ -375,18 +282,17 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
           </For>
         </Menu>
 
-        {/* Favorites quick menu */}
-        <Show when={favorites().length > 0}>
+        {/* Favorites quick menu — always there, so the bar never reflows */}
           <button
             ref={favButtonRef}
-            onClick={() => toggleSheet("favorites")}
-            aria-expanded={sheet() === "favorites"}
-            aria-controls="page-actions-sheet"
+            onClick={toggleFavorites}
+            aria-expanded={favOpen()}
+            aria-controls="favorites-sheet"
             use:helpable="nav.favorites"
             class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                     text-[0.625rem] font-medium transition-colors
                     ${
-                      sheet() === "favorites"
+                      favOpen()
                         ? "text-txt bg-elevated"
                         : "text-muted hover:bg-elevated"
                     }`}
@@ -396,7 +302,6 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
             </span>
             <span class="max-w-full truncate">{t("layout.favorites")}</span>
           </button>
-        </Show>
 
         {/* App drawer */}
         <button
@@ -419,37 +324,12 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
           <span class="max-w-full truncate">{t("layout.apps")}</span>
         </button>
 
-        {/* Current page's header actions, or quick compose when it has none */}
-        <Show when={showActionsButton()}>
-          <button
-            ref={sheetButtonRef}
-            onClick={() => toggleSheet("actions")}
-            aria-expanded={sheet() === "actions"}
-            aria-controls="page-actions-sheet"
-            use:helpable="nav.actions"
-            class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
-                    text-[0.625rem] font-medium transition-colors
-                    ${
-                      sheet() === "actions"
-                        ? "text-txt bg-elevated"
-                        : "text-muted hover:bg-elevated"
-                    }`}
-          >
-            <span aria-hidden="true" class="flex">
-              <Show when={hasPageActions()} fallback={<MdFillEdit size={22} />}>
-                <MdOutlineBolt size={22} />
-              </Show>
-            </span>
-            <span class="max-w-full truncate">
-              {hasPageActions() ? moduleLabel() : t("layout.compose")}
-            </span>
-          </button>
-        </Show>
-
-        <Show when={!hidesRightSidebar()}>
+        {/* Panel — kept in place (disabled) on pages without a sidebar, so the
+            bar never reflows */}
           <button
             ref={setPanelButtonRef}
             onClick={togglePanel}
+            disabled={hidesRightSidebar()}
             aria-expanded={rightOpen()}
             aria-controls="right-sidebar"
             aria-label={rightOpen() ? "Close panel" : "Open panel"}
@@ -460,7 +340,7 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
                       rightOpen()
                         ? "text-txt bg-elevated"
                         : "text-muted hover:bg-elevated"
-                    }`}
+                    } disabled:opacity-40 disabled:pointer-events-none`}
           >
             <span class="relative flex items-center justify-center">
               <span
@@ -468,7 +348,7 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
               >
                 <MdFillChevron_right size={22} />
               </span>
-              <Show when={!rightOpen() && notifCount() > 0}>
+              <Show when={!rightOpen() && !hidesRightSidebar() && notifCount() > 0}>
                 <span
                   class="absolute -top-2 -right-1.5 min-w-[14px] h-[14px] px-[3px]
                          rounded-full bg-accent text-accent-fg
@@ -481,7 +361,6 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
             </span>
             <span class="max-w-full truncate">{t("layout.panel")}</span>
           </button>
-        </Show>
       </nav>
     </Show>
   );

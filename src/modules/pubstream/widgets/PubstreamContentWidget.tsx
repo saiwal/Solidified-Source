@@ -29,6 +29,7 @@ import { MdFillPublic, MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useScrollStyle } from "@utsukta/spa-core/store/scroll-style";
 import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
+import { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
 
 // ── iid lookup from the pubstream flat posts signal ────────────────────────
 function iidForMid(mid: string): number {
@@ -111,6 +112,15 @@ export default function PubstreamContentWidget() {
     if (!tag()) setTimeout(() => setSearchOpen(false), 150);
   }
 
+  // On mobile the tag filter is the floating search button instead.
+  const mobileActions = useMobileActions();
+  usePageSearch(() => ({
+    value: tag(),
+    placeholder: t("pubstream.filter_by_tag"),
+    onSearch: (q) => setTag(q.replace(/^#/, "").trim()),
+    onClear: clearTag,
+  }));
+
   return (
     <Show
       when={!disabled()}
@@ -146,32 +156,34 @@ export default function PubstreamContentWidget() {
             <Show when={tag()}>
               <span class="text-xs text-accent font-medium">#{tag()}</span>
             </Show>
-            <Show
-              when={searchOpen() || !!tag()}
-              fallback={
-                <IconButton label={t("pubstream.filter_by_tag")} variant="outline" onClick={openSearch}>
-                  <MdFillSearch size={15} />
-                </IconButton>
-              }
-            >
-              <div class="flex items-center gap-1">
-                <span class="text-muted text-sm shrink-0">#</span>
-                <Input
-                  class="w-28"
-                  ref={searchInputRef}
-                  type="search"
-                  value={tag()}
-                  onInput={(e) => setTag(e.currentTarget.value.trim())}
-                  onKeyDown={(e) => e.key === "Enter" && setSearchOpen(false)}
-                  onBlur={onSearchBlur}
-                  placeholder={t("pubstream.filter_by_tag")}
-                />
-                <Show when={tag()}>
-                  <IconButton label={t("pubstream.clear")} variant="outline" onClick={clearTag}>
-                    <MdFillClose size={13} />
+            <Show when={!mobileActions()}>
+              <Show
+                when={searchOpen() || !!tag()}
+                fallback={
+                  <IconButton label={t("pubstream.filter_by_tag")} variant="outline" onClick={openSearch}>
+                    <MdFillSearch size={15} />
                   </IconButton>
-                </Show>
-              </div>
+                }
+              >
+                <div class="flex items-center gap-1">
+                  <span class="text-muted text-sm shrink-0">#</span>
+                  <Input
+                    class="w-28"
+                    ref={searchInputRef}
+                    type="search"
+                    value={tag()}
+                    onInput={(e) => setTag(e.currentTarget.value.trim())}
+                    onKeyDown={(e) => e.key === "Enter" && setSearchOpen(false)}
+                    onBlur={onSearchBlur}
+                    placeholder={t("pubstream.filter_by_tag")}
+                  />
+                  <Show when={tag()}>
+                    <IconButton label={t("pubstream.clear")} variant="outline" onClick={clearTag}>
+                      <MdFillClose size={13} />
+                    </IconButton>
+                  </Show>
+                </div>
+              </Show>
             </Show>
           </div>
         </div>

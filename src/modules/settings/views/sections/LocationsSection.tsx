@@ -2,6 +2,7 @@ import { Show, For, createSignal } from "solid-js";
 import { useQuery, useMutation, useQueryClient } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchLocations, locationAction, type LocationAction } from "../../api/api";
 import type { LocationEntry } from "../../store/types";
@@ -59,10 +60,12 @@ export default function LocationsSection() {
       title={t("settings.title_locations")}
       description={t("settings.desc_locations")}
       action={
-        <Button variant="ghost" size="sm" disabled={mutation.isPending} onClick={() => run("sync")}>
-          <MdOutlineSync size={14} />
-          {isBusy(undefined, "sync") ? t("settings.locations_syncing") : t("settings.locations_sync_now")}
-        </Button>
+        <PageActions actions={[{
+          label: isBusy(undefined, "sync") ? t("settings.locations_syncing") : t("settings.locations_sync_now"),
+          icon: MdOutlineSync,
+          disabled: mutation.isPending,
+          onClick: () => run("sync"),
+        }]} />
       }
     >
       <Show when={!query.isPending} fallback={<Skeleton />}>

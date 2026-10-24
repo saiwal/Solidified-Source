@@ -20,7 +20,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, isFeedContactsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
-import { MdOutlineEdit, MdOutlineMail, MdOutlineFilter_alt, MdOutlineRss_feed } from "solid-icons/md";
+import { MdOutlineDelete, MdOutlineEdit, MdOutlineMail, MdOutlineFilter_alt, MdOutlineRss_feed } from "solid-icons/md";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 import { openComposer } from "@/shared/views/modal-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
@@ -181,6 +182,15 @@ export default function InboxView() {
     setReloadKey((n) => n + 1);
   }
 
+  // Inside a section on mobile the sidebar (and its compose buttons) is
+  // hidden, so they and Empty trash go to the floating button and ⋮, under the
+  // section's name.
+  const mobileActions = useMobileActions();
+  const sectionLabel = () => {
+    const l = items().find((i) => i.path === activeKey())?.label;
+    return typeof l === "function" ? l() : l;
+  };
+
   const compose = (kind: "post" | "dm") =>
     openComposer({
       kind,
@@ -222,6 +232,12 @@ export default function InboxView() {
       activeKey={activeKey()}
       contentClass="flex-1 min-w-0 flex flex-col"
     >
+      <PageActions mobileOnly label={sectionLabel()} actions={[
+        { label: t("hq.new_dm"), icon: MdOutlineMail, onClick: () => compose("dm"), primary: true },
+        { label: t("hq.new_post"), icon: MdOutlineEdit, onClick: () => compose("post"), show: isAppInstalled(installedApps(), "/rpost") },
+        { label: emptying() ? t("hq.emptying") : t("hq.empty_trash"), icon: MdOutlineDelete, onClick: () => void doEmptyTrash(),
+          disabled: emptying() || trashCount() === 0, show: selection().file === TRASH },
+      ]} />
       <Show when={activeKey() !== "rules"} fallback={<RulesPane />}>
       {/* Bounded height: MessageList scrolls its own body and paginates on
           scroll, so it needs a container that doesn't grow with its content.
@@ -243,7 +259,7 @@ export default function InboxView() {
                 </Badge>
               </Show>
 
-              <Show when={selection().file === TRASH}>
+              <Show when={selection().file === TRASH && !mobileActions()}>
                 <button
                   type="button"
                   onClick={() => void doEmptyTrash()}

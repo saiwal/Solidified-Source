@@ -1,6 +1,8 @@
 import { createSignal, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
+import { MdOutlineRefresh } from "solid-icons/md";
 import { fetchAdminQueue, adminQueueAction } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
@@ -17,7 +19,11 @@ export default function QueueSection() {
   }
 
   return (
-    <SubPageContent title={t("admin.queue_title")} description={t("admin.queue_desc")}>
+    <SubPageContent
+      title={t("admin.queue_title")}
+      description={t("admin.queue_desc")}
+      action={<PageActions actions={[{ label: t("admin.refresh"), icon: MdOutlineRefresh, onClick: refetch }]} />}
+    >
       <Show when={data()} fallback={<Skeleton />}>
         {(d) => (
           <div class="space-y-4">
@@ -36,9 +42,6 @@ export default function QueueSection() {
                 />
                 {t("admin.expert_mode")}
               </label>
-              <Button variant="ghost" size="sm" onClick={refetch}>
-                {t("admin.refresh")}
-              </Button>
               </div>
             </div>
 

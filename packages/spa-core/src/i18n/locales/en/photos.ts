@@ -47,6 +47,7 @@ export const photos: RawDictionary["photos"] = {
   upload_failed:        "Some photos could not be uploaded.",
   delete_album:         "Delete Album",
   confirm_delete_album: "Delete this album and all its photos? This cannot be undone.",
+  confirm_delete_photo: "Delete this photo? This cannot be undone.",
   delete_photo:         "Delete",
   delete_error:         "Could not delete.",
   select:               "Select",

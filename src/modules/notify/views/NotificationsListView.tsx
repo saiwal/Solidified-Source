@@ -9,7 +9,8 @@ import { resolveNotifyPath, connectionRequestId } from "@utsukta/spa-core/lib/no
 import { openConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
 import { fetchNotifications, type NotificationEntry } from "../api";
 import { relativeTime } from "@utsukta/spa-core/lib/relativeTime";
-import { MdOutlineNotifications_none } from "solid-icons/md";
+import { MdOutlineDone_all, MdOutlineNotifications_none } from "solid-icons/md";
+import PageActions from "@/shared/views/layout/PageActions";
 import { Card } from "@ui/Card";
 import { Avatar } from "@ui/Avatar";
 import { ErrorState } from "@ui/ErrorState";
@@ -65,16 +66,10 @@ export default function NotificationsListView() {
             {(entries() ?? []).length}
           </span>
         </Show>
-        <Show when={!entries.loading && hasUnseen()}>
-          <button
-            type="button"
-            onClick={handleMarkAllSeen}
-            disabled={marking()}
-            class="text-xs text-accent hover:underline disabled:opacity-40"
-          >
-            {t("notify.mark_all_seen")}
-          </button>
-        </Show>
+        <PageActions actions={[{
+          label: t("notify.mark_all_seen"), icon: MdOutlineDone_all, onClick: () => void handleMarkAllSeen(),
+          disabled: marking(), show: !entries.loading && hasUnseen(),
+        }]} />
       </div>
 
       {/* Loading skeleton */}

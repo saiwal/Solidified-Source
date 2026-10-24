@@ -66,6 +66,8 @@ import RenameModal from "../views/RenameModal";
 import MoveCopyModal from "../views/MoveCopyModal";
 import CategoriesModal from "../views/CategoriesModal";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
+import type { IconTypes } from "solid-icons";
 import WopiEditorOverlay from "@/shared/views/WopiEditorOverlay";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
@@ -663,6 +665,7 @@ export default function FilesContentWidget() {
   }
 
   let uploadInput!: HTMLInputElement;
+  const mobileActions = useMobileActions();
 
   const bookmarks = useCloudBookmarks();
 
@@ -1019,22 +1022,39 @@ export default function FilesContentWidget() {
           </div>
         </Show>
 
-        {/* Actions — on the selection, else on the open folder */}
-        <div class={GROUP}>
-          <For each={toolbarActions()}>
-            {(a) => (
-              <ToolButton
-                label={actionLabel(a.id)}
-                disabled={a.id === "delete" && bulkBusy()}
-                active={a.id === "bookmark" && actionUi(a.id) === BOOKMARKED_UI}
-                danger={a.danger}
-                onClick={() => runToolbarAction(a.id)}
-              >
-                {actionUi(a.id).icon({ size: 16 })}
-              </ToolButton>
-            )}
-          </For>
-        </div>
+        {/* Actions — on the selection, else on the open folder. Below lg they
+            and the write tools go to the floating button and ⋮ instead. */}
+        <PageActions
+          mobileOnly
+          label={selectedItems().length ? t("files_mod.selected_count", { count: selectedItems().length }) : undefined}
+          actions={[
+            { label: t("files_mod.upload"), icon: MdOutlineUpload_file, onClick: () => uploadInput.click(), primary: true, show: canWrite() },
+            { label: t("files_mod.new_folder"), icon: MdOutlineCreate_new_folder, onClick: () => setShowNewFolder(true), show: canWrite() },
+            ...toolbarActions().map((a) => ({
+              label: t(actionUi(a.id).label as "files_mod.delete") as string,
+              icon: actionUi(a.id).icon as IconTypes,
+              disabled: a.id === "delete" && bulkBusy(),
+              onClick: () => runToolbarAction(a.id),
+            })),
+          ]}
+        />
+        <Show when={!mobileActions()}>
+          <div class={GROUP}>
+            <For each={toolbarActions()}>
+              {(a) => (
+                <ToolButton
+                  label={actionLabel(a.id)}
+                  disabled={a.id === "delete" && bulkBusy()}
+                  active={a.id === "bookmark" && actionUi(a.id) === BOOKMARKED_UI}
+                  danger={a.danger}
+                  onClick={() => runToolbarAction(a.id)}
+                >
+                  {actionUi(a.id).icon({ size: 16 })}
+                </ToolButton>
+              )}
+            </For>
+          </div>
+        </Show>
 
         <div class={GROUP}>
           <ToolButton
@@ -1076,7 +1096,7 @@ export default function FilesContentWidget() {
           </div>
         </Show>
 
-        <Show when={canWrite()}>
+        <Show when={canWrite() && !mobileActions()}>
           <div class={GROUP}>
             <ToolButton
               label={t("files_mod.new_folder") as string}
@@ -1088,9 +1108,9 @@ export default function FilesContentWidget() {
             <ToolButton label={t("files_mod.upload") as string} onClick={() => uploadInput.click()}>
               <MdOutlineUpload_file size={16} />
             </ToolButton>
-            <input ref={uploadInput} type="file" multiple class="sr-only" onChange={handleUpload} />
           </div>
         </Show>
+        <input ref={uploadInput} type="file" multiple class="sr-only" onChange={handleUpload} />
 
         {/* View filter — inside the sticky bar so it stays pinned while scrolling */}
         <Show when={filterOpen()}>

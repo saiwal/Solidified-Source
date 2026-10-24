@@ -12,6 +12,8 @@ import {
 } from "../api/api";
 import SubPageLayout from "@/shared/views/SubPageLayout";
 import { SETTINGS_ITEMS } from "@/modules/settings/index";
+import PageActions from "@/shared/views/layout/PageActions";
+import { MdOutlineAdd } from "solid-icons/md";
 import { Button } from "@ui/Button";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
@@ -73,11 +75,14 @@ export default function ProfilesView() {
           <h2 class="text-base font-semibold text-txt">{t("profiles.title")}</h2>
           <p class="text-sm text-muted">{t("profiles.desc")}</p>
         </div>
-        <Show when={multiEnabled()}>
-          <Button size="sm" class="shrink-0" onClick={handleCreate} disabled={creating()}>
-            {creating() ? t("profiles.creating") : t("profiles.new_profile")}
-          </Button>
-        </Show>
+        <PageActions class="shrink-0" label={t("profiles.title")} actions={[{
+          label: creating() ? t("profiles.creating") : t("profiles.new_profile"),
+          icon: MdOutlineAdd,
+          onClick: handleCreate,
+          disabled: creating(),
+          primary: true,
+          show: multiEnabled(),
+        }]} />
       </div>
 
       <hr class="border-rim" />

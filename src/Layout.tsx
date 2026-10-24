@@ -6,7 +6,7 @@ import Slot from "./shared/views/Slot";
 import SiteCredits from "./shared/views/SiteCredits";
 import RemoteAuthBanner from "./shared/views/RemoteAuthBanner";
 import HelpOverlay from "./shared/views/HelpOverlay";
-import { MdFillSwitch_left, MdOutlineExpand_less } from "solid-icons/md";
+import { MdFillSwitch_left } from "solid-icons/md";
 import { templateUsageCount, templateName } from "@utsukta/spa-core/store/widget-templates";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { formatCount } from "@/modules/notify/rows";
@@ -22,6 +22,7 @@ import { usePWA } from "@/pwa";
 import DesktopMenu from "./shared/views/layout/DesktopMenu";
 import MobileMenu from "./shared/views/layout/MobileMenu";
 import { setMobileNavAvailable } from "./shared/views/layout/PageActions";
+import FloatingActions from "./shared/views/layout/FloatingActions";
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 const Layout: ParentComponent = (props) => {
@@ -56,11 +57,10 @@ const Layout: ParentComponent = (props) => {
     showsTemplateNotice,
   } = chrome;
 
-  // Header actions are portaled into the mobile actions sheet; if the nav
-  // chrome is hidden on mobile there is no sheet, so let PageActions fall
-  // back to rendering them inline in the page header. Set it once before the
-  // first render too, so mobile doesn't flash the actions inline while waiting
-  // for the effect.
+  // On mobile, page actions move to the floating button and the ⋮ menu; if
+  // the nav chrome is hidden there, PageActions keeps rendering them inline.
+  // Set it once before the first render too, so mobile doesn't flash the
+  // actions inline while waiting for the effect.
   setMobileNavAvailable(!hidesNavChrome());
   createEffect(() => setMobileNavAvailable(!hidesNavChrome()));
 
@@ -215,21 +215,14 @@ const Layout: ParentComponent = (props) => {
           </main>
 
 
-          <Show when={showScrollTop()}>
-            <button
-              onClick={() =>
-                mainRef()?.scrollTo({ top: 0, behavior: "smooth" })
-              }
-              class={`fixed z-50 right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
-                     ${hidesRightSidebar() ? "xl:right-6" : "xl:right-[19.5rem]"}
-                     w-10 h-10 rounded-full flex items-center justify-center
-                     bg-elevated border border-rim
-                     shadow hover:shadow-md transition-all`}
-              aria-label="Scroll to top"
-            >
-              <MdOutlineExpand_less class="w-4 h-4" />
-            </button>
-          </Show>
+          {/* Main action, search, ⋮ and scroll-to-top, stacked bottom-right. */}
+          <FloatingActions
+            showScrollTop={showScrollTop()}
+            onScrollTop={() => mainRef()?.scrollTo({ top: 0, behavior: "smooth" })}
+            hidesRightSidebar={hidesRightSidebar()}
+            viewerRole={viewerRole()}
+            activeModuleId={activeModuleId()}
+          />
 
           {/* ═══════════════════════════════════════════════════════
               RIGHT SIDEBAR

@@ -25,6 +25,10 @@ import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
 import { unblockChannel } from "@utsukta/spa-core/lib/blocklist-api";
 import { approveModerationItem, dropModerationItem } from "@/modules/moderate/api";
 import { Button } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
+import { openShare } from "@utsukta/spa-core/store/share";
+import { shareTargetForPost } from "@/shared/lib/shareLinks";
+import { MdOutlineOpen_in_new, MdOutlineShare } from "solid-icons/md";
 
 function flatNodes(posts: Post[]): ThreadNode[] {
   return posts.map((p) => ({ ...p, children: [] }));
@@ -287,6 +291,12 @@ export default function PostView() {
             when={!n().blocked}
             fallback={<BlockedPlaceholder authorHash={n().authorHash} onUnblocked={refetch} />}
           >
+            <PageActions mobileOnly actions={[
+              { label: t("share.action"), icon: MdOutlineShare, onClick: () => openShare(shareTargetForPost(n())) },
+              // A federated post's home copy; a local one's permalink is this page.
+              { label: t("post.original"), icon: MdOutlineOpen_in_new, href: n().permalink,
+                show: !!n().permalink && !n().permalink.startsWith(location.origin) },
+            ]} />
             <PostCard
               post={n()}
               initiallyExpanded

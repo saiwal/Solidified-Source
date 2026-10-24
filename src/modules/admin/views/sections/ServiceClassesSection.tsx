@@ -12,6 +12,8 @@ import {
 import { SERVICE_CLASS_PROP_DEFS, type AdminServiceClass, type ServiceClassProperties } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
+import { MdOutlineAdd } from "solid-icons/md";
 import { Field, Input, Select } from "@ui/Field";
 import { Badge } from "@ui/Badge";
 
@@ -185,9 +187,7 @@ function CreateClassButton(props: { onCreated: () => void }) {
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        + {t("admin.create_class")}
-      </Button>
+      <PageActions actions={[{ label: t("admin.create_class"), icon: MdOutlineAdd, onClick: () => setOpen(true), primary: true }]} />
       <Show when={open()}>
         <ServiceClassModal
           mode="create"

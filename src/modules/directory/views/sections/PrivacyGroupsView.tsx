@@ -25,6 +25,7 @@ import {
   MdFillExpand_less,
 } from "solid-icons/md";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
 import {
   groups,
   loading,
@@ -242,10 +243,11 @@ const PrivacyGroupsView: Component = () => {
       title={t("directory.privacy_groups_title")}
       description={t("directory.privacy_groups_desc")}
       action={
-        <Button variant="ghost" size="sm" pressed={showCreate()} onClick={() => setShowCreate((v) => !v)}>
-          <MdFillAdd size={15} />
-          {t("directory.create")}
-        </Button>
+        <PageActions actions={[{
+          label: showCreate() ? t("directory.cancel") : t("directory.create"),
+          icon: showCreate() ? MdFillClose : MdFillAdd,
+          onClick: () => setShowCreate((v) => !v),
+        }]} />
       }
     >
       <Show when={showCreate()}>

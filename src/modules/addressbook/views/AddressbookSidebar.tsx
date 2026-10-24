@@ -1,4 +1,5 @@
 import { createSignal, Show } from "solid-js";
+import { useLocation } from "@solidjs/router";
 import { MdOutlineAdd, MdOutlineEdit, MdOutlineDelete, MdOutlineUpload, MdOutlineDownload } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -11,6 +12,7 @@ import {
 } from "../api";
 import { Button } from "@ui/Button";
 import { Input } from "@ui/Field";
+import PageActions from "@/shared/views/layout/PageActions";
 
 const btnClass =
   "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-sm text-muted " +
@@ -30,6 +32,12 @@ export default function AddressbookSidebar(props: Props) {
   const [busy, setBusy] = createSignal(false);
 
   let fileInput: HTMLInputElement | undefined;
+  // Inside a book on mobile this sidebar is hidden, so its book actions join
+  // the section's sheet group (same label: the book's name). On the list page
+  // the sidebar itself is on screen. New/rename need its inline form, so they
+  // stay there.
+  const location = useLocation();
+  const inBook = () => /^\/cdav\/addressbook\/[^/]+/.test(location.pathname);
 
   const run = async (fn: () => Promise<void>, fallback?: string) => {
     setBusy(true);
@@ -87,6 +95,14 @@ export default function AddressbookSidebar(props: Props) {
 
   return (
     <div class="space-y-1">
+      <PageActions mobileOnly label={props.book?.displayname} actions={[
+        { label: busy() ? t("addressbook.importing") : t("addressbook.import_vcf"), icon: MdOutlineUpload,
+          disabled: busy(), onClick: () => fileInput?.click(), show: !!props.book && inBook() },
+        { label: t("addressbook.export_vcf"), icon: MdOutlineDownload, href: props.book?.exportUrl,
+          download: `${props.book?.displayname}.vcf`, show: !!props.book && inBook() },
+        { label: t("addressbook.delete_addressbook"), icon: MdOutlineDelete, disabled: busy(), onClick: remove,
+          show: !!props.book && inBook() },
+      ]} />
       <Show when={mode() !== "idle"}>
         <form onSubmit={submit} class="space-y-2 pb-2">
           <Input

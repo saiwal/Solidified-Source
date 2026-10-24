@@ -22,7 +22,11 @@ export const layout: RawDictionary["layout"] = {
   no_app_matches:     "आपकी खोज से कोई ऐप नहीं मिला।",
   social:             "सामाजिक",
   productivity:       "उत्पादकता",
+	entertainment:      "मनोरंजन",
   system:             "सिस्टम",
   add_favorite:       "पसंदीदा में जोड़ें",
   remove_favorite:    "पसंदीदा से हटाएँ",
+  search:             "खोजें",
+  scroll_top:         "ऊपर जाएँ",
+  no_favorites:       "किसी ऐप को यहाँ पिन करने के लिए ऐप ड्रॉअर में उस पर स्टार लगाएँ।",
 };

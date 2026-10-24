@@ -9,7 +9,7 @@ import type { NavApp } from "@utsukta/spa-core/lib/nav-api";
  * server-provided app URLs are resolved back to their module via
  * `moduleIdForPath`.
  */
-export type AppCategory = "social" | "productivity" | "system";
+export type AppCategory = "social" | "productivity" |  "entertainment" | "system" ;
 
 const BY_MODULE: Record<string, AppCategory> = {
   // People + feeds
@@ -38,9 +38,9 @@ const BY_MODULE: Record<string, AppCategory> = {
   cart: "productivity",
   blocks: "productivity",
   photos: "productivity",
-  games: "productivity",
-  jellyfin: "productivity",
-  "jellyfin-profile": "productivity",
+  games: "entertainment",
+  jellyfin: "entertainment",
+  "jellyfin-profile": "entertainment",
 
   // Account, admin, settings
   settings: "system",
@@ -88,8 +88,8 @@ const BY_ROOT: Record<string, AppCategory> = {
   notepad: "productivity",
   cart: "productivity",
   photos: "productivity",
-  games: "productivity",
-  jellyfin: "productivity",
+  games: "entertainment",
+  jellyfin: "entertainment",
 };
 
 // Core's own app categories (.apd "categories:", user-editable in core's app
@@ -102,13 +102,18 @@ const BY_CORE: Record<string, AppCategory> = {
   personal: "productivity",
   multimedia: "productivity",
   tools: "productivity",
-  gaming: "productivity",
+  gaming: "entertainment",
   "e-commerce": "productivity",
   system: "system",
   "access control": "system",
   developer: "system",
   appearance: "system",
 };
+
+/** A built-in module's curated category, undefined for addons and unlisted ids. */
+export function moduleCategory(moduleId: string | undefined): AppCategory | undefined {
+  return moduleId ? BY_MODULE[moduleId] : undefined;
+}
 
 const rootOf = (path: string) => path.split("/").filter(Boolean)[0] ?? "";
 
@@ -139,9 +144,10 @@ export function appCategory(item: NavItemDef, apps: NavApp[] = []): AppCategory 
 }
 
 /** Drawer group order. */
-export const APP_CATEGORIES: { id: AppCategory; labelKey: "layout.social" | "layout.productivity" | "layout.system" }[] = [
+export const APP_CATEGORIES: { id: AppCategory; labelKey: "layout.social" | "layout.productivity" | "layout.entertainment" | "layout.system" }[] = [
   { id: "social", labelKey: "layout.social" },
   { id: "productivity", labelKey: "layout.productivity" },
+	{ id: "entertainment", labelKey: "layout.entertainment"},
   { id: "system", labelKey: "layout.system" },
 ];
 

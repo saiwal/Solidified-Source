@@ -47,6 +47,7 @@ export const photos: RawDictionary["photos"] = {
   upload_failed:        "Einige Fotos konnten nicht hochgeladen werden.",
   delete_album:         "Album löschen",
   confirm_delete_album: "Dieses Album und alle Fotos löschen? Dies kann nicht rückgängig gemacht werden.",
+  confirm_delete_photo: "Dieses Foto löschen? Dies kann nicht rückgängig gemacht werden.",
   delete_photo:         "Löschen",
   delete_error:         "Löschen fehlgeschlagen.",
   select:               "Auswählen",

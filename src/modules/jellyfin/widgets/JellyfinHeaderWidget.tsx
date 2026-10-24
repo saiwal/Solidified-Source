@@ -17,7 +17,7 @@ import DeviceList from "../RemoteSessions";
 import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
-import PageActions from "@/shared/views/layout/PageActions";
+import PageActions, { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
 
 const panel = "z-50 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2";
 
@@ -40,6 +40,14 @@ export default function JellyfinHeaderWidget() {
     setParams({ ...PAGE_PARAMS, section: params.section, search: q || undefined });
   };
   const closeSearch = () => { setSearching(false); setInput(""); if (activeSearch()) setParams({ search: undefined }); };
+  // On mobile the search is the floating search button instead.
+  const mobileActions = useMobileActions();
+  usePageSearch(() => ({
+    value: activeSearch(),
+    placeholder: t("jellyfin.search_placeholder"),
+    onSearch: (q) => setParams({ ...PAGE_PARAMS, section: params.section, search: q || undefined }),
+    onClear: closeSearch,
+  }));
 
   const devices = createPopover({ placement: "bottom-end" });
 
@@ -61,34 +69,36 @@ export default function JellyfinHeaderWidget() {
           />
 
           <div class="flex items-center gap-1.5">
-            <Show when={searching()} fallback={
-              <IconButton
-                label={t("jellyfin.search")}
-                variant="outline"
-                pressed={!!activeSearch()}
-                onClick={openSearch}
-              >
-                <MdFillSearch size={15} />
-              </IconButton>
-            }>
-              <form onSubmit={submit} class="flex items-center gap-1">
-                <Input
-                  class="w-36"
-                  ref={field}
-                  type="search"
-                  value={input()}
-                  onInput={(e) => setInput(e.currentTarget.value)}
-                  onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }}
-                  placeholder={t("jellyfin.search_placeholder")}
-                  aria-label={t("jellyfin.search")}
-                />
-                <IconButton label={t("jellyfin.search")} variant="outline" type="submit">
+            <Show when={!mobileActions()}>
+              <Show when={searching()} fallback={
+                <IconButton
+                  label={t("jellyfin.search")}
+                  variant="outline"
+                  pressed={!!activeSearch()}
+                  onClick={openSearch}
+                >
                   <MdFillSearch size={15} />
                 </IconButton>
-                <IconButton label={t("jellyfin.clear_search")} size="sm" onClick={closeSearch}>
-                  <MdFillClose size={15} />
-                </IconButton>
-              </form>
+              }>
+                <form onSubmit={submit} class="flex items-center gap-1">
+                  <Input
+                    class="w-36"
+                    ref={field}
+                    type="search"
+                    value={input()}
+                    onInput={(e) => setInput(e.currentTarget.value)}
+                    onKeyDown={(e) => { if (e.key === "Escape") closeSearch(); }}
+                    placeholder={t("jellyfin.search_placeholder")}
+                    aria-label={t("jellyfin.search")}
+                  />
+                  <IconButton label={t("jellyfin.search")} variant="outline" type="submit">
+                    <MdFillSearch size={15} />
+                  </IconButton>
+                  <IconButton label={t("jellyfin.clear_search")} size="sm" onClick={closeSearch}>
+                    <MdFillClose size={15} />
+                  </IconButton>
+                </form>
+              </Show>
             </Show>
 
             <span ref={devices.ref} class="relative">

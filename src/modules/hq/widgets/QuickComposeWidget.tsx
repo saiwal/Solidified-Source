@@ -9,7 +9,7 @@ export default function QuickComposeWidget() {
   return (
     <Show when={actions().length > 0}>
       {/* Drawer-style tiles; auto-fill gives four per row in the mobile
-          actions sheet and as many as fit in an HQ masonry cell. */}
+          compose sheet and as many as fit in an HQ masonry cell. */}
       <div class="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-1">
         <For each={actions()}>
           {(action) => (

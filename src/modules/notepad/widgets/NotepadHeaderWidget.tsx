@@ -4,6 +4,7 @@ import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Input } from "@ui/Field";
 import { IconButton } from "@ui/Button";
+import { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
 
 export default function NotepadHeaderWidget() {
   const { t, locale } = useI18n();
@@ -24,6 +25,15 @@ export default function NotepadHeaderWidget() {
     if (!q) setSearchOpen(false);
   };
 
+  // On mobile the search is the floating search button instead.
+  const mobileActions = useMobileActions();
+  usePageSearch(() => (true) ? {
+    value: activeSearch(),
+    placeholder: t("notepad.search_placeholder"),
+    onSearch: (q) => { setSearchInput(q); submitSearch(); },
+    onClear: () => { setSearchInput(""); submitSearch(); },
+  } : undefined);
+
   const clearAllFilters = () => {
     setSearchInput("");
     setSearchOpen(false);
@@ -41,41 +51,43 @@ export default function NotepadHeaderWidget() {
         <div class="flex items-center justify-between gap-2">
           <h1 class="text-xl font-bold text-txt">{t("notepad.title")}</h1>
 
-          <Show
-            when={searchOpen()}
-            fallback={
-              <IconButton
-                label={t("notepad.search")}
-                variant="outline"
-                pressed={!!activeSearch()}
-                onClick={() => {
-                  setSearchInput(activeSearch());
-                  setSearchOpen(true);
-                }}
-              >
-                <MdFillSearch size={15} />
-              </IconButton>
-            }
-          >
-            <form onSubmit={submitSearch} class="flex items-center gap-1">
-              <Input class="w-40" type="search" value={searchInput()} onInput={(e) => setSearchInput(e.currentTarget.value)} placeholder={t("notepad.search_placeholder")} autofocus onKeyDown={(e) => {
-                  if (e.key === "Escape") setSearchOpen(false);
-                }} />
-              <IconButton label={t("notepad.search")} variant="outline" type="submit">
-                <MdFillSearch size={15} />
-              </IconButton>
-              <IconButton
-                label={t("notepad.cancel")}
-                size="sm"
-                onClick={() => {
-                  setSearchInput("");
-                  setSearchParams({ search: undefined });
-                  setSearchOpen(false);
-                }}
-              >
-                <MdFillClose size={15} />
-              </IconButton>
-            </form>
+          <Show when={!mobileActions()}>
+            <Show
+              when={searchOpen()}
+              fallback={
+                <IconButton
+                  label={t("notepad.search")}
+                  variant="outline"
+                  pressed={!!activeSearch()}
+                  onClick={() => {
+                    setSearchInput(activeSearch());
+                    setSearchOpen(true);
+                  }}
+                >
+                  <MdFillSearch size={15} />
+                </IconButton>
+              }
+            >
+              <form onSubmit={submitSearch} class="flex items-center gap-1">
+                <Input class="w-40" type="search" value={searchInput()} onInput={(e) => setSearchInput(e.currentTarget.value)} placeholder={t("notepad.search_placeholder")} autofocus onKeyDown={(e) => {
+                    if (e.key === "Escape") setSearchOpen(false);
+                  }} />
+                <IconButton label={t("notepad.search")} variant="outline" type="submit">
+                  <MdFillSearch size={15} />
+                </IconButton>
+                <IconButton
+                  label={t("notepad.cancel")}
+                  size="sm"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchParams({ search: undefined });
+                    setSearchOpen(false);
+                  }}
+                >
+                  <MdFillClose size={15} />
+                </IconButton>
+              </form>
+            </Show>
           </Show>
         </div>
       </div>

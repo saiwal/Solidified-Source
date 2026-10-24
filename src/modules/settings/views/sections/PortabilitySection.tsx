@@ -3,6 +3,8 @@ import { A } from "@solidjs/router";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
+import { MdOutlineDownload } from "solid-icons/md";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
@@ -101,6 +103,9 @@ export default function PortabilitySection() {
                 </div>
               </div>
 
+              <PageActions mobileOnly actions={[
+                { label: t("settings.portability_download_btn"), icon: MdOutlineDownload, onClick: handleDownload, primary: true },
+              ]} />
               <Button onClick={handleDownload}>
                 {t("settings.portability_download_btn")}
               </Button>

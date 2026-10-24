@@ -13,6 +13,7 @@ import { fetchSeriesDetail, renameSeries, reorderSeries } from "../api";
 import { articlePath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { Button, IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
 import { EmptyState } from "@ui/EmptyState";
 
@@ -113,11 +114,9 @@ export default function SeriesView() {
               <p class="text-sm text-muted mt-1 tabular-nums">{t("articles.series_articles_count", { count: order().length })}</p>
             </Show>
           </div>
-          <Show when={isOwner()}>
-            <IconButton label={t("articles.series_rename")} onClick={() => setRenaming(true)}>
-              <MdOutlineEdit size={18} />
-            </IconButton>
-          </Show>
+          <PageActions label={name()} actions={[
+            { label: t("articles.series_rename"), icon: MdOutlineEdit, onClick: () => setRenaming(true), show: isOwner() },
+          ]} />
         </div>
 
         <Show when={!data.loading} fallback={<SkeletonRows count={5} />}>

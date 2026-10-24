@@ -2,10 +2,10 @@ import { For, Show } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAccountSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
+import { SaveBar } from "../../store/FormHelpers";
 import type { AccountQuota } from "../../store/types";
 import { formatQuotaValue, quotaPercent } from "@/shared/lib/quota-format";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
 import { Field, Input } from "@ui/Field";
 
 export default function AccountSection() {
@@ -24,11 +24,7 @@ export default function AccountSection() {
             <Input class="w-full max-w-sm" type="email" name="email" value={data()!.$email} />
           </Field>
 
-          <div class="flex items-center gap-3 pt-2">
-            <Button variant="primary" type="submit" disabled={saving()}>
-              {saving() ? t("settings.saving") : t("settings.save")}
-            </Button>
-          </div>
+          <SaveBar saving={saving()} />
         </form>
 
         <Show when={data()!.quotas.length > 0}>

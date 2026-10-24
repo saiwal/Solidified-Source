@@ -21,6 +21,8 @@ export interface NavViewer {
   avatar_s: string;
   avatar_l: string;
   avatar_mime: string;
+  /** 425px cover photo (hub default if unset) — empty for non-local viewers */
+  cover?: string;
   forum: boolean;
   url: string;
   uid: number;
@@ -29,6 +31,14 @@ export interface NavViewer {
   theme: string;
   timezone: string;
   startpage: string;
+}
+
+export interface NavSubject {
+  nick: string;
+  name: string;
+  addr: string;
+  avatar: string;
+  cover: string;
 }
 
 export interface NavChannel {
@@ -110,6 +120,8 @@ export interface NavApiResponse {
   /** Full built-in system app list (syslist / get_system_apps) — available to all users */
   system_apps: NavApp[];
   channel_tabs: NavChannelTab[];
+  /** The visited channel's identity — for anyone but its owner, else null */
+  subject: NavSubject | null;
   has_public_stream: boolean;
   /** admin/site "Site homepage to show visitors" (system.frontpage) — "" = unset */
   frontpage: string;
@@ -242,6 +254,7 @@ export async function fetchNavApi(channelNick?: string): Promise<NavApiResponse>
     featured,
     system_apps,
     channel_tabs:     raw.channel_tabs ?? [],
+    subject:          raw.subject ?? null,
     has_public_stream: raw.has_public_stream ?? false,
     frontpage:        raw.frontpage ?? "",
     startpage:        raw.startpage ?? "",

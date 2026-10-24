@@ -4,6 +4,7 @@ import { albums, tab, switchTab } from "../store/store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { Tabs } from "@ui/Tabs";
+import { PageMenu } from "@/shared/views/layout/PageActions";
 
 export default function PhotosHeaderWidget() {
   const { t } = useI18n();
@@ -45,6 +46,7 @@ export default function PhotosHeaderWidget() {
         onChange={pick}
         items={tabs().map((s) => ({ value: s.id, label: s.label }))}
       />
+      <PageMenu />
     </div>
   );
 }

@@ -22,7 +22,11 @@ export const layout: RawDictionary["layout"] = {
   no_app_matches:     "No apps match your search.",
   social:             "Social",
   productivity:       "Productivity",
+	entertainment:      "Entertainment",
   system:             "System",
   add_favorite:       "Add to favorites",
   remove_favorite:    "Remove from favorites",
+  search:             "Search",
+  scroll_top:         "Scroll to top",
+  no_favorites:       "Star an app in the app drawer to pin it here.",
 };

@@ -26,7 +26,7 @@ import {
   MdOutlineLock, MdOutlineShare, MdOutlineDownload,
   MdFillApps, MdFillCollections,
   MdFillAdd, MdFillClose,
-  MdFillCloud_upload,
+  MdFillCloud_upload, MdOutlineVisibility_off,
   MdFillCheck_box, MdFillCheck_box_outline_blank,
   MdFillArrow_upward, MdFillArrow_downward,
 } from "solid-icons/md";
@@ -56,6 +56,7 @@ import { Badge } from "@ui/Badge";
 import { EmptyState } from "@ui/EmptyState";
 import { Menu, MenuItem } from "@ui/Menu";
 import { FileDropZone } from "@ui/FileDropZone";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 
@@ -579,6 +580,7 @@ function AlbumsView(props: { auto: boolean }) {
   const [aclMode, setAclMode]       = createSignal<AclMode>('public');
   const [allowKeys, setAllowKeys]   = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys]     = createSignal<Set<string>>(new Set<string>());
+  const mobileActions = useMobileActions();
 
   function toggleAcl(entry: AclEntry, list: 'allow' | 'deny') {
     const key = entryKey(entry);
@@ -632,7 +634,7 @@ function AlbumsView(props: { auto: boolean }) {
         view={viewMode()}
         onView={setViewMode}
       >
-        <Show when={canWrite() && !props.auto}>
+        <Show when={canWrite() && !props.auto && !mobileActions()}>
           <IconButton
             label={t("photos.new_album")}
             size="sm"
@@ -649,6 +651,14 @@ function AlbumsView(props: { auto: boolean }) {
           </IconButton>
         </Show>
       </SortToolbar>
+
+      <PageActions mobileOnly actions={[{
+        label: t("photos.new_album"), icon: MdFillAdd, primary: true, show: canWrite() && !props.auto,
+        onClick: () => {
+          setShowForm(true); setCreateError(''); setNewName('');
+          setAclMode('public'); setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>());
+        },
+      }]} />
 
       {/* New album form */}
       <Show when={showForm()}>
@@ -843,6 +853,7 @@ function AlbumGrid() {
     createSignal<{ done: number; total: number } | null>(null);
   let fileInputRef: HTMLInputElement | undefined;
   const [isDragging, setIsDragging] = createSignal(false);
+  const mobileActions = useMobileActions();
 
   const isOwner = () => !!auth()?.nick && auth()!.nick === nick();
 
@@ -959,7 +970,20 @@ function AlbumGrid() {
 
         {/* Spacer pushes the actions right when the (write-only) upload button is absent */}
         <span class="ml-auto" />
-        <Show when={canWrite()}>
+        {/* Upload, download, delete and privacy go to the floating button and ⋮
+            below lg; the upload button stays while it shows progress. */}
+        <PageActions mobileOnly label={albumName() || undefined} actions={[
+          { label: t("photos.upload"), icon: MdFillCloud_upload, primary: true, onClick: () => fileInputRef?.click(),
+            show: canWrite() && !uploadProgress() },
+          { label: t("photos.download_album"), icon: MdOutlineDownload, href: photoDownloadUrl(nick() ?? '', datum() ?? ''),
+            download: `${albumName() || 'album'}.zip`, show: !sel.selectMode() && !!datum() },
+          { label: t("photos.acl_privacy"), icon: MdOutlineLock, onClick: () => setAclOpen(true),
+            show: canWrite() && !sel.selectMode() && !!datum() && isOwner() },
+          { label: t("photos.delete_album"), icon: MdOutlineDelete, disabled: deletingAlbum(),
+            show: canWrite() && !sel.selectMode() && isOwner(),
+            onClick: () => { if (confirm(t("photos.confirm_delete_album"))) { setConfirmAlbum(true); void handleDeleteAlbum(); } } },
+        ]} />
+        <Show when={canWrite() && (!mobileActions() || !!uploadProgress())}>
           {/* Upload */}
           <button
             onClick={() => fileInputRef?.click()}
@@ -980,7 +1004,7 @@ function AlbumGrid() {
 
           {/* Download album as a zip — albums are attach folders, so the files
               download endpoint zips them for us. */}
-          <Show when={!sel.selectMode() && !!datum()}>
+          <Show when={!sel.selectMode() && !!datum() && !mobileActions()}>
             <a
               href={photoDownloadUrl(nick() ?? '', datum() ?? '')}
               download={`${albumName() || 'album'}.zip`}
@@ -992,7 +1016,7 @@ function AlbumGrid() {
             </a>
           </Show>
 
-        <Show when={canWrite()}>
+        <Show when={canWrite() && !mobileActions()}>
           {/* Delete album — bulk-destructive, stays owner-only regardless of write_storage */}
           <Show when={!sel.selectMode() && isOwner()}>
             <Show when={confirmAlbum()} fallback={
@@ -1115,6 +1139,7 @@ function ImageView() {
   const navViewer = useNavViewer();
   const { t }     = useI18n();
   const d         = detail;
+  const mobileActions = useMobileActions();
 
   const [replyOpen, setReplyOpen]         = createSignal(false);
   const [showComments, setShowComments]   = createSignal(true);
@@ -1724,27 +1749,42 @@ function ImageView() {
               </Button>
             </Show>
 
-            <a
-              href={photoDownloadUrl(nick(), d()?.resource_id ?? "")}
-              download={d()?.filename}
-              title={t("photos.download")}
-              aria-label={t("photos.download")}
-              class={`ml-auto ${iconButtonClass()}`}
-            >
-              <MdOutlineDownload size={17} />
-            </a>
+            {/* Download, share and the More menu go to the mobile actions
+                sheet below lg; reactions and reply stay with the photo. */}
+            <PageActions mobileOnly label={d()?.title || d()?.filename || undefined} actions={[
+              { label: t("photos.download"), icon: MdOutlineDownload, href: photoDownloadUrl(nick(), d()?.resource_id ?? ""), download: d()?.filename },
+              { label: t("share.action"), icon: MdOutlineShare, onClick: () => { const p = d(); if (p) openShare(shareTargetForPhoto(nick(), p)); } },
+              { label: editUploading() ? t("photos.editing") : t("photos.edit_photo"), icon: MdOutlineEdit, disabled: editUploading(), onClick: startEdit, show: canWrite() },
+              { label: t("photos.rename"), icon: MdOutlineEdit, onClick: openRename, show: canWrite() },
+              { label: t("photos.acl_privacy"), icon: MdOutlineLock, onClick: () => setAclOpen(true), show: canWrite() && isOwner() },
+              { label: d()?.is_nsfw ? t("photos.nsfw_unmark") : t("photos.nsfw_mark"), icon: MdOutlineVisibility_off, disabled: nsfwSaving(), onClick: handleNsfwToggle, show: canWrite() },
+              { label: t("photos.delete_photo"), icon: MdOutlineDelete, show: canWrite(),
+                onClick: () => { if (confirm(t("photos.confirm_delete_photo"))) { setDeleteConfirming(true); void onDeleteClick(); } } },
+            ]} />
+            <Show when={!mobileActions()}>
+              <a
+                href={photoDownloadUrl(nick(), d()?.resource_id ?? "")}
+                download={d()?.filename}
+                title={t("photos.download")}
+                aria-label={t("photos.download")}
+                class={`ml-auto ${iconButtonClass()}`}
+              >
+                <MdOutlineDownload size={17} />
+              </a>
 
-            <IconButton
-              label={t("share.action")}
-              onClick={() => { const p = d(); if (p) openShare(shareTargetForPhoto(nick(), p)); }}
-            >
-              <MdOutlineShare size={17} />
-            </IconButton>
+              <IconButton
+                label={t("share.action")}
+                onClick={() => { const p = d(); if (p) openShare(shareTargetForPhoto(nick(), p)); }}
+              >
+                <MdOutlineShare size={17} />
+              </IconButton>
+            </Show>
 
             {/* Reply */}
             <Show when={auth()?.isLoggedIn && d()?.item_id}>
               <IconButton
                 label={t("photos.comment")}
+                class={mobileActions() ? "ml-auto" : ""}
                 pressed={replyOpen()}
                 onClick={() => setReplyOpen(v => !v)}
               >
@@ -1753,7 +1793,7 @@ function ImageView() {
             </Show>
 
             {/* More dropdown */}
-            <Show when={canWrite()}>
+            <Show when={canWrite() && !mobileActions()}>
               <Menu
                 label={t("post.more_actions")}
                 class="min-w-[11rem]"

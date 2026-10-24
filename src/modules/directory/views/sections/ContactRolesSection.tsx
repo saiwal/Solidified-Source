@@ -20,6 +20,7 @@ import type { PrivacyGroup } from "../../groups/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillAdd, MdFillClose, MdOutlineEdit, MdFillStar, MdFillStar_border } from "solid-icons/md";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
+import PageActions from "@/shared/views/layout/PageActions";
 import RolePermissionsModal from "./RolePermissionsModal";
 import SubPageContent from "@/shared/views/SubPageContent";
 import CardShell from "@/shared/stream/CardShell";
@@ -502,10 +503,11 @@ export default function ContactRolesSection() {
       title={t("directory.contact_roles_title")}
       description={t("directory.contact_roles_desc")}
       action={
-        <Button variant="ghost" size="sm" pressed={showCreate()} onClick={() => setShowCreate((v) => !v)}>
-          <MdFillAdd size={15} />
-          {t("directory.create_role")}
-        </Button>
+        <PageActions actions={[{
+          label: showCreate() ? t("directory.cancel") : t("directory.create_role"),
+          icon: showCreate() ? MdFillClose : MdFillAdd,
+          onClick: () => setShowCreate((v) => !v),
+        }]} />
       }
     >
       {/* Create form */}

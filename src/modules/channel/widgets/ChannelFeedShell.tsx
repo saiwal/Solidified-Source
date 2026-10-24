@@ -33,6 +33,7 @@ import { openComposer } from "@/shared/views/modal-host";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
+import { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
 import { EmptyState } from "@ui/EmptyState";
 
 // Toolbar/search/pagination/composer chrome shared by `channel.feed` and its
@@ -106,6 +107,14 @@ export default function ChannelFeedShell(props: {
     setSearchParams({ search: undefined });
     setSearchOpen(false);
   };
+  // On mobile the search is the floating search button instead.
+  const mobileActions = useMobileActions();
+  usePageSearch(() => ({
+    value: currentSearch(),
+    placeholder: t("channel.search_placeholder"),
+    onSearch: (q) => { setSearchInput(q); submitSearch(); },
+    onClear: clearSearch,
+  }));
 
   const mid = () => {
     const v = searchParams.mid;
@@ -191,36 +200,38 @@ export default function ChannelFeedShell(props: {
               <MdFillCreate size={15} />
             </IconButton>
           </Show>
-          <Show
-            when={searchOpen()}
-            fallback={
-              <IconButton
-                label={t("channel.search")}
-                variant="outline"
-                pressed={!!currentSearch()}
-                onClick={() => { setSearchInput(currentSearch()); setSearchOpen(true); }}
-              >
-                <MdFillSearch size={15} />
-              </IconButton>
-            }
-          >
-            <form onSubmit={submitSearch} class="flex items-center gap-1">
-              <Input
-                class="w-36"
-                type="search"
-                value={searchInput()}
-                onInput={(e) => setSearchInput(e.currentTarget.value)}
-                placeholder={t("channel.search_placeholder")}
-                autofocus
-                onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
-              />
-              <IconButton label={t("channel.search")} variant="outline" type="submit">
-                <MdFillSearch size={15} />
-              </IconButton>
-              <IconButton label={t("ui.cancel_btn")} size="sm" onClick={clearSearch}>
-                <MdFillClose size={15} />
-              </IconButton>
-            </form>
+          <Show when={!mobileActions()}>
+            <Show
+              when={searchOpen()}
+              fallback={
+                <IconButton
+                  label={t("channel.search")}
+                  variant="outline"
+                  pressed={!!currentSearch()}
+                  onClick={() => { setSearchInput(currentSearch()); setSearchOpen(true); }}
+                >
+                  <MdFillSearch size={15} />
+                </IconButton>
+              }
+            >
+              <form onSubmit={submitSearch} class="flex items-center gap-1">
+                <Input
+                  class="w-36"
+                  type="search"
+                  value={searchInput()}
+                  onInput={(e) => setSearchInput(e.currentTarget.value)}
+                  placeholder={t("channel.search_placeholder")}
+                  autofocus
+                  onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
+                />
+                <IconButton label={t("channel.search")} variant="outline" type="submit">
+                  <MdFillSearch size={15} />
+                </IconButton>
+                <IconButton label={t("ui.cancel_btn")} size="sm" onClick={clearSearch}>
+                  <MdFillClose size={15} />
+                </IconButton>
+              </form>
+            </Show>
           </Show>
         </div>
       </div>

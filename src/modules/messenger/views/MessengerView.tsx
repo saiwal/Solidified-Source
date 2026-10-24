@@ -34,6 +34,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import NewDmPane from "../NewDmPane";
 import RoomPane from "../RoomPane";
 import { Button, IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 import { Card } from "@ui/Card";
 import { Tabs } from "@ui/Tabs";
 import { CountBadge } from "@ui/Badge";
@@ -368,6 +369,13 @@ export default function MessengerView() {
           </Show>
         </div>
 
+        {/* In a conversation on mobile the list (and this button) is hidden,
+            so it moves to the floating button there. */}
+        <PageActions mobileOnly actions={[{
+          label: tab() === "dms" ? t("messenger.new_dm") : t("messenger.new_room"),
+          icon: MdOutlineAdd, onClick: () => void newItem(), primary: true,
+          show: selected() && (tab() === "dms" ? canNewDm() : canCreateRoom()),
+        }]} />
         <Show when={tab() === "dms" ? canNewDm() : canCreateRoom()}>
           <div class="p-3 border-t border-rim shrink-0">
             <Button class="w-full" onClick={() => void newItem()}>

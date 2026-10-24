@@ -19,6 +19,7 @@ import {
   MdFillAdd, MdFillClose, MdFillDelete, MdFillLock, MdOutlineEdit_note, MdOutlineMenu,
 } from "solid-icons/md";
 import { Button, IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
 import { Card, CardHeader } from "@ui/Card";
 
@@ -277,10 +278,9 @@ export default function MenusView() {
             {t("webpages.back")}
           </A>
         </div>
-        <Button size="sm" class="shrink-0" onClick={() => setCreating(!creating())}>
-          <MdFillAdd size={16} />
-          {t("webpages.new_menu")}
-        </Button>
+        <PageActions class="shrink-0" label={t("webpages.manage_menus")} actions={[
+          { label: t("webpages.new_menu"), icon: MdFillAdd, onClick: () => setCreating(!creating()), primary: true },
+        ]} />
       </div>
 
       <Show when={creating()}>

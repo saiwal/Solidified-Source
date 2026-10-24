@@ -15,7 +15,7 @@ import { useArticlesSection } from "../lib/isArticlesList";
 import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
-import PageActions from "@/shared/views/layout/PageActions";
+import PageActions, { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
 
 export default function ArticlesHeaderWidget() {
   const { t, locale } = useI18n();
@@ -57,6 +57,15 @@ export default function ArticlesHeaderWidget() {
     if (!q) setSearchOpen(false);
   };
 
+  // On mobile the search is the floating search button instead.
+  const mobileActions = useMobileActions();
+  usePageSearch(() => (section() === "list") ? {
+    value: activeSearch(),
+    placeholder: t("articles.search_placeholder"),
+    onSearch: (q) => { setSearchInput(q); submitSearch(); },
+    onClear: () => { setSearchInput(""); submitSearch(); },
+  } : undefined);
+
   const clearAllFilters = () => {
     setSearchInput("");
     setSearchOpen(false);
@@ -91,7 +100,7 @@ export default function ArticlesHeaderWidget() {
           />
 
           <div class="flex items-center gap-1.5">
-            <Show when={section() === "list"}>
+            <Show when={section() === "list" && !mobileActions()}>
               <Show
                 when={searchOpen()}
                 fallback={

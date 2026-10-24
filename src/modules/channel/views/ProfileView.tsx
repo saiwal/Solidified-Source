@@ -3,7 +3,7 @@ import { createSignal, Show, For } from "solid-js";
 import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
-import { MdFillLocation_on, MdFillPublic, MdFillRss_feed, MdOutlineMail } from "solid-icons/md";
+import { MdFillLocation_on, MdFillPublic, MdFillRss_feed, MdOutlineMail, MdOutlineEdit, MdOutlineSettings } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { openComposer } from "@/shared/views/modal-host";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -14,6 +14,7 @@ import { oembedResolver } from "@utsukta/spa-core/lib/oembedResolver";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { Button, IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 import { CopyButton } from "@ui/CopyButton";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
@@ -92,9 +93,14 @@ export default function ProfileView(props: { full?: boolean }) {
   const isOwner = () => viewerRole() === "owner";
   const isVisitor = () => viewerRole() === "remote" || viewerRole() === "anonymous";
   const p = () => profile();
+  const { t } = useI18n();
 
   return (
     <div class="mb-6">
+      <PageActions mobileOnly actions={[
+        { label: t("channel.edit_profile"), icon: MdOutlineEdit, href: "/settings/profile", show: isOwner() },
+        { label: t("nav.settings"), icon: MdOutlineSettings, href: "/settings", show: isOwner() },
+      ]} />
       <Show when={profile.loading}>
         <ProfileSkeleton />
       </Show>

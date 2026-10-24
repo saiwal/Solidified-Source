@@ -31,6 +31,7 @@ import { editingWidgets, setEditingWidgets } from "@utsukta/spa-core/store/widge
 import TemplateNameForm from "@/shared/views/TemplateNameForm";
 import { MdFillAdd, MdOutlineDashboard, MdOutlineEdit, MdFillCheck } from "solid-icons/md";
 import { Button, IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 import { Select } from "@ui/Field";
 
 function templateWidgetCount(tpl: { slots: Partial<Record<string, unknown[]>> } | undefined): number {
@@ -109,10 +110,9 @@ export default function LayoutTemplatesView() {
             {t("webpages.back")}
           </A>
         </div>
-        <Button size="sm" class="shrink-0" onClick={() => setCreating(!creating())}>
-          <MdFillAdd size={16} />
-          {t("webpages.new_template")}
-        </Button>
+        <PageActions class="shrink-0" label={t("webpages.layout_templates_title")} actions={[
+          { label: t("webpages.new_template"), icon: MdFillAdd, onClick: () => setCreating(!creating()), primary: true },
+        ]} />
       </div>
 
       <p class="text-xs text-muted">{t("webpages.layout_templates_desc")}</p>

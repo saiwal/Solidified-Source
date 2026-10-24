@@ -9,7 +9,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDeckDetail, renameDeck, reorderDeck } from "../api";
 import { cardPath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
-import { Button } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 import { cardClass } from "@ui/Card";
 import { EmptyState } from "@ui/EmptyState";
 
@@ -71,12 +71,9 @@ export default function DeckView() {
 
       <div class="flex items-center justify-between gap-3">
         <h1 class="text-xl font-bold text-txt">{name()}</h1>
-        <Show when={isOwner()}>
-          <Button variant="ghost" size="sm" onClick={doRename}>
-            <BiRegularEdit class="w-4 h-4" />
-            {t("cards.deck_rename")}
-          </Button>
-        </Show>
+        <PageActions label={name()} actions={[
+          { label: t("cards.deck_rename"), icon: BiRegularEdit, onClick: doRename, show: isOwner() },
+        ]} />
       </div>
 
       <Show when={isOwner()}>

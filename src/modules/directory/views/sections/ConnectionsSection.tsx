@@ -10,6 +10,7 @@ import { addConnection } from "../../people/api";
 import { useSearchParams } from "@solidjs/router";
 import ImportConnectionsModal from "../ImportConnectionsModal";
 import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 import { PlatformIcon } from "@/shared/stream/components/PlatformIcons";
 import Tooltip from "@/shared/views/Tooltip";
 import { openComposer } from "@/shared/views/modal-host";
@@ -415,6 +416,7 @@ function ConnectionsSkeleton() {
 // ── Section ───────────────────────────────────────────────────────────────────
 
 export default function ConnectionsSection() {
+  const mobileActions = useMobileActions();
   const { t } = useI18n();
   const [input, setInput] = createSignal("");
   const [addBusy, setAddBusy] = createSignal(false);
@@ -528,14 +530,19 @@ export default function ConnectionsSection() {
             </Show>
             {addBusy() ? t("directory.add_connection_connecting") : "+ " + t("directory.connect")}
           </Button>
-          <IconButton
-            label={t("directory.import_connections")}
-            variant="outline"
-            class="shrink-0"
-            onClick={() => setImportOpen(true)}
-          >
-            <MdOutlineUpload_file size={18} />
-          </IconButton>
+          <Show when={!mobileActions()}>
+            <IconButton
+              label={t("directory.import_connections")}
+              variant="outline"
+              class="shrink-0"
+              onClick={() => setImportOpen(true)}
+            >
+              <MdOutlineUpload_file size={18} />
+            </IconButton>
+          </Show>
+          <PageActions mobileOnly label={t("directory.connections")} actions={[
+            { label: t("directory.import_connections"), icon: MdOutlineUpload_file, onClick: () => setImportOpen(true) },
+          ]} />
         </div>
       </div>
 

@@ -12,6 +12,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { parseNetworkParams } from "../api";
 import { IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 void helpable;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -59,6 +60,10 @@ export default function StreamFilters() {
 
   return (
     <div class="space-y-1.5 pb-4 max-w-5xl mx-auto" use:helpable="network/index.activity-filters">
+
+      <PageActions mobileOnly actions={[
+        { label: t("network.refresh"), icon: MdFillRefresh, onClick: softRefresh, disabled: loading() || refreshing() },
+      ]} />
 
       {/* Single row: left=refresh+order · right=ViewSwitcher. Wraps on narrow screens. */}
       <div class="flex flex-wrap items-center justify-between gap-y-1.5 gap-x-1 min-w-0">

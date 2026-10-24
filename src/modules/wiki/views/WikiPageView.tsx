@@ -8,7 +8,8 @@ import { useParams, A, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
 import { rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
-import { MdOutlineList } from "solid-icons/md";
+import { MdOutlineDelete, MdOutlineDrive_file_rename_outline, MdOutlineEdit, MdOutlineHistory, MdOutlineList } from "solid-icons/md";
+import PageActions from "@/shared/views/layout/PageActions";
 import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
 import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
 import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
@@ -487,37 +488,14 @@ export default function WikiPageView() {
               </h1>
             </div>
 
-            <Show when={canWrite()}>
-              <div class="flex items-center gap-2">
-                <Show when={!editMode()}>
-                  {/* History toggle */}
-                  <Button variant="ghost" size="sm" pressed={showHistory()} onClick={toggleHistory}>
-                    {t("wiki.history")}
-                  </Button>
-
-                  {/* Rename (not Home) */}
-                  <Show when={!isHome()}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setRenaming(true); setNewPageName(pageData()!.page.name); }}
-                    >
-                      {t("wiki.rename")}
-                    </Button>
-                  </Show>
-
-                  <Button variant="ghost" size="sm" onClick={toggleEditMode}>
-                    {t("wiki.edit")}
-                  </Button>
-                </Show>
-
-                <Show when={!isHome() && !editMode()}>
-                  <Button variant="ghost" size="sm" onClick={() => setConfirmDel(true)}>
-                    {t("wiki.delete")}
-                  </Button>
-                </Show>
-              </div>
-            </Show>
+            {/* Home can't be renamed or deleted */}
+            <PageActions label={pageData()!.page.name} actions={[
+              { label: t("wiki.edit"), icon: MdOutlineEdit, onClick: toggleEditMode, primary: true },
+              { label: t("wiki.history"), icon: MdOutlineHistory, onClick: toggleHistory },
+              { label: t("wiki.rename"), icon: MdOutlineDrive_file_rename_outline, overflow: true, show: !isHome(),
+                onClick: () => { setRenaming(true); setNewPageName(pageData()!.page.name); } },
+              { label: t("wiki.delete"), icon: MdOutlineDelete, overflow: true, show: !isHome(), onClick: () => setConfirmDel(true) },
+            ].map((a) => ({ ...a, show: canWrite() && !editMode() && a.show !== false }))} />
           </div>
 
           {/* Rename form */}

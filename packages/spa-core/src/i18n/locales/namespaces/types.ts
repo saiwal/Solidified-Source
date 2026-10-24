@@ -186,9 +186,13 @@ export type RawDictionary = {
     no_app_matches:     string;
     social:             string;
     productivity:       string;
+		entertainment:      string;
     system:             string;
     add_favorite:       string;
     remove_favorite:    string;
+    search:             string;
+    scroll_top:         string;
+    no_favorites:       string;
   };
   ui: {
     show_more:               string;
@@ -2121,6 +2125,7 @@ export type RawDictionary = {
     upload_failed:        string;
     delete_album:         string;
     confirm_delete_album: string;
+    confirm_delete_photo: string;
     delete_photo:         string;
     delete_error:         string;
     select:               string;

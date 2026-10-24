@@ -1,10 +1,12 @@
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
+import { PageActionsLabel } from "./layout/PageActions";
 
 interface Props {
   title: string;
   description?: string;
-  /** Optional action button(s) in the header (e.g. a Save button) */
+  /** Optional action button(s) in the header — usually a PageActions, which
+   *  moves them to the mobile ⋮ menu, labelled with this title. */
   action?: JSX.Element;
   /** Use a wider content column (for data tables) instead of the default form-width column */
   wide?: boolean;
@@ -23,6 +25,7 @@ interface Props {
  */
 export default function SubPageContent(props: Props) {
   return (
+    <PageActionsLabel.Provider value={() => props.title}>
     <div class={`${props.wide ? "max-w-5xl" : "max-w-3xl"} mx-auto px-4 md:px-6 py-6 space-y-6`}>
       {/* Page header */}
       <div class="flex items-start justify-between gap-4">
@@ -43,5 +46,6 @@ export default function SubPageContent(props: Props) {
       {/* Content */}
       <div class="space-y-6">{props.children}</div>
     </div>
+    </PageActionsLabel.Provider>
   );
 }

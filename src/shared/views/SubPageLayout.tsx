@@ -1,6 +1,7 @@
 import { type JSX, Show, createMemo, createSignal, createEffect } from "solid-js";
 import { useLocation, useNavigate, A } from "@solidjs/router";
 import { createMediaQuery } from "@solid-primitives/media";
+import { PageMenu } from "./layout/PageActions";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
@@ -152,9 +153,14 @@ export default function SubPageLayout(props: Props) {
               </svg>
               {t("layout.back")}
             </button>
-            <span class="text-sm font-medium text-txt ml-1">
+            <span class="text-sm font-medium text-txt ml-1 min-w-0 truncate">
               {(() => { const l = activeItem()?.label; return l ? (typeof l === "function" ? l() : l) : ""; })()}
             </span>
+            {/* The section's ⋮ (PageActions from anywhere in it). Mounted only
+                while this bar shows (below md) — a hidden holder would swallow it. */}
+            <Show when={!isDesktop()}>
+              <PageMenu class="ml-auto" />
+            </Show>
           </CardHeader>
         </Show>
 

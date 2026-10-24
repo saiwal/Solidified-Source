@@ -15,7 +15,7 @@ import { fetchKanban } from "../api";
 import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
-import PageActions from "@/shared/views/layout/PageActions";
+import PageActions, { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
 
 export default function CardsHeaderWidget() {
   const { t, locale } = useI18n();
@@ -58,6 +58,15 @@ export default function CardsHeaderWidget() {
     if (!q) setSearchOpen(false);
   };
 
+  // On mobile the search is the floating search button instead.
+  const mobileActions = useMobileActions();
+  usePageSearch(() => (isList()) ? {
+    value: activeSearch(),
+    placeholder: t("cards.search_placeholder"),
+    onSearch: (q) => { setSearchInput(q); submitSearch(); },
+    onClear: () => { setSearchInput(""); submitSearch(); },
+  } : undefined);
+
   const clearAllFilters = () => {
     setSearchInput("");
     setSearchOpen(false);
@@ -94,36 +103,38 @@ export default function CardsHeaderWidget() {
           </Show>
 
           <div class="flex items-center gap-1.5">
-            <Show
-              when={searchOpen()}
-              fallback={
-                <IconButton
-                  label={t("cards.search")}
-                  variant="outline"
-                  pressed={!!activeSearch()}
-                  onClick={() => { setSearchInput(activeSearch()); setSearchOpen(true); }}
-                >
-                  <MdFillSearch size={15} />
-                </IconButton>
-              }
-            >
-              <form onSubmit={submitSearch} class="flex items-center gap-1">
-                <Input
-                  class="w-36"
-                  type="search"
-                  value={searchInput()}
-                  onInput={(e) => setSearchInput(e.currentTarget.value)}
-                  placeholder={t("cards.search_placeholder")}
-                  autofocus
-                  onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
-                />
-                <IconButton label={t("cards.search")} variant="outline" type="submit">
-                  <MdFillSearch size={15} />
-                </IconButton>
-                <IconButton label={t("cards.cancel")} size="sm" onClick={() => setSearchOpen(false)}>
-                  <MdFillClose size={15} />
-                </IconButton>
-              </form>
+            <Show when={!mobileActions()}>
+              <Show
+                when={searchOpen()}
+                fallback={
+                  <IconButton
+                    label={t("cards.search")}
+                    variant="outline"
+                    pressed={!!activeSearch()}
+                    onClick={() => { setSearchInput(activeSearch()); setSearchOpen(true); }}
+                  >
+                    <MdFillSearch size={15} />
+                  </IconButton>
+                }
+              >
+                <form onSubmit={submitSearch} class="flex items-center gap-1">
+                  <Input
+                    class="w-36"
+                    type="search"
+                    value={searchInput()}
+                    onInput={(e) => setSearchInput(e.currentTarget.value)}
+                    placeholder={t("cards.search_placeholder")}
+                    autofocus
+                    onKeyDown={(e) => { if (e.key === "Escape") setSearchOpen(false); }}
+                  />
+                  <IconButton label={t("cards.search")} variant="outline" type="submit">
+                    <MdFillSearch size={15} />
+                  </IconButton>
+                  <IconButton label={t("cards.cancel")} size="sm" onClick={() => setSearchOpen(false)}>
+                    <MdFillClose size={15} />
+                  </IconButton>
+                </form>
+              </Show>
             </Show>
 
             <PageActions actions={[

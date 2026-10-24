@@ -1,17 +1,32 @@
 // settings/store/FormHelpers.tsx
 import { type JSX } from "solid-js";
+import { MdOutlineSave } from "solid-icons/md";
+import PageActions, { useMobileActions, useFloatingAction } from "@/shared/views/layout/PageActions";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
 import { cardClass } from "@ui/Card";
 
-export function SaveBar(props: { saving: boolean }) {
+/**
+ * A form's Save, always in reach without a bar over the page: the round
+ * floating button above scroll-to-top — on mobile as the page's primary
+ * PageAction, elsewhere through useFloatingAction. Renders nothing visible —
+ * it must sit inside the <form> it submits. Admin passes its own labels.
+ */
+export function SaveBar(props: { saving: boolean; label?: string; savingLabel?: string }) {
   const { t } = useI18n();
+  const mobileActions = useMobileActions();
+  let anchor!: HTMLSpanElement;
+  const action = () => ({
+    label: props.saving ? (props.savingLabel ?? t("settings.saving")) : (props.label ?? t("settings.save")),
+    icon: MdOutlineSave,
+    primary: true,
+    disabled: props.saving,
+    onClick: () => anchor.closest("form")?.requestSubmit(),
+  });
+  useFloatingAction(() => (mobileActions() ? undefined : action()));
   return (
-    <div class="flex items-center gap-3 pt-2 border-t border-rim">
-      <Button type="submit" disabled={props.saving}>
-        {props.saving ? t("settings.saving") : t("settings.save")}
-      </Button>
-    </div>
+    <span ref={anchor} hidden>
+      <PageActions mobileOnly actions={[action()]} />
+    </span>
   );
 }
 

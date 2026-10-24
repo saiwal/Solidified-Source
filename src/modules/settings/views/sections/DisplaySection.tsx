@@ -2,6 +2,7 @@ import { Show, For, createEffect, createSignal } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchDisplaySettings, saveDisplaySettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
+import { SaveBar } from "../../store/FormHelpers";
 import { applyTypography, type FontSize, type FontFamily } from "@utsukta/spa-core/lib/typography";
 import { useThreadMode, setThreadMode } from "@utsukta/spa-core/store/thread-mode";
 import { useListBehavior, setListBehavior, type ListBehavior } from "@utsukta/spa-core/store/list-behavior";
@@ -518,13 +519,7 @@ export default function DisplaySection() {
           {/* Background picker */}
           <BackgroundPicker />
 
-          {/* Feedback + submit */}
-          <div class="flex items-center gap-3 pt-2">
-            <Button type="submit" disabled={saving()}>
-              {saving() ? t("settings.saving") : t("settings.save")}
-            </Button>
-
-          </div>
+          <SaveBar saving={saving()} />
 
         </form>
       </Show>

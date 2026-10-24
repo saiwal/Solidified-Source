@@ -46,6 +46,7 @@ import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { fetchGroups, type PrivacyGroup } from "@/modules/directory/groups/api";
 import { Button, IconButton } from "@ui/Button";
+import PageActions, { usePageSearch } from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { Badge, CountBadge } from "@ui/Badge";
@@ -391,6 +392,19 @@ export default function StreamFiltersWidget() {
     }
   }
 
+  // The panel is a drawer on mobile, so its search is offered as the
+  // floating search button too (pasting a post URL imports it, as here).
+  usePageSearch(() => ({
+    value: search(),
+    placeholder: t("network.search_placeholder"),
+    onSearch: (q) => {
+      sp({ search: q || undefined });
+      if (isUrl(q)) void handleUrlImport(q);
+      else setTimeout(applyNow, 0);
+    },
+    onClear: () => { sp({ search: undefined }); setTimeout(applyNow, 0); },
+  }));
+
   function selectConnection(c: AclConnection) {
     sp({
       cid:         c.type === "c" ? String(c.id) : undefined,
@@ -457,6 +471,11 @@ export default function StreamFiltersWidget() {
 
   return (
     <Card class="overflow-hidden">
+      {/* The panel is a drawer on mobile — clearing from the page's sheet
+          saves opening it just to undo a filter. */}
+      <PageActions mobileOnly actions={[
+        { label: t("network.clear_filters"), icon: MdFillFilter_alt_off, onClick: clearAll, show: hasAnyFilter() },
+      ]} />
       <div class="px-4 py-3 flex items-center justify-between">
         <h2 class="text-sm font-semibold text-txt">{t("network.filters")}</h2>
         <Show when={hasAnyFilter()}>

@@ -5,8 +5,6 @@ import HelpTrigger from "./HelpTrigger";
 import { A } from "@solidjs/router";
 import { BiRegularInfoCircle, BiRegularRss } from "solid-icons/bi";
 import { MdFillCheck, MdOutlineEdit } from "solid-icons/md";
-import type { NavViewer, NavActions } from "@utsukta/spa-core/lib/nav-api";
-import Usermenu from "./UserMenu";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
@@ -16,14 +14,6 @@ import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
 import { IconButton } from "@ui/Button";
 
 const CHANNEL_CONTEXT_MODULES = ["channel", "profile", "articles"];
-
-interface NavUtilitiesProps {
-  viewer?: NavViewer;
-  actions?: NavActions;
-  actionsOpen?: boolean;
-  onUserMenuToggle?: () => void;
-  moduleId?: string;
-}
 
 /**
  * The utility icon row (language, theme, edit-layout, feed, help, site info).
@@ -79,19 +69,5 @@ export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
         </A>
       </div>
     </div>
-  );
-}
-
-export default function NavUtilities(props: NavUtilitiesProps) {
-  return (
-    <>
-      <Usermenu
-        viewer={props.viewer}
-        actions={props.actions}
-        actionsOpen={props.actionsOpen}
-        onUserMenuToggle={props.onUserMenuToggle}
-      />
-      <NavUtilityIcons moduleId={props.moduleId} />
-    </>
   );
 }

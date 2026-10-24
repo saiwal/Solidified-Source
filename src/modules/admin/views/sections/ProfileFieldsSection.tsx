@@ -11,6 +11,8 @@ import {
 } from "../../api";
 import type { ProfdefField } from "../../types";
 import { Button } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
+import { MdOutlineAdd } from "solid-icons/md";
 import { Field, Input, Select, Textarea } from "@ui/Field";
 import { Card, CardHeader } from "@ui/Card";
 
@@ -143,9 +145,7 @@ function CreateButton(props: { onCreated: () => void }) {
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        + Create Custom Field
-      </Button>
+      <PageActions actions={[{ label: "Create Custom Field", icon: MdOutlineAdd, onClick: () => setOpen(true), primary: true }]} />
       <Show when={open()}>
         <FieldModal
           title="New Profile Field"

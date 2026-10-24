@@ -2,10 +2,10 @@ import { createSignal, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
+import { SaveBar } from "@/modules/settings/store/FormHelpers";
 import { fetchAdminFeatures, saveAdminFeatures } from "../../api";
 import type { FeatureItem } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
 import { Switch } from "@ui/Toggle";
 
 export default function FeaturesSection() {
@@ -41,13 +41,6 @@ export default function FeaturesSection() {
     <SubPageContent
       title={t("admin.features_title")}
       description={t("admin.features_desc")}
-      action={
-        <Show when={features()}>
-          <Button form="features-form" type="submit" disabled={saving()}>
-            {saving() ? t("admin.saving") : t("admin.save")}
-          </Button>
-        </Show>
-      }
     >
       <Show when={features()} fallback={<Skeleton />}>
         {(f) => (
@@ -63,6 +56,7 @@ export default function FeaturesSection() {
               )}
             </For>
 
+            <SaveBar saving={saving()} label={t("admin.save")} savingLabel={t("admin.saving")} />
           </form>
         )}
       </Show>

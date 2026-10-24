@@ -1,6 +1,8 @@
 import { createSignal, createEffect, For, Show, batch } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
+import { MdOutlineRefresh } from "solid-icons/md";
 import { fetchAdminQueueworker, saveQueueworkerSettings } from "../../api";
 import type { QueueworkerSettings, WorkerJob } from "../../types";
 import { Button } from "@ui/Button";
@@ -67,9 +69,7 @@ export default function QueueworkerSection() {
       title="Queue Worker"
       description="Monitor queue status and configure worker settings."
       action={
-        <Button variant="ghost" size="sm" onClick={refetch}>
-          Refresh
-        </Button>
+        <PageActions actions={[{ label: "Refresh", icon: MdOutlineRefresh, onClick: refetch }]} />
       }
     >
       <Show when={data()} fallback={<Skeleton />}>

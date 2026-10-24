@@ -39,6 +39,7 @@ import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { Button, IconButton } from "@ui/Button";
+import PageActions, { PageMenu, useMobileActions } from "@/shared/views/layout/PageActions";
 import { Card, cardClass } from "@ui/Card";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
@@ -346,6 +347,7 @@ export default function CardView() {
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";
+  const mobileActions = useMobileActions();
 
   return (
     <div class="relative max-w-5xl mx-auto py-4">
@@ -377,6 +379,7 @@ export default function CardView() {
                     <h1 class="text-3xl font-bold leading-tight text-txt">
                       {d().card.title || t("cards.untitled")}
                     </h1>
+                    <PageMenu class="ml-auto" />
                   </div>
 
                   <Show when={d().card.summary}>
@@ -458,14 +461,25 @@ export default function CardView() {
                     </Button>
                   </Show>
 
-                  <IconButton label={t("share.action")} class="ml-auto" onClick={shareCard}>
-                    <MdOutlineShare size={17} />
-                  </IconButton>
+                  {/* Share and the owner's edit/delete go to the mobile ⋮ menu
+                      below lg; reactions and comment stay with the card. */}
+                  <PageActions mobileOnly label={d().card.title || undefined} actions={[
+                    { label: t("share.action"), icon: MdOutlineShare, onClick: shareCard },
+                    { label: t("cards.edit_card"), icon: BiRegularEdit, primary: true, show: isOwner(),
+                      onClick: () => { setConfirmDelete(false); openEditor(d().card); } },
+                    { label: t("cards.delete_card"), icon: BiRegularTrash, onClick: () => setConfirmDelete(true), show: isOwner() },
+                  ]} />
+                  <Show when={!mobileActions()}>
+                    <IconButton label={t("share.action")} class="ml-auto" onClick={shareCard}>
+                      <MdOutlineShare size={17} />
+                    </IconButton>
+                  </Show>
 
                   <Show when={auth()?.isLoggedIn}>
                     <Button
                       variant="ghost"
                       size="sm"
+                      class={mobileActions() ? "ml-auto" : ""}
                       pressed={replyOpen()}
                       onClick={() => setReplyOpen(v => !v)}
                     >
@@ -475,7 +489,7 @@ export default function CardView() {
                   </Show>
 
                   {/* Owner actions */}
-                  <Show when={isOwner()}>
+                  <Show when={isOwner() && !mobileActions()}>
                     <IconButton
                       label={t("cards.edit_card")}
                       onClick={() => { setConfirmDelete(false); openEditor(d().card); }}

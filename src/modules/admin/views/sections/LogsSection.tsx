@@ -6,6 +6,8 @@ import type { AdminLogs, LogEntry, LogLevel } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { Button } from "@ui/Button";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
+import { MdOutlineDownload } from "solid-icons/md";
 import { Input, Select } from "@ui/Field";
 import { Switch } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
@@ -101,6 +103,7 @@ export default function LogsSection() {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams<{ q?: string; level?: string; file?: string; req?: string; fn?: string }>();
   const setFilter = (p: Record<string, string | undefined>) => setParams(p, { replace: true });
+  const mobileActions = useMobileActions();
 
   const [meta, setMeta] = createSignal<Meta>();
   const [entries, setEntries] = createSignal<LogEntry[]>([]);
@@ -287,9 +290,14 @@ export default function LogsSection() {
                   </For>
                 </Select>
 
-                <Button variant="ghost" size="sm" onClick={download} disabled={filtered().length === 0}>
-                  {t("admin.download")}
-                </Button>
+                <Show when={!mobileActions()}>
+                  <Button variant="ghost" size="sm" onClick={download} disabled={filtered().length === 0}>
+                    {t("admin.download")}
+                  </Button>
+                </Show>
+                <PageActions mobileOnly actions={[
+                  { label: t("admin.download"), icon: MdOutlineDownload, onClick: download, disabled: filtered().length === 0 },
+                ]} />
               </div>
 
               {/* Active filter chips */}

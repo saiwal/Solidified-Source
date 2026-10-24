@@ -3,6 +3,7 @@ import { A } from "@solidjs/router";
 import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
+import { SaveBar } from "@/modules/settings/store/FormHelpers";
 import { fetchAdminSite, saveAdminSite, fetchAdminThemes, uploadSiteLogo, removeSiteLogo } from "../../api";
 import { useSectionForm } from "@/modules/settings/store/useSectionForm";
 import type { AdminSite } from "../../types";
@@ -71,13 +72,6 @@ export default function SiteSection() {
     <SubPageContent
       title={t("admin.site_title")}
       description={t("admin.site_desc")}
-      action={
-        <Show when={data()}>
-          <Button form="site-form" type="submit" disabled={saving()}>
-            {saving() ? t("admin.saving") : t("admin.save")}
-          </Button>
-        </Show>
-      }
     >
       <Show when={data()} fallback={<Skeleton />}>
         {(d) => (
@@ -366,6 +360,7 @@ export default function SiteSection() {
               <Input class="w-full" name="imagick_path" value={d().imagick_path ?? ''} />
             </Field>
 
+            <SaveBar saving={saving()} label={t("admin.save")} savingLabel={t("admin.saving")} />
           </form>
         )}
       </Show>

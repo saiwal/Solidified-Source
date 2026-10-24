@@ -15,6 +15,7 @@ import {
   MdOutlineView_module,
 } from "solid-icons/md";
 import { IconButton } from "@ui/Button";
+import PageActions from "@/shared/views/layout/PageActions";
 
 function formatDate(s: string): string {
   if (!s) return "—";
@@ -106,14 +107,9 @@ export default function BlocksView() {
             {t("webpages.back")}
           </A>
         </div>
-        <A
-          href={`/webpages/${nick()}/blocks/new`}
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent
-                 text-accent-fg text-sm hover:opacity-90 transition-opacity shrink-0"
-        >
-          <MdFillAdd size={16} />
-          {t("webpages.new_block")}
-        </A>
+        <PageActions class="shrink-0" label={t("webpages.manage_blocks")} actions={[
+          { label: t("webpages.new_block"), icon: MdFillAdd, href: `/webpages/${nick()}/blocks/new`, primary: true },
+        ]} />
       </div>
 
       <div class="border-t border-rim" />

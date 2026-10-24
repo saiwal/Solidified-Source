@@ -51,6 +51,7 @@ import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { Button, IconButton } from "@ui/Button";
 import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
+import PageActions, { PageMenu, useMobileActions } from "@/shared/views/layout/PageActions";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -374,6 +375,7 @@ export default function ArticleView() {
   useEmbeds(() => bodyRef, rendered);
 
   const isOwner = () => role() === "owner";
+  const mobileActions = useMobileActions();
   const fmtDate = (iso: string) =>
     new Date(iso.replace(" ", "T") + "Z").toLocaleDateString(locale(), { year: "numeric", month: "long", day: "numeric" });
 
@@ -388,7 +390,10 @@ export default function ArticleView() {
             {/* ── Article ── */}
             <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl">
               <div class="space-y-8">
-                <BackLink fallback={`/articles/${nick()}`} label={t("articles.back")} />
+                <div class="flex items-center justify-between gap-2">
+                  <BackLink fallback={`/articles/${nick()}`} label={t("articles.back")} />
+                  <PageMenu />
+                </div>
 
                 {/* Header — title, summary, byline row */}
                 <header class="space-y-3">
@@ -425,35 +430,44 @@ export default function ArticleView() {
                       </p>
                     </div>
 
-                  {/* Share + owner actions; reactions and Comment live with the comments below */}
-                  <div class="flex items-center gap-1 -mr-2">
-                    <IconButton label={t("share.action")} onClick={shareArticle}>
-                      <MdOutlineShare size={18} />
-                    </IconButton>
+                  {/* Share + owner actions; reactions and Comment live with the comments
+                      below. Below lg they're the mobile ⋮ menu instead. */}
+                  <PageActions mobileOnly label={d().article.title || undefined} actions={[
+                    { label: t("share.action"), icon: MdOutlineShare, onClick: shareArticle },
+                    { label: t("articles.edit_article"), icon: BiRegularEdit, onClick: () => openEditor(d().article), primary: true, show: isOwner() },
+                    { label: t("articles.add_translation"), icon: MdOutlineTranslate, onClick: () => openTranslation(d().article), show: isOwner() },
+                    { label: t("articles.delete_article"), icon: BiRegularTrash, onClick: () => setConfirmDelete(true), show: isOwner() },
+                  ]} />
+                  <Show when={!mobileActions()}>
+                    <div class="flex items-center gap-1 -mr-2">
+                      <IconButton label={t("share.action")} onClick={shareArticle}>
+                        <MdOutlineShare size={18} />
+                      </IconButton>
 
-                    <Show when={isOwner()}>
-                      <Menu
-                        label={t("articles.more")}
-                        class="w-56"
-                        trigger={(p) => (
-                          <IconButton label={t("articles.more")} {...p}>
-                            <MdOutlineMore_horiz size={18} />
-                          </IconButton>
-                        )}
-                      >
-                        <MenuItem icon={<BiRegularEdit size={16} />} onClick={() => openEditor(d().article)}>
-                          {t("articles.edit_article")}
-                        </MenuItem>
-                        <MenuItem icon={<MdOutlineTranslate size={16} />} onClick={() => openTranslation(d().article)}>
-                          {t("articles.add_translation")}
-                        </MenuItem>
-                        <MenuSeparator />
-                        <MenuItem icon={<BiRegularTrash size={16} />} danger onClick={() => setConfirmDelete(true)}>
-                          {t("articles.delete_article")}
-                        </MenuItem>
-                      </Menu>
-                    </Show>
-                  </div>
+                      <Show when={isOwner()}>
+                        <Menu
+                          label={t("articles.more")}
+                          class="w-56"
+                          trigger={(p) => (
+                            <IconButton label={t("articles.more")} {...p}>
+                              <MdOutlineMore_horiz size={18} />
+                            </IconButton>
+                          )}
+                        >
+                          <MenuItem icon={<BiRegularEdit size={16} />} onClick={() => openEditor(d().article)}>
+                            {t("articles.edit_article")}
+                          </MenuItem>
+                          <MenuItem icon={<MdOutlineTranslate size={16} />} onClick={() => openTranslation(d().article)}>
+                            {t("articles.add_translation")}
+                          </MenuItem>
+                          <MenuSeparator />
+                          <MenuItem icon={<BiRegularTrash size={16} />} danger onClick={() => setConfirmDelete(true)}>
+                            {t("articles.delete_article")}
+                          </MenuItem>
+                        </Menu>
+                      </Show>
+                    </div>
+                  </Show>
                   </div>
 
                   <Show when={d().article.series || (d().article.translations ?? []).length > 0}>

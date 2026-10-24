@@ -10,13 +10,14 @@ void motion;
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
 import NavItem from "../NavItem";
 import Slot from "../Slot";
-import NavUtilities from "../NavUtilities";
+import { NavUtilityIcons } from "../NavUtilities";
 import ChannelSwitcher from "../ChannelSwitcher";
 import { moduleIdForPath } from "@utsukta/spa-core/module-registry";
 import { createDragReorder } from "@utsukta/spa-core/lib/useDragReorder";
 import { commitNavOrder } from "@utsukta/spa-core/store/nav-order";
 import { Collapsible } from "@ui/Collapsible";
 import BrandBlock from "./BrandBlock";
+import CoverCard from "./CoverCard";
 import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
 import { FavoriteStar } from "../FavoriteStar";
 import { categoryApps, favoriteTarget, groupNavItems, pinnedNavItems } from "./app-categories";
@@ -41,8 +42,8 @@ function writeOpenGroups(open: Set<string>): void {
 
 /**
  * Desktop navigation rail (lg and up): brand, primary nav (favorites, then the
- * other apps in collapsible categories), the leftBottom slot,
- * the avatar-anchored action-items overlay and the nav utilities footer.
+ * other apps in collapsible categories), a cover header (own account menu, or
+ * the visited channel), the leftBottom slot and the nav utilities footer.
  *
  * Kept out of Layout.tsx so it can be changed without touching the mobile
  * menu. Receives the shared layout chrome rather than calling
@@ -63,7 +64,6 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     setChannelMenuOpen,
     navChannels,
     navViewer,
-    navActions,
     closeAll,
     isLocalUser,
     activeModuleId,
@@ -141,6 +141,32 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     if (group && !openGroups().has(group.id)) setGroupOpen(group.id, true);
   });
 
+  // The account/visitor action items: an overlay under the user's own cover
+  // card, or an inline list at the bottom wherever that card isn't shown.
+  const ActionList = () => (
+    <For each={actionItems()}>
+      {(item) => (
+        <div use:helpable={navItemHelpTarget(item)}>
+          <Show
+            when={channelSwitcherActive() && item.path === "/manage"}
+            fallback={<NavItem href={item.href} label={item.label} icon={item.icon} />}
+          >
+            <ChannelSwitcher
+              channels={navChannels()}
+              currentNick={navViewer()?.nick}
+              open={channelMenuOpen()}
+              onToggle={() => setChannelMenuOpen((o) => !o)}
+              label={typeof item.label === "function" ? item.label() : item.label}
+              onNavigate={closeAll}
+            />
+          </Show>
+        </div>
+      )}
+    </For>
+  );
+  // Your own card on your own pages; anywhere else nothing of yours shows.
+  const ownCard = () => !!navViewer()?.is_local && !navData()?.subject;
+
   return (
     <Show when={!hidesNavChrome()}>
       <aside
@@ -148,15 +174,45 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
         class="hidden lg:flex flex-col w-[224px] shrink-0 relative z-20
                bg-surface border-r border-rim py-3 px-2"
       >
-        {/* Brand */}
-        <div class="flex items-center justify-center px-2 pb-4 pt-2 mb-2 border-b border-rim">
-          <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
-        </div>
+        {/* Full-bleed cover header over the rail's padding: the visited
+            channel (static) for anyone but its owner, else the signed-in
+            user's own card, which opens their account menu. */}
+        <Show
+          when={navData()?.subject}
+          fallback={
+            <Show when={ownCard()}>
+              <div class="relative -mx-2 -mt-3 mb-2">
+                <CoverCard
+                  who={navViewer()!}
+                  open={actionsOpen()}
+                  onToggle={() => setActionsOpen((o) => !o)}
+                />
+                <Show when={actionsOpen() && actionItems().length > 0}>
+                  <div
+                    class="absolute inset-x-2 top-full z-30 mt-1.5 max-h-[60vh] overflow-y-auto
+                           flex flex-col gap-0.5 p-1.5
+                           bg-surface border border-rim rounded-xl shadow-xl"
+                    use:motion={{
+                      initial: { opacity: 0, y: -8 },
+                      animate: { opacity: 1, y: 0 },
+                      transition: { duration: reducedMotion ? 0 : 0.18, easing: "ease-out" },
+                    }}
+                  >
+                    <ActionList />
+                  </div>
+                </Show>
+              </div>
+            </Show>
+          }
+        >
+          {(subject) => (
+            <div class="-mx-2 -mt-3 mb-2">
+              <CoverCard who={subject()} />
+            </div>
+          )}
+        </Show>
 
-        {/* Scrollable region: primary nav only. Action items live outside
-            this region (below) so they always open as an overlay anchored
-            to the avatar, instead of being appended to scrollable content
-            that may already be scrolled out of view. */}
+        {/* Scrollable region: primary nav only. */}
         <div class="flex-1 min-h-0 flex flex-col overflow-y-auto">
           <Show
             when={grouped()}
@@ -245,60 +301,21 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
           </div>
         </Show>
 
-        {/* Anchor for the action-items overlay: positioned relative so the
-            panel below can pin itself to the top of NavUtilities (bottom-full)
-            and always open upward, regardless of nav scroll position. */}
-        <div class="relative">
-          <Show when={actionsOpen() && actionItems().length > 0}>
-            <div
-              class="absolute inset-x-0 bottom-full z-30 mb-1.5 max-h-[60vh] overflow-y-auto
-                     flex flex-col gap-0.5 p-1.5
-                     bg-surface border border-rim rounded-xl shadow-xl"
-              use:motion={{
-                initial: { opacity: 0, y: 8 },
-                animate: { opacity: 1, y: 0 },
-                transition: {
-                  duration: reducedMotion ? 0 : 0.18,
-                  easing: "ease-out",
-                },
-              }}
-            >
-              <For each={actionItems()}>
-                {(item) => (
-                  <div use:helpable={navItemHelpTarget(item)}>
-                    <Show
-                      when={channelSwitcherActive() && item.path === "/manage"}
-                      fallback={
-                        <NavItem
-                          href={item.href}
-                          label={item.label}
-                          icon={item.icon}
-                        />
-                      }
-                    >
-                      <ChannelSwitcher
-                        channels={navChannels()}
-                        currentNick={navViewer()?.nick}
-                        open={channelMenuOpen()}
-                        onToggle={() => setChannelMenuOpen((o) => !o)}
-                        label={typeof item.label === "function" ? item.label() : item.label}
-                        onNavigate={closeAll}
-                      />
-                    </Show>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
+        {/* Visitors' menu (Take me Home / Logout, or Sign In / Register —
+            the full account menu for a local user on someone else's
+            channel), as plain items: no avatar or name of their own. */}
+        <Show when={!ownCard() && actionItems().length > 0}>
+          <div class="mt-2 pt-2 border-t border-rim flex flex-col gap-0.5">
+            <ActionList />
+          </div>
+        </Show>
 
-          <NavUtilities
-            viewer={navViewer()}
-            actions={navActions()}
-            actionsOpen={actionsOpen()}
-            onUserMenuToggle={() => setActionsOpen((o) => !o)}
-            moduleId={activeModuleId()}
-          />
+        {/* Brand, quietly above the footer row. */}
+        <div class="mt-3 flex justify-center opacity-80 hover:opacity-100 transition-opacity">
+          <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
         </div>
+
+        <NavUtilityIcons moduleId={activeModuleId()} />
       </aside>
     </Show>
   );

@@ -3,7 +3,8 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
-import { MdOutlineContent_copy, MdOutlineRefresh, MdOutlineEdit_note } from "solid-icons/md";
+import { MdOutlineAdd, MdOutlineContent_copy, MdOutlineRefresh, MdOutlineEdit_note } from "solid-icons/md";
+import PageActions from "@/shared/views/layout/PageActions";
 import { BiRegularTrash } from "solid-icons/bi";
 import SubPageContent from "@/shared/views/SubPageContent";
 import {
@@ -37,9 +38,9 @@ export default function GuestAccessSection() {
       title={t("guest_access.title") as string}
       description={t("guest_access.description") as string}
       action={
-        <Button size="sm" onClick={() => setEditing(0)}>
-          {t("guest_access.new_token")}
-        </Button>
+        <PageActions actions={[
+          { label: t("guest_access.new_token"), icon: MdOutlineAdd, onClick: () => setEditing(0), primary: true },
+        ]} />
       }
     >
       <Show when={quota()?.limit != null}>

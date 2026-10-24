@@ -7,6 +7,7 @@ import {
   MdOutlineSearch,
 } from "solid-icons/md";
 import SubPageContent from "@/shared/views/SubPageContent";
+import PageActions from "@/shared/views/layout/PageActions";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -18,7 +19,7 @@ import {
   type CardsResponse,
 } from "../api";
 import CardEditorModal from "./CardEditorModal";
-import { Button, IconButton } from "@ui/Button";
+import { IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { cardClass } from "@ui/Card";
 import { Avatar } from "@ui/Avatar";
@@ -69,10 +70,9 @@ export default function CardsSection(props: Props) {
       description={t("addressbook.contact_count", { count: String(cards().length) }) as string}
       wide
       action={
-        <Button size="sm" onClick={() => setCreating(true)}>
-          <MdOutlineAdd class="w-4 h-4" />
-          {t("addressbook.new_contact")}
-        </Button>
+        <PageActions actions={[
+          { label: t("addressbook.new_contact"), icon: MdOutlineAdd, onClick: () => setCreating(true), primary: true },
+        ]} />
       }
     >
       <Show when={cards().length > 0}>

@@ -1,10 +1,10 @@
 import { Show } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
+import { SaveBar } from "@/modules/settings/store/FormHelpers";
 import { fetchAdminSecurity, saveAdminSecurity } from "../../api";
 import { useSectionForm } from "@/modules/settings/store/useSectionForm";
 import type { AdminSecurity } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
 import { Field, Textarea } from "@ui/Field";
 import { Toggle } from "@ui/Toggle";
 
@@ -24,13 +24,6 @@ export default function SecuritySection() {
     <SubPageContent
       title={t("admin.security_title")}
       description={t("admin.security_desc")}
-      action={
-        <Show when={data()}>
-          <Button form="security-form" type="submit" disabled={saving()}>
-            {saving() ? t("admin.saving") : t("admin.save")}
-          </Button>
-        </Show>
-      }
     >
       <Show when={data()} fallback={<Skeleton />}>
         {(d) => (
@@ -84,6 +77,7 @@ export default function SecuritySection() {
               <Textarea class="w-full" name="trusted_directory_servers" rows={2}>{d().trusted_directory_servers}</Textarea>
             </Field>
 
+            <SaveBar saving={saving()} label={t("admin.save")} savingLabel={t("admin.saving")} />
           </form>
         )}
       </Show>
