@@ -235,7 +235,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
                bg-surface border-r border-rim py-3 px-2"
       >
         {/* Brand: centred lockup with its own rule under it, above the cover. */}
-        <div class="flex items-center justify-center px-2 pb-4 pt-2 mb-2 border-b border-rim">
+        <div class="flex items-center justify-center px-2 pb-4 pt-2 border-b border-rim">
           <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
         </div>
 

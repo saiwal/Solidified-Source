@@ -54,7 +54,7 @@ export default function CoverCard(props: {
       {/* Gradient is the fallback when there's no cover. 3.4:1 rather than
           3:1 keeps the header short enough for a 224px rail on a 768px-tall
           laptop, where the nav below already has to scroll. */}
-      <div class="relative bg-gradient-to-br from-accent to-accent-txt" style="aspect-ratio: 3.4 / 1;">
+      <div class="relative bg-gradient-to-br from-accent to-accent-txt" style="aspect-ratio: 2.4 / 1;">
         <Show when={props.who.cover}>
           <img src={props.who.cover} alt="" aria-hidden="true" class="absolute inset-0 h-full w-full object-cover" />
         </Show>
@@ -80,7 +80,7 @@ export default function CoverCard(props: {
         </div>
       </div>
       <div
-        class={`flex items-end gap-2 pt-8 px-[18px] pb-2.5 transition-colors duration-150
+        class={`flex items-end gap-2 pt-6 px-[18px] pb-2.5 transition-colors duration-150
                 group-focus-visible:ring-2 group-focus-visible:ring-inset group-focus-visible:ring-accent/60
                 ${props.open ? "bg-elevated" : props.onToggle ? "group-hover:bg-elevated" : ""}`}
       >

@@ -103,18 +103,6 @@ registerModule({
       contexts: ["channel"],
       helpTarget: "widgets.scrapbook_feed",
     },
-		{
-      // Opt-in vCard-style summary — picker only, no default placement.
-      // Also placeable on /hq: usePageNick() falls back to the viewer's own
-      // nick there, so it shows the owner's own card on their dashboard.
-      id: "channel.contact_card",
-      label: () => useI18n().t("widgets.contact_card"),
-      loader: () => import("./widgets/ContactCardWidget"),
-      slot: ["right"],
-      defaultModules: ["articles", "photos", "cloud", "cal", "webpages", "wiki", "cart"],
-      contexts: "any",
-      helpTarget: "widgets.contact_card",
-    },
     {
       id: "channel.connections",
       label: () => useI18n().t("widgets.connections"),
