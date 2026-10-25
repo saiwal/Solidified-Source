@@ -184,7 +184,8 @@ export default function ComposerModal(props: ComposerModalProps) {
     // carrying a border and a floating card over a backdrop is exactly what it
     // exists to get away from.
     const base = "flex flex-col overflow-hidden text-txt pointer-events-auto ";
-    const card = "bg-surface border border-rim shadow-2xl ";
+    // Accent frame, not rim: a rim border vanished against the cards behind it.
+    const card = "bg-surface border border-accent/40 shadow-2xl ";
     switch (mode()) {
       case "dock":
         return (
@@ -234,7 +235,7 @@ export default function ComposerModal(props: ComposerModalProps) {
         <div class={dialogClass()} data-docked={mode() === "dock" ? "" : undefined} use:helpable={props.helpTarget}>
           {/* ── Header ── */}
           <header
-            class="flex items-center justify-between gap-2 px-3 py-2 border-b border-rim shrink-0"
+            class="flex items-center justify-between gap-2 px-3 py-2 border-b border-accent/40 bg-accent-muted shrink-0"
           >
             <div class="flex items-center gap-2 min-w-0">
               <Show when={frame}>
