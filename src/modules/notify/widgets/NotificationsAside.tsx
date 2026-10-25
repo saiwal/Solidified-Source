@@ -55,7 +55,6 @@ import {
 import { openPost } from "@/shared/views/modal-host";
 import { Button, IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
-import { Badge } from "@ui/Badge";
 import { EmptyState } from "@ui/EmptyState";
 import { ErrorState } from "@ui/ErrorState";
 import { Field, Input, Textarea } from "@ui/Field";
@@ -265,12 +264,14 @@ function GroupHeader(props: {
   return (
     <button type="button" {...props.trigger} class={GROUP_HEADER}>
       <span class="shrink-0 text-muted" aria-hidden="true">{props.icon}</span>
-      <span class="flex-1 min-w-0 truncate text-xs font-semibold">{props.label}</span>
+      <span class="flex-1 min-w-0 truncate text-xs text-muted">{props.label}</span>
       <Show when={props.dot}>
         <span class="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
       </Show>
       <Show when={props.count}>
-        <Badge tone="accent" size="sm" class="tabular-nums">{props.count}</Badge>
+        <span class="inline-flex items-center shrink-0 rounded-md px-1.5 py-0.5 text-[0.625rem] font-medium leading-tight tabular-nums bg-accent text-accent-fg">
+          {props.count}
+        </span>
       </Show>
       <MdOutlineExpand_more
         aria-hidden="true"

@@ -153,8 +153,7 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
                     onClick={() => props.onTagClick?.(tag.name)}
                     title={`${tag.count} post${tag.count !== 1 ? "s" : ""}`}
                   >
-                    <span>#</span>
-                    <span>{tag.name}</span>
+                    <span>#{tag.name}</span>
                   </Chip>
                 );
               }}

@@ -91,7 +91,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
                       classList={{ "bg-accent-muted": isActive() }}
                     >
                       <span
-                        class="text-xs shrink-0 transition-colors"
+                        class="text-xs shrink-0 -mr-2 transition-colors"
                         classList={{
                           "text-accent": isActive(),
                           "text-muted": !isActive(),
