@@ -377,7 +377,7 @@ Modules are auto-imported via `import.meta.glob()` — no changes to core files 
 
 ## AI Assistance
 
-Parts of this codebase were developed with the assistance of [Claude Code](https://claude.ai/code), Anthropic's AI coding tool. This includes code generation, translation key authoring (i18n locale files), and documentation. All AI-generated content has been reviewed and is the responsibility of the project maintainers.
+Parts of this codebase were developed with the assistance of various tools in different capacities. This includes code generation, translation key authoring (i18n locale files), and documentation. All AI-generated content has been reviewed and is the responsibility of the project maintainers.
 
 ---
 
