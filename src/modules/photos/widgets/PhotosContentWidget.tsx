@@ -465,12 +465,79 @@ function SquarePhotoTile(props: { photo: Photo; sel: PhotoSelection }) {
 // Sorting and paging are server-side (see Photos.php::getSummary) — a client
 // sort would only order the page already fetched, which is wrong under scroll.
 
+// Sequential multi-file upload with a done/total counter. `target` is read
+// once per batch; empty album + folder makes the API use the channel's
+// default photo folder (pconfig system/photo_path).
+function createPhotoUpload(
+  target: () => { nick: string; album: string; folder: string },
+  onDone: (t: { nick: string; album: string; folder: string }) => void,
+) {
+  const { t } = useI18n();
+  const [progress, setProgress] = createSignal<{ done: number; total: number } | null>(null);
+  let input: HTMLInputElement | undefined;
+
+  async function upload(files: FileList | File[]) {
+    const tg = target();
+    setProgress({ done: 0, total: files.length });
+    let failed = 0;
+    const errors = new Set<string>();
+    for (let i = 0; i < files.length; i++) {
+      try { await uploadNewPhoto(tg.nick, files[i], tg.album, tg.folder); }
+      catch (err) {
+        failed++;
+        errors.add(err instanceof Error ? err.message : t("photos.upload_failed"));
+      }
+      setProgress({ done: i + 1, total: files.length });
+    }
+    setProgress(null);
+    if (input) input.value = '';
+    onDone(tg);
+    if (failed > 0) toast.error(errors.size ? [...errors].join(" ") : t("photos.upload_failed"));
+  }
+
+  const Input = () => (
+    <input
+      ref={input}
+      type="file"
+      accept="image/*"
+      multiple
+      class="hidden"
+      onChange={e => e.currentTarget.files && upload(e.currentTarget.files)}
+    />
+  );
+
+  return { progress, upload, pick: () => input?.click(), Input };
+}
+
+function UploadButton(props: { up: ReturnType<typeof createPhotoUpload> }) {
+  const { t } = useI18n();
+  return (
+    <button
+      onClick={() => props.up.pick()}
+      disabled={!!props.up.progress()}
+      class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+             bg-accent/10 text-accent hover:bg-accent/20 transition-colors
+             disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <MdFillCloud_upload size={15} />
+      {props.up.progress()
+        ? `${props.up.progress()!.done}/${props.up.progress()!.total}`
+        : t("photos.upload")}
+    </button>
+  );
+}
+
 function AllPhotosView() {
   const nick     = usePageNick();
   const navigate = useNavigate();
   const { t }    = useI18n();
   const [viewMode, setViewMode] = createSignal<ViewMode>('grid');
   const sel = createPhotoSelection(() => nick() ?? '', photos);
+  const mobileActions = useMobileActions();
+  const up = createPhotoUpload(
+    () => ({ nick: nick() ?? '', album: '', folder: '' }),
+    ({ nick: n }) => { loadSummary(n); loadAlbums(n); },
+  );
   let sentinel: HTMLDivElement | undefined;
 
   onMount(() => {
@@ -493,7 +560,15 @@ function AllPhotosView() {
         onView={setViewMode}
       >
         <SelectToggle sel={sel} />
+        <PageActions mobileOnly actions={[
+          { label: t("photos.upload"), icon: MdFillCloud_upload, primary: true, onClick: up.pick,
+            show: canWrite() && !up.progress() },
+        ]} />
+        <Show when={canWrite() && (!mobileActions() || !!up.progress())}>
+          <UploadButton up={up} />
+        </Show>
       </SortToolbar>
+      <up.Input />
 
       <SelectionBar sel={sel} />
 
@@ -848,10 +923,10 @@ function AlbumGrid() {
   // ACL editor
   const [aclOpen, setAclOpen] = createSignal(false);
 
-  // Upload progress
-  const [uploadProgress, setUploadProgress] =
-    createSignal<{ done: number; total: number } | null>(null);
-  let fileInputRef: HTMLInputElement | undefined;
+  const up = createPhotoUpload(
+    () => ({ nick: nick() ?? '', album: albumName(), folder: datum() ?? '' }),
+    ({ nick: n, folder }) => { if (folder) loadAlbum(n, folder); },
+  );
   const [isDragging, setIsDragging] = createSignal(false);
   const mobileActions = useMobileActions();
 
@@ -865,26 +940,6 @@ function AlbumGrid() {
   });
 
   const sel = createPhotoSelection(() => nick() ?? '', sortedPhotos);
-
-  async function handleFiles(files: FileList | File[]) {
-    const n      = nick() ?? '';
-    const folder = datum() ?? '';
-    const album  = albumName();
-    setUploadProgress({ done: 0, total: files.length });
-    let failed = 0;
-    const errors = new Set<string>();
-    for (let i = 0; i < files.length; i++) {
-      try { await uploadNewPhoto(n, files[i], album, folder); }
-      catch (err) {
-        failed++;
-        errors.add(err instanceof Error ? err.message : t("photos.upload_failed"));
-      }
-      setUploadProgress({ done: i + 1, total: files.length });
-    }
-    setUploadProgress(null);
-    if (folder) loadAlbum(n, folder);
-    if (failed > 0) toast.error(errors.size ? [...errors].join(" ") : t("photos.upload_failed"));
-  }
 
   async function handleDeleteAlbum() {
     if (!confirmAlbum()) { setConfirmAlbum(true); return; }
@@ -923,7 +978,7 @@ function AlbumGrid() {
             e.preventDefault();
             setIsDragging(false);
             const files = e.dataTransfer?.files;
-            if (files?.length) handleFiles(files);
+            if (files?.length) up.upload(files);
           }}
         >
           <div class="bg-surface rounded-2xl px-10 py-8 shadow-2xl text-center border-4 border-dashed border-accent pointer-events-none">
@@ -933,15 +988,7 @@ function AlbumGrid() {
         </div>
       </Show>
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        class="hidden"
-        onChange={e => e.currentTarget.files && handleFiles(e.currentTarget.files)}
-      />
+      <up.Input />
 
       {/* Breadcrumb */}
       <div class="flex items-center gap-2">
@@ -973,8 +1020,8 @@ function AlbumGrid() {
         {/* Upload, download, delete and privacy go to the floating button and ⋮
             below lg; the upload button stays while it shows progress. */}
         <PageActions mobileOnly label={albumName() || undefined} actions={[
-          { label: t("photos.upload"), icon: MdFillCloud_upload, primary: true, onClick: () => fileInputRef?.click(),
-            show: canWrite() && !uploadProgress() },
+          { label: t("photos.upload"), icon: MdFillCloud_upload, primary: true, onClick: up.pick,
+            show: canWrite() && !up.progress() },
           { label: t("photos.download_album"), icon: MdOutlineDownload, href: photoDownloadUrl(nick() ?? '', datum() ?? ''),
             download: `${albumName() || 'album'}.zip`, show: !sel.selectMode() && !!datum() },
           { label: t("photos.acl_privacy"), icon: MdOutlineLock, onClick: () => setAclOpen(true),
@@ -983,20 +1030,8 @@ function AlbumGrid() {
             show: canWrite() && !sel.selectMode() && isOwner(),
             onClick: () => { if (confirm(t("photos.confirm_delete_album"))) { setConfirmAlbum(true); void handleDeleteAlbum(); } } },
         ]} />
-        <Show when={canWrite() && (!mobileActions() || !!uploadProgress())}>
-          {/* Upload */}
-          <button
-            onClick={() => fileInputRef?.click()}
-            disabled={!!uploadProgress()}
-            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                   bg-accent/10 text-accent hover:bg-accent/20 transition-colors
-                   disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <MdFillCloud_upload size={15} />
-            {uploadProgress()
-              ? `${uploadProgress()!.done}/${uploadProgress()!.total}`
-              : t("photos.upload")}
-          </button>
+        <Show when={canWrite() && (!mobileActions() || !!up.progress())}>
+          <UploadButton up={up} />
         </Show>
 
           {/* Select / Cancel */}
@@ -1067,7 +1102,7 @@ function AlbumGrid() {
       <Show when={photos().length === 0}>
         <Show when={canWrite()} fallback={<EmptyState>{t("photos.no_photos")}</EmptyState>}>
           <FileDropZone
-            onFiles={(files) => void handleFiles(files)}
+            onFiles={(files) => void up.upload(files)}
             accept="image/*"
             multiple
             label={t("photos.upload")}
