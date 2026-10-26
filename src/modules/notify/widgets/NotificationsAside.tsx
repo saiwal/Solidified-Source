@@ -1478,25 +1478,21 @@ export default function NotificationsAside() {
   );
   createEffect(() => setNotifCount(totalUnread()));
 
-  const statusDotClass = () =>
-    connStatus() === "live"
-      ? "bg-success"
-      : connStatus() === "polling"
-        ? "bg-warning"
-        : connStatus() === "error"
-          ? "bg-danger"
-          : "bg-subtle";
+  // Healthy (live) and transient (connecting) states stay silent; the dot
+  // only appears when delivery is degraded.
+  const degraded = () => connStatus() === "polling" || connStatus() === "error";
 
   return (
     <Card raised role="region" aria-labelledby={titleId} class="overflow-hidden">
       <div class="px-3.5 pt-3.5 pb-2.5 flex items-center gap-2">
         {/* Status leads the heading, the way the other sidebar widgets label
             themselves: quiet uppercase, dot first, one action at the far right. */}
-        <Show when={booted() && auth()?.isLoggedIn}>
+        <Show when={booted() && auth()?.isLoggedIn && degraded()}>
           <span
-            class={`w-1.5 h-1.5 shrink-0 rounded-full ${statusDotClass()}`}
+            class={`w-1.5 h-1.5 shrink-0 rounded-full ${connStatus() === "error" ? "bg-danger" : "bg-warning"}`}
             title={connLabel()}
-            aria-hidden="true"
+            role="img"
+            aria-label={connLabel()}
           />
         </Show>
         <h3
