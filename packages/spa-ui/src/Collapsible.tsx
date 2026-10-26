@@ -82,7 +82,7 @@ export function Collapsible(props: CollapsibleProps) {
                   ${expanded() ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
           inert={!props.open}
         >
-          <div class={`min-h-0 ${settled() ? "" : "overflow-hidden"}`}>
+          <div class={`min-h-0 min-w-0 ${settled() ? "" : "overflow-hidden"}`}>
             <div id={panelId} class={props.panelClass}>
               {props.children}
             </div>

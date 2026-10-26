@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from "solid-js";
-import { computePosition, autoUpdate, flip, shift, offset } from "@floating-ui/dom";
+import { computePosition, autoUpdate, flip, shift, offset, size } from "@floating-ui/dom";
 import type { Placement, ReferenceElement } from "@floating-ui/dom";
 
 export interface UseFloatingOptions {
@@ -44,7 +44,17 @@ export function useFloating(options: UseFloatingOptions = {}) {
     stopUpdate = autoUpdate(reference, floating, async () => {
       const pos = await computePosition(reference, floating, {
         placement: options.placement ?? "bottom",
-        middleware: [offset(options.offset ?? 8), flip(), shift({ padding: 8 })],
+        middleware: [
+          offset(options.offset ?? 8), flip(), shift({ padding: 8 }),
+          // Exposes the room left on the chosen side so a tall panel (a menu
+          // with many channels) can cap itself and scroll instead of running
+          // off-screen: max-h-(--float-max-h).
+          size({
+            padding: 8,
+            apply: ({ availableHeight, elements }) =>
+              elements.floating.style.setProperty("--float-max-h", `${availableHeight}px`),
+          }),
+        ],
       });
       setX(pos.x);
       setY(pos.y);

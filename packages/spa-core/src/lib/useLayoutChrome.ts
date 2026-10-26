@@ -120,10 +120,9 @@ export function useLayoutChrome() {
       { defer: true },
     ),
   );
-  // The desktop action-items panel now renders as an overlay anchored above
-  // NavUtilities (see aside markup below) rather than pushing content inline,
-  // so it must be closed explicitly on navigation or it'd stay floating over
-  // the sidebar on the next page.
+  // The desktop account panel (expanded inline in the rail) closes on
+  // navigation: picking one of its entries is a navigation, and it shouldn't
+  // stay open over the next page's rail.
   createEffect(
     on(
       () => location.pathname,

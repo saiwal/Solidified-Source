@@ -1,13 +1,10 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
-import { motion } from "solid-motionone";
-void motion;
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
 import NavItem from "../NavItem";
 import Slot from "../Slot";
@@ -65,7 +62,6 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     actionItems,
     actionsOpen,
     setActionsOpen,
-    reducedMotion,
     channelSwitcherActive,
     channelMenuOpen,
     setChannelMenuOpen,
@@ -148,9 +144,9 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     if (group && !openGroups().has(group.id)) setGroupOpen(group.id, true);
   });
 
-  // The account/visitor action items: an overlay under the user's own cover
-  // card or, on someone else's channel, under a single "Account" footer entry
-  // whose menu opens upward. Visitors with no card of their own (anonymous or
+  // The account/visitor action items: expanded inline under the user's own
+  // cover card or, on someone else's channel, under a single "Account" footer
+  // entry — the same Collapsible the app categories use. Visitors with no card of their own (anonymous or
   // remote-auth) keep the inline list, since they only have one or two items.
   const ActionList = () => (
     <For each={actionItems()}>
@@ -223,6 +219,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     // they change; rAF waits for the DOM commit.
     navItems();
     openGroups();
+    actionsOpen();
     editingWidgets();
     requestAnimationFrame(syncScrollFades);
   });
@@ -232,60 +229,58 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
       <aside
         aria-label={t("layout.navigation")}
         class="hidden lg:flex flex-col w-[224px] shrink-0 relative z-20
-               bg-surface border-r border-rim py-3 px-2"
+               bg-surface border-r border-rim py-3 px-2 overflow-y-auto"
       >
         {/* Brand: centred lockup with its own rule under it, above the cover. */}
         <div class="flex items-center justify-center px-2 pb-4 pt-2 border-b border-rim">
           <BrandBlock banner={navData()?.banner} logoUrl={navData()?.sitelogo} />
         </div>
 
-        {/* Full-bleed cover header under the masthead: the visited channel
-            (static) for anyone but its owner, else the signed-in user's own
-            card, which opens their account menu. */}
-        <Show
-          when={navData()?.subject}
-          fallback={
-            <Show when={ownCard()}>
-              <div class="relative -mx-2 mb-2">
-                <CoverCard
-                  who={navViewer()!}
-                  open={actionsOpen()}
-                  onToggle={() => setActionsOpen((o) => !o)}
-                />
-                <Show when={actionsOpen() && actionItems().length > 0}>
-                  <div
-                    class="absolute inset-x-2 top-full z-30 mt-1.5 max-h-[60vh] overflow-y-auto
-                           flex flex-col gap-0.5 p-1.5
-                           bg-surface border border-rim rounded-xl shadow-xl"
-                    use:motion={{
-                      initial: { opacity: 0, y: -8 },
-                      animate: { opacity: 1, y: 0 },
-                      transition: { duration: reducedMotion ? 0 : 0.18, easing: "ease-out" },
-                    }}
-                  >
-                    <ActionList />
-                  </div>
-                </Show>
-              </div>
-            </Show>
-          }
-        >
-          {(subject) => (
-            <div class="-mx-2 mb-2">
-              <CoverCard who={subject()} channelHref={`/channel/${subject().nick}`} />
-            </div>
-          )}
-        </Show>
-
-        {/* Scrollable region: primary nav only. `nav-rail-scroll` hides the
+        {/* Scrollable region: the cover + its account panel and the primary
+            nav share one scroll, so an open account panel can't push the
+            apps out of a short window. -mx-2/px-2 lets the cover stay
+            full-bleed inside the clip. `nav-rail-scroll` hides the
             thin scrollbar until the rail is hovered/focused; the inline mask
             fades whichever edge still has hidden rows. */}
         <div
           ref={bindScrollEl}
           onScroll={syncScrollFades}
           style={scrollMask()}
-          class="nav-rail-scroll flex-1 min-h-0 flex flex-col overflow-y-auto"
+          class="nav-rail-scroll flex-1 min-h-0 -mx-2 px-2 flex flex-col overflow-y-auto"
         >
+          {/* Full-bleed cover header under the masthead: the visited channel
+              (static) for anyone but its owner, else the signed-in user's own
+              card, which opens their account menu. */}
+          <Show
+            when={navData()?.subject}
+            fallback={
+              <Show when={ownCard()}>
+                {/* Expands inline like a category group, pushing the nav down. */}
+                <Collapsible
+                  class="-mx-2 mb-2"
+                  open={actionsOpen() && actionItems().length > 0}
+                  onOpenChange={setActionsOpen}
+                  panelClass="flex flex-col gap-0.5 px-2 pt-1.5 pb-1 border-b border-rim"
+                  header={() => (
+                    <CoverCard
+                      who={navViewer()!}
+                      open={actionsOpen()}
+                      onToggle={() => setActionsOpen((o) => !o)}
+                    />
+                  )}
+                >
+                  <ActionList />
+                </Collapsible>
+              </Show>
+            }
+          >
+            {(subject) => (
+              <div class="-mx-2 mb-2">
+                <CoverCard who={subject()} channelHref={`/channel/${subject().nick}`} />
+              </div>
+            )}
+          </Show>
+
           <Show
             when={grouped()}
             fallback={
@@ -378,55 +373,37 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
             actions (when they exist) and the utility strip. */}
         <div class="mt-2 border-t border-rim pt-1.5 flex flex-col gap-0.5">
           <Show when={accountEntry()}>
-            <div class="relative">
-              {/* Your own identity, not a generic "Account" label: visiting
-                  someone else's channel hides your cover card, so this row is
-                  the only place the rail says who the actions belong to. The
-                  name (and avatar) link to your channel; the chevron opens the
-                  account menu — the same overlay the own cover opens down. */}
+            {/* Your own identity, not a generic "Account" label: visiting
+                someone else's channel hides your cover card, so this row is
+                the only place the rail says who the actions belong to. The
+                chevron expands the account entries inline, as the own cover
+                does. */}
+            <Collapsible
+              open={actionsOpen()}
+              onOpenChange={setActionsOpen}
+              panelClass="flex flex-col gap-0.5 pt-0.5"
+              header={(trigger) => (
               <div
                 class={`flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm
                         transition-colors duration-150 ${actionsOpen() ? "bg-elevated" : ""}`}
               >
-                <Show
-                  when={navViewer()?.nick}
-                  fallback={
-                    <span class="flex min-w-0 flex-1 items-center gap-3 text-muted">
-                      <Avatar
-                        src={navViewer()?.avatar}
-                        name={navViewer()?.name}
-                        size={6}
-                        class="shrink-0"
-                      />
-                      <span class="min-w-0 truncate leading-tight">
-                        {navViewer()?.name || t("layout.account")}
-                      </span>
-                    </span>
-                  }
-                >
-                  <A
-                    href={`/channel/${navViewer()!.nick}`}
-                    class="group flex min-w-0 flex-1 items-center gap-3 text-muted
-                           transition-colors hover:text-txt"
-                  >
-                    <Avatar
-                      src={navViewer()?.avatar}
-                      name={navViewer()?.name}
-                      size={6}
-                      class="shrink-0"
-                    />
-                    <span class="min-w-0 truncate leading-tight text-left group-hover:underline group-hover:underline-offset-2">
-                      {navViewer()?.name || t("layout.account")}
-                    </span>
-                  </A>
-                </Show>
+                <span class="flex min-w-0 flex-1 items-center gap-3 text-muted">
+                  <Avatar
+                    src={navViewer()?.avatar}
+                    name={navViewer()?.name}
+                    size={6}
+                    class="shrink-0"
+                  />
+                  <span class="min-w-0 truncate leading-tight">
+                    {navViewer()?.name || t("layout.account")}
+                  </span>
+                </span>
                 <div class="shrink-0" use:helpable="nav.account_menu">
                   <IconButton
                     label={t("layout.account")}
                     size="sm"
-                    aria-expanded={actionsOpen()}
+                    {...trigger}
                     class={actionsOpen() ? "text-txt" : ""}
-                    onClick={() => setActionsOpen((o) => !o)}
                   >
                     <MdOutlineExpand_more
                       size={16}
@@ -436,21 +413,10 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
                   </IconButton>
                 </div>
               </div>
-              <Show when={actionsOpen()}>
-                <div
-                  class="absolute inset-x-0 bottom-full z-30 mb-1.5 max-h-[60vh] overflow-y-auto
-                         flex flex-col gap-0.5 p-1.5
-                         bg-surface border border-rim rounded-xl shadow-xl"
-                  use:motion={{
-                    initial: { opacity: 0, y: 8 },
-                    animate: { opacity: 1, y: 0 },
-                    transition: { duration: reducedMotion ? 0 : 0.18, easing: "ease-out" },
-                  }}
-                >
-                  <ActionList />
-                </div>
-              </Show>
-            </div>
+              )}
+            >
+              <ActionList />
+            </Collapsible>
           </Show>
 
           {/* Visitors' inline menu (Sign In / Remote Auth / Register). */}

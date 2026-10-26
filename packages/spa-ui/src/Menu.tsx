@@ -11,7 +11,7 @@ import type { ContextMenuProps, MenuItemProps, MenuProps } from "@utsukta/spa-co
 import { IconButton } from "@ui/Button";
 
 export const menuPanelClass =
-  "hz-menu z-50 min-w-48 rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2";
+  "hz-menu z-50 min-w-48 max-h-(--float-max-h) overflow-y-auto rounded-2xl bg-surface/95 backdrop-blur-xl shadow-2xl ring-1 ring-rim/60 p-2";
 export const menuItemClass =
   "hz-menu-item w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-left " +
   "hover:bg-elevated/70 focus:bg-elevated/70 focus:outline-none " +

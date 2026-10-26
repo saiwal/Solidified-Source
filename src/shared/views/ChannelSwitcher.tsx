@@ -43,7 +43,7 @@ const ChannelSwitcher = (props: ChannelSwitcherProps) => {
         <span aria-hidden="true" class="shrink-0 w-5 h-5 flex items-center justify-center">
           {getNavIcon("manage", 20)}
         </span>
-        <span class="flex-1 truncate leading-tight text-left">{props.label}</span>
+        <span class="min-w-0 flex-1 truncate leading-tight text-left">{props.label}</span>
         <MdOutlineExpand_more class={`w-3.5 h-3.5 shrink-0 text-muted transition-transform duration-200 ease-out
                   ${props.open ? "rotate-180" : "rotate-0"}`} />
       </button>
@@ -67,7 +67,7 @@ const ChannelSwitcher = (props: ChannelSwitcherProps) => {
                                 : "text-muted hover:bg-elevated hover:text-txt cursor-pointer"
                             }`}
                   >
-                    <span class="truncate flex-1">{ch.name}</span>
+                    <span class="min-w-0 truncate flex-1">{ch.name}</span>
                     <Show when={isCurrent()}>
                       <MdOutlineCheck class="w-3.5 h-3.5 text-accent shrink-0" />
                     </Show>

@@ -1,11 +1,13 @@
-import { For, Show, createSignal, createMemo } from 'solid-js';
+import { For, Show, createSignal, createMemo, lazy } from 'solid-js';
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPubsites, type PubSite } from '../../hubs/api';
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineOpen_in_new } from "solid-icons/md";
+import { MdOutlineInfo } from "solid-icons/md";
 import CardShell from "@/shared/stream/CardShell";
 import { resetReveal } from "@/shared/stream/reveal";
 import { Input, Select } from "@ui/Field";
+
+const HubInfoModal = lazy(() => import("./HubInfoModal"));
 
 const ACCESS_STYLES: Record<string, string> = {
   free:   'bg-accent-muted text-accent',
@@ -46,16 +48,15 @@ function SkeletonCard() {
   );
 }
 
-function HubCard(props: { site: PubSite }) {
+function HubCard(props: { site: PubSite; onOpen: () => void }) {
   const initial = () => props.site.urltext.charAt(0).toUpperCase();
   const version = () => props.site.version ? `v${props.site.version}` : '';
 
   return (
-		<a 
-      href={props.site.register_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="group block rounded-xl border border-rim
+    <button
+      type="button"
+      onClick={props.onOpen}
+      class="group block w-full text-left rounded-xl border border-rim
              bg-surface p-4 space-y-3
              hover:border-accent hover:shadow-sm transition-all duration-200"
     >
@@ -89,10 +90,9 @@ function HubCard(props: { site: PubSite }) {
             <span class="ml-1 font-mono">{version()}</span>
           </Show>
         </span>
-        <MdOutlineOpen_in_new class="w-3.5 h-3.5 text-muted group-hover:text-accent
-                    group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+        <MdOutlineInfo class="w-3.5 h-3.5 text-muted group-hover:text-accent transition-colors" aria-hidden="true" />
       </div>
-    </a>
+    </button>
   );
 }
 
@@ -102,6 +102,7 @@ export default function PubsitesView() {
   const [filter, setFilter] = createSignal('');
   const [accessFilter, setAccessFilter] = createSignal('all');
   const [registerFilter, setRegisterFilter] = createSignal('all');
+  const [selected, setSelected] = createSignal<PubSite | null>(null);
   // Each visit / dropdown change is a new list: let cards enter again, as
   // streams do. Not on keystrokes — the search box would replay constantly.
   resetReveal();
@@ -184,8 +185,12 @@ export default function PubsitesView() {
       {/* Grid */}
       <Show when={!sites.loading && filtered().length > 0}>
         <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
-          <For each={filtered()}>{(site) => <CardShell uuid={site.url} class="grid"><HubCard site={site} /></CardShell>}</For>
+          <For each={filtered()}>{(site) => <CardShell uuid={site.url} class="grid"><HubCard site={site} onOpen={() => setSelected(site)} /></CardShell>}</For>
         </div>
+      </Show>
+
+      <Show when={selected()}>
+        {(s) => <HubInfoModal site={s()} onClose={() => setSelected(null)} />}
       </Show>
     </div>
   );
