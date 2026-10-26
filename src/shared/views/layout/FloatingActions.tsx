@@ -1,18 +1,18 @@
-import { createEffect, createSignal, lazy, on, onCleanup, onMount, Show, Suspense, type JSX } from "solid-js";
+import { createEffect, createSignal, For, lazy, on, onCleanup, onMount, Show, Suspense, type JSX } from "solid-js";
 import { useLocation } from "@solidjs/router";
-import { MdFillEdit, MdOutlineClose, MdOutlineExpand_less, MdOutlineSearch } from "solid-icons/md";
+import { MdFillEdit, MdFillMore_vert, MdOutlineClose, MdOutlineExpand_less, MdOutlineSearch } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { ViewerRole } from "@utsukta/spa-core/store/site-config";
 import { IconButton } from "@ui/Button";
-import { Sheet } from "@ui/Sheet";
 import { moduleCategory } from "./app-categories";
 import {
-  floatingAction, mobilePrimary, pageMenuGroups, pageMenuUnplaced, pageSearch,
-  PageMenuButton, useMobileActions, type PageAction, type PageSearch,
+  floatingAction, mobilePrimary, pageMenuGroups, pageSearch,
+  useMobileActions, type PageAction, type PageSearch,
 } from "./PageActions";
 
-// Loaded only when compose opens, so it stays out of the shell bundle.
-const QuickCompose = lazy(() => import("@/modules/hq/widgets/QuickComposeWidget"));
+// Loaded only when Compose is picked, so the create actions (and what they
+// import) stay out of the shell bundle.
+const ComposeDialItems = lazy(() => import("./ComposeDialItems"));
 
 const ROUND =
   "w-10 h-10 rounded-full flex items-center justify-center bg-elevated border border-rim " +
@@ -23,15 +23,18 @@ const isEditable = (el: EventTarget | null) =>
   (el.isContentEditable || el.matches("input:not([type=checkbox]):not([type=radio]):not([type=button]), textarea, select"));
 
 /**
- * The floating column bottom-right, bottom to top: the page's main action,
- * search, the ⋮ menu when no title row holds it, scroll-to-top. One flex
- * column, so the buttons stack without per-button offsets.
+ * The floating column bottom-right. One flex column, so the buttons stack
+ * without per-button offsets.
  *
- * Main action: on mobile the page's innermost `primary` PageAction (falling
- * back to Compose for the owner in social apps); elsewhere a form's Save
- * (`useFloatingAction`). Search and the ⋮ are mobile-only — desktop keeps them
- * inline. While a text field has focus on mobile (the keyboard is up) the
- * column hides.
+ * Mobile: a "more" button, plus scroll-to-top once scrolled. "More" fans out a column
+ * of labelled buttons: the page's innermost `primary` PageAction (falling back
+ * to Compose for the owner in social apps, which swaps the column for the
+ * create actions), search, then every other page
+ * action. While a text field
+ * has focus (the keyboard is up) the column hides.
+ *
+ * Desktop keeps actions and search inline; only a form's Save
+ * (`useFloatingAction`) floats, above scroll-to-top.
  */
 export default function FloatingActions(props: {
   showScrollTop: boolean;
@@ -44,11 +47,13 @@ export default function FloatingActions(props: {
   const mobile = useMobileActions();
   const location = useLocation();
 
-  const [composeOpen, setComposeOpen] = createSignal(false);
+  const [composing, setComposing] = createSignal(false);
   const [searchOpen, setSearchOpen] = createSignal(false);
+  const [dialOpen, setDialOpen] = createSignal(false);
   const [typing, setTyping] = createSignal(false);
+  const close = () => { setDialOpen(false); setComposing(false); };
   // A navigation hands the page (and its search) over to the next one.
-  createEffect(on(() => location.pathname, () => { setSearchOpen(false); setComposeOpen(false); }, { defer: true }));
+  createEffect(on(() => location.pathname, () => { setSearchOpen(false); close(); }, { defer: true }));
 
   onMount(() => {
     const onIn = (e: FocusEvent) => setTyping(isEditable(e.target));
@@ -65,66 +70,132 @@ export default function FloatingActions(props: {
   // apps where posting is what the page is about.
   const compose = (): PageAction | undefined =>
     props.viewerRole === "owner" && moduleCategory(props.activeModuleId) === "social"
-      ? { label: t("layout.compose"), icon: MdFillEdit, onClick: () => setComposeOpen(true) }
+      ? { label: t("layout.compose"), icon: MdFillEdit, onClick: () => { setComposing(true); setDialOpen(true); } }
       : undefined;
 
-  const main = () => (mobile() ? mobilePrimary() ?? compose() : floatingAction());
-  const search = () => (mobile() ? pageSearch() : undefined);
-  const floatingMenu = () => mobile() && pageMenuUnplaced() && pageMenuGroups().length > 0;
+  // Mobile only: everything "more" fans out. `primary` marks the accented
+  // ones — the main action, and search while a query is active.
+  const items = (): PageAction[] => {
+    if (!mobile()) return [];
+    const s = pageSearch();
+    return [
+      ...[mobilePrimary() ?? compose()].filter((a): a is PageAction => !!a).map((a) => ({ ...a, primary: true })),
+      ...(s ? [{ label: s.placeholder ?? t("layout.search"), icon: MdOutlineSearch, primary: !!s.value, onClick: () => setSearchOpen(true) }] : []),
+      ...pageMenuGroups().flatMap((g) => g.actions),
+    ];
+  };
   const hidden = () => mobile() && typing() && !searchOpen();
 
   return (
     <>
+      <Show when={dialOpen()}>
+        <div class="fixed inset-0 z-50 bg-black/30" aria-hidden="true" onClick={close} />
+      </Show>
+
       <div
         class={`fixed z-50 right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
                ${props.hidesRightSidebar ? "xl:right-6" : "xl:right-[19.5rem]"}
                flex flex-col-reverse items-end gap-2`}
         classList={{ invisible: hidden() }}
+        onKeyDown={(e) => e.key === "Escape" && close()}
       >
-        <Show when={main()}>{(a) => <MainButton action={a()} />}</Show>
+        <Show when={mobile()} fallback={<Show when={floatingAction()}>{(a) => <MainButton action={a()} />}</Show>}>
+          <Show when={items().length}>
+            <button
+              type="button"
+              class={ROUND}
+              aria-label={t("layout.more")}
+              aria-expanded={dialOpen()}
+              aria-controls="floating-more"
+              onClick={() => setDialOpen((o) => !o)}
+            >
+              <Show when={dialOpen()} fallback={<MdFillMore_vert size={18} />}>
+                <MdOutlineClose size={18} />
+              </Show>
+            </button>
+          </Show>
+        </Show>
 
-        <Show when={search()}>
+        <Show when={dialOpen()}>
+          {/* flex-col-reverse: the first item sits nearest the toggle. */}
+          <ul id="floating-more" class="flex flex-col-reverse items-end gap-2 max-h-[60vh] overflow-y-auto p-1 -m-1">
+            {/* Compose swaps the column for the create actions. */}
+            <Show
+              when={composing()}
+              fallback={
+                <For each={items()}>
+                  {(a) => (
+                    <li>
+                      <DialItem action={a} onPick={close} />
+                    </li>
+                  )}
+                </For>
+              }
+            >
+              <Suspense>
+                <ComposeDialItems onPick={close} />
+              </Suspense>
+            </Show>
+          </ul>
+        </Show>
+
+        <Show when={!dialOpen() && props.showScrollTop}>
           <button
             type="button"
-            class={`${ROUND} ${search()!.value ? "text-accent-txt" : ""}`}
-            aria-label={search()!.placeholder ?? t("layout.search")}
-            aria-expanded={searchOpen()}
-            onClick={() => setSearchOpen(true)}
+            class={ROUND}
+            aria-label={t("layout.scroll_top")}
+            onClick={props.onScrollTop}
           >
-            <MdOutlineSearch size={18} />
-          </button>
-        </Show>
-
-        <Show when={floatingMenu()}>
-          <PageMenuButton floating class={ROUND} />
-        </Show>
-
-        <Show when={props.showScrollTop}>
-          <button type="button" class={ROUND} aria-label={t("layout.scroll_top")} onClick={props.onScrollTop}>
             <MdOutlineExpand_less class="w-4 h-4" />
           </button>
         </Show>
       </div>
 
-      <Show when={searchOpen() && search()}>
+      <Show when={searchOpen() && pageSearch()}>
         {(s) => <SearchBar search={s()} onClose={() => setSearchOpen(false)} />}
       </Show>
 
-      <Show when={composeOpen()}>
-        <Sheet side="bottom" label={t("layout.quick_compose")} onClose={() => setComposeOpen(false)} class="p-4 pb-6">
-          <Suspense fallback={<div class="h-10" />}>
-            <QuickCompose />
-          </Suspense>
-        </Sheet>
-      </Show>
     </>
+  );
+}
+
+const actionIcon = (a: PageAction): JSX.Element =>
+  a.icon?.({ size: 18 }) ?? <span class="text-xs font-semibold">{a.label.slice(0, 1)}</span>;
+
+/** One row of the fanned-out column: a label pill beside a round icon, the
+ * whole row one tap target. */
+export function DialItem(props: { action: PageAction; onPick: () => void }) {
+  const a = () => props.action;
+  const cls = "flex items-center gap-2 disabled:opacity-60";
+  const body = () => (
+    <>
+      <span class="max-w-[60vw] truncate px-2.5 py-1 rounded-md bg-elevated border border-rim shadow text-sm text-txt">
+        {a().label}
+      </span>
+      <span class={`${ROUND} ${a().primary ? "text-accent-txt" : ""}`}>{actionIcon(a())}</span>
+    </>
+  );
+  return a().href ? (
+    <a href={a().href} download={a().download} title={a().title} class={cls} onClick={props.onPick}>
+      {body()}
+    </a>
+  ) : (
+    <button
+      type="button"
+      title={a().title}
+      disabled={a().disabled}
+      class={cls}
+      onClick={() => { props.onPick(); a().onClick?.(); }}
+    >
+      {body()}
+    </button>
   );
 }
 
 function MainButton(props: { action: PageAction }) {
   const a = () => props.action;
   const cls = `${ROUND} text-accent-txt`;
-  const icon = (): JSX.Element => a().icon?.({ size: 18 }) ?? <span class="text-xs font-semibold">{a().label.slice(0, 1)}</span>;
+  const icon = () => actionIcon(a());
   return a().href ? (
     <a href={a().href} download={a().download} title={a().label} aria-label={a().label} class={cls}>
       {icon()}

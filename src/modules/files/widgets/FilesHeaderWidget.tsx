@@ -1,6 +1,5 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
-import { PageMenu } from "@/shared/views/layout/PageActions";
 
 export default function FilesHeaderWidget() {
   const { t } = useI18n();
@@ -10,7 +9,6 @@ export default function FilesHeaderWidget() {
       <h1 class="text-lg font-semibold text-txt">
         {owner() === null ? t("files_mod.title_mine") : t("files_mod.title_of", { name: owner()! })}
       </h1>
-      <PageMenu class="ml-auto" />
     </div>
   );
 }

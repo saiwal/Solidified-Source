@@ -51,7 +51,7 @@ import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { Button, IconButton } from "@ui/Button";
 import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
-import PageActions, { PageMenu, useMobileActions } from "@/shared/views/layout/PageActions";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -392,7 +392,6 @@ export default function ArticleView() {
               <div class="space-y-8">
                 <div class="flex items-center justify-between gap-2">
                   <BackLink fallback={`/articles/${nick()}`} label={t("articles.back")} />
-                  <PageMenu />
                 </div>
 
                 {/* Header — title, summary, byline row */}

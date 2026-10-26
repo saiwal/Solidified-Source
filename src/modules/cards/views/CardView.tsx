@@ -39,7 +39,7 @@ import AttachmentList from "@/shared/stream/components/AttachmentList";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { Button, IconButton } from "@ui/Button";
-import PageActions, { PageMenu, useMobileActions } from "@/shared/views/layout/PageActions";
+import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 import { Card, cardClass } from "@ui/Card";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
@@ -379,7 +379,6 @@ export default function CardView() {
                     <h1 class="text-3xl font-bold leading-tight text-txt">
                       {d().card.title || t("cards.untitled")}
                     </h1>
-                    <PageMenu class="ml-auto" />
                   </div>
 
                   <Show when={d().card.summary}>

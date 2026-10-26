@@ -1,10 +1,10 @@
 import { createContext, createEffect, createSignal, For, onCleanup, onMount, Show, useContext } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
-import { MdOutlineMore_horiz, MdOutlineMore_vert } from "solid-icons/md";
+import { MdOutlineMore_horiz } from "solid-icons/md";
 import type { IconTypes } from "solid-icons";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button, buttonClass, IconButton } from "@ui/Button";
-import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
+import { Menu, MenuItem } from "@ui/Menu";
 
 /** One of a page's common actions. */
 export interface PageAction {
@@ -30,10 +30,9 @@ export interface PageAction {
  * A page's common actions, declared as data so each place can render them its
  * own way. Desktop: buttons inline where the PageActions sits (plus a "More"
  * menu for `overflow` ones). Mobile (below lg, with the nav bar): the page's
- * innermost `primary` action is the floating button (FloatingActions.tsx) and
- * every other action, from every mounted PageActions, is one ⋮ menu
- * (`PageMenu`) at the end of the page's title row. Navigation (Tabs) isn't an
- * action; search is its own floating button (`usePageSearch`).
+ * actions from every mounted PageActions, plus the page search
+ * (`usePageSearch`), fan out of one floating "more" button (FloatingActions.tsx),
+ * the innermost `primary` first. Navigation (Tabs) isn't an action.
  */
 
 interface Source {
@@ -60,12 +59,17 @@ const visibleOf = (s: Source) => s.actions().filter((a) => a.show !== false);
 /** The floating button's action: the innermost (last mounted) primary — a
  * section's over its module header's. */
 export function mobilePrimary(): PageAction | undefined {
+  const i = primarySource();
+  return i < 0 ? undefined : visibleOf(sources()[i]).find((a) => a.primary);
+}
+
+// Index of the source holding the floating action. Matched by position, not
+// identity: `actions` is usually a JSX array literal, so every read of it
+// builds fresh objects and `a !== mobilePrimary()` never holds.
+function primarySource(): number {
   const all = sources();
-  for (let i = all.length - 1; i >= 0; i--) {
-    const p = visibleOf(all[i]).find((a) => a.primary);
-    if (p) return p;
-  }
-  return undefined;
+  for (let i = all.length - 1; i >= 0; i--) if (visibleOf(all[i]).some((a) => a.primary)) return i;
+  return -1;
 }
 
 /** One ⋮ menu group. */
@@ -78,11 +82,15 @@ export interface PageActionGroup {
  * sharing a label are one group (a section's header button and a mobileOnly
  * toolbar further down it). */
 export function pageMenuGroups(): PageActionGroup[] {
-  const primary = mobilePrimary();
+  const pi = primarySource();
   const groups: PageActionGroup[] = [];
-  for (const s of sources()) {
+  for (const [i, s] of sources().entries()) {
     const label = s.label?.();
-    const actions = visibleOf(s).filter((a) => a !== primary);
+    let actions = visibleOf(s);
+    if (i === pi) {
+      const j = actions.findIndex((a) => a.primary);
+      actions = actions.filter((_, k) => k !== j);
+    }
     if (!actions.length) continue;
     const g = groups.find((x) => x.label === label);
     if (g) g.actions.push(...actions);
@@ -122,84 +130,9 @@ export function useFloatingAction(action: () => PageAction | undefined) {
   });
 }
 
-// ── ⋮ menu ──────────────────────────────────────────────────────────────────
-
-// Every mounted PageMenu; only the first renders, so a title row can always
-// offer one without checking whether another view already did.
-const [menuHolders, setMenuHolders] = createSignal<object[]>([]);
-
-/** True while no title row holds the ⋮ — FloatingActions floats it instead. */
-export function pageMenuUnplaced(): boolean {
-  return menuHolders().length === 0;
-}
-
-/** The page's ⋮ menu, for the end of a title row. Renders only on mobile, only
- * in the first mounted instance, and only while there is something in it. */
-export function PageMenu(props: { class?: string }) {
-  const mobile = useMobileActions();
-  const holder = {};
-  useRegistration(setMenuHolders, holder);
-  return (
-    <Show when={mobile() && menuHolders()[0] === holder && pageMenuGroups().length}>
-      <PageMenuButton class={props.class} />
-    </Show>
-  );
-}
-
-/** The ⋮ trigger + menu itself; FloatingActions renders it as a round button. */
-export function PageMenuButton(props: { class?: string; floating?: boolean }) {
-  const { t } = useI18n();
-  const groups = pageMenuGroups;
-  return (
-    <Menu
-      label={t("layout.more")}
-      class="w-64"
-      placement={props.floating ? "top-end" : "bottom-end"}
-      trigger={(p) =>
-        props.floating ? (
-          <button type="button" aria-label={t("layout.more")} class={props.class} {...p}>
-            <MdOutlineMore_vert size={18} />
-          </button>
-        ) : (
-          <IconButton label={t("layout.more")} class={props.class} {...p}>
-            <MdOutlineMore_vert size={18} />
-          </IconButton>
-        )
-      }
-    >
-      <For each={groups()}>
-        {(g, i) => (
-          <>
-            <Show when={i() > 0}>
-              <MenuSeparator />
-            </Show>
-            <Show when={groups().length > 1 && g.label}>
-              <p class="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted truncate">{g.label}</p>
-            </Show>
-            <For each={g.actions}>
-              {(a) => (
-                <MenuItem
-                  icon={a.icon ? a.icon({ size: 16 }) : <span />}
-                  href={a.href}
-                  download={a.download}
-                  title={a.title}
-                  disabled={a.disabled}
-                  onClick={() => a.onClick?.()}
-                >
-                  <span class="min-w-0 truncate">{a.label}</span>
-                </MenuItem>
-              )}
-            </For>
-          </>
-        )}
-      </For>
-    </Menu>
-  );
-}
-
 // ── Search ──────────────────────────────────────────────────────────────────
 
-/** A page's search, for the floating search button on mobile. */
+/** A page's search, offered in the floating "more" column on mobile. */
 export interface PageSearch {
   /** The active query, shown when the field opens. */
   value: string;
@@ -221,7 +154,7 @@ export function pageSearch(): PageSearch | undefined {
   return undefined;
 }
 
-/** Offers this view's search as the floating search button while mounted, on
+/** Offers this view's search in the floating "more" column while mounted, on
  * mobile only — hide the inline search toggle while `useMobileActions()`. */
 export function usePageSearch(search: () => PageSearch | undefined) {
   const mobile = useMobileActions();
@@ -256,11 +189,7 @@ export default function PageActions(props: {
   const more = () => visible().filter((a) => a.overflow);
 
   return (
-    <Show
-      when={!mobile()}
-      // An inline PageActions sits in a title row, which is where the ⋮ goes.
-      fallback={<Show when={!props.mobileOnly}><PageMenu class={props.class} /></Show>}
-    >
+    <Show when={!mobile()}>
       <Show when={!props.mobileOnly && visible().length}>
         <div class={`flex items-center gap-1.5 ${props.class ?? ""}`}>
           <For each={main()}>

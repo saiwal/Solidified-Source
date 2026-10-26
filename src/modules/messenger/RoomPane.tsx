@@ -7,7 +7,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillChat, MdOutlineDelete, MdOutlineLogout } from "solid-icons/md";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createRoomSession, deleteChatRoom } from "@/modules/chat/store";
-import PageActions, { PageMenu } from "@/shared/views/layout/PageActions";
+import PageActions from "@/shared/views/layout/PageActions";
 import ChatRoomPane from "@/modules/chat/views/ChatRoomPane";
 import { BackButton } from "./DmPane";
 
@@ -43,7 +43,6 @@ export default function RoomPane(props: { back: string; nick: string; roomId: nu
             <p class="text-xs text-muted">{room.presence().length} {t("chat.online_count")}</p>
           </Show>
         </div>
-        <PageMenu />
       </div>
       <ChatRoomPane nick={props.nick} roomId={props.roomId} room={room} onClose={() => navigate(props.back)} />
     </div>
