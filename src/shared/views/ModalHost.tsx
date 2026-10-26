@@ -293,13 +293,16 @@ export default function ModalHost(props: {
           the bottom edge; bottom-16 lifts them over the mobile tab bar (h-16,
           hidden from lg up), which is the only reason for any offset.
           A docked panel owns that same corner, so the row is padded out of its
-          way and the pills queue up to its left — one bottom-right rail. */}
+          way and the pills queue up to its left — one bottom-right rail.
+          The row spans left-0 (over the desktop nav's footer), so only the
+          pills themselves take clicks. */}
       <Show when={minimized().length > 0 && stripMount()} keyed>
         {(mount) => (
         <Portal mount={mount}>
           <div
             class="fixed z-50 bottom-16 lg:bottom-0 left-0 right-2 sm:right-4 xl:right-[19.5rem]
-                   flex items-end justify-end gap-2 pl-2 overflow-x-auto"
+                   flex items-end justify-end gap-2 pl-2 overflow-x-auto
+                   pointer-events-none *:pointer-events-auto"
             // 26rem is a docked panel's width, plus the gap — one rail width
             // per panel currently on it.
             style={{

@@ -16,6 +16,7 @@ import ConnectionRequestModalHost from "@/shared/views/ConnectionRequestModalHos
 import FeedModalHost from "@/shared/views/FeedModalHost";
 import ShareModalHost from "@/shared/views/ShareModalHost";
 import ModalHost from "@/shared/views/ModalHost";
+import { composerEntries } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
 import { usePWA } from "@/pwa";
@@ -33,6 +34,7 @@ const Layout: ParentComponent = (props) => {
   // owns singleton state (focus restoration, drag reorder, scroll tracking),
   // so a menu can't call it a second time. See shared/views/layout/.
   const chrome = useLayoutChrome();
+  const hasMinimized = () => composerEntries().some((e) => e.mode() === "min");
   const {
     rightOpen, setRightOpen,
     moreOpen,
@@ -146,7 +148,13 @@ const Layout: ParentComponent = (props) => {
             ref={setMainRef}
             tabindex="-1"
             onScroll={onMainScroll}
-            class="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] p-4 lg:p-6 pb-16 lg:pb-6 relative flex flex-col"
+            class="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] p-4 lg:p-6 relative flex flex-col"
+            // Minimized-composer pills are fixed over the bottom edge; pad so
+            // the last row (and its action icons) can scroll clear of them.
+            classList={{
+              "pb-16 lg:pb-6": !hasMinimized(),
+              "pb-28 lg:pb-16": hasMinimized(),
+            }}
           >
             <div class="flex flex-col flex-1">
               {/* Route changes swap <main> silently; without this a screen
