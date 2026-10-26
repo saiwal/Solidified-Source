@@ -16,7 +16,7 @@ import ConnectionRequestModalHost from "@/shared/views/ConnectionRequestModalHos
 import FeedModalHost from "@/shared/views/FeedModalHost";
 import ShareModalHost from "@/shared/views/ShareModalHost";
 import ModalHost from "@/shared/views/ModalHost";
-import { composerEntries } from "@/shared/views/modal-host";
+import { hasMinimized } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
 import { usePWA } from "@/pwa";
@@ -34,7 +34,6 @@ const Layout: ParentComponent = (props) => {
   // owns singleton state (focus restoration, drag reorder, scroll tracking),
   // so a menu can't call it a second time. See shared/views/layout/.
   const chrome = useLayoutChrome();
-  const hasMinimized = () => composerEntries().some((e) => e.mode() === "min");
   const {
     rightOpen, setRightOpen,
     moreOpen,

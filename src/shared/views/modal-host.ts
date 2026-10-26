@@ -180,6 +180,8 @@ const [entries, setEntries] = createSignal<ComposerEntry[]>([]);
 
 /** Every live composer, expanded or minimized. */
 export const composerEntries = entries;
+/** Any composer minimized to a pill — the page and floating buttons make room. */
+export const hasMinimized = () => entries().some((e) => e.mode() === "min");
 
 let seq = 0;
 

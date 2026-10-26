@@ -9,6 +9,7 @@ import {
   floatingAction, mobilePrimary, pageMenuGroups, pageSearch,
   useMobileActions, type PageAction, type PageSearch,
 } from "./PageActions";
+import { hasMinimized } from "@/shared/views/modal-host";
 
 // Loaded only when Compose is picked, so the create actions (and what they
 // import) stay out of the shell bundle.
@@ -96,7 +97,8 @@ export default function FloatingActions(props: {
         class={`fixed z-50 right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
                ${props.hidesRightSidebar ? "xl:right-6" : "xl:right-[19.5rem]"}
                flex flex-col-reverse items-end gap-2`}
-        classList={{ invisible: hidden() }}
+        // Lift the stack above the minimized-composer pills (ModalHost).
+        classList={{ invisible: hidden(), "mb-11": hasMinimized() }}
         onKeyDown={(e) => e.key === "Escape" && close()}
       >
         <Show when={mobile()} fallback={<Show when={floatingAction()}>{(a) => <MainButton action={a()} />}</Show>}>
