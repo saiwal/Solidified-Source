@@ -35,7 +35,7 @@ export function SearchField(props: SearchFieldProps) {
         ref={(el) => (inputEl = el)}
         type="search"
         size={own.size}
-        class="w-full !pl-8 !pr-9"
+        class="w-full pl-9 pr-9"
         value={own.value}
         aria-label={own.label}
         onInput={(e) => own.onInput(e.currentTarget.value)}

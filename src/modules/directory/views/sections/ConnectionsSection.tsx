@@ -510,7 +510,7 @@ export default function ConnectionsSection() {
         <label class="relative flex-1 min-w-[12rem]">
           <MdOutlineSearch size={16} class="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
           <Input
-            class="w-full"
+            class="w-full pl-9 pr-9"
             type="search"
             placeholder={t("directory.search_connections")}
             value={input()}
