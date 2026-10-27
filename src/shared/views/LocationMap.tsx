@@ -9,7 +9,7 @@ import { DEFAULT_TMS, geocode, osmEmbedSrc, osmLink, parseCoord } from "@utsukta
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
 
-export default function LocationMap(props: { location: string; class?: string }) {
+export default function LocationMap(props: { location: string; class?: string; /** Link text; defaults to the location. */ label?: string }) {
   const enabled = useMapsEnabled();
   const navData = useNavData();
   const [coord] = createResource(
@@ -30,7 +30,7 @@ export default function LocationMap(props: { location: string; class?: string })
           />
           <a href={osmLink(c(), navData()?.osm?.zoom ?? 16, tms())} target="_blank" rel="noopener noreferrer"
             class="text-xs text-muted hover:underline">
-            {props.location}
+            {props.label ?? props.location}
           </a>
         </div>
       )}

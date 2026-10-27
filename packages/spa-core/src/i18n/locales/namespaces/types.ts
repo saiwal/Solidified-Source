@@ -2172,6 +2172,13 @@ export type RawDictionary = {
     tab_albums:       string;
     tab_uploads:      string;
     tab_map:          string;
+    location_add:     string;
+    location_edit:    string;
+    location_remove:  string;
+    location_save:    string;
+    location_open_osm:string;
+    location_hint:    string;
+    location_local_note:string;
     map_empty:        string;
     map_empty_owner:  string;
     loading_more:     string;

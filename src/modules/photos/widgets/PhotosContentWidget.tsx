@@ -39,6 +39,7 @@ import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForPhoto } from "@/shared/lib/shareLinks";
 import CommentThread from "@/shared/views/CommentThread";
 import AclEditor from "../components/AclEditor";
+import PhotoLocation from "../components/PhotoLocation";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
@@ -1725,6 +1726,7 @@ function ImageView() {
               {' · '}{new Date(d()!.created).toLocaleString()}
             </Show>
           </p>
+          <PhotoLocation nick={nick() ?? ''} resourceId={d()!.resource_id} coord={d()?.coord} canWrite={canWrite()} />
 
           {/* Action bar */}
           <div class="mt-4 pt-3 border-t border-rim flex items-center gap-1">

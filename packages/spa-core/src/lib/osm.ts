@@ -40,6 +40,15 @@ export function osmEmbedSrc(c: Coord, tms = DEFAULT_TMS, marker = 1): string {
   return `${tms}/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik${m}`;
 }
 
+/** Coordinates → short place name ("Plaka, Athens"), via the server's cached
+ *  Nominatim reverse lookup. null when nothing is known there. */
+export async function reverseGeocode(c: Coord, signal?: AbortSignal): Promise<string | null> {
+  const res = await fetch(`/spa/geocode?lat=${c.lat}&lon=${c.lon}`, { signal });
+  if (!res.ok) return null;
+  const json = await res.json();
+  return (json?.data ?? json)?.name || null;
+}
+
 /** Server-side forward geocode (see Api/Handlers/Geocode.php). */
 export async function geocode(place: string, signal?: AbortSignal): Promise<Coord | null> {
   const res = await fetch(`/spa/geocode?place=${encodeURIComponent(place)}`, { signal });

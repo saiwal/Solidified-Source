@@ -12,6 +12,7 @@ import {
   deleteAlbum as apiDeleteAlbum,
   renamePhoto as apiRenamePhoto,
   updatePhotoTitle as apiUpdateTitle,
+  updatePhotoLocation as apiUpdateLocation,
   updatePhotoDescription as apiUpdateDescription,
   togglePhotoNsfw as apiToggleNsfw,
 } from "../api/api";
@@ -278,6 +279,11 @@ export async function renamePhotoAction(nick: string, resourceId: string, filena
 export async function updateTitleAction(nick: string, resourceId: string, title: string): Promise<void> {
   await apiUpdateTitle(nick, resourceId, title);
   setDetail(prev => prev ? { ...prev, title } : prev);
+}
+
+export async function updateLocationAction(nick: string, resourceId: string, coord: string): Promise<void> {
+  const saved = await apiUpdateLocation(nick, resourceId, coord);
+  setDetail(prev => prev ? { ...prev, coord: saved } : prev);
 }
 
 export async function updateDescriptionAction(nick: string, resourceId: string, description: string): Promise<void> {

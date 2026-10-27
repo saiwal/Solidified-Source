@@ -17,14 +17,20 @@ import { Button } from "@ui/Button";
 import { Input } from "@ui/Field";
 interface Props {
   onClose: () => void;
-  onInsert: (bbcode: string) => void;
+  /** Composer use: receives `[map=lat lon]`. */
+  onInsert?: (bbcode: string) => void;
+  /** Picking a position for something else (a photo's location): gets the
+   *  coordinates instead, and the button reads `actionLabel`. */
+  onPick?: (c: Coord) => void;
+  actionLabel?: string;
+  initial?: Coord | null;
 }
 
 const MapPickerModal: Component<Props> = (props) => {
   const { t } = useI18n();
   const navData = useNavData();
   const [place, setPlace] = createSignal("");
-  const [coord, setCoord] = createSignal<Coord | null>(null);
+  const [coord, setCoord] = createSignal<Coord | null>(props.initial ?? null);
   const [zoom, setZoom] = createSignal(navData()?.osm?.zoom ?? 16);
   const [busy, setBusy] = createSignal<"search" | "locate" | null>(null);
   const [error, setError] = createSignal("");
@@ -69,7 +75,8 @@ const MapPickerModal: Component<Props> = (props) => {
   const insert = () => {
     const c = coord();
     if (!c) return;
-    props.onInsert(`[map=${c.lat} ${c.lon}]`);
+    if (props.onPick) props.onPick(c);
+    else props.onInsert?.(`[map=${c.lat} ${c.lon}]`);
     props.onClose();
   };
 
@@ -97,6 +104,8 @@ const MapPickerModal: Component<Props> = (props) => {
               {busy() === "locate" ? t("editor.map_locating") : t("editor.map_use_browser")}
             </Button>
 
+            {/* Zoom only shapes the [map] embed — meaningless when picking a position */}
+            <Show when={!props.onPick}>
             <label class="flex items-center gap-2 text-sm text-muted ml-auto">
               {t("editor.map_zoom")}
               <Input
@@ -108,6 +117,7 @@ const MapPickerModal: Component<Props> = (props) => {
                 onInput={(e) => setZoom(Math.min(18, Math.max(1, Number(e.currentTarget.value) || 16)))}
               />
             </label>
+            </Show>
           </div>
 
           <Show when={error()}>
@@ -132,7 +142,7 @@ const MapPickerModal: Component<Props> = (props) => {
             {t("ui.cancel_btn")}
           </Button>
           <Button size="sm" onClick={insert} disabled={!coord()}>
-            {t("editor.map_insert")}
+            {props.actionLabel ?? t("editor.map_insert")}
           </Button>
         </div>
       </ModalPanel>

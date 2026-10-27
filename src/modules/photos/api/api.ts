@@ -1,4 +1,4 @@
-import { apiFetch } from '@utsukta/spa-core/lib/fetch';
+import { apiFetch, apiError } from '@utsukta/spa-core/lib/fetch';
 
 /** Swap the Hubzilla size suffix (-0/-1/-2/-3) in a photo URL.
  *  Scales are 0=original, 1=1024px, 2=640px, 3=320px (include/photos.php);
@@ -165,6 +165,8 @@ export interface PhotoDetail {
   height:          number;
   is_nsfw:         boolean;
   is_private:      boolean;
+  /** "lat lon" from the photo's item (EXIF GPS or set by hand); '' = none. */
+  coord?:          string;
   src:             string;
   src_full:        string;
   prevlink:        string | null;
@@ -385,6 +387,15 @@ export async function saveAcl(
     const err = await res.json().catch(() => ({})) as Record<string, unknown>;
     throw new Error(String((err?.error as Record<string, unknown>)?.message ?? 'Could not save privacy'));
   }
+}
+
+export async function updatePhotoLocation(nick: string, resourceId: string, coord: string): Promise<string> {
+  const res = await apiFetch(`/spa/photos/${nick}/image/${resourceId}/location`, {
+    method: 'POST',
+    body: JSON.stringify({ coord }),
+  });
+  if (!res.ok) throw await apiError(res);
+  return ((await res.json()).data?.coord ?? '') as string;
 }
 
 export async function updatePhotoTitle(nick: string, resourceId: string, title: string): Promise<void> {
