@@ -342,7 +342,8 @@ let resumeAt: number | null = savedQueue.length ? (saved.position ?? 0) : null;
 
 window.addEventListener("pagehide", persist);
 
-let retriedId: string | null = null; // track auto-retried after an error; cleared once anything plays
+let retry = { id: "", n: 0 }; // auto-retries of a failing track; cleared once anything plays
+const RETRY_MS = [500, 1500, 3000];
 
 function el(): HTMLAudioElement {
   if (audio) return audio;
@@ -354,7 +355,7 @@ function el(): HTMLAudioElement {
   audio.volume = volume();
   audio.muted = muted();
   audio.addEventListener("play", () => void ctx?.resume());
-  audio.addEventListener("playing", () => { retriedId = null; setPlaying(true); setLoading(false); setError(null); });
+  audio.addEventListener("playing", () => { retry = { id: "", n: 0 }; setPlaying(true); setLoading(false); setError(null); });
   audio.addEventListener("pause", () => {
     setPlaying(false);
     progress(true);
@@ -379,12 +380,15 @@ function el(): HTMLAudioElement {
   audio.addEventListener("error", () => {
     const t = current(), err = audio!.error;
     console.warn("jellyfin: playback error", err?.code, err?.message);
-    // /universal fails transiently (cold transcode start, network blip) and a
-    // re-click then plays — so retry once per track before surfacing the error
-    if (t && !inParty() && retriedId !== t.Id) {
-      retriedId = t.Id;
+    // Requests to the Jellyfin host fail transiently (seen on track change and
+    // seek, for a second or more) and a re-click then plays — so retry with
+    // backoff before surfacing the error. Also covers a failed seek: playAt
+    // reloads at position(), which timeupdate already moved to the seek target.
+    if (retry.id !== t?.Id) retry = { id: t?.Id ?? "", n: 0 };
+    if (t && !inParty() && retry.n < RETRY_MS.length) {
       const i = index(), at = position();
-      setTimeout(() => { if (index() === i && current()?.Id === t.Id) playAt(i, at); }, 600);
+      setLoading(true);
+      setTimeout(() => { if (index() === i && current()?.Id === t.Id) playAt(i, at); }, RETRY_MS[retry.n++]);
       return;
     }
     setLoading(false);
