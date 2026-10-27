@@ -342,6 +342,8 @@ let resumeAt: number | null = savedQueue.length ? (saved.position ?? 0) : null;
 
 window.addEventListener("pagehide", persist);
 
+let retriedId: string | null = null; // track auto-retried after an error; cleared once anything plays
+
 function el(): HTMLAudioElement {
   if (audio) return audio;
   audio = new Audio();
@@ -352,7 +354,7 @@ function el(): HTMLAudioElement {
   audio.volume = volume();
   audio.muted = muted();
   audio.addEventListener("play", () => void ctx?.resume());
-  audio.addEventListener("playing", () => { setPlaying(true); setLoading(false); setError(null); });
+  audio.addEventListener("playing", () => { retriedId = null; setPlaying(true); setLoading(false); setError(null); });
   audio.addEventListener("pause", () => {
     setPlaying(false);
     progress(true);
@@ -375,6 +377,16 @@ function el(): HTMLAudioElement {
     else { setPlaying(false); persist(); }
   });
   audio.addEventListener("error", () => {
+    const t = current(), err = audio!.error;
+    console.warn("jellyfin: playback error", err?.code, err?.message);
+    // /universal fails transiently (cold transcode start, network blip) and a
+    // re-click then plays — so retry once per track before surfacing the error
+    if (t && !inParty() && retriedId !== t.Id) {
+      retriedId = t.Id;
+      const i = index(), at = position();
+      setTimeout(() => { if (index() === i && current()?.Id === t.Id) playAt(i, at); }, 600);
+      return;
+    }
     setLoading(false);
     setPlaying(false);
     setError("playback");
