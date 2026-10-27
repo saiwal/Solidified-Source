@@ -347,9 +347,9 @@ let retriedId: string | null = null; // track auto-retried after an error; clear
 function el(): HTMLAudioElement {
   if (audio) return audio;
   audio = new Audio();
-  // CORS mode, so the visualizer's analyser may read the samples — without it a
-  // cross-origin stream routed through Web Audio plays as silence
-  audio.crossOrigin = "anonymous";
+  // No crossOrigin here: a CORS-mode stream rides Firefox's anonymous connection
+  // pool, which sits idle through a buffered track and is stale by the next one
+  // ("CORS request did not succeed" on track change). analyser() opts in.
   audio.preload = "auto";
   audio.volume = volume();
   audio.muted = muted();
@@ -738,7 +738,18 @@ export function analyser(): AnalyserNode {
   ctx = new AudioContext();
   analyserNode = ctx.createAnalyser();
   analyserNode.fftSize = 128;
-  ctx.createMediaElementSource(el()).connect(analyserNode).connect(ctx.destination);
+  const a = el();
+  // CORS mode, so the analyser may read the samples — a cross-origin stream
+  // routed through Web Audio without it plays as silence. The loaded stream was
+  // fetched without CORS, so refetch it at the same spot.
+  a.crossOrigin = "anonymous";
+  if (a.currentSrc) {
+    const at = a.currentTime, wasPaused = a.paused;
+    a.src = a.currentSrc;
+    a.addEventListener("loadedmetadata", () => { a.currentTime = at; }, { once: true });
+    if (!wasPaused) a.play().catch(() => undefined);
+  }
+  ctx.createMediaElementSource(a).connect(analyserNode).connect(ctx.destination);
   return analyserNode;
 }
 
