@@ -3,7 +3,7 @@
 // Check: node --experimental-strip-types src/modules/notify/rows.test.ts
 
 export interface HzNotification {
-  notify_id?: number;
+  notify_id?: number | "";
   notify_link?: string;
   b64mid?: string;
   name?: string;
@@ -94,9 +94,12 @@ export function isFetchable(key: string): boolean {
 
 // A row's stable identity across snapshots. Without it every poll hands <For>
 // brand-new object references and it tears down and rebuilds the whole list.
+// notify_id wins over b64mid: a notify row's b64mid is notify.hash, which for
+// a like is the *liked post's* uuid, so two likes on one post shared a key.
+// Core sends notify_id as '' for non-item rows, hence the type check.
 export function rowKey(n: HzNotification): string {
+  if (typeof n.notify_id === "number") return `n${n.notify_id}`;
   if (n.b64mid) return n.b64mid;
-  if (n.notify_id != null) return `n${n.notify_id}`;
   return `${n.notify_link ?? ""}|${n.when ?? ""}`;
 }
 

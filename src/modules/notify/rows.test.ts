@@ -15,7 +15,11 @@ import {
 } from "./rows.ts";
 
 // ── rowKey: one stable key per row shape ─────────────────────────────────────
-assert.equal(rowKey({ b64mid: "abc", notify_id: 7 }), "abc");
+assert.equal(rowKey({ b64mid: "abc", notify_id: 7 }), "n7");
+assert.equal(rowKey({ b64mid: "abc" }), "abc");
+// two likes on the same post share b64mid (notify.hash) — must not collide
+assert.notEqual(rowKey({ b64mid: "p", notify_id: 1 }), rowKey({ b64mid: "p", notify_id: 2 }));
+assert.equal(rowKey({ b64mid: "abc", notify_id: "" }), "abc");
 assert.equal(rowKey({ notify_id: 7 }), "n7");
 assert.equal(rowKey({ notify_id: 0 }), "n0"); // 0 is a real id, not "missing"
 assert.equal(rowKey({ notify_link: "/connections#4", when: "t" }), "/connections#4|t");
