@@ -239,14 +239,14 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
         {/* Scrollable region: the cover + its account panel and the primary
             nav share one scroll, so an open account panel can't push the
             apps out of a short window. -mx-2/px-2 lets the cover stay
-            full-bleed inside the clip. `nav-rail-scroll` hides the
-            thin scrollbar until the rail is hovered/focused; the inline mask
-            fades whichever edge still has hidden rows. */}
+            full-bleed inside the clip. The scrollbar style is the global one
+            in index.css; the inline mask fades whichever edge still has
+            hidden rows. */}
         <div
           ref={bindScrollEl}
           onScroll={syncScrollFades}
           style={scrollMask()}
-          class="nav-rail-scroll flex-1 min-h-0 -mx-2 px-2 flex flex-col overflow-y-auto"
+          class="flex-1 min-h-0 -mx-2 px-2 flex flex-col overflow-y-auto"
         >
           {/* Full-bleed cover header under the masthead: the visited channel
               (static) for anyone but its owner, else the signed-in user's own
