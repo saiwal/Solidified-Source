@@ -47,24 +47,34 @@ function buildFrame(c: Coord, label: string, tms: string, zoom: number, marker: 
  * Shaped like usePlyr(ref, body): call it from a component with the rendered
  * body element's ref accessor and an accessor for the body that produced it.
  */
+/**
+ * Whether maps may render here: the user's openstreetmap opt-in plus the core
+ * addon being on site-wide (its CSP hook is what lets the tile frame load).
+ * Multi-pin Leaflet maps (shared/views/MapView) gate on this too.
+ */
+export function useMapsEnabled(): () => boolean {
+  const installedApps = useInstalledApps();
+  const navData = useNavData();
+  return () =>
+    isModuleActive("openstreetmap", installedApps(), disabledFrontendModules()) && !!navData()?.osm;
+}
+
 export function useOsmMap(
   ref: () => HTMLElement | undefined,
   body: () => string,
   coord?: () => string | undefined,
 ): void {
-  const installedApps = useInstalledApps();
   const navData = useNavData();
+  const enabled = useMapsEnabled();
 
   createEffect(() => {
     body();
     const el = ref();
     if (!el) return;
-    if (!isModuleActive("openstreetmap", installedApps(), disabledFrontendModules())) return;
-
-    // null when the core openstreetmap addon is off site-wide — then its CSP
+    // Off when the core openstreetmap addon is off site-wide — then its CSP
     // hook never whitelisted the tile server, so leave the plain links alone.
-    const cfg = navData()?.osm;
-    if (!cfg) return;
+    if (!enabled()) return;
+    const cfg = navData()!.osm!;
     const tms = cfg.tmsserver || DEFAULT_TMS;
     const zoom = cfg.zoom ?? 16;
     const marker = cfg.marker ?? 1;

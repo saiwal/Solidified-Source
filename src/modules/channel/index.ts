@@ -164,6 +164,15 @@ registerModule({
       contexts: ["channel", "profile", "viewconnections", "hq"],
       helpTarget: "widgets.activity_heatmap",
     },
+    {
+      // Opt-in map of geotagged wall posts — picker only, no default placement.
+      id: "channel.places",
+      label: () => useI18n().t("widgets.channel_places"),
+      loader: () => import("./widgets/ChannelPlacesWidget"),
+      slot: ["right", "contentTop"],
+      defaultModules: [],
+      contexts: ["channel", "profile"],
+    },
   ],
   permissions: [],
 });

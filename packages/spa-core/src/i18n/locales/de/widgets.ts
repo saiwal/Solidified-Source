@@ -178,6 +178,18 @@ export const widgets: RawDictionary["widgets"] = {
   activity_heatmap:       "Aktivität",
   activity_heatmap_empty: "Noch keine Aktivität.",
   activity_heatmap_total: "{{count}} Beiträge im letzten Jahr",
+  tasks:                  "Aufgaben",
+  // Birthdays (hq.birthdays)
+  birthdays:              "Geburtstage",
+  birthdays_today:        "heute",
+  // Delivery health (hq.delivery_health)
+  delivery_health:        "Zustellung",
+  delivery_summary:       "{{pct}} % von {{total}} letzten Zustellungen kamen an",
+  delivery_all_ok:        "Keine fehlerhaften Seiten.",
+  delivery_failing:       "Fehlerhafte Seiten",
+  // Places map (channel.places)
+  channel_places:         "Orte",
+  channel_places_empty:   "Noch keine Beiträge mit Standort.",
   // Site Announcements (notify.notifications announcements toggle)
   site_announcements:      "Seitenankündigungen",
   no_announcements:        "Keine Ankündigungen.",

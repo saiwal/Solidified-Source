@@ -30,6 +30,7 @@ export const post: RawDictionary["post"] = {
   refresh:              "Aktualisieren",
   more_actions:         "Weitere Aktionen",
   reply:                "Antworten",
+  comments_closed:      "Kommentare sind geschlossen",
   delete_post:          "Beitrag löschen",
   delete:               "Löschen",
   remove_from_feed:         "Aus deinem Feed entfernen",

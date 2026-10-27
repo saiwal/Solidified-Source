@@ -37,6 +37,7 @@ export const network: RawDictionary["network"] = {
   clear_filters:        "फ़िल्टर साफ़ करें",
   tag:                  "टैग",
   tag_placeholder:      "जैसे solidjs",
+  language:             "भाषा",
   date_range:           "तिथि सीमा",
   date_from:            "से",
   date_to:              "तक",

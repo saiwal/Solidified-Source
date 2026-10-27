@@ -19,6 +19,26 @@ registerModule({
     context: "owner",
   },
   widgets: [
+    {
+      // Opt-in: connections' birthdays in the next 30 days — your own pages only
+      id: "hq.birthdays",
+      label: () => useI18n().t("widgets.birthdays"),
+      loader: () => import("./widgets/BirthdaysWidget"),
+      slot: "right",
+      defaultModules: [],
+      contexts: ["hq", "network", "cal"],
+      visitorVisible: false,
+    },
+    {
+      // Opt-in: recent outgoing delivery success + the sites that keep failing
+      id: "hq.delivery_health",
+      label: () => useI18n().t("widgets.delivery_health"),
+      loader: () => import("./widgets/DeliveryHealthWidget"),
+      slot: "right",
+      defaultModules: [],
+      contexts: ["hq", "network"],
+      visitorVisible: false,
+    },
     // Row of quick-launch buttons for the other composers (post, DM,
     // webpage, wiki, article) — each button only appears when its
     // corresponding Hubzilla app is installed.

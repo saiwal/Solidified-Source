@@ -1,6 +1,7 @@
-import { createEffect, createSignal, Show, For } from "solid-js";
+import { createEffect, createSignal, lazy, Show, For } from "solid-js";
+import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import {
-  entries, loading, loadingMore, hasMore,
+  entries, loading, loadingMore, hasMore, keywordCloud,
   loadDirectory, loadMoreDirectory,
 } from "../../people/store";
 import {
@@ -21,6 +22,8 @@ import { Chip } from "@ui/Chip";
 import { Skeleton, SkeletonText } from "@ui/Skeleton";
 import { LoadMore } from "@ui/LoadMore";
 
+const PlaceMap = lazy(() => import("@/shared/views/PlaceMap"));
+
 type Order = "date" | "rdate" | "alphabetic" | "ralpha";
 
 export default function DirectorySection() {
@@ -28,11 +31,16 @@ export default function DirectorySection() {
   const [searchInput, setSearchInput] = createSignal("");
   const [appliedSearch, setAppliedSearch] = createSignal("");
   const [order, setOrder] = createSignal<Order>("date");
+  const [keyword, setKeyword] = createSignal("");
   const [selected, setSelected] = createSignal<DirectoryEntry | null>(null);
+  const [view, setView] = createSignal<"grid" | "map">("grid");
+  const mapsOn = useMapsEnabled();
+  const showMap = () => mapsOn() && view() === "map";
 
   createEffect(() => {
     loadDirectory({
       search: appliedSearch(),
+      keywords: keyword() || undefined,
       order: order(),
       global: globalDir(),
       safe: safe(),
@@ -112,7 +120,32 @@ export default function DirectorySection() {
         >
           {t("directory.filter_safe_mode")}
         </Chip>
+
+        <Show when={mapsOn()}>
+          <Tabs
+            variant="segmented"
+            class="sm:ml-auto"
+            label={t("ui.view_map")}
+            value={view()}
+            onChange={setView}
+            items={[{ value: "grid", label: t("ui.view_grid") }, { value: "map", label: t("ui.view_map") }]}
+          />
+        </Show>
       </div>
+
+      {/* ── Keyword cloud (xtag) — the picked one stays even off the list ── */}
+      <Show when={keywordCloud().length > 0 || keyword()}>
+        <div class="flex flex-wrap gap-1.5" role="group" aria-label={t("directory.keywords")}>
+          <For each={keyword() && !keywordCloud().some((k) => k.term === keyword())
+            ? [{ term: keyword(), weight: 0 }, ...keywordCloud()] : keywordCloud()}>
+            {(k) => (
+              <Chip selected={keyword() === k.term} onClick={() => setKeyword(keyword() === k.term ? "" : k.term)}>
+                #{k.term}
+              </Chip>
+            )}
+          </For>
+        </div>
+      </Show>
 
       {/* ── Skeleton ── */}
       <Show when={loading()}>
@@ -127,7 +160,11 @@ export default function DirectorySection() {
           when={entries().length > 0}
           fallback={<EmptyState>{t("directory.no_channels")}</EmptyState>}
         >
-          <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
+          {/* Map covers the loaded entries — Load more adds pins */}
+          <Show when={showMap()}>
+            <PlaceMap items={entries().map((e) => ({ place: e.location ?? "", name: e.name, open: () => setSelected(e) }))} />
+          </Show>
+          <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]" classList={{ hidden: showMap() }}>
             <For each={entries()}>
               {(entry) => <CardShell uuid={entry.hash} class="grid"><DirectoryCard entry={entry} onSelect={setSelected} /></CardShell>}
             </For>
@@ -141,7 +178,7 @@ export default function DirectorySection() {
           onClick={loadMoreDirectory}
         />
 
-        <Show when={loadingMore()}>
+        <Show when={loadingMore() && !showMap()}>
           <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
             <For each={Array(6).fill(0)}>{() => <CardSkeleton />}</For>
           </div>

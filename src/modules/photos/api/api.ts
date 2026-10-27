@@ -46,6 +46,24 @@ export async function fetchPhotoSummary(nick: string, start = 0): Promise<Photo[
   return data as Photo[];
 }
 
+/** A geotagged photo (map tab). coord is core's "lat lon". */
+export interface PhotoPin {
+  resource_id: string;
+  title:       string;
+  is_nsfw:     boolean;
+  album:       string;
+  created:     string;
+  coord:       string;
+  src:         string;
+}
+
+export async function fetchPhotoPins(nick: string): Promise<PhotoPin[]> {
+  const res = await apiFetch(`/spa/photos/${nick}/map`);
+  if (!res.ok) throw await res.json();
+  const { data } = await res.json();
+  return data as PhotoPin[];
+}
+
 export type PhotoSort = 'date' | 'name' | 'size';
 export type SortDir   = 'asc' | 'desc';
 

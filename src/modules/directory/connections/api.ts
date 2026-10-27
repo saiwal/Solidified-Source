@@ -22,6 +22,9 @@ export type ConnectionFilter =
   | "ignored"
   | "hidden"
   | "archived"
+  // Every hub of theirs flagged dead / no post from them in 180 days.
+  | "unreachable"
+  | "inactive"
   | "recent"
   | "all"
   // Connections that carry a message filter — the inbox rules overview.
@@ -46,6 +49,10 @@ export interface Connection {
   // abook_incl / abook_excl. Only populated by the paginated list endpoint.
   incl?: string;
   excl?: string;
+  /** List endpoint only: all their hubs are dead (site_dead / hubloc_error). */
+  unreachable?: boolean;
+  /** List endpoint only: newest item they authored in this channel (UTC). */
+  last_post?: string;
 }
 
 export interface ConnectionsMeta {

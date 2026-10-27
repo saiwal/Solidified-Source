@@ -178,6 +178,18 @@ export const widgets: RawDictionary["widgets"] = {
   activity_heatmap:       "गतिविधि",
   activity_heatmap_empty: "अभी तक कोई गतिविधि नहीं।",
   activity_heatmap_total: "पिछले वर्ष में {{count}} पोस्ट",
+  tasks:                  "कार्य",
+  // Birthdays (hq.birthdays)
+  birthdays:              "जन्मदिन",
+  birthdays_today:        "आज",
+  // Delivery health (hq.delivery_health)
+  delivery_health:        "डिलीवरी स्थिति",
+  delivery_summary:       "{{total}} हाल की डिलीवरी में से {{pct}}% पहुँचीं",
+  delivery_all_ok:        "कोई विफल साइट नहीं।",
+  delivery_failing:       "विफल साइटें",
+  // Places map (channel.places)
+  channel_places:         "स्थान",
+  channel_places_empty:   "अभी तक स्थान वाली कोई पोस्ट नहीं।",
   // Site Announcements (notify.notifications announcements toggle)
   site_announcements:      "साइट घोषणाएँ",
   no_announcements:        "कोई घोषणा नहीं।",

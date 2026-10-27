@@ -6,8 +6,11 @@ import { MdOutlineInfo } from "solid-icons/md";
 import CardShell from "@/shared/stream/CardShell";
 import { resetReveal } from "@/shared/stream/reveal";
 import { Input, Select } from "@ui/Field";
+import { Tabs } from "@ui/Tabs";
+import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 
 const HubInfoModal = lazy(() => import("./HubInfoModal"));
+const PlaceMap = lazy(() => import("@/shared/views/PlaceMap"));
 
 const ACCESS_STYLES: Record<string, string> = {
   free:   'bg-accent-muted text-accent',
@@ -103,6 +106,8 @@ export default function PubsitesView() {
   const [accessFilter, setAccessFilter] = createSignal('all');
   const [registerFilter, setRegisterFilter] = createSignal('all');
   const [selected, setSelected] = createSignal<PubSite | null>(null);
+  const [view, setView] = createSignal<'grid' | 'map'>('grid');
+  const mapsOn = useMapsEnabled();
   // Each visit / dropdown change is a new list: let cards enter again, as
   // streams do. Not on keystrokes — the search box would replay constantly.
   resetReveal();
@@ -154,6 +159,15 @@ export default function PubsitesView() {
           <option value="approve">{t("directory.reg_approve")}</option>
           <option value="closed">{t("directory.reg_closed")}</option>
         </Select>
+        <Show when={mapsOn()}>
+          <Tabs
+            variant="segmented"
+            label={t("ui.view_map")}
+            value={view()}
+            onChange={setView}
+            items={[{ value: 'grid', label: t("ui.view_grid") }, { value: 'map', label: t("ui.view_map") }]}
+          />
+        </Show>
       </div>
 
       {/* Stats row */}
@@ -182,8 +196,16 @@ export default function PubsitesView() {
         </div>
       </Show>
 
+      {/* Map — a pin shared by several hubs narrows the grid to that place */}
+      <Show when={!sites.loading && filtered().length > 0 && mapsOn() && view() === 'map'}>
+        <PlaceMap
+          items={filtered().map((s) => ({ place: s.location ?? '', name: s.urltext, open: () => setSelected(s) }))}
+          onGroup={(place) => { setFilter(place); setView('grid'); }}
+        />
+      </Show>
+
       {/* Grid */}
-      <Show when={!sites.loading && filtered().length > 0}>
+      <Show when={!sites.loading && filtered().length > 0 && !(mapsOn() && view() === 'map')}>
         <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
           <For each={filtered()}>{(site) => <CardShell uuid={site.url} class="grid"><HubCard site={site} onOpen={() => setSelected(site)} /></CardShell>}</For>
         </div>

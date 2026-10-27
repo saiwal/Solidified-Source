@@ -46,6 +46,7 @@ export const network: RawDictionary["network"] = {
   clear_filters:        "Clear filters",
   tag:                  "Tags",
   tag_placeholder:      "e.g. solidjs",
+  language:             "Language",
   date_range:           "Date range",
   date_from:            "From",
   date_to:              "To",

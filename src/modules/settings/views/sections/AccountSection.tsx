@@ -3,8 +3,9 @@ import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAccountSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
 import { SaveBar } from "../../store/FormHelpers";
-import type { AccountQuota } from "../../store/types";
-import { formatQuotaValue, quotaPercent } from "@/shared/lib/quota-format";
+import type { AccountQuota, AccountSettings } from "../../store/types";
+import { formatQuotaValue, humanBytes, quotaPercent } from "@/shared/lib/quota-format";
+import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Field, Input } from "@ui/Field";
 
@@ -38,8 +39,53 @@ export default function AccountSection() {
             </div>
           </div>
         </Show>
+
+        <Show when={data()!.storage?.types.length}>
+          <StorageBreakdown storage={data()!.storage!} />
+        </Show>
       </Show>
     </SubPageContent>
+  );
+}
+
+function StorageBreakdown(props: { storage: NonNullable<AccountSettings["storage"]> }) {
+  const { t } = useI18n();
+  const total = () => props.storage.types.reduce((n, x) => n + x.bytes, 0) || 1;
+  return (
+    <div class="space-y-3 pt-2 border-t border-rim mt-6">
+      <h3 class="text-sm font-semibold text-txt pt-4">{t("settings.storage_title")}</h3>
+      {/* One stacked bar; opacity steps of the accent keep it on theme */}
+      <div class="flex h-2 rounded-full overflow-hidden bg-elevated" aria-hidden="true">
+        <For each={props.storage.types}>
+          {(x, i) => <div class="h-full bg-accent" style={{ width: `${(x.bytes / total()) * 100}%`, opacity: 1 - i() * 0.18 }} />}
+        </For>
+      </div>
+      <ul class="space-y-1 text-sm">
+        <For each={props.storage.types}>
+          {(x, i) => (
+            <li class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-sm bg-accent shrink-0" style={{ opacity: 1 - i() * 0.18 }} />
+              <span class="flex-1 text-txt">{t(`settings.storage_${x.kind}` as any)}</span>
+              <span class="text-xs text-muted tabular-nums">{t("settings.storage_files", { n: x.files })}</span>
+              <span class="w-20 text-right tabular-nums text-txt">{humanBytes(x.bytes)}</span>
+            </li>
+          )}
+        </For>
+      </ul>
+      <Show when={props.storage.largest.length}>
+        <p class="text-xs text-muted pt-2">{t("settings.storage_largest")}</p>
+        <ul class="space-y-1 text-sm">
+          <For each={props.storage.largest}>
+            {(f) => (
+              <li class="flex items-center gap-2 min-w-0">
+                <A href={f.href} class="flex-1 truncate text-accent-txt hover:underline">{f.name}</A>
+                <span class="w-20 text-right tabular-nums text-muted shrink-0">{humanBytes(f.bytes)}</span>
+              </li>
+            )}
+          </For>
+        </ul>
+      </Show>
+    </div>
   );
 }
 

@@ -3,6 +3,7 @@ import type { RawDictionary } from "../namespaces/types";
 export const directory: RawDictionary["directory"] = {
   // Tab/section labels
   connections:          "Verbindungen",
+  keywords:             "Schlagwörter",
   directory:            "Verzeichnis",
   hubs:                 "Hubs",
   suggestions:          "Vorschläge",
@@ -60,6 +61,11 @@ export const directory: RawDictionary["directory"] = {
   filter_ignored:       "Ignoriert",
   filter_hidden:        "Versteckt",
   filter_archived:      "Archiviert",
+  filter_unreachable:   "Unerreichbar",
+  filter_inactive:      "Inaktiv",
+  unreachable:          "Unerreichbar",
+  unreachable_hint:     "Alle Hubs dieses Kontakts nehmen keine Zustellungen mehr an",
+  last_post:            "letzter Beitrag {{date}}",
   filter_all:           "Alle",
   order_name_asc:       "Name A–Z",
   order_name_desc:      "Name Z–A",

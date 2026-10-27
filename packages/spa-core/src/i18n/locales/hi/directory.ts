@@ -2,6 +2,7 @@ import type { RawDictionary } from "../namespaces/types";
 
 export const directory: RawDictionary["directory"] = {
   connections:          "कनेक्शन",
+  keywords:             "कीवर्ड",
   directory:            "निर्देशिका",
   hubs:                 "हब्स",
   suggestions:          "सुझाव",
@@ -55,6 +56,11 @@ export const directory: RawDictionary["directory"] = {
   filter_ignored:       "अनदेखा",
   filter_hidden:        "छुपे हुए",
   filter_archived:      "संग्रहीत",
+  filter_unreachable:   "पहुँच से बाहर",
+  filter_inactive:      "निष्क्रिय",
+  unreachable:          "पहुँच से बाहर",
+  unreachable_hint:     "इस संपर्क के सभी हब अब डिलीवरी स्वीकार नहीं कर रहे",
+  last_post:            "अंतिम पोस्ट {{date}}",
   filter_all:           "सभी",
   order_name_asc:       "नाम A–Z",
   order_name_desc:      "नाम Z–A",

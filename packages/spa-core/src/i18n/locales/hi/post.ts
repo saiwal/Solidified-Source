@@ -29,6 +29,7 @@ export const post: RawDictionary["post"] = {
   refresh:              "ताज़ा करें",
   more_actions:         "और क्रियाएँ",
   reply:                "जवाब दें",
+  comments_closed:      "टिप्पणियाँ बंद हैं",
   delete_post:          "पोस्ट हटाएँ",
   delete:               "हटाएँ",
   remove_from_feed:         "अपने फ़ीड से हटाएँ",

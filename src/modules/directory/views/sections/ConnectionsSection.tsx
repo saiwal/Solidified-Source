@@ -34,7 +34,7 @@ import { EmptyState } from "@ui/EmptyState";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const FILTER_IDS: ConnectionFilter[] = ["active", "pending", "blocked", "ignored", "hidden", "archived", "all"];
+const FILTER_IDS: ConnectionFilter[] = ["active", "pending", "blocked", "ignored", "hidden", "archived", "unreachable", "inactive", "all"];
 const ORDER_IDS: { id: ConnectionOrder; key: string }[] = [
   { id: "name",           key: "order_name_asc"  },
   { id: "name_desc",      key: "order_name_desc" },
@@ -140,7 +140,7 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
   const [chatCustomMode, setChatCustomMode] = createSignal(false);
   const [chatCustomInput, setChatCustomInput] = createSignal("60");
   const [sendInvite, setSendInvite] = createSignal(true);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const auth = useAuth();
   const navViewer = useNavViewer();
   const installedApps = useInstalledApps();
@@ -237,6 +237,11 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
                 {t("directory.pending")}
               </Badge>
             </Show>
+            <Show when={props.conn.unreachable}>
+              <Badge tone="warning" size="sm" class="shrink-0 uppercase tracking-wide" title={t("directory.unreachable_hint")}>
+                {t("directory.unreachable")}
+              </Badge>
+            </Show>
             <For each={props.conn.status.filter((s) => s !== "pending")}>
               {(s) => (
                 <Badge tone="accent" size="sm" class="shrink-0 uppercase tracking-wide">
@@ -247,6 +252,9 @@ function ConnectionCard(props: { conn: Connection; onDeleted: () => void }) {
           </div>
           <p class="text-xs text-muted truncate mt-0.5">
             {props.conn.address || props.conn.url}
+            <Show when={props.conn.last_post}>
+              {(d) => <> · {t("directory.last_post", { date: new Date(d().replace(" ", "T") + "Z").toLocaleDateString(locale(), { month: "short", year: "numeric" }) })}</>}
+            </Show>
           </p>
         </div>
 

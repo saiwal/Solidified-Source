@@ -67,6 +67,7 @@ export type NetworkParams = {
   order?: SortOrder;
   search?: string;
   tag?: string;
+  lang?: string;
   cat?: string;
   verb?: string;
   file?: string;
@@ -95,6 +96,7 @@ export function parseNetworkParams(params: Record<string, string | string[] | un
   if (order !== "created") p.order = order;
   if (params.search) p.search = String(params.search);
   if (params.tag)    p.tag    = String(params.tag);
+  if (params.lang)   p.lang   = String(params.lang);
   if (params.file)   p.file   = String(params.file);
   if (params.star  === "1") p.star  = 1;
   if (params.pf    === "1") p.pf    = 1;
@@ -176,6 +178,14 @@ export async function fetchConnections(params: AclSearchParams = {}): Promise<Ac
     xid: decodeXid(c.xid),
     photo: c.photo?.endsWith('twopeople.png') ? undefined : c.photo,
   }));
+}
+
+/** Languages in the viewer's stream (last 90 days), most common first. */
+export async function fetchStreamLangs(): Promise<{ lang: string; total: number }[]> {
+  const res = await fetch('/spa/network/langs');
+  if (!res.ok) return [];
+  const { data } = await res.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function fetchFolders(): Promise<string[]> {

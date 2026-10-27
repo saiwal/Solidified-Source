@@ -68,6 +68,11 @@ export interface AccountQuota {
 export interface AccountSettings {
   $email: string;
   quotas: AccountQuota[];
+  /** Account-wide attach usage by type + largest files. */
+  storage: {
+    types: { kind: "images" | "video" | "audio" | "documents" | "other"; bytes: number; files: number }[];
+    largest: { name: string; bytes: number; href: string }[];
+  } | null;
 }
 
 // ── Locations ────────────────────────────────────────────────────────────────

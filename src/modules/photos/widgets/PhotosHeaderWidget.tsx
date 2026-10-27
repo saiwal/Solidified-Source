@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { albums, tab, switchTab } from "../store/store";
+import { albums, tab, switchTab, type PhotoTab } from "../store/store";
+import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { Tabs } from "@ui/Tabs";
@@ -11,13 +12,14 @@ export default function PhotosHeaderWidget() {
   const navigate = useNavigate();
   const nick     = usePageNick();
   const owner    = usePageOwnerName();
+  const mapsOn   = useMapsEnabled();
 
   // The tabs stay visible inside an album or a single image (those are their
   // own routes, see PhotosContentWidget's datatype()) — picking one there
   // navigates back to the summary rather than leaving the tab inert.
   const isSummary = () => !/\/(album|image)(\/|$)/.test(location.pathname);
 
-  function pick(id: "photos" | "albums" | "uploads") {
+  function pick(id: PhotoTab) {
     switchTab(id);
     if (!isSummary()) navigate(`/photos/${nick() ?? ""}`);
   }
@@ -30,6 +32,7 @@ export default function PhotosHeaderWidget() {
     { id: "photos" as const, label: t("photos.tab_photos"), show: true },
     { id: "albums" as const, label: t("photos.tab_albums"), show: true },
     { id: "uploads" as const, label: t("photos.tab_uploads"), show: hasAuto() },
+    { id: "map" as const, label: t("photos.tab_map"), show: mapsOn() },
   ].filter((s) => s.show);
 
   return (

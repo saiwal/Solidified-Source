@@ -59,6 +59,7 @@ import { FileDropZone } from "@ui/FileDropZone";
 import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
+const PhotoMap = lazy(() => import("../components/PhotoMap"));
 
 // The album/image :datum route param isn't reachable via usePageNick/
 // useSubjectNick (those only resolve the channel nick) — this component
@@ -122,8 +123,10 @@ export default function PhotosContentWidget() {
           </Show>
         </>
       }>
-        <Show when={tab() === 'photos'} fallback={<AlbumsView auto={tab() === 'uploads'} />}>
-          <AllPhotosView />
+        <Show when={tab() !== 'map'} fallback={<PhotoMap nick={nick() ?? ''} />}>
+          <Show when={tab() === 'photos'} fallback={<AlbumsView auto={tab() === 'uploads'} />}>
+            <AllPhotosView />
+          </Show>
         </Show>
       </Show>
     </div>

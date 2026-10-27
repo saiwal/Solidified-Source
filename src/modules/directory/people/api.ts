@@ -36,6 +36,8 @@ export interface DirectoryMeta {
   suggest: boolean;
   order: string;
   is_directory_admin: boolean;
+  /** Directory keyword cloud (xtag), first page only. */
+  keywords?: { term: string; weight: number }[];
 }
 
 export interface DirectoryResponse {

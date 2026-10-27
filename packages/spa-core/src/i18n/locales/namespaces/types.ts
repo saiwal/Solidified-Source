@@ -217,6 +217,10 @@ export type RawDictionary = {
     notifications:           string;
     remote_visitor:          string;
     remote_visitor_channel:  string;
+    view_grid:               string;
+    view_map:                string;
+    map_locating:            string;
+    map_more:                string;
     remote_guest:            string;
     go_home_link:            string;
     custom:                  string;
@@ -668,6 +672,18 @@ export type RawDictionary = {
     activity_heatmap:       string;
     activity_heatmap_empty: string;
     activity_heatmap_total: string;
+    tasks:                  string;
+    // Birthdays (hq.birthdays)
+    birthdays:              string;
+    birthdays_today:        string;
+    // Delivery health (hq.delivery_health)
+    delivery_health:        string;
+    delivery_summary:       string;
+    delivery_all_ok:        string;
+    delivery_failing:       string;
+    // Places map (channel.places)
+    channel_places:         string;
+    channel_places_empty:   string;
     // Site Announcements (notify.notifications announcements toggle)
     site_announcements:      string;
     no_announcements:        string;
@@ -910,7 +926,7 @@ export type RawDictionary = {
     expires: string; expired_badge: string; expired_title: string;
     scheduled_badge: string; scheduled_title: string;
     dm_badge: string; dm_title: string; dm_to: string;
-    reply_badge: string; reply_indicator: string; view_in_context: string;
+    reply_badge: string; reply_indicator: string; view_in_context: string; comments_closed: string;
   };
   editor: {
     // PostComposer
@@ -1312,6 +1328,14 @@ export type RawDictionary = {
     desc_account:        string;
     quotas_title:        string;
     quotas_desc:         string;
+    storage_title:       string;
+    storage_images:      string;
+    storage_video:       string;
+    storage_audio:       string;
+    storage_documents:   string;
+    storage_other:       string;
+    storage_files:       string;
+    storage_largest:     string;
     quota_total_identities: string;
     quota_total_channels: string;
     quota_total_feeds:   string;
@@ -1699,6 +1723,7 @@ export type RawDictionary = {
     clear_filters:        string;
     tag:                  string;
     tag_placeholder:      string;
+    language:             string;
     date_range:           string;
     date_from:            string;
     date_to:              string;
@@ -1731,6 +1756,7 @@ export type RawDictionary = {
   };
   directory: {
     connections:          string;
+    keywords:             string;
     directory:            string;
     hubs:                 string;
     suggestions:          string;
@@ -1783,6 +1809,11 @@ export type RawDictionary = {
     filter_ignored:       string;
     filter_hidden:        string;
     filter_archived:      string;
+    filter_unreachable:   string;
+    filter_inactive:      string;
+    unreachable:          string;
+    unreachable_hint:     string;
+    last_post:            string;
     filter_all:           string;
     order_name_asc:       string;
     order_name_desc:      string;
@@ -2140,6 +2171,9 @@ export type RawDictionary = {
     tab_photos:       string;
     tab_albums:       string;
     tab_uploads:      string;
+    tab_map:          string;
+    map_empty:        string;
+    map_empty_owner:  string;
     loading_more:     string;
     view_grid:        string;
     view_list:        string;
@@ -2418,6 +2452,23 @@ export type RawDictionary = {
 
   calendar: {
     title_mine: string;
+    tasks: string;
+    tasks_show_done: string;
+    tasks_add: string;
+    tasks_add_btn: string;
+    tasks_due: string;
+    tasks_due_on: string;
+    tasks_priority: string;
+    tasks_prio_high: string;
+    tasks_prio_medium: string;
+    tasks_prio_low: string;
+    tasks_list: string;
+    tasks_channel: string;
+    tasks_empty: string;
+    tasks_delete: string;
+    tasks_edit: string;
+    tasks_save: string;
+    tasks_cancel: string;
     title_of: string;
     loading:          string;
     no_events:        string;

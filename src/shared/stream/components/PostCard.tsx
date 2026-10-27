@@ -29,7 +29,7 @@ import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { scrollHighlightIntoView } from "@utsukta/spa-core/lib/scrollHighlightIntoView";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
-import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
+import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineComments_disabled, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { BiRegularLinkExternal } from "solid-icons/bi";
 import { UnseenBadge } from "./UnseenBadge";
@@ -1446,6 +1446,11 @@ export default function PostCard(props: {
               <MdOutlineReply size={14} />
             </IconButton>
           </Show>
+          <Show when={canInteract() && props.post.canComment === false && !isComment()}>
+            <span class="p-1 text-muted" role="img" title={t("post.comments_closed")} aria-label={t("post.comments_closed")}>
+              <MdOutlineComments_disabled size={14} />
+            </span>
+          </Show>
 
           <Menu
             label={t("post.more_actions")}
@@ -2064,6 +2069,13 @@ export default function PostCard(props: {
               <MdOutlineVisibility size={17} />
             </IconButton>
           </Show>
+        </Show>
+        {/* Closed to the viewer (comment policy, closed date, owner perms) — say so
+            rather than silently dropping the reply button */}
+        <Show when={canInteract() && props.post.canComment === false && !isComment()}>
+          <span class="p-2 text-muted" role="img" title={t("post.comments_closed")} aria-label={t("post.comments_closed")}>
+            <MdOutlineComments_disabled size={17} />
+          </span>
         </Show>
 
         {/* ── More actions dropdown (vertical three dots, after Reply) ── */}

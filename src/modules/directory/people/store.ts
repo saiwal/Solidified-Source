@@ -15,6 +15,7 @@ const [hasMore, setHasMore] = createSignal(false);
 const [total, setTotal] = createSignal(0);
 const [error, setError] = createSignal<string | null>(null);
 const [isDirectoryAdmin, setIsDirectoryAdmin] = createSignal(false);
+const [keywordCloud, setKeywordCloud] = createSignal<{ term: string; weight: number }[]>([]);
 
 let currentParams: DirectoryParams = {};
 let currentStart = 0;
@@ -34,6 +35,7 @@ export async function loadDirectory(params: DirectoryParams = {}) {
     setEntries(data.entries);
     setTotal(data.meta.total);
     setIsDirectoryAdmin(data.meta.is_directory_admin);
+    setKeywordCloud(data.meta.keywords ?? []);
     currentStart = data.entries.length;
     setHasMore(data.entries.length >= data.meta.limit);
   } catch (err) {
@@ -79,4 +81,4 @@ export function setEntryCensored(hash: string, censored: number) {
   setEntries((prev) => prev.map((e) => (e.hash === hash ? { ...e, censored } : e)));
 }
 
-export { entries, loading, loadingMore, hasMore, total, error, isDirectoryAdmin };
+export { entries, loading, loadingMore, hasMore, total, error, isDirectoryAdmin, keywordCloud };

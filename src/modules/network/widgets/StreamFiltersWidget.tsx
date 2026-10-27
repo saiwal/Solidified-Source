@@ -8,6 +8,7 @@ import {
   MdFillClose,
   MdFillFilter_alt_off,
   MdFillFolder,
+  MdFillTranslate,
   MdFillGroup,
   MdFillForum,
   MdFillKeyboard_arrow_down,
@@ -29,7 +30,7 @@ import { useInfiniteQuery, useQuery } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { loadNetwork, resetPosts, saveSortPref } from "../store";
-import { fetchFolders, fetchConnectionPage, CONN_PAGE_SIZE, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
+import { fetchFolders, fetchStreamLangs, fetchConnectionPage, CONN_PAGE_SIZE, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
 import { useAuth, isFeedContactsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -272,9 +273,15 @@ function AffinitySlider(props: { min: number; max: number; onChange: (min: numbe
 }
 
 export default function StreamFiltersWidget() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const [folders] = createQueryResource("network-folders", fetchFolders);
+  const [langs] = createQueryResource("network-langs", fetchStreamLangs);
+  // "de" → "German" in the UI language; a code Intl doesn't know stays a code.
+  const langName = (code: string) => {
+    try { return new Intl.DisplayNames([locale()], { type: "language" }).of(code) ?? code; }
+    catch { return code; }
+  };
 
   const installedApps = useInstalledApps();
   const privacyGroupsInstalled = () => isAppInstalled(installedApps(), "/group");
@@ -303,6 +310,7 @@ export default function StreamFiltersWidget() {
   };
 
   const tag    = () => str(searchParams.tag);
+  const lang   = () => str(searchParams.lang);
   const file   = () => str(searchParams.file);
   const dbegin = () => str(searchParams.dbegin);
   const dend   = () => str(searchParams.dend);
@@ -313,6 +321,7 @@ export default function StreamFiltersWidget() {
   const [groupsOpen,    setGroupsOpen]    = createSignal(!!str(searchParams.gid));
   const [forumsOpen,    setForumsOpen]    = createSignal(!!str(searchParams.cid));
   const [tagOpen,       setTagOpen]       = createSignal(!!str(searchParams.tag));
+  const [langOpen,      setLangOpen]      = createSignal(!!str(searchParams.lang));
   const [dateOpen,      setDateOpen]      = createSignal(!!(str(searchParams.dbegin) || str(searchParams.dend)));
   const [affinityOpen,  setAffinityOpen]  = createSignal(!!(str(searchParams.cmin) || str(searchParams.cmax)));
 
@@ -320,6 +329,7 @@ export default function StreamFiltersWidget() {
   createEffect(() => { if (str(searchParams.gid))                     setGroupsOpen(true); });
   createEffect(() => { if (str(searchParams.cid))                     setForumsOpen(true); });
   createEffect(() => { if (tag())                                      setTagOpen(true); });
+  createEffect(() => { if (lang())                                     setLangOpen(true); });
   createEffect(() => { if (dbegin() || dend())                         setDateOpen(true); });
   createEffect(() => { if (cmin() || cmax())                           setAffinityOpen(true); });
 
@@ -359,7 +369,7 @@ export default function StreamFiltersWidget() {
     (str(searchParams.order) || "created") !== "created" || !!searchParams.range || !!searchParams.search ||
     searchParams.star === "1" || searchParams.pf === "1" ||
     searchParams.conv === "1" || searchParams.dm === "1" || searchParams.event === "1" || searchParams.poll === "1" || searchParams.rss === "1" ||
-    !!(tag() || file() || dbegin() || dend() || cmin() || cmax()) ||
+    !!(tag() || lang() || file() || dbegin() || dend() || cmin() || cmax()) ||
     !!(searchParams.cid || searchParams.gid);
 
   function applyNow() {
@@ -424,7 +434,7 @@ export default function StreamFiltersWidget() {
   const hasSaveableSearch = () => !!(search() || tag() || xchanLabel());
 
   function captureParams(): Record<string, string> {
-    const keys = ["order","range","search","tag","file","star","pf","conv","dm","event","poll","rss","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
+    const keys = ["order","range","search","tag","lang","file","star","pf","conv","dm","event","poll","rss","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
     const p: Record<string, string> = {};
     for (const k of keys) {
       const v = str(searchParams[k]);
@@ -451,7 +461,7 @@ export default function StreamFiltersWidget() {
     saveSortPref();
     setSearchParams(
       {
-        order: undefined, range: undefined, search: undefined, tag: undefined, file: undefined,
+        order: undefined, range: undefined, search: undefined, tag: undefined, lang: undefined, file: undefined,
         star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined, poll: undefined, rss: undefined,
         dbegin: undefined, dend: undefined,
         cmin: undefined, cmax: undefined,
@@ -806,6 +816,50 @@ export default function StreamFiltersWidget() {
             </div>
           </Show>
         </div>
+
+        {/* Language — item.lang, core's per-post language guess */}
+        <Show when={(langs() ?? []).length > 1 || !!lang()}>
+          <div>
+            <button
+              onClick={() => setLangOpen((o) => !o)}
+              class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm
+                     transition-colors text-left text-muted hover:bg-elevated hover:text-txt"
+            >
+              <MdFillTranslate size={15} class="shrink-0" />
+              <span class="flex-1">{t("network.language")}</span>
+              <Show when={!!lang()}>
+                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+              </Show>
+              <Show when={langOpen()} fallback={<MdFillKeyboard_arrow_right size={15} class="shrink-0" />}>
+                <MdFillKeyboard_arrow_down size={15} class="shrink-0" />
+              </Show>
+            </button>
+            <Show when={langOpen()}>
+              <div class="pl-6 pt-1 pb-0.5 flex flex-wrap gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  pressed={!lang()}
+                  onClick={() => { sp({ lang: undefined }); setTimeout(applyNow, 0); }}
+                >
+                  {t("network.folder_all")}
+                </Button>
+                <For each={langs() ?? []}>
+                  {(l) => (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={lang() === l.lang}
+                      onClick={() => { sp({ lang: l.lang }); setTimeout(applyNow, 0); }}
+                    >
+                      {langName(l.lang)}
+                    </Button>
+                  )}
+                </For>
+              </div>
+            </Show>
+          </div>
+        </Show>
 
         {/* Date range */}
         <div>

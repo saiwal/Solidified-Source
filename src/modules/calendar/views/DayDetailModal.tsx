@@ -21,6 +21,7 @@ import { Modal } from "@ui/Modal";
 import { Motion, pop, slideDown } from "@/shared/views/anim";
 import { Button, IconButton, iconBtn } from "@ui/Button";
 import { EmptyState } from "@ui/EmptyState";
+import LocationMap from "@/shared/views/LocationMap";
 
 interface Props {
   date: string;
@@ -183,6 +184,10 @@ function EventDetailPanel(props: { event: CalEvent; onEdit: () => void; onDelete
       </Show>
 
       <CategoryChips categories={ev.categories} />
+
+      <Show when={ev.location}>
+        <LocationMap location={ev.location} />
+      </Show>
 
       <Show
         when={!confirming()}

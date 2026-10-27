@@ -9,7 +9,7 @@ import { IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 
 const ALL_PARAM_KEYS = [
-  "order", "search", "tag", "star", "pf", "conv", "dm", "event",
+  "order", "search", "tag", "lang", "star", "pf", "conv", "dm", "event",
   "dbegin", "dend", "cmin", "cmax", "cid", "gid", "xchan_label",
 ] as const;
 
@@ -20,6 +20,7 @@ function paramsToNetworkParams(params: Record<string, string>): NetworkParams {
   if (params.order && params.order !== "created") p.order = params.order as NetworkParams["order"];
   if (params.search)  p.search  = params.search;
   if (params.tag)     p.tag     = params.tag;
+  if (params.lang)    p.lang    = params.lang;
   if (params.star  === "1") p.star  = 1;
   if (params.pf    === "1") p.pf    = 1;
   if (params.conv  === "1") p.conv  = 1;

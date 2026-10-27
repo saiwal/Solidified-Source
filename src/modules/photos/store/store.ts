@@ -33,7 +33,7 @@ const [canWrite, setCanWrite]     = createSignal(false);
 
 // ─── /photos tab state (mirrors cart's store-held tab) ────────────────────────
 const PAGE = 30;
-type PhotoTab = 'photos' | 'albums' | 'uploads';
+export type PhotoTab = 'photos' | 'albums' | 'uploads' | 'map';
 const [tab, setTab]               = createSignal<PhotoTab>('photos');
 const [photoSort, setPhotoSort]   = createSignal<PhotoSort>('date');
 const [photoDir, setPhotoDir]     = createSignal<SortDir>('desc');
