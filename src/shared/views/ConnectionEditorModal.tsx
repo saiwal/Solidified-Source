@@ -490,7 +490,7 @@ function ConnectionEditorModal(props: Props) {
         </div>
 
         {/* Footer */}
-        <div class="flex items-center gap-2 px-4 py-3 border-t border-rim shrink-0">
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-rim shrink-0 flex-wrap">
           <Button
             variant={confirmDelete() ? "danger" : "ghost"}
             size="sm"
