@@ -24,7 +24,7 @@ registerModule({
       label: () => useI18n().t("widgets.chatrooms_list"),
       loader: () => import("./widgets/ChatRoomsListWidget"),
       slot: "right",
-      defaultModules: ["hq"],
+      defaultModules: [],
       contexts: "any",
       helpTarget: "widgets.chatrooms_list",
     },
