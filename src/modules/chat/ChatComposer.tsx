@@ -17,7 +17,6 @@ import { appendInsert, bbcodeToInsert } from "@/shared/editor/attachments/insert
 import { MdFillSend, MdOutlineAttach_file, MdOutlineLock } from "solid-icons/md";
 import EmojiPicker from "@/shared/editor/emoji/EmojiPicker";
 import SourceToggleButton from "@/shared/editor/components/SourceToggleButton";
-import { emojiEntryToImg } from "@utsukta/spa-core/lib/emojify";
 import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { IconButton, SplitSubmitButton } from "@/shared/editor/components/buttons";
 
@@ -132,20 +131,15 @@ export default function ChatComposer(props: Props) {
   }
 
   // The slim row's emoji picker; the toolbar's own one is hidden with it.
+  // Appended to the body like an attachment: RichEditor puts an appended
+  // suffix at the caret it tracked. Inserting into the surface directly landed
+  // at the start, since the picker's search box blurs the editor and the blur
+  // pass re-renders it.
   function insertEmoji(entry: EmojiEntry) {
-    if (store.tab() === "source") {
-      store.setBody(`${store.body()}${entry.shortname} `);
-      return;
-    }
-    const el = box?.querySelector<HTMLElement>("[contenteditable]");
-    if (!el) return;
-    el.focus();
-    // execCommand fires the surface's input event, which syncs the body.
-    document.execCommand("insertHTML", false, `${emojiEntryToImg(entry)} `);
+    store.setBody(`${store.body()}${entry.shortname} `);
   }
 
   let fileInput: HTMLInputElement | undefined;
-  let box: HTMLDivElement | undefined;
   const attach: AttachmentActions = {
     openFile: () => fileInput?.click(),
     openBrowse: () => setPickerOpen(true),
@@ -172,7 +166,7 @@ export default function ChatComposer(props: Props) {
           formatting toolbar when "Aa" is on, then a slim action row (attach,
           emoji, Aa, session encryption, source). */}
       <div
-        ref={(el) => { box = el; wiring.wrapperRef(el); }}
+        ref={wiring.wrapperRef}
         class="rounded-2xl border border-rim bg-elevated focus-within:border-rim-strong transition-colors"
       >
         <RichEditor

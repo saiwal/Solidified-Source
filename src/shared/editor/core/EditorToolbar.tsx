@@ -195,6 +195,10 @@ export default function EditorToolbar(props: Props) {
     if (!sel || sel.rangeCount === 0) return;
     const r = sel.getRangeAt(0);
     if (!inEditor(r)) return;
+    // Only while the surface has focus, as in RichEditor's trackCaret: the
+    // blur pass's innerHTML swap collapses the selection to the start, and the
+    // selectionchange it queues would record that as the insert position.
+    if (!props.editorRef()?.contains(document.activeElement)) return;
     lastRange = r.cloneRange();
     const surface = props.editorRef();
     if (!surface) return;
@@ -211,17 +215,15 @@ export default function EditorToolbar(props: Props) {
     const el = props.editorRef();
     if (!el) return undefined;
     el.focus();
-    const sel = window.getSelection();
-    const cur = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-    // Refocusing a contenteditable whose selection was taken over by a panel
-    // input gives it back *collapsed* in Chrome — so `cur` is in the editor
-    // and the old check kept it, and every command that needs a selection
-    // (createLink above all) ran against an empty range and did nothing
-    // visible. lastRange only holds a non-collapsed range while the user's
-    // last in-editor selection really was one, so preferring it here can't
-    // resurrect a selection they already dismissed.
-    const stale = !cur || !inEditor(cur) || (cur.collapsed && !lastRange?.collapsed);
-    if (lastRange && stale && lastRange.startContainer.isConnected) {
+    // Always put lastRange back. Refocusing a contenteditable whose selection
+    // a panel input took over gives it back collapsed at the *start* in
+    // Chrome, which still looks like a valid in-editor caret — so a check on
+    // `cur` kept it, and inserts after a panel (quote author, link, media…)
+    // landed at the start. lastRange is the latest in-editor selection: any
+    // click or keystroke in the surface updates it, so this can't resurrect
+    // one the user moved away from.
+    if (lastRange?.startContainer.isConnected) {
+      const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(lastRange);
     }
@@ -263,6 +265,20 @@ export default function EditorToolbar(props: Props) {
   const insertBlock = (html: string) => {
     if (!focusEditor()) return;
     document.execCommand("insertHTML", false, html + ZWSP);
+  };
+
+  /**
+   * formatBlock with insertBlock's trailing anchor: converting the last line
+   * into a <pre> or <blockquote> left nothing after it, so the caret could
+   * never leave the block.
+   */
+  const formatBlockEscapable = (tag: "pre" | "blockquote") => {
+    exec("formatBlock", tag);
+    const surface = props.editorRef();
+    const sel = window.getSelection();
+    let n: Node | null = sel?.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    while (n && n.parentNode !== surface) n = n.parentNode;
+    if (n?.nodeName.toLowerCase() === tag && !n.nextSibling) n.parentNode!.appendChild(document.createTextNode(ZWSP));
   };
 
   const wrapHtml = (open: string, close: string) => {
@@ -399,7 +415,7 @@ export default function EditorToolbar(props: Props) {
     // formatBlock converts the current line so the user can type straight into
     // an empty quote — but it can't carry an author, so a named quote always
     // wraps instead, leaving an anchor past the block either way.
-    if (!author && !editorHasSelection()) { exec("formatBlock", "blockquote"); return; }
+    if (!author && !editorHasSelection()) { formatBlockEscapable("blockquote"); return; }
     const open = author ? `<span class="bb-quote">${author} wrote:</span><blockquote>` : "<blockquote>";
     wrapHtml(open, `</blockquote>${ZWSP}`);
   };
@@ -440,7 +456,7 @@ export default function EditorToolbar(props: Props) {
       // Same trailing anchor as insertBlock, for an inline <code>.
       wrapHtml("<code>", `</code>${ZWSP}`);
     } else {
-      exec("formatBlock", "pre");
+      formatBlockEscapable("pre");
     }
   };
 

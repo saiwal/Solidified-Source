@@ -32,7 +32,6 @@ import {
   type TagState,
   type TagItem,
 } from "../tag/useTag";
-import { htmlToSource } from "../core/htmlToSource";
 import type { MimeType } from "../types/editor.types";
 
 export interface MentionEmojiWiringOptions {
@@ -144,14 +143,20 @@ export function useMentionEmojiWiring(
     tag?.close();
   });
 
+  // Sync through RichEditor's own input handler, not opts.setBody: that
+  // handler records the body it echoed (domSig). Bypassing it made RichEditor
+  // read ":smile: " as the old ":smi" plus an appended "le: " (its
+  // attachment-insert path) and re-insert that suffix at the caret.
+  function syncFromEditor(editor: HTMLDivElement) {
+    editor.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
   function selectMention(entry?: MentionEntry) {
     const e = entry ?? mention.filtered()[mention.activeIdx()];
     if (!e) return;
     const editor = getEditor();
     if (editor) {
-      mention.insertWysiwyg(e, () =>
-        opts.setBody(htmlToSource(editor.innerHTML, opts.mimetype())),
-      );
+      mention.insertWysiwyg(e, () => syncFromEditor(editor));
       return;
     }
     const ta = getTA();
@@ -163,9 +168,7 @@ export function useMentionEmojiWiring(
     if (!e) return;
     const editor = getEditor();
     if (editor) {
-      emoji.insertWysiwyg(e, () =>
-        opts.setBody(htmlToSource(editor.innerHTML, opts.mimetype())),
-      );
+      emoji.insertWysiwyg(e, () => syncFromEditor(editor));
       return;
     }
     const ta = getTA();
@@ -178,9 +181,7 @@ export function useMentionEmojiWiring(
     if (!e) return;
     const editor = getEditor();
     if (editor) {
-      tag.insertWysiwyg(e, () =>
-        opts.setBody(htmlToSource(editor.innerHTML, opts.mimetype())),
-      );
+      tag.insertWysiwyg(e, () => syncFromEditor(editor));
       return;
     }
     const ta = getTA();

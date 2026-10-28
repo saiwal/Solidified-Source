@@ -199,9 +199,31 @@ export default function RichEditor(props: Props) {
     if (!editorRef || caretOffset === null || !domSig?.startsWith(`${mime()} `)) return false;
     const prev = domSig.slice(mime().length + 1);
     if (!prev || !props.body.startsWith(prev) || props.body === prev) return false;
-    const suffix = props.body.slice(prev.length).replace(/^\n/, "");
+    const raw = props.body.slice(prev.length);
+    const suffix = raw.replace(/^\n/, "");
+    let html = sourceToHtml(suffix, mime()).trim();
+    // appendInsert (attachments) always leaves a newline at the boundary and
+    // stays a block. Without one it is an inline append (chat's emoji picker),
+    // but marked wraps even ":smile: " in a <p>, which landed on a line of its
+    // own. marked also trims the trailing space, so put that back.
+    const inline = !raw.startsWith("\n") && !prev.endsWith("\n");
+    if (inline && html.startsWith("<p>") && html.endsWith("</p>") && !html.includes("<p", 1)) {
+      html = html.slice(3, -4) + (/\s$/.test(suffix) ? " " : "");
+    }
     const range = rangeAtOffset(editorRef, caretOffset);
-    range.insertNode(range.createContextualFragment(sourceToHtml(suffix, mime())));
+    const frag = range.createContextualFragment(html);
+    const last = frag.lastChild;
+    range.insertNode(frag);
+    // Caret after the insert, so the next one (or typing) follows it — same
+    // focus condition as the re-render effect below.
+    const active = document.activeElement;
+    if (last && (editorRef.contains(active) || active === document.body || active === null)) {
+      range.setStartAfter(last);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
     const next = htmlToSource(editorRef.innerHTML, mime());
     domSig = `${mime()} ${next}`;
     hydrateShareEmbeds(editorRef);
@@ -344,6 +366,12 @@ export default function RichEditor(props: Props) {
     // replaces every node, so the range the toolbar saved to insert at is
     // detached and the insert lands at the start of the surface instead.
     if (wrapperEl?.contains(e.relatedTarget as Node)) return;
+    // Same for the toolbar's insert dialogs (card, map, LaTeX, diagram,
+    // drawing): @ui/Modal portals to <body>, outside wrapperEl, so the check
+    // above missed them and every insert landed at the start. A dialog that
+    // holds the editor itself (ComposerModal) is ordinary focus movement.
+    const dialog = (e.relatedTarget as Element | null)?.closest?.("dialog");
+    if (dialog && !dialog.contains(editorRef)) return;
     // The window lost focus (alt-tab), not the editor: it stays the
     // activeElement, and re-rendering would drop the caret to the start.
     if (document.activeElement === editorRef) return;
