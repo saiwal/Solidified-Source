@@ -29,6 +29,7 @@ import {
   MdFillCloud_upload, MdOutlineVisibility_off,
   MdFillCheck_box, MdFillCheck_box_outline_blank,
   MdFillArrow_upward, MdFillArrow_downward,
+  MdOutlineLocation_on, MdOutlineLocation_off,
 } from "solid-icons/md";
 import PhotoSwipe from "photoswipe";
 import "photoswipe/style.css";
@@ -44,7 +45,8 @@ import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "@/shared/stream/types";
 import type { PhotoComment, Album, Photo, SortDir } from "../api/api";
-import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetchAlbums, fetchPhotoAlbum, variantSrc, saveAcl } from "../api/api";
+import { uploadPhotoEdit, uploadNewPhoto, photoDownloadUrl, downloadPhotos, fetchAlbums, fetchPhotoAlbum, variantSrc, saveAcl, batchSetLocation } from "../api/api";
+import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import AclPicker, { entryKey, aclPayload, type AclEntry, type AclMode } from "@/shared/editor/components/AclPicker";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { humanBytes } from "@/shared/lib/quota-format";
@@ -60,6 +62,7 @@ import { FileDropZone } from "@ui/FileDropZone";
 import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
+const MapPickerModal = lazy(() => import("@/shared/editor/map/MapPickerModal"));
 const PhotoMap = lazy(() => import("../components/PhotoMap"));
 
 // The album/image :datum route param isn't reachable via usePageNick/
@@ -308,6 +311,25 @@ function SelectToggle(props: { sel: PhotoSelection }) {
 function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
   const { t } = useI18n();
   const sel = props.sel;
+  const [picking, setPicking] = createSignal(false);
+  const [locating, setLocating] = createSignal(false);
+
+  // One location for every selected photo ("" removes it). The Map tab's pins
+  // are cached, so they're invalidated rather than left stale.
+  async function applyLocation(coord: string) {
+    setPicking(false);
+    setLocating(true);
+    try {
+      const done = await batchSetLocation(sel.nick(), Array.from(sel.selected()), coord);
+      toast.success(t(coord ? "photos.location_set_n" : "photos.location_removed_n", { n: done.length }));
+      void queryClient.invalidateQueries({ queryKey: ["photo-pins"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLocating(false);
+    }
+  }
+
   return (
     <>
       <Show when={sel.selectMode() && sel.selected().size > 0}>
@@ -336,6 +358,24 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
                   {(a) => <option value={a.folder}>{a.album}</option>}
                 </For>
               </Select>
+              <Menu
+                label={t("photos.location_menu")}
+                trigger={(p, open) => (
+                  <Button variant="ghost" size="sm" pressed={open()} disabled={locating()} {...p}>
+                    <MdOutlineLocation_on size={14} />
+                    {locating() ? t("photos.location_saving") : t("photos.location_menu")}
+                  </Button>
+                )}
+              >
+                <MenuItem icon={<MdOutlineLocation_on size={15} />} onClick={() => setPicking(true)}>
+                  {t("photos.location_set_selected")}
+                </MenuItem>
+                {/* Removing wipes the EXIF position for good — confirm first. */}
+                <MenuItem icon={<MdOutlineLocation_off size={15} />}
+                  onClick={() => { if (confirm(t("photos.location_remove_confirm", { n: sel.selected().size }))) void applyLocation(""); }}>
+                  {t("photos.location_remove_selected")}
+                </MenuItem>
+              </Menu>
             </Show>
             <Show when={canWrite()}>
             <Show when={sel.confirmBatch()} fallback={
@@ -359,6 +399,14 @@ function SelectionBar(props: { sel: PhotoSelection; folder?: string }) {
             </Show>
           </div>
         </Card>
+      </Show>
+
+      <Show when={picking()}>
+        <MapPickerModal
+          onPick={(c) => void applyLocation(`${c.lat} ${c.lon}`)}
+          actionLabel={t("photos.location_apply_n", { n: sel.selected().size })}
+          onClose={() => setPicking(false)}
+        />
       </Show>
 
       <Show when={sel.selectMode()}>

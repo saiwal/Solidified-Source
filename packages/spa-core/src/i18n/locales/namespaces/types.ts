@@ -2179,6 +2179,14 @@ export type RawDictionary = {
     location_open_osm:string;
     location_hint:    string;
     location_local_note:string;
+    location_menu: string;
+    location_saving: string;
+    location_set_selected: string;
+    location_remove_selected: string;
+    location_remove_confirm: string;
+    location_apply_n: string;
+    location_set_n: string;
+    location_removed_n: string;
     map_empty:        string;
     map_empty_owner:  string;
     loading_more:     string;

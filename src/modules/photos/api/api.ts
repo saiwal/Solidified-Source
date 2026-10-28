@@ -398,6 +398,16 @@ export async function updatePhotoLocation(nick: string, resourceId: string, coor
   return ((await res.json()).data?.coord ?? '') as string;
 }
 
+/** Set ("lat lon") or clear ("") the location of several photos; returns the ids updated. */
+export async function batchSetLocation(nick: string, resourceIds: string[], coord: string): Promise<string[]> {
+  const res = await apiFetch(`/spa/photos/${nick}/images/location`, {
+    method: 'POST',
+    body: JSON.stringify({ resource_ids: resourceIds, coord }),
+  });
+  if (!res.ok) throw await apiError(res);
+  return ((await res.json()).data?.updated ?? []) as string[];
+}
+
 export async function updatePhotoTitle(nick: string, resourceId: string, title: string): Promise<void> {
   const { getCsrfToken } = await import('@utsukta/spa-core/lib/csrf');
   const token = await getCsrfToken().catch(() => '');
