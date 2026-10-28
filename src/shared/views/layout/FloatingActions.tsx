@@ -90,11 +90,13 @@ export default function FloatingActions(props: {
   return (
     <>
       <Show when={dialOpen()}>
-        <div class="fixed inset-0 z-50 bg-black/30" aria-hidden="true" onClick={close} />
+        <div class="fixed inset-0 z-[25] bg-black/30" aria-hidden="true" onClick={close} />
       </Show>
 
+      {/* z-[25]: under the drawers' backdrop (z-30) and the drawers/right
+          sidebar (z-40), over sticky page headers (z-10/z-20). */}
       <div
-        class={`fixed z-50 right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
+        class={`fixed z-[25] right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
                ${props.hidesRightSidebar ? "xl:right-6" : "xl:right-[19.5rem]"}
                flex flex-col-reverse items-end gap-2`}
         // Lift the stack above the minimized-composer pills (ModalHost).

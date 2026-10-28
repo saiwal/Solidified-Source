@@ -35,7 +35,7 @@ registerModule({
       label: () => useI18n().t("widgets.delivery_health"),
       loader: () => import("./widgets/DeliveryHealthWidget"),
       slot: "right",
-      defaultModules: [],
+      defaultModules: ["hq"],
       contexts: ["hq", "network"],
       visitorVisible: false,
     },
