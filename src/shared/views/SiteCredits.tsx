@@ -36,7 +36,15 @@ export default function SiteCredits() {
           )}
         </Show>
         {" · "}
-        {t("widgets.credits_theme")}: Solidified{__THEME_VERSION__ ? ` v${__THEME_VERSION__}` : ""}
+        {t("widgets.credits_theme")}:{" "}
+        <a
+          href="https://github.com/saiwal/Utsukta-hub-themes"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-accent hover:underline"
+        >
+          Solidified{__THEME_VERSION__ ? ` v${__THEME_VERSION__}` : ""}
+        </a>
       </p>
     </footer>
   );
