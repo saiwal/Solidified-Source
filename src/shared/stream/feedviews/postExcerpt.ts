@@ -5,11 +5,14 @@
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { parseEventData } from "@utsukta/spa-core/lib/activity.mapper";
 
-function stripHtml(html: string): string {
-  const raw = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+function decodeEntities(s: string): string {
   const el = document.createElement("textarea");
-  el.innerHTML = raw;
+  el.innerHTML = s;
   return el.value;
+}
+
+function stripHtml(html: string): string {
+  return decodeEntities(html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim());
 }
 
 // Event posts embed [event-summary]/[event-description]/… bbcode tags
@@ -30,10 +33,12 @@ export function excerptOf(post: Pick<Post, "body" | "bodyNsfw" | "eventData">, m
 
 // Skips decoration that isn't post content: the quoted author's avatar in a
 // reshare header (bbcode.ts `share-avatar`) and inline emoji (emojify.ts).
+// The regex reads the raw attribute, still entity-encoded ("?w=1&amp;h=2"),
+// so decode it before it's handed to a JSX src.
 export function firstImageSrc(body: string): string | undefined {
   for (const m of body.matchAll(/<img[^>]*>/gi)) {
     if (/class="[^"]*\b(share-avatar|emoji)\b/i.test(m[0])) continue;
     const src = m[0].match(/src="([^"]+)"/i)?.[1];
-    if (src) return src;
+    if (src) return decodeEntities(src);
   }
 }
