@@ -6,7 +6,7 @@ import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillChevron_left, MdFillChevron_right } from "solid-icons/md";
 import {
-  events, loading, loadCalendar, monthRange, calendarRefreshVersion,
+  events, loading, loadCalendar, calendarRefreshVersion,
   viewType, anchor, setAnchor, type ViewType,
 } from "../store";
 import type { CalEvent, CalRange } from "../api";
@@ -27,14 +27,23 @@ function rangeForView(view: ViewType, anchor: Date): CalRange {
     oneYearOut.setFullYear(oneYearOut.getFullYear() + 1);
     return { start: isoDateStr(now), end: isoDateStr(oneYearOut) };
   }
+  // Grid views fetch every visible cell (a month grid shows the neighbouring
+  // months' days too) plus a day either side: the server reads these bare dates
+  // as UTC midnight, so without the pad a viewer east/west of UTC loses events
+  // near the edges. The views filter by local day, so the extra rows are inert.
+  const mondayStart = isFeatureEnabled("cal_first_day");
+  let s: Date, e: Date;
   if (view === "month") {
-    return monthRange(anchor.getFullYear(), anchor.getMonth() + 1);
+    s = startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1), mondayStart);
+    e = addDays(startOfWeek(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0), mondayStart), 7);
+  } else if (view === "week") {
+    s = startOfWeek(anchor, mondayStart);
+    e = addDays(s, 7);
+  } else {
+    s = anchor;
+    e = addDays(anchor, 1);
   }
-  if (view === "week") {
-    const s = startOfWeek(anchor, isFeatureEnabled("cal_first_day"));
-    return { start: isoDateStr(s), end: isoDateStr(addDays(s, 7)) };
-  }
-  return { start: isoDateStr(anchor), end: isoDateStr(addDays(anchor, 1)) };
+  return { start: isoDateStr(addDays(s, -1)), end: isoDateStr(addDays(e, 1)) };
 }
 
 export default function CalendarContentWidget() {

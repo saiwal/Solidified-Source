@@ -5,6 +5,8 @@ export interface PollOption {
 
 export interface PollData {
   multiple: boolean;
+  /** Server-side core rule: own copy, not the poll's owner, may still comment. */
+  can_vote: boolean;
   end_time: string | null;
   closed: string | null;
   options: PollOption[];

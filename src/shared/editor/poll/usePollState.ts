@@ -6,11 +6,13 @@
  */
 
 import { createSignal } from "solid-js";
+import { useI18n } from "@utsukta/spa-core/i18n";
 
 export interface PollFormPayload {
   answers: string[];
   expireValue: string;
   expireUnit: string;
+  multiple: boolean;
 }
 
 export interface PollState {
@@ -24,6 +26,8 @@ export interface PollState {
   setExpireValue: (v: string) => void;
   expireUnit: () => string;
   setExpireUnit: (v: string) => void;
+  multiple: () => boolean;
+  setMultiple: (v: boolean) => void;
   reset: () => void;
   /**
    * Returns null when the poll is off. Throws when on but fewer than 2
@@ -33,10 +37,12 @@ export interface PollState {
 }
 
 export function usePollState(): PollState {
+  const { t } = useI18n();
   const [enabled, setEnabled] = createSignal(false);
   const [answers, setAnswers] = createSignal<string[]>(["", ""]);
   const [expireValue, setExpireValue] = createSignal("1");
   const [expireUnit, setExpireUnit] = createSignal("Days");
+  const [multiple, setMultiple] = createSignal(false);
 
   function updateAnswer(i: number, val: string) {
     setAnswers((prev) => prev.map((a, j) => (j === i ? val : a)));
@@ -53,15 +59,16 @@ export function usePollState(): PollState {
     setAnswers(["", ""]);
     setExpireValue("1");
     setExpireUnit("Days");
+    setMultiple(false);
   }
 
   function toFormPayload(): PollFormPayload | null {
     if (!enabled()) return null;
     const filled = answers().filter((a) => a.trim());
     if (filled.length < 2) {
-      throw new Error("At least 2 poll options are required.");
+      throw new Error(t("editor.poll_min_answers"));
     }
-    return { answers: filled, expireValue: expireValue(), expireUnit: expireUnit() };
+    return { answers: filled, expireValue: expireValue(), expireUnit: expireUnit(), multiple: multiple() };
   }
 
   return {
@@ -75,6 +82,8 @@ export function usePollState(): PollState {
     setExpireValue,
     expireUnit,
     setExpireUnit,
+    multiple,
+    setMultiple,
     reset,
     toFormPayload,
   };

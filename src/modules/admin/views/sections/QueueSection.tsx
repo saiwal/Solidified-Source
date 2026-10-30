@@ -6,6 +6,8 @@ import { MdOutlineRefresh } from "solid-icons/md";
 import { fetchAdminQueue, adminQueueAction } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
+import { DataTable } from "@ui/DataTable";
+import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
 
 export default function QueueSection() {
   const { t } = useI18n();
@@ -17,6 +19,37 @@ export default function QueueSection() {
     await adminQueueAction(action, posturl);
     refetch();
   }
+
+  type QueueItem = NonNullable<ReturnType<typeof data>>["items"][number];
+  const columns = (): DataTableColumn<QueueItem>[] => [
+    {
+      key: "dest",
+      header: t("admin.col_destination"),
+      class: "text-txt truncate",
+      cell: (item) => <span title={item.outq_posturl}>{item.outq_posturl}</span>,
+    },
+    { key: "updated", header: t("admin.col_updated"), width: 8, class: "text-muted", cell: (item) => fmtDate(item.outq_updated) },
+    { key: "priority", header: t("admin.col_priority"), width: 6, class: "text-muted", cell: (item) => item.outq_priority },
+    ...(expert() ? [{
+      key: "actions",
+      header: "",
+      width: 8,
+      class: "flex justify-end gap-1",
+      cell: (item: QueueItem) => (
+        <For each={[
+          ["deliver", t("admin.queue_deliverhub"), "↻"],
+          ["empty", t("admin.queue_emptyhub"), "🗑"],
+          ["drop", t("admin.queue_drophub"), "✕"],
+        ] as const}>
+          {([action, label, glyph]) => (
+            <Button variant="ghost" size="sm" title={label} aria-label={label} onClick={() => act(action, item.outq_posturl)}>
+              {glyph}
+            </Button>
+          )}
+        </For>
+      ),
+    }] : []),
+  ];
 
   return (
     <SubPageContent
@@ -50,56 +83,12 @@ export default function QueueSection() {
             </Show>
 
             <Show when={d().items.length > 0}>
-              <div class="rounded-lg border border-rim overflow-x-auto">
-                <table class="w-full text-xs">
-                  <thead>
-                    <tr class="border-b border-rim bg-elevated">
-                      <th class="px-3 py-2 text-left font-medium text-muted">{t("admin.col_destination")}</th>
-                      <th class="px-3 py-2 text-left font-medium text-muted hidden sm:table-cell">{t("admin.col_updated")}</th>
-                      <th class="px-3 py-2 text-left font-medium text-muted hidden md:table-cell">{t("admin.col_priority")}</th>
-                      <Show when={expert()}>
-                        <th class="px-3 py-2 text-left font-medium text-muted">{t("admin.col_actions")}</th>
-                      </Show>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <For each={d().items}>
-                      {(item) => (
-                        <tr class="border-b border-rim last:border-0 hover:bg-elevated/50 transition-colors">
-                          <td class="px-3 py-2 text-txt truncate max-w-[16rem]" title={item.outq_posturl}>
-                            {item.outq_posturl}
-                          </td>
-                          <td class="px-3 py-2 text-muted hidden sm:table-cell">{fmtDate(item.outq_updated)}</td>
-                          <td class="px-3 py-2 text-muted hidden md:table-cell">{item.outq_priority}</td>
-                          <Show when={expert()}>
-                            <td class="px-3 py-2">
-                              <div class="flex flex-wrap gap-1">
-                                <For each={[
-                                  ["deliver", t("admin.queue_deliverhub"), "↻"],
-                                  ["empty", t("admin.queue_emptyhub"), "🗑"],
-                                  ["drop", t("admin.queue_drophub"), "✕"],
-                                ] as const}>
-                                  {([action, label, glyph]) => (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      title={label}
-                                      aria-label={label}
-                                      onClick={() => act(action, item.outq_posturl)}
-                                    >
-                                      {glyph}
-                                    </Button>
-                                  )}
-                                </For>
-                              </div>
-                            </td>
-                          </Show>
-                        </tr>
-                      )}
-                    </For>
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={columns()}
+                rows={d().items}
+                rowKey={(item) => item.outq_posturl}
+                class="rounded-lg border border-rim"
+              />
             </Show>
           </div>
         )}

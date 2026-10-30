@@ -2,6 +2,11 @@ import type { CalEvent } from "../api";
 
 export const HOUR_H = 56; // px per hour in time grid
 
+/** Display title; birthdays (core's update_birthdays() cron) get a cake marker. */
+export function evTitle(ev: CalEvent, fallback: string): string {
+  return (ev.etype === "birthday" ? "🎂 " : "") + (ev.title || fallback);
+}
+
 export function isoDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }

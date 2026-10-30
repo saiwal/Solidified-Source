@@ -4,6 +4,7 @@ import type { PollState } from "./usePollState";
 import { MdOutlineClose } from "solid-icons/md";
 import { IconButton } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
+import { Switch } from "@ui/Toggle";
 
 export interface PollPanelProps {
   poll: PollState;
@@ -42,6 +43,10 @@ const PollPanel: Component<PollPanelProps> = (props) => {
           </div>
         )}
       </Index>
+      <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
+        <Switch checked={poll.multiple()} onChange={poll.setMultiple} />
+        {t("editor.poll_multiple")}
+      </label>
       <div class="flex flex-wrap items-center gap-3 pt-1">
         <Show when={poll.answers().length < 10}>
           <button
@@ -69,10 +74,10 @@ const PollPanel: Component<PollPanelProps> = (props) => {
             value={poll.expireUnit()}
             onChange={(e) => poll.setExpireUnit(e.currentTarget.value)}
           >
-            <option value="Days">Days</option>
-            <option value="Hours">Hours</option>
-            <option value="Minutes">Minutes</option>
-            <option value="Weeks">Weeks</option>
+            <option value="Days">{t("editor.poll_unit_days")}</option>
+            <option value="Hours">{t("editor.poll_unit_hours")}</option>
+            <option value="Minutes">{t("editor.poll_unit_minutes")}</option>
+            <option value="Weeks">{t("editor.poll_unit_weeks")}</option>
           </Select>
         </div>
       </div>

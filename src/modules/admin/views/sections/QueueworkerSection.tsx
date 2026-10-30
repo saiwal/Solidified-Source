@@ -12,18 +12,19 @@ import { DataTable } from "@ui/DataTable";
 import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
 
 const JOB_COLUMNS: DataTableColumn<WorkerJob>[] = [
-  { key: "id", header: "ID", class: "text-xs font-mono text-muted", cell: (job) => job.id },
+  { key: "id", header: "ID", width: 5, class: "text-xs font-mono text-muted", cell: (job) => job.id },
   {
     key: "cmd",
     header: "Command",
-    class: "text-xs font-mono text-txt",
-    cell: (job) => <span class="block max-w-[10rem] truncate">{job.cmd || "—"}</span>,
+    class: "text-xs font-mono text-txt truncate",
+    cell: (job) => job.cmd || "—",
   },
-  { key: "priority", header: "Priority", class: "text-xs text-muted", cell: (job) => job.priority },
+  { key: "priority", header: "Priority", width: 6, class: "text-xs text-muted", cell: (job) => job.priority },
   {
     key: "status",
     header: "Status",
-    class: "text-xs hidden sm:table-cell",
+    width: 6,
+    class: "text-xs",
     cell: (job) => (
       <Show when={job.reservation_id} fallback={<span class="text-muted">queued</span>}>
         <span class="text-warning-txt">active</span>

@@ -324,6 +324,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
         payload.poll_answers = pollPayload.answers;
         payload.poll_expire_value = pollPayload.expireValue;
         payload.poll_expire_unit = pollPayload.expireUnit;
+        payload.poll_multiple_answers = pollPayload.multiple ? 1 : 0;
       }
 
       const res = await fetch("/spa/item", {

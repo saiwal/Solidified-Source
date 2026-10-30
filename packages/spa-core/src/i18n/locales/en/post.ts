@@ -111,4 +111,13 @@ export const post: RawDictionary["post"] = {
   reply_badge:           "Reply",
   reply_indicator:       "This is a reply, shown standalone because the stream is unthreaded",
   view_in_context:       "View in context",
+  // poll card
+  poll_vote:            "Vote",
+  poll_voting:          "Voting…",
+  poll_votes_one:       "1 vote",
+  poll_votes:           "{{count}} votes",
+  poll_ended:           "Poll has ended",
+  poll_ends:            "Ends {{when}}",
+  poll_vote_submitted:  "Your vote has been submitted. Updates may not appear instantly.",
+  poll_vote_failed:     "Vote failed",
 };

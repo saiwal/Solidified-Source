@@ -12,6 +12,8 @@ export interface CalEvent {
   allDay: boolean;
   nofinish: boolean;
   timezone: string;
+  /** Core's event.etype — "birthday" rows come from its daily birthday cron. */
+  etype?: string;
   rw: boolean;
   /** Channel-calendar events: false when the owner isn't the author (delete only). */
   editable?: boolean;

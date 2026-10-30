@@ -3,6 +3,7 @@ import type { CalEvent } from "../api";
 import {
   HOUR_H, isoDateStr, todayKey, prevDay,
   columnLayout, eventTopPx, eventHeightPx, eventChip,
+  evTitle,
 } from "./calUtils";
 import NowLine from "./NowLine";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -70,7 +71,7 @@ export default function DayView(props: Props) {
                   style={chip.style}
                   onClick={() => props.onDayClick(dateStr())}
                 >
-                  {ev.title || t("calendar.no_title")}
+                  {evTitle(ev, t("calendar.no_title"))}
                 </div>
               );
             }}
@@ -142,7 +143,7 @@ export default function DayView(props: Props) {
                     }}
                     onClick={() => props.onDayClick(dateStr())}
                   >
-                    <div class="font-semibold truncate">{item.event.title || t("calendar.no_title")}</div>
+                    <div class="font-semibold truncate">{evTitle(item.event, t("calendar.no_title"))}</div>
                     <div class="opacity-70 text-[0.625rem] tabular-nums">
                       {startLbl}{endLbl ? ` – ${crossesMidnight ? endLbl + " →" : endLbl}` : ""}
                     </div>

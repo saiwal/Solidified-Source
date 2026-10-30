@@ -3,6 +3,7 @@ import type { CalEvent } from "../api";
 import {
   HOUR_H, localDay, startOfWeek, addDays, isoDateStr, todayKey,
   weekLayout, columnLayout, eventTopPx, eventHeightPx, eventChip,
+  evTitle,
 } from "./calUtils";
 import NowLine from "./NowLine";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -113,7 +114,7 @@ export default function WeekView(props: Props) {
                           }}
                           onClick={() => props.onDayClick(weekDates()[span.startCol])}
                         >
-                          {!span.startsBefore && (span.event.title || t("calendar.no_title"))}
+                          {!span.startsBefore && evTitle(span.event, t("calendar.no_title"))}
                         </div>
                       );
                     }}
@@ -189,7 +190,7 @@ export default function WeekView(props: Props) {
                           }}
                           onClick={() => props.onDayClick(date)}
                         >
-                          <div class="font-semibold truncate">{item.event.title || t("calendar.no_title")}</div>
+                          <div class="font-semibold truncate">{evTitle(item.event, t("calendar.no_title"))}</div>
                           <div class="opacity-70 tabular-nums">{startLbl}</div>
                         </div>
                       );

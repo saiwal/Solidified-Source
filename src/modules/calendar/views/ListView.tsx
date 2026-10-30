@@ -3,7 +3,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillLocation_on, MdFillOpen_in_new, MdOutlineCalendar_today } from "solid-icons/md";
 import DOMPurify from "dompurify";
 import type { CalEvent } from "../api";
-import { isoDateStr, localDay, fmtEventRange } from "./calUtils";
+import { isoDateStr, localDay, fmtEventRange, evTitle } from "./calUtils";
 import CategoryChips from "./CategoryChips";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { Motion, slideDown } from "@/shared/views/anim";
@@ -76,7 +76,7 @@ export default function ListView(props: Props) {
                           />
                           <span class="min-w-0 flex-1">
                             <span class={`block text-sm font-medium truncate ${isPast ? "text-muted" : open() ? "text-accent-txt" : "text-txt"}`}>
-                              {ev.title || t("calendar.no_title")}
+                              {evTitle(ev, t("calendar.no_title"))}
                             </span>
                             <span class="block text-xs text-muted mt-0.5 tabular-nums">
                               {fmtEventRange(ev, locale(), t("calendar.all_day"))}

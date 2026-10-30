@@ -616,18 +616,26 @@ export interface SheetProps {
 export interface DataTableColumn<T> {
   /** Stable column id, also the sort key when `sortable`. */
   key: string;
-  header: JSX.Element;
+  /** Plain text: it is repeated as the inline label once rows fold. "" = no label (an actions column). */
+  header: string;
   /** Cell renderer. */
   cell: (row: T) => JSX.Element;
   /** Sort this column; header becomes a button. */
   sortable?: boolean;
-  /** Classes on the th/td (alignment, responsive hiding). */
+  /** Fixed width in rem, padding included. Absent = shares the spare width (at least 10rem). */
+  width?: number;
+  /** Classes on the cell (alignment, `truncate`, text colour). */
   class?: string;
 }
 
 /**
  * A sortable table. `sort` is controlled: the call site owns the key/direction
  * and re-sorts `rows`; the header renders aria-sort and calls `onSort`.
+ *
+ * Never hides a column or scrolls sideways: once the container is narrower
+ * than the columns' widths, the header row hides and each row folds — the
+ * first column and any unlabelled (actions) column on the top line, the rest
+ * wrapping beneath as `label value` pairs. Folded, there is no header to sort by.
  */
 export interface DataTableProps<T> {
   columns: DataTableColumn<T>[];

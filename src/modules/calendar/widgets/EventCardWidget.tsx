@@ -10,6 +10,7 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillEvent } from "solid-icons/md";
+import { evTitle } from "../views/calUtils";
 import { fetchEvents, type CalEvent } from "../api";
 import { Card } from "@ui/Card";
 
@@ -62,7 +63,7 @@ export default function EventCardWidget(props: WidgetProps) {
               <div class="px-4 py-3 flex items-start gap-2">
                 <MdFillEvent size={18} class="text-accent-txt shrink-0 mt-0.5" />
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-txt">{ev().title}</p>
+                  <p class="text-sm font-medium text-txt">{evTitle(ev(), "")}</p>
                   <p class="text-xs text-muted mt-0.5">{eventDate(ev(), locale())}</p>
                   <Show when={ev().location}>
                     <p class="text-xs text-muted mt-0.5 truncate">{ev().location}</p>

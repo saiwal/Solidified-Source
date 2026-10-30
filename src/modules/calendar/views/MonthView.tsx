@@ -1,6 +1,6 @@
 import { For, Show, createMemo } from "solid-js";
 import type { CalEvent } from "../api";
-import { weeksForMonth, weekLayout, todayKey, eventChip } from "./calUtils";
+import { weeksForMonth, weekLayout, todayKey, eventChip, evTitle } from "./calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 
@@ -85,7 +85,7 @@ export default function MonthView(props: Props) {
                                 class={`block text-[0.625rem] leading-[18px] rounded-md px-1.5 mb-0.5 font-medium truncate ${chip.class}`}
                                 style={chip.style}
                               >
-                                {ev.title || t("calendar.no_title")}
+                                {evTitle(ev, t("calendar.no_title"))}
                               </span>
                             );
                           }}
@@ -126,7 +126,7 @@ export default function MonthView(props: Props) {
                                 }}
                                 onClick={() => props.onDayClick(weekDates[span.startCol])}
                               >
-                                {!span.startsBefore && (span.event.title || t("calendar.no_title"))}
+                                {!span.startsBefore && evTitle(span.event, t("calendar.no_title"))}
                               </div>
                             );
                           }}

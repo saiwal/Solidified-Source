@@ -6,7 +6,7 @@ import {
   fetchAdminAccounts, adminAccountAction, adminPendingAction,
   fetchAdminServiceClasses, setAccountServiceClass, setAccountExpires, setAccountPassword,
 } from "../../api";
-import type { AdminAccount } from "../../types";
+import type { AdminAccount, AdminPendingAccount } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button, IconButton } from "@ui/Button";
 import { Field, Input, Select } from "@ui/Field";
@@ -15,6 +15,8 @@ import { MenuButton } from "@ui/MenuButton";
 import { Sheet } from "@ui/Sheet";
 import { Badge } from "@ui/Badge";
 import { Banner } from "@ui/Banner";
+import { DataTable } from "@ui/DataTable";
+import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
 
 export default function AccountsSection() {
   const { t } = useI18n();
@@ -58,78 +60,12 @@ export default function AccountsSection() {
                   </Badge>
                 </h3>
 
-                <div class="rounded-lg border border-rim overflow-x-auto">
-                  <table class="w-full text-sm table-fixed">
-                    <colgroup>
-                      <col class="w-auto" />
-                      <col class="hidden sm:table-column sm:w-32" />
-                      <col class="hidden md:table-column md:w-32" />
-                      <col class="w-32" />
-                      <col class="w-40" />
-                    </colgroup>
-                    <thead>
-                      <tr class="border-b border-rim bg-elevated">
-                        <th class="px-3 py-2 text-left text-xs font-medium text-muted">Email</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden sm:table-cell">Requested</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden md:table-cell">IP</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-muted">Status</th>
-                        <th class="px-3 py-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <For each={r().pending}>
-                        {(reg) => (
-                          <>
-                          <tr class="border-b border-rim last:border-0 hover:bg-elevated/50 transition-colors">
-                            <td class="px-3 py-2 text-txt truncate">{reg.reg_email}</td>
-                            <td class="px-3 py-2 text-muted hidden sm:table-cell">{fmtDate(reg.reg_created)}</td>
-                            <td class="px-3 py-2 text-muted font-mono text-xs hidden md:table-cell">{reg.reg_atip || "—"}</td>
-                            <td class="px-3 py-2">
-                              <div class="flex flex-wrap gap-1">
-                                <Show when={reg.unverified}>
-                                  <Badge tone="warning">
-                                    Unverified
-                                  </Badge>
-                                </Show>
-                                <Show when={reg.expired}>
-                                  <Badge tone="danger">
-                                    Expired
-                                  </Badge>
-                                </Show>
-                              </div>
-                            </td>
-                            <td class="px-3 py-2">
-                              <div class="flex items-center gap-1.5">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => pendingAct(reg.reg_id, "approve")}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  onClick={() => pendingAct(reg.reg_id, "deny")}
-                                >
-                                  Deny
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                          <Show when={reg.msg}>
-                            <tr class="border-b border-rim last:border-0">
-                              <td colspan="5" class="px-3 pb-2 text-xs text-muted">
-                                <span class="font-medium text-txt">Message:</span> {reg.msg}
-                              </td>
-                            </tr>
-                          </Show>
-                          </>
-                        )}
-                      </For>
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  columns={pendingColumns(pendingAct)}
+                  rows={r().pending}
+                  rowKey={(reg) => reg.reg_id}
+                  class="rounded-lg border border-rim"
+                />
               </section>
             </Show>
 
@@ -141,56 +77,12 @@ export default function AccountsSection() {
                   : `Showing ${r().meta.offset + 1}–${r().meta.offset + r().data.length} of ${r().meta.root_count}`}
               </p>
 
-              <div class="rounded-lg border border-rim overflow-x-auto">
-                <table class="w-full text-sm table-fixed">
-                  <colgroup>
-                    <col class="w-auto" />
-                    <col class="hidden sm:table-column sm:w-28" />
-                    <col class="hidden md:table-column md:w-28" />
-                    <col class="hidden lg:table-column lg:w-28" />
-                    <col class="hidden md:table-column md:w-28" />
-                    <col class="hidden lg:table-column lg:w-28" />
-                    <col class="w-28" />
-                    <col class="w-40" />
-                  </colgroup>
-                  <thead>
-                    <tr class="border-b border-rim bg-elevated">
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted">{t("admin.col_email")}</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden sm:table-cell">{t("admin.col_channels")}</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden md:table-cell">{t("admin.col_created")}</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden lg:table-cell">Last login</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden md:table-cell">{t("admin.col_service_class")}</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted hidden lg:table-cell">{t("admin.col_expires")}</th>
-                      <th class="px-3 py-2 text-left text-xs font-medium text-muted">{t("admin.col_status")}</th>
-                      <th class="px-3 py-2" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <For each={r().data}>
-                      {(acc) => (
-                        <tr class="border-b border-rim last:border-0 hover:bg-elevated/50 transition-colors">
-                          <td class="px-3 py-2 text-txt truncate">{acc.account_email}</td>
-                          <td class="px-3 py-2 text-muted hidden sm:table-cell truncate">{acc.channels || "—"}</td>
-                          <td class="px-3 py-2 text-muted hidden md:table-cell">{fmtDate(acc.account_created)}</td>
-                          <td class="px-3 py-2 text-muted hidden lg:table-cell">{fmtDate(acc.account_lastlog)}</td>
-                          <td class="px-3 py-2 text-muted hidden md:table-cell truncate">{acc.account_service_class || "—"}</td>
-                          <td class="px-3 py-2 text-muted hidden lg:table-cell">{fmtDate(acc.account_expires)}</td>
-                          <td class="px-3 py-2">
-                            <Show when={Number(acc.blocked) > 0}>
-                              <Badge tone="danger">
-                                {t("admin.blocked_badge")}
-                              </Badge>
-                            </Show>
-                          </td>
-                          <td class="px-3 py-2">
-                            <AccountActions account={acc} onAct={act} onEdited={refetch} />
-                          </td>
-                        </tr>
-                      )}
-                    </For>
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={accountColumns(t, act, refetch)}
+                rows={r().data}
+                rowKey={(acc) => acc.account_id}
+                class="rounded-lg border border-rim"
+              />
 
               <div class="flex items-center gap-2">
                 <Button
@@ -218,6 +110,90 @@ export default function AccountsSection() {
       </Show>
     </SubPageContent>
   );
+}
+
+type Translate = ReturnType<typeof useI18n>["t"];
+
+function accountColumns(
+  t: Translate,
+  act: (id: number, action: "block" | "unblock" | "delete") => void,
+  refetch: () => void,
+): DataTableColumn<AdminAccount>[] {
+  return [
+    {
+      key: "email",
+      header: t("admin.col_email"),
+      class: "text-txt",
+      cell: (acc) => (
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="truncate" title={acc.account_email}>{acc.account_email}</span>
+          <Show when={Number(acc.blocked) > 0}>
+            <Badge tone="danger">{t("admin.blocked_badge")}</Badge>
+          </Show>
+        </div>
+      ),
+    },
+    { key: "channels", header: t("admin.col_channels"), width: 9, class: "text-muted truncate", cell: (acc) => acc.channels || "—" },
+    { key: "created", header: t("admin.col_created"), width: 7, class: "text-muted", cell: (acc) => fmtDate(acc.account_created) },
+    { key: "lastlog", header: "Last login", width: 7, class: "text-muted", cell: (acc) => fmtDate(acc.account_lastlog) },
+    { key: "class", header: t("admin.col_service_class"), width: 8, class: "text-muted truncate", cell: (acc) => acc.account_service_class || "—" },
+    { key: "expires", header: t("admin.col_expires"), width: 7, class: "text-muted", cell: (acc) => fmtDate(acc.account_expires) },
+    {
+      key: "actions",
+      header: "",
+      width: 8,
+      class: "flex justify-end",
+      cell: (acc) => <AccountActions account={acc} onAct={act} onEdited={refetch} />,
+    },
+  ];
+}
+
+function pendingColumns(
+  pendingAct: (reg_id: number, action: "approve" | "deny") => void,
+): DataTableColumn<AdminPendingAccount>[] {
+  return [
+    {
+      key: "email",
+      header: "Email",
+      class: "text-txt",
+      cell: (reg) => (
+        <>
+          <div class="truncate" title={reg.reg_email}>{reg.reg_email}</div>
+          <Show when={reg.msg}>
+            <p class="text-xs text-muted">
+              <span class="font-medium text-txt">Message:</span> {reg.msg}
+            </p>
+          </Show>
+        </>
+      ),
+    },
+    { key: "requested", header: "Requested", width: 7, class: "text-muted", cell: (reg) => fmtDate(reg.reg_created) },
+    { key: "ip", header: "IP", width: 9, class: "text-muted font-mono text-xs truncate", cell: (reg) => reg.reg_atip || "—" },
+    {
+      key: "status",
+      header: "Status",
+      width: 7,
+      cell: (reg) => (
+        <div class="flex flex-wrap gap-1">
+          <Show when={reg.unverified}><Badge tone="warning">Unverified</Badge></Show>
+          <Show when={reg.expired}><Badge tone="danger">Expired</Badge></Show>
+          <Show when={!reg.unverified && !reg.expired}><span class="text-muted">—</span></Show>
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      width: 10,
+      class: "flex justify-end gap-1.5",
+      cell: (reg) => (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => pendingAct(reg.reg_id, "approve")}>Approve</Button>
+          <Button variant="danger" size="sm" onClick={() => pendingAct(reg.reg_id, "deny")}>Deny</Button>
+        </>
+      ),
+    },
+  ];
 }
 
 function AccountActions(props: {

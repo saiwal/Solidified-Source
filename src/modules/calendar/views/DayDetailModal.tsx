@@ -15,7 +15,7 @@ import type { CalEvent } from "../api";
 import { deleteEvent } from "../api";
 import CategoryChips from "./CategoryChips";
 import { openEvent } from "@/shared/views/modal-host";
-import { fmtEventRange } from "./calUtils";
+import { fmtEventRange, evTitle } from "./calUtils";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { Modal } from "@ui/Modal";
 import { Motion, pop, slideDown } from "@/shared/views/anim";
@@ -111,7 +111,7 @@ export default function DayDetailModal(props: Props) {
                       />
                       <span class="min-w-0 flex-1">
                         <span class={`block text-sm font-medium leading-snug ${open() ? "text-accent-txt" : "text-txt"}`}>
-                          {ev.title || t("calendar.no_title")}
+                          {evTitle(ev, t("calendar.no_title"))}
                         </span>
                         <span class="block text-xs text-muted mt-0.5 tabular-nums">
                           {fmtEventRange(ev, locale(), t("calendar.all_day"))}

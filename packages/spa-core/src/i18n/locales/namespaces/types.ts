@@ -926,7 +926,9 @@ export type RawDictionary = {
     expires: string; expired_badge: string; expired_title: string;
     scheduled_badge: string; scheduled_title: string;
     dm_badge: string; dm_title: string; dm_to: string;
-    reply_badge: string; reply_indicator: string; view_in_context: string; comments_closed: string;
+    reply_badge: string; reply_indicator: string; view_in_context: string;
+    poll_vote: string; poll_voting: string; poll_votes_one: string; poll_votes: string;
+    poll_ended: string; poll_ends: string; poll_vote_submitted: string; poll_vote_failed: string; comments_closed: string;
   };
   editor: {
     // PostComposer
@@ -1126,6 +1128,12 @@ export type RawDictionary = {
     poll_add_answer:          string;
     poll_remove_answer:       string;
     poll_expires_label:       string;
+    poll_multiple:            string;
+    poll_min_answers:         string;
+    poll_unit_minutes:        string;
+    poll_unit_hours:          string;
+    poll_unit_days:           string;
+    poll_unit_weeks:          string;
     posting_to_wall:          string;
     posting_to_forum:         string;
     post_to_wall:             string;

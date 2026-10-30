@@ -60,6 +60,7 @@ export function mapActivityToPost(activity: any): Post {
     activity.obj_type === "Question" && activity.poll
       ? {
           multiple:     activity.poll.multiple     ?? false,
+          can_vote:     activity.poll.can_vote     ?? false,
           end_time:     activity.poll.end_time     ?? null,
           closed:       activity.poll.closed       ?? null,
           options:      Array.isArray(activity.poll.options) ? activity.poll.options : [],

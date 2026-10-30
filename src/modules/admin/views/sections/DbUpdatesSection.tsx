@@ -41,7 +41,7 @@ function dbColumns(sample: DbUpdate | undefined): DataTableColumn<DbUpdate>[] {
   return Object.keys(sample ?? {}).map((key) => ({
     key,
     header: key,
-    class: "text-xs max-w-[12rem] truncate",
+    class: "text-xs truncate",
     cell: (row) => String(row[key] ?? "—"),
   }));
 }

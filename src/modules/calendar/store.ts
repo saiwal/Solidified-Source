@@ -107,15 +107,3 @@ function rangesEqual(a?: CalRange, b?: CalRange): boolean {
   return a.start === b.start && a.end === b.end;
 }
 
-/**
- * Derive the month boundaries (YYYY-MM-DD) for a given year/month.
- * Feed these into loadCalendar() to drive month navigation.
- */
-export function monthRange(year: number, month: number): CalRange {
-  const start = new Date(Date.UTC(year, month - 1, 1));
-  const end   = new Date(Date.UTC(year, month, 1)); // exclusive: first day of NEXT month
-  return {
-    start: start.toISOString().slice(0, 10),
-    end:   end.toISOString().slice(0, 10),
-  };
-}

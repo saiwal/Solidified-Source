@@ -4,7 +4,7 @@ import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
 import { openEvent } from "@/shared/views/modal-host";
 import DayDetailModal from "@/modules/calendar/views/DayDetailModal";
-import { localDay, todayKey } from "@/modules/calendar/views/calUtils";
+import { localDay, todayKey, evTitle } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
 import { Button } from "@ui/Button";
@@ -157,7 +157,7 @@ export default function UpcomingEventsWidget() {
                     class="text-sm font-medium truncate leading-snug"
                     classList={{ "text-txt": !isPast, "text-muted": isPast }}
                   >
-                    {ev.title || "(no title)"}
+                    {evTitle(ev, "(no title)")}
                   </p>
                   <p class="text-xs text-muted mt-0.5 truncate">
                     <Show when={isToday}>

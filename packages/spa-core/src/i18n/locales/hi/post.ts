@@ -103,4 +103,13 @@ export const post: RawDictionary["post"] = {
   reply_badge:           "उत्तर",
   reply_indicator:       "यह एक उत्तर है, स्ट्रीम अनथ्रेडेड होने के कारण अलग से दिखाया गया है",
   view_in_context:       "संदर्भ में देखें",
+  // poll card
+  poll_vote:            "वोट करें",
+  poll_voting:          "वोट हो रहा है…",
+  poll_votes_one:       "1 वोट",
+  poll_votes:           "{{count}} वोट",
+  poll_ended:           "मतदान समाप्त हो गया",
+  poll_ends:            "{{when}} को समाप्त",
+  poll_vote_submitted:  "आपका वोट दर्ज हो गया। बदलाव तुरंत न दिखें ऐसा हो सकता है।",
+  poll_vote_failed:     "वोट विफल रहा",
 };

@@ -111,4 +111,13 @@ export const post: RawDictionary["post"] = {
   reply_badge:           "Antwort",
   reply_indicator:       "Dies ist eine Antwort, einzeln angezeigt, weil der Stream ungeordnet ist",
   view_in_context:       "Im Kontext anzeigen",
+  // poll card
+  poll_vote:            "Abstimmen",
+  poll_voting:          "Wird gesendet…",
+  poll_votes_one:       "1 Stimme",
+  poll_votes:           "{{count}} Stimmen",
+  poll_ended:           "Umfrage beendet",
+  poll_ends:            "Endet {{when}}",
+  poll_vote_submitted:  "Deine Stimme wurde abgegeben. Änderungen erscheinen eventuell nicht sofort.",
+  poll_vote_failed:     "Abstimmung fehlgeschlagen",
 };

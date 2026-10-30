@@ -2710,8 +2710,8 @@ function DeliveryReport(props: {
               <For each={props.data!}>
                 {(entry) => (
                   <tr class="border-b border-rim/40 last:border-0">
-                    <td class="py-1.5 pr-3 text-txt max-w-[10rem] truncate">
-                      {entry.name}
+                    <td class="py-1.5 pr-3 text-txt">
+                      <div class="truncate max-w-40">{entry.name}</div>
                     </td>
                     <td
                       class={`py-1.5 pr-3 font-mono ${resultClass(entry.result)}`}
