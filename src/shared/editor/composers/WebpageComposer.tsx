@@ -32,7 +32,7 @@ import SlugField from "../components/SlugField";
 import FormatSelect from "../components/FormatSelect";
 import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
 import type { MimeType } from "../types/editor.types";
-import { createWysiwygAvailable } from "../core/wysiwygSafe";
+import { createWysiwygGate } from "../core/wysiwygSafe";
 import { pageMimetype } from "@utsukta/spa-core/store/auth-store";
 import SummaryField from "../components/SummaryField";
 import ComposerActionBar from "../components/ComposerActionBar";
@@ -268,7 +268,7 @@ export default function WebpageComposer(props: Props) {
 
   // This body is stored in the format it was typed in, so the Write tab is
   // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
-  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+  const wysiwygGate = createWysiwygGate(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
 
   return (
     <ComposerShell
@@ -370,7 +370,7 @@ export default function WebpageComposer(props: Props) {
             attach={attachActions}
               onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
               body={store.body()}
-              wysiwygAvailable={wysiwygAvailable()}
+              wysiwygGate={wysiwygGate}
               onInput={store.setBody}
               capabilities={caps}
               tab={store.tab()}

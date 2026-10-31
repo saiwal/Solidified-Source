@@ -99,10 +99,20 @@ markdownTurndown.addRule("bbraw", {
 markdownTurndown.addRule("listItem", {
   filter: "li",
   replacement: (content, node, options) => {
+    let marker = options.bulletListMarker + " ";
+    const parent = node.parentNode as HTMLElement | null;
+    if (parent && parent.nodeName === "OL") {
+      const start = parent.getAttribute("start");
+      const index = Array.prototype.indexOf.call(parent.children, node);
+      marker = (start ? Number(start) + index : index + 1) + ". ";
+    }
+
+    // Continuation lines (a nested list among them) indent to the marker's
+    // width: CommonMark nests under "1. " only at three spaces, not two.
     const body = content
       .replace(/^\n+/, "")
       .replace(/\n+$/, "\n")
-      .replace(/\n/gm, "\n  ");
+      .replace(/\n/gm, "\n" + " ".repeat(marker.length));
 
     // GFM task item: marked renders the checkbox as an <input>, which turndown
     // drops entirely, so the "[ ]"/"[x]" has to be put back from its state.
@@ -112,13 +122,8 @@ markdownTurndown.addRule("listItem", {
     // trimming it the marker comes back as "- [ ]  todo".
     const text = task ? body.replace(/^\s+/, "") : body;
 
-    let prefix = options.bulletListMarker + " " + task;
-    const parent = node.parentNode as HTMLElement | null;
-    if (parent && parent.nodeName === "OL") {
-      const start = parent.getAttribute("start");
-      const index = Array.prototype.indexOf.call(parent.children, node);
-      prefix = (start ? Number(start) + index : index + 1) + ". ";
-    }
+    // Ordered items never carried the task box; kept that way.
+    const prefix = parent?.nodeName === "OL" ? marker : marker + task;
 
     return prefix + text + (node.nextSibling && !/\n$/.test(text) ? "\n" : "");
   },
@@ -198,6 +203,7 @@ markdownTurndown.addRule("bbImage", {
       el.classList.contains("zrl") ||
       el.classList.contains("bb-latex-img") ||
       !!getStyle(el, "width") ||
+      !!getStyle(el, "float") ||
       !!el.getAttribute("width")
     );
   },

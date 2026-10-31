@@ -1,5 +1,5 @@
 import { POST_PROSE } from "@/shared/lib/prose";
-import { createEffect, createSignal, onCleanup, useContext, For, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, on, onCleanup, useContext, For, Show, type JSX } from "solid-js";
 import EditorStats, { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
@@ -13,6 +13,17 @@ import EditorToolbar from "./EditorToolbar";
 import { sourceToHtml, hydrateShareEmbeds, hydrateCardEmbeds, hydrateLatexEmbeds } from "./sourceToHtml";
 import { completesMarkdownBlock } from "./markdownProtect";
 import { htmlToSource } from "./htmlToSource";
+import { indentListItem, outdentListItem } from "./listIndent";
+import { createEditHistory, type Snapshot } from "./editHistory";
+import type { WysiwygGate } from "./wysiwygSafe";
+import { cleanPastedHtml, isInternalPaste } from "./pasteClean";
+import { autoFormatRule, autoFormatTyped } from "./autoFormat";
+import LinkPopover, { normalizeUrl } from "./LinkPopover";
+import TableTools, { addRow } from "./TableTools";
+import FindReplace from "./FindReplace";
+import { TbOutlineFloatCenter, TbOutlineFloatLeft, TbOutlineFloatNone, TbOutlineFloatRight } from "solid-icons/tb";
+import { IconButton } from "@ui/Button";
+import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
 import { Input, Textarea } from "@ui/Field";
@@ -44,12 +55,15 @@ interface Props {
    */
   onImageAlt?: (src: string, alt: string) => void;
   /**
-   * Overrides the capability gate on the Write tab — pass the accessor from
-   * createWysiwygAvailable() wherever the body is stored in the format it was
-   * typed in, so the tab is offered only for a body the round trip preserves.
+   * Overrides the capability gate on the Write tab — pass createWysiwygGate()
+   * wherever the body is stored in the format it was typed in: the tab opens
+   * freely for a body the round trip preserves, and otherwise asks first
+   * (or refuses, when switching would delete content).
    */
-  wysiwygAvailable?: boolean;
+  wysiwygGate?: WysiwygGate;
   placeholder?: string;
+  /** Language of the text, for spellcheck and screen readers; defaults to the UI's. */
+  lang?: string;
   minHeight?: string;
   /** Caps the editing surface's growth — it scrolls internally past this. */
   maxHeight?: string;
@@ -72,7 +86,11 @@ interface Props {
 }
 
 export default function RichEditor(props: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  // The writing's language, not the interface's, when the composer knows it
+  // (an article's language field) — Firefox and Safari pick the spellcheck
+  // dictionary from it; screen readers the pronunciation.
+  const textLang = () => props.lang || locale();
   let editorRef: HTMLDivElement | undefined;
   let wrapperEl: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
@@ -97,7 +115,24 @@ export default function RichEditor(props: Props) {
   // The composer decides this for formats stored as typed (see
   // wysiwygSafe.ts); everything else keeps the plain capability answer.
   const wysiwygAllowed = () =>
-    props.wysiwygAvailable ?? canUseWysiwyg(mime(), props.capabilities.nonBbcodeWysiwyg);
+    props.wysiwygGate?.available() ?? canUseWysiwyg(mime(), props.capabilities.nonBbcodeWysiwyg);
+  /** The toggle shows for a gated body too — clicking it asks or explains. */
+  const toggleOffered = () => {
+    const m = props.wysiwygGate?.mode();
+    return wysiwygAllowed() || m === "confirm" || m === "blocked";
+  };
+  const toggleTab = () => {
+    flushEcho();
+    if (tab() === "source" && !wysiwygAllowed()) {
+      const gate = props.wysiwygGate!;
+      if (gate.mode() === "blocked") { alert(t("editor.wysiwyg_blocked")); return; }
+      if (!confirm(t("editor.wysiwyg_rewrite_confirm"))) return;
+      gate.force();
+      props.onTabChange("wysiwyg");
+      return;
+    }
+    props.onTabChange(tab() === "wysiwyg" ? "source" : "wysiwyg");
+  };
   const tab = (): EditorTab => (wysiwygAllowed() ? props.tab : "source");
   const sig = () => `${mime()} ${props.body}`;
   const minH = () =>
@@ -144,6 +179,9 @@ export default function RichEditor(props: Props) {
   // after source → wysiwyg round-trips).
   const seedEditor = (el: HTMLDivElement) => {
     editorRef = el;
+    checksObserver.disconnect();
+    checksObserver.observe(el, { childList: true, subtree: true });
+    cancelEcho();
     el.innerHTML = sourceToHtml(props.body, mime());
     domSig = sig();
     hydrateShareEmbeds(el);
@@ -224,6 +262,7 @@ export default function RichEditor(props: Props) {
       sel?.removeAllRanges();
       sel?.addRange(range);
     }
+    cancelEcho();
     const next = htmlToSource(editorRef.innerHTML, mime());
     domSig = `${mime()} ${next}`;
     hydrateShareEmbeds(editorRef);
@@ -237,18 +276,24 @@ export default function RichEditor(props: Props) {
   // echoing the DOM back (attachment insert, draft load, tab switch, reset, …).
   createEffect(() => {
     const nextSig = sig();
-    if (tab() === "wysiwyg" && editorRef && nextSig !== domSig && !insertAtCaret()) {
+    // An undo step is a whole new body, never an append: insertAtCaret would
+    // splice a redo's suffix in at the caret instead of where it belongs.
+    if (tab() === "wysiwyg" && editorRef && nextSig !== domSig && (restoring || !insertAtCaret())) {
+      cancelEcho();
       editorRef.innerHTML = sourceToHtml(props.body, mime());
       domSig = nextSig;
       hydrateShareEmbeds(editorRef);
       hydrateCardEmbeds(editorRef);
       if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
       setImgSel(null); // DOM was replaced — a selected <img> no longer exists
+      setLinkEl(null);
+      setTableCell(null);
       // Placing a selection inside a contenteditable focuses it, so only move
       // the caret when focus isn't in another field (e.g. the alt-text box,
       // whose per-keystroke body patches land here).
       const active = document.activeElement;
-      if (editorRef.contains(active) || active === document.body || active === null) {
+      // restoreSnapshot places the caret itself, at the step's own position.
+      if (!restoring && (editorRef.contains(active) || active === document.body || active === null)) {
         const range = document.createRange();
         const sel = window.getSelection();
         range.selectNodeContents(editorRef);
@@ -328,18 +373,159 @@ export default function RichEditor(props: Props) {
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
   };
 
-  const onEditorInput = (e?: InputEvent) => {
+  // Convert WYSIWYG HTML back to the chosen source format before storing.
+  // That walks the whole document, so typing schedules it instead of running
+  // it per keystroke. Everything that reads the body right away flushes first
+  // (blur, Enter/Escape, tab switch, unmount); everything that rewrites the
+  // DOM from the body cancels it, since the pending typing is then either
+  // re-serialized with the rewrite (insertAtCaret, blur) or deliberately
+  // replaced (draft load, reset).
+  let pendingEcho: ReturnType<typeof setTimeout> | undefined;
+  const cancelEcho = () => { clearTimeout(pendingEcho); pendingEcho = undefined; };
+  const echoDom = () => {
+    cancelEcho();
     if (!editorRef) return;
-    // Enter (not Shift+Enter, which is insertLineBreak) finished a block.
-    if (e?.inputType === "insertParagraph") renderCompletedBlock();
-    // Convert WYSIWYG HTML back to the chosen source format before storing
     const next = htmlToSource(editorRef.innerHTML, mime());
     domSig = `${mime()} ${next}`;
     props.onInput(next);
   };
+  const flushEcho = () => { if (pendingEcho !== undefined) echoDom(); };
+  onCleanup(flushEcho);
+
+  const onEditorInput = (e?: InputEvent) => {
+    if (!editorRef) return;
+    // Enter (not Shift+Enter, which is insertLineBreak) finished a block.
+    if (e?.inputType === "insertParagraph") { boxNewItem(); renderCompletedBlock(); }
+    typed = isTyping(e);
+    clearTimeout(pendingEcho);
+    pendingEcho = setTimeout(echoDom, 120);
+    // Last, so the conversion's own input events (re-entering here) win the
+    // typed flag: the literal text is one undo step, the conversion the next.
+    if (e?.inputType === "insertText" && isFeatureEnabled("spa_autoformat")) {
+      autoFormatTyped(editorRef, e.data, flushEcho);
+    }
+  };
 
   const onTextareaInput = (e: InputEvent) => {
+    typed = isTyping(e);
     props.onInput((e.target as HTMLTextAreaElement).value);
+  };
+
+  // ── Undo / redo (core/editHistory.ts) ─────────────────────────────────────
+  // Records every body change, whoever made it, so toolbar actions, inserts
+  // and draft loads are undoable too; plain typing coalesces into steps.
+  const history = createEditHistory();
+  const [histVer, setHistVer] = createSignal(0);
+  let typed = false;
+  let restoring = false;
+  const isTyping = (e?: InputEvent) =>
+    !!e && /^(insert(Text|CompositionText|Paragraph|LineBreak)|delete(Content|Word|SoftLine|HardLine))/.test(e.inputType);
+
+  /** Text offsets of the selection within the surface. */
+  const surfaceSel = (): [number, number] | null => {
+    const sel = window.getSelection();
+    if (!editorRef || !sel?.rangeCount) return null;
+    const r = sel.getRangeAt(0);
+    if (!editorRef.contains(r.startContainer)) return caretOffset === null ? null : [caretOffset, caretOffset];
+    const at = (node: Node, off: number) => {
+      const pre = document.createRange();
+      pre.selectNodeContents(editorRef!);
+      pre.setEnd(node, off);
+      return pre.toString().length;
+    };
+    return [at(r.startContainer, r.startOffset), at(r.endContainer, r.endOffset)];
+  };
+  const snap = (body: string): Snapshot =>
+    tab() === "source"
+      ? { body, mode: "source", sel: textareaRef ? [textareaRef.selectionStart, textareaRef.selectionEnd] : null }
+      : { body, mode: "wysiwyg", sel: surfaceSel() };
+
+  let last: Snapshot = { body: props.body, mode: tab(), sel: null };
+  createEffect(on(() => props.body, (body) => {
+    if (restoring || body === last.body) return;
+    history.change(last, typed);
+    typed = false;
+    last = snap(body);
+    setHistVer((v) => v + 1);
+  }, { defer: true }));
+
+  const restoreSnapshot = (s: Snapshot) => {
+    restoring = true;
+    try {
+      props.onInput(s.body);
+    } finally {
+      restoring = false;
+    }
+    last = s;
+    setHistVer((v) => v + 1);
+    const sel = s.mode === tab() ? s.sel : null;
+    if (tab() === "source" && textareaRef) {
+      // value={props.body} has updated by now; selection after it.
+      const ta = textareaRef;
+      ta.focus();
+      ta.setSelectionRange(sel?.[0] ?? ta.value.length, sel?.[1] ?? ta.value.length);
+      return;
+    }
+    if (!editorRef) return;
+    editorRef.focus();
+    const end = editorRef.textContent?.length ?? 0;
+    const r = rangeAtOffset(editorRef, sel?.[0] ?? end);
+    if (sel && sel[1] !== sel[0]) {
+      const e = rangeAtOffset(editorRef, sel[1]);
+      r.setEnd(e.startContainer, e.startOffset);
+    }
+    const ws = window.getSelection();
+    ws?.removeAllRanges();
+    ws?.addRange(r);
+    (r.startContainer.nodeType === Node.TEXT_NODE ? r.startContainer.parentElement : (r.startContainer as Element))
+      ?.scrollIntoView({ block: "nearest" });
+  };
+
+  const undo = () => {
+    flushEcho();
+    const s = history.undo(snap(props.body));
+    if (s) restoreSnapshot(s);
+  };
+  const redo = () => {
+    flushEcho();
+    const s = history.redo(snap(props.body));
+    if (s) restoreSnapshot(s);
+  };
+  const historyApi = {
+    undo,
+    redo,
+    canUndo: () => (histVer(), history.canUndo()),
+    canRedo: () => (histVer(), history.canRedo()),
+  };
+  // The keyboard's Ctrl+Z is caught in handleKeyDown; this is the rest —
+  // the context menu's Undo, mobile keyboards' undo, Edit → Undo.
+  const onBeforeInput = (e: InputEvent) => {
+    if (e.inputType === "historyUndo") { e.preventDefault(); undo(); }
+    else if (e.inputType === "historyRedo") { e.preventDefault(); redo(); }
+  };
+
+  let toolbarShortcut: ((e: KeyboardEvent) => boolean) | undefined;
+
+  // ── Find & replace (FindReplace.tsx) ──────────────────────────────────────
+  // Full editors, visual tab only — in source the browser's own Ctrl+F stands.
+  const [finding, setFinding] = createSignal<{ initial: string; focusReplace: boolean } | null>(null);
+  const canFind = () => props.capabilities.toolbar === "full" && tab() === "wysiwyg";
+  const openFind = (focusReplace = false) => {
+    if (!canFind()) return;
+    const sel = window.getSelection()?.toString() ?? "";
+    // A selection seeds the field, but only a one-line one — a paragraph
+    // selected for something else isn't a search term.
+    setFinding({ initial: sel.includes("\n") ? (finding()?.initial ?? "") : sel, focusReplace });
+  };
+  const closeFind = (at: Range | null) => {
+    setFinding(null);
+    if (!editorRef) return;
+    editorRef.focus();
+    if (at && editorRef.contains(at.startContainer)) {
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(at);
+    }
   };
 
   // Renders bbcode typed (or pasted without triggering the paste-time
@@ -354,6 +540,7 @@ export default function RichEditor(props: Props) {
   // round-tripping through marked/Turndown here would risk lossy rewrites.
   const onEditorBlur = (e: FocusEvent) => {
     if (!editorRef) return;
+    flushEcho();
     // Focus moving into the image popup must NOT re-render the surface: that
     // replaces every node, so the <img> imgSel() holds is detached and each
     // width/alt edit lands on an orphan — the popup looked dead. Its buttons
@@ -361,6 +548,8 @@ export default function RichEditor(props: Props) {
     // every browser focuses a button on click, which would leave no
     // relatedTarget to test here.
     if (popupRef?.contains(e.relatedTarget as Node)) return;
+    // Same for the link popover's and table bar's own fields and buttons.
+    if ((e.relatedTarget as Element | null)?.closest?.("[data-editor-popup]")) return;
     // Same for focus moving into the toolbar (the emoji picker's autofocused
     // search box is the only child that takes focus): re-rendering here
     // replaces every node, so the range the toolbar saved to insert at is
@@ -375,6 +564,8 @@ export default function RichEditor(props: Props) {
     // The window lost focus (alt-tab), not the editor: it stays the
     // activeElement, and re-rendering would drop the caret to the start.
     if (document.activeElement === editorRef) return;
+    setLinkEl(null);
+    setTableCell(null);
     if (wysiwygAllowed()) {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
@@ -385,7 +576,181 @@ export default function RichEditor(props: Props) {
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
   };
 
+  // ── Link popover + table bar (LinkPopover.tsx, TableTools.tsx) ───────────
+  // Follow the caret: inside a link → its popover, inside a table cell → the
+  // table bar. Only while the surface has focus: when it moves into one of
+  // those popups' own fields, the popup must stay.
+  const [linkEl, setLinkEl] = createSignal<HTMLAnchorElement | null>(null);
+  const [tableCell, setTableCell] = createSignal<HTMLTableCellElement | null>(null);
+  const trackContext = () => {
+    if (!editorRef || tab() !== "wysiwyg" || !editorRef.contains(document.activeElement)) return;
+    const sel = window.getSelection();
+    const node = sel?.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const el = node && editorRef.contains(node)
+      ? (node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element))
+      : null;
+    const a = el?.closest("a");
+    // Photo links ([zrl] around an image) belong to the image popup; embeds
+    // aren't editable text.
+    setLinkEl(a && editorRef.contains(a) && !a.querySelector("img") && !a.closest(".bb-share-embed, .bb-card-embed-wrap, [contenteditable=false]") ? a : null);
+    const cell = el?.closest("td, th") as HTMLTableCellElement | null;
+    setTableCell(cell && editorRef.contains(cell) && !cell.closest("[contenteditable=false]") ? cell : null);
+  };
+  document.addEventListener("selectionchange", trackContext);
+  onCleanup(() => document.removeEventListener("selectionchange", trackContext));
+
+  /** Caret to the end of `el`'s contents, the surface focused. */
+  const caretInto = (el: Element) => {
+    editorRef?.focus();
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(r);
+  };
+
+  const onTableChange = (focus: Element | null) => {
+    if (focus?.isConnected) caretInto(focus);
+    else editorRef?.focus();
+    trackContext();
+    onEditorInput();
+  };
+
+  // Tab / Shift+Tab in a table cell moves to the next / previous cell; Tab in
+  // the last one adds a row, as word processors do.
+  const handleCellTab = (e: KeyboardEvent, el: Element): boolean => {
+    const cell = el.closest("td, th");
+    const table = cell?.closest("table");
+    if (!cell || !table || !editorRef!.contains(table)) return false;
+    e.preventDefault();
+    const cells = Array.from(table.querySelectorAll("td, th")).filter((c) => c.closest("table") === table);
+    const i = cells.indexOf(cell);
+    let next = cells[i + (e.shiftKey ? -1 : 1)];
+    if (!next && !e.shiftKey) {
+      const rows = (table as HTMLTableElement).rows;
+      next = addRow(rows[rows.length - 1], false).cells[0];
+      onEditorInput();
+    }
+    if (next) caretInto(next);
+    return true;
+  };
+
+  // Tab / Shift+Tab inside a list nests / un-nests the item, word-processor
+  // style. Outside a list Tab keeps moving focus, so keyboard users can leave.
+  const handleListTab = (e: KeyboardEvent): boolean => {
+    if (e.key !== "Tab" || e.ctrlKey || e.metaKey || e.altKey || !editorRef) return false;
+    if (document.querySelector("[data-suggest-popup]")) return false;
+    const sel = window.getSelection();
+    if (!sel?.rangeCount) return false;
+    const range = sel.getRangeAt(0);
+    const start = range.startContainer;
+    const el = start.nodeType === Node.TEXT_NODE ? start.parentElement : (start as Element);
+    const li = el?.closest("li");
+    // A list inside a cell nests as usual; otherwise a cell's Tab moves on.
+    if (el && (!li || !editorRef.contains(li)) && handleCellTab(e, el)) return true;
+    if (!li || !editorRef.contains(li) || li.closest(".checklist")) return false;
+    e.preventDefault();
+    // Moving the <li> collapses the selection to its old parent; put it back.
+    const { startContainer, startOffset, endContainer, endOffset } = range;
+    if (!(e.shiftKey ? outdentListItem(li) : indentListItem(li))) return true;
+    const r = document.createRange();
+    r.setStart(startContainer, startOffset);
+    r.setEnd(endContainer, endOffset);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    onEditorInput();
+    return true;
+  };
+
+  // ── Checklists, code spellcheck ───────────────────────────────────────────
+  // Rendered boxes are `disabled` (bbcode.ts bbChecklist) — right for a post,
+  // but a disabled input swallows clicks, so inside the editor they're armed.
+  // Only the `checked` *attribute* reaches the body (htmlToSource, turndown),
+  // so a toggle writes it back. Code is exempt from spellcheck — `npm run
+  // build` isn't a typo. Neither attribute reaches a bbcode/markdown body;
+  // HTML bodies are stored as the DOM itself and would keep both, so they're
+  // left alone.
+  const checkItem = (li: Element | null | undefined) =>
+    li?.querySelector(":scope > input[type=checkbox]") ? li : null;
+  const armChecks = (root: Element) => {
+    if (mime() === "text/html") return;
+    root.querySelectorAll("li > input[type=checkbox][disabled]").forEach((b) => b.removeAttribute("disabled"));
+    const code = [...(root.matches("pre, code") ? [root] : []), ...Array.from(root.querySelectorAll("pre, code"))];
+    code.forEach((c) => c.setAttribute("spellcheck", "false"));
+  };
+  const checksObserver = new MutationObserver((records) => {
+    for (const r of records) r.addedNodes.forEach((n) => n.nodeType === 1 && armChecks(n as Element));
+  });
+  onCleanup(() => checksObserver.disconnect());
+  const onEditorChange = (e: Event) => {
+    const box = e.target as HTMLInputElement;
+    if (box.type !== "checkbox" || !checkItem(box.parentElement)) return;
+    box.toggleAttribute("checked", box.checked);
+    onEditorInput();
+  };
+  /** Enter in a checklist: an empty item leaves the list; otherwise native. */
+  const checklistEnter = (e: KeyboardEvent): boolean => {
+    const sel = window.getSelection();
+    const n = sel?.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const li = checkItem((n?.nodeType === Node.TEXT_NODE ? n.parentElement : (n as Element | null))?.closest("li"));
+    if (!li || !editorRef?.contains(li) || (li.textContent ?? "").replace(/[\s\u200B]/g, "")) return false;
+    e.preventDefault();
+    const list = li.parentElement!;
+    const line = document.createElement("div");
+    line.appendChild(document.createElement("br"));
+    list.after(line);
+    li.remove();
+    if (!list.querySelector("li")) list.remove();
+    caretInto(line);
+    onEditorInput();
+    return true;
+  };
+  /** After a native Enter split a checklist item, give the new one its box. */
+  const boxNewItem = () => {
+    const sel = window.getSelection();
+    const n = sel?.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const li = (n?.nodeType === Node.TEXT_NODE ? n.parentElement : (n as Element | null))?.closest("li");
+    if (!li || checkItem(li) || !checkItem(li.previousElementSibling) || !editorRef?.contains(li)) return;
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    li.prepend(box, document.createTextNode(" "));
+  };
+
   const handleKeyDown = (e: KeyboardEvent) => {
+    // Submit (Enter/Ctrl+Enter), close (Escape) and suggestion picks read the
+    // body synchronously — hand them what is on screen.
+    if (e.key === "Enter" || e.key === "Escape") flushEcho();
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && !e.altKey) {
+      const k = e.key.toLowerCase();
+      // Only keydown can tell Ctrl+Shift+V from Ctrl+V; the paste event can't.
+      if (k === "v") plainPaste = e.shiftKey;
+      if (k === "z" || k === "y") {
+        e.preventDefault();
+        k === "y" || e.shiftKey ? redo() : undo();
+        return;
+      }
+      if ((k === "f" || k === "h") && !e.shiftKey && canFind()) {
+        e.preventDefault();
+        openFind(k === "h");
+        return;
+      }
+    }
+    if (mod) {
+      // Typing before the shortcut becomes its own undo step, not part of it.
+      flushEcho();
+      if (toolbarShortcut?.(e)) { e.preventDefault(); return; }
+    }
+    if (editorRef?.contains(e.target as Node) && handleListTab(e)) return;
+    if (e.key === "Enter" && !e.shiftKey && !mod && editorRef?.contains(e.target as Node) && checklistEnter(e)) return;
+    if (
+      e.key === "Enter" && !e.shiftKey && !mod && editorRef?.contains(e.target as Node) &&
+      isFeatureEnabled("spa_autoformat") && autoFormatRule(editorRef, flushEcho)
+    ) {
+      e.preventDefault();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && props.onEnter?.()) {
       e.preventDefault();
       return;
@@ -452,6 +817,47 @@ export default function RichEditor(props: Props) {
     onEditorInput();
   };
 
+  // ── Image alignment ───────────────────────────────────────────────────────
+  // Left/right float the image (text wraps; core's legacy float form, see
+  // elementBBCode imgBBCode). Centre puts it on its own line in a centred
+  // block, which htmlToSource writes as [center]. A photo link's <a> wrapper
+  // moves with its image.
+  type ImgAlign = "none" | "left" | "center" | "right";
+  const imgBox = (img: HTMLImageElement): Element => {
+    const a = img.parentElement;
+    return a?.tagName === "A" && a.textContent?.replace(/[\s\u200B]/g, "") === "" && a.querySelectorAll("img").length === 1 ? a : img;
+  };
+  const centreWrap = (box: Element): HTMLElement | null => {
+    const p = box.parentElement;
+    if (!p || p === editorRef || !/^(DIV|P|CENTER)$/.test(p.tagName)) return null;
+    if (p.tagName !== "CENTER" && p.style.textAlign !== "center") return null;
+    const others = Array.from(p.childNodes).filter((n) => n !== box && (n.nodeType !== 3 || n.textContent!.replace(/[\s\u200B]/g, "")));
+    return others.length ? null : p;
+  };
+  const imgAlign = (img: HTMLImageElement): ImgAlign => {
+    const f = img.style.float;
+    if (f === "left" || f === "right") return f;
+    return centreWrap(imgBox(img)) ? "center" : "none";
+  };
+  const applyImgAlign = (kind: ImgAlign) => {
+    const sel = imgSel();
+    if (!sel) return;
+    const img = sel.el;
+    const box = imgBox(img);
+    img.style.removeProperty("float");
+    const wrap = centreWrap(box);
+    if (wrap && kind !== "center") wrap.replaceWith(box);
+    if (kind === "left" || kind === "right") img.style.float = kind;
+    if (kind === "center" && !wrap) {
+      const d = document.createElement("div");
+      d.style.textAlign = "center";
+      box.replaceWith(d);
+      d.appendChild(box);
+    }
+    setImgSel({ el: img, rect: img.getBoundingClientRect() });
+    onEditorInput();
+  };
+
   const applyImgAlt = (text: string) => {
     const sel = imgSel();
     if (!sel) return;
@@ -515,6 +921,7 @@ export default function RichEditor(props: Props) {
     if (tab() === "wysiwyg" && editorRef && text && (/\[share[=\s][\s\S]*?\[\/share\]/i.test(text) || /\[card[=\s][\s\S]*?\[\/card\]/i.test(text))) {
       e.preventDefault();
       document.execCommand("insertText", false, text);
+      cancelEcho();
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
       domSig = `${mime()} ${next}`;
@@ -527,8 +934,47 @@ export default function RichEditor(props: Props) {
       sel?.removeAllRanges();
       sel?.addRange(range);
       props.onInput(next);
+      return;
     }
+
+    // Rich text: rebuilt from structure only (core/pasteClean.ts), so a paste
+    // brings its bold and lists but not its fonts and colours. Ctrl+Shift+V
+    // is plain text, as everywhere else.
+    const plain = plainPaste;
+    plainPaste = false;
+    const html = dt.getData("text/html");
+    // A URL pasted over selected text links the text instead of replacing it.
+    const url = text.trim();
+    if (tab() === "wysiwyg" && editorRef && !plain && /^https?:\/\/\S+$/i.test(url) && !window.getSelection()?.isCollapsed) {
+      e.preventDefault();
+      document.execCommand("createLink", false, normalizeUrl(url));
+      return;
+    }
+    if (tab() === "wysiwyg" && editorRef) {
+      if (plain) {
+        e.preventDefault();
+        document.execCommand("insertText", false, text);
+        return;
+      }
+      if (!html || isInternalPaste(html)) return;
+      e.preventDefault();
+      document.execCommand("insertHTML", false, cleanPastedHtml(html));
+      return;
+    }
+    // Source tab: the same cleaned structure, spelled in the body's format —
+    // a pasted bold word arrives as [b]word[/b] / **word**. Plain text has no
+    // spelling for any of it, so the textarea's own paste stands.
+    const ta = textareaRef;
+    if (!ta || plain || !html || mime() === "text/plain" || isInternalPaste(html)) return;
+    const cleaned = cleanPastedHtml(html);
+    if (!/<[a-z]/i.test(cleaned)) return; // nothing but text: default paste is the same
+    e.preventDefault();
+    const insert = htmlToSource(cleaned, mime()).trim();
+    const { selectionStart: a, selectionEnd: b, value } = ta;
+    props.onInput(value.slice(0, a) + insert + value.slice(b));
+    ta.setSelectionRange(a + insert.length, a + insert.length);
   };
+  let plainPaste = false;
 
   // Every composer gets the tab bar (write/source) except chat's plain input.
   //
@@ -554,6 +1000,17 @@ export default function RichEditor(props: Props) {
       ref={wrapperEl}
       class={`rich-editor flex flex-col ${props.fill ? "flex-1 min-h-0" : "shrink-0"}`}
     >
+      <Show when={canFind() && editorRef && finding()}>
+        {(f) => (
+          <FindReplace
+            surface={editorRef!}
+            initial={f().initial}
+            focusReplace={f().focusReplace}
+            onChange={() => onEditorInput()}
+            onClose={closeFind}
+          />
+        )}
+      </Show>
       {/* The typing surface, with the zen toggle floating over its bottom-right
           corner (shell-hosted composers only — zen means nothing elsewhere). */}
       <div class={`relative flex ${props.surfaceTrailing ? "flex-row items-end rounded-t-lg bg-elevated" : "flex-col"} ${surfaceGrowClass()}`}>
@@ -562,9 +1019,16 @@ export default function RichEditor(props: Props) {
         <div
           ref={seedEditor}
           contenteditable
+          lang={textLang()}
+          spellcheck
+          role="textbox"
+          aria-multiline="true"
+          aria-label={props.placeholder ?? t("editor.write_placeholder")}
           dir="ltr"
           onInput={(e) => onEditorInput(e as InputEvent)}
+          onBeforeInput={onBeforeInput}
           onKeyDown={handleKeyDown}
+          onChange={onEditorChange}
           onPaste={handlePaste}
           onDrop={handleDrop}
           onClick={onEditorClick}
@@ -586,12 +1050,15 @@ export default function RichEditor(props: Props) {
           ref={textareaRef}
           value={props.body}
           onInput={onTextareaInput}
+          lang={textLang()}
+          onBeforeInput={onBeforeInput}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onDrop={handleDrop}
           style={{ "min-height": surfaceMinH(), "max-height": maxH() }}
           class={`${surfaceGrowClass()} min-w-0 overflow-y-auto ${surfaceSkin()} w-full p-3 text-sm font-mono text-txt outline-none ${props.resizable ? "resize-y" : "resize-none"}`}
           placeholder={t("editor.source_placeholder")}
+          aria-label={props.placeholder ?? t("editor.write_placeholder")}
         />
       </Show>
         <Show when={zenOffered()}>
@@ -612,8 +1079,8 @@ export default function RichEditor(props: Props) {
           words={() => countWords(props.body)}
           chars={() => props.body.length}
           tab={tab()}
-          onToggleTab={() => props.onTabChange(tab() === "wysiwyg" ? "source" : "wysiwyg")}
-          canWysiwyg={wysiwygAllowed()}
+          onToggleTab={toggleTab}
+          canWysiwyg={toggleOffered()}
         />
       </div>
       </Show>
@@ -634,7 +1101,23 @@ export default function RichEditor(props: Props) {
         textareaRef={() => textareaRef}
         onSourceChange={(v) => { props.onInput(v); }}
         trailing={props.toolbarTrailing}
+        history={historyApi}
+        onFind={canFind() ? () => openFind() : undefined}
+        bindShortcuts={(fn) => { toolbarShortcut = fn; }}
       />
+      </Show>
+
+      <Show when={tab() === "wysiwyg" && linkEl()}>
+        {(a) => (
+          <LinkPopover
+            el={a()}
+            onChange={() => { caretInto(a()); onEditorInput(); }}
+            onClose={() => setLinkEl(null)}
+          />
+        )}
+      </Show>
+      <Show when={tab() === "wysiwyg" && !linkEl() && tableCell()}>
+        {(c) => <TableTools cell={c()} onChange={onTableChange} />}
       </Show>
 
       {/* ── Image resize popup ───────────────────────────── */}
@@ -667,6 +1150,20 @@ export default function RichEditor(props: Props) {
               <Button variant="ghost" size="sm" onClick={() => applyImgWidth(null)}>
                 100%
               </Button>
+              <span class="w-px h-4 bg-rim mx-0.5" />
+              <For each={[
+                ["none", TbOutlineFloatNone, "img_align_inline"],
+                ["left", TbOutlineFloatLeft, "img_align_left"],
+                ["center", TbOutlineFloatCenter, "img_align_center"],
+                ["right", TbOutlineFloatRight, "img_align_right"],
+              ] as const}>
+                {([kind, Icon, key]) => (
+                  <IconButton label={t(`editor.${key}`)} size="sm" pressed={imgAlign(imgSel()!.el) === kind}
+                    onClick={() => applyImgAlign(kind)}>
+                    <Icon class="w-4 h-4" />
+                  </IconButton>
+                )}
+              </For>
               <span class="w-px h-4 bg-rim mx-0.5" />
               <Input size="sm" class="w-16" type="number" min="16" title={t("editor.img_width")} value={widthVal()} onInput={(e) => setWidthVal(e.currentTarget.value)} onChange={(e) => {
                   const w = parseInt(e.currentTarget.value, 10);

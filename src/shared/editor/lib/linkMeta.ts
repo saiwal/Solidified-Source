@@ -41,7 +41,8 @@ export async function fetchLinkMeta(url: string): Promise<LinkMeta | null> {
 // them rather than trying to escape bbcode, which has no escape syntax.
 const safeBb = (s: string) => s.replace(/[[\]]/g, "").trim();
 
-const escapeHtml = (s: string) =>
+/** Shared with EditorToolbar's insertHTML calls — any user text spliced into markup. */
+export const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 

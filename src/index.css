@@ -944,3 +944,15 @@ html.hz-theme-fade *::after {
   [data-hz-reveal] { opacity: 1; translate: none; }
   .animate-hz-reveal { animation: none; }
 }
+
+/* Find & replace (editor/core/FindReplace.tsx) — CSS Custom Highlight API,
+   so matches are painted without touching the editor's DOM. */
+::highlight(hz-find) { background-color: var(--color-warning-muted); }
+::highlight(hz-find-current) { background-color: var(--color-warning); color: var(--color-warning-fg); }
+
+/* Floated images ([img=…x float=left|right]): breathing room for the text
+   that wraps them, and a post body that grows to contain them. Matched on the
+   inline style both bbcode renderers and the editor write. */
+img[style*="float: left"], img[style*="float:left"] { margin: 0.25rem 1rem 0.5rem 0; }
+img[style*="float: right"], img[style*="float:right"] { margin: 0.25rem 0 0.5rem 1rem; }
+.prose:has(img[style*="float"]) { display: flow-root; }

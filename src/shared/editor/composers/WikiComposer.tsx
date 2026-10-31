@@ -4,6 +4,7 @@ import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import type { MimeType, EditorTab } from "../types/editor.types";
 import FormatSelect from "../components/FormatSelect";
+import { createWysiwygGate } from "../core/wysiwygSafe";
 import ComposerShell from "../components/ComposerShell";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import { SecondaryButton } from "../components/buttons";
@@ -41,12 +42,17 @@ export default function WikiComposer(props: Props) {
   const caps = CAPABILITIES.wiki;
 
   const [body, setBody] = createSignal(props.initialBody);
-  const [tab, setTab] = createSignal<EditorTab>("source");
   const [commitMsg, setCommitMsg] = createSignal(props.initialCommitMsg ?? "");
 
   // Seeded from the wiki's format; only movable while allowFormatChange is on.
   const [mimeOverride, setMimeOverride] = createSignal<string | null>(null);
   const mime = () => (mimeOverride() ?? props.mimeType ?? "text/bbcode") as MimeType;
+
+  // Strict: core git-versions every page, so even a bbcode page opens in the
+  // visual editor only when it comes back byte-identical — otherwise merely
+  // opening the editor would land as a rewrite in the page history.
+  const wysiwygGate = createWysiwygGate(body, mime, caps.nonBbcodeWysiwyg, true);
+  const [tab, setTab] = createSignal<EditorTab>(wysiwygGate.available() ? "wysiwyg" : "source");
 
   // A wiki page is plain stored text with no item `attach` array, so uploads
   // are only ever referenced from the body — inserted as markup for the page's
@@ -82,6 +88,7 @@ export default function WikiComposer(props: Props) {
             tab={tab()}
             onTabChange={setTab}
             mimetype={mime()}
+            wysiwygGate={wysiwygGate}
             placeholder={t("editor.start_writing")}
             minHeight={zenMode() ? "0px" : "60vh"}
             fill={zenMode()}

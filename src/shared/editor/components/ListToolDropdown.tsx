@@ -6,16 +6,18 @@
  */
 
 import { Show, createSignal } from "solid-js";
-import { MdOutlineFormat_list_bulleted, MdOutlineFormat_list_numbered } from "solid-icons/md";
+import { MdOutlineChecklist, MdOutlineFormat_list_bulleted, MdOutlineFormat_list_numbered } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { IconButton } from "@ui/Button";
 
-export type ListKind = "bullet" | "number" | "alpha";
+export type ListKind = "bullet" | "number" | "alpha" | "check";
 
 export interface ListToolDropdownProps {
   disabled?: boolean;
   onSelect: (kind: ListKind) => void;
+  /** Keyboard shortcut per item, shown as its tooltip. */
+  hints?: Partial<Record<ListKind, string>>;
 }
 
 export default function ListToolDropdown(props: ListToolDropdownProps) {
@@ -27,7 +29,11 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
   // items both suppress mousedown, so it survives the whole interaction).
   const [active, setActive] = createSignal<ListKind | "">("");
   function currentKind(): ListKind | "" {
-    if (document.queryCommandState("insertUnorderedList")) return "bullet";
+    if (document.queryCommandState("insertUnorderedList")) {
+      const n = window.getSelection()?.anchorNode;
+      const e = n?.nodeType === Node.TEXT_NODE ? n.parentElement : (n as Element | null);
+      return e?.closest?.("li")?.querySelector(":scope > input[type=checkbox]") ? "check" : "bullet";
+    }
     if (!document.queryCommandState("insertOrderedList")) return "";
     const node = window.getSelection()?.anchorNode;
     const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element | null);
@@ -76,6 +82,7 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("bullet")}
+            title={props.hints?.bullet}
             class={itemClass("bullet")}
           >
             <MdOutlineFormat_list_bulleted class="w-4 h-4 shrink-0" />
@@ -85,6 +92,7 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("number")}
+            title={props.hints?.number}
             class={itemClass("number")}
           >
             <MdOutlineFormat_list_numbered class="w-4 h-4 shrink-0" />
@@ -98,6 +106,15 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
           >
             <span class="w-4 h-4 shrink-0 flex items-center justify-center text-[0.625rem] font-semibold">abc</span>
             {t("editor.lettered_list")}
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => select("check")}
+            class={itemClass("check")}
+          >
+            <MdOutlineChecklist class="w-4 h-4 shrink-0" />
+            {t("editor.checklist")}
           </button>
         </div>
       </Show>

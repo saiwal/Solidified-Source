@@ -161,6 +161,8 @@ export const settings: RawDictionary["settings"] = {
   post_mode_hint:          "Wie ein geöffneter Beitrag standardmäßig angezeigt wird. Pro Beitrag weiterhin andock-, maximier- und minimierbar.",
   show_emoji_images:       "Emoticons (Smilies) als Bilder anzeigen",
   show_emoji_images_hint:  "Zeigt :shortcode:-Emoji beim Lesen von Beiträgen, Kommentaren und Titeln als Bilder an. Wenn deaktiviert, wird stattdessen der rohe Shortcode-Text angezeigt.",
+  reply_mention:           "Autor beim Antworten erwähnen",
+  reply_mention_hint:      "Beginnt eine Antwort mit @Autor, wie im klassischen Hubzilla, damit dieser benachrichtigt wird. Der Thread-Besitzer erhält die Antwort in jedem Fall.",
   widget_layout: "Widget-Layout",
   widget_layout_hint: "Setzt die Widgets aller Seiten auf ihre Standardanordnung zurück.",
   widget_layout_reset: "Layout auf Standard zurücksetzen",

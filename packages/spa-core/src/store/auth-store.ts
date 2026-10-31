@@ -16,6 +16,7 @@ import { setPostHeight } from "./post-height";
 import { setCommentOrder } from "./comment-order";
 import { setThreadMode } from "./thread-mode";
 import { setEmojiAsImages } from "./emoji-as-images";
+import { setReplyMention } from "./reply-mention";
 
 export type AuthState = {
   isLocal: boolean; // true = native logged-in user
@@ -180,6 +181,8 @@ async function fetchAuthState(): Promise<AuthState> {
   // pconfig system/no_smilies — the server wins, or the toggle only took
   // effect in a browser that had visited Settings → Display.
   if (isLocal) setEmojiAsImages(data.system?.no_smilies !== "1");
+  // pconfig spa/reply_mention — unset = on, like core.
+  if (isLocal) setReplyMention(String(data.spa?.reply_mention ?? "1") !== "0");
 
   return {
     isLocal,

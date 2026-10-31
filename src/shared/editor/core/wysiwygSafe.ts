@@ -16,11 +16,10 @@
  * dialect passes (markdown-roundtrip.test.ts pins 33 such shapes); anything
  * imported or hand-written elsewhere falls back to source-only on its own.
  *
- * Wiki pages are excluded a level up (`nonBbcodeWysiwyg: false`) whatever this
- * says, because core git-versions them and a normalising edit would show up as
- * a whole-file rewrite in the page history.
+ * A body that fails isn't locked out: the toggle asks before switching, so
+ * the writer chooses the rewrite (see createWysiwygGate).
  */
-import { createMemo, on, untrack, type Accessor } from "solid-js";
+import { createEffect, createMemo, createSignal, on, untrack, type Accessor } from "solid-js";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { sourceToHtml } from "./sourceToHtml";
 import { htmlToSource } from "./htmlToSource";
@@ -50,23 +49,54 @@ export function roundTripsCleanly(body: string, mime: MimeType): boolean {
 }
 
 /**
+ * Content the visual surface would *delete*, not just reformat: sourceToHtml
+ * sanitizes, so these never reach the DOM and never come back out of it.
+ */
+const LOST = /<(script|style|iframe|form|object|embed|link|meta|input|button|select|textarea)\b/i;
+
+/**
  * The Write tab's availability, decided at mount and again whenever the format
  * picker changes the mimetype — deliberately *not* per keystroke. The check
  * runs marked, DOMPurify and Turndown over the whole document, and a tab that
  * appeared and vanished as you typed would be worse than either answer.
  *
- * Pass the same accessor to `<RichEditor wysiwygAvailable>` and to the source
- * toggle, so the button and the surface can't disagree.
+ * - `available`: the surface may be used — the body round-trips cleanly, or
+ *   the writer accepted the rewrite (`force`).
+ * - `mode`: what the visual toggle offers when it isn't available yet —
+ *   "confirm" (switching would normalise some formatting: ask first),
+ *   "blocked" (switching would delete scripts/styles/embeds: refuse), or
+ *   "never" (this format has no visual form here; no toggle at all).
+ *
+ * `strict` runs the check on bbcode too. Off everywhere a rewrite merely
+ * re-spells an item; on for wiki pages, which core git-versions, so any
+ * normalisation would show up as a whole-file change in the page history.
  */
-export function createWysiwygAvailable(
+export interface WysiwygGate {
+  available: Accessor<boolean>;
+  mode: Accessor<"clean" | "confirm" | "blocked" | "never">;
+  force: () => void;
+}
+
+export function createWysiwygGate(
   body: Accessor<string>,
   mime: Accessor<MimeType>,
   allowNonBbcode?: boolean,
-): Accessor<boolean> {
-  return createMemo(
-    on(mime, (m) =>
-      canUseWysiwyg(m, allowNonBbcode) &&
-      (m === "text/bbcode" || roundTripsCleanly(untrack(body), m)),
-    ),
+  strict = false,
+): WysiwygGate {
+  const mode = createMemo(
+    on(mime, (m) => {
+      if (!canUseWysiwyg(m, allowNonBbcode)) return "never" as const;
+      const b = untrack(body);
+      if ((m === "text/bbcode" && !strict) || roundTripsCleanly(b, m)) return "clean" as const;
+      return LOST.test(b) ? ("blocked" as const) : ("confirm" as const);
+    }),
   );
+  const [forced, setForced] = createSignal(false);
+  // A new format is a new question.
+  createEffect(on(mime, () => setForced(false), { defer: true }));
+  return {
+    available: () => mode() === "clean" || (forced() && mode() === "confirm"),
+    mode,
+    force: () => setForced(true),
+  };
 }

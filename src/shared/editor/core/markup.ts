@@ -31,7 +31,7 @@ import type { MimeType } from "../types/editor.types";
  */
 
 export type Kind =
-  | "b" | "i" | "u" | "s"
+  | "b" | "i" | "u" | "s" | "sup" | "sub" | "checklist"
   | "mark" | "markClear" | "color" | "font" | "size"
   | "code" | "codeblock"
   | "quote" | "quoteAuthor" | "h" | "hr"
@@ -68,6 +68,12 @@ const TABLE: Record<Kind, Row> = {
   // Markdown has no underline (`__x__` is bold), so this one always falls back.
   u:    { bb: w("[u]", "[/u]"), html: tag("u") },
   s:    { bb: w("[s]", "[/s]"), md: w("~~", "~~"), html: tag("s") },
+  // The extended syntax markedExtended.ts parses and markdownTurndown emits.
+  sup:  { bb: w("[sup]", "[/sup]"), md: w("^", "^"), html: tag("sup") },
+  sub:  { bb: w("[sub]", "[/sub]"), md: w("~", "~"), html: tag("sub") },
+  // GFM task items; core's [checklist] ([] / [x] markers, bbcode.php bb_checklist).
+  checklist: { bb: w("[checklist]\n[] ", "\n[/checklist]\n"), md: () => ({ prefix: "- [ ] " }),
+               html: w('<ul class="checklist" style="list-style-type: none;"><li><input type="checkbox" disabled> ', "</li></ul>\n") },
 
   mark:      { bb: (a) => ({ open: `[mark=${a}]`, close: "[/mark]" }),
                html: (a) => ({ open: `<mark style="background-color:${a}">`, close: "</mark>" }) },

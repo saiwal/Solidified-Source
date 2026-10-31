@@ -17,7 +17,7 @@
  * nothing (colour / highlight / font / size all silently did nothing).
  */
 
-import { For, Show, type JSX } from "solid-js";
+import { For, Show, onCleanup, type JSX } from "solid-js";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { Button, iconButtonClass } from "@ui/Button";
 
@@ -29,11 +29,16 @@ function triggerClass(open: boolean) {
 }
 
 /** Fires on mousedown so the editor selection survives the click. */
+// Mouse acts on mousedown (so the editor keeps its selection); a keyboard
+// Enter/Space only fires click, with detail 0 — without that branch the
+// pickers couldn't be used from the keyboard at all.
+// (Two handlers rather than one spread object: solid's compiler turns a
+// multi-line class on a spread element into an unterminated string.)
 function press(fn: () => void) {
-  return (e: MouseEvent) => {
-    e.preventDefault();
-    fn();
-  };
+  return (e: MouseEvent) => { e.preventDefault(); fn(); };
+}
+function keyPress(fn: () => void) {
+  return (e: MouseEvent) => { if (e.detail === 0) fn(); };
 }
 
 // ── Colour ───────────────────────────────────────────────────────────────────
@@ -74,7 +79,7 @@ export function ColorPicker(props: {
         <div ref={setPanelRef} class={`${PANEL} w-52`} style={floatStyle()}>
           <Show when={props.onClear}>
             <button type="button"
-                    onMouseDown={press(() => { props.onClear!(); setOpen(false); })}
+                    onMouseDown={press(() => { props.onClear!(); setOpen(false); })} onClick={keyPress(() => { props.onClear!(); setOpen(false); })}
                     class="w-full mb-2 px-2 py-1 text-xs rounded text-txt hover:bg-elevated text-left">
               {props.clearLabel}
             </button>
@@ -83,7 +88,7 @@ export function ColorPicker(props: {
           <div class="grid grid-cols-8 gap-1">
             <For each={SWATCHES}>
               {(c) => (
-                <button type="button" title={c} onMouseDown={press(() => pick(c))}
+                <button type="button" title={c} onMouseDown={press(() => pick(c))} onClick={keyPress(() => pick(c))}
                         style={{ "background-color": c }}
                         class="w-5 h-5 rounded border border-rim hover:scale-110 transition-transform" />
               )}
@@ -138,9 +143,13 @@ export function PromptPanel(props: {
   submitLabel: string;
   disabled?: boolean;
   onSubmit: (values: Record<string, string>) => void;
+  /** Receives an "open this panel" function — the toolbar's Ctrl+K. */
+  opener?: (open: (() => void) | undefined) => void;
 }) {
   const { open, toggle, setOpen, floatStyle, setTriggerRef, setPanelRef } =
     useDropdown({ placement: "top-start", offset: 4 });
+  props.opener?.(() => { if (!props.disabled) setOpen(true); });
+  onCleanup(() => props.opener?.(undefined));
 
   const inputs = new Map<string, HTMLInputElement>();
 
@@ -243,7 +252,7 @@ export function OptionMenu(props: {
           <For each={props.options}>
             {(o) => (
               <button type="button"
-                      onMouseDown={press(() => { props.onPick(o.value); setOpen(false); })}
+                      onMouseDown={press(() => { props.onPick(o.value); setOpen(false); })} onClick={keyPress(() => { props.onPick(o.value); setOpen(false); })}
                       class="w-full flex items-baseline justify-between gap-2 px-2 py-1
                              rounded text-txt hover:bg-elevated text-left">
                 <span style={o.preview}>Aa</span>

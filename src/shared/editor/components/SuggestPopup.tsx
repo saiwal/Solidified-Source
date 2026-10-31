@@ -33,6 +33,8 @@ const SuggestPopup: Component<SuggestPopupProps> = (props) => {
         style={style()}
         role="listbox"
         aria-label="Suggestions"
+        // RichEditor's Tab-to-indent yields to an open popup (Tab picks the suggestion).
+        data-suggest-popup
         class="bg-surface border border-rim rounded-xl shadow-2xl overflow-hidden py-1"
       >
         <For each={props.items}>

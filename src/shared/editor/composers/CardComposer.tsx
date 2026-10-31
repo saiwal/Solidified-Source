@@ -38,7 +38,7 @@ import ComposerActionBar from "../components/ComposerActionBar";
 import { slugify } from "../lib/slugify";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { fetchLinkMeta } from "../lib/linkMeta";
-import { createWysiwygAvailable } from "../core/wysiwygSafe";
+import { createWysiwygGate } from "../core/wysiwygSafe";
 import {
   CARD_TEMPLATES, composeTemplate, parseTemplate, sniffTemplate, emptyTemplateFields,
   type CardTemplate, type TemplateFields,
@@ -398,7 +398,7 @@ export default function CardComposer(props: Props) {
 
   // This body is stored in the format it was typed in, so the Write tab is
   // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
-  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+  const wysiwygGate = createWysiwygGate(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
 
   return (
     // No mx-auto here, deliberately: every mount point (CardsHeaderWidget's
@@ -595,7 +595,7 @@ export default function CardComposer(props: Props) {
             attach={attachActions}
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
-            wysiwygAvailable={wysiwygAvailable()}
+            wysiwygGate={wysiwygGate}
             onInput={store.setBody}
             capabilities={caps}
             tab={store.tab()}

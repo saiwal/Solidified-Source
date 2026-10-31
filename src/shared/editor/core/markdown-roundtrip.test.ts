@@ -55,6 +55,7 @@ const STABLE: Record<string, string> = {
   "h1..h3":        "# a\n\n## b\n\n### c",
   "bullet list":   "- one\n- two",
   "nested list":   "- one\n  - nested\n- two",
+  "nested in ol":  "1. one\n   - nested\n2. two",
   "ordered list":  "1. first\n2. second",
   "emphasis":      "*em* and **strong**",
   "inline code":   "use `npm run build` now",

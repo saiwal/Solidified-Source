@@ -13,6 +13,7 @@ import { defaultComposerMode, setDefaultComposerMode, defaultPostMode, setDefaul
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
 import { setEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
+import { setReplyMention } from "@utsukta/spa-core/store/reply-mention";
 import PATTERN_PRESETS from "virtual:public-listing/patterns";
 import BG_PRESETS from "virtual:public-listing/bg";
 import {
@@ -63,9 +64,9 @@ export default function DisplaySection() {
     saver: saveDisplaySettings,
     numericFields: [
       "update_interval", "itemspage", "post_height",
-      "start_menu", "show_emoji_images",
+      "start_menu", "show_emoji_images", "reply_mention",
     ],
-    checkboxFields: ["start_menu", "show_emoji_images"],
+    checkboxFields: ["start_menu", "show_emoji_images", "reply_mention"],
     reloadOn: (prev, next) => prev?.theme !== next.theme,
   });
 
@@ -92,6 +93,7 @@ export default function DisplaySection() {
       applyCornerRadius(d.corner_radius as CornerRadius);
     }
     setEmojiAsImages(!!d.show_emoji_images);
+    setReplyMention(!!d.reply_mention);
   });
 
   return (
@@ -517,6 +519,21 @@ export default function DisplaySection() {
               <span class="text-sm text-txt">{t("settings.show_emoji_images")}</span>
             </label>
             <p class="text-xs text-muted mt-1 ml-7">{t("settings.show_emoji_images_hint")}</p>
+          </div>
+
+          {/* Prefill @author when replying (core's doreply()) */}
+          <div>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="reply_mention"
+                value="1"
+                checked={!!data()!.reply_mention}
+                class="h-4 w-4 rounded border-rim accent-accent"
+              />
+              <span class="text-sm text-txt">{t("settings.reply_mention")}</span>
+            </label>
+            <p class="text-xs text-muted mt-1 ml-7">{t("settings.reply_mention_hint")}</p>
           </div>
 
           {/* Background picker */}

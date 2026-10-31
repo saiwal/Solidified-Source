@@ -29,6 +29,7 @@ import { POST_PROSE } from "@/shared/lib/prose";
 import { markItemSeen } from "@utsukta/spa-core/lib/markSeen";
 import { scrollHighlightIntoView } from "@utsukta/spa-core/lib/scrollHighlightIntoView";
 import { useCommentOrder } from "@utsukta/spa-core/store/comment-order";
+import { useReplyMention } from "@utsukta/spa-core/store/reply-mention";
 import { MdFillAdd, MdFillBar_chart, MdFillChat, MdFillFolder, MdFillFolder_open, MdFillKeyboard_arrow_down, MdFillMore_vert, MdFillNotifications, MdFillPush_pin, MdFillShare, MdFillStar, MdFillStar_border, MdFillThumb_down, MdFillThumb_up, MdFillUnfold_more, MdOutlineCheck, MdOutlineClose, MdOutlineCloud_download, MdOutlineCode, MdOutlineComments_disabled, MdOutlineDelete, MdOutlineEdit, MdOutlineEvent, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineFlag, MdOutlineLocation_on, MdOutlineNotifications_none, MdOutlinePush_pin, MdOutlineRefresh, MdOutlineReply, MdOutlineSchedule, MdOutlineSend, MdOutlineShare, MdOutlineThumb_down, MdOutlineThumb_up, MdOutlineTimer, MdOutlineVisibility } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { BiRegularLinkExternal } from "solid-icons/bi";
@@ -236,6 +237,7 @@ export default function PostCard(props: {
   const commentsOffset = () => props.post.commentsOffset ?? 0;
   const [loadingMoreComments, setLoadingMoreComments] = createSignal(false);
   const commentOrder = useCommentOrder();
+  const replyMention = useReplyMention();
   const [deleteConfirming, setDeleteConfirming] = createSignal(false);
   // A card with no rootUuid IS the thread root; comments always get one
   // threaded down to them (see the rootUuid prop docs above).
@@ -322,10 +324,14 @@ export default function PostCard(props: {
   function openReply() {
     const opening = !replyOpen();
     if (opening) {
+      // Core's doreply(): a reply starts "@{author} " so the author is
+      // notified. Skipped on your own post/comment.
+      const addr = props.post.authorAddress || props.post.authorUrl;
+      const mention = replyMention() && addr && !isOwn() ? `@{${addr}} ` : "";
       setReplyQuote(
-        lastSelectedText
-          ? `[quote=${props.post.authorName}]${lastSelectedText}[/quote]\n`
-          : "",
+        mention + (lastSelectedText
+          ? `${mention ? "\n" : ""}[quote=${props.post.authorName}]${lastSelectedText}[/quote]\n`
+          : ""),
       );
       lastSelectedText = "";
     }

@@ -15,6 +15,8 @@ export interface HeadingToolDropdownProps {
   disabled?: boolean;
   /** "p" resets to a plain paragraph; "h1"–"h6" apply that heading level. */
   onSelect: (value: string) => void;
+  /** Keyboard shortcut per level ("p", "h1"…), shown as its tooltip. */
+  hints?: Record<string, string>;
 }
 
 const LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
@@ -74,6 +76,7 @@ export default function HeadingToolDropdown(props: HeadingToolDropdownProps) {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => select("p")}
+            title={props.hints?.p}
             class={itemClass("p")}
           >
             <Check on={active() === "p"} />
@@ -85,6 +88,7 @@ export default function HeadingToolDropdown(props: HeadingToolDropdownProps) {
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => select(level)}
+                title={props.hints?.[level]}
                 class={itemClass(level) + " uppercase"}
               >
                 <Check on={active() === level} />

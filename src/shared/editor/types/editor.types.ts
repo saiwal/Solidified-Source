@@ -50,12 +50,10 @@ export type EditorCapabilities = {
   // Free for posts, comments and DMs, whose body is converted to bbcode on
   // save, so the round trip's normalisation never reaches stored content.
   // Everywhere else the body *is* the stored content, so the composer pairs
-  // this with createWysiwygAvailable() (wysiwygSafe.ts), which offers the tab
-  // only for a body that survives the trip byte-for-byte.
-  //
-  // Off for wiki pages whatever the body says: core git-versions them, and a
-  // normalising edit would read as a whole-file rewrite in the page history.
-  // See markdownProtect.ts and canUseWysiwyg().
+  // this with createWysiwygGate() (wysiwygSafe.ts): the tab opens freely for a
+  // body that survives the trip byte-for-byte, and asks before rewriting one
+  // that doesn't. Wiki pages run that check on bbcode too (`strict`), since
+  // core git-versions them. See markdownProtect.ts and canUseWysiwyg().
   nonBbcodeWysiwyg: boolean;
   // Whether this body is converted to bbcode when it is saved — i.e. whether
   // bbcode mixed into a non-bbcode source still works.
@@ -225,7 +223,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     poll: false,
     cardPicker: false,
     format: true,
-    nonBbcodeWysiwyg: false,
+    nonBbcodeWysiwyg: true,
     bbcodeFallback: false,
   },
   // Personal note — always private, full toolbar (uniform with the other

@@ -92,6 +92,19 @@ export function imgBBCode(el: Element): string {
   const alt0 = el.getAttribute("alt") ?? "";
   const alt = alt0 === "Image/photo" ? "" : alt0;
 
+  // A floated image needs core's *legacy* form, the only one whose parser
+  // reads float (bbcode.php bb_imgoptions; bbcode.ts mirrors it):
+  // [img=400x float=left alt=text]url[/img]. Width rides in "WxH" ("x" alone
+  // when unsized — a "0" would size it to nothing), alt runs to the end of the
+  // tag unquoted, and height/class have no slot. Centring is [center] around
+  // the image instead, so it never comes through here.
+  const float = getStyle(el, "float");
+  if (float === "left" || float === "right") {
+    const w = px(el, "width");
+    const a = alt.replace(/[[\]]/g, "").replace(/\s+/g, " ").trim();
+    return `[${tag}=${w > 0 ? w : ""}x float=${float}${a ? ` alt=${a}` : ""}]${src}[/${tag}]`;
+  }
+
   // Core bbcode.php (bb_imgoptions) format: [img width='400']url[/img], px
   // units, single-quoted. Width alone keeps the aspect ratio; height is only
   // carried through when it was already in the source.

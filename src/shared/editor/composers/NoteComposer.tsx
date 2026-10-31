@@ -10,7 +10,6 @@ import AttachmentBar from "../attachments/AttachmentBar";
 import ComposerShell, { useEditorFloor } from "../components/ComposerShell";
 import { zenMode } from "@utsukta/spa-core/store/zen";
 import ComposerActionBar from "../components/ComposerActionBar";
-import { createWysiwygAvailable } from "../core/wysiwygSafe";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
@@ -105,6 +104,9 @@ export default function NoteComposer(props: Props) {
   }, scope, {
     initialBody: props.initial?.body,
     initialCategory: props.initial?.categories?.join(","),
+    // Same "Markdown" feature toggle posts/comments/DMs follow — an input
+    // format only: Notes.php / Item.php editItem store it as bbcode.
+    initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
   });
 
   if (props.initial?.mimetype) {
@@ -152,10 +154,6 @@ export default function NoteComposer(props: Props) {
     </div>
   );
 
-  // This body is stored in the format it was typed in, so the Write tab is
-  // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
-  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
-
   return (
     <ComposerShell
       class={props.fill ? "p-3" : undefined}
@@ -193,7 +191,6 @@ export default function NoteComposer(props: Props) {
             attach={attach ? attachActions : undefined}
             onImageAlt={(src, alt) => attach?.setAltByUrl(src, alt)}
             body={store.body()}
-            wysiwygAvailable={wysiwygAvailable()}
             onInput={store.setBody}
             capabilities={caps}
             tab={store.tab()}

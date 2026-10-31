@@ -38,7 +38,7 @@ import { MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } fro
 import DateTimePicker from "../components/DateTimePicker";
 import ComposerShell from "../components/ComposerShell";
 import { underlineFieldClass } from "../lib/fieldStyles";
-import { createWysiwygAvailable } from "../core/wysiwygSafe";
+import { createWysiwygGate } from "../core/wysiwygSafe";
 import { Input } from "@ui/Field";
 
 interface Props {
@@ -315,7 +315,7 @@ export default function ArticleComposer(props: Props) {
 
   // This body is stored in the format it was typed in, so the Write tab is
   // offered only while the round trip leaves it byte-identical (wysiwygSafe.ts).
-  const wysiwygAvailable = createWysiwygAvailable(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
+  const wysiwygGate = createWysiwygGate(store.body, store.mimetype, caps.nonBbcodeWysiwyg);
 
   return (
     <ComposerShell
@@ -409,12 +409,13 @@ export default function ArticleComposer(props: Props) {
             attach={attachActions}
             onImageAlt={(src, alt) => attach.setAltByUrl(src, alt)}
             body={store.body()}
-            wysiwygAvailable={wysiwygAvailable()}
+            wysiwygGate={wysiwygGate}
             onInput={store.setBody}
             capabilities={caps}
             tab={store.tab()}
             onTabChange={store.setTab}
             mimetype={store.mimetype()}
+            lang={lang()}
             placeholder={t("editor.start_writing")}
             minHeight="150px"
             fill

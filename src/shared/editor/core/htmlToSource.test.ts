@@ -98,6 +98,13 @@ const CORPUS = [
   "[quote]quoted[/quote]",
   "[h2]Title[/h2]\nbody",
   "[list]\n[*]one\n[*]two\n[/list]",
+  "[checklist]\n[x] done\n[] todo\n[/checklist]",
+  // Floated images: core's legacy form, the only one whose parser reads float.
+  "[img=400x float=left alt=A cat]https://x.org/a.png[/img]",
+  "[img=x float=right]https://x.org/a.png[/img]",
+  "[zmg=250x float=right alt=Photo]https://x.org/p.jpg[/zmg]",
+  "[center][img]https://x.org/a.png[/img][/center]",
+  "x[sup]2[/sup] H[sub]2[/sub]O",
   "[list=a]\n[*]one\n[*]two\n[/list]",
   "[code]x = 1[/code]",
   // The language used to be dropped (a [code=mermaid] diagram became plain

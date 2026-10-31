@@ -3,17 +3,20 @@ import type { LatexInsertMode, MimeType, ToolbarLevel } from "../types/editor.ty
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { persistedSignal, boolFlag } from "@utsukta/spa-core/lib/persisted";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdOutlineAccount_tree, MdOutlineAttach_file, MdOutlineBrush, MdOutlineChevron_right, MdOutlineCode, MdOutlineFont_download, MdOutlineFormat_bold, MdOutlineFormat_clear, MdOutlineFormat_color_text, MdOutlineFormat_italic, MdOutlineFormat_quote, MdOutlineFormat_size, MdOutlineFormat_strikethrough, MdOutlineFormat_underlined, MdOutlineFunctions, MdOutlineHighlight, MdOutlineHorizontal_rule, MdOutlineImage, MdOutlineLink, MdOutlineMap, MdOutlinePhoto_camera, MdOutlineStyle, MdOutlineTable_chart, MdOutlineVisibility_off } from "solid-icons/md";
+import { MdOutlineAccount_tree, MdOutlineAttach_file, MdOutlineChecklist, MdOutlineFormat_list_bulleted, MdOutlineFormat_list_numbered, MdOutlineFind_replace, MdOutlineBrush, MdOutlineChevron_right, MdOutlineCode, MdOutlineFont_download, MdOutlineFormat_bold, MdOutlineFormat_clear, MdOutlineFormat_color_text, MdOutlineFormat_italic, MdOutlineFormat_quote, MdOutlineFormat_size, MdOutlineFormat_strikethrough, MdOutlineFormat_underlined, MdOutlineFunctions, MdOutlineHighlight, MdOutlineHorizontal_rule, MdOutlineImage, MdOutlineLink, MdOutlineMap, MdOutlinePhoto_camera, MdOutlineRedo, MdOutlineSubscript, MdOutlineSuperscript, MdOutlineStyle, MdOutlineTable_chart, MdOutlineTitle, MdOutlineUndo, MdOutlineVisibility_off } from "solid-icons/md";
 import EmojiPicker from "../emoji/EmojiPicker";
 import { ColorPicker, OptionMenu, PromptPanel, SIZE_OPTIONS, FONT_OPTIONS } from "./ToolbarPickers";
 import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { emojiEntryToImg } from "@utsukta/spa-core/lib/emojify";
 import ListToolDropdown from "../components/ListToolDropdown";
+import SelectionBubble from "./SelectionBubble";
+import SlashMenu, { filterSlash, type SlashItem } from "./SlashMenu";
 import HeadingToolDropdown from "../components/HeadingToolDropdown";
+import OutlineDropdown, { headingCount } from "../components/OutlineDropdown";
 import { useInstalledApps, useNavData } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled, isModuleActive } from "@utsukta/spa-core/module-registry";
 import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
-import { fetchLinkMeta, linkMetaToBbcode, linkMetaToHtml } from "../lib/linkMeta";
+import { escapeHtml, fetchLinkMeta, linkMetaToBbcode, linkMetaToHtml } from "../lib/linkMeta";
 import { bbAlt, readAlt } from "../attachments/insertHelpers";
 import { bbcodeToHtml } from "@utsukta/spa-core/lib/bbcode";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
@@ -50,7 +53,16 @@ interface Props {
   /** Buttons pinned to the row's right end — the quick composer's clear and
    *  open-in-full, which would otherwise need a second row of their own. */
   trailing?: JSX.Element;
+  /** RichEditor's undo stack (core/editHistory.ts); buttons on full bars only. */
+  history?: { undo: () => void; redo: () => void; canUndo: () => boolean; canRedo: () => boolean };
+  /** Hands RichEditor the shortcut matcher, which it runs on the surfaces'
+   *  keydown. Returns true when the key was a shortcut and has been applied. */
+  bindShortcuts?: (fn: (e: KeyboardEvent) => boolean) => void;
+  /** Opens RichEditor's find & replace bar; omitted where it isn't offered. */
+  onFind?: () => void;
 }
+
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent);
 
 /**
  * Whether the toolbar's second tier is unfolded. Persisted and shared by every
@@ -207,9 +219,52 @@ export default function EditorToolbar(props: Props) {
         Object.keys(MARK_TAGS).map((m) => [m, !!markElement(r.startContainer, m, surface)]),
       ),
     );
+    trackBubble(r);
+    setHeadings(headingCount(surface));
   };
   document.addEventListener("selectionchange", trackSelection);
   onCleanup(() => document.removeEventListener("selectionchange", trackSelection));
+
+  // How many headings the surface has, refreshed with the caret — the
+  // Contents button (OutlineDropdown) only earns its place from three.
+  const [headings, setHeadings] = createSignal(0);
+
+  // ── Selection bubble (SelectionBubble.tsx) ────────────────────────────────
+  // Shown once a selection has settled — not on every step of a drag — and
+  // gone the moment it collapses, focus leaves for anywhere but the bubble,
+  // or the page scrolls (its position would be stale).
+  const [bubble, setBubble] = createSignal<DOMRect | null>(null);
+  let bubbleTimer: ReturnType<typeof setTimeout> | undefined;
+  const trackBubble = (r: Range) => {
+    clearTimeout(bubbleTimer);
+    const start = r.startContainer.nodeType === Node.TEXT_NODE ? r.startContainer.parentElement : (r.startContainer as Element);
+    if (isSource() || r.collapsed || !r.toString().trim() || start?.closest("pre, code, [contenteditable=false]")) {
+      setBubble(null);
+      return;
+    }
+    bubbleTimer = setTimeout(() => setBubble(r.getBoundingClientRect()), 150);
+  };
+  const hideBubble = () => { clearTimeout(bubbleTimer); setBubble(null); };
+  const onFocusIn = (e: FocusEvent) => {
+    const t = e.target as Element;
+    if (!props.editorRef()?.contains(t) && !t.closest?.("[data-editor-popup]")) hideBubble();
+  };
+  document.addEventListener("focusin", onFocusIn);
+  window.addEventListener("scroll", hideBubble, true);
+  onCleanup(() => {
+    clearTimeout(bubbleTimer);
+    document.removeEventListener("focusin", onFocusIn);
+    window.removeEventListener("scroll", hideBubble, true);
+  });
+  const bubbleItems = () => [
+    can("b") && { label: withKeys(t("editor.bold"), "Mod+B"), icon: <MdOutlineFormat_bold class="w-4 h-4" />, onPress: bold, active: marks().bold },
+    can("i") && { label: withKeys(t("editor.italic"), "Mod+I"), icon: <MdOutlineFormat_italic class="w-4 h-4" />, onPress: italic, active: marks().italic },
+    can("s") && { label: withKeys(t("editor.strikethrough"), "Mod+Shift+X"), icon: <MdOutlineFormat_strikethrough class="w-4 h-4" />, onPress: strike, active: marks().strikeThrough },
+    isFull() && can("code") && { label: withKeys(t("editor.code_block"), "Mod+E"), icon: <MdOutlineCode class="w-4 h-4" />, onPress: code },
+    isFull() && can("h") && { label: withKeys(t("editor.heading"), "Mod+Alt+2"), icon: <MdOutlineTitle class="w-4 h-4" />, onPress: () => heading("h2") },
+    !isCompact() && can("quote") && { label: withKeys(t("editor.blockquote"), "Mod+Shift+9"), icon: <MdOutlineFormat_quote class="w-4 h-4" />, onPress: () => quote("") },
+    isFull() && can("b") && { label: withKeys(t("editor.clear_formatting"), "Mod+\\"), icon: <MdOutlineFormat_clear class="w-4 h-4" />, onPress: clearFormatting },
+  ].filter(Boolean) as { label: string; icon: JSX.Element; onPress: () => void; active?: boolean }[];
 
   const focusEditor = () => {
     const el = props.editorRef();
@@ -416,7 +471,7 @@ export default function EditorToolbar(props: Props) {
     // an empty quote — but it can't carry an author, so a named quote always
     // wraps instead, leaving an anchor past the block either way.
     if (!author && !editorHasSelection()) { formatBlockEscapable("blockquote"); return; }
-    const open = author ? `<span class="bb-quote">${author} wrote:</span><blockquote>` : "<blockquote>";
+    const open = author ? `<span class="bb-quote">${escapeHtml(author)} wrote:</span><blockquote>` : "<blockquote>";
     wrapHtml(open, `</blockquote>${ZWSP}`);
   };
 
@@ -493,6 +548,91 @@ export default function EditorToolbar(props: Props) {
     );
   };
 
+  const supMark = () => isSource() ? applySpell("sup") : exec("superscript");
+  const subMark = () => isSource() ? applySpell("sub") : exec("subscript");
+
+  // The selected lines (or an empty first item) as checklist items — the
+  // markup bbcode.ts's bbChecklist renders, which htmlToSource and turndown
+  // both read back. RichEditor makes the boxes clickable.
+  const checklist = () => {
+    if (isSource()) { applySpell("checklist"); return; }
+    const sel = window.getSelection();
+    const lines = sel && sel.rangeCount && !sel.isCollapsed ? sel.toString().split("\n").filter((l) => l.trim()) : [""];
+    const items = lines.map((l) => `<li><input type="checkbox" disabled> ${l ? escapeHtml(l) : "<br>"}</li>`).join("");
+    insertBlock(`<ul class="checklist" style="list-style-type: none;">${items}</ul>`);
+  };
+
+  type ListKind = "bullet" | "number" | "alpha" | "check";
+  const kindOf = (l: Element): ListKind =>
+    l.tagName === "UL"
+      ? (l.classList.contains("checklist") ? "check" : "bullet")
+      : (/lower-alpha/.test((l as HTMLElement).style.listStyleType) || l.classList.contains("listloweralpha") ? "alpha" : "number");
+
+  /**
+   * Re-style the list the caret is in, in place. execCommand can't: in an
+   * <ol>, insertOrderedList *toggles the list off* — so picking "Lettered"
+   * for an indented numbered sub-list (or "Numbered" under a lettered one)
+   * removed the sub-list instead. Only that one level changes; the levels
+   * around it keep their own style, which [list=1] / [list=a] nesting keeps.
+   */
+  const retype = (el: Element, kind: ListKind) => {
+    const sel = window.getSelection();
+    const r = sel?.rangeCount ? sel.getRangeAt(0) : null;
+    const saved = r && { sc: r.startContainer, so: r.startOffset, ec: r.endContainer, eo: r.endOffset };
+    const n = document.createElement(kind === "bullet" || kind === "check" ? "ul" : "ol");
+    if (kind === "alpha") { n.className = "listloweralpha"; n.style.listStyleType = "lower-alpha"; }
+    if (kind === "check") { n.className = "checklist"; n.style.listStyleType = "none"; }
+    n.append(...Array.from(el.childNodes));
+    for (const li of Array.from(n.children)) {
+      if (li.tagName !== "LI") continue;
+      const box = li.querySelector(":scope > input[type=checkbox]");
+      if (kind === "check" && !box) li.prepend(Object.assign(document.createElement("input"), { type: "checkbox" }), " ");
+      if (kind !== "check" && box) box.remove();
+    }
+    el.replaceWith(n);
+    if (saved && sel && saved.sc.isConnected) {
+      const back = document.createRange();
+      back.setStart(saved.sc, saved.so);
+      back.setEnd(saved.ec, saved.eo);
+      sel.removeAllRanges();
+      sel.addRange(back);
+    }
+    // A direct DOM edit fires no input event; RichEditor records on one.
+    props.editorRef()?.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  const list = (kind: ListKind) => {
+    const surface = focusEditor();
+    const node = window.getSelection()?.rangeCount ? window.getSelection()!.getRangeAt(0).startContainer : null;
+    const el = node && (node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element));
+    const cur = el?.closest("ul, ol");
+    if (surface && cur && surface.contains(cur)) {
+      // Picking the style the list already has removes it, as before.
+      if (kindOf(cur) !== kind) { retype(cur, kind); return; }
+      if (kind === "check") return;
+      exec(kind === "bullet" ? "insertUnorderedList" : "insertOrderedList");
+      return;
+    }
+    if (kind === "check") checklist();
+    else if (kind === "bullet") exec("insertUnorderedList");
+    else if (kind === "number") exec("insertOrderedList");
+    else listAlpha();
+  };
+
+  const heading = (val: string) => {
+    if (isSource()) {
+      if (val !== "p") applySpell("h", val);
+      return;
+    }
+    if (!focusEditor()) return;
+    // Picking the level the caret is already in removes it —
+    // queryCommandValue reports the current block tag ("h2", "p").
+    const cur = (document.queryCommandValue("formatBlock") || "").toLowerCase();
+    document.execCommand("formatBlock", false, cur === val ? "p" : val);
+  };
+
+  const clearFormatting = () => { exec("formatBlock", "p"); exec("removeFormat"); };
+
   // Linking selected text is "make this a link" and stays literal. With no
   // selection the user is dropping in a bare URL, so we scrape it (see
   // ../lib/linkMeta) and insert a title/thumbnail/quote preview instead.
@@ -541,13 +681,13 @@ export default function EditorToolbar(props: Props) {
     if (/^(mp4|webm|ogv|mov|m4v)$/.test(ext)) {
       isSource()
         ? applySpell("video", u)
-        : insertBlock(`<video src="${u}" controls preload="none" style="max-width:100%"></video>`);
+        : insertBlock(`<video src="${escapeHtml(u)}" controls preload="none" style="max-width:100%"></video>`);
       return;
     }
     if (/^(mp3|ogg|oga|wav|m4a|flac|opus|aac)$/.test(ext)) {
       isSource()
         ? applySpell("audio", u)
-        : insertBlock(`<audio src="${u}" controls preload="none"></audio>`);
+        : insertBlock(`<audio src="${escapeHtml(u)}" controls preload="none"></audio>`);
       return;
     }
     if (!/^(png|jpe?g|gif|webp|avif|svg|bmp)$/.test(ext)) {
@@ -608,7 +748,7 @@ export default function EditorToolbar(props: Props) {
     // its intended inline size — same convention as applyImgWidth() below.
     // class="bb-latex-img" (see index.css) overrides Tailwind preflight's
     // `img { display: block }` so it flows inline like the saved post will.
-    const html = `<img src="${src}" alt="${alt}" class="bb-latex-img" style="width:${width}px" />`;
+    const html = `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" class="bb-latex-img" style="width:${width}px" />`;
     isBlock ? insertBlock(`<div style="text-align:center">${html}</div>`) : exec("insertHTML", html);
   };
 
@@ -654,7 +794,7 @@ export default function EditorToolbar(props: Props) {
     }
     const [, altAttr, src] = m;
     const alt = readAlt(altAttr);
-    exec("insertHTML", `<img src="${src}" alt="${alt}" />`);
+    exec("insertHTML", `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" />`);
   };
 
   // Literal [map=lat lon] bbcode — the WYSIWYG has no live map preview, same
@@ -673,10 +813,10 @@ export default function EditorToolbar(props: Props) {
     const cols = Math.min(20, Math.max(1, parseInt(colsRaw, 10) || 2));
     const rows = Math.min(50, Math.max(0, parseInt(rowsRaw, 10) || 2));
     if (isSource()) { applySpell("table", `${cols}x${rows}`); return; }
-    const header   = "<tr>" + Array.from({ length: cols }, (_, i) => `<th>Header ${i + 1}</th>`).join("") + "</tr>";
-    const dataRows = Array.from({ length: rows }, (_, r) =>
-      "<tr>" + Array.from({ length: cols }, (_, c) => `<td>Cell ${r + 1}-${c + 1}</td>`).join("") + "</tr>"
-    ).join("");
+    // Empty cells (a <br> keeps their height and takes the caret); the
+    // table bar (TableTools.tsx) grows or trims it from there.
+    const header   = "<tr>" + "<th><br></th>".repeat(cols) + "</tr>";
+    const dataRows = ("<tr>" + "<td><br></td>".repeat(cols) + "</tr>").repeat(rows);
     insertBlock(`<table border="1">${header}${dataRows}</table>`);
   };
 
@@ -684,7 +824,7 @@ export default function EditorToolbar(props: Props) {
     if (isSource()) {
       applySpell("spoiler", label);
     } else {
-      wrapHtml(`<details><summary>${label || "Spoiler"}</summary><div>`, `</div></details>${ZWSP}`);
+      wrapHtml(`<details><summary>${escapeHtml(label || "Spoiler")}</summary><div>`, `</div></details>${ZWSP}`);
     }
   };
 
@@ -725,10 +865,187 @@ export default function EditorToolbar(props: Props) {
     </>
   );
 
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
+  // Same functions as the buttons, so a key does exactly what its button does
+  // in either tab. Each fires only where its button is offered.
+
+  /** "Mod+Shift+X" spelled for this platform and locale ("Strg+Umschalt+X", "⌘⇧X"). */
+  const keys = (combo: string) => {
+    const mac: Record<string, string> = { Mod: "⌘", Shift: "⇧", Alt: "⌥" };
+    const pc: Record<string, string> = { Mod: t("editor.key_ctrl"), Shift: t("editor.key_shift"), Alt: "Alt" };
+    return combo.split("+").map((k) => (IS_MAC ? mac : pc)[k] ?? k).join(IS_MAC ? "" : "+");
+  };
+  const withKeys = (label: string, combo: string) => `${label} (${keys(combo)})`;
+
+  let openLink: (() => void) | undefined;
+
+  const shortcut = (e: KeyboardEvent): boolean => {
+    // AltGr reaches us as Ctrl+Alt on Windows — AltGr+7 is "{" on a German
+    // keyboard, not a heading.
+    if (!(IS_MAC ? e.metaKey : e.ctrlKey) || e.getModifierState?.("AltGraph")) return false;
+    const blocks = !isCompact() && !isSource() && can("b");
+    const fire = (ok: boolean, fn: () => void) => (ok ? (fn(), true) : false);
+    if (!e.shiftKey && !e.altKey) {
+      switch (e.key.toLowerCase()) {
+        case "b": return fire(can("b"), bold);
+        case "i": return fire(can("i"), italic);
+        case "u": return fire(can("u"), underline);
+        case "e": return fire(isFull() && can("code"), code);
+        case "k": return fire(!!openLink, () => openLink!());
+        case "\\": return fire(isFull() && !isSource() && can("b"), clearFormatting);
+        case ".": return fire(!isCompact() && can("sup"), supMark);
+        case ",": return fire(!isCompact() && can("sub"), subMark);
+      }
+      return false;
+    }
+    // Physical keys from here: Shift+7 is "&" or "/" depending on layout.
+    if (e.shiftKey && !e.altKey) {
+      switch (e.code) {
+        case "KeyX":   return fire(can("s"), strike);
+        case "Digit7": return fire(blocks, () => list("number"));
+        case "Digit8": return fire(blocks, () => list("bullet"));
+        case "Digit9": return fire(!isCompact() && can("quote"), () => quote(""));
+      }
+      return false;
+    }
+    const lvl = e.altKey && !e.shiftKey ? /^Digit([0-3])$/.exec(e.code)?.[1] : undefined;
+    return lvl !== undefined && fire(isFull() && can("h"), () => heading(lvl === "0" ? "p" : `h${lvl}`));
+  };
+  props.bindShortcuts?.(shortcut);
+
+  // ── Slash menu (SlashMenu.tsx) ─────────────────────────────────────────────
+  // "/" typed at a line start or after a space opens it; the text typed after
+  // it filters. Picking deletes the "/query" and runs the item's toolbar
+  // action. Settings → Features → Editor `spa_slash` switches it off.
+  let openMedia: (() => void) | undefined;
+  const [slash, setSlash] = createSignal<{ node: Text; start: number; query: string; rect: DOMRect } | null>(null);
+  const [slashActive, setSlashActive] = createSignal(0);
+  const closeSlash = () => setSlash(null);
+
+  /** A panel that lives behind "More formatting": unfold it, then open. */
+  const viaTools = (open: () => (() => void) | undefined) => () => {
+    if (!toolsOpen()) setToolsOpen(true);
+    queueMicrotask(() => open()?.());
+  };
+
+  const slashItems = (): SlashItem[] => {
+    const ic = (el: JSX.Element) => el;
+    const h = (n: 1 | 2 | 3): SlashItem => ({
+      id: `h${n}`, label: `${t("editor.heading")} ${n}`, aliases: `h${n} heading title`,
+      icon: <span class="text-[0.625rem] font-semibold">H{n}</span>, run: () => heading(`h${n}`),
+    });
+    return [
+      ...(isFull() && can("h") ? [h(1), h(2), h(3)] : []),
+      ...(!isCompact() && can("b") ? [
+        { id: "ul", label: t("editor.bullet_list"), aliases: "bullet list ul unordered", icon: ic(<MdOutlineFormat_list_bulleted class="w-4 h-4" />), run: () => list("bullet") },
+        { id: "ol", label: t("editor.numbered_list"), aliases: "numbered list ol ordered", icon: ic(<MdOutlineFormat_list_numbered class="w-4 h-4" />), run: () => list("number") },
+        { id: "alpha", label: t("editor.lettered_list"), aliases: "lettered list alpha abc", icon: <span class="text-[0.625rem] font-semibold">abc</span>, run: () => list("alpha") },
+        { id: "check", label: t("editor.checklist"), aliases: "checklist todo task checkbox", icon: ic(<MdOutlineChecklist class="w-4 h-4" />), run: () => list("check") },
+      ] : []),
+      ...(!isCompact() && can("quote") ? [{ id: "quote", label: t("editor.blockquote"), aliases: "quote blockquote", icon: ic(<MdOutlineFormat_quote class="w-4 h-4" />), run: () => quote("") }] : []),
+      ...(isFull() && can("code") ? [{ id: "code", label: t("editor.code_block"), aliases: "code pre", icon: ic(<MdOutlineCode class="w-4 h-4" />), run: code }] : []),
+      ...(!isCompact() && can("hr") ? [{ id: "hr", label: t("editor.horizontal_rule"), aliases: "divider rule hr line separator", icon: ic(<MdOutlineHorizontal_rule class="w-4 h-4" />), run: hr }] : []),
+      ...(isFull() && can("table") ? [{ id: "table", label: t("editor.table"), aliases: "table grid", icon: ic(<MdOutlineTable_chart class="w-4 h-4" />), run: () => table("3", "2") }] : []),
+      ...(isFull() && can("spoiler") ? [{ id: "spoiler", label: t("editor.spoiler"), aliases: "spoiler details collapse hide", icon: ic(<MdOutlineVisibility_off class="w-4 h-4" />), run: () => spoiler("") }] : []),
+      ...(!isCompact() && can("img") ? [{ id: "media", label: t("editor.media"), aliases: "image picture photo video audio media youtube embed", icon: ic(<MdOutlineImage class="w-4 h-4" />), run: viaTools(() => openMedia) }] : []),
+      ...(openLink ? [{ id: "link", label: t("editor.link"), aliases: "link url", icon: ic(<MdOutlineLink class="w-4 h-4" />), run: () => openLink?.() }] : []),
+      ...(props.attach ? [{ id: "file", label: t("editor.attach_file_title"), aliases: "attach file upload", icon: ic(<MdOutlineAttach_file class="w-4 h-4" />), run: () => props.attach!.openFile() }] : []),
+      ...(!isCompact() && showLatex() ? [{ id: "latex", label: t("editor.latex_toolbar_title"), aliases: "latex math equation formula", icon: ic(<MdOutlineFunctions class="w-4 h-4" />), run: () => setLatexOpen(true) }] : []),
+      ...(!isCompact() && showDiagram() ? [{ id: "diagram", label: t("editor.diagram_toolbar_title"), aliases: "diagram mermaid flowchart chart", icon: ic(<MdOutlineAccount_tree class="w-4 h-4" />), run: () => setDiagramOpen(true) }] : []),
+      ...(!isCompact() && showExcalidraw() ? [{ id: "draw", label: t("editor.excalidraw_toolbar_title"), aliases: "drawing sketch excalidraw whiteboard", icon: ic(<MdOutlineBrush class="w-4 h-4" />), run: () => setExcalidrawOpen(true) }] : []),
+      ...(!isCompact() && showMap() ? [{ id: "map", label: t("editor.map_toolbar_title"), aliases: "map location place", icon: ic(<MdOutlineMap class="w-4 h-4" />), run: () => setMapOpen(true) }] : []),
+      ...(!isCompact() && showCardPicker() ? [{ id: "card", label: t("editor.card_toolbar_title"), aliases: "card embed", icon: ic(<MdOutlineStyle class="w-4 h-4" />), run: () => setCardPickerOpen(true) }] : []),
+    ];
+  };
+  const slashMatches = () => {
+    const s = slash();
+    return s ? filterSlash(slashItems(), s.query) : [];
+  };
+
+  const caretRect = (r: Range) => {
+    const rects = r.getClientRects();
+    return rects.length ? rects[rects.length - 1] : r.getBoundingClientRect();
+  };
+
+  const onDocInput = (e: Event) => {
+    const surface = props.editorRef();
+    if (!surface || !surface.contains(e.target as Node) || isSource()) return;
+    const sel = window.getSelection();
+    const r = sel?.rangeCount ? sel.getRangeAt(0) : null;
+    const node = r?.startContainer;
+    if (!r || !r.collapsed || node?.nodeType !== Node.TEXT_NODE) { closeSlash(); return; }
+    const text = node as Text;
+    const s = slash();
+    if (!s) {
+      const ie = e as InputEvent;
+      if (ie.inputType !== "insertText" || ie.data !== "/" || !isFeatureEnabled("spa_slash")) return;
+      if (document.querySelector("[data-suggest-popup]") || text.parentElement?.closest("pre, code, [contenteditable=false]")) return;
+      if (!/(^|\s)\/$/.test(text.data.slice(0, r.startOffset).replace(/\u200B/g, ""))) return;
+      setSlashActive(0);
+      setSlash({ node: text, start: r.startOffset - 1, query: "", rect: caretRect(r) });
+      return;
+    }
+    // Still typing the query in the same text node, right after the "/"?
+    if (text !== s.node || r.startOffset <= s.start || text.data[s.start] !== "/") { closeSlash(); return; }
+    const query = text.data.slice(s.start + 1, r.startOffset);
+    if (/\s/.test(query) || !filterSlash(slashItems(), query).length) { closeSlash(); return; }
+    setSlashActive(0);
+    setSlash({ ...s, query, rect: caretRect(r) });
+  };
+
+  const pickSlash = (it: SlashItem) => {
+    const s = slash();
+    closeSlash();
+    if (!s || !s.node.isConnected) return;
+    // Delete "/query" through the editor (one input event, so the body and
+    // undo follow), with the caret left where the item will insert.
+    const r = document.createRange();
+    r.setStart(s.node, s.start);
+    r.setEnd(s.node, Math.min(s.node.data.length, s.start + 1 + s.query.length));
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(r);
+    document.execCommand("delete");
+    lastRange = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : lastRange;
+    it.run();
+  };
+
+  // Capture phase on the document: ahead of RichEditor's own Enter/Tab
+  // handling, the composers' window listeners and Solid's delegated handlers.
+  const onSlashKey = (e: KeyboardEvent) => {
+    if (!slash()) return;
+    const items = slashMatches();
+    const step = (d: number) => setSlashActive((i) => (i + d + items.length) % items.length);
+    if (e.key === "ArrowDown") step(1);
+    else if (e.key === "ArrowUp") step(-1);
+    else if (e.key === "Enter" || e.key === "Tab") { const it = items[slashActive()]; if (it) pickSlash(it); else closeSlash(); }
+    else if (e.key === "Escape") closeSlash();
+    else return;
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const onSlashSelection = () => {
+    const s = slash();
+    if (!s) return;
+    const sel = window.getSelection();
+    const r = sel?.rangeCount ? sel.getRangeAt(0) : null;
+    // Caret moved off the query (click elsewhere, arrow left past "/").
+    if (!r || r.startContainer !== s.node || r.startOffset <= s.start || r.startOffset > s.start + 1 + s.query.length) closeSlash();
+  };
+  document.addEventListener("input", onDocInput, true);
+  document.addEventListener("keydown", onSlashKey, true);
+  document.addEventListener("selectionchange", onSlashSelection);
+  onCleanup(() => {
+    document.removeEventListener("input", onDocInput, true);
+    document.removeEventListener("keydown", onSlashKey, true);
+    document.removeEventListener("selectionchange", onSlashSelection);
+  });
+
   const LinkPanel = () => (
     <Show when={can("url")}>
     <PromptPanel
-      title={t("editor.link")}
+      title={withKeys(t("editor.link"), "Mod+K")}
+      opener={(fn) => { openLink = fn; }}
       icon={<MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />}
       fields={[{ key: "url", label: t("editor.url_label") }]}
       submitLabel={t("editor.insert")}
@@ -738,31 +1055,73 @@ export default function EditorToolbar(props: Props) {
     </Show>
   );
 
+  // Left/Right/Home/End move between the bar's own buttons. Only from a
+  // button: a panel's text field needs its arrow keys for the caret.
+  const toolbarArrows = (e: KeyboardEvent) => {
+    const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+    const cur = e.target as HTMLElement;
+    if (!keys.includes(e.key) || cur.tagName !== "BUTTON") return;
+    const bar = e.currentTarget as HTMLElement;
+    const btns = [...bar.querySelectorAll<HTMLButtonElement>("button:not([disabled])")]
+      .filter((b) => b.closest("[role=toolbar]") === bar && b.offsetParent !== null);
+    const i = btns.indexOf(cur as HTMLButtonElement);
+    if (i < 0) return;
+    e.preventDefault();
+    const next = e.key === "Home" ? 0 : e.key === "End" ? btns.length - 1
+      : (i + (e.key === "ArrowRight" ? 1 : -1) + btns.length) % btns.length;
+    btns[next].focus();
+  };
+
   return (
     <>
-    <div class="flex flex-wrap items-center gap-0.5 px-2 py-2 shrink-0 border-t border-rim rounded-b-lg bg-surface">
+    <Show when={slash() && slashMatches().length ? slash() : null}>
+      {(s) => (
+        <SlashMenu
+          rect={s().rect}
+          items={slashMatches()}
+          active={Math.min(slashActive(), slashMatches().length - 1)}
+          onPick={pickSlash}
+          onHover={setSlashActive}
+        />
+      )}
+    </Show>
+    <Show when={bubble()}>
+      {(rect) => (
+        <SelectionBubble
+          rect={rect()}
+          items={bubbleItems()}
+          onLink={can("url") ? (u) => { void link(u); } : undefined}
+        />
+      )}
+    </Show>
+    <div
+      role="toolbar"
+      aria-label={t("editor.toolbar_label")}
+      onKeyDown={toolbarArrows}
+      class="flex flex-wrap items-center gap-0.5 px-2 py-2 shrink-0 border-t border-rim rounded-b-lg bg-surface"
+    >
 
       {/* ── Group 1: Inline formatting — all levels ── */}
       {/* marks() only tracks the WYSIWYG caret, so the source tab shows none. */}
       {/* Each mark renders only where the current format can spell it —
            text/plain can spell none of them, so the group disappears. */}
       <Show when={can("b")}>
-        <Btn title={t("editor.bold")} onPress={bold} active={!isSource() && marks().bold}>
+        <Btn title={withKeys(t("editor.bold"), "Mod+B")} onPress={bold} active={!isSource() && marks().bold}>
           <MdOutlineFormat_bold class="w-4 h-4" />
         </Btn>
       </Show>
       <Show when={can("i")}>
-        <Btn title={t("editor.italic")} onPress={italic} active={!isSource() && marks().italic}>
+        <Btn title={withKeys(t("editor.italic"), "Mod+I")} onPress={italic} active={!isSource() && marks().italic}>
           <MdOutlineFormat_italic class="w-4 h-4" />
         </Btn>
       </Show>
       <Show when={can("u")}>
-        <Btn title={t("editor.underline")} onPress={underline} active={!isSource() && marks().underline}>
+        <Btn title={withKeys(t("editor.underline"), "Mod+U")} onPress={underline} active={!isSource() && marks().underline}>
           <MdOutlineFormat_underlined class="w-4 h-4" />
         </Btn>
       </Show>
       <Show when={can("s")}>
-        <Btn title={t("editor.strikethrough")} onPress={strike} active={!isSource() && marks().strikeThrough}>
+        <Btn title={withKeys(t("editor.strikethrough"), "Mod+Shift+X")} onPress={strike} active={!isSource() && marks().strikeThrough}>
           <MdOutlineFormat_strikethrough class="w-4 h-4" />
         </Btn>
       </Show>
@@ -813,11 +1172,8 @@ export default function EditorToolbar(props: Props) {
           <Show when={can("b")}>
           <ListToolDropdown
             disabled={isSource()}
-            onSelect={(kind) => {
-              if (kind === "bullet") exec("insertUnorderedList");
-              else if (kind === "number") exec("insertOrderedList");
-              else listAlpha();
-            }}
+            onSelect={list}
+            hints={{ bullet: keys("Mod+Shift+8"), number: keys("Mod+Shift+7") }}
           />
           </Show>
           <EmojiPicker onSelect={insertEmoji} />
@@ -852,6 +1208,14 @@ export default function EditorToolbar(props: Props) {
               onPick={size}
             />
           </Show>
+          <Show when={can("sup")}>
+            <Btn title={withKeys(t("editor.superscript"), "Mod+.")} onPress={supMark}>
+              <MdOutlineSuperscript class="w-4 h-4" />
+            </Btn>
+            <Btn title={withKeys(t("editor.subscript"), "Mod+,")} onPress={subMark}>
+              <MdOutlineSubscript class="w-4 h-4" />
+            </Btn>
+          </Show>
 
           {/* ── Group 3: Block elements ── */}
           <Sep />
@@ -859,22 +1223,13 @@ export default function EditorToolbar(props: Props) {
               are real bbcode (htmlToSource emits them, core renders them). */}
           <Show when={isFull() && can("h")}>
             <HeadingToolDropdown
-              onSelect={(val) => {
-                if (isSource()) {
-                  if (val !== "p") applySpell("h", val);
-                  return;
-                }
-                if (!focusEditor()) return;
-                // Picking the level the caret is already in removes it —
-                // queryCommandValue reports the current block tag ("h2", "p").
-                const cur = (document.queryCommandValue("formatBlock") || "").toLowerCase();
-                document.execCommand("formatBlock", false, cur === val ? "p" : val);
-              }}
+              onSelect={heading}
+              hints={{ p: keys("Mod+Alt+0"), h1: keys("Mod+Alt+1"), h2: keys("Mod+Alt+2"), h3: keys("Mod+Alt+3") }}
             />
           </Show>
           <Show when={can("quote")}>
           <PromptPanel
-            title={t("editor.blockquote")}
+            title={withKeys(t("editor.blockquote"), "Mod+Shift+9")}
             icon={<MdOutlineFormat_quote class="w-4 h-4" />}
             fields={[{ key: "author", label: t("editor.quote_author") }]}
             submitLabel={t("editor.insert")}
@@ -883,7 +1238,7 @@ export default function EditorToolbar(props: Props) {
           </Show>
           <Show when={isFull() && can("code")}>
             <>
-              <Btn title={t("editor.code_block")} onPress={code}>
+              <Btn title={withKeys(t("editor.code_block"), "Mod+E")} onPress={code}>
                 <MdOutlineCode class="w-4 h-4" />
               </Btn>
             </>
@@ -900,6 +1255,7 @@ export default function EditorToolbar(props: Props) {
             fields={[{ key: "url", label: t("editor.media_url") }]}
             submitLabel={t("editor.insert")}
             onSubmit={(v) => media(v.url)}
+            opener={(fn) => { openMedia = fn; }}
           />
           </Show>
           {/* The card/draw/map buttons insert raw bbcode tokens, so they only
@@ -967,9 +1323,29 @@ export default function EditorToolbar(props: Props) {
           <Show when={isFull() && can("b")}>
             <>
               <span class="flex-1" />
+              <Show when={!isSource() && headings() >= 3}>
+                <OutlineDropdown editorRef={props.editorRef} title={t("editor.outline")} />
+              </Show>
+              <Show when={props.onFind}>
+                <Btn title={withKeys(t("editor.find_replace"), "Mod+F")} onPress={() => props.onFind?.()}>
+                  <MdOutlineFind_replace class="w-4 h-4" />
+                </Btn>
+              </Show>
+              <Show when={props.history}>
+                {(h) => (
+                  <>
+                    <Btn title={withKeys(t("editor.undo"), "Mod+Z")} onPress={() => h().undo()} disabled={!h().canUndo()}>
+                      <MdOutlineUndo class="w-4 h-4" />
+                    </Btn>
+                    <Btn title={withKeys(t("editor.redo"), "Mod+Shift+Z")} onPress={() => h().redo()} disabled={!h().canRedo()}>
+                      <MdOutlineRedo class="w-4 h-4" />
+                    </Btn>
+                  </>
+                )}
+              </Show>
               <Btn
-                title={t("editor.clear_formatting")}
-                onPress={() => { exec("formatBlock", "p"); exec("removeFormat"); }}
+                title={withKeys(t("editor.clear_formatting"), "Mod+\\")}
+                onPress={clearFormatting}
                 disabled={isSource()}
               >
                 <MdOutlineFormat_clear class="w-4 h-4" />
@@ -1065,6 +1441,10 @@ function Btn(props: {
       onMouseDown={(e) => {
         e.preventDefault();
         if (!props.disabled) props.onPress(e);
+      }}
+      // Keyboard Enter/Space fires only click (detail 0); mouse already acted.
+      onClick={(e) => {
+        if (e.detail === 0 && !props.disabled) props.onPress(e);
       }}
     >
       {props.children}
