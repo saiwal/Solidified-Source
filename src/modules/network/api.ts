@@ -105,6 +105,7 @@ export function parseNetworkParams(params: Record<string, string | string[] | un
   if (params.event === "1") p.event = 1;
   if (params.poll  === "1") p.poll  = 1;
   if (params.rss   === "1") p.net   = "rss";
+  if (params.unseen === "1") p.unseen = 1;
   if (params.dbegin) p.dbegin = String(params.dbegin);
   // `range` is a UI-only param: map it to the window the API understands, but
   // never override an explicit date range set in the sidebar filter widget.

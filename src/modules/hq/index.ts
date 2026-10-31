@@ -4,7 +4,7 @@ import "./tours";
 
 registerModule({
   id: "hq",
-  i18n: ["articles", "calendar", "cards", "settings"],
+  i18n: ["articles", "calendar", "cards", "network", "settings"],
   // :uuid — core redirects DM notifications (/notify/view/:id, NOTIFY_MAIL)
   // server-side to classic HQ's /hq/<b64mid> permalink before the SPA loads,
   // so this route has to answer that URL too; HqView opens it in the same
@@ -122,6 +122,32 @@ registerModule({
       contexts: "any",
       visitorVisible: false,
       helpTarget: "widgets.scheduled_posts",
+    },
+    {
+      // Opt-in, one card per saved search — see FilteredPostsList.tsx
+      id: "hq.saved_search_posts",
+      label: () => useI18n().t("widgets.saved_search_posts"),
+      loader: () => import("./widgets/SavedSearchPostsWidget"),
+      slot: "contentTop",
+      defaultSpan: 3,
+      defaultModules: [],
+      contexts: ["hq"],
+      visitorVisible: false,
+      multiInstance: true,
+      configComponent: () => import("./widgets/SavedSearchPostsConfig"),
+    },
+    {
+      // Opt-in, one card per stream filter preset (+ optional group/forum)
+      id: "hq.filter_posts",
+      label: () => useI18n().t("widgets.filter_posts"),
+      loader: () => import("./widgets/FilterPostsWidget"),
+      slot: "contentTop",
+      defaultSpan: 3,
+      defaultModules: [],
+      contexts: ["hq"],
+      visitorVisible: false,
+      multiInstance: true,
+      configComponent: () => import("./widgets/FilterPostsConfig"),
     },
     {
       // Local users only — mirrors the old `auth()?.isLocal` gate in HqView
