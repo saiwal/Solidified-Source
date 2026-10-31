@@ -3,6 +3,8 @@ import type { RawDictionary } from "../namespaces/types";
 export const connection: RawDictionary["connection"] = {
   close:          "Schließen",
   role:           "Rolle",
+  manage_roles:   "Kontaktrollen verwalten",
+  manage_groups:  "Privatsphäre-Gruppen verwalten",
   role_loading:   "Rollen werden geladen…",
   no_role:        "Standard",
   closeness:      "Nähe",

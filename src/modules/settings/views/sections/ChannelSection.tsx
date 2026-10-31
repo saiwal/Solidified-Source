@@ -221,7 +221,7 @@ export default function ChannelSection() {
                               <span class="block text-xs text-muted">{perm.help}</span>
                             </Show>
                           </span>
-                          <Select class="w-full shrink-0" onChange={(e) =>
+                          <Select class="w-full sm:w-64 shrink-0" onChange={(e) =>
                               setPermOverrides({ ...permOverrides(), [perm.key]: Number(e.currentTarget.value) })
                             }>
                             <For each={Object.entries(perm.options)}>

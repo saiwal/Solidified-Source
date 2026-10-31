@@ -359,6 +359,8 @@ export type RawDictionary = {
   connection: {
     close:          string;
     role:           string;
+    manage_roles:   string;
+    manage_groups:  string;
     role_loading:   string;
     no_role:        string;
     closeness:      string;

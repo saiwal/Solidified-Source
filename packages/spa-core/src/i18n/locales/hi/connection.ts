@@ -3,6 +3,8 @@ import type { RawDictionary } from "../namespaces/types";
 export const connection: RawDictionary["connection"] = {
   close:          "बंद करें",
   role:           "भूमिका",
+  manage_roles:   "संपर्क भूमिकाएँ प्रबंधित करें",
+  manage_groups:  "गोपनीयता समूह प्रबंधित करें",
   role_loading:   "भूमिकाएँ लोड हो रही हैं…",
   no_role:        "कोई भूमिका नहीं",
   closeness:      "निकटता",

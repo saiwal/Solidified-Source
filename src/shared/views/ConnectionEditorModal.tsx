@@ -12,8 +12,10 @@ import { fetchProfiles } from "@/modules/profiles/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import FilterRuleBuilder from "./FilterRuleBuilder";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
-import { MdOutlineCheck, MdOutlineClose, MdOutlineRefresh, MdOutlineWarning } from "solid-icons/md";
+import { MdOutlineCheck, MdOutlineClose, MdOutlineLink, MdOutlineRefresh, MdOutlineWarning } from "solid-icons/md";
 import { A } from "@solidjs/router";
+import { isAppInstalled } from "@utsukta/spa-core/module-registry";
+import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 
 import { Modal, ModalPanel } from "@ui/Modal";
 import { Button, IconButton, buttonClass } from "@ui/Button";
@@ -46,6 +48,16 @@ const CrossIcon = () => (
   <MdOutlineClose class="w-3.5 h-3.5 text-danger-txt shrink-0" />
 );
 
+/** Small icon link beside a section label, to the page that manages that list. */
+function ManageLink(p: { href: string; label: string; onClick: () => void }) {
+  return (
+    <A href={p.href} onClick={p.onClick} aria-label={p.label} title={p.label}
+       class="text-muted hover:text-accent-txt">
+      <MdOutlineLink class="w-4 h-4" />
+    </A>
+  );
+}
+
 function FlagToggle(p: { label: string; active: boolean; onChange: (v: boolean) => void }) {
   return (
     <Button variant="ghost" size="sm" pressed={p.active} onClick={() => p.onChange(!p.active)}>
@@ -63,6 +75,7 @@ function formatDate(iso: string): string {
 
 function ConnectionEditorModal(props: Props) {
   const { t } = useI18n();
+  const installedApps = useInstalledApps();
   const [tab, setTab] = createSignal<Tab>(props.initialTab ?? "settings");
   const [role, setRole] = createSignal(props.connection.role ?? "");
   const [closeness, setCloseness] = createSignal(props.connection.closeness ?? 80);
@@ -252,9 +265,14 @@ function ConnectionEditorModal(props: Props) {
 
               {/* Role (permcat dropdown) */}
               <div>
-                <label class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">
-                  {t("connection.role")}
-                </label>
+                <div class="flex items-center gap-1.5 mb-1.5">
+                  <label class="text-xs font-semibold text-muted uppercase tracking-wide">
+                    {t("connection.role")}
+                  </label>
+                  <Show when={isAppInstalled(installedApps(), "/permcats")}>
+                    <ManageLink href="/directory/contact-roles" label={t("connection.manage_roles")} onClick={props.onClose} />
+                  </Show>
+                </div>
                 <Show
                   when={!permcats.loading}
                   fallback={
@@ -320,9 +338,14 @@ function ConnectionEditorModal(props: Props) {
               {/* Privacy Groups */}
               <Show when={(privacyGroups() ?? []).length > 0}>
                 <div>
-                  <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-                    {t("connection.privacy_groups")}
-                  </p>
+                  <div class="flex items-center gap-1.5 mb-2">
+                    <p class="text-xs font-semibold text-muted uppercase tracking-wide">
+                      {t("connection.privacy_groups")}
+                    </p>
+                    <Show when={isAppInstalled(installedApps(), "/group")}>
+                      <ManageLink href="/directory/privacy-groups" label={t("connection.manage_groups")} onClick={props.onClose} />
+                    </Show>
+                  </div>
                   <div class="flex flex-wrap gap-2">
                     <For each={privacyGroups()}>
                       {(group) => (
