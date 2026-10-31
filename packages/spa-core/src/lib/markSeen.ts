@@ -1,3 +1,4 @@
+import { apiFetch } from "./fetch";
 import { editingWidgets } from "../store/widget-layout";
 import { queryClient } from "./query-client";
 
@@ -22,14 +23,15 @@ export function markNotifySeen(nid: number): Promise<void> {
 }
 
 /**
- * Mark a whole notification bucket seen.
- * Core's Zotlabs\Module\Notifications::get() switches on the key — it handles
- * network, home, dm, all_events, notify, pubs and forum_<abook_id> by prefix,
- * and silently does nothing for anything else — then killme()s with no body.
+ * Mark whole notification buckets seen, in one request.
+ * POST /spa/notifications/markread mirrors core's /notifications?markRead=
+ * switch — network, home, dm, all_events, notify, pubs and forum_<abook_id>;
+ * anything else is ignored — but without core's lock-heavy range UPDATE.
  */
-export async function markAllSeen(key: string): Promise<void> {
-  const res = await fetch(`/notifications?markRead=${encodeURIComponent(key)}`, {
-    credentials: "include",
+export async function markAllSeen(keys: string | string[]): Promise<void> {
+  const res = await apiFetch("/spa/notifications/markread", {
+    method: "POST",
+    body: JSON.stringify({ keys: ([] as string[]).concat(keys) }),
   });
   if (!res.ok) throw new Error("Failed to mark read");
   void refreshUnreadBadges();

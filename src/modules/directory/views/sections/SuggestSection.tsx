@@ -3,7 +3,8 @@ import {
   entries, loading, loadingMore, hasMore, total,
   loadDirectory, loadMoreDirectory, resetDirectory,
 } from "../../people/store";
-import DirectoryCard from "../DirectoryCard";
+import DirectoryCard, { CardSkeleton } from "../DirectoryCard";
+import { Section } from "../Section";
 import DirectoryEntryModal from "../DirectoryEntryModal";
 import type { DirectoryEntry } from "../../people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -21,11 +22,14 @@ export default function SuggestSection() {
   });
 
   return (
-    <div class="px-4 md:px-6 py-6 space-y-4">
-      <Show when={!loading() && total() > 0}>
-        <p class="text-sm text-muted">{total().toLocaleString()} {t("directory.suggestions_count")}</p>
-      </Show>
-
+    <Section
+      title={t("directory.suggestions")}
+      description={
+        <Show when={!loading() && total() > 0}>
+          <span class="tabular-nums">{total().toLocaleString()}</span> {t("directory.suggestions_count")}
+        </Show>
+      }
+    >
       <Show when={loading()}>
         <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]">
           <For each={Array(12).fill(0)}>{() => <CardSkeleton />}</For>
@@ -63,22 +67,6 @@ export default function SuggestSection() {
       </Show>
 
       <DirectoryEntryModal entry={selected()} onClose={() => setSelected(null)} />
-    </div>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div class="rounded-xl border border-rim bg-surface p-4 space-y-3 animate-pulse">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-full bg-overlay shrink-0" />
-        <div class="flex-1 space-y-2">
-          <div class="h-4 bg-overlay rounded w-3/4" />
-          <div class="h-3 bg-overlay rounded w-1/2" />
-        </div>
-      </div>
-      <div class="h-3 bg-overlay rounded w-full" />
-      <div class="h-3 bg-overlay rounded w-2/3" />
-    </div>
+    </Section>
   );
 }

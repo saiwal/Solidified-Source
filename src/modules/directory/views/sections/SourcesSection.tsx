@@ -13,13 +13,11 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import {
   MdFillAdd,
   MdFillClose,
-  MdFillDelete,
-  MdFillEdit,
   MdFillPeople,
   MdFillWarning,
+  MdOutlineDelete,
+  MdOutlineEdit,
 } from "solid-icons/md";
-import SubPageContent from "@/shared/views/SubPageContent";
-import PageActions from "@/shared/views/layout/PageActions";
 import { useConnectionSearch } from "@/shared/editor/components/useConnectionSearch";
 import {
   ALL_CONNECTIONS,
@@ -28,14 +26,30 @@ import {
   saveSource,
   type Source,
 } from "../../sources/api";
+import { Section, ROW } from "../Section";
 import { Button, IconButton } from "@ui/Button";
 import { Field, Input, Textarea } from "@ui/Field";
-import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
+import { ListRow } from "@ui/ListRow";
+import { Menu, MenuItem } from "@ui/Menu";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { SearchField } from "@ui/SearchField";
+import { Toggle } from "@ui/Toggle";
+import { Skeleton } from "@ui/Skeleton";
+import { Spinner } from "@ui/Spinner";
 
 // ── Channel picker ────────────────────────────────────────────────────────────
+
+const AllIcon = (props: { size: number }) => (
+  <span
+    class="rounded-full bg-elevated flex items-center justify-center text-accent-txt shrink-0"
+    style={{ width: `${props.size / 4}rem`, height: `${props.size / 4}rem` }}
+  >
+    <MdFillPeople size={props.size * 2} />
+  </span>
+);
 
 // On edit the source's channel is fixed: re-pointing an existing source is
 // indistinguishable from delete-and-recreate, and swapping src_xchan would
@@ -43,6 +57,8 @@ import { EmptyState } from "@ui/EmptyState";
 const ChannelPicker: Component<{
   value: string;
   name: string | null;
+  /** Edit mode: show the choice, no way to change it. */
+  locked?: boolean;
   onSelect: (xchan: string, name: string | null) => void;
 }> = (props) => {
   const { t } = useI18n();
@@ -56,73 +72,75 @@ const ChannelPicker: Component<{
     <Show
       when={!props.value}
       fallback={
-        <div class="flex items-center gap-2 rounded-lg bg-elevated border border-rim px-2 py-1.5">
-          <MdFillPeople size={16} class="text-accent shrink-0" />
+        <div class="flex items-center gap-2 rounded-xl bg-elevated/60 px-3 py-2">
+          <AllIcon size={6} />
           <span class="text-sm text-txt truncate">
             {props.value === ALL_CONNECTIONS
               ? t("sources.all_connections")
               : props.name || props.value}
           </span>
-          <IconButton
-            label={t("sources.change_channel")}
-            class="ml-auto shrink-0"
-            onClick={() => props.onSelect("", null)}
-          >
-            <MdFillClose size={14} />
-          </IconButton>
+          <Show when={!props.locked}>
+            <IconButton
+              label={t("sources.change_channel")}
+              size="sm"
+              class="ml-auto"
+              onClick={() => props.onSelect("", null)}
+            >
+              <MdFillClose size={14} />
+            </IconButton>
+          </Show>
         </div>
       }
     >
       <div class="space-y-2">
-        <Input
+        <SearchField
           class="w-full"
-          type="text"
           autocomplete="off"
+          label={t("sources.search_connections")}
+          clearLabel={t("ui.clear")}
           placeholder={t("sources.search_connections")}
           value={search.query()}
-          onInput={(e) => search.setQuery(e.currentTarget.value)}
+          onInput={search.setQuery}
         />
-        <div class="max-h-48 overflow-y-auto rounded-lg border border-rim divide-y divide-rim">
-          <button
-            onClick={() => props.onSelect(ALL_CONNECTIONS, null)}
-            class="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-elevated transition-colors"
-          >
-            <MdFillPeople size={16} class="text-accent shrink-0" />
-            <span class="text-sm text-txt">{t("sources.all_connections")}</span>
-          </button>
+        <ul class="max-h-56 overflow-y-auto space-y-0.5">
+          <li>
+            <ListRow
+              class="rounded-xl items-center!"
+              onClick={() => props.onSelect(ALL_CONNECTIONS, null)}
+              leading={<AllIcon size={7} />}
+              title={t("sources.all_connections")}
+            />
+          </li>
           <For each={options()}>
             {(c) => (
-              <button
-                onClick={() => props.onSelect(String(c.xid), c.name)}
-                class="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-elevated transition-colors"
-              >
-                <img
-                  src={c.photo}
-                  alt=""
-                  class="w-5 h-5 rounded-full object-cover bg-overlay shrink-0"
-                  onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+              <li>
+                <ListRow
+                  class="rounded-xl items-center!"
+                  onClick={() => props.onSelect(String(c.xid), c.name)}
+                  leading={<Avatar src={c.photo} name={c.name} size={7} />}
+                  title={<span class="block truncate">{c.name}</span>}
                 />
-                <span class="text-sm text-txt truncate">{c.name}</span>
-              </button>
+              </li>
             )}
           </For>
-          <Show when={!search.loading() && options().length === 0}>
-            <p class="px-2 py-3 text-xs text-muted text-center">
-              {t("sources.no_connections")}
-            </p>
-          </Show>
-        </div>
+        </ul>
+        <Show when={search.loading()}>
+          <Spinner size="sm" />
+        </Show>
+        <Show when={!search.loading() && options().length === 0}>
+          <p class="py-2 text-xs text-muted text-center">{t("sources.no_connections")}</p>
+        </Show>
       </div>
     </Show>
   );
 };
 
-// ── Create / edit form ────────────────────────────────────────────────────────
+// ── Create / edit dialog ──────────────────────────────────────────────────────
 
-const SourceForm: Component<{
+const SourceDialog: Component<{
   initial?: Source;
   onSubmit: (v: { xchan: string; words: string; tags: string; resend: boolean }) => Promise<void>;
-  onCancel: () => void;
+  onClose: () => void;
 }> = (props) => {
   const { t } = useI18n();
   const [xchan, setXchan] = createSignal(props.initial?.xchan ?? "");
@@ -151,66 +169,52 @@ const SourceForm: Component<{
   };
 
   return (
-    <div class="bg-surface border border-accent/30 rounded-xl p-3 space-y-3">
-      <div class="space-y-1">
-        <label class="text-xs font-medium text-txt">{t("sources.channel_name")}</label>
-        <Show
-          when={!props.initial}
-          fallback={
-            <div class="flex items-center gap-2 rounded-lg bg-elevated border border-rim px-2 py-1.5">
-              <MdFillPeople size={16} class="text-muted shrink-0" />
-              <span class="text-sm text-muted truncate">
-                {xchan() === ALL_CONNECTIONS ? t("sources.all_connections") : name() || xchan()}
-              </span>
-            </div>
-          }
-        >
-          <ChannelPicker
-            value={xchan()}
-            name={name()}
-            onSelect={(x, n) => { setXchan(x); setName(n); }}
+    <Modal onClose={props.onClose} dismissOnBackdrop={false}>
+      <ModalPanel
+        size="md"
+        title={props.initial ? t("sources.edit") : t("sources.new_source")}
+        onClose={props.onClose}
+        class="flex flex-col max-h-[90vh]"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={props.onClose}>
+              {t("sources.cancel")}
+            </Button>
+            <Button size="sm" onClick={submit} disabled={busy() || !xchan()}>
+              <Show when={busy()}><Spinner size="xs" /></Show>
+              {t("sources.save")}
+            </Button>
+          </>
+        }
+      >
+        <div class="p-4 space-y-4 overflow-y-auto min-h-0">
+          <div class="space-y-1.5">
+            <p class="text-xs font-medium text-txt">{t("sources.channel_name")}</p>
+            <ChannelPicker
+              value={xchan()}
+              name={name()}
+              locked={!!props.initial}
+              onSelect={(x, n) => { setXchan(x); setName(n); }}
+            />
+          </div>
+          <Field label={t("sources.words_label")} hint={t("sources.words_help")}>
+            <Textarea class="w-full" rows={3} value={words()} onInput={(e) => setWords(e.currentTarget.value)} />
+          </Field>
+          <Field label={t("sources.tags_label")} hint={t("sources.tags_help")}>
+            <Input class="w-full" type="text" value={tags()} onInput={(e) => setTags(e.currentTarget.value)} />
+          </Field>
+          <Toggle
+            label={t("sources.resend_label")}
+            hint={t("sources.resend_help")}
+            checked={resend()}
+            onChange={setResend}
           />
-        </Show>
-      </div>
-
-      <div class="space-y-1">
-        <Field label={t("sources.words_label")} hint={t("sources.words_help")} size="sm">
-          <Textarea class="w-full" rows={3} value={words()} onInput={(e) => setWords(e.currentTarget.value)} />
-        </Field>
-      </div>
-
-      <div class="space-y-1">
-        <Field label={t("sources.tags_label")} hint={t("sources.tags_help")} size="sm">
-          <Input class="w-full" type="text" value={tags()} onInput={(e) => setTags(e.currentTarget.value)} />
-        </Field>
-      </div>
-
-      <label class="flex items-start gap-2 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={resend()}
-          onChange={(e) => setResend(e.currentTarget.checked)}
-          class="accent-[var(--accent)] mt-0.5"
-        />
-        <span class="space-y-0.5">
-          <span class="block text-xs font-medium text-txt">{t("sources.resend_label")}</span>
-          <span class="block text-xs text-muted">{t("sources.resend_help")}</span>
-        </span>
-      </label>
-
-      <Show when={error()}>
-        <p class="text-xs text-danger-txt">{error()}</p>
-      </Show>
-
-      <div class="flex items-center justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={props.onCancel}>
-          {t("sources.cancel")}
-        </Button>
-        <Button size="sm" onClick={submit} disabled={busy() || !xchan()}>
-          {t("sources.save")}
-        </Button>
-      </div>
-    </div>
+          <Show when={error()}>
+            <p class="text-xs text-danger-txt" role="alert">{error()}</p>
+          </Show>
+        </div>
+      </ModalPanel>
+    </Modal>
   );
 };
 
@@ -229,63 +233,57 @@ const SourceRow: Component<{
     props.source.tags.split(",").map((s) => s.trim()).filter(Boolean);
 
   return (
-    <Card class="group px-4 py-3 space-y-2">
-      <div class="flex items-center gap-3">
-        <Show
-          when={props.source.photo}
-          fallback={
-            <span class="w-9 h-9 rounded-full bg-elevated flex items-center justify-center text-accent shrink-0">
-              <MdFillPeople size={18} />
-            </span>
-          }
-        >
-          <Avatar src={props.source.photo!} size={9} />
-        </Show>
-
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-txt truncate">{label()}</p>
-          <p class="text-xs text-muted truncate">
-            {props.source.words || t("sources.all_public_content")}
-          </p>
-        </div>
-
-        <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-          <IconButton label={t("sources.edit")} onClick={props.onEdit}>
-            <MdFillEdit size={17} />
-          </IconButton>
-          <IconButton label={t("sources.delete")} variant="danger" onClick={props.onDelete}>
-            <MdFillDelete size={17} />
-          </IconButton>
-        </div>
-      </div>
-
-      <Show when={categories().length > 0 || props.source.resend}>
-        <div class="flex flex-wrap items-center gap-1.5 pl-12">
-          <For each={categories()}>
-            {(c) => (
-              <Badge>{c}</Badge>
-            )}
-          </For>
-          <Show when={props.source.resend}>
-            <span class="text-xs text-accent">{t("sources.resend_badge")}</span>
+    <div>
+      <ListRow
+        class={ROW}
+        leading={
+          <Show when={props.source.photo} fallback={<AllIcon size={10} />}>
+            <Avatar src={props.source.photo!} name={label()} size={10} />
           </Show>
-        </div>
-      </Show>
-
+        }
+        title={<span class="block font-medium truncate">{label()}</span>}
+        subtitle={
+          <span class="block truncate">
+            {props.source.words || t("sources.all_public_content")}
+          </span>
+        }
+        meta={
+          <Show when={categories().length > 0 || props.source.resend}>
+            <span class="flex flex-wrap items-center gap-1 pt-0.5">
+              <For each={categories()}>{(c) => <Badge size="sm">{c}</Badge>}</For>
+              <Show when={props.source.resend}>
+                <Badge tone="accent" size="sm">{t("sources.resend_badge")}</Badge>
+              </Show>
+            </span>
+          </Show>
+        }
+        trailing={
+          <span class="flex items-center gap-0.5">
+            <IconButton label={t("sources.edit")} size="sm" onClick={props.onEdit}>
+              <MdOutlineEdit size={15} />
+            </IconButton>
+            <Menu label={t("directory.more_actions")} placement="bottom-end" class="w-44">
+              <MenuItem danger icon={<MdOutlineDelete size={16} />} onClick={props.onDelete}>
+                {t("sources.delete")}
+              </MenuItem>
+            </Menu>
+          </span>
+        }
+      />
       {/* Core's UI hides this, so a source that silently imports nothing is the
           classic support question. Surface it. */}
       <Show when={!props.source.republish_granted}>
-        <p class="flex items-start gap-1.5 pl-12 text-xs text-warning-txt">
+        <p class="flex items-start gap-1.5 pl-16 pr-3 pb-2 text-xs text-warning-txt">
           <MdFillWarning size={13} class="mt-0.5 shrink-0" />
           <span>
             {t("sources.no_republish")}{" "}
-            <A href="/directory/connections" class="underline hover:text-warning-txt">
+            <A href="/directory/connections" class="underline">
               {t("sources.review_connection")}
             </A>
           </span>
         </p>
       </Show>
-    </Card>
+    </div>
   );
 };
 
@@ -294,8 +292,8 @@ const SourceRow: Component<{
 const SourcesSection: Component = () => {
   const { t } = useI18n();
   const [sources, { refetch }] = createQueryResource("sources", fetchSources);
-  const [creating, setCreating] = createSignal(false);
-  const [editingId, setEditingId] = createSignal<number | null>(null);
+  // null = closed, "new" = create, a Source = editing it.
+  const [dialog, setDialog] = createSignal<Source | "new" | null>(null);
 
   const handleDelete = async (s: Source) => {
     const label = s.xchan === ALL_CONNECTIONS ? t("sources.all_connections") : s.name || s.xchan;
@@ -305,36 +303,30 @@ const SourcesSection: Component = () => {
   };
 
   return (
-    <SubPageContent
+    <Section
       title={t("sources.title")}
-      description={t("sources.description")}
-      action={
-        <PageActions actions={[{
-          label: creating() ? t("sources.cancel") : t("sources.new_source"),
-          icon: creating() ? MdFillClose : MdFillAdd,
-          onClick: () => { setEditingId(null); setCreating((v) => !v); },
-        }]} />
-      }
+      description={<>{t("sources.description")} {t("sources.import_desc")}</>}
+      actions={[{
+        label: t("sources.new_source"),
+        icon: MdFillAdd,
+        onClick: () => setDialog("new"),
+        primary: true,
+      }]}
     >
-      <p class="text-xs text-muted">{t("sources.import_desc")}</p>
-
-      <Show when={creating()}>
-        <SourceForm
-          onCancel={() => setCreating(false)}
-          onSubmit={async (v) => {
-            await saveSource(v);
-            setCreating(false);
-            refetch();
-          }}
-        />
-      </Show>
-
       <Show
-        when={!sources.loading}
+        when={!sources.loading || sources()}
         fallback={
-          <div class="space-y-2">
+          <div class="space-y-0.5">
             <For each={[1, 2, 3]}>
-              {() => <div class="bg-surface border border-rim rounded-xl h-16 animate-pulse" />}
+              {() => (
+                <div class="flex items-center gap-3 px-3 py-2">
+                  <Skeleton rounded="full" tone="overlay" class="w-10 h-10 shrink-0" />
+                  <div class="flex-1 space-y-2">
+                    <Skeleton tone="overlay" class="h-3.5 w-1/4" />
+                    <Skeleton tone="overlay" class="h-3 w-1/2" />
+                  </div>
+                </div>
+              )}
             </For>
           </div>
         }
@@ -342,40 +334,43 @@ const SourcesSection: Component = () => {
         <Show
           when={(sources() ?? []).length > 0}
           fallback={
-            <Show when={!creating()}>
-              <EmptyState>{t("sources.no_sources")}</EmptyState>
-            </Show>
+            <EmptyState
+              icon={<MdFillPeople />}
+              action={<Button size="sm" onClick={() => setDialog("new")}>{t("sources.new_source")}</Button>}
+            >
+              {t("sources.no_sources")}
+            </EmptyState>
           }
         >
-          <div class="space-y-2">
+          <div class="space-y-0.5 -mx-3">
             <For each={sources()}>
               {(s) => (
-                <Show
-                  when={editingId() !== s.id}
-                  fallback={
-                    <SourceForm
-                      initial={s}
-                      onCancel={() => setEditingId(null)}
-                      onSubmit={async (v) => {
-                        await saveSource({ ...v, id: s.id });
-                        setEditingId(null);
-                        refetch();
-                      }}
-                    />
-                  }
-                >
-                  <SourceRow
-                    source={s}
-                    onEdit={() => { setCreating(false); setEditingId(s.id); }}
-                    onDelete={() => handleDelete(s)}
-                  />
-                </Show>
+                <SourceRow
+                  source={s}
+                  onEdit={() => setDialog(s)}
+                  onDelete={() => handleDelete(s)}
+                />
               )}
             </For>
           </div>
         </Show>
       </Show>
-    </SubPageContent>
+
+      <Show when={dialog()}>
+        {(d) => (
+          <SourceDialog
+            initial={d() === "new" ? undefined : (d() as Source)}
+            onClose={() => setDialog(null)}
+            onSubmit={async (v) => {
+              const cur = d();
+              await saveSource(cur === "new" ? v : { ...v, id: cur.id });
+              setDialog(null);
+              refetch();
+            }}
+          />
+        )}
+      </Show>
+    </Section>
   );
 };
 

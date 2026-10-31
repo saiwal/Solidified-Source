@@ -48,8 +48,23 @@ export const {
   loadMore, flushNewPosts, stopPolling, softRefresh,
 } = store;
 
-export function resetPosts() { store.reset(); }
-export function loadNetwork(params?: NetworkParams) { return store.load(params); }
+// The params the shown stream was loaded with. The URL is the source of truth:
+// NetworkContentWidget reloads when it changes, and the filter controls also
+// apply by hand (search has to, it's debounced) — this key keeps the two from
+// fetching the same stream twice.
+let loadedKey: string | undefined;
+
+export function resetPosts() { loadedKey = undefined; store.reset(); }
+export function loadedNetworkParams(): NetworkParams | undefined {
+  return loadedKey === undefined ? undefined : JSON.parse(loadedKey);
+}
+export function applyNetwork(params: NetworkParams) {
+  const key = JSON.stringify(params);
+  if (key === loadedKey) return;
+  store.reset();
+  loadedKey = key;
+  return store.load(params);
+}
 
 // ── actions ───────────────────────────────────────────────────────────────────
 export const {

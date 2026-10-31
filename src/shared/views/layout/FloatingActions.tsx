@@ -27,7 +27,8 @@ const isEditable = (el: EventTarget | null) =>
  * The floating column bottom-right. One flex column, so the buttons stack
  * without per-button offsets.
  *
- * Mobile: a "more" button, plus scroll-to-top once scrolled. "More" fans out a column
+ * Mobile: a "more" button (or, with a single action, that action itself),
+ * plus scroll-to-top once scrolled. "More" fans out a column
  * of labelled buttons: the page's innermost `primary` PageAction (falling back
  * to Compose for the owner in social apps, which swaps the column for the
  * create actions), search, then every other page
@@ -104,7 +105,12 @@ export default function FloatingActions(props: {
         onKeyDown={(e) => e.key === "Escape" && close()}
       >
         <Show when={mobile()} fallback={<Show when={floatingAction()}>{(a) => <MainButton action={a()} />}</Show>}>
-          <Show when={items().length}>
+          {/* A lone action needs no fan-out: show it directly. Compose's
+              action opens the dial itself, which brings the toggle back. */}
+          <Show when={items().length === 1 && !dialOpen()}>
+            <MainButton action={items()[0]} />
+          </Show>
+          <Show when={items().length > 1 || dialOpen()}>
             <button
               type="button"
               class={ROUND}

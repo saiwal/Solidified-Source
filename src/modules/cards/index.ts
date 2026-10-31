@@ -61,6 +61,17 @@ registerModule({
       helpTarget: "widgets.drafts",
     },
     {
+      // Items sharing hashtags/categories with the one on screen; renders
+      // nothing off a single-item page.
+      id: "cards.related",
+      label: () => useI18n().t("widgets.related"),
+      loader: () => import("@/shared/stream/components/RelatedItemsWidget"),
+      slot: ["right", "footer"],
+      defaultSlot: "right",
+      defaultModules: ["cards"],
+      contexts: ["cards"],
+    },
+    {
       id: "cards.popular",
       label: () => useI18n().t("widgets.popular_cards"),
       loader: () => import("./widgets/CardPopularWidget"),
@@ -76,7 +87,8 @@ registerModule({
       loader: () => import("./widgets/CardCategoryWidget"),
       slot: ["right", "footer"],
       defaultSlot: "right",
-      configComponent: () => import("@/shared/stream/components/CategoryStyleConfig"),
+      configComponent: () =>
+        import("@/shared/stream/components/CategoryStyleConfig"),
       helpTarget: "widgets.categories",
     },
     {
@@ -86,7 +98,8 @@ registerModule({
       loader: () => import("./widgets/CardTagWidget"),
       slot: ["right", "footer"],
       defaultSlot: "right",
-      configComponent: () => import("@/shared/stream/components/TagStyleConfig"),
+      configComponent: () =>
+        import("@/shared/stream/components/TagStyleConfig"),
       helpTarget: "widgets.tags",
     },
     {

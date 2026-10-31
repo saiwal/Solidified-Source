@@ -9,6 +9,7 @@ export const guest_access: RawDictionary["guest_access"] = {
   edit_token:       "Gast bearbeiten",
   login_name:       "Anmeldename",
   login_password:   "Anmeldepasswort",
+  copy_password: "Passwort kopieren",
   regenerate:       "Neues Passwort erzeugen",
   expires:          "Läuft ab",
   expires_never:    "Nie",

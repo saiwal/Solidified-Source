@@ -10,22 +10,17 @@ import {
   onMount,
   type Component,
 } from "solid-js";
-import { A } from "@solidjs/router";
+import { A, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdFillGroup,
   MdFillAdd,
-  MdFillDelete,
-  MdFillVisibility,
-  MdFillVisibility_off,
+  MdOutlineDelete,
+  MdOutlineEdit,
   MdFillStar,
   MdFillStar_border,
-  MdFillClose,
   MdFillExpand_more,
-  MdFillExpand_less,
 } from "solid-icons/md";
-import SubPageContent from "@/shared/views/SubPageContent";
-import PageActions from "@/shared/views/layout/PageActions";
 import {
   groups,
   loading,
@@ -37,14 +32,22 @@ import {
 import { fetchGroup } from "../../groups/api";
 import type { PrivacyGroup, GroupContact } from "../../groups/api";
 import CardShell from "@/shared/stream/CardShell";
+import { Section, ROW } from "../Section";
 import { Button, IconButton } from "@ui/Button";
-import { Input } from "@ui/Field";
-import { Card } from "@ui/Card";
+import { Field, Input } from "@ui/Field";
+import { Badge } from "@ui/Badge";
+import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
+import { ListRow } from "@ui/ListRow";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Toggle } from "@ui/Toggle";
+import { Skeleton } from "@ui/Skeleton";
+import { Spinner } from "@ui/Spinner";
 
-// ── Inline create form ────────────────────────────────────────────────────────
+// ── Create dialog ─────────────────────────────────────────────────────────────
 
-const CreateForm: Component<{ onDone: () => void }> = (props) => {
+const CreateDialog: Component<{ onClose: () => void }> = (props) => {
   const { t } = useI18n();
   const [name, setName] = createSignal("");
   const [visible, setVisible] = createSignal(false);
@@ -56,40 +59,46 @@ const CreateForm: Component<{ onDone: () => void }> = (props) => {
     setBusy(true);
     await createGroup(name().trim(), visible());
     setBusy(false);
-    setName("");
-    setVisible(false);
-    props.onDone();
+    props.onClose();
   }
 
   return (
-    <div class="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-2">
-      <div class="flex gap-2">
-        <Input
-          class="flex-1"
-          autofocus
-          type="text"
-          placeholder={t("directory.group_name_placeholder")}
-          value={name()}
-          onInput={(e) => setName(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Escape" && props.onDone()}
-        />
-        <Button size="sm" class="shrink-0" onClick={submit} disabled={busy() || !name().trim()}>
-          {busy() ? t("directory.creating") : t("directory.create")}
-        </Button>
-        <IconButton label="Cancel" size="sm" class="shrink-0" onClick={props.onDone}>
-          <MdFillClose size={16} />
-        </IconButton>
-      </div>
-      <label class="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={visible()}
-          onChange={(e) => setVisible(e.currentTarget.checked)}
-          class="accent-[var(--accent)]"
-        />
-        {t("directory.members_visible")}
-      </label>
-    </div>
+    <Modal onClose={props.onClose} dismissOnBackdrop={false}>
+      {/* contents: the panel, not the form, is the dialog's flex child. */}
+      <form class="contents" onSubmit={submit}>
+        <ModalPanel
+          size="sm"
+          title={t("directory.new_group")}
+          onClose={props.onClose}
+          footer={
+            <>
+              <Button variant="ghost" size="sm" onClick={props.onClose}>{t("directory.cancel")}</Button>
+              <Button size="sm" type="submit" disabled={busy() || !name().trim()}>
+                {busy() ? t("directory.creating") : t("directory.create")}
+              </Button>
+            </>
+          }
+        >
+          <div class="p-4 space-y-4">
+            <Field label={t("directory.group_name_input")}>
+              <Input
+                class="w-full"
+                autofocus
+                type="text"
+                placeholder={t("directory.group_name_placeholder")}
+                value={name()}
+                onInput={(e) => setName(e.currentTarget.value)}
+              />
+            </Field>
+            <Toggle
+              label={t("directory.members_visible")}
+              checked={visible()}
+              onChange={setVisible}
+            />
+          </div>
+        </ModalPanel>
+      </form>
+    </Modal>
   );
 };
 
@@ -97,21 +106,20 @@ const CreateForm: Component<{ onDone: () => void }> = (props) => {
 
 const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [deleteBusy, setDeleteBusy] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
   const [members, setMembers] = createSignal<GroupContact[] | null>(null);
-  const [membersLoading, setMembersLoading] = createSignal(false);
+  const href = () => `/directory/privacy-groups/${props.group.id}`;
 
-  async function handleDelete(e: Event) {
-    e.preventDefault();
-    if (!confirm(`Delete group "${props.group.name}"?`)) return;
+  async function handleDelete() {
+    if (!confirm(t("directory.confirm_delete_group", { name: props.group.name }))) return;
     setDeleteBusy(true);
     await deleteGroup(props.group.id);
     setDeleteBusy(false);
   }
 
-  async function toggleDefaultAcl(e: Event) {
-    e.preventDefault();
+  async function toggleDefaultAcl() {
     await updateGroup(props.group.id, { set_default_acl: !props.group.is_default_acl });
   }
 
@@ -119,115 +127,98 @@ const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
     const next = !expanded();
     setExpanded(next);
     if (next && members() === null) {
-      setMembersLoading(true);
-      try {
-        const detail = await fetchGroup(props.group.id);
-        setMembers(detail.members);
-      } finally {
-        setMembersLoading(false);
-      }
+      const detail = await fetchGroup(props.group.id);
+      setMembers(detail.members);
     }
   }
 
   return (
-    <Card class="px-4 py-3">
-      <div class="flex items-center gap-3">
-        <button
-          onClick={toggleExpanded}
-          title={expanded() ? t("directory.hide_members") : t("directory.view_members")}
-          class="text-muted hover:text-accent transition-colors shrink-0"
-        >
-          {expanded() ? <MdFillExpand_less size={18} /> : <MdFillExpand_more size={18} />}
-        </button>
-
-        <span class="text-accent shrink-0">
-          <MdFillGroup size={20} />
-        </span>
-
-        {/* Name + badges */}
-        <div class="flex-1 min-w-0">
-          <A
-            href={`/directory/privacy-groups/${props.group.id}`}
-            class="text-sm font-medium text-txt hover:text-accent truncate block"
-          >
+    <div>
+      <ListRow
+        class={ROW}
+        leading={
+          <span class="w-10 h-10 rounded-full bg-elevated flex items-center justify-center text-accent-txt">
+            <MdFillGroup size={20} />
+          </span>
+        }
+        title={
+          <A href={href()} class="font-medium hover:underline truncate block">
             {props.group.name}
           </A>
-          <div class="flex items-center gap-2 mt-0.5">
-            <span class="text-xs text-muted">
+        }
+        subtitle={
+          <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="tabular-nums">
               {t("directory.member_count", { count: String(props.group.member_count) })}
             </span>
-            <span class="flex items-center gap-1 text-xs text-muted">
-              {props.group.visible
-                ? <><MdFillVisibility size={11} />{t("directory.visible_label")}</>
-                : <><MdFillVisibility_off size={11} />{t("directory.private_label")}</>}
-            </span>
+            <Show when={!props.group.visible}>
+              <Badge size="sm">{t("directory.private_label")}</Badge>
+            </Show>
             <Show when={props.group.is_default_group}>
-              <span class="text-xs text-accent">· {t("directory.default_group")}</span>
+              <Badge tone="accent" size="sm">{t("directory.default_group")}</Badge>
             </Show>
             <Show when={props.group.is_default_acl}>
-              <span class="text-xs text-accent">· {t("directory.default_acl")}</span>
+              <Badge tone="accent" size="sm">{t("directory.default_acl")}</Badge>
             </Show>
-          </div>
-        </div>
-
-        {/* Star = default ACL shortcut */}
-        <button
-          onClick={toggleDefaultAcl}
-          title={props.group.is_default_acl ? t("directory.remove_default_acl") : t("directory.set_default_acl")}
-          class="text-muted hover:text-accent transition-colors"
-        >
-          {props.group.is_default_acl
-            ? <MdFillStar size={17} class="text-accent" />
-            : <MdFillStar_border size={17} />}
-        </button>
-
-        <A
-          href={`/directory/privacy-groups/${props.group.id}`}
-          class="text-xs border border-rim text-muted hover:bg-elevated rounded-lg px-3 py-1.5 transition-colors"
-        >
-          {t("directory.edit_label")}
-        </A>
-
-        <IconButton
-          label={t("directory.delete_group")}
-          variant="danger"
-          onClick={handleDelete}
-          disabled={deleteBusy()}
-        >
-          <MdFillDelete size={17} />
-        </IconButton>
-      </div>
+          </span>
+        }
+        trailing={
+          <span class="flex items-center gap-0.5">
+            <IconButton
+              size="sm"
+              label={props.group.is_default_acl ? t("directory.remove_default_acl") : t("directory.set_default_acl")}
+              pressed={props.group.is_default_acl}
+              onClick={toggleDefaultAcl}
+            >
+              {props.group.is_default_acl
+                ? <MdFillStar size={16} class="text-accent-txt" />
+                : <MdFillStar_border size={16} />}
+            </IconButton>
+            <IconButton
+              size="sm"
+              label={expanded() ? t("directory.hide_members") : t("directory.view_members")}
+              pressed={expanded()}
+              onClick={toggleExpanded}
+            >
+              <MdFillExpand_more size={16} class={`transition-transform ${expanded() ? "rotate-180" : ""}`} />
+            </IconButton>
+            <Menu label={t("directory.more_actions")} placement="bottom-end" class="w-48">
+              <MenuItem icon={<MdOutlineEdit size={16} />} onClick={() => navigate(href())}>
+                {t("directory.edit_label")}
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem danger icon={<MdOutlineDelete size={16} />} onClick={handleDelete} disabled={deleteBusy()}>
+                {t("directory.delete_group")}
+              </MenuItem>
+            </Menu>
+          </span>
+        }
+      />
 
       <Show when={expanded()}>
-        <div class="mt-3 pt-3 border-t border-rim pl-9">
-          <Show
-            when={!membersLoading()}
-            fallback={<p class="text-muted text-xs">{t("directory.loading")}</p>}
-          >
-            <Show
-              when={(members() ?? []).length > 0}
-              fallback={<p class="text-muted text-xs">{t("directory.no_members")}</p>}
-            >
-              <div class="flex flex-wrap gap-2">
-                <For each={members()}>
-                  {(m) => (
-                    <span class="flex items-center gap-1.5 bg-elevated rounded-full pl-1 pr-2.5 py-1 text-xs text-txt">
-                      <img
-                        src={m.photo}
-                        alt={m.name}
-                        class="w-5 h-5 rounded-full object-cover bg-overlay"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                      />
-                      {m.name}
-                    </span>
-                  )}
-                </For>
-              </div>
-            </Show>
+        <div class="pl-16 pr-3 pb-3">
+          <Show when={members()} fallback={<Spinner size="sm" />}>
+            {(list) => (
+              <Show
+                when={list().length > 0}
+                fallback={<p class="text-xs text-muted">{t("directory.no_members")}</p>}
+              >
+                <ul class="flex flex-wrap gap-1.5">
+                  <For each={list()}>
+                    {(m) => (
+                      <li class="inline-flex items-center gap-1.5 h-7 rounded-lg bg-elevated pl-1 pr-2.5 text-xs text-txt">
+                        <Avatar src={m.photo} name={m.name} size={5} />
+                        {m.name}
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
+            )}
           </Show>
         </div>
       </Show>
-    </Card>
+    </div>
   );
 };
 
@@ -239,27 +230,30 @@ const PrivacyGroupsView: Component = () => {
   onMount(() => loadGroups());
 
   return (
-    <SubPageContent
+    <Section
       title={t("directory.privacy_groups_title")}
       description={t("directory.privacy_groups_desc")}
-      action={
-        <PageActions actions={[{
-          label: showCreate() ? t("directory.cancel") : t("directory.create"),
-          icon: showCreate() ? MdFillClose : MdFillAdd,
-          onClick: () => setShowCreate((v) => !v),
-        }]} />
-      }
+      actions={[{
+        label: t("directory.new_group"),
+        icon: MdFillAdd,
+        onClick: () => setShowCreate(true),
+        primary: true,
+      }]}
     >
-      <Show when={showCreate()}>
-        <CreateForm onDone={() => setShowCreate(false)} />
-      </Show>
-
       <Show
         when={!loading()}
         fallback={
-          <div class="space-y-2">
+          <div class="space-y-0.5">
             <For each={[1, 2, 3]}>
-              {() => <div class="bg-surface border border-rim rounded-xl h-14 animate-pulse" />}
+              {() => (
+                <div class="flex items-center gap-3 px-3 py-2">
+                  <Skeleton rounded="full" tone="overlay" class="w-10 h-10 shrink-0" />
+                  <div class="flex-1 space-y-2">
+                    <Skeleton tone="overlay" class="h-3.5 w-1/4" />
+                    <Skeleton tone="overlay" class="h-3 w-1/3" />
+                  </div>
+                </div>
+              )}
             </For>
           </div>
         }
@@ -267,19 +261,24 @@ const PrivacyGroupsView: Component = () => {
         <Show
           when={groups().length > 0}
           fallback={
-            <Show when={!showCreate()}>
-              <EmptyState>
-                {t("directory.no_privacy_groups")}
-              </EmptyState>
-            </Show>
+            <EmptyState
+              icon={<MdFillGroup />}
+              action={<Button size="sm" onClick={() => setShowCreate(true)}>{t("directory.new_group")}</Button>}
+            >
+              {t("directory.no_privacy_groups")}
+            </EmptyState>
           }
         >
-          <div class="space-y-2">
+          <div class="space-y-0.5 -mx-3">
             <For each={groups()}>{(g) => <CardShell uuid={`group:${g.hash}`}><GroupRow group={g} /></CardShell>}</For>
           </div>
         </Show>
       </Show>
-    </SubPageContent>
+
+      <Show when={showCreate()}>
+        <CreateDialog onClose={() => setShowCreate(false)} />
+      </Show>
+    </Section>
   );
 };
 

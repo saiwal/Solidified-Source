@@ -3,8 +3,8 @@ import { useSearchParams } from "@solidjs/router";
 import { MdFillBookmarks, MdFillDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { savedSearches, loadSavedSearches, removeSavedSearch, type SavedSearch } from "../saved-searches";
-import { loadNetwork, resetPosts } from "../store";
-import type { NetworkParams } from "../api";
+import { applyNetwork } from "../store";
+import { parseNetworkParams } from "../api";
 import { IconButton } from "@ui/Button";
 import { Card } from "@ui/Card";
 
@@ -15,26 +15,6 @@ const ALL_PARAM_KEYS = [
 
 const CLEAR_PARAMS = Object.fromEntries(ALL_PARAM_KEYS.map((k) => [k, undefined])) as Record<string, undefined>;
 
-function paramsToNetworkParams(params: Record<string, string>): NetworkParams {
-  const p: NetworkParams = {};
-  if (params.order && params.order !== "created") p.order = params.order as NetworkParams["order"];
-  if (params.search)  p.search  = params.search;
-  if (params.tag)     p.tag     = params.tag;
-  if (params.lang)    p.lang    = params.lang;
-  if (params.star  === "1") p.star  = 1;
-  if (params.pf    === "1") p.pf    = 1;
-  if (params.conv  === "1") p.conv  = 1;
-  if (params.dm    === "1") p.dm    = 1;
-  if (params.event === "1") p.event = 1;
-  if (params.dbegin) p.dbegin = params.dbegin;
-  if (params.dend)   p.dend   = params.dend;
-  if (params.cmin)   p.cmin   = Number(params.cmin);
-  if (params.cmax)   p.cmax   = Number(params.cmax);
-  if (params.cid)    p.cid    = Number(params.cid);
-  if (params.gid)    p.gid    = Number(params.gid);
-  return p;
-}
-
 export default function SavedSearchesWidget() {
   const { t } = useI18n();
   const [, setSearchParams] = useSearchParams();
@@ -43,10 +23,7 @@ export default function SavedSearchesWidget() {
 
   function apply(s: SavedSearch) {
     setSearchParams({ ...CLEAR_PARAMS, ...s.params }, { replace: true });
-    setTimeout(() => {
-      resetPosts();
-      loadNetwork(paramsToNetworkParams(s.params));
-    }, 0);
+    setTimeout(() => applyNetwork(parseNetworkParams(s.params)), 0);
   }
 
   return (

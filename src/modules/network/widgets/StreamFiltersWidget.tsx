@@ -29,7 +29,7 @@ import { createSignal, createEffect, createMemo, on, For, Show, type JSX } from 
 import { useInfiniteQuery, useQuery } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { loadNetwork, resetPosts, saveSortPref } from "../store";
+import { applyNetwork, saveSortPref } from "../store";
 import { fetchFolders, fetchStreamLangs, fetchConnectionPage, CONN_PAGE_SIZE, fetchConnections, parseNetworkParams, type AclConnection, type ForumConnection } from "../api";
 import { useAuth, isFeedContactsEnabled } from "@utsukta/spa-core/store/auth-store";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -373,8 +373,7 @@ export default function StreamFiltersWidget() {
     !!(searchParams.cid || searchParams.gid);
 
   function applyNow() {
-    resetPosts();
-    loadNetwork(parseNetworkParams(searchParams));
+    applyNetwork(parseNetworkParams(searchParams));
   }
 
   let searchTimer: ReturnType<typeof setTimeout>;

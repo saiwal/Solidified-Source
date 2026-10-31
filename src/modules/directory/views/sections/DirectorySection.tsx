@@ -8,28 +8,34 @@ import {
   safe, setSafe,
   pubforums, setPubforums, globalDir, setGlobalDir,
 } from "../../people/filters";
-import DirectoryCard from "../DirectoryCard";
+import DirectoryCard, { CardSkeleton } from "../DirectoryCard";
 import DirectoryEntryModal from "../DirectoryEntryModal";
 import type { DirectoryEntry } from "../../people/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import CardShell from "@/shared/stream/CardShell";
-import { Button } from "@ui/Button";
-import { Select } from "@ui/Field";
-import { SearchField } from "@ui/SearchField";
+import { Section, SearchToggle } from "../Section";
 import { EmptyState } from "@ui/EmptyState";
 import { Tabs } from "@ui/Tabs";
 import { Chip } from "@ui/Chip";
-import { Skeleton, SkeletonText } from "@ui/Skeleton";
 import { LoadMore } from "@ui/LoadMore";
 
 const PlaceMap = lazy(() => import("@/shared/views/PlaceMap"));
 
 type Order = "date" | "rdate" | "alphabetic" | "ralpha";
 
+const KEYWORD_CAP = 12;
+
 export default function DirectorySection() {
   const { t } = useI18n();
-  const [searchInput, setSearchInput] = createSignal("");
   const [appliedSearch, setAppliedSearch] = createSignal("");
+  const [allKeywords, setAllKeywords] = createSignal(false);
+  // The picked keyword leads even when it's off the cloud, so the cap never hides it.
+  const keywords = () => {
+    const cloud = keywordCloud();
+    const k = keyword();
+    if (!k) return cloud;
+    return [cloud.find((x) => x.term === k) ?? { term: k, weight: 0 }, ...cloud.filter((x) => x.term !== k)];
+  };
   const [order, setOrder] = createSignal<Order>("date");
   const [keyword, setKeyword] = createSignal("");
   const [selected, setSelected] = createSignal<DirectoryEntry | null>(null);
@@ -48,48 +54,31 @@ export default function DirectorySection() {
     });
   });
 
-  function handleSearch(e: Event) {
-    e.preventDefault();
-    setAppliedSearch(searchInput());
-  }
 
   return (
-    <div class="px-4 md:px-6 py-6 space-y-4">
-
-      {/* ── Search row ── */}
-      <form onSubmit={handleSearch} class="flex gap-2">
-        <SearchField
-          class="flex-1"
-          value={searchInput()}
-          onInput={setSearchInput}
-          label={t("directory.search")}
-          clearLabel={t("ui.clear")}
-          placeholder="Name, address, or keyword…"
-        />
-        <Button class="shrink-0" type="submit">
-          {t("directory.search")}
-        </Button>
-      </form>
-
-      {/* ── Filter bar ── */}
+    <Section
+      title={t("directory.people_groups")}
+      tools={
+        <>
+          <SearchToggle
+            applied={appliedSearch()}
+            onSearch={setAppliedSearch}
+            placeholder={t("directory.search_placeholder")}
+          />
+          <Show when={mapsOn()}>
+            <Tabs
+              variant="segmented"
+              label={t("ui.view_map")}
+              value={view()}
+              onChange={setView}
+              items={[{ value: "grid", label: t("ui.view_grid") }, { value: "map", label: t("ui.view_map") }]}
+            />
+          </Show>
+        </>
+      }
+    >
+      {/* ── Filters + sort ── */}
       <div class="flex flex-wrap items-center gap-2">
-
-        {/* Sort — sm + h-8 so it lines up with the chips and the scope tabs */}
-        <Select
-          size="sm"
-          class="h-8"
-          value={order()}
-          onChange={(e) => setOrder(e.currentTarget.value as Order)}
-        >
-          <option value="date">{t("directory.sort_newest")}</option>
-          <option value="rdate">{t("directory.sort_oldest")}</option>
-          <option value="alphabetic">{t("directory.sort_az")}</option>
-          <option value="ralpha">{t("directory.sort_za")}</option>
-        </Select>
-
-        {/* Divider */}
-        <span class="hidden sm:block w-px h-5 bg-rim" />
-
         {/* Scope — the standard segmented switcher, 32px like the sm buttons */}
         <Tabs
           variant="segmented"
@@ -101,49 +90,47 @@ export default function DirectorySection() {
             { value: "local", label: t("directory.local_dir") },
           ]}
         />
-
-        {/* Divider */}
-        <span class="hidden sm:block w-px h-5 bg-rim" />
-
-        {/* Forums chip */}
         <Chip
           selected={pubforums() === 1}
           onClick={() => setPubforums(pubforums() === 1 ? 0 : 1)}
         >
           {t("directory.filter_forums_only")}
         </Chip>
-
-        {/* Safe mode chip */}
         <Chip
           selected={safe() === 1}
           onClick={() => setSafe(safe() === 1 ? 0 : 1)}
         >
           {t("directory.filter_safe_mode")}
         </Chip>
-
-        <Show when={mapsOn()}>
-          <Tabs
-            variant="segmented"
-            class="sm:ml-auto"
-            label={t("ui.view_map")}
-            value={view()}
-            onChange={setView}
-            items={[{ value: "grid", label: t("ui.view_grid") }, { value: "map", label: t("ui.view_map") }]}
-          />
-        </Show>
+        {/* Same quiet picker as Connections' sort, pinned right. */}
+        <select
+          aria-label={t("directory.sort_by")}
+          value={order()}
+          onChange={(e) => setOrder(e.currentTarget.value as Order)}
+          class="shrink-0 ml-auto bg-transparent text-muted text-sm focus:outline-none hover:text-txt cursor-pointer"
+        >
+          <option value="date">{t("directory.sort_newest")}</option>
+          <option value="rdate">{t("directory.sort_oldest")}</option>
+          <option value="alphabetic">{t("directory.sort_az")}</option>
+          <option value="ralpha">{t("directory.sort_za")}</option>
+        </select>
       </div>
 
       {/* ── Keyword cloud (xtag) — the picked one stays even off the list ── */}
       <Show when={keywordCloud().length > 0 || keyword()}>
         <div class="flex flex-wrap gap-1.5" role="group" aria-label={t("directory.keywords")}>
-          <For each={keyword() && !keywordCloud().some((k) => k.term === keyword())
-            ? [{ term: keyword(), weight: 0 }, ...keywordCloud()] : keywordCloud()}>
+          <For each={allKeywords() ? keywords() : keywords().slice(0, KEYWORD_CAP)}>
             {(k) => (
               <Chip selected={keyword() === k.term} onClick={() => setKeyword(keyword() === k.term ? "" : k.term)}>
                 #{k.term}
               </Chip>
             )}
           </For>
+          <Show when={keywords().length > KEYWORD_CAP}>
+            <Chip size="md" class="border-dashed" onClick={() => setAllKeywords((v) => !v)}>
+              {allKeywords() ? t("ui.show_less") : `${t("ui.show_more")} (${keywords().length - KEYWORD_CAP})`}
+            </Chip>
+          </Show>
         </div>
       </Show>
 
@@ -191,21 +178,6 @@ export default function DirectorySection() {
 
       {/* ── Detail modal ── */}
       <DirectoryEntryModal entry={selected()} onClose={() => setSelected(null)} />
-    </div>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div class="rounded-xl border border-rim bg-surface p-4 space-y-3">
-      <div class="flex items-center gap-3">
-        <Skeleton rounded="full" tone="overlay" class="w-12 h-12" />
-        <div class="flex-1 space-y-2">
-          <Skeleton tone="overlay" class="h-4 w-3/4" />
-          <Skeleton tone="overlay" class="h-3 w-1/2" />
-        </div>
-      </div>
-      <SkeletonText lines={2} tone="overlay" />
-    </div>
+    </Section>
   );
 }

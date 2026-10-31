@@ -3,6 +3,8 @@ import type { RawDictionary } from "../namespaces/types";
 export const invite: RawDictionary["invite"] = {
   title:            "Invite",
   description:      "Email an invitation code to someone who wants to join this hub.",
+  section_recipients: "Recipients",
+  section_message: "Message",
   quota_mine:       "Invitations I am using",
   quota_site:       "Invitations we are using",
   recipients_label: "Enter email addresses, one per line:",

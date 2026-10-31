@@ -140,7 +140,7 @@ const DirectoryEntryModal: Component<Props> = (props) => {
                       href={e()!.homepage}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-accent hover:underline break-all"
+                      class="text-accent-txt hover:underline break-all"
                     >
                       {e()!.homepage}
                     </a>

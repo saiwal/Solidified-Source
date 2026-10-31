@@ -1,5 +1,5 @@
 import type { JSX } from "solid-js";
-import { Show } from "solid-js";
+import { Show, children } from "solid-js";
 import { PageActionsLabel } from "./layout/PageActions";
 
 interface Props {
@@ -24,6 +24,10 @@ interface Props {
  *   </SubPageContent>
  */
 export default function SubPageContent(props: Props) {
+  // Resolved once: reading props.action in both `when` and the body would
+  // mount it twice, and a PageActions registers once per mount (duplicate
+  // entries in the mobile floating menu).
+  const action = children(() => props.action);
   return (
     <PageActionsLabel.Provider value={() => props.title}>
     <div class={`${props.wide ? "max-w-5xl" : "max-w-3xl"} mx-auto px-4 md:px-6 py-6 space-y-6`}>
@@ -35,8 +39,8 @@ export default function SubPageContent(props: Props) {
             <p class="text-sm text-muted">{props.description}</p>
           </Show>
         </div>
-        <Show when={props.action}>
-          <div class="shrink-0">{props.action}</div>
+        <Show when={action()}>
+          <div class="shrink-0">{action()}</div>
         </Show>
       </div>
 

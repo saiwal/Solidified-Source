@@ -383,7 +383,7 @@ function StreamGroup(props: {
   id: string;
   bucket: StreamBucket;
   label: string;
-  href?: string;
+  href: (startersOnly: boolean) => string | undefined;
   countLimit: number;
   open: boolean;
   onToggle: () => void;
@@ -615,17 +615,17 @@ function StreamGroup(props: {
       </Show>
 
       <div class="flex items-center gap-2 px-2 pt-1">
-        <Show when={props.href}>
-          <a
-            href={props.href}
+        <Show when={props.href(startersOnly())}>
+          {(href) => <a
+            href={href()}
             onClick={(e) => {
               e.preventDefault();
-              navigate(props.href!);
+              navigate(href());
             }}
             class="text-[0.6875rem] text-accent-txt hover:underline"
           >
             {t("hq.view_all")}
-          </a>
+          </a>}
         </Show>
         <Show
           when={
@@ -1044,9 +1044,13 @@ export default function NotificationsAside() {
     return forumNames()?.[key] ?? t("notify.bucket_forums");
   };
 
-  const sectionHref = (key: string): string | undefined =>
+  // Not core's `pf=1&cid=` — `pf` is "public forum" there but "followed
+  // threads" in the SPA's stream filter, which narrowed this to threads you'd
+  // joined. Threaded shows the forum's top-level posts, matching the
+  // "conversation starters" filter; otherwise every post and comment, flat.
+  const sectionHref = (key: string, startersOnly: boolean): string | undefined =>
     key.startsWith("forum_")
-      ? `/network?pf=1&cid=${key.slice("forum_".length)}`
+      ? `/network?cid=${key.slice("forum_".length)}${startersOnly ? "" : "&order=unthreaded"}`
       : KNOWN_META[key]?.href;
   // Transient notice/info rows carried on the counts payload — rendered as
   // status banners above the groups, not as a notification category.
@@ -1404,20 +1408,12 @@ export default function NotificationsAside() {
     // bounce N -> 0 -> N as soon as doFetchCounts() came back.
     const cleared: string[] = [];
 
-    // Use server-side markRead for all supported item/event/notify buckets
-    for (const key of ["network", "dm", "home", "notify", "all_events", "pubs"] as const) {
-      if ((currentBuckets[key]?.count ?? 0) > 0) {
-        promises.push(markAllSeen(key));
-        cleared.push(key);
-      }
+    // Use server-side markRead for all supported item/event/notify buckets.
+    // Forums are ordinary markRead keys — the server matches them by prefix.
+    for (const key of ["network", "dm", "home", "notify", "all_events", "pubs", ...forumKeys()]) {
+      if ((currentBuckets[key]?.count ?? 0) > 0) cleared.push(key);
     }
-    // Forums are ordinary markRead keys — core matches them by prefix.
-    for (const fk of forumKeys()) {
-      if ((currentBuckets[fk]?.count ?? 0) > 0) {
-        promises.push(markAllSeen(fk));
-        cleared.push(fk);
-      }
-    }
+    if (cleared.length) promises.push(markAllSeen(cleared));
     // Files have no markRead endpoint — use b64mids from loaded notifications
     const fileMids = (currentBuckets["files"]?.notifications ?? [])
       .map((n) => n.b64mid)
@@ -1545,7 +1541,7 @@ export default function NotificationsAside() {
                   id={key}
                   bucket={buckets[key]}
                   label={sectionLabel(key)}
-                  href={sectionHref(key)}
+                  href={(starters) => sectionHref(key, starters)}
                   countLimit={notifyCountLimit()}
                   open={openGroup() === key}
                   onToggle={() => toggleGroup(key)}

@@ -75,6 +75,8 @@ export async function fetchConnections(params: {
   search?: string;
   // their_perms keys the contact must all have granted, or ["none"].
   perms?: string[];
+  /** One role's members; "" = connections with no role. */
+  role?: string;
   order?: ConnectionOrder;
   start?: number;
   limit?: number;
@@ -84,6 +86,7 @@ export async function fetchConnections(params: {
   if (params.type)   q.set("type",   params.type);
   if (params.search) q.set("search", params.search);
   if (params.perms?.length) q.set("perms", params.perms.join(","));
+  if (params.role !== undefined) q.set("role", params.role);
   if (params.order)  q.set("order",  params.order);
   if (params.start)  q.set("start",  String(params.start));
   if (params.limit)  q.set("limit",  String(params.limit));
@@ -155,6 +158,8 @@ export interface Permcat {
   label: string;
   system: boolean;
   is_default: boolean;
+  /** Connections holding this role (GET permcats only). */
+  count?: number;
 }
 
 export interface PermcatPermEntry {
@@ -186,6 +191,14 @@ export async function fetchPermcats(): Promise<Permcat[]> {
   if (!res.ok) throw await apiError(res, "permcats");
   const body = await res.json();
   return body.data as Permcat[];
+}
+
+/** Roles with member counts, plus how many connections have no role. */
+export async function fetchRoleSummary(): Promise<{ roles: Permcat[]; unassigned: number }> {
+  const res = await apiFetch("/spa/connections/permcats");
+  if (!res.ok) throw await apiError(res, "permcats");
+  const body = await res.json();
+  return { roles: body.data as Permcat[], unassigned: body.meta?.unassigned ?? 0 };
 }
 
 export async function createPermcat(name: string): Promise<Permcat> {

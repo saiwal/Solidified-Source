@@ -4,7 +4,7 @@
 // Search and connection filtering live in the StreamFilters widget (sidebar).
 
 import { useSearchParams } from "@solidjs/router";
-import { loadNetwork, loading, refreshing, resetPosts, softRefresh, viewMode, changeView, saveSortPref } from "../store";
+import { applyNetwork, loading, refreshing, softRefresh, viewMode, changeView, saveSortPref } from "../store";
 import { ViewSwitcher, SortSelect, DEFAULT_RANGE, type SortOrder, type SortRange } from "@/shared/stream/filters";
 import { MdFillRefresh } from "solid-icons/md";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
@@ -41,8 +41,7 @@ export default function StreamFilters() {
   }
 
   function apply() {
-    resetPosts();
-    loadNetwork(parseNetworkParams(searchParams));
+    applyNetwork(parseNetworkParams(searchParams));
   }
 
   function setOrderAndApply(o: SortOrder, r?: SortRange) {

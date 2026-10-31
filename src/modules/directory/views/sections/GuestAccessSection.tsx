@@ -3,19 +3,23 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
-import { MdOutlineAdd, MdOutlineContent_copy, MdOutlineRefresh, MdOutlineEdit_note } from "solid-icons/md";
-import PageActions from "@/shared/views/layout/PageActions";
-import { BiRegularTrash } from "solid-icons/bi";
-import SubPageContent from "@/shared/views/SubPageContent";
+import { MdOutlineAdd, MdOutlineDelete, MdOutlineEdit, MdOutlineKey, MdOutlineRefresh } from "solid-icons/md";
 import {
   fetchTokens, newTokenValue, saveToken, deleteToken,
   type GuestToken,
 } from "../../tokens/api";
 import { editing, setEditing } from "../../tokens/store";
+import { Section, ROW } from "../Section";
 import { Button, IconButton } from "@ui/Button";
 import { Field, Input, Select } from "@ui/Field";
-import { cardClass } from "@ui/Card";
 import { Badge } from "@ui/Badge";
+import { Banner } from "@ui/Banner";
+import { CopyButton } from "@ui/CopyButton";
+import { EmptyState } from "@ui/EmptyState";
+import { ListRow } from "@ui/ListRow";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Skeleton } from "@ui/Skeleton";
 
 /**
  * Guest Access — /directory/guest-access.
@@ -28,23 +32,20 @@ export default function GuestAccessSection() {
   const { t, locale } = useI18n();
 
   const [data, { refetch }] = createQueryResource("guest-tokens", fetchTokens);
-
   const tokens = () => data()?.tokens ?? [];
   const roles  = () => data()?.meta.roles ?? [];
   const quota  = () => data()?.meta.quota;
 
   return (
-    <SubPageContent
+    <Section
       title={t("guest_access.title") as string}
       description={t("guest_access.description") as string}
-      action={
-        <PageActions actions={[
-          { label: t("guest_access.new_token"), icon: MdOutlineAdd, onClick: () => setEditing(0), primary: true },
-        ]} />
-      }
+      actions={[
+        { label: t("guest_access.new_token"), icon: MdOutlineAdd, onClick: () => setEditing(0), primary: true },
+      ]}
     >
       <Show when={quota()?.limit != null}>
-        <p class="text-xs text-muted">
+        <p class="text-xs text-muted tabular-nums">
           {t("guest_access.quota", {
             used: String(quota()!.used),
             limit: String(quota()!.limit),
@@ -52,44 +53,64 @@ export default function GuestAccessSection() {
         </p>
       </Show>
 
+      <Show
+        when={!data.loading || data()}
+        fallback={
+          <div class="space-y-0.5">
+            <For each={[1, 2]}>
+              {() => (
+                <div class="flex items-center gap-3 px-3 py-2">
+                  <Skeleton rounded="full" tone="overlay" class="w-10 h-10 shrink-0" />
+                  <div class="flex-1 space-y-2">
+                    <Skeleton tone="overlay" class="h-3.5 w-1/4" />
+                    <Skeleton tone="overlay" class="h-3 w-1/3" />
+                  </div>
+                </div>
+              )}
+            </For>
+          </div>
+        }
+      >
+        <Show
+          when={tokens().length > 0}
+          fallback={
+            <EmptyState
+              icon={<MdOutlineKey />}
+              action={<Button size="sm" onClick={() => setEditing(0)}>{t("guest_access.new_token")}</Button>}
+            >
+              <p>{t("guest_access.no_tokens")}</p>
+              <p class="text-xs">{t("guest_access.no_tokens_desc")}</p>
+            </EmptyState>
+          }
+        >
+          <div class="space-y-0.5 -mx-3">
+            <For each={tokens()}>
+              {(tok) => (
+                <TokenRow
+                  token={tok}
+                  locale={locale()}
+                  onEdit={() => setEditing(tok)}
+                  onDeleted={refetch}
+                />
+              )}
+            </For>
+          </div>
+        </Show>
+      </Show>
+
+      <Banner title={t("guest_access.how_to_use")}>
+        {t("guest_access.how_to_use_body")}
+      </Banner>
+
       <Show when={editing() !== null}>
-        <TokenForm
+        <TokenDialog
           token={editing() === 0 ? null : (editing() as GuestToken)}
           roles={roles()}
           onDone={() => { setEditing(null); refetch(); }}
+          onClose={() => setEditing(null)}
         />
       </Show>
-
-      <Show
-        when={tokens().length > 0}
-        fallback={
-          <Show when={!data.loading}>
-            <div class="text-center py-16 text-muted text-sm space-y-2">
-              <p>{t("guest_access.no_tokens")}</p>
-              <p class="text-xs">{t("guest_access.no_tokens_desc")}</p>
-            </div>
-          </Show>
-        }
-      >
-        <div class="divide-y divide-rim border border-rim rounded-xl overflow-hidden">
-          <For each={tokens()}>
-            {(tok) => (
-              <TokenRow
-                token={tok}
-                locale={locale()}
-                onEdit={() => setEditing(tok)}
-                onDeleted={refetch}
-              />
-            )}
-          </For>
-        </div>
-      </Show>
-
-      <div class="rounded-lg border border-rim p-3 space-y-1">
-        <p class="text-xs font-semibold text-txt">{t("guest_access.how_to_use")}</p>
-        <p class="text-xs text-muted">{t("guest_access.how_to_use_body")}</p>
-      </div>
-    </SubPageContent>
+    </Section>
   );
 }
 
@@ -124,52 +145,52 @@ function TokenRow(props: {
   };
 
   return (
-    <div class="flex items-center gap-3 px-3 py-2.5 bg-surface hover:bg-elevated transition-colors">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-txt truncate">{props.token.name}</span>
-          <Show when={props.token.expired}>
-            <Badge tone="danger" size="sm">
-              {t("guest_access.expired")}
-            </Badge>
-          </Show>
-        </div>
-        <span class="text-[0.6875rem] text-muted font-mono truncate block">
-          {props.token.guest_addr}
+    <ListRow
+      class={ROW}
+      leading={
+        <span class="w-10 h-10 rounded-full bg-elevated flex items-center justify-center text-accent-txt">
+          <MdOutlineKey size={18} />
         </span>
-      </div>
-
-      <span class="hidden sm:block text-xs text-muted shrink-0">{expiryLabel()}</span>
-
-      <div class="flex items-center gap-1 shrink-0">
-        <IconButton label={t("guest_access.login_password") as string} size="sm" onClick={() => {
-            navigator.clipboard.writeText(props.token.token)
-              .then(() => toast.success(t("share.copied") as string))
-              .catch(() => toast.error(t("share.copy_failed") as string));
-          }}>
-          <MdOutlineContent_copy size={14} />
-        </IconButton>
-        <IconButton label={t("guest_access.edit_token") as string} size="sm" onClick={props.onEdit}>
-          <MdOutlineEdit_note size={14} />
-        </IconButton>
-        <IconButton
-          label={t("guest_access.delete") as string}
-          variant="danger"
-          size="sm"
-          onClick={remove}
-          disabled={busy()}
-        >
-          <BiRegularTrash size={14} />
-        </IconButton>
-      </div>
-    </div>
+      }
+      title={
+        <span class="flex items-center gap-1.5 min-w-0">
+          <span class="font-medium truncate">{props.token.name}</span>
+          <Show when={props.token.expired}>
+            <Badge tone="danger" size="sm">{t("guest_access.expired")}</Badge>
+          </Show>
+        </span>
+      }
+      subtitle={<span class="block truncate">{props.token.guest_addr}</span>}
+      meta={<span class="tabular-nums">{t("guest_access.expires")}: {expiryLabel()}</span>}
+      trailing={
+        <span class="flex items-center gap-0.5">
+          <CopyButton
+            size="sm"
+            value={props.token.token}
+            label={t("guest_access.copy_password") as string}
+            copiedLabel={t("share.copied") as string}
+            onError={() => toast.error(t("share.copy_failed") as string)}
+          />
+          <Menu label={t("directory.more_actions")} placement="bottom-end" class="w-48">
+            <MenuItem icon={<MdOutlineEdit size={16} />} onClick={props.onEdit}>
+              {t("guest_access.edit_token")}
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem danger icon={<MdOutlineDelete size={16} />} onClick={remove} disabled={busy()}>
+              {t("guest_access.delete")}
+            </MenuItem>
+          </Menu>
+        </span>
+      }
+    />
   );
 }
 
-function TokenForm(props: {
+function TokenDialog(props: {
   token: GuestToken | null;
   roles: { name: string; label: string }[];
   onDone: () => void;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
 
@@ -214,75 +235,71 @@ function TokenForm(props: {
   }
 
   return (
-    <form class={`${cardClass()} space-y-3 p-4`} onSubmit={submit}>
-      <h2 class="text-sm font-semibold text-txt">
-        {props.token ? t("guest_access.edit_token") : t("guest_access.new_token")}
-      </h2>
-
-      <div class="space-y-1">
-        <Field label={t("guest_access.login_name")} size="sm">
-          <Input
-          class="w-full"
-          type="text"
-          required
-          value={name()}
-          onInput={(e) => setName(e.currentTarget.value)}
-          />
-        </Field>
-      </div>
-
-      <div class="space-y-1">
-        <label class="block text-xs text-muted">{t("guest_access.login_password")}</label>
-        <div class="flex gap-2">
-          <Input
-            class="w-full font-mono flex-1 min-w-0"
-            type="text"
-            required
-            value={token()}
-            onInput={(e) => setToken(e.currentTarget.value)}
-          />
-          <IconButton
-            label={t("guest_access.regenerate") as string}
-            class="shrink-0"
-            onClick={() => newTokenValue().then(setToken).catch(() => {})}
-          >
-            <MdOutlineRefresh size={15} />
-          </IconButton>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="space-y-1">
-          <Field label={t("guest_access.expires")} size="sm">
-            <Input
-            class="w-full"
-            type="date"
-            value={expires()}
-            onInput={(e) => setExpires(e.currentTarget.value)}
-            />
-          </Field>
-        </div>
-        <div class="space-y-1">
-          <Field label={t("guest_access.role")} size="sm">
-            <Select class="w-full" value={role()} onChange={(e) => setRole(e.currentTarget.value)}>
-            <option value="" />
-            <For each={props.roles}>
-            {(r) => <option value={r.name}>{r.label}</option>}
-            </For>
-            </Select>
-          </Field>
-        </div>
-      </div>
-      <p class="text-[0.6875rem] text-muted">{t("guest_access.role_hint")}</p>
-
-      <div class="flex gap-2">
-        <Button size="sm" type="submit" disabled={saving()}>
-          {saving() ? t("guest_access.saving") : t("guest_access.save")}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
-          {t("guest_access.cancel")}
-        </Button>
-      </div>
-    </form>
+    <Modal onClose={props.onClose} dismissOnBackdrop={false}>
+      {/* contents: the panel, not the form, is the dialog's flex child. */}
+      <form class="contents" onSubmit={submit}>
+        <ModalPanel
+          size="md"
+          title={props.token ? t("guest_access.edit_token") : t("guest_access.new_token")}
+          onClose={props.onClose}
+          footer={
+            <>
+              <Button variant="ghost" size="sm" onClick={props.onClose}>{t("guest_access.cancel")}</Button>
+              <Button size="sm" type="submit" disabled={saving()}>
+                {saving() ? t("guest_access.saving") : t("guest_access.save")}
+              </Button>
+            </>
+          }
+        >
+          <div class="p-4 space-y-4">
+            <Field label={t("guest_access.login_name")}>
+              <Input
+                class="w-full"
+                type="text"
+                required
+                autofocus
+                value={name()}
+                onInput={(e) => setName(e.currentTarget.value)}
+              />
+            </Field>
+            <div class="flex items-end gap-2">
+              <Field label={t("guest_access.login_password")} class="flex-1 min-w-0">
+                <Input
+                  class="w-full"
+                  type="text"
+                  required
+                  value={token()}
+                  onInput={(e) => setToken(e.currentTarget.value)}
+                />
+              </Field>
+              <IconButton
+                label={t("guest_access.regenerate") as string}
+                onClick={() => newTokenValue().then(setToken).catch(() => {})}
+              >
+                <MdOutlineRefresh size={16} />
+              </IconButton>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label={t("guest_access.expires")}>
+                <Input
+                  class="w-full"
+                  type="date"
+                  value={expires()}
+                  onInput={(e) => setExpires(e.currentTarget.value)}
+                />
+              </Field>
+              <Field label={t("guest_access.role")} hint={t("guest_access.role_hint")}>
+                <Select class="w-full" value={role()} onChange={(e) => setRole(e.currentTarget.value)}>
+                  <option value="" />
+                  <For each={props.roles}>
+                    {(r) => <option value={r.name}>{r.label}</option>}
+                  </For>
+                </Select>
+              </Field>
+            </div>
+          </div>
+        </ModalPanel>
+      </form>
+    </Modal>
   );
 }

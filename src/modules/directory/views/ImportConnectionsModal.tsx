@@ -144,7 +144,7 @@ const ImportConnectionsModal: Component<Props> = (props) => {
                           row.status === "connected" ? "text-success-txt" :
                           row.status === "already"   ? "text-muted" :
                           row.status === "failed"    ? "text-danger-txt" :
-                          row.status === "connecting" ? "text-accent" :
+                          row.status === "connecting" ? "text-accent-txt" :
                           "text-muted"
                         }
                         title={row.message}

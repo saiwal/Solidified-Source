@@ -1,13 +1,9 @@
-import {
-  createSignal,
-  createMemo,
-  For,
-  Show,
-} from "solid-js";
+import { createSignal, createMemo, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import {
   fetchConnections,
-  fetchPermcats,
+  fetchRoleSummary,
   createPermcat,
   deletePermcat,
   updateConnection,
@@ -18,579 +14,446 @@ import type { Connection, Permcat } from "../../connections/api";
 import { fetchGroups } from "../../groups/api";
 import type { PrivacyGroup } from "../../groups/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillAdd, MdFillClose, MdOutlineEdit, MdFillStar, MdFillStar_border } from "solid-icons/md";
-import ConnectionEditorModal from "@/shared/views/ConnectionEditorModal";
-import PageActions from "@/shared/views/layout/PageActions";
+import {
+  MdFillAdd, MdFillExpand_more, MdFillStar, MdFillStar_border,
+  MdOutlineBadge, MdOutlineDelete, MdOutlineDrive_file_rename_outline,
+  MdOutlineGroups, MdOutlineTune,
+} from "solid-icons/md";
 import RolePermissionsModal from "./RolePermissionsModal";
-import SubPageContent from "@/shared/views/SubPageContent";
-import CardShell from "@/shared/stream/CardShell";
-import { resetReveal } from "@/shared/stream/reveal";
+import { Section, ROW } from "../Section";
 import { Button, IconButton } from "@ui/Button";
-import { Chip } from "@ui/Chip";
-import { Input, Select } from "@ui/Field";
-import { Card } from "@ui/Card";
+import { Field, Input, Select } from "@ui/Field";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
-import { Menu, MenuItem } from "@ui/Menu";
+import { ListRow } from "@ui/ListRow";
+import { LoadMore } from "@ui/LoadMore";
+import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { Skeleton } from "@ui/Skeleton";
+import { Spinner } from "@ui/Spinner";
 
-// ── API ───────────────────────────────────────────────────────────────────────
+const PAGE = 50;
 
-async function fetchAllConnections(): Promise<Connection[]> {
-  const limit = 50;
-  const all: Connection[] = [];
-  let offset = 0;
-  while (offset < 500) {
-    const data = await fetchConnections({ filter: "all", limit, start: offset });
-    all.push(...data.connections);
-    if (all.length >= data.meta.total || data.connections.length < limit) break;
-    offset += limit;
-  }
-  return all;
+/** A row in the roles list; `name: ""` is the "No role" bucket. */
+type RoleEntry = Permcat & { count: number };
+
+// Roles changed: this page's counts and the connection editor's role list.
+function invalidateRoles() {
+  queryClient.invalidateQueries({ queryKey: ["role-summary"] });
+  queryClient.invalidateQueries({ queryKey: ["permcats"] });
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Name dialog (create + rename) ─────────────────────────────────────────────
 
-const NETWORK_LABELS: Record<string, string> = {
-  zot6:        "Zot",
-  activitypub: "AP",
-  rss:         "RSS",
-};
-
-// ── Inline create-role form ───────────────────────────────────────────────────
-
-function CreateRoleForm(props: {
-  onCreated: (role: Permcat) => void;
-  onDone: () => void;
+function NameDialog(props: {
+  title: string;
+  initial?: string;
+  submitLabel: string;
+  onSubmit: (name: string) => Promise<void>;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
-  const [newName, setNewName] = createSignal("");
+  const [name, setName] = createSignal(props.initial ?? "");
   const [busy, setBusy] = createSignal(false);
+  const [error, setError] = createSignal<string | null>(null);
 
-  async function handleCreate(e: Event) {
+  async function submit(e: Event) {
     e.preventDefault();
-    const name = newName().trim();
-    if (!name) return;
+    const n = name().trim();
+    if (!n) return;
+    if (n === props.initial) { props.onClose(); return; }
     setBusy(true);
+    setError(null);
     try {
-      const role = await createPermcat(name);
-      props.onCreated(role);
-      setNewName("");
-      props.onDone();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div class="rounded-lg border border-accent/30 bg-accent/5 p-3">
-      <form onSubmit={handleCreate} class="flex gap-2">
-        <Input
-          class="flex-1"
-          autofocus
-          type="text"
-          placeholder={t("directory.role_name_placeholder")}
-          value={newName()}
-          onInput={(e) => setNewName(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Escape" && props.onDone()}
-        />
-        <Button size="sm" class="shrink-0" type="submit" disabled={busy() || !newName().trim()}>
-          {busy() ? t("directory.creating_role") : t("directory.create_role")}
-        </Button>
-        <IconButton
-          label={t("layout.close")}
-          size="sm"
-          class="shrink-0"
-          onClick={props.onDone}
-        >
-          <MdFillClose size={16} />
-        </IconButton>
-      </form>
-    </div>
-  );
-}
-
-// ── Custom role split-button pill ─────────────────────────────────────────────
-
-function CustomRolePill(props: {
-  name: string;
-  label: string;
-  count: number;
-  active: boolean;
-  onSelect: () => void;
-  onDeleted: (name: string) => void;
-  onRenamed: (oldName: string, newPermcat: Permcat) => void;
-  onEditPerms: (name: string, label: string) => void;
-  onBulkAssigned: () => void;
-}) {
-  const { t } = useI18n();
-  const [picking, setPicking] = createSignal(false);
-  const [renaming, setRenaming] = createSignal(false);
-  const [newName, setNewName] = createSignal("");
-  const [busy, setBusy] = createSignal(false);
-  const [renameError, setRenameError] = createSignal<string | null>(null);
-  const [groups] = createQueryResource("privacy-groups", fetchGroups);
-
-  async function handleAssignToGroup(group: PrivacyGroup) {
-    if (!confirm(t("directory.assign_to_group_confirm", { role: props.label, group: group.name }))) return;
-    setBusy(true);
-    try {
-      await assignPermcatToGroup(props.name, group.id);
-      props.onBulkAssigned();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function startRename() {
-    setNewName(props.label);
-    setRenameError(null);
-    setRenaming(true);
-  }
-
-  async function commitRename(e: Event) {
-    e.preventDefault();
-    const name = newName().trim();
-    if (!name || name === props.label) { setRenaming(false); return; }
-    setBusy(true);
-    setRenameError(null);
-    try {
-      const created = await createPermcat(name);
-      try {
-        await deletePermcat(props.name);
-      } catch {
-        // Rollback the just-created permcat so we don't leave both behind
-        await deletePermcat(created.name).catch(() => {});
-        throw new Error("Delete old role failed — rename reverted");
-      }
-      props.onRenamed(props.name, created);
-      setRenaming(false);
+      await props.onSubmit(n);
+      props.onClose();
     } catch (err) {
-      setRenameError(err instanceof Error ? err.message : "Rename failed");
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
   }
-
-  async function handleDelete() {
-    if (!confirm(`Delete role "${props.label}"?`)) return;
-    setBusy(true);
-    try {
-      await deletePermcat(props.name);
-      props.onDeleted(props.name);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const activeBase = "bg-accent text-accent-fg border-accent";
-  const idleBase   = "bg-overlay text-muted border-rim";
-  const divider    = () => props.active ? "bg-white/20" : "bg-rim";
 
   return (
-    <div class="relative">
-      <Show
-        when={!renaming()}
-        fallback={
-          <div class="flex flex-col gap-1">
-            <form
-              onSubmit={commitRename}
-              class={`flex items-center rounded-full border overflow-hidden bg-surface ${
-                renameError() ? "border-danger" : "border-accent"
-              }`}
-            >
-              <input
+    <Modal onClose={props.onClose} dismissOnBackdrop={false}>
+      {/* contents: the panel, not the form, is the dialog's flex child. */}
+      <form class="contents" onSubmit={submit}>
+        <ModalPanel
+          size="sm"
+          title={props.title}
+          onClose={props.onClose}
+          footer={
+            <>
+              <Button variant="ghost" size="sm" onClick={props.onClose}>{t("directory.cancel")}</Button>
+              <Button size="sm" type="submit" disabled={busy() || !name().trim()}>
+                <Show when={busy()}><Spinner size="xs" /></Show>
+                {props.submitLabel}
+              </Button>
+            </>
+          }
+        >
+          <div class="p-4">
+            <Field label={t("directory.role_name")} error={error() ?? undefined}>
+              <Input
+                class="w-full"
                 autofocus
-                value={newName()}
-                onInput={(e) => setNewName(e.currentTarget.value)}
-                onKeyDown={(e) => e.key === "Escape" && setRenaming(false)}
-                class="text-sm px-3 py-1 bg-transparent text-txt w-28 focus:outline-none"
+                type="text"
+                placeholder={t("directory.role_name_placeholder")}
+                value={name()}
+                onInput={(e) => setName(e.currentTarget.value)}
               />
-              <Button variant="ghost" size="sm" type="submit" disabled={busy()}>
-                ✓
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setRenaming(false)}>
-                ×
-              </Button>
-            </form>
-            <Show when={renameError()}>
-              <p class="text-xs text-danger-txt px-1">{renameError()}</p>
-            </Show>
+            </Field>
           </div>
-        }
-      >
-        <div class={`flex items-center rounded-full text-sm border transition-colors overflow-hidden ${
-          props.active ? activeBase : idleBase
-        }`}>
-          {/* Filter side */}
-          <button
-            onClick={props.onSelect}
-            disabled={busy()}
-            class="flex items-center gap-1.5 px-3 py-1 disabled:opacity-50"
-          >
-            {props.label}
-            <span class={`text-xs font-medium tabular-nums ${props.active ? "opacity-80" : ""}`}>
-              {props.count}
-            </span>
-          </button>
+        </ModalPanel>
+      </form>
+    </Modal>
+  );
+}
 
-          {/* Divider */}
-          <div class={`w-px self-stretch ${divider()}`} />
+// ── Members of one role ───────────────────────────────────────────────────────
 
-          {/* Dropdown trigger */}
-          <Menu
-            label="Role actions"
-            placement="bottom-start"
-            class="max-h-64 overflow-y-auto"
-            // Dismissing the menu (however it happens) drops the group-picker sub-state.
-            onOpenChange={(o) => { if (!o) setPicking(false); }}
-            trigger={(p) => (
-              <button
-                {...p}
-                disabled={busy()}
-                class={`px-1.5 py-1 transition-colors disabled:opacity-50 ${
-                  props.active ? "hover:bg-white/10" : "hover:bg-surface"
-                }`}
-                aria-label="Role actions"
-              >
-                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            )}
+function RoleMembers(props: {
+  role: string;
+  roleOptions: { name: string; label: string }[];
+}) {
+  const { t } = useI18n();
+  const [list, setList] = createSignal<Connection[] | null>(null);
+  const [total, setTotal] = createSignal(0);
+  const [loadingMore, setLoadingMore] = createSignal(false);
+  const [busyId, setBusyId] = createSignal<number | null>(null);
+
+  async function load(start = 0) {
+    const data = await fetchConnections({ filter: "all", role: props.role, limit: PAGE, start, order: "name" });
+    setTotal(data.meta.total);
+    setList((prev) => (start ? [...(prev ?? []), ...data.connections] : data.connections));
+  }
+  void load();
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try { await load(list()?.length ?? 0); } finally { setLoadingMore(false); }
+  }
+
+  // A member moved to another role leaves this list; counts refresh.
+  async function changeRole(conn: Connection, role: string) {
+    setBusyId(conn.id);
+    try {
+      await updateConnection(conn.id, { role });
+      setList((prev) => prev?.filter((c) => c.id !== conn.id) ?? null);
+      setTotal((n) => n - 1);
+      invalidateRoles();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div class="pl-12 sm:pl-16 pr-3 pb-3">
+      <Show when={list()} fallback={<Spinner size="sm" />}>
+        {(rows) => (
+          <Show
+            when={rows().length > 0}
+            fallback={<p class="text-xs text-muted py-1">{t("directory.role_no_members")}</p>}
           >
-            <Show
-              when={!picking()}
-              fallback={
-                <>
-                  <p class="px-3 py-1.5 text-xs text-muted border-b border-rim mb-1">
-                    {t("directory.assign_to_group")}
-                  </p>
-                  <Show
-                    when={(groups() ?? []).length > 0}
-                    fallback={<p class="px-3 py-1.5 text-xs text-muted">{t("directory.no_privacy_groups_short")}</p>}
-                  >
-                    <For each={groups() ?? []}>
-                      {(g) => (
-                        <MenuItem onClick={() => handleAssignToGroup(g)} disabled={busy()}>
-                          {g.name} <span class="text-muted">({g.member_count})</span>
-                        </MenuItem>
-                      )}
-                    </For>
-                  </Show>
-                </>
-              }
-            >
-              <MenuItem onClick={() => props.onEditPerms(props.name, props.label)}>{t("directory.edit_permissions")}</MenuItem>
-              <MenuItem keepOpen onClick={() => setPicking(true)}>{t("directory.assign_to_group")}</MenuItem>
-              <MenuItem onClick={startRename}>Rename</MenuItem>
-              <MenuItem danger onClick={handleDelete}>Delete</MenuItem>
-            </Show>
-          </Menu>
-        </div>
+            <p class="text-xs text-muted pb-1">{t("directory.role_assign_hint")}</p>
+            <ul class="space-y-0.5 -mx-3">
+              <For each={rows()}>
+                {(conn) => (
+                  <li>
+                    <ListRow
+                      class={ROW}
+                      leading={<Avatar src={conn.photo} name={conn.name} size={8} />}
+                      title={<span class="block truncate">{conn.name}</span>}
+                      subtitle={<span class="block truncate">{conn.address || conn.url}</span>}
+                      trailing={
+                        <Select
+                          size="sm"
+                          class="w-28 sm:w-36"
+                          aria-label={t("directory.field_role")}
+                          disabled={busyId() === conn.id}
+                          onChange={(e) => changeRole(conn, e.currentTarget.value)}
+                        >
+                          <For each={props.roleOptions}>
+                            {(r) => <option value={r.name} selected={r.name === (conn.role ?? "")}>{r.label}</option>}
+                          </For>
+                        </Select>
+                      }
+                    />
+                  </li>
+                )}
+              </For>
+            </ul>
+            <LoadMore
+              hasMore={rows().length < total() && !loadingMore()}
+              loading={loadingMore()}
+              label={t("directory.load_more")}
+              onClick={loadMore}
+            />
+          </Show>
+        )}
       </Show>
-
     </div>
   );
 }
 
-// ── Connection card with inline role selector ─────────────────────────────────
+// ── Role row ──────────────────────────────────────────────────────────────────
 
-function RoleCard(props: {
-  conn: Connection;
+function RoleRow(props: {
+  role: RoleEntry;
+  open: boolean;
+  onToggle: () => void;
   roleOptions: { name: string; label: string }[];
-  onRoleChanged: (newRole: string) => void;
-  onDeleted: () => void;
+  onEditPerms: () => void;
+  onRename: () => void;
 }) {
-  const [busy, setBusy] = createSignal(false);
-  const [editOpen, setEditOpen] = createSignal(false);
   const { t } = useI18n();
-  const networkLabel = () => NETWORK_LABELS[props.conn.network] ?? props.conn.network;
+  const [busy, setBusy] = createSignal(false);
+  const [picking, setPicking] = createSignal(false);
+  const [groups] = createQueryResource("privacy-groups", fetchGroups);
+  const custom = () => !props.role.system && props.role.name !== "";
 
-  async function handleRoleChange(e: Event) {
-    const select = e.currentTarget as HTMLSelectElement;
-    const newRole = select.value;
-    if (newRole === (props.conn.role ?? "")) return;
+  async function toggleDefault() {
+    try {
+      await setDefaultPermcat(props.role.name, !props.role.is_default);
+    } finally {
+      invalidateRoles();
+    }
+  }
+
+  async function assignToGroup(group: PrivacyGroup) {
+    if (!confirm(t("directory.assign_to_group_confirm", { role: props.role.label, group: group.name }))) return;
     setBusy(true);
-    await updateConnection(props.conn.id, { role: newRole });
-    setBusy(false);
-    props.onRoleChanged(newRole);
+    try {
+      await assignPermcatToGroup(props.role.name, group.id);
+      invalidateRoles();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!confirm(t("directory.confirm_delete_role", { name: props.role.label }))) return;
+    setBusy(true);
+    try {
+      await deletePermcat(props.role.name);
+      invalidateRoles();
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <>
-    <Card class="flex items-center gap-3 p-3">
-      <a href={props.conn.url} target="_blank" rel="noopener" class="shrink-0">
-        <Avatar src={props.conn.photo} name={props.conn.name} size={11} class="ring-1 ring-rim" />
-      </a>
-
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <a
-            href={props.conn.url}
-            target="_blank"
-            rel="noopener"
-            class="font-medium text-sm text-txt truncate hover:underline"
-          >
-            {props.conn.name}
-          </a>
-          <Badge tone="accent" class="shrink-0">
-            {networkLabel()}
-          </Badge>
-          <Show when={props.conn.is_forum}>
-            <Badge tone="accent" class="shrink-0">
-              {t("directory.forum")}
-            </Badge>
-          </Show>
-        </div>
-        <p class="text-xs text-muted truncate mt-0.5">
-          {props.conn.address || props.conn.url}
-        </p>
-      </div>
-
-      {/* Role selector */}
-      <Select size="sm" class="shrink-0" onChange={handleRoleChange} disabled={busy()}>
-        <For each={props.roleOptions}>
-          {(r) => (
-            <option value={r.name} selected={r.name === (props.conn.role ?? "")}>
-              {r.label}
-            </option>
-          )}
-        </For>
-      </Select>
-
-      <IconButton label={t("directory.edit")} size="sm" class="shrink-0" onClick={() => setEditOpen(true)}>
-        <MdOutlineEdit size={14} />
-      </IconButton>
-    </Card>
-
-    <Show when={editOpen()}>
-      <ConnectionEditorModal
-        connection={props.conn}
-        authorName={props.conn.name}
-        authorAvatar={props.conn.photo}
-        onSaved={() => { setEditOpen(false); props.onDeleted(); }}
-        onClose={() => setEditOpen(false)}
-        onDeleted={() => { setEditOpen(false); props.onDeleted(); }}
+    <div>
+      <ListRow
+        class={ROW}
+        leading={
+          <span class="w-10 h-10 rounded-full bg-elevated flex items-center justify-center text-accent-txt">
+            <MdOutlineBadge size={20} />
+          </span>
+        }
+        title={
+          <button type="button" class="flex items-center gap-1.5 font-medium text-left hover:underline" onClick={props.onToggle}>
+            <span class="truncate">{props.role.label}</span>
+            <Show when={props.role.is_default}>
+              <Badge tone="accent" size="sm">{t("directory.default_role")}</Badge>
+            </Show>
+          </button>
+        }
+        subtitle={
+          <span class="tabular-nums">
+            {props.role.count}{" "}
+            {props.role.count === 1 ? t("directory.connection_singular") : t("directory.connections_plural")}
+          </span>
+        }
+        trailing={
+          <span class="flex items-center gap-0.5">
+            <Show when={props.role.name !== "" && props.role.name !== "default"}>
+              <IconButton
+                size="sm"
+                label={props.role.is_default ? t("directory.remove_default_role") : t("directory.set_default_role")}
+                pressed={props.role.is_default}
+                onClick={toggleDefault}
+              >
+                {props.role.is_default
+                  ? <MdFillStar size={16} class="text-accent-txt" />
+                  : <MdFillStar_border size={16} />}
+              </IconButton>
+            </Show>
+            <IconButton
+              size="sm"
+              label={props.open ? t("directory.hide_members") : t("directory.view_members")}
+              pressed={props.open}
+              onClick={props.onToggle}
+            >
+              <MdFillExpand_more size={16} class={`transition-transform ${props.open ? "rotate-180" : ""}`} />
+            </IconButton>
+            <Show when={custom()}>
+              <Menu
+                label={t("directory.more_actions")}
+                placement="bottom-end"
+                class="w-56 max-h-64 overflow-y-auto"
+                // Dismissing the menu (however it happens) drops the group-picker sub-state.
+                onOpenChange={(o) => { if (!o) setPicking(false); }}
+              >
+                <Show
+                  when={!picking()}
+                  fallback={
+                    <>
+                      <p class="px-3 py-1.5 text-xs text-muted">{t("directory.assign_to_group")}</p>
+                      <Show
+                        when={(groups() ?? []).length > 0}
+                        fallback={<p class="px-3 py-1.5 text-xs text-muted">{t("directory.no_privacy_groups_short")}</p>}
+                      >
+                        <For each={groups() ?? []}>
+                          {(g) => (
+                            <MenuItem onClick={() => assignToGroup(g)} disabled={busy()}>
+                              {g.name} <span class="text-muted tabular-nums">({g.member_count})</span>
+                            </MenuItem>
+                          )}
+                        </For>
+                      </Show>
+                    </>
+                  }
+                >
+                  <MenuItem icon={<MdOutlineTune size={16} />} onClick={props.onEditPerms}>
+                    {t("directory.edit_permissions")}
+                  </MenuItem>
+                  <MenuItem icon={<MdOutlineGroups size={16} />} keepOpen onClick={() => setPicking(true)}>
+                    {t("directory.assign_to_group")}
+                  </MenuItem>
+                  <MenuItem icon={<MdOutlineDrive_file_rename_outline size={16} />} onClick={props.onRename}>
+                    {t("directory.rename")}
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem danger icon={<MdOutlineDelete size={16} />} onClick={remove} disabled={busy()}>
+                    {t("directory.delete_role")}
+                  </MenuItem>
+                </Show>
+              </Menu>
+            </Show>
+          </span>
+        }
       />
-    </Show>
-    </>
-  );
-}
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function Skeleton() {
-  return (
-    <div class="space-y-2 animate-pulse">
-      <For each={Array(6).fill(0)}>
-        {() => (
-          <Card class="p-3 flex items-center gap-3">
-            <div class="w-11 h-11 rounded-full bg-overlay shrink-0" />
-            <div class="flex-1 space-y-2">
-              <div class="h-3.5 bg-overlay rounded w-1/3" />
-              <div class="h-3 bg-overlay rounded w-1/2" />
-            </div>
-            <div class="h-7 w-24 bg-overlay rounded-lg shrink-0" />
-          </Card>
-        )}
-      </For>
+      <Show when={props.open}>
+        <RoleMembers role={props.role.name} roleOptions={props.roleOptions} />
+      </Show>
     </div>
   );
 }
 
 // ── Section ───────────────────────────────────────────────────────────────────
 
-type RolePill = {
-  name: string | null;
-  label: string;
-  count: number;
-  system: boolean;
-  is_default: boolean;
-};
-
 export default function ContactRolesSection() {
   const { t } = useI18n();
-  const [connections, { mutate: mutateConns, refetch: refetchConns }] = createQueryResource("connections-all", fetchAllConnections);
-  const [permcats, { mutate: mutatePermcats, refetch: refetchPermcats }] = createQueryResource("permcats", fetchPermcats);
-  const [activeRole, setActiveRole] = createSignal<string | null>(null);
-  // Each visit / role-filter pick replays the card entrance, as streams do.
-  resetReveal();
-  const [showCreate, setShowCreate] = createSignal(false);
+  const [summary] = createQueryResource("role-summary", fetchRoleSummary);
+  const [openRole, setOpenRole] = createSignal<string | null>(null);
+  const [creating, setCreating] = createSignal(false);
+  const [renaming, setRenaming] = createSignal<RoleEntry | null>(null);
   const [editingPerms, setEditingPerms] = createSignal<{ name: string; label: string } | null>(null);
 
-  const roleOptions = createMemo<{ name: string; label: string }[]>(() => {
-    const cats = permcats() ?? [];
-    return [
-      { name: "", label: "No role" },
-      ...cats.map((p) => ({ name: p.name, label: p.label })),
-    ];
+  const roles = createMemo<RoleEntry[]>(() => {
+    const s = summary();
+    if (!s) return [];
+    const list = s.roles.map((r) => ({ ...r, count: r.count ?? 0 }));
+    return s.unassigned > 0
+      ? [...list, { name: "", label: t("directory.no_role"), system: true, is_default: false, count: s.unassigned }]
+      : list;
   });
 
-  const rolePills = createMemo<RolePill[]>(() => {
-    const data = connections() ?? [];
-    const cats = permcats() ?? [];
+  const roleOptions = createMemo(() => [
+    { name: "", label: t("directory.no_role") },
+    ...(summary()?.roles ?? []).map((r) => ({ name: r.name, label: r.label })),
+  ]);
 
-    const counts = new Map<string, number>();
-    for (const c of data) {
-      const key = c.role ?? "";
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-
-    const noRoleCount = counts.get("") ?? 0;
-
-    return [
-      { name: null,  label: "All",     count: data.length,  system: true, is_default: false },
-      ...(noRoleCount > 0
-        ? [{ name: "" as string | null, label: "No role", count: noRoleCount, system: true, is_default: false }]
-        : []),
-      ...cats.map((p) => ({
-        name:       p.name as string | null,
-        label:      p.label,
-        count:      counts.get(p.name) ?? 0,
-        system:     p.system,
-        is_default: p.is_default,
-      })),
-    ];
-  });
-
-  const selected = createMemo(() => activeRole());
-
-  const filtered = createMemo(() => {
-    const data = connections() ?? [];
-    const sel = selected();
-    if (sel === null) return data;
-    return data.filter((c) => (c.role ?? "") === sel);
-  });
-
-  function handleRoleChanged(conn: Connection, newRole: string) {
-    mutateConns((prev) =>
-      prev?.map((c) => (c.id === conn.id ? { ...c, role: newRole } : c))
-    );
-  }
-
-  function handlePermcatCreated(role: Permcat) {
-    mutatePermcats((prev) => [...(prev ?? []), role]);
+  async function create(name: string) {
+    const role = await createPermcat(name);
+    invalidateRoles();
     // Freshly created roles start as a copy of "default" — send the user
-    // straight into the permission grid so they can actually customize it.
+    // straight into the permission grid so they can actually customise it.
     setEditingPerms({ name: role.name, label: role.label });
   }
 
-  function handlePermcatDeleted(name: string) {
-    mutatePermcats((prev) => (prev ?? []).filter((p) => p.name !== name));
-    mutateConns((prev) => prev?.map((c) => c.role === name ? { ...c, role: "default" } : c));
-    if (activeRole() === name) setActiveRole(null);
-  }
-
-  function handlePermcatRenamed(oldName: string, newPermcat: Permcat) {
-    mutatePermcats((prev) => prev?.map((p) => p.name === oldName ? newPermcat : p));
-    mutateConns((prev) => prev?.map((c) => c.role === oldName ? { ...c, role: newPermcat.name } : c));
-    if (activeRole() === oldName) setActiveRole(newPermcat.name);
-  }
-
-  async function handleToggleDefault(name: string, wasDefault: boolean) {
-    const next = !wasDefault;
-    mutatePermcats((prev) => prev?.map((p) => ({ ...p, is_default: p.name === name ? next : false })));
+  // Core has no rename: create the new role, then drop the old one, and undo
+  // the create if the delete fails so both don't linger.
+  async function rename(old: RoleEntry, name: string) {
+    const created = await createPermcat(name);
     try {
-      await setDefaultPermcat(name, next);
+      await deletePermcat(old.name);
     } catch {
-      refetchPermcats();
+      await deletePermcat(created.name).catch(() => {});
+      throw new Error(t("directory.rename_failed"));
     }
+    if (openRole() === old.name) setOpenRole(created.name);
+    invalidateRoles();
   }
 
   return (
-    <SubPageContent
+    <Section
       title={t("directory.contact_roles_title")}
       description={t("directory.contact_roles_desc")}
-      action={
-        <PageActions actions={[{
-          label: showCreate() ? t("directory.cancel") : t("directory.create_role"),
-          icon: showCreate() ? MdFillClose : MdFillAdd,
-          onClick: () => setShowCreate((v) => !v),
-        }]} />
-      }
+      actions={[{
+        label: t("directory.create_role"),
+        icon: MdFillAdd,
+        onClick: () => setCreating(true),
+        primary: true,
+      }]}
     >
-      {/* Create form */}
-      <Show when={showCreate()}>
-        <CreateRoleForm
-          onCreated={handlePermcatCreated}
-          onDone={() => setShowCreate(false)}
-        />
-      </Show>
-
-      {/* Connection list */}
-      <Show when={!connections.loading} fallback={<Skeleton />}>
-        <Show
-          when={(connections() ?? []).length > 0}
-          fallback={
-            <EmptyState>No connections found.</EmptyState>
-          }
-        >
-          {/* Role filter pills — custom roles get a split button */}
-          <div class="flex flex-wrap gap-1.5">
-            <For each={rolePills()}>
-              {(pill) => (
-                <div class="flex items-center gap-1">
-                  <Show
-                    when={!pill.system && pill.name !== null && pill.name !== ""}
-                    fallback={
-                      <Chip
-                        selected={selected() === pill.name}
-                        count={pill.count}
-                        onClick={() => { resetReveal(); setActiveRole(pill.name); }}
-                      >
-                        {pill.label}
-                      </Chip>
-                    }
-                  >
-                    <CustomRolePill
-                      name={pill.name!}
-                      label={pill.label}
-                      count={pill.count}
-                      active={selected() === pill.name}
-                      onSelect={() => { resetReveal(); setActiveRole(pill.name); }}
-                      onDeleted={handlePermcatDeleted}
-                      onRenamed={handlePermcatRenamed}
-                      onEditPerms={(name, label) => setEditingPerms({ name, label })}
-                      onBulkAssigned={() => refetchConns()}
-                    />
-                  </Show>
-                  <Show when={pill.name && pill.name !== "default"}>
-                    <button
-                      onClick={() => handleToggleDefault(pill.name!, pill.is_default)}
-                      title={pill.is_default ? t("directory.remove_default_role") : t("directory.set_default_role")}
-                      class="text-muted hover:text-accent transition-colors shrink-0"
-                    >
-                      {pill.is_default
-                        ? <MdFillStar size={15} class="text-accent" />
-                        : <MdFillStar_border size={15} />}
-                    </button>
-                  </Show>
+      <Show
+        when={summary()}
+        fallback={
+          <div class="space-y-0.5">
+            <For each={[1, 2, 3, 4]}>
+              {() => (
+                <div class="flex items-center gap-3 px-3 py-2">
+                  <Skeleton rounded="full" tone="overlay" class="w-10 h-10 shrink-0" />
+                  <div class="flex-1 space-y-2">
+                    <Skeleton tone="overlay" class="h-3.5 w-1/4" />
+                    <Skeleton tone="overlay" class="h-3 w-1/5" />
+                  </div>
                 </div>
               )}
             </For>
           </div>
-
-          <p class="text-sm text-muted">
-            {filtered().length} connection{filtered().length !== 1 ? "s" : ""}
-            {selected() !== null && (
-              <> — {t("directory.role_assign_hint")}</>
-            )}
-          </p>
-
-          <div class="space-y-2">
-            <For each={filtered()}>
-              {(conn) => (<CardShell uuid={conn.xchan_hash}>
-                <RoleCard
-                  conn={conn}
+        }
+      >
+        <Show when={roles().length > 0} fallback={<EmptyState>{t("directory.no_roles")}</EmptyState>}>
+          <div class="space-y-0.5 -mx-3">
+            <For each={roles()}>
+              {(role) => (
+                <RoleRow
+                  role={role}
+                  open={openRole() === role.name}
+                  onToggle={() => setOpenRole(openRole() === role.name ? null : role.name)}
                   roleOptions={roleOptions()}
-                  onRoleChanged={(newRole) => handleRoleChanged(conn, newRole)}
-                  onDeleted={() => refetchConns()}
-                /></CardShell>
+                  onEditPerms={() => setEditingPerms({ name: role.name, label: role.label })}
+                  onRename={() => setRenaming(role)}
+                />
               )}
             </For>
           </div>
         </Show>
+      </Show>
+
+      <Show when={creating()}>
+        <NameDialog
+          title={t("directory.create_role")}
+          submitLabel={t("directory.create")}
+          onSubmit={create}
+          onClose={() => setCreating(false)}
+        />
+      </Show>
+
+      <Show when={renaming()}>
+        {(role) => (
+          <NameDialog
+            title={t("directory.rename")}
+            initial={role().label}
+            submitLabel={t("directory.save")}
+            onSubmit={(name) => rename(role(), name)}
+            onClose={() => setRenaming(null)}
+          />
+        )}
       </Show>
 
       <Show when={editingPerms()}>
@@ -603,6 +466,6 @@ export default function ContactRolesSection() {
           />
         )}
       </Show>
-    </SubPageContent>
+    </Section>
   );
 }

@@ -11,8 +11,8 @@ import { For, Show, createEffect, createMemo, createSignal, type Component } fro
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { MdFillCheck_circle, MdFillError, MdFillSend } from "solid-icons/md";
-import SubPageContent from "@/shared/views/SubPageContent";
+import { MdFillCheck_circle, MdFillError, MdFillExpand_more, MdFillSend } from "solid-icons/md";
+import { Section } from "../Section";
 import {
   checkRecipients,
   fetchInviteInfo,
@@ -22,7 +22,11 @@ import {
 } from "../../invite/api";
 import { Button } from "@ui/Button";
 import { Field, Input, Textarea } from "@ui/Field";
-
+import { Chip } from "@ui/Chip";
+import { Stat } from "@ui/Stat";
+import { Banner } from "@ui/Banner";
+import { Collapsible } from "@ui/Collapsible";
+import { Skeleton } from "@ui/Skeleton";
 
 // Core's field_duration.qmc.tpl offers exactly these three, even though
 // calcdue() also understands w/m/y.
@@ -41,6 +45,7 @@ const InviteSection: Component = () => {
   const [durq, setDurq] = createSignal<string>("d");
   const [results, setResults] = createSignal<RecipientResult[] | null>(null);
   const [busy, setBusy] = createSignal(false);
+  const [previewOpen, setPreviewOpen] = createSignal(false);
 
   // Seed the pickers from the server's defaults once the payload lands.
   createEffect(() => {
@@ -108,37 +113,49 @@ const InviteSection: Component = () => {
       refetch();
     });
 
+  const canSend = () => !!info() && !busy() && addresses().length > 0 && !!style();
+
   return (
-    <SubPageContent title={t("invite.title")} description={t("invite.description")}>
+    <Section
+      narrow
+      title={t("invite.title")}
+      description={t("invite.description")}
+      actions={info.error ? [] : [{
+        label: t("invite.submit"),
+        icon: MdFillSend,
+        onClick: () => void send(),
+        disabled: !canSend(),
+        primary: true,
+      }]}
+    >
       {/* A gate failure (app off, invites disabled, quota spent) is the whole
           answer — core returns the message instead of the form, so do that. */}
       <Show when={!info.error} fallback={
-        <p class="text-sm text-warning-txt">
-          {String(info.error?.message ?? info.error)}
-        </p>
+        <Banner tone="warning" role="alert">{String(info.error?.message ?? info.error)}</Banner>
       }>
-        <Show when={info()} fallback={<div class="h-64 bg-surface border border-rim rounded-xl animate-pulse" />}>
+        <Show when={info()} fallback={<Skeleton class="h-96" />}>
           {(d) => (
-            <div class="space-y-5">
-              {/* Counters */}
-              <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
-                <span>{t("invite.quota_mine")}: {quotaLabel(d())}</span>
-                <span>{t("invite.quota_site")}: {d().site.used} / {d().site.max}</span>
+            <div class="space-y-8">
+              {/* ── Quotas ── */}
+              <div class="grid grid-cols-2 gap-3">
+                <Stat label={t("invite.quota_mine")} value={<span class="tabular-nums">{quotaLabel(d())}</span>} />
+                <Stat label={t("invite.quota_site")} value={<span class="tabular-nums">{d().site.used} / {d().site.max}</span>} />
               </div>
 
-              {/* Recipients */}
-              <div class="space-y-1.5">
-                <Field label={t("invite.recipients_label")} size="sm">
+              {/* ── Recipients ── */}
+              <section class="space-y-3">
+                <h2 class="text-sm font-semibold text-txt">{t("invite.section_recipients")}</h2>
+                <Field
+                  label={t("invite.recipients_label")}
+                  hint={t("invite.max_recipients", { max: String(d().max_recipients) })}
+                >
                   <Textarea
-                  class="w-full h-28 font-mono"
-                  value={recipients()}
-                  onInput={(e) => { setRecipients(e.currentTarget.value); setResults(null); }}
+                    class="w-full h-28"
+                    value={recipients()}
+                    onInput={(e) => { setRecipients(e.currentTarget.value); setResults(null); }}
                   />
                 </Field>
-                <div class="flex items-center justify-between gap-2">
-                  <p class="text-xs text-muted">
-                    {t("invite.max_recipients", { max: String(d().max_recipients) })}
-                  </p>
+                <div class="flex justify-end">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -148,122 +165,108 @@ const InviteSection: Component = () => {
                     {t("invite.check")}
                   </Button>
                 </div>
-              </div>
+                <Show when={results()}>
+                  <ul class="space-y-1">
+                    <For each={results()!}>
+                      {(r) => (
+                        <li class={`flex items-start gap-1.5 text-xs ${r.ok ? "text-muted" : "text-danger-txt"}`}>
+                          <Show when={r.ok} fallback={<MdFillError size={13} class="mt-0.5 shrink-0" />}>
+                            <MdFillCheck_circle size={13} class="mt-0.5 shrink-0 text-success-txt" />
+                          </Show>
+                          <span>{r.message}</span>
+                        </li>
+                      )}
+                    </For>
+                  </ul>
+                </Show>
+              </section>
 
-              <Show when={results()}>
-                <ul class="space-y-1">
-                  <For each={results()!}>
-                    {(r) => (
-                      <li class={`flex items-start gap-1.5 text-xs ${r.ok ? "text-muted" : "text-danger-txt"}`}>
-                        <Show when={r.ok} fallback={<MdFillError size={13} class="mt-0.5 shrink-0" />}>
-                          <MdFillCheck_circle size={13} class="mt-0.5 shrink-0 text-success-txt" />
-                        </Show>
-                        <span>{r.message}</span>
-                      </li>
-                    )}
-                  </For>
-                </ul>
-              </Show>
-
-              {/* Expiry */}
-              <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-txt">{t("invite.expire_label")}</label>
-                <div class="flex flex-wrap items-center gap-3">
+              {/* ── Message ── */}
+              <section class="space-y-4">
+                <h2 class="text-sm font-semibold text-txt">{t("invite.section_message")}</h2>
+                {/* Template pickers — the language lane only lists locales that
+                    have an invite template AND that the SPA itself ships. */}
+                <div class="space-y-2">
+                  <p class="text-xs text-muted">{t("invite.template_label")}</p>
+                  <Show when={langs().length > 1}>
+                    <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("invite.template_label")}>
+                      <For each={langs()}>
+                        {(l) => <Chip selected={lang() === l} onClick={() => setLang(l)}>{l}</Chip>}
+                      </For>
+                    </div>
+                  </Show>
+                  <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("invite.template_label")}>
+                    <For each={styles()}>
+                      {(st) => <Chip selected={style() === st} onClick={() => setStyle(st)}>{st}</Chip>}
+                    </For>
+                  </div>
+                </div>
+                <Field label={t("invite.subject_label")}>
                   <Input
-                    class="w-full w-20"
+                    class="w-full"
+                    type="text"
+                    value={subject()}
+                    onInput={(e) => setSubject(e.currentTarget.value)}
+                  />
+                </Field>
+                <Field label={t("invite.message_label")}>
+                  <Textarea
+                    class="w-full h-24"
+                    placeholder={t("invite.message_ph")}
+                    value={message()}
+                    onInput={(e) => setMessage(e.currentTarget.value)}
+                  />
+                </Field>
+                <Collapsible
+                  open={previewOpen()}
+                  onOpenChange={setPreviewOpen}
+                  panelClass="pt-2"
+                  header={(trigger) => (
+                    <button type="button" {...trigger} class="flex items-center gap-1 text-xs text-muted hover:text-txt">
+                      <MdFillExpand_more size={16} class={`transition-transform ${previewOpen() ? "rotate-180" : ""}`} />
+                      {t("invite.preview_label")}
+                    </button>
+                  )}
+                >
+                  <pre class="bg-elevated/60 rounded-xl p-3 text-xs text-muted font-[inherit]
+                              whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
+                    {template()?.body ?? ""}
+                  </pre>
+                </Collapsible>
+              </section>
+
+              {/* ── Expiry ── */}
+              <section class="space-y-3">
+                <h2 class="text-sm font-semibold text-txt">{t("invite.expire_label")}</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                  <Input
+                    class="w-16"
                     type="number"
                     min="1"
                     max="99"
+                    aria-label={t("invite.expire_label")}
                     value={durn()}
                     onInput={(e) => setDurn(parseInt(e.currentTarget.value, 10) || 1)}
                   />
-                  <div class="flex items-center gap-1.5">
-                    <For each={UNITS}>
-                      {(u) => (
-                        <Button variant="ghost" size="sm" pressed={durq() === u} onClick={() => setDurq(u)}>
-                          {t(`invite.unit_${u}` as "invite.unit_d")}
-                        </Button>
-                      )}
-                    </For>
-                  </div>
-                </div>
-                <p class="text-xs text-muted">
-                  {t("invite.valid_until")} {d().expire.due}
-                </p>
-              </div>
-
-              {/* Template pickers — the language lane only lists locales that
-                  have an invite template AND that the SPA itself ships. */}
-              <div class="space-y-2">
-                <label class="block text-xs font-medium text-txt">{t("invite.template_label")}</label>
-                <Show when={langs().length > 1}>
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <For each={langs()}>
-                      {(l) => (
-                        <Button variant="ghost" size="sm" pressed={lang() === l} onClick={() => setLang(l)}>
-                          {l}
-                        </Button>
-                      )}
-                    </For>
-                  </div>
-                </Show>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  <For each={styles()}>
-                    {(s) => (
-                      <Button variant="ghost" size="sm" pressed={style() === s} onClick={() => setStyle(s)}>
-                        {s}
-                      </Button>
+                  <For each={UNITS}>
+                    {(u) => (
+                      <Chip selected={durq() === u} onClick={() => setDurq(u)}>
+                        {t(`invite.unit_${u}` as "invite.unit_d")}
+                      </Chip>
                     )}
                   </For>
                 </div>
-              </div>
-
-              {/* Subject */}
-              <div class="space-y-1.5">
-                <Field label={t("invite.subject_label")} size="sm">
-                  <Input
-                  class="w-full"
-                  type="text"
-                  value={subject()}
-                  onInput={(e) => setSubject(e.currentTarget.value)}
-                  />
-                </Field>
-              </div>
-
-              {/* Preview */}
-              <div class="space-y-1.5">
-                <label class="block text-xs font-medium text-txt">{t("invite.preview_label")}</label>
-                <pre class="bg-elevated border border-rim rounded-lg p-3 text-xs text-muted
-                            whitespace-pre-wrap break-words max-h-64 overflow-y-auto">
-                  {template()?.body ?? ""}
-                </pre>
-              </div>
-
-              {/* Personal note */}
-              <div class="space-y-1.5">
-                <Field label={t("invite.message_label")} size="sm">
-                  <Textarea
-                  class="w-full h-24"
-                  placeholder={t("invite.message_ph")}
-                  value={message()}
-                  onInput={(e) => setMessage(e.currentTarget.value)}
-                  />
-                </Field>
-              </div>
+                <p class="text-xs text-muted">
+                  {t("invite.valid_until")} <span class="tabular-nums">{d().expire.due}</span>
+                </p>
+              </section>
 
               <p class="text-xs text-muted">{t("invite.log_note")}</p>
-
-              <div class="flex justify-end">
-                <Button size="sm" onClick={send} disabled={busy() || addresses().length === 0 || !style()}>
-                  <MdFillSend size={15} />
-                  {t("invite.submit")}
-                </Button>
-              </div>
             </div>
           )}
         </Show>
       </Show>
-    </SubPageContent>
+    </Section>
   );
 };
 

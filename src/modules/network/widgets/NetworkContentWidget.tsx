@@ -1,5 +1,5 @@
-import { createEffect, onCleanup, Show, For, Switch, Match } from "solid-js";
-import { useSearchParams } from "@solidjs/router";
+import { createEffect, on, onCleanup, Show, For, Switch, Match } from "solid-js";
+import { useLocation, useSearchParams } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useScrollStyle } from "@utsukta/spa-core/store/scroll-style";
@@ -12,7 +12,7 @@ import { TimelinePlaceholder } from "@/shared/stream/feedviews/TimelineView";
 import StreamFilters from "../views/StreamFilters";
 import { parseNetworkParams } from "../api";
 import {
-  viewMode, posts, loadNetwork, resetPosts,
+  viewMode, posts, applyNetwork, loadedNetworkParams, resetPosts,
   loading, loadMore, loadingMore, hasMore, newPosts, flushNewPosts, sortPref,
   handleLike, handleDislike, handleRepeat,
   handleStar, handleDelete, handleEdit,
@@ -49,9 +49,21 @@ export default function NetworkContentWidget() {
     const pref = sortPref();
     const params = searchParams.order ? searchParams : { ...searchParams, ...pref };
     if (!searchParams.order && pref.order) setSearchParams(pref, { replace: true });
-    resetPosts();
-    loadNetwork(parseNetworkParams(params));
+    applyNetwork(parseNetworkParams(params));
   });
+
+  // Links from outside the filter controls (a forum's "See all" in the
+  // notifications panel, saved-search-style URLs) only change the URL.
+  // `search` is left to the search box, which debounces its own apply.
+  const location = useLocation();
+  createEffect(on(() => location.search, () => {
+    const loaded = loadedNetworkParams();
+    if (!loaded) return;
+    const next = parseNetworkParams(searchParams);
+    const { search: _a, ...a } = next;
+    const { search: _b, ...b } = loaded;
+    if (JSON.stringify(a) !== JSON.stringify(b)) applyNetwork(next);
+  }, { defer: true }));
 
   onCleanup(() => resetPosts());
 

@@ -11,6 +11,7 @@ export const guest_access: RawDictionary["guest_access"] = {
   edit_token:       "Edit guest",
   login_name:       "Login name",
   login_password:   "Login password",
+  copy_password: "Copy password",
   regenerate:       "Generate a new password",
   expires:          "Expires",
   expires_never:    "Never",

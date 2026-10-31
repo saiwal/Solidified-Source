@@ -29,6 +29,7 @@ import type { StreamHandlers } from "../types";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { MdOutlineChat_bubble_outline } from "solid-icons/md";
 import { openPost } from "@/shared/views/modal-host";
+import { useNavigate } from "@solidjs/router";
 import { Card, CardHeader } from "@ui/Card";
 import { Avatar } from "@ui/Avatar";
 
@@ -105,8 +106,14 @@ function PopularPostRow(props: {
   rank: number;
   handlers?: StreamHandlers;
   locale: string;
+  /** Set for articles/cards: the row opens the app page, not the post modal */
+  appPath?: string;
 }) {
+  const { t } = useI18n();
+  const navigate = useNavigate();
   const p = props.post;
+  // App views canonicalise a uuid to the slug themselves.
+  const open = () => (props.appPath ? navigate(`${props.appPath}/${p.uuid}`) : openPost(p.uuid));
 
   const snippet = () => {
     const div = document.createElement("div");
@@ -118,7 +125,7 @@ function PopularPostRow(props: {
     <>
       <li>
         <button
-          onClick={() => openPost(p.uuid)}
+          onClick={open}
           class="w-full px-4 py-3 flex items-start gap-3 text-left
                  hover:bg-elevated transition-colors group"
         >
@@ -138,7 +145,7 @@ function PopularPostRow(props: {
             {/* Title / snippet */}
             <p class="text-sm font-medium text-txt leading-snug line-clamp-2
                       group-hover:text-accent transition-colors">
-              {p.title || snippet() || "Untitled"}
+              {p.title || snippet() || t("widgets.untitled")}
             </p>
 
             {/* Author + date */}
@@ -169,7 +176,7 @@ function PopularPostRow(props: {
               <MdOutlineChat_bubble_outline class="w-3 h-3 text-muted shrink-0" />
               <span class="text-xs text-muted">
                 {p.commentCount}{" "}
-                {p.commentCount === 1 ? "comment" : "comments"}
+                {p.commentCount === 1 ? t("ui.comment_singular") : t("ui.comment_plural")}
               </span>
             </div>
           </div>
@@ -192,6 +199,8 @@ export interface PopularPostsWidgetProps {
   data?: PopularPost[];
   /** How many posts to show. Default: 5 */
   limit?: number;
+  /** Header text. Default: "Popular Posts" */
+  title?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -217,6 +226,11 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
 
   createEffect(on(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); }));
 
+  const appPath = () =>
+    (props.type === "articles" || props.type === "cards") && props.channelNick
+      ? `/${props.type}/${props.channelNick}`
+      : undefined;
+
   const posts = (): PopularPost[] =>
     (props.data ?? remote() ?? []).slice(0, limit());
 
@@ -225,7 +239,10 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
       {/* Header */}
       <CardHeader>
         <h2 class="text-sm font-semibold text-txt">
-          {t("widgets.popular_posts")}
+          {props.title ??
+            t(props.type === "articles" ? "widgets.popular_articles"
+              : props.type === "cards" ? "widgets.popular_cards"
+              : "widgets.popular_posts")}
         </h2>
       </CardHeader>
 
@@ -252,6 +269,7 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
                   rank={idx() + 1}
                   handlers={props.handlers}
                   locale={locale()}
+                  appPath={appPath()}
                 />
               )}
             </For>

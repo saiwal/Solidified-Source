@@ -31,6 +31,9 @@ import { MdFillCheck, MdFillEdit } from "solid-icons/md";
 import { Button, IconButton } from "@ui/Button";
 import { Field, Input, Select } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
+import { Modal, ModalPanel } from "@ui/Modal";
+import { useWidgetLayout, saveWidgetLayout } from "@utsukta/spa-core/store/widget-layout";
+import { toast } from "@utsukta/spa-core/store/toast";
 
 /** The vars beyond base/txt/accent, shown in the "Advanced" disclosure. */
 const ADVANCED_VARS = THEME_VARS.filter(
@@ -519,11 +522,63 @@ export default function DisplaySection() {
           {/* Background picker */}
           <BackgroundPicker />
 
+          <ResetWidgetLayout />
+
           <SaveBar saving={saving()} />
 
         </form>
       </Show>
     </SubPageContent>
+  );
+}
+
+// ── Widget layout reset ───────────────────────────────────────────────────────
+
+function ResetWidgetLayout() {
+  const { t } = useI18n();
+  const layout = useWidgetLayout();
+  const [busy, setBusy] = createSignal(false);
+  const [confirming, setConfirming] = createSignal(false);
+
+  const reset = async () => {
+    setBusy(true);
+    const ok = await saveWidgetLayout(null);
+    setBusy(false);
+    setConfirming(false);
+    if (ok) toast.success(String(t("settings.widget_layout_reset_done")));
+    else toast.error(String(t("settings.widget_layout_reset_error")));
+  };
+
+  return (
+    <>
+      <Field label={t("settings.widget_layout")} hint={t("settings.widget_layout_hint")}>
+        <div>
+          <Button type="button" variant="ghost" size="sm" disabled={!layout() || busy()} onClick={() => setConfirming(true)}>
+            {t("settings.widget_layout_reset")}
+          </Button>
+        </div>
+      </Field>
+      <Show when={confirming()}>
+        <Modal onClose={() => setConfirming(false)}>
+          <ModalPanel
+            size="sm"
+            title={t("settings.widget_layout_reset")}
+            description={t("settings.widget_layout_reset_confirm")}
+            onClose={() => setConfirming(false)}
+            footer={
+              <>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+                  {t("settings.cancel")}
+                </Button>
+                <Button type="button" variant="danger" size="sm" disabled={busy()} onClick={reset}>
+                  {t("settings.widget_layout_reset")}
+                </Button>
+              </>
+            }
+          />
+        </Modal>
+      </Show>
+    </>
   );
 }
 

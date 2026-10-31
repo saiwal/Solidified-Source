@@ -61,6 +61,17 @@ registerModule({
       helpTarget: "widgets.drafts",
     },
     {
+      // Items sharing hashtags/categories with the one on screen; renders
+      // nothing off a single-item page.
+      id: "articles.related",
+      label: () => useI18n().t("widgets.related"),
+      loader: () => import("@/shared/stream/components/RelatedItemsWidget"),
+      slot: ["right", "footer"],
+      defaultSlot: "right",
+      defaultModules: ["articles"],
+      contexts: ["articles"],
+    },
+    {
       id: "articles.popular",
       label: () => useI18n().t("widgets.popular_articles"),
       loader: () => import("./widgets/ArticlePopularWidget"),
@@ -76,7 +87,8 @@ registerModule({
       loader: () => import("./widgets/ArticleCategoryWidget"),
       slot: ["right", "footer"],
       defaultSlot: "right",
-      configComponent: () => import("@/shared/stream/components/CategoryStyleConfig"),
+      configComponent: () =>
+        import("@/shared/stream/components/CategoryStyleConfig"),
       helpTarget: "widgets.categories",
     },
     {
@@ -86,7 +98,8 @@ registerModule({
       loader: () => import("./widgets/ArticleTagWidget"),
       slot: ["right", "footer"],
       defaultSlot: "right",
-      configComponent: () => import("@/shared/stream/components/TagStyleConfig"),
+      configComponent: () =>
+        import("@/shared/stream/components/TagStyleConfig"),
       helpTarget: "widgets.tags",
     },
     {
@@ -98,7 +111,8 @@ registerModule({
       slot: ["right", "footer"],
       defaultModules: [],
       contexts: ["articles"],
-      configComponent: () => import("@/shared/stream/components/ArchiveStyleConfig"),
+      configComponent: () =>
+        import("@/shared/stream/components/ArchiveStyleConfig"),
       helpTarget: "widgets.archive",
     },
     {
