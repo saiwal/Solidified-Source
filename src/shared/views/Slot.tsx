@@ -137,7 +137,7 @@ const Slot: Component<SlotProps> = (props) => {
           widget: w,
           key: entryKey(entry),
           config: entryConfig(entry),
-          span: entrySpan(entry),
+          span: entrySpan(entry) ?? w.defaultSpan,
         });
       }
     } else {
@@ -204,16 +204,19 @@ const Slot: Component<SlotProps> = (props) => {
   // The current arrangement in persistable form: plain id for singletons,
   // instance object otherwise
   const currentEntries = (): LayoutEntry[] =>
-    localEntries().map((e) =>
-      e.key === e.widget.id && e.config === undefined && e.span === undefined
+    localEntries().map((e) => {
+      // The widget's default width is stored as no span, so a later change to
+      // defaultSpan still reaches layouts that never overrode it.
+      const span = e.span === e.widget.defaultSpan ? undefined : e.span;
+      return e.key === e.widget.id && e.config === undefined && span === undefined
         ? e.widget.id
         : {
             id: e.widget.id,
             key: e.key,
             ...(e.config !== undefined ? { config: e.config } : {}),
-            ...(e.span !== undefined ? { span: e.span } : {}),
-          },
-    );
+            ...(span !== undefined ? { span } : {}),
+          };
+    });
 
   const move = (index: number, delta: number) => {
     const entries = [...currentEntries()];
@@ -265,7 +268,8 @@ const Slot: Component<SlotProps> = (props) => {
       id: entryId(e),
       key: entryKey(e),
       ...(cfg !== undefined ? { config: cfg } : {}),
-      ...(span !== 12 ? { span } : {}),
+      // Absent = the widget's default width (full when it has none)
+      ...(span !== (localEntries()[index]?.widget.defaultSpan ?? 12) ? { span } : {}),
     };
     void persist(entries);
   };
