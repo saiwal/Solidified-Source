@@ -6,7 +6,7 @@ import type { MimeType } from "../types/editor.types";
  *
  * The toolbar used to know one format — bbcode — plus a handful of `isMd()`
  * branches. That is right for posts and comments, whose Markdown body is
- * converted to bbcode on save (see docs/dev/en/markdown.md), so bbcode mixed
+ * converted to bbcode on save (see docs/dev/en/2-interface/markdown.md), so bbcode mixed
  * into the source survives. It is wrong everywhere the body is stored as
  * typed: core's prepare_text() renders text/html untouched, text/plain through
  * escape_tags() and text/markdown through MarkdownExtra *alone* — no bbcode

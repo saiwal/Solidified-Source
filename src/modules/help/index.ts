@@ -36,6 +36,14 @@ registerModule({
       contexts: ["help"],
       locked: true,
     },
+    {
+      id: "help.nav",
+      label: () => useI18n().t("widgets.help_nav"),
+      loader: () => import("./widgets/HelpNavWidget"),
+      slot: "right",
+      defaultModules: ["help"],
+      helpTarget: "widgets.navigation_tree",
+    },
 		{
       id: "help.tours",
       label: () => useI18n().t("widgets.help_tours"),
@@ -45,15 +53,6 @@ registerModule({
       contexts: "any",
       helpTarget: "widgets.guided_tours",
       visitorVisible: false,
-    },
-
-    {
-      id: "help.nav",
-      label: () => useI18n().t("widgets.help_nav"),
-      loader: () => import("./widgets/HelpNavWidget"),
-      slot: "right",
-      defaultModules: ["help"],
-      helpTarget: "widgets.navigation_tree",
     },
     ],
 });

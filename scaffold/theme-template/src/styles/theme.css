@@ -5,7 +5,7 @@
  * (types/theme.types.ts) though: the color-scheme picker (ThemeToggle.tsx)
  * is shared infrastructure and iterates that array regardless of theme —
  * an id with no matching block here just silently falls back to :root.
- * See src/docs/dev/en/theme-scaffold.md.
+ * See src/docs/dev/en/5-extending/theme-scaffold.md.
  */
 
 /* ── Default (light) ─────────────────────────────────────────── */

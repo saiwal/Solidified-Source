@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import solid from "vite-plugin-solid";
 import path from "path";
-import { readdirSync, readFileSync, writeFileSync, statSync } from "fs";
+import { readdirSync, readFileSync, writeFileSync, statSync, rmSync } from "fs";
 import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL } from "./theme.config.mjs";
 import { SPA_CORE_PLACEHOLDER } from "@utsukta/spa-core";
 import { uiShadow } from "@utsukta/spa-ui/vite-plugin";
@@ -123,6 +123,21 @@ function templateThemeSlug(): Plugin {
 }
 
 /**
+ * Empty the deployed docs/ before static-copy refills it. The copy only adds,
+ * so a moved or deleted page lived on in the theme (and in the help sidebar).
+ * Everything in it must come from src/docs.
+ */
+function cleanDeployedDocs(): Plugin {
+  return {
+    name: "clean-deployed-docs",
+    apply: "build",
+    buildStart() {
+      rmSync(path.resolve(OUT_DIR, "../docs"), { recursive: true, force: true });
+    },
+  };
+}
+
+/**
  * Fail the build if the colour schemes didn't make it into the CSS. theme.css
  * is an @import, and CSS silently drops an @import placed after any other
  * statement — that once shipped a build where every preset scheme had no
@@ -149,6 +164,7 @@ function assertThemeCss(): Plugin {
 export default defineConfig({
   plugins: [
     assertThemeCss(),
+    cleanDeployedDocs(),
     uiShadow({ themeUiDir: path.resolve(__dirname, "src/ui") }),
     publicDirListing(),
     serveFFmpegCore(),

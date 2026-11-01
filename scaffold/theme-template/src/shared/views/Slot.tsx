@@ -17,7 +17,7 @@ import type { WidgetSlotName } from "@utsukta/spa-core/types/module.types";
  * layout templates. All of that machinery already exists in spa-core's
  * stores — this component just doesn't call into it yet. See solidified's
  * Slot.tsx (src/shared/views/Slot.tsx) for the full pattern to build
- * toward, and src/docs/dev/en/slot-system.md for the complete reference.
+ * toward, and src/docs/dev/en/1-architecture/slot-system.md for the complete reference.
  */
 export default function Slot(props: { name: WidgetSlotName; moduleId: string }) {
   const widgets = () => [

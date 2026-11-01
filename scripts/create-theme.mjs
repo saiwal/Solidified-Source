@@ -75,5 +75,5 @@ Next steps:
      @utsukta/spa-core/lib/useLayoutChrome() hook solidified uses
   7. Add modules under src/modules/<id>/ as you build out views
 
-See src/docs/dev/en/theme-scaffold.md for the full walkthrough.
+See src/docs/dev/en/5-extending/theme-scaffold.md for the full walkthrough.
 `);
