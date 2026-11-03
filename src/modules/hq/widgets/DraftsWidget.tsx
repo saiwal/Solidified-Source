@@ -8,7 +8,7 @@ import { useAuth, channelKey } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
 import { IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 const DRAFT_TYPES = "post,article,card,webpage,wiki,note,dm";
 const SHOWN_TYPES = ["post", "article", "card", "webpage", "wiki", "note", "dm"];
@@ -66,7 +66,7 @@ type DraftEntry = { scope: string; draft: SavedDraft };
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 const SkeletonRow = () => (
-  <div class="px-3.5 py-3 animate-pulse space-y-2">
+  <div class="px-(--ws-px) py-3 animate-pulse space-y-2">
     <div class="h-3.5 bg-overlay rounded w-2/3" />
     <div class="h-3 bg-overlay rounded w-4/5" />
     <div class="flex items-center justify-between pt-0.5">
@@ -208,24 +208,21 @@ export default function DraftsWidget() {
 
   return (
     <>
-      <Card raised class="flex flex-col overflow-hidden" data-tour="hq.drafts"
-        style={{ "max-height": "480px" }}>
-
-        {/* Header */}
-        <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
-          <span class="text-xs font-medium uppercase tracking-wider text-muted">
-            {t("hq.drafts")}
-          </span>
-          <div class="flex items-center gap-1.5">
+      <div data-tour="hq.drafts">
+      <WidgetShell
+        class="flex flex-col max-h-[480px]"
+        title={t("hq.drafts")}
+        actions={
+          <>
             <Show when={!loading() && entries().length > 0}>
               <span class="text-xs text-muted tabular-nums">{entries().length}</span>
             </Show>
-            {/* Refresh */}
             <IconButton label={t("hq.retry")} size="sm" onClick={loadAll} disabled={loading()}>
               <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
             </IconButton>
-          </div>
-        </div>
+          </>
+        }
+      >
 
         {/* Loading skeletons */}
         <Show when={loading()}>
@@ -234,7 +231,7 @@ export default function DraftsWidget() {
 
         {/* Empty state */}
         <Show when={!loading() && entries().length === 0}>
-          <div class="px-4 py-6 flex flex-col items-center gap-2 text-muted">
+          <div class="px-(--ws-px) py-6 flex flex-col items-center gap-2 text-muted">
             <MdOutlineDescription class="w-7 h-7 opacity-30" />
             <span class="text-xs">{t("hq.no_drafts")}</span>
           </div>
@@ -249,7 +246,7 @@ export default function DraftsWidget() {
                 const isDeleting = () => deleting() === entry.draft.id;
 
                 return (
-                  <div class="px-3.5 py-3 hover:bg-elevated group transition-colors"
+                  <div class="px-(--ws-px) py-3 hover:bg-elevated group transition-colors"
                     classList={{ "opacity-50 pointer-events-none": isDeleting() }}>
 
                     {/* Line 1 + 2 — title & summary */}
@@ -306,7 +303,8 @@ export default function DraftsWidget() {
             </For>
           </div>
         </Show>
-      </Card>
+      </WidgetShell>
+      </div>
 
     </>
   );

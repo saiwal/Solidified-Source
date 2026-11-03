@@ -228,7 +228,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     <Show when={!hidesNavChrome()}>
       <aside
         aria-label={t("layout.navigation")}
-        class="hidden lg:flex flex-col w-[224px] shrink-0 relative z-20
+        class="hz-nav-sidebar hidden lg:flex flex-col w-[224px] shrink-0 relative z-20
                bg-surface border-r border-rim py-3 px-2 overflow-y-auto"
       >
         {/* Brand: centred lockup with its own rule under it, above the cover. */}

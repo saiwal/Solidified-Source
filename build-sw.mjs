@@ -33,6 +33,36 @@ assert(!remoteImage('https://hub.example', 'https://hub.example/photo/abc-2.png'
 
 const OUT_DIR = path.resolve(__dirname, SW_OUT_DIR_REL);
 
+// ── What the precache holds, derived from Vite's build manifest ──────────────
+// The shell is everything the app's *own* code can reach: the entry's static
+// graph, plus every chunk app code lazy-loads (routes, widgets, views) with
+// its static imports and CSS. Not followed: a dynamic import *into a library*
+// (mermaid, epub.js, libsodium, hls.js, … — each pulls a large graph only one
+// feature uses), or into the HEAVY_TOOLS below. Everything not reached is
+// left out of the precache and runtime-cached on first use (hz-lazy-chunks).
+// This replaced a hand-kept list of filename globs, two of them rolldown
+// chunk ids that silently stopped matching whenever chunk boundaries moved —
+// the precache had crept to 7.4 MB.
+const HEAVY_TOOLS = /\/excalidraw\/|ImageEditor/;
+const manifest = JSON.parse(fs.readFileSync(path.join(OUT_DIR, '.vite/manifest.json'), 'utf8'));
+const shell = new Set();
+const visit = (key) => {
+  const e = manifest[key];
+  // Checked on every edge, static too: a lazy app chunk can import a tool
+  // statically, and that must not pull the tool into the shell.
+  if (!e || shell.has(e.file) || HEAVY_TOOLS.test(key)) return;
+  shell.add(e.file);
+  for (const c of e.css ?? []) shell.add(c);
+  for (const k of e.imports ?? []) visit(k);
+  for (const k of e.dynamicImports ?? []) {
+    if (!k.includes('node_modules/')) visit(k);
+  }
+};
+for (const [key, e] of Object.entries(manifest)) if (e.isEntry) visit(key);
+const lazyOnly = fs.readdirSync(OUT_DIR)
+  .filter((f) => /^app-.+\.(js|css)$/.test(f) && !shell.has(f));
+assert(shell.size > 10, `[SW] manifest walk found only ${shell.size} shell files — is .vite/manifest.json from this build?`);
+
 const { count, size } = await generateSW({
   swDest: path.join(OUT_DIR, 'sw.js'),
   globDirectory: OUT_DIR,
@@ -43,41 +73,11 @@ const { count, size } = await generateSW({
   // browsers fail or evict outright — and a failed install means no service
   // worker at all, so offline stopped working entirely. They're runtime-cached
   // on first use instead (see hz-assets below); ffmpeg is left uncached, a
-  // 32 MB entry is not worth an origin's storage quota. Individually large
-  // *top-level* chunks (Excalidraw/mermaid, Filerobot) get the same
-  // runtime-cached treatment via globIgnores + hz-heavy-chunks below, since
-  // flat non-recursive globbing can't otherwise separate them from the shell.
+  // 32 MB entry is not worth an origin's storage quota. Top-level chunks only
+  // a library or heavy tool reaches are excluded via the manifest walk above.
   globPatterns: ['*.{js,css}', '*.{png,svg,ico}'],
-  globIgnores: [
-    'sw.js',
-    // Excalidraw's canvas + its bundled "mermaid to diagram" conversion
-    // feature (mermaid core, cytoscape/dagre/cose-bilkent layout engines, one
-    // chunk per diagram type) and the Filerobot image editor are ~6 MB of
-    // chunks that are only ever dynamically imported when a user opens one of
-    // those tools — never part of the app shell. Flat non-recursive globbing
-    // (see comment above) can't tell eager chunks from lazy ones by directory,
-    // so they're excluded by name here and runtime-cached instead (see
-    // hz-heavy-chunks below), same treatment as fonts/patterns/puzzles.
-    'app-Excalidraw*.js',
-    'app-vendor-image-editor-*.js',
-    'app-cytoscape.esm-*.js',
-    'app-dagre*.js',
-    'app-cose-bilkent*.js',
-    'app-mermaid*.js',
-    'app-*Diagram*.js',
-    'app-swimlanes*.js',
-    // hls.js (light), loaded only when the Jellyfin player has to play a
-    // transcoded stream — ~360 KB nobody without Jellyfin should precache.
-    'app-hls*.js',
-    // ponytail: these two are Rollup's auto-generated shared-chunk ids (the
-    // "EIO257PC"/"FOHPRMQF" segments are content hashes, not source names),
-    // so the exact match can go stale on a rebuild that reshuffles chunk
-    // boundaries — if the [SW] precache-size assert trips again after an
-    // unrelated dependency bump, re-check `du -h assets/*.js | sort -rh` for
-    // a new large un-ignored "chunk-*" file before raising the limit.
-    'app-chunk-EIO257PC-*.js',
-    'app-chunk-FOHPRMQF-*.js',
-  ],
+  // Lazy-only chunks (see the manifest walk above) stay out of the shell.
+  globIgnores: ['sw.js', ...lazyOnly],
   maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
 
   // app-*.js/css names contain a content hash; the URL itself is the revision
@@ -212,15 +212,16 @@ const { count, size } = await generateSW({
       },
     },
     {
-      // Excalidraw/mermaid + Filerobot chunks excluded from the precache
-      // above — content-hashed and immutable, so CacheFirst is safe; they're
-      // fetched (and cached) the first time a user actually opens one of
-      // those tools rather than on every install.
-      urlPattern: /\/assets\/app-(Excalidraw|vendor-image-editor|cytoscape\.esm|dagre|cose-bilkent|mermaid|chunk-EIO257PC|chunk-FOHPRMQF|[A-Za-z0-9]*Diagram|swimlanes|hls)[^/]*\.(js|css)$/,
+      // Every hashed app chunk the precache left out (lazyOnly above): heavy
+      // tools and the libraries features pull in on demand. Content-hashed and
+      // immutable, so CacheFirst is safe. Precached URLs never get here — the
+      // precache route answers them first.
+      urlPattern: /\/assets\/app-[^/]+\.(js|css)$/,
       handler: 'CacheFirst',
       options: {
-        cacheName: 'hz-heavy-chunks',
-        expiration: { maxEntries: 40, maxAgeSeconds: 30 * 86400 },
+        cacheName: 'hz-lazy-chunks',
+        // mermaid alone is ~30 chunks (one per diagram type)
+        expiration: { maxEntries: 200, maxAgeSeconds: 30 * 86400 },
         cacheableResponse: { statuses: [0, 200] },
       },
     },

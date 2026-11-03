@@ -6,6 +6,7 @@ import { applyTypographyCSS, loadTypography, FONT_FAMILY_IDS, type FontSize, typ
 import { applyCornerRadiusCSS, loadCornerRadius, type CornerRadius } from "./corner-radius";
 import { initPageWidgetLayout } from "../store/widget-layout";
 import { loadWidgetShell, setPageWidgetShell } from "./widget-shell";
+import { applyGlassCSS, loadGlass } from "./glass";
 import { initPageWidgetTemplates } from "../store/widget-templates";
 import { THEMES, type ThemeId, type CustomThemeColors } from "../types/theme.types";
 
@@ -46,6 +47,7 @@ export function useChannelTheme(channelNick: () => string) {
       loadTypography();
       loadCornerRadius();
       loadWidgetShell();
+      loadGlass();
       applyTheme(((localStorage.getItem("hz-theme") ?? "light") as ThemeId));
       initPageWidgetLayout(null);
       initPageWidgetTemplates(null);
@@ -84,5 +86,6 @@ export function useChannelTheme(channelNick: () => string) {
     const cornerRadius = (VALID_RADII.has(spa.corner_radius ?? "") ? spa.corner_radius : "default") as CornerRadius;
     applyCornerRadiusCSS(cornerRadius);
     setPageWidgetShell(spa.widget_shell);
+    applyGlassCSS(spa.glass_ui);
   });
 }

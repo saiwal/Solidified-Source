@@ -157,6 +157,12 @@ export interface CardProps extends JSX.HTMLAttributes<HTMLDivElement> {
 /** The bar across the top of a Card: bottom rule, standard padding. */
 export type CardHeaderProps = JSX.HTMLAttributes<HTMLDivElement>;
 
+export interface WidgetShellTabs {
+  items: { id: string; label: string; /** data-tour target */ tour?: string }[];
+  active: string | undefined;
+  onSelect: (id: string) => void;
+}
+
 /**
  * The frame a widget renders in. Which look it gets is the user's display pref
  * (lib/widget-shell.ts), so every shell must keep the same semantics: a
@@ -172,6 +178,12 @@ export interface WidgetShellProps {
   actions?: JSX.Element;
   /** Secondary actions/links under the body. Omitted = no footer. */
   footer?: JSX.Element;
+  /**
+   * Vertical tabs beside the body; the shell styles them like its title and
+   * wires tablist/tab/tabpanel. The body is the active tab's panel — the
+   * widget swaps what it renders on `onSelect`.
+   */
+  tabs?: WidgetShellTabs;
   class?: string;
   children?: JSX.Element;
 }

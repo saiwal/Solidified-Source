@@ -12,6 +12,8 @@ import { useCommentOrder, setCommentOrder, type CommentOrder } from "@utsukta/sp
 import { defaultComposerMode, setDefaultComposerMode, defaultPostMode, setDefaultPostMode } from "@/shared/views/modal-host";
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { applyWidgetShell, widgetShell, WIDGET_SHELLS } from "@utsukta/spa-core/lib/widget-shell";
+import { applyGlass } from "@utsukta/spa-core/lib/glass";
+import { Toggle } from "@ui/Toggle";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
 import { setEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
 import { setReplyMention } from "@utsukta/spa-core/store/reply-mention";
@@ -65,9 +67,9 @@ export default function DisplaySection() {
     saver: saveDisplaySettings,
     numericFields: [
       "update_interval", "itemspage", "post_height",
-      "start_menu", "show_emoji_images", "reply_mention",
+      "start_menu", "show_emoji_images", "reply_mention", "glass_ui",
     ],
-    checkboxFields: ["start_menu", "show_emoji_images", "reply_mention"],
+    checkboxFields: ["start_menu", "show_emoji_images", "reply_mention", "glass_ui"],
     reloadOn: (prev, next) => prev?.theme !== next.theme,
   });
 
@@ -94,6 +96,7 @@ export default function DisplaySection() {
       applyCornerRadius(d.corner_radius as CornerRadius);
     }
     if (d.widget_shell) applyWidgetShell(d.widget_shell);
+    applyGlass(d.glass_ui);
     setEmojiAsImages(!!d.show_emoji_images);
     setReplyMention(!!d.reply_mention);
   });
@@ -337,6 +340,15 @@ export default function DisplaySection() {
               </For>
             </Select>
           </Field>
+
+          {/* Translucent surfaces (lib/glass.ts) — previews live, saved with the form */}
+          <Toggle
+            name="glass_ui"
+            label={t("settings.glass_ui")}
+            hint={t("settings.glass_ui_hint")}
+            checked={!!data()!.glass_ui}
+            onChange={(on) => applyGlass(on)}
+          />
 
           {/* Corner roundness */}
           <Field label={t("settings.corner_radius")} hint={t("settings.corner_radius_hint")}>

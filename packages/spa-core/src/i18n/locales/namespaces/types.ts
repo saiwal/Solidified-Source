@@ -1526,6 +1526,8 @@ export type RawDictionary = {
     corner_radius:           string;
     widget_shell:            string;
     widget_shell_hint:       string;
+    glass_ui:                string;
+    glass_ui_hint:           string;
     widget_shell_card: string;
     widget_shell_section: string;
     widget_shell_banded: string;

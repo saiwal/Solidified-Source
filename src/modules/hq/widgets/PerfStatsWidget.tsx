@@ -3,7 +3,7 @@ import { isAdmin } from "@utsukta/spa-core/store/auth-store";
 import { createSignal, createEffect, on, onCleanup, onMount, For, Show } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 interface PerfStats {
   loadavg: [number, number, number];
@@ -133,19 +133,18 @@ function PerfStatsPanelInner() {
   }
 
   return (
-    <Card raised class="p-3.5">
-      {/* Header */}
-      <div class="flex items-center justify-between mb-2.5">
-        <span class="text-xs font-medium uppercase tracking-wider text-muted">
-          {t("hq.server_performance")}
-        </span>
-        <Show when={latest()}>
+    <WidgetShell
+      title={t("hq.server_performance")}
+      actions={
+        latest() ? (
           <span class="flex items-center gap-1.5 text-xs text-muted">
             <span class={`w-1.5 h-1.5 rounded-full ${error() ? "bg-danger" : "bg-success animate-pulse"}`} />
             {error() ? "error" : age() < 3 ? "live" : `${age()}s ago`}
           </span>
-        </Show>
-      </div>
+        ) : undefined
+      }
+    >
+      <div class="px-(--ws-px) py-3">
 
       {/* Skeleton */}
       <Show when={!latest()}>
@@ -193,6 +192,7 @@ function PerfStatsPanelInner() {
           );
         }}
       </Show>
-    </Card>
+    </div>
+    </WidgetShell>
   );
 }

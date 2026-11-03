@@ -5,7 +5,7 @@
  * add to either store, delete. Owner only — tasks are always private.
  */
 import { createMemo, createSignal, For, Show } from "solid-js";
-import { MdOutlineDelete } from "solid-icons/md";
+import { MdOutlineDelete, MdOutlineDone_all } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
@@ -144,9 +144,9 @@ export default function TasksWidget() {
       <WidgetShell
         title={t("calendar.tasks")}
         actions={
-          <Button variant="ghost" size="sm" pressed={showDone()} onClick={() => setShowDone((v) => !v)}>
-            {t("calendar.tasks_show_done")}
-          </Button>
+          <IconButton label={t("calendar.tasks_show_done")} size="sm" pressed={showDone()} onClick={() => setShowDone((v) => !v)}>
+            <MdOutlineDone_all class="w-4 h-4" />
+          </IconButton>
         }
       >
 <div class="px-(--ws-px) py-3 space-y-3">

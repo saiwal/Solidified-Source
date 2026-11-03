@@ -353,7 +353,7 @@ export default function WikiPageView() {
       <FloatingPageList nick={params.nick} wikiName={params.wikiName} pageName={params.pageName} />
 
       {/* ── Sidebar: page list ──────────────────────────────────────────── */}
-      <aside class="hidden md:flex flex-col w-52 shrink-0 gap-2">
+      <aside class={`${cardClass()} hidden md:flex flex-col w-52 shrink-0 gap-2 p-3 self-start`}>
         <Card class="p-3 space-y-1 sticky top-20">
           <Show when={currentWiki()}>
             <div class="text-xs font-semibold uppercase tracking-wide text-muted mb-2 truncate">
@@ -597,10 +597,11 @@ export default function WikiPageView() {
           <Show when={!editMode()}>
             <article
               ref={(el) => { useLightbox(() => el); createEffect(() => { safeHtml(); hydrateLatex(el); hydrateMermaid(el); }); }}
-              class="prose prose-neutral dark:prose-invert max-w-none
+              // Same reading panel as a webpage (PageView) — readable over a wallpaper.
+              class={`${cardClass()} p-6 prose prose-neutral dark:prose-invert max-w-none
                      [&_a]:text-accent [&_a]:no-underline [&_a:hover]:underline
                      [&_pre]:bg-elevated [&_pre]:border [&_pre]:border-rim [&_pre]:rounded-xl
-                     [&_blockquote]:border-l-2 [&_blockquote]:border-rim [&_blockquote]:text-muted"
+                     [&_blockquote]:border-l-2 [&_blockquote]:border-rim [&_blockquote]:text-muted`}
               innerHTML={safeHtml()}
             />
           </Show>

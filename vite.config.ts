@@ -24,7 +24,7 @@ function publicDirListing(): Plugin {
     load(id) {
       if (!id.startsWith(RESOLVED)) return;
       const folder = id.slice(RESOLVED.length);
-      const dir = path.join(__dirname, "public", folder);
+      const dir = path.join(import.meta.dirname, "public", folder);
       const files = readdirSync(dir)
         .filter((f) => /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(f))
         .sort();
@@ -33,9 +33,9 @@ function publicDirListing(): Plugin {
   };
 }
 
-const FFMPEG_CORE_DIR = path.resolve(__dirname, "node_modules/@ffmpeg/core/dist/umd");
+const FFMPEG_CORE_DIR = path.resolve(import.meta.dirname, "node_modules/@ffmpeg/core/dist/umd");
 
-const FFMPEG_WORKER_SRC = path.resolve(__dirname, "src/ffmpeg-worker.js");
+const FFMPEG_WORKER_SRC = path.resolve(import.meta.dirname, "src/ffmpeg-worker.js");
 
 /** Serve @ffmpeg/core WASM files + our custom worker during dev at the same path used in production. */
 function serveFFmpegCore(): Plugin {
@@ -69,7 +69,7 @@ function serveFFmpegCore(): Plugin {
     },
   };
 }
-const OUT_DIR = path.resolve(__dirname, BUILD_OUT_DIR_REL);
+const OUT_DIR = path.resolve(import.meta.dirname, BUILD_OUT_DIR_REL);
 
 // Dev-server only: when the app is served by the hub itself these paths are
 // already same-origin, so none of this applies to a built theme.
@@ -165,7 +165,7 @@ export default defineConfig({
   plugins: [
     assertThemeCss(),
     cleanDeployedDocs(),
-    uiShadow({ themeUiDir: path.resolve(__dirname, "src/ui") }),
+    uiShadow({ themeUiDir: path.resolve(import.meta.dirname, "src/ui") }),
     publicDirListing(),
     serveFFmpegCore(),
     solid(),
@@ -199,16 +199,31 @@ export default defineConfig({
   build: {
     outDir: OUT_DIR,
     emptyOutDir: true,
-    cssCodeSplit: false,
+    // Split: a lazy chunk's CSS (Excalidraw ~134 KB, KaTeX, Leaflet,
+    // PhotoSwipe) loads with it — Vite's preload helper fetches it before the
+    // import resolves, so no unstyled flash — instead of riding in the one
+    // stylesheet every page downloads. Plyr/Shepherd stay global on purpose:
+    // they're @imported in index.css, which overrides .plyr rules at equal
+    // specificity and so must load after them. php/manifest.php reads the
+    // entry's `css` list.
+    cssCodeSplit: true,
     // .vite/manifest.json maps entry → hashed filenames; read by php/manifest.php
     manifest: true,
     // removed watch: {} — use vite build --watch from CLI
     rollupOptions: {
+      // Excalidraw's Radix deps open with "use client" — a React Server
+      // Components marker that means nothing in this client-only bundle, so
+      // rolldown dropping it is correct. Silence only that code, once per file
+      // it was dozens of lines burying real warnings.
+      onwarn(warning, warn) {
+        if (warning.code === "MODULE_LEVEL_DIRECTIVE") return;
+        warn(warning);
+      },
       output: {
         entryFileNames: "app-[hash].js",
         chunkFileNames: "app-[name]-[hash].js",
         assetFileNames: (info) =>
-          info.name?.endsWith(".css") ? "app-[hash].css" : "[name][extname]",
+          info.name?.endsWith(".css") ? "app-[name]-[hash].css" : "[name][extname]",
         manualChunks(id) {
           // React + Filerobot image editor land in a single vendor chunk so
           // the browser can cache them across deploys independently of app code.
@@ -247,7 +262,7 @@ export default defineConfig({
   base: ASSET_WEB_PATH + "/",
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
 });

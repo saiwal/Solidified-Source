@@ -5,7 +5,7 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive } from "@utsukta/spa-core/module-registry";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { EmptyState } from "@ui/EmptyState";
 
 // ── Types & API ───────────────────────────────────────────────────────────────
@@ -90,23 +90,32 @@ export default function ChannelActivitiesWidget() {
   );
 
   return (
-    <Card raised class="overflow-hidden">
-      <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between">
-        <h3 class="text-xs font-medium uppercase tracking-wider text-muted">
-          {t("hq.channel_activities")}
-        </h3>
-        <Show when={active()}>
-          <button
-            onClick={() => navigate(active()!.url)}
-            class="text-xs text-accent hover:underline"
-          >
+    <WidgetShell
+      title={t("hq.channel_activities")}
+      // Vertical rail — rotated labels so seven sections fit one masonry cell.
+      tabs={
+        !data.loading && sections().length > 0
+          ? {
+              items: sections().map((s) => ({
+                id: s.id,
+                label: SECTION_LABEL[s.id] ? t(SECTION_LABEL[s.id] as "hq.ca_photos") : s.label,
+              })),
+              active: active()?.id,
+              onSelect: setActiveId,
+            }
+          : undefined
+      }
+      actions={
+        active() ? (
+          <button onClick={() => navigate(active()!.url)} class="text-xs text-accent hover:underline">
             {t("hq.view_all")}
           </button>
-        </Show>
-      </div>
+        ) : undefined
+      }
+    >
 
       <Show when={data.loading}>
-        <div class="px-3.5 pb-3.5 space-y-2">
+        <div class="px-(--ws-px) pb-3.5 space-y-2">
           <For each={[1, 2, 3]}>
             {() => <div class="h-3 bg-overlay rounded w-3/5 animate-pulse" />}
           </For>
@@ -114,42 +123,13 @@ export default function ChannelActivitiesWidget() {
       </Show>
 
       <Show when={!data.loading && sections().length === 0}>
-        <EmptyState size="sm" class="px-4">
+        <EmptyState size="sm" class="px-(--ws-px)">
           {t("hq.ca_empty")}
         </EmptyState>
       </Show>
 
       <Show when={!data.loading && sections().length > 0}>
-        <div class="flex border-t border-rim">
-          {/* Vertical rail — labels rotated with writing-mode so seven
-              sections fit a single masonry cell. */}
-          <div
-            role="tablist"
-            class="flex flex-col shrink-0 border-r border-rim bg-elevated"
-          >
-            <For each={sections()}>
-              {(s) => (
-                <button
-                  role="tab"
-                  aria-selected={active()?.id === s.id}
-                  onClick={() => setActiveId(s.id)}
-                  class="[writing-mode:vertical-rl] rotate-180 px-1.5 py-3
-                         text-[0.6875rem] font-medium uppercase tracking-wider
-                         transition-colors"
-                  classList={{
-                    "text-txt bg-surface": active()?.id === s.id,
-                    "text-muted hover:text-txt": active()?.id !== s.id,
-                  }}
-                >
-                  {SECTION_LABEL[s.id]
-                    ? t(SECTION_LABEL[s.id] as "hq.ca_photos")
-                    : s.label}
-                </button>
-              )}
-            </For>
-          </div>
-
-          <div class="flex-1 min-w-0 max-h-80 overflow-y-auto">
+          <div class="max-h-80 overflow-y-auto">
             <Show when={active()} keyed>
               {(s) => (
                 <Show
@@ -178,9 +158,8 @@ export default function ChannelActivitiesWidget() {
               )}
             </Show>
           </div>
-        </div>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 }
 
@@ -207,7 +186,7 @@ function ItemRows(props: { items: ActivityItem[] }) {
       {(i, idx) => (
         <button
           onClick={() => navigate(i.url)}
-          class="w-full text-left px-3.5 py-2 flex items-start justify-between gap-2.5
+          class="w-full text-left px-(--ws-px) py-2 flex items-start justify-between gap-2.5
                  hover:bg-elevated transition-colors"
           classList={{ "border-b border-rim": idx() < props.items.length - 1 }}
         >

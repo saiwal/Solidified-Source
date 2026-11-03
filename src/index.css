@@ -48,6 +48,255 @@
 /* Widget body inset; each @ui/WidgetShell look overrides it on its root. */
 :root { --ws-px: 1rem; }
 
+/* ── Embeds follow the widget shell ──────────────────────────────────
+   [share] embeds (.bb-share > .bb-share-header + .bb-share-body, built as
+   HTML by bbcode.ts) can't render <WidgetShell>, so each look is mirrored
+   here, keyed on <html data-widget-shell> (lib/widget-shell.ts). Keep these
+   in step with LOOKS in spa-ui/src/WidgetShell.tsx. "card" is the base
+   .bb-share style. Fills use overlay, not surface: an embed sits inside a
+   bg-surface post card, where a surface fill would vanish. Unlayered, so it
+   beats the base rules; the stacked-card edge is dropped by looks without a
+   box. */
+:root:is([data-widget-shell="section"], [data-widget-shell="fold"]) .bb-share {
+  --emb-fill: transparent;
+  border: 0;
+  border-top: 1px solid var(--color-rim-strong);
+  border-radius: 0;
+  box-shadow: none;
+  margin-right: 0;
+}
+:root:is([data-widget-shell="section"], [data-widget-shell="fold"]) .bb-share-header {
+  border-bottom: 0;
+  padding: 0.5rem 0.25rem 0.125rem;
+}
+:root:is([data-widget-shell="section"], [data-widget-shell="fold"]) .bb-share-body {
+  padding-inline: 0.25rem;
+}
+
+:root[data-widget-shell="banded"] .bb-share-header {
+  background-color: var(--color-elevated);
+}
+
+:root[data-widget-shell="rail"] .bb-share {
+  --emb-fill: var(--color-elevated);
+  border: 0;
+  box-shadow: none;
+  margin-right: 0;
+}
+:root[data-widget-shell="rail"] .bb-share-header {
+  border-bottom: 0;
+  padding-bottom: 0.125rem;
+}
+:root[data-widget-shell="rail"] .bb-share-header::before {
+  content: "";
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  flex-shrink: 0;
+}
+
+:root[data-widget-shell="glass"] .bb-share {
+  --emb-fill: var(--color-elevated);
+  border-color: color-mix(in oklab, var(--color-txt) 10%, transparent);
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.25);
+  margin-right: 0;
+}
+:root[data-widget-shell="glass"] .bb-share-header {
+  border-bottom: 0;
+}
+
+/* Legend: the header draws the top edge — corner, avatar + line, then a
+   line running into the right corner — and the body carries the sides and
+   bottom, so the author line sits *in* the border like a widget title. The
+   pieces start 0.875rem down (half the min-height) rather than at 50%, so a
+   header that wraps in a narrow column keeps the line on its first row. */
+:root[data-widget-shell="legend"] .bb-share {
+  --emb-fill: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  margin-right: 0;
+}
+:root[data-widget-shell="legend"] .bb-share-header {
+  border-bottom: 0;
+  padding: 0;
+  min-height: 1.75rem;
+}
+:root[data-widget-shell="legend"] .bb-share-header::before,
+:root[data-widget-shell="legend"] .bb-share-header::after {
+  content: "";
+  align-self: stretch;
+  margin-top: 0.875rem;
+  border-top: 1px solid var(--color-rim);
+}
+:root[data-widget-shell="legend"] .bb-share-header::before {
+  width: 0.75rem;
+  flex-shrink: 0;
+  border-left: 1px solid var(--color-rim);
+  border-top-left-radius: 0.75rem;
+}
+:root[data-widget-shell="legend"] .bb-share-header::after {
+  flex: 1 1 0.75rem;
+  min-width: 0.75rem;
+  border-right: 1px solid var(--color-rim);
+  border-top-right-radius: 0.75rem;
+}
+:root[data-widget-shell="legend"] .bb-share-body {
+  background-color: var(--color-overlay);
+  border: 1px solid var(--color-rim);
+  border-top: 0;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+/* Tab: the author line is a tab on the body's top-left edge. */
+:root[data-widget-shell="tab"] .bb-share {
+  --emb-fill: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  margin-right: 0;
+}
+:root[data-widget-shell="tab"] .bb-share-header {
+  position: relative;
+  top: 1px;
+  width: fit-content;
+  max-width: 85%;
+  padding: 0.375rem 0.75rem 0.25rem;
+  background-color: var(--color-overlay);
+  border: 1px solid var(--color-rim);
+  border-bottom: 0;
+  border-radius: 0.5625rem 0.5625rem 0 0;
+}
+:root[data-widget-shell="tab"] .bb-share-body {
+  background-color: var(--color-overlay);
+  border: 1px solid var(--color-rim);
+  border-radius: 0 0.75rem 0.75rem 0.75rem;
+}
+
+:root[data-widget-shell="compact"] .bb-share {
+  border-radius: 0.5rem;
+}
+:root[data-widget-shell="compact"] .bb-share-header {
+  padding: 0.25rem 0.5rem;
+}
+:root[data-widget-shell="compact"] .bb-share-body {
+  padding: 0.375rem 0.5rem;
+}
+
+/* ── Translucent surfaces (Settings → Display, pconfig spa/glass_ui) ──
+   lib/glass.ts sets <html data-glass>. Cards, panels and filled widget
+   shells go see-through, and the sidebars clear so there is something
+   behind them to show. Independent of the widget shell look.
+   Unlayered on purpose: it must beat the bg-surface utility.
+
+   Panels = .hz-card (Card/cardClass — incl. the card/banded/compact/tab
+   shells) plus any bordered bg-surface box rounded xl/2xl (post cards,
+   hand-written panels); .hz-ws-fill = the elevated-filled shells (rail,
+   glass); .hz-ws-clear / .hz-ws-legend = the no-fill shells (section/fold
+   root, legend outline). Deliberately left
+   opaque: popovers/tooltips (rounded-lg — they float over text), menus
+   (already frosted) and modal/sheet panels (their <dialog> blurs, and a
+   nested backdrop-filter only sees as far as that backdrop root, so a
+   translucent panel would just go darker).
+   ponytail: one blur per post card; drop the backdrop-filter here if long
+   streams stutter on low-end phones — the 75% base wash already mutes the
+   wallpaper. */
+:root[data-glass] :is(.hz-card, .bg-surface.border.rounded-xl, .bg-surface.border.rounded-2xl) {
+  background-color: color-mix(in oklab, var(--color-surface) 60%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+}
+:root[data-glass] .hz-ws-fill {
+  background-color: color-mix(in oklab, var(--color-elevated) 55%, transparent);
+  -webkit-backdrop-filter: blur(4px) saturate(1.25);
+  backdrop-filter: blur(4px) saturate(1.25);
+}
+/* The no-fill shells get the same frost, so nothing reads straight off the
+   wallpaper. section/fold become rounded frosted panels and take a real
+   inset instead of sitting flush to an edge that no longer exists. */
+:root[data-glass] .hz-ws-clear {
+  background-color: color-mix(in oklab, var(--color-surface) 60%, transparent);
+  -webkit-backdrop-filter: blur(4px) saturate(1.25);
+  backdrop-filter: blur(4px) saturate(1.25);
+}
+/* Legend: one frosted layer under the whole outline — body, tab rail and
+   corners — starting at the border line, so the half of the title row above
+   it stays clear. A pseudo-element, not the root's own background: that
+   would also paint above the line, and clipping it would cut the title.
+   Offsets mirror WidgetShell.tsx: 0.875rem = half the legend header's h-7;
+   0.75rem = half the inline tab rail's w-6 (its centre line is the edge). */
+:root[data-glass] .hz-ws-legend {
+  position: relative;
+  isolation: isolate;
+}
+:root[data-glass] .hz-ws-legend::before {
+  content: "";
+  position: absolute;
+  inset: 0.875rem 0 0 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 0.75rem;
+  background-color: color-mix(in oklab, var(--color-surface) 60%, transparent);
+  -webkit-backdrop-filter: blur(4px) saturate(1.25);
+  backdrop-filter: blur(4px) saturate(1.25);
+}
+:root[data-glass] .hz-ws-legend:not(:has(> header))::before {
+  top: 0;
+}
+:root[data-glass] .hz-ws-legend:has(> div > [role="tablist"])::before {
+  left: 0.75rem;
+}
+:root[data-glass] .hz-ws-clear {
+  --ws-px: 0.875rem;
+  border-top-color: transparent;
+  border-radius: 0.75rem;
+  padding-top: 0;
+}
+/* Fill layers *inside* a translucent frame (the post window's content area,
+   the seamless PostCard in it) — without this they cover the frame's glass
+   with an opaque sheet. Opt in per element; don't widen to every bg-base. */
+:root[data-glass] .hz-glass-clear {
+  background-color: transparent;
+}
+/* Embedded posts/cards ([share] blocks from bbcode.ts). Tint only, no blur:
+   they sit inside a post card whose backdrop-filter makes it the backdrop
+   root, so a blur here could only blur the card itself. */
+:root[data-glass] { --emb-stack: color-mix(in oklab, var(--color-overlay) 50%, transparent); }
+:root[data-glass] :is(.bb-share, .bb-card-compact) {
+  background-color: color-mix(in oklab, var(--emb-fill, var(--color-overlay)) 50%, transparent);
+}
+:root[data-glass][data-widget-shell="tab"] :is(.bb-share-header, .bb-share-body),
+:root[data-glass][data-widget-shell="legend"] .bb-share-body {
+  background-color: color-mix(in oklab, var(--color-overlay) 50%, transparent);
+}
+:root[data-glass] .hz-nav-sidebar {
+  background-color: color-mix(in oklab, var(--color-surface) 40%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+/* Below xl the right sidebar is a drawer over the page: frosted, so the
+   content under it stays out of the way. */
+:root[data-glass] #right-sidebar {
+  background-color: color-mix(in oklab, var(--color-surface) 75%, transparent);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+/* In-flow at xl: a light tint and no blur — a backdrop-filter here would
+   become the glass widgets' backdrop root and stop them blurring the page.
+   (The left .hz-nav-sidebar does take a 4px blur: it holds only nav and the
+   odd leftBottom widget, which then show the wallpaper at that 4px.) */
+@media (width >= 80rem) {
+  :root[data-glass] #right-sidebar {
+    background-color: color-mix(in oklab, var(--color-surface) 40%, transparent);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* ── Plyr theme integration ─────────────────────────────────────── */
 :root {
   --plyr-color-main: var(--color-accent);
@@ -256,7 +505,9 @@
     border: 1px solid var(--color-rim);
     border-radius: 0.75rem;
     overflow: hidden;
-    background-color: var(--color-overlay);
+    /* --emb-fill: set per widget-shell look (the "Embeds follow the widget
+       shell" block); --emb-stack: tinted by "Translucent surfaces". */
+    background-color: var(--emb-fill, var(--color-overlay));
   }
 
   /* A card embed is stored as an ordinary [share] block so redbasic can render
@@ -277,9 +528,9 @@
     margin-top: 1.25rem;
     margin-right: 0.4375rem;
     box-shadow:
-      3px -3px 0 0 var(--color-overlay),
+      3px -3px 0 0 var(--emb-stack, var(--color-overlay)),
       3px -3px 0 1px color-mix(in oklab, var(--color-rim) 75%, transparent),
-      6px -6px 0 0 var(--color-overlay),
+      6px -6px 0 0 var(--emb-stack, var(--color-overlay)),
       6px -6px 0 1px color-mix(in oklab, var(--color-rim) 50%, transparent);
   }
 

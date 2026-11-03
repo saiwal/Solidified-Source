@@ -8,6 +8,7 @@ import CategoryChips from "./CategoryChips";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { Motion, slideDown } from "@/shared/views/anim";
 
+import { cardClass } from "@ui/Card";
 interface Props {
   events: CalEvent[];
 }
@@ -50,8 +51,11 @@ export default function ListView(props: Props) {
       >
         <For each={grouped()}>
           {([dateStr, evs]) => (
-            <section>
-              <h3 class={`sticky top-0 z-10 bg-base px-3 py-1.5 text-sm font-semibold ${
+            // One panel per day (readable over a wallpaper). overflow-clip, not
+            // -hidden: hidden makes the section a scroll box and kills the
+            // sticky date header.
+            <section class={`${cardClass()} overflow-clip p-1`}>
+              <h3 class={`sticky top-0 z-10 bg-surface px-3 py-1.5 text-sm font-semibold ${
                 dateStr === todayStr ? "text-accent-txt" : dateStr < todayStr ? "text-muted" : "text-txt"
               }`}>
                 {dateStr === todayStr ? `${t("calendar.today")}, ` : ""}{fmtDateHeader(dateStr, locale())}

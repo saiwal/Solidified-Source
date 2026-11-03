@@ -355,7 +355,7 @@ export default function CardView() {
         {(d) => (
           <div class="xl:flex xl:gap-8">
             {/* ── Card ── */}
-            <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl space-y-6">
+            <article class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-6`}>
               {/* Back link */}
               <A
                 href={`/cards/${nick()}`}

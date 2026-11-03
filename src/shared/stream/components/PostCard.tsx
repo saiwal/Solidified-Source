@@ -1659,7 +1659,7 @@ export default function PostCard(props: {
       ref={cardRef}
       class={
         (props.seamless
-          ? "relative bg-surface p-3 wide-md:p-5"
+          ? "hz-glass-clear relative bg-surface p-3 wide-md:p-5"
           : "relative bg-surface border border-rim rounded-2xl p-3 wide-md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
         // Flat (unthreaded) reply: same card, with an accent rail down its left edge.
         (isFlatReply() && !props.seamless && !props.split ? " border-l-4 border-l-accent/50" : "") +

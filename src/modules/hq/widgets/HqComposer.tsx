@@ -19,7 +19,7 @@ import { useMentionEmojiWiring } from "@/shared/editor/mention/useMentionEmojiWi
 import MentionEmojiPopups from "@/shared/editor/mention/MentionEmojiPopups";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button, IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Avatar } from "@ui/Avatar";
 void motion;
 
@@ -277,7 +277,8 @@ function HqComposer() {
   ];
 
   return (
-    <Card raised class="p-3.5 flex flex-col gap-3 max-w-5xl mx-auto" ref={rootEl} data-tour="hq.composer">
+    <WidgetShell class="max-w-5xl mx-auto">
+    <div class="px-(--ws-px) py-3.5 flex flex-col gap-3" ref={rootEl} data-tour="hq.composer">
 
       {/* Body area — two lines tall until the text outgrows them */}
       <div ref={wiring.wrapperRef} class="flex gap-2.5 items-start">
@@ -394,6 +395,7 @@ function HqComposer() {
 
       {/* Mention + emoji popups */}
       <MentionEmojiPopups wiring={wiring} />
-    </Card>
+    </div>
+    </WidgetShell>
   );
 }

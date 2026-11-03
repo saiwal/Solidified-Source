@@ -178,6 +178,8 @@ export const settings: RawDictionary["settings"] = {
   corner_radius:         "Eckenrundung",
   widget_shell: "Widget-Stil",
   widget_shell_hint: "Wie Widgets in Seitenleiste und Seiten eingerahmt werden. Besucher deiner Seiten sehen deine Wahl.",
+  glass_ui: "Durchscheinende Flächen",
+  glass_ui_hint: "Karten, Bereiche und Seitenleisten lassen die Seite und dein Hintergrundbild durchscheinen. Besucher deiner Seiten sehen deine Wahl.",
   widget_shell_card: "Karte",
   widget_shell_section: "Abschnitt",
   widget_shell_banded: "Mit Kopfleiste",

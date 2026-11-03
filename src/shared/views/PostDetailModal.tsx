@@ -450,8 +450,8 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
           aria-label={props.inline ? title() : undefined}
           tabindex="-1"
           class={props.inline
-            ? "relative w-full h-full flex flex-col bg-base overflow-clip focus:outline-none"
-            : "relative flex-1 min-h-0 flex flex-col bg-base overflow-clip focus:outline-none"}
+            ? "hz-glass-clear relative w-full h-full flex flex-col bg-base overflow-clip focus:outline-none"
+            : "hz-glass-clear relative flex-1 min-h-0 flex flex-col bg-base overflow-clip focus:outline-none"}
         >
           {/* Scrollable body */}
           <div

@@ -119,6 +119,11 @@ try {
     assert.match(full, /--ws-px/, `${id}: sets the body inset`);
     const bare = sh.match(/<section[^>]*>(?:(?!<\/section>)[\s\S])*Bare body[\s\S]*?<\/section>/)?.[0] ?? "";
     assert(bare && !/<footer|<header/.test(bare), `${id}: no title or footer renders neither`);
+    assert.match(sh, /role="tablist"[\s\S]*Tab A[\s\S]*Tab B/, `${id}: tabs render in a tablist`);
+    const selTab = sh.match(/<button[^>]*aria-selected="true"[^>]*>/)?.[0] ?? "";
+    const selId = selTab.match(/id="([^"]+)"/)?.[1];
+    assert(selId && /tabindex="0"/.test(selTab), `${id}: the active tab is the Tab stop`);
+    assert.match(sh, new RegExp(`role="tabpanel"[^>]*aria-labelledby="${selId}"|aria-labelledby="${selId}"[^>]*role="tabpanel"`), `${id}: the panel is labelled by the active tab`);
     if (id === "fold") assert.match(full, /<h3[^>]*><button[^>]*aria-expanded="true"/, "fold: the toggle is a button inside the heading");
   }
   console.log("check-ui: ok");

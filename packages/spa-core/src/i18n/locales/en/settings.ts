@@ -178,6 +178,8 @@ export const settings: RawDictionary["settings"] = {
   corner_radius:         "Corner roundness",
   widget_shell: "Widget style",
   widget_shell_hint: "How sidebar and page widgets are framed. Visitors to your pages see your choice.",
+  glass_ui: "Translucent surfaces",
+  glass_ui_hint: "Cards, panels and sidebars let the page and your background image show through. Visitors to your pages see your choice.",
   widget_shell_card: "Card",
   widget_shell_section: "Section",
   widget_shell_banded: "Banded",

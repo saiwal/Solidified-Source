@@ -138,6 +138,8 @@ export const settings: RawDictionary["settings"] = {
   corner_radius:           "कोने की गोलाई",
   widget_shell: "विजेट शैली",
   widget_shell_hint: "साइडबार और पेज विजेट किस रूप में दिखें। आपके पेज पर आने वाले आपकी पसंद देखते हैं।",
+  glass_ui: "पारदर्शी सतहें",
+  glass_ui_hint: "कार्ड, पैनल और साइडबार के पीछे पेज और आपकी पृष्ठभूमि छवि दिखती है। आपके पेज पर आने वाले आपकी पसंद देखते हैं।",
   widget_shell_card: "कार्ड",
   widget_shell_section: "खंड",
   widget_shell_banded: "पट्टीदार",

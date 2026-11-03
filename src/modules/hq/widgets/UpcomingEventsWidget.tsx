@@ -7,8 +7,8 @@ import DayDetailModal from "@/modules/calendar/views/DayDetailModal";
 import { localDay, todayKey, evTitle } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
-import { Button } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { IconButton } from "@ui/Button";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function next30DaysRange() {
   const start = new Date();
@@ -37,7 +37,7 @@ function fmtTime(iso: string, allDay: boolean, allDayLabel: string) {
 }
 
 const SkeletonRow = () => (
-  <div class="px-3.5 py-2.5 flex items-center gap-2.5 animate-pulse">
+  <div class="px-(--ws-px) py-2.5 flex items-center gap-2.5 animate-pulse">
     <div class="w-8 h-9 rounded-lg bg-overlay shrink-0" />
     <div class="flex-1 space-y-2">
       <div class="h-3 bg-overlay rounded w-3/5" />
@@ -74,18 +74,16 @@ export default function UpcomingEventsWidget() {
 
   return (
     <>
-      <Card raised class="flex flex-col overflow-hidden" data-tour="hq.events">
-
-        {/* Header */}
-        <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
-          <span class="text-xs font-medium uppercase tracking-wider text-muted">
-            {t("hq.upcoming_events")}
-          </span>
-          <Button size="sm" onClick={() => openEvent({ onCreated: load })}>
-            <MdOutlineAdd class="w-3 h-3" />
-            {t("hq.new_event")}
-          </Button>
-        </div>
+      <div data-tour="hq.events">
+      <WidgetShell
+        class="flex flex-col"
+        title={t("hq.upcoming_events")}
+        actions={
+          <IconButton label={t("hq.new_event")} size="sm" onClick={() => openEvent({ onCreated: load })}>
+            <MdOutlineAdd class="w-4 h-4" />
+          </IconButton>
+        }
+      >
 
         {/* Body */}
         <div class="flex flex-col">
@@ -94,13 +92,13 @@ export default function UpcomingEventsWidget() {
           </Show>
 
           <Show when={!loading() && error()}>
-            <div class="px-4 py-4 text-center">
+            <div class="px-(--ws-px) py-4 text-center">
               <button onClick={load} class="text-xs text-accent hover:underline">{t("hq.retry")}</button>
             </div>
           </Show>
 
           <Show when={!loading() && !error() && events().length === 0}>
-            <div class="px-4 py-6 flex flex-col items-center gap-2 text-muted">
+            <div class="px-(--ws-px) py-6 flex flex-col items-center gap-2 text-muted">
               <MdOutlineCalendar_today class="w-7 h-7 opacity-30" />
               <span class="text-xs">{t("hq.no_upcoming_events")}</span>
               <button
@@ -125,7 +123,7 @@ export default function UpcomingEventsWidget() {
                 tabindex="0"
                 onClick={() => setActiveEvent(ev)}
                 onKeyDown={(e) => e.key === "Enter" && setActiveEvent(ev)}
-                class={`px-3.5 py-2.5 flex items-center gap-2.5 hover:bg-elevated transition-colors cursor-pointer
+                class={`px-(--ws-px) py-2.5 flex items-center gap-2.5 hover:bg-elevated transition-colors cursor-pointer
                   ${i() < events().length - 1 ? "border-b border-rim" : ""}
                   ${isPast ? "opacity-50" : ""} ${isToday ? "bg-accent-muted/25" : ""}`}
               >
@@ -177,7 +175,8 @@ export default function UpcomingEventsWidget() {
             }}
           </For>
         </div>
-      </Card>
+      </WidgetShell>
+      </div>
 
       <Show when={activeEvent()}>
         {(ev) => (

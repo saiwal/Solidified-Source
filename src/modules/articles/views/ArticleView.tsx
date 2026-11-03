@@ -53,6 +53,7 @@ import { Button, IconButton } from "@ui/Button";
 import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 
+import { cardClass } from "@ui/Card";
 // ── delete confirm ────────────────────────────────────────────────────────────
 
 function DeleteDialog(props: { uuid: string; onDeleted: () => void; onCancel: () => void }) {
@@ -388,7 +389,7 @@ export default function ArticleView() {
             <ArticleToc entries={toc()} activeId={activeId()} label={t("articles.on_this_page")} />
 
             {/* ── Article ── */}
-            <article class="min-w-0 flex-1 max-w-none xl:max-w-3xl">
+            <article class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6`}>
               <div class="space-y-8">
                 <div class="flex items-center justify-between gap-2">
                   <BackLink fallback={`/articles/${nick()}`} label={t("articles.back")} />

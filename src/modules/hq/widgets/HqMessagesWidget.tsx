@@ -9,7 +9,7 @@ import type { AclEntry } from "@/modules/network/api";
 import { MessageList, FolderViewToggle, folderViewMode, setFolderViewMode } from "./MessageList";
 import { TABS, type Tab } from "./MessageTabs";
 import { IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 
@@ -142,14 +142,21 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
   const isNotices = () => tab() === "notification";
 
   return (
-    <Card raised class="flex flex-col overflow-hidden"
-      data-tour="hq.messages"
-     
-      style={{ "max-height": "480px" }}>
-      <div class="px-2.5 py-2 shrink-0 flex items-center justify-between gap-2 border-b border-rim">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-muted truncate">
-          {t("hq.messages")}
-        </h3>
+    <div data-tour="hq.messages">
+    <WidgetShell
+      class="flex flex-col max-h-[480px]"
+      title={t("hq.messages")}
+      // Vertical rail — rotated labels so four tabs fit one masonry cell.
+      tabs={{
+        items: TABS.map((tb) => ({
+          id: tb.id,
+          label: t(tb.key as "hq.msg_tab_all"),
+          tour: tb.id === "direct" ? "hq.messages.direct" : undefined,
+        })),
+        active: tab(),
+        onSelect: (id) => setTab(id as Tab),
+      }}
+      actions={
         <Show when={isFeed()} fallback={<FolderViewToggle mode={folderViewMode()} onChange={setFolderViewMode} />}>
           <IconButton
             label={t("hq.refresh")}
@@ -161,36 +168,9 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
             <MdOutlineRefresh size={14} class={refreshing() ? "animate-spin" : ""} />
           </IconButton>
         </Show>
-      </div>
+      }
+    >
 
-      <div class="flex-1 flex min-h-0 overflow-hidden">
-        {/* Vertical rail — labels rotated with writing-mode so four tabs fit a
-            single masonry cell. */}
-        <div
-          role="tablist"
-          class="flex flex-col shrink-0 border-r border-rim bg-elevated"
-        >
-          {TABS.map((tb) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab() === tb.id}
-              data-tour={tb.id === "direct" ? "hq.messages.direct" : undefined}
-              onClick={() => setTab(tb.id)}
-              class="[writing-mode:vertical-rl] rotate-180 px-1.5 py-3
-                     text-[0.6875rem] font-medium uppercase tracking-wider
-                     transition-colors"
-              classList={{
-                "text-txt bg-surface": tab() === tb.id,
-                "text-muted hover:text-txt": tab() !== tb.id,
-              }}
-            >
-              {t(tb.key as "hq.msg_tab_all")}
-            </button>
-          ))}
-        </div>
-
-        <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
           <Show
             when={isFeed()}
             fallback={<HqFoldersWidget viewMode={folderViewMode()} />}
@@ -204,8 +184,7 @@ export default function HqMessagesWidget(props: { config?: Record<string, unknow
               onRefreshingChange={setRefreshing}
             />
           </Show>
-        </div>
-      </div>
-    </Card>
+    </WidgetShell>
+    </div>
   );
 }

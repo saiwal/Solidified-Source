@@ -90,6 +90,7 @@ export const shells = () =>
         <div>
           <WidgetShell title="Shell title" actions={<a href="/x">Shell action</a>} footer={<a href="/y">Shell footer</a>}>Shell body</WidgetShell>
           <WidgetShell>Bare body</WidgetShell>
+          <WidgetShell title="Tabbed" tabs={{ items: [{ id: "a", label: "Tab A" }, { id: "b", label: "Tab B" }], active: "b", onSelect: () => {} }}>Tab body</WidgetShell>
         </div>
       ));
       return [id, out];

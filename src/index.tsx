@@ -4,6 +4,7 @@ import App from "./App";
 import { loadTypography } from "@utsukta/spa-core/lib/typography";
 import { loadBackground } from "@utsukta/spa-core/lib/background";
 import { loadCornerRadius } from "@utsukta/spa-core/lib/corner-radius";
+import { loadGlass } from "@utsukta/spa-core/lib/glass";
 import { applyTheme } from "@utsukta/spa-core/lib/useTheme";
 import { installOfflineFallback } from "@utsukta/spa-core/lib/offline-fallback";
 import { i18nReady } from "@utsukta/spa-core/i18n";
@@ -35,6 +36,7 @@ applyTheme((localStorage.getItem("hz-theme") as ThemeId) ?? "light");
 loadTypography();
 loadBackground();
 loadCornerRadius();
+loadGlass();
 
 // Core strings load as their own chunks; render once they're in rather than
 // paint raw keys. A failed load only warns, so this always resolves.

@@ -24,8 +24,16 @@ function readCache(): WidgetShellId {
   }
 }
 
-const [shell, setShell] = createSignal<WidgetShellId>(readCache());
+const [shell, setShellSignal] = createSignal<WidgetShellId>(readCache());
 export const widgetShell = shell;
+
+// Mirrored onto <html data-widget-shell>: [share] embeds are HTML strings
+// from bbcode.ts, not components, so index.css restyles them per look.
+function setShell(id: WidgetShellId): void {
+  setShellSignal(id);
+  if (typeof document !== "undefined") document.documentElement.dataset.widgetShell = id;
+}
+setShell(shell());
 
 /** A visited channel's shell — screen only, the viewer's saved pref stays. */
 export function setPageWidgetShell(v: unknown): void {
