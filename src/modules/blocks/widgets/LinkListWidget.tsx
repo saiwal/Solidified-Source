@@ -8,6 +8,7 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillOpen_in_new } from "solid-icons/md";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 export interface LinkEntry {
   label: string;
@@ -36,18 +37,13 @@ export default function LinkListWidget(props: WidgetProps) {
       when={links().length > 0}
       fallback={
         <Show when={editingWidgets()}>
-          <Card class="px-4 py-3">
+          <Card class="px-(--ws-px) py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
           </Card>
         </Show>
       }
     >
-      <Card class="overflow-hidden">
-        <Show when={title()}>
-          <div class="px-4 py-3">
-            <h3 class="text-sm font-semibold text-txt">{title()}</h3>
-          </div>
-        </Show>
+      <WidgetShell title={title() || undefined}>
         <ul class="divide-y divide-rim">
           <For each={links()}>
             {(link) => (
@@ -56,7 +52,7 @@ export default function LinkListWidget(props: WidgetProps) {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="flex items-center gap-2 px-4 py-2.5 text-sm text-txt
+                  class="flex items-center gap-2 px-(--ws-px) py-2.5 text-sm text-txt
                          hover:bg-elevated hover:text-accent transition-colors"
                 >
                   <span class="flex-1 truncate">{link.label}</span>
@@ -66,7 +62,7 @@ export default function LinkListWidget(props: WidgetProps) {
             )}
           </For>
         </ul>
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

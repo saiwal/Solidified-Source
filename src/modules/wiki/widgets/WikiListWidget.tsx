@@ -5,7 +5,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { MdFillLock } from "solid-icons/md";
 import { wikis, wikisLoading, wikisError, loadWikis } from "../store";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { EmptyState } from "@ui/EmptyState";
 
 export default function WikiListWidget() {
@@ -23,32 +23,29 @@ export default function WikiListWidget() {
 
   return (
     <Show when={!hidden()}>
-      <Card raised class="overflow-hidden">
-
-        {/* Header */}
-        <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
-          <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <WidgetShell
+        icon={
+          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
               d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
               d="M15 3v5h5M9 9h6M9 13h6M9 17h3" />
           </svg>
-          <h3 class="text-sm font-semibold text-txt flex-1">{t("widgets.wiki_list")}</h3>
-          <Show when={!wikisLoading() && wikis().length > 0}>
-            <span class="text-xs text-muted tabular-nums">{wikis().length}</span>
-          </Show>
-        </div>
+        }
+        title={t("widgets.wiki_list")}
+        actions={!wikisLoading() && wikis().length > 0 ? <span class="text-xs text-muted tabular-nums">{wikis().length}</span> : undefined}
+      >
 
         {/* Skeleton */}
         <Show when={wikisLoading()}>
-          <div class="px-4 py-3 space-y-2 animate-pulse">
+          <div class="px-(--ws-px) py-3 space-y-2 animate-pulse">
             <For each={[1, 2, 3]}>{() => <div class="h-3 bg-elevated rounded w-4/5" />}</For>
           </div>
         </Show>
 
         {/* Empty */}
         <Show when={!wikisLoading() && wikis().length === 0}>
-          <EmptyState size="sm" class="px-4">{t("wiki.no_wikis")}</EmptyState>
+          <EmptyState size="sm" class="px-(--ws-px)">{t("wiki.no_wikis")}</EmptyState>
         </Show>
 
         {/* List */}
@@ -58,7 +55,7 @@ export default function WikiListWidget() {
               {(wiki) => (
                 <A
                   href={`/wiki/${nick()}/${wiki.url_name}`}
-                  class="flex items-center gap-2 px-4 py-2.5 hover:bg-elevated transition-colors group"
+                  class="flex items-center gap-2 px-(--ws-px) py-2.5 hover:bg-elevated transition-colors group"
                 >
                   <span class="flex-1 text-xs text-txt truncate group-hover:text-accent transition-colors">
                     {wiki.name}
@@ -71,7 +68,7 @@ export default function WikiListWidget() {
             </For>
           </div>
         </Show>
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

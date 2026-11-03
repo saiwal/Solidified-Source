@@ -1524,6 +1524,17 @@ export type RawDictionary = {
     font_size_xl:            string;
     font_family:             string;
     corner_radius:           string;
+    widget_shell:            string;
+    widget_shell_hint:       string;
+    widget_shell_card: string;
+    widget_shell_section: string;
+    widget_shell_banded: string;
+    widget_shell_rail: string;
+    widget_shell_glass: string;
+    widget_shell_legend: string;
+    widget_shell_tab: string;
+    widget_shell_compact: string;
+    widget_shell_fold: string;
     corner_radius_hint:      string;
     corner_radius_none:      string;
     corner_radius_sm:        string;

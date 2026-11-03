@@ -12,11 +12,12 @@ import { MdFillChat } from "solid-icons/md";
 import { fetchRooms } from "../api";
 import { Button } from "@ui/Button";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <Card class="px-4 py-3">
+      <Card class="px-(--ws-px) py-3">
         <p class="text-xs text-muted">{props.text}</p>
       </Card>
     </Show>
@@ -40,17 +41,17 @@ export default function RoomCardWidget(props: WidgetProps) {
   return (
     <Show when={roomId()} fallback={<EditHint text={t("widgets.not_configured")} />}>
       <Show when={room.loading}>
-        <div class="bg-surface border border-rim rounded-xl p-4 space-y-2 animate-pulse">
+        <WidgetShell><div class="p-4 space-y-2 animate-pulse">
           <div class="h-3 bg-elevated rounded w-1/2" />
           <div class="h-3 bg-elevated rounded w-1/3" />
-        </div>
+        </div></WidgetShell>
       </Show>
 
       <Show when={!room.loading}>
         <Show when={room()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(r) => (
-            <Card class="overflow-hidden">
-              <div class="px-4 py-3 flex items-center gap-2">
+            <WidgetShell>
+              <div class="px-(--ws-px) py-3 flex items-center gap-2">
                 <MdFillChat size={18} class="text-accent shrink-0" />
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-txt truncate">{r().name}</p>
@@ -67,7 +68,7 @@ export default function RoomCardWidget(props: WidgetProps) {
               >
                 {t("widgets.join_room")}
               </Button>
-            </Card>
+            </WidgetShell>
           )}
         </Show>
       </Show>

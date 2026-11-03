@@ -6,7 +6,7 @@ import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 
 import { openPost } from "@/shared/views/modal-host";
 import { Button } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 type ScheduledPost = {
   iid: number;
@@ -72,21 +72,17 @@ export default function ScheduledPostsWidget() {
 
   return (
     <Show when={posts().length > 0}>
-      <Card raised class="flex flex-col overflow-hidden"
-        style={{ "max-height": "480px" }}>
-        {/* Header */}
-        <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between shrink-0">
-          <span class="text-xs font-medium uppercase tracking-wider text-muted">
-            {t("hq.scheduled")}
-          </span>
-          <span class="text-xs text-muted tabular-nums">{posts().length}</span>
-        </div>
+      <WidgetShell
+        class="flex flex-col max-h-[480px]"
+        title={t("hq.scheduled")}
+        actions={<span class="text-xs text-muted tabular-nums">{posts().length}</span>}
+      >
 
         <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-rim">
           <For each={posts()}>
             {(post) => (
               <div
-                class="px-3.5 py-2.5 hover:bg-elevated transition-colors cursor-pointer"
+                class="px-(--ws-px) py-2.5 hover:bg-elevated transition-colors cursor-pointer"
                 classList={{ "opacity-50 pointer-events-none": busy() === post.uuid }}
                 onClick={() => openPost(post.uuid, { onClose: () => void load() })}
               >
@@ -136,7 +132,7 @@ export default function ScheduledPostsWidget() {
             )}
           </For>
         </div>
-      </Card>
+      </WidgetShell>
 
     </Show>
   );

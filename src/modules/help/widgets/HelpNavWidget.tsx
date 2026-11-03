@@ -5,7 +5,7 @@ import { useLocation, A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchNav, type NavNode } from "../api";
 import { MdOutlineChevron_right } from "solid-icons/md";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function NavItem(props: {
   node: NavNode;
@@ -89,7 +89,7 @@ function NavItem(props: {
 
 function NavSkeleton() {
   return (
-    <div class="px-4 py-3 space-y-2 animate-pulse">
+    <div class="px-(--ws-px) py-3 space-y-2 animate-pulse">
       <For each={Array(6).fill(0)}>
         {(_, i) => (
           <div
@@ -122,17 +122,17 @@ export default function HelpNavWidget() {
   );
 
   return (
-    <Card raised class="overflow-hidden">
-      {/* Header */}
-      <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
-        <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <WidgetShell
+      icon={
+        <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
             d="M4 6a2 2 0 012-2h9a2 2 0 012 2v13.5a.5.5 0 01-.5.5H7a3 3 0 01-3-3V6z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
             d="M7 18a3 3 0 013-3h7" />
         </svg>
-        <h3 class="text-sm font-semibold text-txt flex-1">{t("widgets.help_nav")}</h3>
-      </div>
+      }
+      title={t("widgets.help_nav")}
+    >
 
       <Show when={!navData.loading} fallback={<NavSkeleton />}>
         <Show when={navData()} keyed>
@@ -152,6 +152,6 @@ export default function HelpNavWidget() {
           )}
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 }

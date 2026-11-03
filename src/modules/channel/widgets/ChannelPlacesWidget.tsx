@@ -11,7 +11,7 @@ import { parseCoord } from "@utsukta/spa-core/lib/osm";
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { openPost } from "@/shared/views/modal-host";
 import type { MapPoint } from "@/shared/views/MapView";
 
@@ -39,16 +39,15 @@ export default function ChannelPlacesWidget() {
 
   return (
     <Show when={enabled() && !data.loading && data()}>
-      <Card class="p-4">
-        <h3 class="text-xs font-semibold text-muted uppercase tracking-wide mb-3">
-          {t("widgets.channel_places")}
-        </h3>
+      <WidgetShell title={t("widgets.channel_places")}>
+<div class="px-(--ws-px) py-3">
         <Show when={points().length} fallback={<p class="text-xs text-muted">{t("widgets.channel_places_empty")}</p>}>
           <Suspense>
             <MapView points={points()} class="h-64" />
           </Suspense>
         </Show>
-      </Card>
+      </div>
+</WidgetShell>
     </Show>
   );
 }

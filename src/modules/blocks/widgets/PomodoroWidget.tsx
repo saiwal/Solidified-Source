@@ -8,7 +8,7 @@ import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 type Phase = "work" | "break";
 
@@ -85,7 +85,8 @@ export default function PomodoroWidget(props: WidgetProps) {
   };
 
   return (
-    <Card class="px-4 py-4 text-center">
+    <WidgetShell>
+    <div class="px-(--ws-px) py-4 text-center">
       <p
         class="text-xs font-medium mb-1"
         classList={{
@@ -113,6 +114,7 @@ export default function PomodoroWidget(props: WidgetProps) {
           {t("widgets.pomo_reset")}
         </Button>
       </div>
-    </Card>
+    </div>
+    </WidgetShell>
   );
 }

@@ -5,6 +5,7 @@ import { cartCount, cartItems, nick, sellerOrders } from '../store';
 import { useI18n } from '@utsukta/spa-core/i18n';
 import { useViewerRole } from '@utsukta/spa-core/store/site-config';
 import { Badge } from "@ui/Badge";
+import { WidgetShell } from "@ui/WidgetShell";
 
 export default function CartWidget() {
   const { t } = useI18n();
@@ -15,21 +16,24 @@ export default function CartWidget() {
   const unfulfilledCount = () => sellerOrders().filter(o => !o.flags?.fulfilled).length;
 
   return (
-    <>
+    <div class="space-y-4">
       {/* Buyer cart summary */}
       <Show when={cartCount() > 0}>
-        <div class="bg-elevated border border-rim rounded-2xl p-4 flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <MdFillShopping_cart size={18} class="text-accent" />
-              <span class="text-sm font-semibold text-txt">{t('cart.cart_label')}</span>
-            </div>
+        <WidgetShell
+          icon={<MdFillShopping_cart size={16} class="text-accent" />}
+          title={t('cart.cart_label')}
+          actions={
             <Badge tone="accent">
               {cartCount()} {cartCount() === 1 ? t('cart.item_singular') : t('cart.item_plural')}
             </Badge>
-          </div>
-
-          <div class="flex flex-col gap-1">
+          }
+          footer={
+            <A href={`/cart/${nick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
+              {t('cart.view_cart')}
+            </A>
+          }
+        >
+          <div class="px-(--ws-px) py-3 flex flex-col gap-1">
             <Show
               when={cartItems().length > 0}
               fallback={<p class="text-xs text-muted">{t('cart.no_items_yet')}</p>}
@@ -48,24 +52,21 @@ export default function CartWidget() {
             </Show>
           </div>
 
-          <A
-            href={`/cart/${nick()}`}
-            class="text-center text-xs font-medium text-accent hover:text-accent-txt transition-colors"
-          >
-            {t('cart.view_cart')}
-          </A>
-        </div>
+        </WidgetShell>
       </Show>
 
       {/* Seller shop summary */}
       <Show when={isOwner() && sellerOrders().length > 0}>
-        <div class="bg-elevated border border-rim rounded-2xl p-4 flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <MdFillStore size={18} class="text-accent" />
-            <span class="text-sm font-semibold text-txt">{t('cart.orders_tab')}</span>
-          </div>
-
-          <div class="flex flex-col gap-1">
+        <WidgetShell
+          icon={<MdFillStore size={16} class="text-accent" />}
+          title={t('cart.orders_tab')}
+          footer={
+            <A href={`/cart/${nick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
+              {t('cart.orders_tab')} →
+            </A>
+          }
+        >
+          <div class="px-(--ws-px) py-3 flex flex-col gap-1">
             <Show when={unpaidCount() > 0}>
               <div class="flex items-center justify-between text-xs">
                 <span class="text-muted flex items-center gap-1">
@@ -82,14 +83,8 @@ export default function CartWidget() {
             </Show>
           </div>
 
-          <A
-            href={`/cart/${nick()}`}
-            class="text-center text-xs font-medium text-accent hover:text-accent-txt transition-colors"
-          >
-            {t('cart.orders_tab')} →
-          </A>
-        </div>
+        </WidgetShell>
       </Show>
-    </>
+    </div>
   );
 }

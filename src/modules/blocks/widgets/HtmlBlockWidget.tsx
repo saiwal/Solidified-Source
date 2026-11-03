@@ -17,6 +17,7 @@ import { renderBody, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody"
 import { handleNsfwToggleClick } from "@utsukta/spa-core/lib/nsfw";
 import { handleDecryptClick } from "@utsukta/spa-core/lib/decrypt-click";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 export default function HtmlBlockWidget(props: WidgetProps) {
   const { t } = useI18n();
@@ -55,7 +56,7 @@ export default function HtmlBlockWidget(props: WidgetProps) {
       when={hasContent()}
       fallback={
         <Show when={editingWidgets()}>
-          <Card class="px-4 py-3">
+          <Card class="px-(--ws-px) py-3">
             <p class="text-xs text-muted">
               {blockName() && block.error ? t("widgets.block_load_failed") : t("widgets.not_configured")}
             </p>
@@ -63,18 +64,13 @@ export default function HtmlBlockWidget(props: WidgetProps) {
         </Show>
       }
     >
-      <Card class="overflow-hidden">
-        <Show when={title()}>
-          <div class="px-4 py-3">
-            <h3 class="text-sm font-semibold text-txt">{title()}</h3>
-          </div>
-        </Show>
+      <WidgetShell title={title() || undefined}>
         <div
-          class="px-4 py-3 prose prose-sm dark:prose-invert max-w-none text-txt"
+          class="px-(--ws-px) py-3 prose prose-sm dark:prose-invert max-w-none text-txt"
           onClick={onBodyClick}
           innerHTML={content()}
         />
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

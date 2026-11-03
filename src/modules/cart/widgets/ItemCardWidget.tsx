@@ -13,6 +13,7 @@ import { MdFillAdd_shopping_cart, MdFillShopping_cart } from "solid-icons/md";
 import { fetchCatalog, addItem, type CatalogItem } from "../api";
 import { Button } from "@ui/Button";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 // One catalog fetch per channel per session, shared by every card instance
 const catalogCache = new Map<string, Promise<CatalogItem[]>>();
@@ -32,7 +33,7 @@ function cachedCatalog(nick: string): Promise<CatalogItem[]> {
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <Card class="px-4 py-3">
+      <Card class="px-(--ws-px) py-3">
         <p class="text-xs text-muted">{props.text}</p>
       </Card>
     </Show>
@@ -68,19 +69,19 @@ export default function ItemCardWidget(props: WidgetProps) {
   return (
     <Show when={sku()} fallback={<EditHint text={t("widgets.not_configured")} />}>
       <Show when={catalog.loading}>
-        <div class="bg-surface border border-rim rounded-xl overflow-hidden animate-pulse">
+        <WidgetShell><div class="animate-pulse">
           <div class="h-32 bg-elevated" />
           <div class="p-4 space-y-2">
             <div class="h-3 bg-elevated rounded w-3/4" />
             <div class="h-3 bg-elevated rounded w-1/3" />
           </div>
-        </div>
+        </div></WidgetShell>
       </Show>
 
       <Show when={!catalog.loading}>
         <Show when={item()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(it) => (
-            <Card class="overflow-hidden">
+            <WidgetShell>
               <Show when={it().photo_url}>
                 <img
                   src={it().photo_url!}
@@ -112,7 +113,7 @@ export default function ItemCardWidget(props: WidgetProps) {
                   </A>
                 </Show>
               </div>
-            </Card>
+            </WidgetShell>
           )}
         </Show>
       </Show>

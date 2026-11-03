@@ -54,7 +54,7 @@ import {
 } from "@/modules/manage/api";
 import { openPost } from "@/shared/views/modal-host";
 import { Button, IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { EmptyState } from "@ui/EmptyState";
 import { ErrorState } from "@ui/ErrorState";
 import { Field, Input, Textarea } from "@ui/Field";
@@ -962,7 +962,7 @@ function AnnouncementsGroup(props: {
           >
             <form
               id={formId}
-              class="px-4 py-4 space-y-4"
+              class="px-(--ws-px) py-4 space-y-4"
               onSubmit={(e) => {
                 e.preventDefault();
                 void post();
@@ -1479,26 +1479,25 @@ export default function NotificationsAside() {
   const degraded = () => connStatus() === "polling" || connStatus() === "error";
 
   return (
-    <Card raised role="region" aria-labelledby={titleId} class="overflow-hidden">
-      <div class="px-3.5 pt-3.5 pb-2.5 flex items-center gap-2">
-        {/* Status leads the heading, the way the other sidebar widgets label
-            themselves: quiet uppercase, dot first, one action at the far right. */}
-        <Show when={booted() && auth()?.isLoggedIn && degraded()}>
-          <span
-            class={`w-1.5 h-1.5 shrink-0 rounded-full ${connStatus() === "error" ? "bg-danger" : "bg-warning"}`}
-            title={connLabel()}
-            role="img"
-            aria-label={connLabel()}
-          />
-        </Show>
-        <h3
-          id={titleId}
-          title={t("ui.notifications_title")}
-          class="min-w-0 flex-1 truncate text-xs font-medium uppercase tracking-wider text-muted"
-        >
-          {t("ui.notifications_title")}
-        </h3>
-        <Show when={booted() && auth()?.isLoggedIn}>
+    <div role="region" aria-labelledby={titleId}>
+    <WidgetShell
+      title={
+        // The status dot leads the heading and keeps its label, so it rides
+        // in the title rather than the decorative icon slot.
+        <span class="flex items-center gap-2 min-w-0">
+          <Show when={booted() && auth()?.isLoggedIn && degraded()}>
+            <span
+              class={`w-1.5 h-1.5 shrink-0 rounded-full ${connStatus() === "error" ? "bg-danger" : "bg-warning"}`}
+              title={connLabel()}
+              role="img"
+              aria-label={connLabel()}
+            />
+          </Show>
+          <span id={titleId} title={t("ui.notifications_title")} class="truncate">{t("ui.notifications_title")}</span>
+        </span>
+      }
+      actions={
+        booted() && auth()?.isLoggedIn ? (
           <IconButton
             label={`${t("ui.refresh")} · ${connLabel()}`}
             size="sm"
@@ -1507,8 +1506,9 @@ export default function NotificationsAside() {
           >
             <MdFillRefresh class={`w-4 h-4 ${refreshing() ? "animate-spin" : ""}`} />
           </IconButton>
-        </Show>
-      </div>
+        ) : undefined
+      }
+    >
 
       <Show when={!booted()}>
         <div class="p-2 space-y-1.5" role="status" aria-label={t("ui.loading")}>
@@ -1644,6 +1644,7 @@ export default function NotificationsAside() {
           </div>
         </div>
       </Show>
-    </Card>
+    </WidgetShell>
+    </div>
   );
 }

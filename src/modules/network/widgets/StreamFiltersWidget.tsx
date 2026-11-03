@@ -49,7 +49,7 @@ import { fetchGroups, type PrivacyGroup } from "@/modules/directory/groups/api";
 import { Button, IconButton } from "@ui/Button";
 import PageActions, { usePageSearch } from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Badge, CountBadge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { Menu, MenuItem } from "@ui/Menu";
@@ -479,20 +479,21 @@ export default function StreamFiltersWidget() {
   }
 
   return (
-    <Card class="overflow-hidden">
+    <WidgetShell
+      title={t("network.filters")}
+      actions={
+        hasAnyFilter() ? (
+          <IconButton label={t("network.clear_filters")} size="sm" onClick={clearAll}>
+            <MdFillFilter_alt_off size={12} />
+          </IconButton>
+        ) : undefined
+      }
+    >
       {/* The panel is a drawer on mobile — clearing from the page's sheet
           saves opening it just to undo a filter. */}
       <PageActions mobileOnly actions={[
         { label: t("network.clear_filters"), icon: MdFillFilter_alt_off, onClick: clearAll, show: hasAnyFilter() },
       ]} />
-      <div class="px-4 py-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-txt">{t("network.filters")}</h2>
-        <Show when={hasAnyFilter()}>
-          <IconButton label={t("network.clear_filters")} size="sm" onClick={clearAll}>
-            <MdFillFilter_alt_off size={12} />
-          </IconButton>
-        </Show>
-      </div>
       <div class="px-3 py-2 space-y-1">
         {/* Search — plain text, or paste a post URL and press Enter to import */}
         <div class="px-0.5 pb-1">
@@ -918,7 +919,7 @@ export default function StreamFiltersWidget() {
               </Show>
             </button>
             <Show when={affinityOpen()}>
-              <div class="pl-4 pr-2 pt-2 pb-2">
+              <div class="pl-(--ws-px) pr-2 pt-2 pb-2">
                 <AffinitySlider
                   min={cmin() ? Number(cmin()) : 0}
                   max={cmax() ? Number(cmax()) : AFFINITY_MAX}
@@ -936,6 +937,6 @@ export default function StreamFiltersWidget() {
           </div>
         </Show>
       </div>
-    </Card>
+    </WidgetShell>
   );
 }

@@ -12,12 +12,13 @@ import { fetchArticle } from "../api";
 import { articlePath } from "@/shared/lib/shareLinks";
 import { bbcodeExcerpt } from "@utsukta/spa-core/lib/bbcode";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <Card class="px-4 py-3">
+      <Card class="px-(--ws-px) py-3">
         <p class="text-xs text-muted">{props.text}</p>
       </Card>
     </Show>
@@ -38,18 +39,18 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
   return (
     <Show when={uuid()} fallback={<EditHint text={t("widgets.not_configured")} />}>
       <Show when={article.loading}>
-        <div class="bg-surface border border-rim rounded-xl p-4 space-y-2 animate-pulse">
+        <WidgetShell><div class="p-4 space-y-2 animate-pulse">
           <div class="h-3 bg-elevated rounded w-2/3" />
           <div class="h-3 bg-elevated rounded w-full" />
           <div class="h-3 bg-elevated rounded w-1/2" />
-        </div>
+        </div></WidgetShell>
       </Show>
 
       <Show when={!article.loading}>
         <Show when={article()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(a) => (
-            <Card class="overflow-hidden">
-              <div class="px-4 py-3">
+            <WidgetShell>
+              <div class="px-(--ws-px) py-3">
                 <h4 class="text-sm font-semibold text-txt">{a().title}</h4>
                 <p class="text-[0.625rem] text-muted mt-0.5">
                   {new Date(a().created).toLocaleDateString(locale())}
@@ -58,12 +59,12 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
               </div>
               <A
                 href={articlePath(nick(), a())}
-                class="block px-4 py-2 border-t border-rim text-center text-xs font-medium
+                class="block px-(--ws-px) py-2 border-t border-rim text-center text-xs font-medium
                        text-accent-txt hover:bg-elevated transition-colors"
               >
                 {t("widgets.read_article")}
               </A>
-            </Card>
+            </WidgetShell>
           )}
         </Show>
       </Show>

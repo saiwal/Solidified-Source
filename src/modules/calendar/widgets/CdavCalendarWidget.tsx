@@ -33,7 +33,7 @@ import {
 import { Button, IconButton, iconButtonClass, primaryPill } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
 import { ColorSwatch } from "@ui/ColorSwatch";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 
 // ── small shared primitives ───────────────────────────────────────────────────
@@ -315,7 +315,7 @@ function Section(props: { label: string; children: JSX.Element }) {
         type="button"
         aria-expanded={open()}
         onClick={() => setOpen((o) => !o)}
-        class="w-full flex items-center justify-between px-4 pt-3 pb-1 text-xs font-semibold text-muted hover:text-txt transition-colors"
+        class="w-full flex items-center justify-between px-(--ws-px) pt-3 pb-1 text-xs font-semibold text-muted hover:text-txt transition-colors"
       >
         <span>{props.label}</span>
         <MdOutlineExpand_more class={`w-3.5 h-3.5 transition-transform ${open() ? "rotate-180" : ""}`} />
@@ -448,24 +448,27 @@ export default function CdavCalendarWidget() {
   const [data, { refetch }] = createQueryResource<CdavCalendarsData>("cdav-calendars", fetchCdavCalendars);
 
   return (
-    <Card raised class="overflow-hidden pb-2">
-      {/* Header */}
-      <div class="pl-4 pr-2 pt-3 flex items-center gap-2">
-        <MdOutlineCalendar_today class="w-4 h-4 text-muted shrink-0" />
-        <h3 class="text-sm font-semibold text-txt flex-1">{t("calendar.calendar_actions")}</h3>
-        <Show when={data()?.has_cdav}>
-          <IconButton label={t("calendar.import_ical")} size="sm" onClick={() => setDialog("import")}>
-            <MdOutlineFile_upload size={16} />
-          </IconButton>
-          <IconButton label={t("calendar.create_calendar")} size="sm" onClick={() => setDialog("create")}>
-            <MdOutlineAdd size={16} />
-          </IconButton>
-        </Show>
-      </div>
+    <WidgetShell
+      class="pb-2"
+      icon={<MdOutlineCalendar_today class="w-4 h-4" />}
+      title={t("calendar.calendar_actions")}
+      actions={
+        data()?.has_cdav ? (
+          <>
+            <IconButton label={t("calendar.import_ical")} size="sm" onClick={() => setDialog("import")}>
+              <MdOutlineFile_upload size={16} />
+            </IconButton>
+            <IconButton label={t("calendar.create_calendar")} size="sm" onClick={() => setDialog("create")}>
+              <MdOutlineAdd size={16} />
+            </IconButton>
+          </>
+        ) : undefined
+      }
+    >
 
       <Switch>
         <Match when={data.error}>
-          <div class="px-4 py-4 text-sm text-muted text-center">
+          <div class="px-(--ws-px) py-4 text-sm text-muted text-center">
             <button type="button" onClick={refetch} class="text-accent-txt hover:underline">{t("calendar.retry")}</button>
           </div>
         </Match>
@@ -478,7 +481,7 @@ export default function CdavCalendarWidget() {
           {(d) => (
             <>
               <Show when={!d().has_cdav}>
-                <p class="px-4 pt-2 text-xs text-muted">{t("calendar.no_cdav")}</p>
+                <p class="px-(--ws-px) pt-2 text-xs text-muted">{t("calendar.no_cdav")}</p>
               </Show>
 
               <Section label={t("calendar.channel_calendar")}>
@@ -522,6 +525,6 @@ export default function CdavCalendarWidget() {
           }}
         />
       </Show>
-    </Card>
+    </WidgetShell>
   );
 }

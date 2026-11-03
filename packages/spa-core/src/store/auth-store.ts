@@ -3,6 +3,7 @@ import { applyTypography, FONT_FAMILY_IDS, type FontSize, type FontFamily } from
 import { initBackground, type BgFit } from "../lib/background";
 import { initTheme } from "../lib/useTheme";
 import { applyCornerRadius, type CornerRadius } from "../lib/corner-radius";
+import { applyWidgetShell } from "../lib/widget-shell";
 import { initWidgetLayout } from "./widget-layout";
 import { initWidgetTemplates } from "./widget-templates";
 import { initNavOrder } from "./nav-order";
@@ -160,6 +161,7 @@ async function fetchAuthState(): Promise<AuthState> {
     if (validRadii.has(serverRadius)) {
       applyCornerRadius(serverRadius as CornerRadius);
     }
+    if (data.spa.widget_shell) applyWidgetShell(data.spa.widget_shell);
 
     // Reading prefs: the user's own, else the hub default (admin → themes).
     // Absent = neither set, so keep whatever is cached locally.

@@ -13,6 +13,7 @@ import { MdFillEvent } from "solid-icons/md";
 import { evTitle } from "../views/calUtils";
 import { fetchEvents, type CalEvent } from "../api";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function eventDate(ev: CalEvent, locale: string): string {
   const d = new Date(ev.start);
@@ -26,7 +27,7 @@ function eventDate(ev: CalEvent, locale: string): string {
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <Card class="px-4 py-3">
+      <Card class="px-(--ws-px) py-3">
         <p class="text-xs text-muted">{props.text}</p>
       </Card>
     </Show>
@@ -50,17 +51,17 @@ export default function EventCardWidget(props: WidgetProps) {
   return (
     <Show when={uri()} fallback={<EditHint text={t("widgets.not_configured")} />}>
       <Show when={event.loading}>
-        <div class="bg-surface border border-rim rounded-xl p-4 space-y-2 animate-pulse">
+        <WidgetShell><div class="p-4 space-y-2 animate-pulse">
           <div class="h-3 bg-elevated rounded w-2/3" />
           <div class="h-3 bg-elevated rounded w-1/2" />
-        </div>
+        </div></WidgetShell>
       </Show>
 
       <Show when={!event.loading}>
         <Show when={event()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(ev) => (
-            <Card class="overflow-hidden">
-              <div class="px-4 py-3 flex items-start gap-2">
+            <WidgetShell>
+              <div class="px-(--ws-px) py-3 flex items-start gap-2">
                 <MdFillEvent size={18} class="text-accent-txt shrink-0 mt-0.5" />
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-txt">{evTitle(ev(), "")}</p>
@@ -72,12 +73,12 @@ export default function EventCardWidget(props: WidgetProps) {
               </div>
               <A
                 href={`/cal/${nick()}`}
-                class="block px-4 py-2 border-t border-rim text-center text-xs font-medium
+                class="block px-(--ws-px) py-2 border-t border-rim text-center text-xs font-medium
                        text-accent-txt hover:bg-elevated transition-colors"
               >
                 {t("widgets.view_calendar")}
               </A>
-            </Card>
+            </WidgetShell>
           )}
         </Show>
       </Show>

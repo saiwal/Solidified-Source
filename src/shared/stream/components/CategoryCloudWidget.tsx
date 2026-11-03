@@ -16,12 +16,12 @@ import {
 import { Button } from "@ui/Button";
 import { Chip } from "@ui/Chip";
 import { Skeleton } from "@ui/Skeleton";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function CloudSkeleton() {
   const widths = [52, 70, 44, 80, 58, 64];
   return (
-    <div class="px-4 py-3 flex flex-wrap gap-1.5">
+    <div class="px-(--ws-px) py-3 flex flex-wrap gap-1.5">
       <For each={widths}>
         {(w) => <Skeleton rounded="full" class="h-6" style={{ width: `${w}px` }} />}
       </For>
@@ -50,10 +50,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
   const visible = () => (expanded() ? categories() : categories().slice(0, max()));
 
   return (
-    <Card class="overflow-hidden">
-      <CardHeader>
-        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.categories")}</h3>
-      </CardHeader>
+    <WidgetShell title={props.title ?? t("widgets.categories")}>
 
       <Show when={!props.data && remote.loading}>
         <CloudSkeleton />
@@ -63,10 +60,10 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
         <Show
           when={categories().length > 0}
           fallback={
-            <p class="px-4 py-3 text-xs text-muted">{t("widgets.no_categories")}</p>
+            <p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.no_categories")}</p>
           }
         >
-          <div class="px-4 py-3 flex flex-wrap gap-1.5">
+          <div class="px-(--ws-px) py-3 flex flex-wrap gap-1.5">
             <For each={visible()}>
               {(cat) => {
                 const isActive = () => props.activeSlug === cat.slug;
@@ -98,7 +95,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
           </Show>
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 };
 

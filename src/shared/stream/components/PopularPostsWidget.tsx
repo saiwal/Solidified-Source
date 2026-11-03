@@ -30,7 +30,7 @@ import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
 import { MdOutlineChat_bubble_outline } from "solid-icons/md";
 import { openPost } from "@/shared/views/modal-host";
 import { useNavigate } from "@solidjs/router";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Avatar } from "@ui/Avatar";
 
 // ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ function PopularSkeleton(props: { count: number }) {
     <ul class="divide-y divide-rim animate-pulse">
       <For each={Array(props.count).fill(0)}>
         {(_, i) => (
-          <li class="px-4 py-3 flex items-start gap-3">
+          <li class="px-(--ws-px) py-3 flex items-start gap-3">
             <div class="w-5 h-5 rounded-full bg-elevated shrink-0 mt-0.5" />
             <div class="flex-1 space-y-2">
               <div
@@ -126,7 +126,7 @@ function PopularPostRow(props: {
       <li>
         <button
           onClick={open}
-          class="w-full px-4 py-3 flex items-start gap-3 text-left
+          class="w-full px-(--ws-px) py-3 flex items-start gap-3 text-left
                  hover:bg-elevated transition-colors group"
         >
           {/* Rank badge */}
@@ -235,16 +235,12 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
     (props.data ?? remote() ?? []).slice(0, limit());
 
   return (
-    <Card class="overflow-hidden">
-      {/* Header */}
-      <CardHeader>
-        <h2 class="text-sm font-semibold text-txt">
-          {props.title ??
-            t(props.type === "articles" ? "widgets.popular_articles"
-              : props.type === "cards" ? "widgets.popular_cards"
-              : "widgets.popular_posts")}
-        </h2>
-      </CardHeader>
+    <WidgetShell title={
+        props.title ??
+        t(props.type === "articles" ? "widgets.popular_articles"
+          : props.type === "cards" ? "widgets.popular_cards"
+          : "widgets.popular_posts")
+      }>
 
       {/* Loading */}
       <Show when={!props.data && remote.loading}>
@@ -256,7 +252,7 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
         <Show
           when={posts().length > 0}
           fallback={
-            <p class="px-4 py-3 text-xs text-muted">
+            <p class="px-(--ws-px) py-3 text-xs text-muted">
               {t("widgets.no_popular")}
             </p>
           }
@@ -276,7 +272,7 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
           </ul>
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 };
 

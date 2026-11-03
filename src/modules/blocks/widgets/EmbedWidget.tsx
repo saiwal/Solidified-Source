@@ -7,6 +7,7 @@ import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function isEmbeddable(url: string): boolean {
   try {
@@ -28,18 +29,13 @@ export default function EmbedWidget(props: WidgetProps) {
       when={url() && isEmbeddable(url())}
       fallback={
         <Show when={editingWidgets()}>
-          <Card class="px-4 py-3">
+          <Card class="px-(--ws-px) py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
           </Card>
         </Show>
       }
     >
-      <Card class="overflow-hidden">
-        <Show when={title()}>
-          <div class="px-4 py-2.5">
-            <h3 class="text-sm font-semibold text-txt truncate">{title()}</h3>
-          </div>
-        </Show>
+      <WidgetShell title={title() || undefined}>
         <iframe
           src={url()}
           title={title() || "embed"}
@@ -49,7 +45,7 @@ export default function EmbedWidget(props: WidgetProps) {
           referrerpolicy="no-referrer"
           sandbox="allow-scripts allow-same-origin allow-popups"
         />
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

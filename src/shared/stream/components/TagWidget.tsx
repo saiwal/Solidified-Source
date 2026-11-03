@@ -19,7 +19,7 @@ import { rainbowStyle } from "./rainbow";
 import { Button } from "@ui/Button";
 import { Chip } from "@ui/Chip";
 import { Skeleton } from "@ui/Skeleton";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +55,7 @@ export async function fetchTags(params: {
 function TagSkeleton() {
   const widths = [60, 80, 45, 70, 55, 90, 50, 65];
   return (
-    <div class="px-4 py-3 flex flex-wrap gap-1.5">
+    <div class="px-(--ws-px) py-3 flex flex-wrap gap-1.5">
       <For each={widths}>
         {(w) => (
           <Skeleton
@@ -116,11 +116,18 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
   const hiddenCount = () => tags().length - max();
 
   return (
-    <Card class="overflow-hidden">
-      {/* Header */}
-      <CardHeader>
-        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.tags")}</h3>
-      </CardHeader>
+    <WidgetShell
+      title={props.title ?? t("widgets.tags")}
+      footer={
+        !remote.loading && tags().length > max() ? (
+          <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)}>
+            {expanded()
+              ? t("ui.show_less")
+              : t("widgets.show_more_tags", { count: hiddenCount() })}
+          </Button>
+        ) : undefined
+      }
+    >
 
       {/* Loading */}
       <Show when={!props.data && remote.loading}>
@@ -132,10 +139,10 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
         <Show
           when={tags().length > 0}
           fallback={
-            <p class="px-4 py-3 text-xs text-muted">{t("widgets.no_tags")}</p>
+            <p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.no_tags")}</p>
           }
         >
-          <div class="px-4 py-3 flex flex-wrap gap-1.5">
+          <div class="px-(--ws-px) py-3 flex flex-wrap gap-1.5">
             <For each={visibleTags()}>
               {(tag) => {
                 const isActive = () => props.activeTag === tag.name;
@@ -160,17 +167,9 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
             </For>
           </div>
 
-          {/* Expand / collapse */}
-          <Show when={tags().length > max()}>
-            <Button variant="ghost" size="sm" class="w-full" onClick={() => setExpanded((v) => !v)}>
-              {expanded()
-                ? t("ui.show_less")
-                : t("widgets.show_more_tags", { count: hiddenCount() })}
-            </Button>
-          </Show>
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 };
 

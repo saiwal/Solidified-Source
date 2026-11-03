@@ -8,7 +8,7 @@ import { For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Avatar } from "@ui/Avatar";
 import { ListRow } from "@ui/ListRow";
 
@@ -33,10 +33,8 @@ export default function BirthdaysWidget() {
 
   return (
     <Show when={(list() ?? []).length > 0}>
-      <Card class="p-4">
-        <h3 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-          {t("widgets.birthdays")}
-        </h3>
+      <WidgetShell title={t("widgets.birthdays")}>
+<div class="px-(--ws-px) py-3">
         <For each={list()}>
           {(b) => (
             <ListRow
@@ -48,7 +46,8 @@ export default function BirthdaysWidget() {
             />
           )}
         </For>
-      </Card>
+      </div>
+</WidgetShell>
     </Show>
   );
 }

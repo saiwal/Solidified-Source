@@ -47,6 +47,7 @@ import WidgetArrangementEditor, {
 } from "./WidgetArrangementEditor";
 import type { WidgetSlotName } from "@utsukta/spa-core/types/module.types";
 
+import { WidgetKeyContext } from "@utsukta/spa-core/lib/widget-shell";
 interface SlotProps {
   name: WidgetSlotName;
   moduleId?: string;
@@ -336,7 +337,9 @@ const Slot: Component<SlotProps> = (props) => {
             use:rowSpan={isFullWidth ? 16 : undefined}
             use:helpable={widgetHelpTarget(g.widget)}
           >
-            <g.Widget />
+            <WidgetKeyContext.Provider value={g.widget.id}>
+              <g.Widget />
+            </WidgetKeyContext.Provider>
           </div>
         )}
       </For>
@@ -355,7 +358,9 @@ const Slot: Component<SlotProps> = (props) => {
                   use:rowSpan={isFullWidth ? 16 : undefined}
                   use:helpable={widgetHelpTarget(entry.widget)}
                 >
-                  <Widget config={entry.config} />
+                  <WidgetKeyContext.Provider value={entry.key}>
+                    <Widget config={entry.config} />
+                  </WidgetKeyContext.Provider>
                 </div>
               );
             }}

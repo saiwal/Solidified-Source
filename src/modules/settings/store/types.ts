@@ -18,6 +18,7 @@ export interface DisplaySettings {
   composer_mode: "modal" | "dock" | "page";
   post_mode: "modal" | "dock" | "page";
   thread_mode: "threaded" | "flat";
+  widget_shell: "card" | "section" | "banded" | "rail" | "glass" | "legend" | "tab" | "compact" | "fold";
   show_emoji_images: number; // 0 | 1
   reply_mention: number; // 0 | 1
 }

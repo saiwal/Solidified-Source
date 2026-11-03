@@ -11,13 +11,14 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchPhotoAlbum } from "../api/api";
 import { variantSrc } from "../api/api";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 const MAX_THUMBS = 6;
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <Card class="px-4 py-3">
+      <Card class="px-(--ws-px) py-3">
         <p class="text-xs text-muted">{props.text}</p>
       </Card>
     </Show>
@@ -53,12 +54,14 @@ export default function AlbumStripWidget(props: WidgetProps) {
           when={(data()?.photos.length ?? 0) > 0}
           fallback={<EditHint text={t("widgets.item_unavailable")} />}
         >
-          <Card class="overflow-hidden">
-            <div class="px-4 py-3">
-              <h3 class="text-sm font-semibold text-txt truncate">
-                {data()!.album_name || t("widgets.album_strip")}
-              </h3>
-            </div>
+          <WidgetShell
+            title={data()!.album_name || t("widgets.album_strip")}
+            footer={
+              <A href={`/photos/${nick()}/album/${album()}`} class="mx-auto font-medium text-accent hover:underline">
+                {t("widgets.view_album")}
+              </A>
+            }
+          >
             <div class="p-2 grid grid-cols-3 gap-1">
               <For each={data()!.photos.slice(0, MAX_THUMBS)}>
                 {(photo) => (
@@ -83,14 +86,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
                 )}
               </For>
             </div>
-            <A
-              href={`/photos/${nick()}/album/${album()}`}
-              class="block px-4 py-2 border-t border-rim text-center text-xs font-medium
-                     text-accent hover:bg-elevated transition-colors"
-            >
-              {t("widgets.view_album")}
-            </A>
-          </Card>
+          </WidgetShell>
         </Show>
       </Show>
     </Show>

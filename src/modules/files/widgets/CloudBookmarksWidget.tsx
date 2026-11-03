@@ -5,7 +5,7 @@ import { MdOutlineBookmark_border, MdOutlineDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useCloudBookmarks } from "../bookmarks";
 import { IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 /** Bookmarks pointing into a /cloud/ — folders open in the file view, files preview.
  *  Renders nothing until there is at least one, so an empty sidebar slot (or one
@@ -20,12 +20,11 @@ export default function CloudBookmarksWidget() {
 
   return (
     <Show when={bm.enabled() && bm.list().length > 0}>
-      <Card raised class="overflow-hidden">
-        <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
-          <MdOutlineBookmark_border class="w-4 h-4 text-accent shrink-0" />
-          <h3 class="text-sm font-semibold text-txt flex-1">{t("files_mod.bookmarked_files")}</h3>
-          <span class="text-xs text-muted tabular-nums">{bm.list().length}</span>
-        </div>
+      <WidgetShell
+        icon={<MdOutlineBookmark_border class="w-4 h-4 text-accent" />}
+        title={t("files_mod.bookmarked_files")}
+        actions={<span class="text-xs text-muted tabular-nums">{bm.list().length}</span>}
+      >
 
         <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
           <For each={bm.list()}>
@@ -51,7 +50,7 @@ export default function CloudBookmarksWidget() {
             )}
           </For>
         </div>
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

@@ -4,7 +4,7 @@ import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import NoteComposer from "@/shared/editor/composers/NoteComposer";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 // Lets you jot a private note from any page's sidebar without navigating to
 // /notepad. Reuses the same composer/scope ("note:new") as the notepad page
@@ -14,24 +14,22 @@ export default function QuickNoteWidget() {
   const { t } = useI18n();
 
   return (
-    <Card raised class="overflow-hidden">
-      <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between">
-        <span class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted">
-          <MdOutlineEdit_note size={14} />
-          {t("widgets.note_quick")}
-        </span>
+    <WidgetShell
+      icon={<MdOutlineEdit_note size={14} />}
+      title={t("widgets.note_quick")}
+      actions={
         <A href="/notepad" class="text-xs text-accent hover:underline">
           {t("widgets.view_all")}
         </A>
-      </div>
-
-      <div class="px-3.5 pb-3.5">
+      }
+    >
+      <div class="px-(--ws-px) py-3">
         <NoteComposer
           nick={auth()?.nick || ""}
           minimal
           onSaved={() => toast.success(t("notepad.quick_saved"))}
         />
       </div>
-    </Card>
+    </WidgetShell>
   );
 }

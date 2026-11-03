@@ -23,6 +23,8 @@ import { DataTable } from "./DataTable";
 import { Stat } from "./Stat";
 import { ColorSwatch } from "./ColorSwatch";
 import { FileDropZone } from "./FileDropZone";
+import { WidgetShell } from "./WidgetShell";
+import { WIDGET_SHELLS, setPageWidgetShell } from "@utsukta/spa-core/lib/widget-shell";
 
 export const html = () =>
   renderToString(() => (
@@ -74,5 +76,22 @@ export const html = () =>
       <Stat label="Total" value={42} accent />
       <ColorSwatch value="#336699" onChange={() => {}} label="Accent colour" />
       <FileDropZone onFiles={() => {}} label="Upload files" hint="or drag them" />
+      <WidgetShell title="Shell title" actions={<a href="/x">Shell action</a>} footer={<a href="/y">Shell footer</a>}>Shell body</WidgetShell>
+      <WidgetShell>Bare body</WidgetShell>
     </div>
   ));
+
+// One render per shell look — each must keep the WidgetShellProps semantics.
+export const shells = () =>
+  Object.fromEntries(
+    WIDGET_SHELLS.map((id) => {
+      setPageWidgetShell(id);
+      const out = renderToString(() => (
+        <div>
+          <WidgetShell title="Shell title" actions={<a href="/x">Shell action</a>} footer={<a href="/y">Shell footer</a>}>Shell body</WidgetShell>
+          <WidgetShell>Bare body</WidgetShell>
+        </div>
+      ));
+      return [id, out];
+    }),
+  );

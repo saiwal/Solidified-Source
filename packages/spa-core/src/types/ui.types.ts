@@ -158,6 +158,25 @@ export interface CardProps extends JSX.HTMLAttributes<HTMLDivElement> {
 export type CardHeaderProps = JSX.HTMLAttributes<HTMLDivElement>;
 
 /**
+ * The frame a widget renders in. Which look it gets is the user's display pref
+ * (lib/widget-shell.ts), so every shell must keep the same semantics: a
+ * <section>, the title as an <h3>, actions grouped at the header's end, the
+ * footer in a <footer>. Like Card, the body gets no padding of its own.
+ */
+export interface WidgetShellProps {
+  /** Omitted together with `actions` = no header at all. */
+  title?: JSX.Element;
+  /** Decorative, before the title. */
+  icon?: JSX.Element;
+  /** Right side of the header: IconButtons, links, a MenuButton. */
+  actions?: JSX.Element;
+  /** Secondary actions/links under the body. Omitted = no footer. */
+  footer?: JSX.Element;
+  class?: string;
+  children?: JSX.Element;
+}
+
+/**
  * A modal dialog layer (backdrop + top layer). Must trap focus, close on
  * Escape, make the page inert and restore focus to the opener — solidified
  * uses native <dialog>.showModal() for all of that.

@@ -4,7 +4,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchConnections } from "../api";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Avatar } from "@ui/Avatar";
 
 export default function ChannelConnectionsWidget() {
@@ -21,15 +21,11 @@ export default function ChannelConnectionsWidget() {
 
   return (
     <Show when={!data.loading && !data()?.hidden && conns().length > 0}>
-      <Card class="p-3">
-        <div class="flex items-center justify-between mb-2.5">
-          <h3 class="text-xs font-semibold text-muted uppercase tracking-wide">
-            {t("widgets.connections")}
-          </h3>
-          <Show when={total() > conns().length}>
-            <span class="text-xs text-muted">{total()}</span>
-          </Show>
-        </div>
+      <WidgetShell
+        title={t("widgets.connections")}
+        actions={total() > conns().length ? <span class="text-xs text-muted tabular-nums">{total()}</span> : undefined}
+      >
+<div class="p-3">
 
         <div class="grid grid-cols-4 gap-1.5">
           <For each={conns()}>
@@ -61,7 +57,8 @@ export default function ChannelConnectionsWidget() {
             </Show>
           </div>
         </Show>
-      </Card>
+      </div>
+</WidgetShell>
     </Show>
   );
 }

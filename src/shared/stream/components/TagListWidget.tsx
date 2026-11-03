@@ -18,7 +18,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { fetchTags, type TagItem, type TagWidgetProps } from "./TagWidget";
 import { Button } from "@ui/Button";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function ListSkeleton() {
   const widths = [55, 75, 40, 65, 50];
@@ -26,7 +26,7 @@ function ListSkeleton() {
     <ul class="divide-y divide-rim animate-pulse">
       <For each={widths}>
         {(w) => (
-          <li class="px-4 py-2.5 flex items-center gap-2">
+          <li class="px-(--ws-px) py-2.5 flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-elevated shrink-0" />
             <div class="h-2.5 bg-elevated rounded" style={{ width: `${w}%` }} />
             <div class="ml-auto h-2.5 bg-elevated rounded w-5 shrink-0" />
@@ -60,10 +60,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
   const hiddenCount = () => tags().length - max();
 
   return (
-    <Card class="overflow-hidden">
-      <CardHeader>
-        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.tags")}</h3>
-      </CardHeader>
+    <WidgetShell title={props.title ?? t("widgets.tags")}>
 
       <Show when={!props.data && remote.loading}>
         <ListSkeleton />
@@ -73,7 +70,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
         <Show
           when={tags().length > 0}
           fallback={
-            <p class="px-4 py-3 text-xs text-muted">{t("widgets.no_tags")}</p>
+            <p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.no_tags")}</p>
           }
         >
           <ul class="divide-y divide-rim max-h-80 overflow-y-auto">
@@ -86,7 +83,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
                   <li>
                     <button
                       onClick={() => props.onTagClick?.(tag.name)}
-                      class="w-full px-4 py-2.5 flex items-center gap-2 text-left
+                      class="w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left
                              hover:bg-elevated transition-colors group"
                       classList={{ "bg-accent-muted": isActive() }}
                     >
@@ -136,7 +133,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
           </Show>
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 };
 

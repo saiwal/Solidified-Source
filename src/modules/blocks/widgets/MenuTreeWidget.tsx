@@ -10,12 +10,13 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMenuTree } from "@utsukta/spa-core/lib/menus";
 import { MenuAccordion } from "./menu-shared";
-import { Card, CardHeader } from "@ui/Card";
+import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function EditHint(props: { text: string }) {
   return (
     <Show when={editingWidgets()}>
-      <Card class="px-4 py-3">
+      <Card class="px-(--ws-px) py-3">
         <p class="text-xs text-muted">{props.text}</p>
       </Card>
     </Show>
@@ -38,16 +39,11 @@ export default function MenuTreeWidget(props: WidgetProps) {
     <Show when={menuName()} fallback={<EditHint text={t("widgets.not_configured")} />}>
       <Show when={!tree.error} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
         <Show when={tree()?.items.length}>
-          <nav class="bg-surface border border-rim rounded-xl overflow-hidden">
-            <Show when={title()}>
-              <CardHeader>
-                <h3 class="text-sm font-semibold text-txt">{title()}</h3>
-              </CardHeader>
-            </Show>
-            <div class="p-1.5">
+          <WidgetShell title={title() || undefined}>
+            <nav class="p-1.5" aria-label={title() || menuName()}>
               <MenuAccordion items={tree()!.items} />
-            </div>
-          </nav>
+            </nav>
+          </WidgetShell>
         </Show>
       </Show>
     </Show>

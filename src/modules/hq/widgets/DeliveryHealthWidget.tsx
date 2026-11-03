@@ -7,7 +7,7 @@ import { For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 interface Health {
   ok: number; pending: number; failed: number; total: number; oldest: string | null;
@@ -31,10 +31,8 @@ export default function DeliveryHealthWidget() {
 
   return (
     <Show when={health()?.total}>
-      <Card class="p-4">
-        <h3 class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-          {t("widgets.delivery_health")}
-        </h3>
+      <WidgetShell title={t("widgets.delivery_health")}>
+<div class="px-(--ws-px) py-3">
         <p class="text-sm text-txt">
           {t("widgets.delivery_summary", { pct: pct(), total: health()!.total })}
         </p>
@@ -54,7 +52,8 @@ export default function DeliveryHealthWidget() {
             </For>
           </ul>
         </Show>
-      </Card>
+      </div>
+</WidgetShell>
     </Show>
   );
 }

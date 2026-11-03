@@ -11,6 +11,7 @@ import { usePostHeight, setPostHeight } from "@utsukta/spa-core/store/post-heigh
 import { useCommentOrder, setCommentOrder, type CommentOrder } from "@utsukta/spa-core/store/comment-order";
 import { defaultComposerMode, setDefaultComposerMode, defaultPostMode, setDefaultPostMode } from "@/shared/views/modal-host";
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
+import { applyWidgetShell, widgetShell, WIDGET_SHELLS } from "@utsukta/spa-core/lib/widget-shell";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
 import { setEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
 import { setReplyMention } from "@utsukta/spa-core/store/reply-mention";
@@ -92,6 +93,7 @@ export default function DisplaySection() {
       setCornerRadius(d.corner_radius as CornerRadius);
       applyCornerRadius(d.corner_radius as CornerRadius);
     }
+    if (d.widget_shell) applyWidgetShell(d.widget_shell);
     setEmojiAsImages(!!d.show_emoji_images);
     setReplyMention(!!d.reply_mention);
   });
@@ -326,6 +328,15 @@ export default function DisplaySection() {
             </Select>
           </Field>
 
+
+          {/* Widget frame (@ui/WidgetShell) — previews live, saved with the form */}
+          <Field label={t("settings.widget_shell")} hint={t("settings.widget_shell_hint")}>
+            <Select class="w-full" name="widget_shell" onChange={(e) => applyWidgetShell(e.currentTarget.value)}>
+              <For each={WIDGET_SHELLS}>
+                {(id) => <option value={id} selected={id === widgetShell()}>{t(`settings.widget_shell_${id}`)}</option>}
+              </For>
+            </Select>
+          </Field>
 
           {/* Corner roundness */}
           <Field label={t("settings.corner_radius")} hint={t("settings.corner_radius_hint")}>

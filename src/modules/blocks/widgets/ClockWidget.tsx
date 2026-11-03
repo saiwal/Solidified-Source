@@ -8,6 +8,7 @@ import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -111,16 +112,14 @@ export default function ClockWidget(props: WidgetProps) {
       when={configured()}
       fallback={
         <Show when={editingWidgets()}>
-          <Card class="px-4 py-3">
+          <Card class="px-(--ws-px) py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
           </Card>
         </Show>
       }
     >
-      <div
-        class="bg-surface border border-rim rounded-xl px-4 py-4"
-        classList={{ "text-center": mode() !== "world" }}
-      >
+      <WidgetShell>
+      <div class="px-(--ws-px) py-4" classList={{ "text-center": mode() !== "world" }}>
         <Show when={label()}>
           <p class="text-xs font-medium text-muted mb-1 truncate">{label()}</p>
         </Show>
@@ -145,10 +144,10 @@ export default function ClockWidget(props: WidgetProps) {
         </Show>
 
         <Show when={mode() === "world"}>
-          <ul class="divide-y divide-rim -mx-4 -mb-4 mt-1">
+          <ul class="divide-y divide-rim -mx-(--ws-px) -mb-4 mt-1">
             <For each={zones()}>
               {(zone) => (
-                <li class="flex items-baseline justify-between px-4 py-2">
+                <li class="flex items-baseline justify-between px-(--ws-px) py-2">
                   <span class="text-sm text-txt truncate">
                     {zone.label || zone.timezone.split("/").pop()?.replace(/_/g, " ")}
                   </span>
@@ -164,6 +163,7 @@ export default function ClockWidget(props: WidgetProps) {
           </ul>
         </Show>
       </div>
+      </WidgetShell>
     </Show>
   );
 }

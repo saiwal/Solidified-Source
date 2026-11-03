@@ -10,7 +10,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { Button } from "@ui/Button";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,7 +50,7 @@ function CategorySkeleton() {
     <ul class="divide-y divide-rim animate-pulse">
       <For each={widths}>
         {(w) => (
-          <li class="px-4 py-2.5 flex items-center gap-2">
+          <li class="px-(--ws-px) py-2.5 flex items-center gap-2">
             <div class="w-2 h-2 rounded-full bg-elevated shrink-0" />
             <div class="h-2.5 bg-elevated rounded" style={{ width: `${w}%` }} />
             <div class="ml-auto h-2.5 bg-elevated rounded w-5 shrink-0" />
@@ -108,11 +108,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
   const visible = () => (expanded() ? categories() : categories().slice(0, max()));
 
   return (
-    <Card class="overflow-hidden">
-      {/* Header */}
-      <CardHeader>
-        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.categories")}</h3>
-      </CardHeader>
+    <WidgetShell title={props.title ?? t("widgets.categories")}>
 
       {/* Loading */}
       <Show when={!props.data && remote.loading}>
@@ -124,7 +120,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
         <Show
           when={categories().length > 0}
           fallback={
-            <p class="px-4 py-3 text-xs text-muted">
+            <p class="px-(--ws-px) py-3 text-xs text-muted">
               {t("widgets.no_categories")}
             </p>
           }
@@ -140,7 +136,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
                   <li>
                     <button
                       onClick={() => props.onCategoryClick?.(cat.slug)}
-                      class="w-full px-4 py-2.5 flex items-center gap-2 text-left
+                      class="w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left
                              hover:bg-elevated transition-colors group"
                       classList={{ "bg-accent-muted": isActive() }}
                     >
@@ -190,7 +186,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
           </Show>
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 };
 

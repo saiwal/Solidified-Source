@@ -23,7 +23,7 @@ import {
   type ArchiveWidgetProps,
 } from "./ArchiveWidget";
 import { Button } from "@ui/Button";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 // 2000-01-02 is a Sunday — anchor for building a Sun-first weekday label row.
 function weekdayLabels(locale: string): string[] {
@@ -126,10 +126,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
   };
 
   return (
-    <Card class="overflow-hidden">
-      <CardHeader>
-        <h3 class="text-sm font-semibold text-txt">{props.title ?? t("widgets.archive")}</h3>
-      </CardHeader>
+    <WidgetShell title={props.title ?? t("widgets.archive")}>
 
       <div class="px-3 pt-3">
         {/* Month/year navigation */}
@@ -220,7 +217,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
           </div>
         </div>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 };
 

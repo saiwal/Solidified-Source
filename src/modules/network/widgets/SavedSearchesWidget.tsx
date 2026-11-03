@@ -6,7 +6,7 @@ import { savedSearches, loadSavedSearches, removeSavedSearch, type SavedSearch }
 import { applyNetwork } from "../store";
 import { parseNetworkParams } from "../api";
 import { IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 const ALL_PARAM_KEYS = [
   "order", "search", "tag", "lang", "star", "pf", "conv", "dm", "event",
@@ -28,11 +28,10 @@ export default function SavedSearchesWidget() {
 
   return (
     <Show when={savedSearches().length > 0}>
-      <Card class="overflow-hidden">
-        <div class="px-4 py-3 flex items-center gap-2">
-          <MdFillBookmarks size={14} class="text-muted shrink-0" />
-          <h2 class="text-sm font-semibold text-txt">{t("network.saved_searches")}</h2>
-        </div>
+      <WidgetShell
+        icon={<MdFillBookmarks size={14} />}
+        title={t("network.saved_searches")}
+      >
         <div class="px-3 py-2 space-y-1 max-h-[26rem] overflow-y-auto">
           <For each={savedSearches()}>
             {(s) => (
@@ -59,7 +58,7 @@ export default function SavedSearchesWidget() {
             )}
           </For>
         </div>
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

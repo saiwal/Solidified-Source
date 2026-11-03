@@ -16,7 +16,7 @@ const server = await createServer({
   server: { middlewareMode: true },
 });
 try {
-  const { html } = await server.ssrLoadModule("/packages/spa-ui/src/ui.check.tsx");
+  const { html, shells } = await server.ssrLoadModule("/packages/spa-ui/src/ui.check.tsx");
   const out = html();
   const fors = [...out.matchAll(/for="([^"]+)"/g)].map((m) => m[1]);
   const ids = [...out.matchAll(/<(?:input|select)[^>]*?\sid="([^"]+)"/g)].map((m) => m[1]);
@@ -107,6 +107,20 @@ try {
   const drop = out.match(/<input[^>]*type="file"[^>]*>/)?.[0] ?? "";
   assert(/aria-label="Upload files"/.test(drop), "a drop zone names its picker");
   assert.match(out, /or drag them/, "a drop zone shows its hint");
+  const shell = out.match(/<section[^>]*>(?:(?!<\/section>)[\s\S])*Shell body[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert.match(shell, /<header[\s\S]*<h3[^>]*>Shell title<\/h3>[\s\S]*Shell action[\s\S]*<\/header>/, "a widget shell titles with an h3, actions after it in the header");
+  assert.match(shell, /<footer[^>]*>[\s\S]*Shell footer[\s\S]*<\/footer>/, "a widget shell puts its footer in a footer");
+  const bare = out.match(/<section[^>]*>(?:(?!<\/section>)[\s\S])*Bare body[\s\S]*?<\/section>/)?.[0] ?? "";
+  assert(bare && !/<footer|<header/.test(bare), "a widget shell without a title or footer renders neither");
+  for (const [id, sh] of Object.entries(shells())) {
+    const full = sh.match(/<section[^>]*>(?:(?!<\/section>)[\s\S])*Shell body[\s\S]*?<\/section>/)?.[0] ?? "";
+    assert.match(full, /<header[\s\S]*<h3[^>]*>[\s\S]*Shell title[\s\S]*<\/h3>[\s\S]*Shell action[\s\S]*<\/header>/, `${id}: h3 title, actions after it in the header`);
+    assert.match(full, /<footer[^>]*>[\s\S]*Shell footer[\s\S]*<\/footer>/, `${id}: footer in a footer`);
+    assert.match(full, /--ws-px/, `${id}: sets the body inset`);
+    const bare = sh.match(/<section[^>]*>(?:(?!<\/section>)[\s\S])*Bare body[\s\S]*?<\/section>/)?.[0] ?? "";
+    assert(bare && !/<footer|<header/.test(bare), `${id}: no title or footer renders neither`);
+    if (id === "fold") assert.match(full, /<h3[^>]*><button[^>]*aria-expanded="true"/, "fold: the toggle is a button inside the heading");
+  }
   console.log("check-ui: ok");
 } finally {
   await server.close();

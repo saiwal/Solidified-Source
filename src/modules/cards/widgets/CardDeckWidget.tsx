@@ -16,7 +16,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchDeckDetail } from "../api";
 import { cardPath } from "@/shared/lib/shareLinks";
 import { IconButton } from "@ui/Button";
-import { Card, CardHeader } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 interface DeckItem {
   name: string;
@@ -67,15 +67,12 @@ export default function CardDeckWidget() {
   }
 
   return (
-    <Card class="overflow-hidden">
-      <CardHeader>
-        <h3 class="text-sm font-semibold text-txt">{t("widgets.card_deck")}</h3>
-      </CardHeader>
+    <WidgetShell title={t("widgets.card_deck")}>
 
       <Show when={!data.loading}>
         <Show
           when={(data() ?? []).length > 0}
-          fallback={<p class="px-4 py-3 text-xs text-muted">{t("cards.deck_no_decks")}</p>}
+          fallback={<p class="px-(--ws-px) py-3 text-xs text-muted">{t("cards.deck_no_decks")}</p>}
         >
           <ul class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
             <For each={data()}>
@@ -83,7 +80,7 @@ export default function CardDeckWidget() {
                 <li>
                   <A
                     href={`/cards/${nick()}/deck/${encodeURIComponent(deck.name)}`}
-                    class="w-full px-4 py-2.5 flex items-center gap-2 text-left hover:bg-elevated transition-colors group"
+                    class="w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left hover:bg-elevated transition-colors group"
                   >
                     <StackGlyph />
                     <span class="flex-1 text-sm truncate text-txt group-hover:text-accent transition-colors">
@@ -105,6 +102,6 @@ export default function CardDeckWidget() {
           </ul>
         </Show>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 }

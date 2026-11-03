@@ -5,6 +5,7 @@ import { applyTheme, applyCustomThemeColors } from "./useTheme";
 import { applyTypographyCSS, loadTypography, FONT_FAMILY_IDS, type FontSize, type FontFamily } from "./typography";
 import { applyCornerRadiusCSS, loadCornerRadius, type CornerRadius } from "./corner-radius";
 import { initPageWidgetLayout } from "../store/widget-layout";
+import { loadWidgetShell, setPageWidgetShell } from "./widget-shell";
 import { initPageWidgetTemplates } from "../store/widget-templates";
 import { THEMES, type ThemeId, type CustomThemeColors } from "../types/theme.types";
 
@@ -44,6 +45,7 @@ export function useChannelTheme(channelNick: () => string) {
       loadBackground();
       loadTypography();
       loadCornerRadius();
+      loadWidgetShell();
       applyTheme(((localStorage.getItem("hz-theme") ?? "light") as ThemeId));
       initPageWidgetLayout(null);
       initPageWidgetTemplates(null);
@@ -81,5 +83,6 @@ export function useChannelTheme(channelNick: () => string) {
     // Apply the channel's corner radius (CSS only — do not overwrite user's localStorage)
     const cornerRadius = (VALID_RADII.has(spa.corner_radius ?? "") ? spa.corner_radius : "default") as CornerRadius;
     applyCornerRadiusCSS(cornerRadius);
+    setPageWidgetShell(spa.widget_shell);
   });
 }

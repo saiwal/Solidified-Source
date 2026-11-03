@@ -23,7 +23,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchRooms } from "../api";
 import { isChatUnread, isRemoteChatUnread, markRemoteChatSeen } from "../unread";
 import { Button, IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { EmptyState } from "@ui/EmptyState";
 
 /**
@@ -166,31 +166,26 @@ export default function BookmarkedRoomsWidget() {
   const { t } = useI18n();
   return (
     <Show when={isLocalUser()}>
-      <Card raised class="overflow-hidden">
-
-        {/* Header */}
-        <div class="px-4 pt-3.5 pb-3 flex items-center gap-2">
-          <MdOutlineBookmark_border class="w-4 h-4 text-accent shrink-0" />
-          <h3 class="text-sm font-semibold text-txt flex-1">{t("chat.bookmarked_rooms")}</h3>
-          <Show when={!loading() && bookmarks().length > 0}>
-            <span class="text-xs text-muted tabular-nums">{bookmarks().length}</span>
-          </Show>
-        </div>
+      <WidgetShell
+        icon={<MdOutlineBookmark_border class="w-4 h-4 text-accent" />}
+        title={t("chat.bookmarked_rooms")}
+        actions={!loading() && bookmarks().length > 0 ? <span class="text-xs text-muted tabular-nums">{bookmarks().length}</span> : undefined}
+      >
 
         {/* Skeleton */}
         <Show when={loading()}>
-          <div class="px-4 py-3 space-y-2 animate-pulse">
+          <div class="px-(--ws-px) py-3 space-y-2 animate-pulse">
             <For each={[1, 2, 3]}>{() => <div class="h-3 bg-elevated rounded w-4/5" />}</For>
           </div>
         </Show>
 
         {/* Empty */}
         <Show when={!loading() && bookmarks().length === 0}>
-          <EmptyState size="sm" class="px-4">{t("chat.no_bookmarks")}</EmptyState>
+          <EmptyState size="sm" class="px-(--ws-px)">{t("chat.no_bookmarks")}</EmptyState>
         </Show>
 
         <BookmarkedRoomsList />
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

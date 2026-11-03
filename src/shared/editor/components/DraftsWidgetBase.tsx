@@ -5,7 +5,7 @@ import type { SavedDraft } from "../store/createComposerStore";
 import { listServerDrafts, deleteServerDraft, draftsVersion } from "../api/drafts";
 import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
 import { IconButton } from "@ui/Button";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 // Shared list UI behind the per-module drafts widgets (articles, webpages,
 // wiki, …) — one card with header/skeleton/empty-state/list chrome, fetching
@@ -49,7 +49,7 @@ function formatDate(ms: number): string {
 }
 
 const SkeletonRow = () => (
-  <div class="px-4 py-3 animate-pulse space-y-2">
+  <div class="px-(--ws-px) py-3 animate-pulse space-y-2">
     <div class="h-3.5 bg-overlay rounded w-2/3" />
     <div class="h-3 bg-overlay rounded w-4/5" />
     <div class="flex items-center justify-between pt-0.5">
@@ -106,19 +106,15 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
   }
 
   return (
-    <Card raised class="flex flex-col overflow-hidden">
-
-      {/* Header */}
-      <div class="px-4 pt-3.5 pb-3 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2">
-          <MdOutlineDescription class="w-4 h-4 text-muted" />
-          <h3 class="text-sm font-semibold text-txt">{props.title}</h3>
-        </div>
-        <div class="flex items-center gap-2">
+    <WidgetShell
+      class="flex flex-col"
+      icon={<MdOutlineDescription class="w-4 h-4" />}
+      title={props.title}
+      actions={
+        <>
           <Show when={!loading() && entries().length > 0}>
             <span class="text-xs text-muted tabular-nums">{entries().length}</span>
           </Show>
-          {/* Refresh */}
           <IconButton
             label={props.refreshTitle}
             size="sm"
@@ -127,8 +123,9 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
           >
             <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
           </IconButton>
-        </div>
-      </div>
+        </>
+      }
+    >
 
       {/* Loading skeletons */}
       <Show when={loading()}>
@@ -137,7 +134,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
 
       {/* Empty state */}
       <Show when={!loading() && entries().length === 0}>
-        <div class="px-4 py-6 flex flex-col items-center gap-2 text-muted">
+        <div class="px-(--ws-px) py-6 flex flex-col items-center gap-2 text-muted">
           <MdOutlineDescription class="w-8 h-8 opacity-30" />
           <span class="text-xs">{props.emptyText}</span>
         </div>
@@ -152,7 +149,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
               const canLoad = () => loadable(entry.scope);
 
               return (
-                <div class="px-4 py-3 hover:bg-elevated group transition-colors"
+                <div class="px-(--ws-px) py-3 hover:bg-elevated group transition-colors"
                   classList={{ "opacity-50 pointer-events-none": isDeleting() }}>
 
                   {/* Line 1 + 2 — title & summary */}
@@ -209,6 +206,6 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
           </For>
         </div>
       </Show>
-    </Card>
+    </WidgetShell>
   );
 }

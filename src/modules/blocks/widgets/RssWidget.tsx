@@ -8,6 +8,7 @@ import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 interface FeedItem {
   title: string;
@@ -53,33 +54,27 @@ export default function RssWidget(props: WidgetProps) {
       when={url()}
       fallback={
         <Show when={editingWidgets()}>
-          <Card class="px-4 py-3">
+          <Card class="px-(--ws-px) py-3">
             <p class="text-xs text-muted">{t("widgets.not_configured")}</p>
           </Card>
         </Show>
       }
     >
-      <Card class="overflow-hidden">
-        <div class="px-4 py-3">
-          <h3 class="text-sm font-semibold text-txt truncate">
-            <Show when={feed()?.link} fallback={feed()?.title || t("widgets.rss_feed")}>
-              <a
-                href={feed()!.link!}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="hover:text-accent transition-colors"
-              >
-                {feed()?.title || t("widgets.rss_feed")}
-              </a>
-            </Show>
-          </h3>
-        </div>
+      <WidgetShell
+        title={
+          <Show when={feed()?.link} fallback={feed()?.title || t("widgets.rss_feed")}>
+            <a href={feed()!.link!} target="_blank" rel="noopener noreferrer" class="hover:text-accent transition-colors">
+              {feed()?.title || t("widgets.rss_feed")}
+            </a>
+          </Show>
+        }
+      >
 
         <Show when={feed.loading}>
           <ul class="divide-y divide-rim animate-pulse">
             <For each={[75, 55, 85]}>
               {(w) => (
-                <li class="px-4 py-2.5">
+                <li class="px-(--ws-px) py-2.5">
                   <div class="h-2.5 bg-elevated rounded" style={{ width: `${w}%` }} />
                 </li>
               )}
@@ -88,13 +83,13 @@ export default function RssWidget(props: WidgetProps) {
         </Show>
 
         <Show when={feed.error}>
-          <p class="px-4 py-3 text-xs text-muted">{t("widgets.load_error")}</p>
+          <p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.load_error")}</p>
         </Show>
 
         <Show when={!feed.loading && !feed.error}>
           <Show
             when={(feed()?.items.length ?? 0) > 0}
-            fallback={<p class="px-4 py-3 text-xs text-muted">{t("widgets.rss_empty")}</p>}
+            fallback={<p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.rss_empty")}</p>}
           >
             <ul class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
               <For each={feed()!.items}>
@@ -104,7 +99,7 @@ export default function RssWidget(props: WidgetProps) {
                       href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="block px-4 py-2.5 hover:bg-elevated transition-colors"
+                      class="block px-(--ws-px) py-2.5 hover:bg-elevated transition-colors"
                     >
                       <span class="block text-sm text-txt line-clamp-2">{item.title}</span>
                       <Show when={itemDate(item.published)}>
@@ -119,7 +114,7 @@ export default function RssWidget(props: WidgetProps) {
             </ul>
           </Show>
         </Show>
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

@@ -10,7 +10,7 @@ import { fetchAccountSettings } from "@/modules/settings/api/api";
 import type { AccountQuota } from "@/modules/settings/store/types";
 import { formatQuotaValue, quotaPercent } from "@/shared/lib/quota-format";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 export default function UsageQuotasWidget() {
   const { t } = useI18n();
@@ -23,10 +23,8 @@ export default function UsageQuotasWidget() {
 
   return (
     <Show when={!settings.loading && quotas().length > 0}>
-      <Card class="p-4" data-tour="hq.quotas">
-        <h3 class="text-xs font-semibold text-muted uppercase tracking-wide mb-3">
-          {t("widgets.usage_quotas")}
-        </h3>
+      <WidgetShell title={t("widgets.usage_quotas")}>
+<div class="px-(--ws-px) py-3" data-tour="hq.quotas">
 
         <div class="space-y-2">
           <For each={quotas()}>{(q) => <QuotaTile quota={q} />}</For>
@@ -38,7 +36,8 @@ export default function UsageQuotasWidget() {
         >
           {t("widgets.usage_quotas_view_all")}
         </A>
-      </Card>
+      </div>
+</WidgetShell>
     </Show>
   );
 }

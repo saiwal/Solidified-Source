@@ -10,7 +10,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 import { Button, IconButton } from "@ui/Button";
 import { Input, Select } from "@ui/Field";
 import { fetchTasks, createTask, toggleTask, editTask, taskRef, type Task } from "../api/tasks";
@@ -141,13 +141,15 @@ export default function TasksWidget() {
 
   return (
     <Show when={role() === "owner"}>
-      <Card class="p-4 space-y-3">
-        <div class="flex items-center gap-2">
-          <h3 class="flex-1 text-xs font-semibold text-muted uppercase tracking-wide">{t("calendar.tasks")}</h3>
+      <WidgetShell
+        title={t("calendar.tasks")}
+        actions={
           <Button variant="ghost" size="sm" pressed={showDone()} onClick={() => setShowDone((v) => !v)}>
             {t("calendar.tasks_show_done")}
           </Button>
-        </div>
+        }
+      >
+<div class="px-(--ws-px) py-3 space-y-3">
 
         <form onSubmit={add} class="space-y-2">
           <Input
@@ -231,7 +233,8 @@ export default function TasksWidget() {
             </For>
           </ul>
         </Show>
-      </Card>
+      </div>
+</WidgetShell>
     </Show>
   );
 }

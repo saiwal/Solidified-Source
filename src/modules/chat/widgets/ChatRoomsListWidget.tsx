@@ -10,7 +10,7 @@ import { openChat } from "@/shared/views/modal-host";
 import { MdFillPeople } from "solid-icons/md";
 import { fetchRooms } from "../api";
 import { isChatUnread } from "../unread";
-import { Card } from "@ui/Card";
+import { WidgetShell } from "@ui/WidgetShell";
 
 export default function ChatRoomsListWidget() {
   const { t } = useI18n();
@@ -20,23 +20,23 @@ export default function ChatRoomsListWidget() {
   return (
     // Hidden where the channel has no chatrooms app (or the fetch failed).
     <Show when={data.error ? null : data()?.chatrooms_installed !== false}>
-      <Card raised class="overflow-hidden">
-        {/* Same header as the other HQ sidebar widgets (ScheduledPostsWidget). */}
-        <div class="px-3.5 pt-3.5 pb-2.5 flex items-center justify-between">
-          <h3 class="text-xs font-medium uppercase tracking-wider text-muted">{t("chat.chatrooms")}</h3>
+      <WidgetShell
+        title={t("chat.chatrooms")}
+        actions={
           <A href={`/chat/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
             {t("widgets.view_all")}
           </A>
-        </div>
+        }
+      >
 
         <Show when={data.loading && !data()}>
-          <div class="px-3.5 pb-3 space-y-2 animate-pulse">
+          <div class="px-(--ws-px) pb-3 space-y-2 animate-pulse">
             <For each={[1, 2, 3]}>{() => <div class="h-3 bg-elevated rounded w-4/5" />}</For>
           </div>
         </Show>
 
         <Show when={data() && data()!.rooms.length === 0}>
-          <p class="px-3.5 pb-4 text-xs text-muted text-center">{t("chat.no_chatrooms")}</p>
+          <p class="px-(--ws-px) pb-4 text-xs text-muted text-center">{t("chat.no_chatrooms")}</p>
         </Show>
 
         <div class="divide-y divide-rim border-t border-rim empty:border-t-0 max-h-[26rem] overflow-y-auto">
@@ -45,7 +45,7 @@ export default function ChatRoomsListWidget() {
               <button
                 type="button"
                 onClick={() => openChat(nick(), room.id, room.name)}
-                class="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-elevated transition-colors"
+                class="w-full flex items-center gap-2 px-(--ws-px) py-2.5 text-left hover:bg-elevated transition-colors"
               >
                 <span class="flex-1 min-w-0 text-sm text-txt truncate">{room.name}</span>
                 <Show when={isChatUnread(nick(), room)}>
@@ -59,7 +59,7 @@ export default function ChatRoomsListWidget() {
             )}
           </For>
         </div>
-      </Card>
+      </WidgetShell>
     </Show>
   );
 }

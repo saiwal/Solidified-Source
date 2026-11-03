@@ -45,6 +45,9 @@
   }
 }
 
+/* Widget body inset; each @ui/WidgetShell look overrides it on its root. */
+:root { --ws-px: 1rem; }
+
 /* ── Plyr theme integration ─────────────────────────────────────── */
 :root {
   --plyr-color-main: var(--color-accent);
