@@ -20,6 +20,7 @@ import { SkeletonRows } from "@/shared/views/ui";
 import { Motion, fade } from "@/shared/views/anim";
 import { Button, IconButton } from "@ui/Button";
 
+import { cardClass } from "@ui/Card";
 function rangeForView(view: ViewType, anchor: Date): CalRange {
   if (view === "list") {
     const now = new Date();
@@ -123,7 +124,8 @@ export default function CalendarContentWidget() {
 
   // The time grids scroll inside a window-sized box, so "scroll to 7am" has
   // something to scroll and the day headers stay put.
-  const gridBox = "h-[calc(100dvh-15rem)] min-h-[26rem]";
+  // Panel (readable over a wallpaper); week/day scroll inside it.
+  const gridBox = `${cardClass()} overflow-hidden h-[calc(100dvh-15rem)] min-h-[26rem]`;
 
   return (
     <div class="flex flex-col gap-4 max-w-5xl mx-auto">
@@ -166,12 +168,15 @@ export default function CalendarContentWidget() {
           <Motion.div {...fade}>
             <Switch>
               <Match when={v === "month"}>
-                <MonthView
-                  year={anchor().getFullYear()}
-                  month={anchor().getMonth() + 1}
-                  events={visibleEvents()}
-                  onDayClick={setActiveDay}
-                />
+                {/* overflow-clip, not -hidden: keeps the weekday header sticky. */}
+                <div class={`${cardClass()} overflow-clip`}>
+                  <MonthView
+                    year={anchor().getFullYear()}
+                    month={anchor().getMonth() + 1}
+                    events={visibleEvents()}
+                    onDayClick={setActiveDay}
+                  />
+                </div>
               </Match>
               <Match when={v === "week"}>
                 <div class={gridBox}>

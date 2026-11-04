@@ -34,7 +34,7 @@ export default function MonthView(props: Props) {
   return (
     <div class="flex flex-col">
       {/* Weekday header */}
-      <div class="grid grid-cols-7 sticky top-0 bg-base z-10">
+      <div class="grid grid-cols-7 sticky top-0 bg-surface z-10">
         <For each={headerLabels()}>
           {(wd) => <div class="text-center text-xs text-muted py-2">{wd}</div>}
         </For>

@@ -9,6 +9,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { SkeletonRows } from "@/shared/views/ui";
 import { fetchSeriesList } from "../api";
 import { EmptyState } from "@ui/EmptyState";
+import { cardClass } from "@ui/Card";
 
 export default function SeriesIndexView() {
   const params = useParams<{ nick: string }>();
@@ -23,8 +24,7 @@ export default function SeriesIndexView() {
   );
 
   return (
-    <div class="max-w-5xl mx-auto">
-      <div class="max-w-3xl -mx-3">
+      <div class={"max-w-3xl mx-auto " +cardClass()}>
         <Show when={!data.loading} fallback={<SkeletonRows count={4} />}>
           <Show
             when={(data() ?? []).length > 0}
@@ -47,6 +47,5 @@ export default function SeriesIndexView() {
           </Show>
         </Show>
       </div>
-    </div>
   );
 }

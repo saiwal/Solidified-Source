@@ -48,7 +48,6 @@ export default function DangerSection() {
         <div class="space-y-6">
 
           {/* Remove channel */}
-          <div class="rounded-xl border border-danger/40 bg-danger-muted/50 p-5 space-y-4">
             <div>
               <h3 class="text-sm font-semibold text-danger-txt">{t("settings.danger_remove_channel")}</h3>
               <p class="text-xs text-danger-txt mt-1">
@@ -89,7 +88,6 @@ export default function DangerSection() {
             >
               {busy() ? t("settings.danger_removing") : t("settings.danger_remove_btn")}
             </Button>
-          </div>
 
         </div>
       </Show>

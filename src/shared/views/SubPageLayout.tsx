@@ -110,7 +110,9 @@ export default function SubPageLayout(props: Props) {
       {/* ── Left nav ─────────────────────────────────────── */}
       <aside
         class={[
-          "shrink-0 flex flex-col border-rim",
+          // Surface like the app's left nav (and frosted with it under
+          // "Translucent surfaces" — .hz-nav-sidebar), not bare page background.
+          "hz-nav-sidebar bg-surface shrink-0 flex flex-col border-rim",
           "w-full md:w-[224px] lg:w-[240px]",
           "border-b md:border-b-0 md:border-r",
           atBase() ? "flex" : "hidden md:flex",

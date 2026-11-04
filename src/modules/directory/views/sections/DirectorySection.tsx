@@ -57,6 +57,7 @@ export default function DirectorySection() {
 
   return (
     <Section
+      panel={false}
       title={t("directory.people_groups")}
       tools={
         <>

@@ -65,7 +65,7 @@ export default function CardsSection(props: Props) {
   };
 
   return (
-    <SubPageContent
+    <SubPageContent panel={false}
       title={props.book.displayname}
       description={t("addressbook.contact_count", { count: String(cards().length) }) as string}
       wide

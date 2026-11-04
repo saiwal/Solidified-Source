@@ -191,8 +191,6 @@ export default function ProfileEditView() {
         </Show>
       </div>
 
-      <hr class="border-rim" />
-
       {/* Filerobot image editors — render their own full-screen overlay */}
       <Show when={avatarFile()}>
         {(file) => (

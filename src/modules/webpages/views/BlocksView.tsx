@@ -16,6 +16,7 @@ import {
 } from "solid-icons/md";
 import { IconButton } from "@ui/Button";
 import PageActions from "@/shared/views/layout/PageActions";
+import { cardClass } from "@ui/Card";
 
 function formatDate(s: string): string {
   if (!s) return "—";
@@ -112,8 +113,9 @@ export default function BlocksView() {
         ]} />
       </div>
 
-      <div class="border-t border-rim" />
 
+      {/* Reading panel, like a webpage — readable over a wallpaper. */}
+      <div class={`${cardClass()} p-1.5`}>
       <Show
         when={!blocksLoading()}
         fallback={
@@ -154,6 +156,7 @@ export default function BlocksView() {
           </div>
         </Show>
       </Show>
+      </div>
     </div>
   );
 }

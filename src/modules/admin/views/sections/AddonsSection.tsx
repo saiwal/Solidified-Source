@@ -24,7 +24,7 @@ export default function AddonsSection() {
   }
 
   return (
-    <SubPageContent title={t("admin.addons_title")} description={t("admin.addons_desc")}>
+    <SubPageContent panel={true} title={t("admin.addons_title")} description={t("admin.addons_desc")}>
       <Show when={addons()} fallback={<Skeleton />}>
         {(list) => (
           <div class="space-y-2">

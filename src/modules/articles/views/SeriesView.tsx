@@ -16,6 +16,7 @@ import { Button, IconButton } from "@ui/Button";
 import PageActions from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
 import { EmptyState } from "@ui/EmptyState";
+import { cardClass } from "@ui/Card";
 
 function RenameDialog(props: { name: string; onClose: () => void; onRename: (to: string) => Promise<void> }) {
   const { t } = useI18n();
@@ -103,11 +104,11 @@ export default function SeriesView() {
   }
 
   return (
-    <div class="max-w-5xl mx-auto">
-      <div class="max-w-3xl space-y-6">
+		<>
+      <div class="max-w-3xl space-y-6 mx-auto">
         <BackLink fallback={`/articles/${nick()}/series`} label={t("articles.back")} />
 
-        <div class="flex items-start justify-between gap-3">
+        <div class={"flex items-start justify-between gap-3 p-6  " + cardClass()} >
           <div class="min-w-0">
             <h1 class="text-2xl font-bold text-txt">{name()}</h1>
             <Show when={!data.loading}>
@@ -124,7 +125,7 @@ export default function SeriesView() {
             when={order().length > 0}
             fallback={<EmptyState>{t("articles.series_no_series")}</EmptyState>}
           >
-            <ol class="space-y-0.5 -mx-3">
+            <ol class={"space-y-0.5 "+cardClass()}>
               <For each={order()}>
                 {(article, i) => (
                   <li class="group flex items-center gap-3 rounded-xl px-3 py-1.5 hover:bg-elevated/40 transition-colors">
@@ -164,6 +165,6 @@ export default function SeriesView() {
       <Show when={renaming()}>
         <RenameDialog name={name()} onClose={() => setRenaming(false)} onRename={rename} />
       </Show>
-    </div>
+			</>
   );
 }

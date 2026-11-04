@@ -38,7 +38,7 @@ export default function ChannelsSection() {
   }
 
   return (
-    <SubPageContent title={t("admin.channels_title")} description={t("admin.channels_desc")}>
+    <SubPageContent panel={false} title={t("admin.channels_title")} description={t("admin.channels_desc")}>
       <Show when={result.error}>
         <Banner tone="danger" role="alert">
           Error: {String(result.error?.message ?? result.error)}

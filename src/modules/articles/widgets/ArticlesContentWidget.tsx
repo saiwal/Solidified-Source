@@ -12,6 +12,7 @@ import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { useIsArticlesList } from "../lib/isArticlesList";
 import { Button, IconButton } from "@ui/Button";
+import { cardClass } from "@ui/Card";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ function ArticleEntry(props: { post: Post; nick: string; onOpen: () => void }) {
   return (
     <article
       onClick={(e) => { if (!(e.target as HTMLElement).closest("a,button")) props.onOpen(); }}
-      class="group cursor-pointer rounded-2xl bg-elevated/40 p-5 hover:bg-elevated/70 transition-colors"
+      class={"group cursor-pointer p-6 " + cardClass()}
     >
       <h2 class="text-lg font-semibold leading-snug">
         <A

@@ -350,7 +350,7 @@ export default function CardView() {
   const mobileActions = useMobileActions();
 
   return (
-    <div class="relative max-w-5xl mx-auto py-4">
+    <div class="relative max-w-3xl mx-auto py-4">
       <Show when={!data.loading && data()} fallback={<CardViewSkeleton />}>
         {(d) => (
           <div class="xl:flex xl:gap-8">

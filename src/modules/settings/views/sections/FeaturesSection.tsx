@@ -86,7 +86,7 @@ export default function FeaturesSection() {
     toggleMutation.mutate({ name, enabled: currentlyEnabled });
 
   return (
-    <SubPageContent title={t("settings.title_features")} description={t("settings.desc_features")}>
+    <SubPageContent panel={true} title={t("settings.title_features")} description={t("settings.desc_features")}>
       <Show when={query.isError}>
         <p class="text-sm text-muted">{t("settings.feat_load_error")}</p>
       </Show>

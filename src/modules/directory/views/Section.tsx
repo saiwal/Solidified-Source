@@ -9,6 +9,7 @@ import PageActions, { PageActionsLabel, type PageAction } from "@/shared/views/l
 import { IconButton } from "@ui/Button";
 import { SearchField } from "@ui/SearchField";
 
+import { cardClass } from "@ui/Card";
 export function Section(props: {
   title: string;
   description?: JSX.Element;
@@ -17,6 +18,9 @@ export function Section(props: {
   actions?: PageAction[];
   /** narrow: a form column. Default: the list/grid width. */
   narrow?: boolean;
+  /** Frame the content in a reading panel (default). false for content that
+   *  is already cards — a DirectoryCard grid — so cards don't nest in a card. */
+  panel?: boolean;
   children: JSX.Element;
 }) {
   return (
@@ -34,7 +38,9 @@ export function Section(props: {
             <p class="text-sm text-muted max-w-prose">{props.description}</p>
           </Show>
         </div>
-        {props.children}
+        <Show when={props.panel !== false} fallback={props.children}>
+          <div class={`${cardClass()} p-2`}>{props.children}</div>
+        </Show>
       </div>
     </PageActionsLabel.Provider>
   );

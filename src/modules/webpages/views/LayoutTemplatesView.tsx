@@ -34,6 +34,7 @@ import { Button, IconButton } from "@ui/Button";
 import PageActions from "@/shared/views/layout/PageActions";
 import { Select } from "@ui/Field";
 
+import { cardClass } from "@ui/Card";
 function templateWidgetCount(tpl: { slots: Partial<Record<string, unknown[]>> } | undefined): number {
   if (!tpl) return 0;
   return TEMPLATE_SLOTS.reduce((sum, slot) => sum + (tpl.slots[slot]?.length ?? 0), 0);
@@ -144,7 +145,6 @@ export default function LayoutTemplatesView() {
         />
       </Show>
 
-      <div class="border-t border-rim" />
 
       <Show
         when={templateIds().length > 0}
@@ -158,7 +158,7 @@ export default function LayoutTemplatesView() {
         <div class="space-y-2">
           <For each={templateIds()}>
             {(id) => (
-              <div class="border border-rim rounded-xl overflow-hidden">
+              <div class={`${cardClass()} overflow-hidden`}>
                 <Show
                   when={renamingId() !== id}
                   fallback={

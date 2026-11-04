@@ -8,6 +8,7 @@ import { useToc } from "@utsukta/spa-core/lib/useToc";
 import ArticleToc from "@/shared/views/ArticleToc";
 import { fetchTopic, fetchHelpSearch } from "../api";
 import { Card, cardClass } from "@ui/Card";
+import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ export default function HelpContentWidget() {
         </Show>
 
         {/* ── Content ── */}
-        <article class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-5`}>
+        <article ref={(el) => { useLightbox(() => el);}} class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-5`}>
           <Show
             when={!query()}
             fallback={

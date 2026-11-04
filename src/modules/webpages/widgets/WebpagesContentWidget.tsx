@@ -21,6 +21,7 @@ import CardShell from "@/shared/stream/CardShell";
 import { IconButton, buttonClass } from "@ui/Button";
 import { EmptyState } from "@ui/EmptyState";
 
+import { cardClass } from "@ui/Card";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(s: string): string {
@@ -174,8 +175,10 @@ export default function WebpagesContentWidget() {
   return (
     <Show when={isList()}>
       <div class="max-w-3xl mx-auto px-4 md:px-6 pb-6 space-y-4">
+        {/* Labels + list share one reading panel, like a webpage. */}
+        <div class={`${cardClass()} p-1.5`}>
         {/* Column labels */}
-        <div class="flex items-center gap-3 px-3 text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
+        <div class="flex items-center gap-3 px-3 pt-1.5 pb-2 mb-1 border-b border-rim text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
           <span class="w-5 shrink-0" />
           <span class="flex-1">{t('webpages.col_title')}</span>
           <span class="hidden sm:block w-20 shrink-0 text-right">{t('webpages.col_visibility')}</span>
@@ -214,6 +217,7 @@ export default function WebpagesContentWidget() {
             </div>
           </Show>
         </Show>
+        </div>
       </div>
     </Show>
   );

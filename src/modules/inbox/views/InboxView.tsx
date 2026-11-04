@@ -42,6 +42,7 @@ import { Badge, CountBadge } from "@ui/Badge";
 import { buttonClass } from "@ui/Button";
 import { ProgressBar } from "@ui/ProgressBar";
 
+import { cardClass } from "@ui/Card";
 const FOLDER_PREFIX = "folder/";
 
 const COMPOSE_BTN = `${buttonClass("primary")} flex-1`;
@@ -243,7 +244,8 @@ export default function InboxView() {
           scroll, so it needs a container that doesn't grow with its content.
           Kept as tall as the chrome allows — the reader fills this same box. */}
       <div
-        class="flex flex-col"
+        // Reading panel, like a webpage — readable over a wallpaper.
+        class={`${cardClass()} flex flex-col overflow-hidden`}
         classList={{ "h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem]": !reading() }}
       >
         <InboxSearchBar

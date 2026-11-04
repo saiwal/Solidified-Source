@@ -346,7 +346,8 @@ const MessageItem: Component<{
           "bg-accent-muted": isAnyUnseen(),
           // bg-inherit on the action rail needs the row to actually paint a
           // background; HQ's rows stay transparent on their card.
-          "bg-base": !!props.actions && !isAnyUnseen(),
+          // surface: the inbox list sits in a bg-surface panel.
+          "bg-surface": !!props.actions && !isAnyUnseen(),
           "focus-within:bg-overlay": !!props.actions,
           "ring-2 ring-inset ring-accent": props.cursored,
           "bg-elevated": props.active || props.selected,
@@ -1026,7 +1027,7 @@ export const MessageList: Component<{
         scrolls rather than a fixed-height box. */}
     <Show when={reading()}>
       <div
-        class="flex flex-col bg-base focus:outline-none"
+        class="hz-glass-clear flex flex-col bg-surface focus:outline-none"
         tabindex="-1"
         ref={(el) => { readerRef = el; queueMicrotask(() => el.focus({ preventScroll: true })); }}
         onKeyDown={(ev) => {

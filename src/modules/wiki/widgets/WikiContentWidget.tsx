@@ -14,6 +14,7 @@ import { Modal, ModalPanel } from "@ui/Modal";
 import CardShell from "@/shared/stream/CardShell";
 import { Button, IconButton } from "@ui/Button";
 import { EmptyState } from "@ui/EmptyState";
+import { cardClass } from "@ui/Card";
 type SortField = "name" | "format";
 type SortDir   = "asc"  | "desc";
 
@@ -185,8 +186,9 @@ export default function WikiContentWidget() {
 
         {/* Column headers + list */}
         <Show when={!wikisLoading() && !wikisError() && wikis().length > 0}>
-          <div class="border-t border-rim" />
-          <div class="flex items-center gap-3 px-3 text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
+          {/* One reading panel, like a webpage — readable over a wallpaper. */}
+          <div class={`${cardClass()} p-1.5`}>
+          <div class="flex items-center gap-3 px-3 pt-1.5 pb-2 mb-1 border-b border-rim text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
             <button
               onClick={() => toggleSort("name")}
               class={`flex-1 flex items-center gap-0.5 text-left transition-colors hover:text-txt ${
@@ -264,6 +266,7 @@ export default function WikiContentWidget() {
                 </div></CardShell>
               )}
             </For>
+          </div>
           </div>
         </Show>
 

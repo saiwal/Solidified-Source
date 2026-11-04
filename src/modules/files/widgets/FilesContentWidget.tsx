@@ -77,6 +77,7 @@ import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { EmptyState } from "@ui/EmptyState";
 import { ErrorState } from "@ui/ErrorState";
+import { cardClass } from "@ui/Card";
 type ModalKind = "rename" | "moveCopy" | "categories";
 
 type ViewMode   = "list" | "grid";
@@ -1175,10 +1176,11 @@ export default function FilesContentWidget() {
         </form>
       </Show>
 
+      {/* Labels + list/grid share one reading panel, like a webpage. */}
+      <div class={`${cardClass()} p-1.5`}>
       {/* ── Column labels (list mode only) ── */}
       <Show when={viewMode() === "list"}>
-        <div class="border-t border-rim" />
-        <div class="flex items-center gap-3 px-3 text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
+        <div class="flex items-center gap-3 px-3 pt-1.5 pb-2 mb-1 border-b border-rim text-[0.625rem] font-semibold uppercase tracking-wide text-muted select-none">
           {/* Checkbox column — select-all lives in the toolbar (works in grid view too) */}
           <span class="w-4 shrink-0" />
           <span class="w-5 shrink-0" />
@@ -1278,6 +1280,7 @@ export default function FilesContentWidget() {
           </Show>
         </Show>
       </Show>
+      </div>
 
       {/* Permissions — one item or a whole selection */}
       <Show when={permItems()}>

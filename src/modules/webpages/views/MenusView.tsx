@@ -21,7 +21,7 @@ import {
 import { Button, IconButton } from "@ui/Button";
 import PageActions from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
-import { Card, CardHeader } from "@ui/Card";
+import { Card, CardHeader, cardClass } from "@ui/Card";
 
 // ── Menu name/desc form (create + rename) ─────────────────────────────────────
 
@@ -294,9 +294,10 @@ export default function MenusView() {
         />
       </Show>
 
-      <div class="border-t border-rim" />
 
       {/* Menu list */}
+      {/* Reading panel, like a webpage — readable over a wallpaper. */}
+      <div class={`${cardClass()} p-1.5`}>
       <Show
         when={(menus() ?? []).length > 0}
         fallback={
@@ -366,6 +367,7 @@ export default function MenusView() {
           </For>
         </div>
       </Show>
+      </div>
 
       {/* Item editor for the selected menu */}
       <Show when={selectedId() && raw()}>

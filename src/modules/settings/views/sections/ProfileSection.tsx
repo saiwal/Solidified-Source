@@ -53,7 +53,7 @@ export default function ProfileSection() {
   });
 
   return (
-    <SubPageContent title={t("settings.title_profile")} description={t("settings.desc_profile")}>
+    <SubPageContent panel={true} title={t("settings.title_profile")} description={t("settings.desc_profile")}>
       <Show when={data()} fallback={<Skeleton />}>
         <form onSubmit={handleSubmit} class="space-y-5">
 

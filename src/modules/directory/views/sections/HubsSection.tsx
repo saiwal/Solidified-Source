@@ -111,6 +111,7 @@ export default function PubsitesView() {
 
   return (
     <Section
+      panel={false}
       title={t("directory.public_hubs")}
       description={t("directory.hubs_subtext")}
       tools={

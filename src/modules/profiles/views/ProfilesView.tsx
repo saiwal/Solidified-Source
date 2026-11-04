@@ -68,7 +68,7 @@ export default function ProfilesView() {
   const multiEnabled = () => result()?.multiProfilesEnabled ?? false;
 
   return (
-    <SubPageLayout base="/settings" items={SETTINGS_ITEMS} activeKey="profile">
+    <SubPageLayout  base="/settings" items={SETTINGS_ITEMS} activeKey="profile">
     <div class="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-6">
       <div class="flex items-start justify-between gap-4">
         <div class="space-y-0.5">
@@ -84,8 +84,6 @@ export default function ProfilesView() {
           show: multiEnabled(),
         }]} />
       </div>
-
-      <hr class="border-rim" />
 
       <Show when={result.loading}>
         <Skeleton />

@@ -23,6 +23,7 @@ export default function SuggestSection() {
 
   return (
     <Section
+      panel={false}
       title={t("directory.suggestions")}
       description={
         <Show when={!loading() && total() > 0}>

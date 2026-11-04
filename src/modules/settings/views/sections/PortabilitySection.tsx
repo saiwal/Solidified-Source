@@ -69,7 +69,7 @@ export default function PortabilitySection() {
   }
 
   return (
-    <SubPageContent title={t("settings.title_portability")} description={t("settings.desc_portability")}>
+    <SubPageContent panel={true} title={t("settings.title_portability")} description={t("settings.desc_portability")}>
       <Show when={meta()} fallback={<div class="text-sm text-muted">{t("settings.load_error")}</div>}>
         {(m) => (
           <Show

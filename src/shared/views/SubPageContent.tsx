@@ -10,6 +10,10 @@ interface Props {
   action?: JSX.Element;
   /** Use a wider content column (for data tables) instead of the default form-width column */
   wide?: boolean;
+  /** Frame the content in a reading panel (default), like a webpage — never
+   *  bare on the page background, where a wallpaper makes it hard to read.
+   *  false for content that is already a stack of cards. */
+  panel?: boolean;
   children: JSX.Element;
 }
 
@@ -44,11 +48,18 @@ export default function SubPageContent(props: Props) {
         </Show>
       </div>
 
-      {/* Divider */}
-      <hr class="border-rim" />
-
-      {/* Content */}
-      <div class="space-y-6">{props.children}</div>
+      {/* Content — the panel's edge replaces the divider */}
+      <Show
+        when={props.panel !== false}
+        fallback={
+          <>
+            <hr class="border-rim" />
+            <div class="space-y-6">{props.children}</div>
+          </>
+        }
+      >
+        {props.children}
+      </Show>
     </div>
     </PageActionsLabel.Provider>
   );
