@@ -2,7 +2,7 @@
 // Canvas, not SVG: a few hundred nodes re-laid out every frame is what canvas
 // is for. The canvas is mouse/touch only, so the same nodes are also an
 // sr-only link list.
-import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack } from "solid-js";
 import { A, useParams } from "@solidjs/router";
 import {
   forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation,
@@ -131,6 +131,11 @@ export default function GraphView() {
 
     let w = 0, h = 0, dpr = 1;
     let hover: SimNode | null = null;
+    // Untracked: draw() reads query()/selectedId(), and the effect calls it
+    // (via resize) on setup — tracked, a click re-ran this whole effect,
+    // rebuilding the layout and resetting the view. Only the small effect
+    // below redraws on those.
+    const draw = () => untrack(paint);
 
     const sim = forceSimulation(nodes)
       .force("link", forceLink<SimNode, SimLink>(links).id((n) => n.id).distance(50))
@@ -143,7 +148,7 @@ export default function GraphView() {
       sim.tick(300);
     }
 
-    function draw() {
+    function paint() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const css = getComputedStyle(document.documentElement);
