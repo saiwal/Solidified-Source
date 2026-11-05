@@ -13,6 +13,7 @@ import { useQuery, keepPreviousData } from "../lib/query";
 import { fetchNavApi, type NavApiResponse } from "../lib/nav-api";
 import type { NavApp, NavChannel } from "../lib/nav-api";
 import { queryClient } from "../lib/query-client";
+import { subjectNickFromPath } from "./site-config";
 
 // ── Channel nick signal ───────────────────────────────────────────────────────
 //
@@ -20,12 +21,7 @@ import { queryClient } from "../lib/query-client";
 // Layout.tsx keeps it in sync on SPA navigation via setNavNick().
 
 function nickFromUrl(): string {
-  const parts = window.location.pathname.split("/").filter(Boolean);
-  const withNick = [
-    "channel", "about", "photos", "articles", "cart", "chat",
-    "calendar", "cloud", "webpages", "wiki", "cal", "page",
-  ];
-  return (parts[1] && withNick.includes(parts[0])) ? parts[1] : "";
+  return subjectNickFromPath(window.location.pathname);
 }
 
 const [navNick, setNavNick] = createSignal<string>(nickFromUrl());

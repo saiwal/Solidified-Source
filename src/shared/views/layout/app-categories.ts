@@ -35,6 +35,7 @@ const BY_MODULE: Record<string, AppCategory> = {
   webpages: "productivity",
   wiki: "productivity",
   notepad: "productivity",
+  graph: "productivity",
   cart: "productivity",
   blocks: "productivity",
   photos: "productivity",

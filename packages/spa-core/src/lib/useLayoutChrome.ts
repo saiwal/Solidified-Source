@@ -2,7 +2,7 @@ import { createSignal, createMemo, createEffect, on } from "solid-js";
 import { useLocation, useIsRouting } from "@solidjs/router";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useNav, useNavActionItems } from "./useNav";
-import { moduleIdForPath, getModule } from "../module-registry";
+import { moduleIdForPath, getModule, setChannelFrontendOverrides } from "../module-registry";
 import { createDragReorder } from "./useDragReorder";
 import { commitNavOrder } from "../store/nav-order";
 import type { NavItemDef } from "../types/module.types";
@@ -45,6 +45,11 @@ export function useLayoutChrome() {
   const navViewer = useNavViewer();
   const navActions = useNavActions();
   const navData = useNavData();
+  // channelScoped modules (the graph) follow the visited channel's owner.
+  createEffect(() => {
+    const raw = navData()?.subject_frontend_overrides;
+    setChannelFrontendOverrides(navData.loading ? undefined : raw ? new Set(raw) : null);
+  });
   const navChannels = useNavChannels();
   const navChannelSelectEnabled = useNavChannelSelectEnabled();
 

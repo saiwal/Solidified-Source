@@ -29,6 +29,8 @@ export type NoteFilters = {
   dbegin?: string;
   dend?: string;
   search?: string;
+  /** One note by uuid (links from search and the graph). */
+  note?: string;
 };
 
 export async function fetchNotes(
@@ -42,6 +44,7 @@ export async function fetchNotes(
   if (filters.dbegin) params.set("dbegin", filters.dbegin);
   if (filters.dend) params.set("dend", filters.dend);
   if (filters.search) params.set("search", filters.search);
+  if (filters.note) params.set("note", filters.note);
   const res = await apiFetch(`/spa/notes?${params.toString()}`);
   if (!res.ok) {
     const err = await res.json().catch(() => null);

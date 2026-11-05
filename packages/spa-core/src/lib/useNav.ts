@@ -73,6 +73,7 @@ const TAB_LABEL_KEYS: Record<string, string> = {
   bookmarks: "nav.bookmarks",
   webpages: "nav.webpages",
   wiki: "nav.wiki",
+  graph: "nav.graph",
   shop: "nav.shop",
 };
 

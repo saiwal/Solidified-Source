@@ -20,6 +20,8 @@ export const nav: RawDictionary["nav"] = {
   admin:         "Admin",
   webpages:      "Webseiten",
   wiki:          "Wiki",
+  graph:         "Graph",
+  graph_desc:    "Eine Karte, wie deine Wiki-Seiten, Artikel, Karten, Notizen und Beiträge aufeinander verweisen – mit einem Graph-Tab auf deinem Kanal und einem „Verlinkt von“-Widget auf jeder Seite.",
   notepad:       "Notizblock",
   tools:         "Werkzeuge",
   games:         "Spiele",

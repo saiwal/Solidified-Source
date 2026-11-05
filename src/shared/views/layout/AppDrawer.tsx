@@ -18,6 +18,14 @@ import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
 import { moduleIdForPath } from "@utsukta/spa-core/module-registry";
 import { Collapsible } from "@ui/Collapsible";
 import { SearchField } from "@ui/SearchField";
+import { IconButton } from "@ui/Button";
+import { Spinner } from "@ui/Spinner";
+import { MdOutlineTune } from "solid-icons/md";
+import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
+import ResultList from "../search/ResultList";
+import SearchFilters from "../search/SearchFilters";
+import { contentEntries } from "../search/CommandPalette";
+import { emptyFilters, useContentSearch } from "../search/search";
 import { getNavIcon } from "../NavItem";
 import { NavUtilityIcons } from "../NavUtilities";
 import BrandBlock from "./BrandBlock";
@@ -159,6 +167,15 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
     );
   });
 
+  // Content search (local users): the same /spa/find results as the desktop
+  // Ctrl+K palette, listed under the matching apps.
+  const [filters, setFilters] = createSignal(emptyFilters());
+  const [showFilters, setShowFilters] = createSignal(false);
+  const { results } = useContentSearch(query, filters, () => moreOpen() && isLocalUser());
+  const content = createMemo(() =>
+    contentEntries(results() ?? [], (r) => t(`layout.palette_type_${r.type}`)),
+  );
+
   const groups = createMemo(() =>
     groupNavItems(navItems(), categoryApps(navData())),
   );
@@ -184,7 +201,10 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
   // Each open starts on the current app's category, with search cleared.
   createEffect(
     on(moreOpen, (open) => {
-      if (!open) return setQuery("");
+      if (!open) {
+        setFilters(emptyFilters());
+        return setQuery("");
+      }
       const current = groups().find((g) =>
         g.items.some((item) => moduleIdForPath(item.path) === activeModuleId()),
       );
@@ -220,23 +240,46 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
         <Show
           when={!searching()}
           fallback={
-            <Show
-              when={matches().length > 0}
-              fallback={
-                <p class="px-1 py-6 text-center text-sm text-muted">
-                  {t("layout.no_app_matches")}
-                </p>
-              }
-            >
-              <section class="mb-4">
-                <GroupHeading label={t("layout.search_results")} />
-                <AppGrid
-                  items={matches()}
-                  onNavigate={closeAll}
-                  starFor={starFor}
-                />
-              </section>
-            </Show>
+            <>
+              <Show
+                when={matches().length > 0}
+                fallback={
+                  <Show when={!isLocalUser()}>
+                    <p class="px-1 py-6 text-center text-sm text-muted">
+                      {t("layout.no_app_matches")}
+                    </p>
+                  </Show>
+                }
+              >
+                <section class="mb-4">
+                  <GroupHeading label={t("layout.search_results")} />
+                  <AppGrid
+                    items={matches()}
+                    onNavigate={closeAll}
+                    starFor={starFor}
+                  />
+                </section>
+              </Show>
+              <Show when={isLocalUser()}>
+                <section class="-mx-3">
+                  <ResultList
+                    entries={content()}
+                    idPrefix="hz-drawer"
+                    onPick={(e) => !e.external && closeAll()}
+                  />
+                  <Show when={results.loading}>
+                    <div class="flex items-center gap-2 px-4 py-3 text-sm text-muted">
+                      <Spinner size="sm" /> {t("layout.palette_searching")}
+                    </div>
+                  </Show>
+                  <Show when={!results.loading && !content().length && !matches().length}>
+                    <p class="px-1 py-6 text-center text-sm text-muted">
+                      {t("layout.palette_no_results")}
+                    </p>
+                  </Show>
+                </section>
+              </Show>
+            </>
           }
         >
           <div class="space-y-2">
@@ -283,14 +326,29 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
 
       {/* Search filters the app list; pinned to the bottom of the sheet so it
           stays reachable while the content scrolls. */}
-      <div class="shrink-0 border-t border-rim bg-surface px-3 py-3">
-        <SearchField
-          value={query()}
-          onInput={setQuery}
-          label={t("layout.search_apps")}
-          clearLabel={t("layout.clear_search")}
-          placeholder={t("layout.search_apps")}
-        />
+      <div class="shrink-0 border-t border-rim bg-surface px-3 py-3 space-y-2">
+        <Show when={showFilters()}>
+          <SearchFilters value={filters()} onChange={setFilters} />
+        </Show>
+        <div class="flex items-center gap-2">
+          <SearchField
+            class="flex-1"
+            value={query()}
+            onInput={setQuery}
+            label={isLocalUser() ? t("layout.palette_title") : t("layout.search_apps")}
+            clearLabel={t("layout.clear_search")}
+            placeholder={isLocalUser() ? t("layout.palette_placeholder") : t("layout.search_apps")}
+          />
+          <Show when={isLocalUser()}>
+            <IconButton
+              label={t("layout.palette_filters")}
+              pressed={showFilters()}
+              onClick={() => setShowFilters(!showFilters())}
+            >
+              <MdOutlineTune size={18} />
+            </IconButton>
+          </Show>
+        </div>
       </div>
       {/* Utility icons live directly under the brand row */}
       <NavUtilityIcons

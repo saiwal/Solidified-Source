@@ -12,7 +12,7 @@ import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import PopularPostsWidget, { type PopularPost } from "./PopularPostsWidget";
 
-type Source = { type: "posts" | "articles" | "cards"; item: string; nick?: string };
+export type Source = { type: "posts" | "articles" | "cards"; item: string; nick?: string };
 
 // /display/:uuid, /item/:uuid, /articles/:nick/:x, /cards/:nick/:x — but not
 // the literal series/deck index segments.
@@ -24,11 +24,12 @@ function sourceFromPath(path: string): Source | null {
   return null;
 }
 
-async function fetchRelated(src: Source): Promise<PopularPost[]> {
+export async function fetchRelated(src: Source & { limit?: number }): Promise<PopularPost[]> {
   const url = new URL("/spa/stream-widgets/related", window.location.origin);
   url.searchParams.set("type", src.type);
   url.searchParams.set("item", src.item);
   if (src.nick) url.searchParams.set("channel_nick", src.nick);
+  if (src.limit) url.searchParams.set("limit", String(src.limit));
   const res = await fetch(url.toString());
   if (!res.ok) throw await apiError(res);
   const json = await res.json();

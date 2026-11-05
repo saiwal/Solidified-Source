@@ -6,6 +6,7 @@ import Slot from "./shared/views/Slot";
 import SiteCredits from "./shared/views/SiteCredits";
 import RemoteAuthBanner from "./shared/views/RemoteAuthBanner";
 import HelpOverlay from "./shared/views/HelpOverlay";
+import CommandPalette from "./shared/views/search/CommandPalette";
 import { MdFillSwitch_left } from "solid-icons/md";
 import { templateUsageCount, templateName } from "@utsukta/spa-core/store/widget-templates";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
@@ -76,6 +77,7 @@ const Layout: ParentComponent = (props) => {
         {t("layout.skip_to_content")}
       </a>
       <HelpOverlay />
+      <CommandPalette navItems={chrome.navItems} />
       <ToastContainer />
       <ConnectionRequestModalHost />
       <FeedModalHost />

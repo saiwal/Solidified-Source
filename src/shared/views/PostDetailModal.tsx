@@ -1,4 +1,5 @@
 // src/shared/views/PostDetailModal.tsx
+import RelatedPostsFooter from "@/shared/stream/components/RelatedPostsFooter";
 import { type Component, createEffect, createMemo, createSignal, on, Show, onMount, useContext } from "solid-js";
 import PostCard from "../stream/components/PostCard";
 import type { StreamHandlers } from "../stream/types";
@@ -498,6 +499,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
                   expandAll
                   split={split()}
                   handlers={selfHandlers}
+                  footer={<RelatedPostsFooter uuid={n().uuid} />}
                   contextBanner={
                     <>
                     <Show when={canFetchReplies()}>

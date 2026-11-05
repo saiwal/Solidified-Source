@@ -146,6 +146,13 @@ export interface ModuleDef {
     description?: string | (() => string);
     /** false = off until the user enables it in Settings → Integrations. Defaults to true. */
     defaultEnabled?: boolean;
+    /**
+     * On someone else's channel pages, follow the *channel owner's* toggle
+     * instead of the viewer's — for features that show the owner's content
+     * (the graph). Nav.php sends the owner's overrides as
+     * subject_frontend_overrides; Layout feeds them to the registry.
+     */
+    channelScoped?: boolean;
   };
   /** true = only rendered for authenticated users; anonymous visitors are redirected to /login. */
   requiresAuth?: boolean;

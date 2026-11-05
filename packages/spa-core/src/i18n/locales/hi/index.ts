@@ -37,6 +37,7 @@ import { invite }     from "./invite";
 import { bookmarks }  from "./bookmarks";
 import { profiles }   from "./profiles";
 import { notepad }    from "./notepad";
+import { graph }      from "./graph";
 import { jellyfin }   from "./jellyfin";
 import { messenger }  from "./messenger";
 import { channel_create } from "./channel_create";
@@ -84,6 +85,7 @@ export const dict: RawDictionary = {
   bookmarks,
   profiles,
   notepad,
+  graph,
   jellyfin,
   messenger,
   channel_create,

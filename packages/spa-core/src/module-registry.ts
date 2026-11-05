@@ -21,6 +21,14 @@ const [navItems, setNavItems] = createSignal<NavItemDef[]>([]);
 const [routes, setRoutes] = createSignal<RouteDef[]>([]);
 const [widgetVersion, setWidgetVersion] = createSignal(0);
 
+// The visited channel's frontend-feature overrides, for `channelScoped`
+// modules: null = not on someone else's channel (use the viewer's own),
+// undefined = that channel's nav is still loading (let the module through,
+// as with an unloaded installedApps), a Set = the owner's overrides.
+const [channelFrontendOverrides, setChannelFrontendOverrides] =
+  createSignal<Set<string> | null | undefined>(null);
+export { channelFrontendOverrides, setChannelFrontendOverrides };
+
 // Lazy component cache — prevents remounting when memos recompute
 const lazyCache = new WeakMap<ComponentLoader<any>, Component<any>>();
 export function getLazy<P extends Record<string, any> = {}>(loader: ComponentLoader<P>): Component<P> {
@@ -149,7 +157,13 @@ export function isModuleActive(
 ): boolean {
   const mod = modules.get(moduleId);
   if (!mod) return false;
-  if (!frontendFeatureEnabled(mod.frontendFeature, moduleId, disabledFrontendModules)) return false;
+  let overrides = disabledFrontendModules;
+  if (mod.frontendFeature?.channelScoped) {
+    const owner = channelFrontendOverrides();
+    if (owner === undefined) return true;
+    if (owner) overrides = owner;
+  }
+  if (!frontendFeatureEnabled(mod.frontendFeature, moduleId, overrides)) return false;
   if (!mod.appUrlSlug) return true;
   if (installedApps.size === 0) return true;
   return isAppInstalled(installedApps, mod.appUrlSlug);

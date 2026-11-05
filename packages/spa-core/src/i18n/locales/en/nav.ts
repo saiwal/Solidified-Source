@@ -20,6 +20,8 @@ export const nav: RawDictionary["nav"] = {
   admin:         "Admin",
   webpages:      "Webpages",
   wiki:          "Wiki",
+  graph:         "Graph",
+  graph_desc:    "A map of how your wiki pages, articles, cards, notes and posts link to each other, with a Graph tab on your channel and a “Linked from” widget on each page.",
   notepad:       "Notepad",
   tools:         "Tools",
   games:         "Games",

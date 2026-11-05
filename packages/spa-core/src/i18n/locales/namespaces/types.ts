@@ -130,6 +130,8 @@ export type RawDictionary = {
     webpages:      string;
     wiki:          string;
     notepad:       string;
+    graph:         string;
+    graph_desc:    string;
     tools:         string;
     games:         string;
     excalidraw:    string;
@@ -183,6 +185,27 @@ export type RawDictionary = {
     quick_compose:      string;
     favorites:          string;
     search_apps:        string;
+    palette_title: string;
+    palette_filters: string;
+    palette_placeholder: string;
+    palette_jump: string;
+    palette_no_results: string;
+    palette_searching: string;
+    palette_tag: string;
+    palette_from: string;
+    palette_to: string;
+    palette_all: string;
+    palette_type_post: string;
+    palette_type_article: string;
+    palette_type_card: string;
+    palette_type_webpage: string;
+    palette_type_wiki: string;
+    palette_type_note: string;
+    palette_type_file: string;
+    palette_type_bookmark: string;
+    palette_hint: string;
+    palette_open: string;
+    palette_content: string;
     search_results:     string;
     clear_search:       string;
     no_app_matches:     string;
@@ -734,6 +757,8 @@ export type RawDictionary = {
     // Notepad header (notepad.header) / composer+list (notepad.content)
     notepad_header:  string;
     notepad_content: string;
+    backlinks:       string;
+    related_footer:  string;
     // Jellyfin header / library browser / global mini-player
     jellyfin_header:     string;
     jellyfin_content:    string;
@@ -3944,5 +3969,30 @@ export type RawDictionary = {
     articles:               string;
     cart:                   string;
     nsfw:                   string;
+  };
+  graph: {
+    title: string;
+    subtitle: string;
+    empty: string;
+    filter: string;
+    all: string;
+    type_post: string;
+    type_article: string;
+    type_card: string;
+    type_webpage: string;
+    type_wiki: string;
+    type_note: string;
+    type_missing: string;
+    missing_page: string;
+    missing_hint: string;
+    resolving: string;
+    unlinked_posts: string;
+    links_to: string;
+    linked_from: string;
+    stats: string;
+    find_node: string;
+    fit_all: string;
+    reset_view: string;
+    open: string;
   };
 };

@@ -32,7 +32,7 @@ import {
   MdFillAdmin_panel_settings,
   MdFillPerson,
   MdFillEdit,
-  MdFillRss_feed,
+  MdFillGrid_on,
   MdFillNote,
   MdFillHardware,
   MdFillVideogame_asset,
@@ -41,6 +41,8 @@ import {
   MdFillGavel,
   MdFillStyle,
   MdFillPoll,
+  MdFillHub,
+  MdFillMode_comment,
 } from "solid-icons/md";
 import { IconButton } from "@ui/Button";
 import { CountBadge } from "@ui/Badge";
@@ -72,7 +74,9 @@ const ICON_MAP: Record<string, (size: number) => JSX.Element> = {
   public: (s) => <MdFillPublic size={s} />,
   groups: (s) => <MdFillLock size={s} />,
   pdl: (s) => <MdFillView_column size={s} />,
-  network: (s) => <MdFillRss_feed size={s} />,
+  network: (s) => <MdFillGrid_on size={s} />,
+  // A single post (search results) — not the Network feed's RSS icon.
+  post: (s) => <MdFillMode_comment size={s} />,
   pubstream: (s) => <MdFillPublic size={s} />,
   channel: (s) => <MdFillPerson size={s} />,
   settings: (s) => <MdFillSettings size={s} />,
@@ -86,6 +90,7 @@ const ICON_MAP: Record<string, (size: number) => JSX.Element> = {
   person: (s) => <MdFillPerson size={s} />,
   edit: (s) => <MdFillEdit size={s} />,
   notepad: (s) => <MdFillNote size={s} />,
+  graph: (s) => <MdFillHub size={s} />,
   tools: (s) => <MdFillHardware size={s} />,
 	games: (s) => <MdFillVideogame_asset size={s}/>,
   jellyfin: (s) => <MdFillLibrary_music size={s} />,

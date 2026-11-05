@@ -3,6 +3,7 @@ import { marked } from "marked";
 import { bbcodeToHtml, type BbcodeOptions } from "./bbcode";
 import { normalizeMime } from "./mimetypes";
 import { zid, zidifyLinks } from "./zid";
+import { linkWikilinks } from "./wikilinks";
 
 // The single body -> HTML entry point, mirroring core's prepare_text()
 // (include/text.php:2083). Hubzilla never converts between formats: a body is
@@ -64,7 +65,7 @@ function escapeTags(s: string): string {
 // htmlToSource() on every blur and would write the zid back into the stored
 // source.
 export function bbcodeDisplay(text: string, opts?: BbcodeOptions): string {
-  return zidifyLinks(bbcodeToHtml(text, { zidResolver: zid, ...context, ...opts }));
+  return linkWikilinks(zidifyLinks(bbcodeToHtml(text, { zidResolver: zid, ...context, ...opts })));
 }
 
 // Facts about the hub and the viewer that bbcode() resolves rather than
@@ -104,7 +105,7 @@ export function renderBody(
   opts?: BbcodeOptions,
   purify: (html: string) => string = (html) => DOMPurify.sanitize(html),
 ): string {
-  const sanitize = (html: string) => rootRelativeLinks(purify(html));
+  const sanitize = (html: string) => linkWikilinks(rootRelativeLinks(purify(html)));
   switch (normalizeMime(mimetype)) {
     case "text/html":
       return sanitize(body);

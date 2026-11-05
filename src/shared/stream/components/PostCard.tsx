@@ -206,6 +206,10 @@ export default function PostCard(props: {
   // they've scrolled down to the highlighted comment. Only meaningful on the
   // root (full, non-compact) layout.
   contextBanner?: JSX.Element;
+  // Root layout only: quiet extras at the very end (PostDetailModal's related
+  // posts). Under the comments when stacked; under the post column when split,
+  // so the comments column stays the comments.
+  footer?: JSX.Element;
   // Root layout only: post left, comments right, each scrolling on its own,
   // reply box opening atop the comments. The parent must give the card a
   // definite height and decide the breakpoint. PostDetailModal's page mode.
@@ -2240,6 +2244,7 @@ export default function PostCard(props: {
         />
       </Show>
 
+      <Show when={props.split}>{props.footer}</Show>
       </div>
       <div class={props.split ? "flex flex-col min-h-0 border-l border-rim" : undefined}>
       <div
@@ -2322,6 +2327,7 @@ export default function PostCard(props: {
         </Show>
       </Show>
       <Show when={!props.split}>{props.contextBanner}</Show>
+      <Show when={!props.split}>{props.footer}</Show>
       </div>
       </div>
     </div>

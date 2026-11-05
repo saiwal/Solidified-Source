@@ -152,7 +152,8 @@ export default function NotepadContentWidget() {
   const activeCat    = () => String(searchParams.cat ?? "");
   const activeDbegin = () => String(searchParams.dbegin ?? "");
   const activeSearch = () => String(searchParams.search ?? "");
-  const hasFilters   = () => !!(activeTag() || activeCat() || activeDbegin() || activeSearch());
+  const activeNote   = () => String(searchParams.note ?? "");
+  const hasFilters   = () => !!(activeTag() || activeCat() || activeDbegin() || activeSearch() || activeNote());
 
   createEffect(() => {
     if (!auth.loading && nick()) {
@@ -162,6 +163,7 @@ export default function NotepadContentWidget() {
         dbegin: activeDbegin() || undefined,
         dend:   String(searchParams.dend ?? "") || undefined,
         search: activeSearch() || undefined,
+        note:   activeNote()   || undefined,
       });
     }
   });

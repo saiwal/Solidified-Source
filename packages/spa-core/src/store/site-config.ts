@@ -5,6 +5,19 @@ import { useAuth } from "./auth-store";
 
 export type ViewerRole = "owner" | "local" | "remote" | "anonymous" | "admin";
 
+const MODULES_WITH_NICK = [
+  "channel", "profile", "photos", "articles", "cards", "cart", "chat",
+  "calendar", "cloud", "webpages", "wiki", "cal", "page", "messenger",
+  "viewconnections", "graph",
+];
+
+/** Pure form of useSubjectNick, for code outside a reactive context. */
+export function subjectNickFromPath(pathname: string): string {
+  const parts = pathname.split("/").filter(Boolean);
+  // Any route with shape /:module/:nick — channel, photos, etc.
+  return parts[1] && MODULES_WITH_NICK.includes(parts[0]) ? parts[1] : "";
+}
+
 /**
  * Derives the *subject* nick from the current URL.
  * /channel/alice  →  "alice"
@@ -14,31 +27,9 @@ export type ViewerRole = "owner" | "local" | "remote" | "anonymous" | "admin";
  */
 export function useSubjectNick(): () => string {
   const location = useLocation();
-  return createMemo(() => {
-    const parts = location.pathname.split("/").filter(Boolean);
-    // Any route with shape /:module/:nick — channel, photos, etc.
-    // parts[0] = module, parts[1] = nick
-    const modulesWithNick = [
-      "channel",
-      "profile",
-      "photos",
-      "articles",
-      "cards",
-      "cart",
-      "chat",
-      "calendar",
-      "cloud",
-      "webpages",
-      "wiki",
-      "cal",
-      "page",
-      "messenger",
-    "viewconnections",
-    ];
-    if (parts[1] && modulesWithNick.includes(parts[0])) return parts[1];
-    return "";
-  });
+  return createMemo(() => subjectNickFromPath(location.pathname));
 }
+
 /**
  * Derives the viewer's role relative to the current page subject.
  *

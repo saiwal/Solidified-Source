@@ -129,6 +129,8 @@ export interface NavApiResponse {
   startpage: string;
   /** All installed app names for the local user — empty for visitors/anon */
   installed_apps: string[];
+  /** The visited channel owner's frontend-feature overrides; null on your own pages. */
+  subject_frontend_overrides: string[] | null;
   /** openstreetmap addon site config — null when the addon isn't enabled. */
   osm: OsmConfig | null;
   /** Effective classic-Hubzilla language for this request (2-letter code, e.g. "de") */
@@ -259,6 +261,7 @@ export async function fetchNavApi(channelNick?: string): Promise<NavApiResponse>
     frontpage:        raw.frontpage ?? "",
     startpage:        raw.startpage ?? "",
     installed_apps:   raw.installed_apps ?? [],
+    subject_frontend_overrides: raw.subject_frontend_overrides ?? null,
     osm:              raw.osm ?? null,
     language:         raw.language ?? "",
   };

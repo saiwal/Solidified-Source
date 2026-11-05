@@ -4,7 +4,8 @@ import ThemeToggle from "./ThemeToggle";
 import HelpTrigger from "./HelpTrigger";
 import { A } from "@solidjs/router";
 import { BiRegularInfoCircle, BiRegularRss } from "solid-icons/bi";
-import { MdFillCheck, MdOutlineEdit } from "solid-icons/md";
+import { MdFillCheck, MdOutlineEdit, MdOutlineSearch } from "solid-icons/md";
+import { setPaletteOpen } from "./search/search";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
@@ -28,6 +29,14 @@ export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
   const showFeedIcon = () => !isOwner() && CHANNEL_CONTEXT_MODULES.includes(props.moduleId ?? "");
   return (
     <div class={props.class ?? "mt-3 pt-2 border-t border-rim flex items-center gap-[2px] px-[4px] justify-evenly"}>
+      {/* Desktop only: on mobile the app drawer's own search is the palette. */}
+      <IconButton
+        label={t("layout.palette_open")}
+        class="p-[8px] hidden lg:inline-flex"
+        onClick={() => setPaletteOpen(true)}
+      >
+        <MdOutlineSearch size={18} />
+      </IconButton>
       <div use:helpable="nav.language">
         <LanguageSwitcher />
       </div>
