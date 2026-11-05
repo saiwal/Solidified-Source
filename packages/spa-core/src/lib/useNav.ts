@@ -255,9 +255,17 @@ export function useNav(subjectNick: () => string): () => NavItemDef[] {
         appToNavItem(a),
       );
 
-      // SPA-exclusive modules (no appUrlSlug) opt in with hidden: false
+      // SPA-exclusive modules (no appUrlSlug) opt in with hidden: false. They
+      // slot into the featured apps (alphabetical from Nav.php) by label rather
+      // than trailing after them; a drag order from applyNavItemOrder still wins.
+      const label = (i: NavItemDef) => (typeof i.label === "function" ? i.label() : i.label);
       for (const item of getSpaExclusiveNavItems(disabledFrontendModules())) {
-        if (item.hidden === false && visibleForOwner(item.context)) items.push(item);
+        if (item.hidden !== false || !visibleForOwner(item.context)) continue;
+        const name = label(item);
+        const at = items.findIndex(
+          (other, i) => i >= filteredPinned.length && label(other).localeCompare(name) > 0,
+        );
+        items.splice(at === -1 ? items.length : at, 0, item);
       }
 
       // Merge apps and SPA-exclusive modules into one reorderable list —

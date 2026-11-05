@@ -66,11 +66,13 @@ export function applyNavItemOrder(items: NavItemDef[]): NavItemDef[] {
   const order = navOrder();
   if (order.length === 0) return items;
   const idx = new Map(order.map((path, i) => [path, i]));
-  return [...items].sort((a, b) => {
-    const ia = idx.get(a.path) ?? order.length;
-    const ib = idx.get(b.path) ?? order.length;
-    return ia - ib;
+  // Items the saved order has never seen (a newly enabled app or module) keep
+  // their natural, alphabetical slot instead of all piling up at the end.
+  const out = items.filter((i) => idx.has(i.path)).sort((a, b) => idx.get(a.path)! - idx.get(b.path)!);
+  items.forEach((item, i) => {
+    if (!idx.has(item.path)) out.splice(Math.min(i, out.length), 0, item);
   });
+  return out;
 }
 
 // Commit a new order for a *subset* of the nav (e.g. just the mobile bottom
