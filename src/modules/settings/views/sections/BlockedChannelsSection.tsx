@@ -116,7 +116,7 @@ export default function BlockedChannelsSection() {
       title={t("settings.title_blocked") as string}
       description={t("settings.desc_blocked") as string}
     >
-      <Card class="px-4 divide-y divide-rim">
+      <Card class="p-5 space-y-4">
         <Show
           when={installed()}
           fallback={

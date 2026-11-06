@@ -14,6 +14,7 @@ import {
 } from "solid-icons/md";
 import { Button, IconButton } from "@ui/Button";
 import { EmptyState } from "@ui/EmptyState";
+import { Card } from "@ui/Card";
 
 export default function LocationsSection() {
   const { t } = useI18n();
@@ -68,6 +69,7 @@ export default function LocationsSection() {
         }]} />
       }
     >
+		<Card class="p-5 space-y-4">
       <Show when={!query.isPending} fallback={<Skeleton />}>
         <Show
           when={locations().length > 0}
@@ -130,6 +132,7 @@ export default function LocationsSection() {
           </div>
         </Show>
       </Show>
+		</Card>
     </SubPageContent>
   );
 }

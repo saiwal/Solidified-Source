@@ -8,6 +8,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
 import { DataTable } from "@ui/DataTable";
 import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
+import { Card } from "@ui/Card";
 
 export default function QueueSection() {
   const { t } = useI18n();
@@ -57,6 +58,7 @@ export default function QueueSection() {
       description={t("admin.queue_desc")}
       action={<PageActions actions={[{ label: t("admin.refresh"), icon: MdOutlineRefresh, onClick: refetch }]} />}
     >
+		<Card class="p-5 space-y-4">
       <Show when={data()} fallback={<Skeleton />}>
         {(d) => (
           <div class="space-y-4">
@@ -93,6 +95,7 @@ export default function QueueSection() {
           </div>
         )}
       </Show>
+			</Card>
     </SubPageContent>
   );
 }

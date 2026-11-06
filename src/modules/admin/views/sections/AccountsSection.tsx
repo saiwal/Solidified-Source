@@ -17,6 +17,7 @@ import { Badge } from "@ui/Badge";
 import { Banner } from "@ui/Banner";
 import { DataTable } from "@ui/DataTable";
 import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
+import { Card } from "@ui/Card";
 
 export default function AccountsSection() {
   const { t } = useI18n();
@@ -40,6 +41,7 @@ export default function AccountsSection() {
 
   return (
     <SubPageContent title={t("admin.accounts_title")} description={t("admin.accounts_desc")} wide>
+		<Card class="p-5 space-y-4">
       <Show when={result.error}>
         <Banner tone="danger" role="alert" class="mb-4">
           Error: {String(result.error?.message ?? result.error)}
@@ -108,7 +110,8 @@ export default function AccountsSection() {
           </div>
         )}
       </Show>
-    </SubPageContent>
+</Card>
+			</SubPageContent>
   );
 }
 

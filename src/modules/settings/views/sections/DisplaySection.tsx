@@ -38,6 +38,7 @@ import { Tabs } from "@ui/Tabs";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { useWidgetLayout, saveWidgetLayout } from "@utsukta/spa-core/store/widget-layout";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { Card } from "@ui/Card";
 
 /** The vars beyond base/txt/accent, shown in the "Advanced" disclosure. */
 const ADVANCED_VARS = THEME_VARS.filter(
@@ -103,6 +104,7 @@ export default function DisplaySection() {
 
   return (
     <SubPageContent title={t("settings.title_display")} description={t("settings.desc_display")}>
+			<Card class="p-5 space-y-4">
       <Show when={data()} fallback={<FormSkeleton />}>
         <form onSubmit={handleSubmit} class="space-y-6">
 
@@ -568,6 +570,7 @@ export default function DisplaySection() {
 
         </form>
       </Show>
+			</Card>
     </SubPageContent>
   );
 }

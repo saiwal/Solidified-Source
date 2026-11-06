@@ -6,6 +6,7 @@ import type { DbUpdate } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { DataTable } from "@ui/DataTable";
 import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
+import { Card } from "@ui/Card";
 
 export default function DbUpdatesSection() {
   const { t } = useI18n();
@@ -13,6 +14,7 @@ export default function DbUpdatesSection() {
 
   return (
     <SubPageContent title={t("admin.db_title")} description={t("admin.db_desc")}>
+		<Card class="p-5 space-y-4">
       <Show when={updates()} fallback={<Skeleton />}>
         {(list) => (
           <div class="space-y-3">
@@ -33,6 +35,7 @@ export default function DbUpdatesSection() {
           </div>
         )}
       </Show>
+			</Card>
     </SubPageContent>
   );
 }

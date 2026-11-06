@@ -16,6 +16,7 @@ import PageActions from "@/shared/views/layout/PageActions";
 import { MdOutlineAdd } from "solid-icons/md";
 import { Field, Input, Select } from "@ui/Field";
 import { Badge } from "@ui/Badge";
+import { Card } from "@ui/Card";
 
 const EMPTY_PROPS: ServiceClassProperties = {};
 
@@ -30,6 +31,7 @@ export default function ServiceClassesSection() {
       action={<CreateClassButton onCreated={refetch} />}
       wide
     >
+		<Card class="p-5 space-y-4">
       <Show when={data()} fallback={<Skeleton />}>
         {(d) => (
           <div class="rounded-lg border border-rim overflow-hidden">
@@ -50,6 +52,7 @@ export default function ServiceClassesSection() {
           </div>
         )}
       </Show>
+		</Card>
     </SubPageContent>
   );
 }

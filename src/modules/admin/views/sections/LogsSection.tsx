@@ -11,6 +11,7 @@ import { MdOutlineDownload } from "solid-icons/md";
 import { Input, Select } from "@ui/Field";
 import { Switch } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
+import { Card } from "@ui/Card";
 
 const POLL_MS = 3000;
 const MAX_ENTRIES = 2000; // client-side cap while live-tailing
@@ -228,12 +229,15 @@ export default function LogsSection() {
       <Show when={meta()} fallback={pollError() ? <p class="text-sm text-muted">{t("admin.poll_error")}</p> : <Skeleton />}>
         {(m) => (
           <div class="space-y-3">
+						<Card class="p-5 space-y-4">
             <LogSettings meta={m()} onSaved={() => tick(true)} />
+						</Card>
 
             <Show when={!m().debugging}>
               <p class="text-xs text-warning-txt">{t("admin.debugging_off")}</p>
             </Show>
 
+						<Card class="p-5 space-y-4">
             <Show
               when={m().logfile && m().readable}
               fallback={
@@ -355,6 +359,7 @@ export default function LogsSection() {
                 </div>
               </div>
             </Show>
+						</Card>
           </div>
         )}
       </Show>
@@ -387,8 +392,8 @@ function LogSettings(props: { meta: Meta; onSaved: () => void }) {
   }
 
   return (
-    <details open={!props.meta.debugging || !props.meta.logfile} class="rounded-lg border border-rim bg-surface group">
-      <summary class="px-4 py-2.5 text-sm font-medium text-txt cursor-pointer select-none flex items-center gap-2">
+    <details open={!props.meta.debugging || !props.meta.logfile}>
+      <summary class="text-sm font-medium text-txt cursor-pointer select-none flex items-center gap-2">
         <span class="transition-transform group-open:rotate-90">▸</span>
         {t("admin.log_settings")}
         <span class="text-xs font-normal text-muted">

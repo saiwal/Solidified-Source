@@ -67,13 +67,14 @@ export default function ProfileFieldsSection() {
         {(d) => (
           <div class="space-y-6">
             {/* All available fields */}
+						<Card class="p-5 space-y-4">
             <div class="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-1">
               <p class="text-xs font-semibold text-accent">All available fields</p>
               <p class="text-xs text-txt leading-relaxed">
                 {d().all_available.join(", ")}
               </p>
             </div>
-
+</Card>
             {/* Layout form */}
             <Card class="p-4 space-y-4">
               <div class="space-y-1">
@@ -107,7 +108,7 @@ export default function ProfileFieldsSection() {
                 </Button>
               </div>
             </Card>
-
+<Card class="p-5 space-y-4">
             {/* Custom fields */}
             <div class="space-y-2">
               <div class="space-y-0.5">
@@ -131,7 +132,9 @@ export default function ProfileFieldsSection() {
                 </div>
               </Show>
             </div>
-          </div>
+          </Card>
+						</div>
+
         )}
       </Show>
     </SubPageContent>

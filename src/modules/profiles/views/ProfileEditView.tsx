@@ -347,7 +347,7 @@ export default function ProfileEditView() {
                 </Show>
               </div>
             </Card>
-
+<Card class="p-5 space-y-4">
             {/* Profile identity */}
             <Section title={t("profiles.group_basic")}>
               <Field label={t("profiles.profile_name_label")} hint={t("profiles.profile_name_hint")}>
@@ -399,7 +399,8 @@ export default function ProfileEditView() {
                 />
               </Show>
             </Section>
-
+</Card>
+<Card class="p-5 space-y-4">
             {/* Personal */}
             <Section title={t("profiles.group_personal")}>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -439,6 +440,8 @@ export default function ProfileEditView() {
                 </Field>
               </div>
             </Section>
+</Card>
+<Card class="p-5 space-y-4">
 
             {/* Interests */}
             <Section title={t("profiles.group_interests")}>
@@ -457,6 +460,8 @@ export default function ProfileEditView() {
                 </Field>
               </div>
             </Section>
+</Card>
+<Card class="p-5 space-y-4">
 
             {/* Culture */}
             <Section title={t("profiles.group_culture")}>
@@ -475,6 +480,8 @@ export default function ProfileEditView() {
                 </Field>
               </div>
             </Section>
+</Card>
+<Card class="p-5 space-y-4">
 
             {/* Work & Education */}
             <Section title={t("profiles.group_work")}>
@@ -487,6 +494,8 @@ export default function ProfileEditView() {
                 </Field>
               </div>
             </Section>
+</Card>
+<Card class="p-5 space-y-4">
 
             {/* Contact */}
             <Section title={t("profiles.group_contact")}>
@@ -497,6 +506,8 @@ export default function ProfileEditView() {
                 <Input class="w-full" type="text" name="channels" value={p().channels ?? ""} />
               </Field>
             </Section>
+</Card>
+<Card class="p-5 space-y-4">
 
             {/* Admin-defined custom fields (/admin → Profile Fields) */}
             <Show when={(p().custom_fields?.length ?? 0) > 0}>
@@ -517,7 +528,8 @@ export default function ProfileEditView() {
                 <span class="text-xs text-muted">{t("profiles.profile_name_hint")}</span>
               </Show>
             </div>
-          </form>
+</Card>
+						</form>
         )}
       </Show>
     </div>

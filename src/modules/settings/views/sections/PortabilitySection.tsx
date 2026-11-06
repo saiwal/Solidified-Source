@@ -18,14 +18,17 @@ interface PortabilityMeta {
 }
 
 const SECTION_OPTIONS = [
-  { value: "channel",     labelKey: "settings.portability_section_channel" },
-  { value: "connections", labelKey: "settings.portability_section_connections" },
-  { value: "config",      labelKey: "settings.portability_section_config" },
-  { value: "apps",        labelKey: "settings.portability_section_apps" },
-  { value: "chatrooms",   labelKey: "settings.portability_section_chatrooms" },
-  { value: "events",      labelKey: "settings.portability_section_events" },
-  { value: "webpages",    labelKey: "settings.portability_section_webpages" },
-  { value: "wikis",       labelKey: "settings.portability_section_wikis" },
+  { value: "channel", labelKey: "settings.portability_section_channel" },
+  {
+    value: "connections",
+    labelKey: "settings.portability_section_connections",
+  },
+  { value: "config", labelKey: "settings.portability_section_config" },
+  { value: "apps", labelKey: "settings.portability_section_apps" },
+  { value: "chatrooms", labelKey: "settings.portability_section_chatrooms" },
+  { value: "events", labelKey: "settings.portability_section_events" },
+  { value: "webpages", labelKey: "settings.portability_section_webpages" },
+  { value: "wikis", labelKey: "settings.portability_section_wikis" },
 ] as const;
 
 export default function PortabilitySection() {
@@ -62,24 +65,43 @@ export default function PortabilitySection() {
       toast.error(t("settings.portability_no_sections"));
       return;
     }
-    const params = new URLSearchParams({ sections: Array.from(selected()).join(",") });
+    const params = new URLSearchParams({
+      sections: Array.from(selected()).join(","),
+    });
     const a = document.createElement("a");
     a.href = `/spa/portability/export?${params.toString()}`;
     a.click();
   }
 
   return (
-    <SubPageContent panel={true} title={t("settings.title_portability")} description={t("settings.desc_portability")}>
-      <Show when={meta()} fallback={<div class="text-sm text-muted">{t("settings.load_error")}</div>}>
-        {(m) => (
-          <Show
-            when={m().export_enabled}
-            fallback={<div class="text-sm text-muted">{t("settings.portability_not_installed")}</div>}
-          >
-            <Card class="p-5 space-y-4">
+    <SubPageContent
+      panel={true}
+      title={t("settings.title_portability")}
+      description={t("settings.desc_portability")}
+    >
+      <Card class="p-5 space-y-4">
+        <Show
+          when={meta()}
+          fallback={
+            <div class="text-sm text-muted">{t("settings.load_error")}</div>
+          }
+        >
+          {(m) => (
+            <Show
+              when={m().export_enabled}
+              fallback={
+                <div class="text-sm text-muted">
+                  {t("settings.portability_not_installed")}
+                </div>
+              }
+            >
               <div>
-                <h3 class="text-sm font-semibold text-txt">{t("settings.portability_export_title")}</h3>
-                <p class="text-xs text-muted mt-1">{t("settings.portability_export_desc")}</p>
+                <h3 class="text-sm font-semibold text-txt">
+                  {t("settings.portability_export_title")}
+                </h3>
+                <p class="text-xs text-muted mt-1">
+                  {t("settings.portability_export_desc")}
+                </p>
               </div>
 
               <div class="space-y-2">
@@ -87,7 +109,11 @@ export default function PortabilitySection() {
                   {t("settings.portability_sections")}
                 </label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <For each={SECTION_OPTIONS.filter((opt) => m().sections.includes(opt.value))}>
+                  <For
+                    each={SECTION_OPTIONS.filter((opt) =>
+                      m().sections.includes(opt.value),
+                    )}
+                  >
                     {(section) => (
                       <label class="flex items-center gap-2 text-sm text-txt cursor-pointer">
                         <input
@@ -103,20 +129,31 @@ export default function PortabilitySection() {
                 </div>
               </div>
 
-              <PageActions mobileOnly actions={[
-                { label: t("settings.portability_download_btn"), icon: MdOutlineDownload, onClick: handleDownload, primary: true },
-              ]} />
+              <PageActions
+                mobileOnly
+                actions={[
+                  {
+                    label: t("settings.portability_download_btn"),
+                    icon: MdOutlineDownload,
+                    onClick: handleDownload,
+                    primary: true,
+                  },
+                ]}
+              />
               <Button onClick={handleDownload}>
                 {t("settings.portability_download_btn")}
               </Button>
-            </Card>
-          </Show>
-        )}
-      </Show>
-
-      <Card class="p-5 space-y-2">
-        <h3 class="text-sm font-semibold text-txt">{t("settings.portability_import_title")}</h3>
-        <p class="text-xs text-muted">{t("settings.portability_import_desc")}</p>
+            </Show>
+          )}
+        </Show>
+      </Card>
+      <Card class="p-5 space-y-4">
+        <h3 class="text-sm font-semibold text-txt">
+          {t("settings.portability_import_title")}
+        </h3>
+        <p class="text-xs text-muted">
+          {t("settings.portability_import_desc")}
+        </p>
         <A
           href="/import"
           class="inline-block px-4 py-2 text-sm font-medium rounded-lg border border-rim text-txt

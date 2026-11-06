@@ -7,6 +7,7 @@ import type { AdminSecurity } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Field, Textarea } from "@ui/Field";
 import { Toggle } from "@ui/Toggle";
+import { Card } from "@ui/Card";
 
 export default function SecuritySection() {
   const { t } = useI18n();
@@ -25,6 +26,7 @@ export default function SecuritySection() {
       title={t("admin.security_title")}
       description={t("admin.security_desc")}
     >
+		<Card class="p-5 space-y-4">
       <Show when={data()} fallback={<Skeleton />}>
         {(d) => (
           <form id="security-form" onSubmit={handleSubmit} class="space-y-5">
@@ -81,6 +83,7 @@ export default function SecuritySection() {
           </form>
         )}
       </Show>
+		</Card>
     </SubPageContent>
   );
 }

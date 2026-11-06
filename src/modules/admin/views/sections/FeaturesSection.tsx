@@ -7,6 +7,7 @@ import { fetchAdminFeatures, saveAdminFeatures } from "../../api";
 import type { FeatureItem } from "../../types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Switch } from "@ui/Toggle";
+import { Card } from "@ui/Card";
 
 export default function FeaturesSection() {
   const { t } = useI18n();
@@ -42,6 +43,7 @@ export default function FeaturesSection() {
       title={t("admin.features_title")}
       description={t("admin.features_desc")}
     >
+		<Card class="p-5 space-y-4">
       <Show when={features()} fallback={<Skeleton />}>
         {(f) => (
           <form id="features-form" onSubmit={handleSubmit} class="space-y-6">
@@ -60,6 +62,7 @@ export default function FeaturesSection() {
           </form>
         )}
       </Show>
+			</Card>
     </SubPageContent>
   );
 }

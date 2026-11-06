@@ -8,6 +8,7 @@ import { formatQuotaValue, humanBytes, quotaPercent } from "@/shared/lib/quota-f
 import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Field, Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
 export default function AccountSection() {
   const { t } = useI18n();
@@ -19,6 +20,7 @@ export default function AccountSection() {
 
   return (
     <SubPageContent title={t("settings.title_account")} description={t("settings.desc_account")}>
+		<Card class="p-5 space-y-4">
       <Show when={data()} fallback={<Skeleton />}>
         <form onSubmit={handleSubmit} class="space-y-6">
           <Field label={t("settings.email")}>
@@ -44,6 +46,7 @@ export default function AccountSection() {
           <StorageBreakdown storage={data()!.storage!} />
         </Show>
       </Show>
+		</Card>
     </SubPageContent>
   );
 }

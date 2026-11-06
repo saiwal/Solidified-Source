@@ -19,6 +19,7 @@ import { Input } from "@ui/Field";
 import { Switch } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
 import { Tabs } from "@ui/Tabs";
+import { Card } from "@ui/Card";
 
 interface AppEntry {
   name: string;
@@ -185,6 +186,7 @@ export default function IntegrationsSection() {
       title={t("settings.title_integrations")}
       description={t("settings.desc_integrations")}
     >
+		<Card class="p-5 space-y-4">
       <div class="flex gap-2 flex-wrap">
         <Tabs
           label={t("settings.title_integrations")}
@@ -296,7 +298,7 @@ export default function IntegrationsSection() {
           </div>
         </Show>
       </Show>
-
+</Card>
       <Show when={configApp() === "nsfw"}>
         <NsfwConfigModal onClose={() => setConfigApp(null)} />
       </Show>

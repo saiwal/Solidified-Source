@@ -445,8 +445,8 @@
 .hz-app-root {
   background-image:
     linear-gradient(
-      color-mix(in srgb, var(--color-base) 75%, transparent),
-      color-mix(in srgb, var(--color-base) 75%, transparent)
+      color-mix(in srgb, var(--color-base) 60%, transparent),
+      color-mix(in srgb, var(--color-base) 60%, transparent)
     ),
     var(--hz-bg-image, none);
   background-size:     auto, var(--hz-bg-size, auto);

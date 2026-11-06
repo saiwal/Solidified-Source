@@ -6,8 +6,13 @@ import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
 import { Field, Input } from "@ui/Field";
+import { Card } from "@ui/Card";
 
-interface DangerData { nick: string; name: string; account_email: string; }
+interface DangerData {
+  nick: string;
+  name: string;
+  account_email: string;
+}
 
 export default function DangerSection() {
   const { t } = useI18n();
@@ -31,7 +36,10 @@ export default function DangerSection() {
     try {
       const res = await apiFetch("/spa/settings/danger", {
         method: "POST",
-        body: JSON.stringify({ action: "remove_channel", password: password() }),
+        body: JSON.stringify({
+          action: "remove_channel",
+          password: password(),
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error?.message ?? "Failed");
@@ -43,54 +51,68 @@ export default function DangerSection() {
   };
 
   return (
-    <SubPageContent title={t("settings.title_danger")} description={t("settings.desc_danger")}>
+    <SubPageContent
+      title={t("settings.title_danger")}
+      description={t("settings.desc_danger")}
+    >
+		<Card class="p-5 space-y-4">
       <Show when={data()}>
         <div class="space-y-6">
-
           {/* Remove channel */}
-            <div>
-              <h3 class="text-sm font-semibold text-danger-txt">{t("settings.danger_remove_channel")}</h3>
-              <p class="text-xs text-danger-txt mt-1">
-                Permanently deletes <strong>{data()!.name}</strong> (@{data()!.nick}) and all
-                its posts, connections, and data. This cannot be undone.
-              </p>
-            </div>
+          <div>
+            <h3 class="text-sm font-semibold text-danger-txt">
+              {t("settings.danger_remove_channel")}
+            </h3>
+            <p class="text-xs text-danger-txt mt-1">
+              Permanently deletes <strong>{data()!.name}</strong> (@
+              {data()!.nick}) and all its posts, connections, and data. This
+              cannot be undone.
+            </p>
+          </div>
 
-            <div class="space-y-2">
-              <Field label={t("settings.danger_type_to_confirm").replace("{{nick}}", data()!.nick)} size="sm">
-                <Input
+          <div class="space-y-2">
+            <Field
+              label={t("settings.danger_type_to_confirm").replace(
+                "{{nick}}",
+                data()!.nick,
+              )}
+              size="sm"
+            >
+              <Input
                 class="w-full max-w-xs"
                 type="text"
                 value={confirm()}
                 onInput={(e) => setConfirm(e.currentTarget.value)}
                 placeholder={data()!.nick}
-                />
-              </Field>
-            </div>
+              />
+            </Field>
+          </div>
 
-            <div class="space-y-2">
-              <Field label={t("settings.danger_password_label")} size="sm">
-                <Input
+          <div class="space-y-2">
+            <Field label={t("settings.danger_password_label")} size="sm">
+              <Input
                 class="w-full max-w-xs"
                 type="password"
                 value={password()}
                 onInput={(e) => setPassword(e.currentTarget.value)}
                 placeholder={t("settings.danger_password_placeholder")}
                 autocomplete="current-password"
-                />
-              </Field>
-            </div>
+              />
+            </Field>
+          </div>
 
-            <Button
-              variant="danger"
-              disabled={confirm() !== data()!.nick || !password() || busy()}
-              onClick={removeChannel}
-            >
-              {busy() ? t("settings.danger_removing") : t("settings.danger_remove_btn")}
-            </Button>
-
+          <Button
+            variant="danger"
+            disabled={confirm() !== data()!.nick || !password() || busy()}
+            onClick={removeChannel}
+          >
+            {busy()
+              ? t("settings.danger_removing")
+              : t("settings.danger_remove_btn")}
+          </Button>
         </div>
       </Show>
+		</Card>
     </SubPageContent>
   );
 }

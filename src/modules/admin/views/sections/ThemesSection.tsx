@@ -12,6 +12,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { Switch } from "@ui/Toggle";
 import { Badge } from "@ui/Badge";
 import { Button } from "@ui/Button";
+import { Card } from "@ui/Card";
 
 export default function ThemesSection() {
   const { t } = useI18n();
@@ -32,7 +33,7 @@ export default function ThemesSection() {
             <div class="space-y-2">
               <For each={r().themes}>
                 {(theme) => (
-                  <div class={`rounded-lg border p-3 bg-surface ${theme.current ? "border-accent" : "border-rim"}`}>
+                  <Card class="p-5 space-y-4">
                     <div class="flex items-start justify-between gap-4">
                       <div class="space-y-0.5 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
@@ -86,7 +87,7 @@ export default function ThemesSection() {
                         save={saveThemeSettings}
                       />
                     </Show>
-                  </div>
+                  </Card>
                 )}
               </For>
             </div>
