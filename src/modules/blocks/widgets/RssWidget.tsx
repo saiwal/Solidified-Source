@@ -9,6 +9,7 @@ import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Card } from "@ui/Card";
 import { WidgetShell } from "@ui/WidgetShell";
+import { Spinner } from "@ui/Spinner";
 
 interface FeedItem {
   title: string;
@@ -71,15 +72,9 @@ export default function RssWidget(props: WidgetProps) {
       >
 
         <Show when={feed.loading}>
-          <ul class="divide-y divide-rim animate-pulse">
-            <For each={[75, 55, 85]}>
-              {(w) => (
-                <li class="px-(--ws-px) py-2.5">
-                  <div class="h-2.5 bg-elevated rounded" style={{ width: `${w}%` }} />
-                </li>
-              )}
-            </For>
-          </ul>
+          <div class="flex justify-center py-6">
+            <Spinner size="lg" tone="muted" label={t("ui.loading")} />
+          </div>
         </Show>
 
         <Show when={feed.error}>
