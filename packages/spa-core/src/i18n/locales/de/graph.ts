@@ -2,6 +2,9 @@ import type { RawDictionary } from "../namespaces/types";
 
 export const graph: RawDictionary["graph"] = {
   title: "Graph",
+  title_mine: "Mein Graph",
+  title_of: "Graph von {{name}}",
+  subtitle_of: "Wie die Wiki-Seiten, Artikel, Karten, Notizen und Beiträge von {{name}} aufeinander verweisen",
   subtitle: "Wie deine Wiki-Seiten, Artikel, Karten, Notizen und Beiträge aufeinander verweisen",
   empty: "Noch verweist nichts auf etwas. Nutze [[Seitentitel]] oder füge einen Permalink in eine Seite, einen Artikel, eine Notiz oder einen Beitrag ein.",
   filter: "Anzeigen",

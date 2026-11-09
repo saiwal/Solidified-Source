@@ -10,6 +10,7 @@ import {
 } from "d3-force";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
+import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { cardClass } from "@ui/Card";
 import { Chip } from "@ui/Chip";
@@ -32,6 +33,7 @@ export default function GraphView() {
   const { t } = useI18n();
   const params = useParams();
   const pageNick = usePageNick();
+  const owner = usePageOwnerName();
   const nick = () => params.nick || pageNick() || null;
   const [graph] = createQueryResource("links-graph", nick, fetchGraph);
 
@@ -340,8 +342,8 @@ export default function GraphView() {
     <div class="flex flex-col gap-3 p-3 md:p-4 h-[calc(100dvh-8rem)] min-h-[24rem]">
       <div class="flex flex-wrap items-end gap-x-4 gap-y-2">
         <div class="min-w-0 flex-1">
-          <h1 class="text-xl font-semibold text-txt">{t("graph.title")}</h1>
-          <p class="text-sm text-muted">{t("graph.subtitle")}</p>
+          <h1 class="text-xl font-semibold text-txt">{owner() === null ? t("graph.title_mine") : t("graph.title_of", { name: owner()! })}</h1>
+          <p class="text-sm text-muted">{owner() === null ? t("graph.subtitle") : t("graph.subtitle_of", { name: owner()! })}</p>
         </div>
         <Show when={graph()}>
           {(g) => <span class="text-xs text-muted">{t("graph.stats", { nodes: g().nodes.length, edges: g().edges.length })}</span>}

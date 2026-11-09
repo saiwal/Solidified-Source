@@ -3975,6 +3975,9 @@ export type RawDictionary = {
   };
   graph: {
     title: string;
+    title_mine: string;
+    title_of: string;
+    subtitle_of: string;
     subtitle: string;
     empty: string;
     filter: string;

@@ -2,6 +2,9 @@ import type { RawDictionary } from "../namespaces/types";
 
 export const graph: RawDictionary["graph"] = {
   title: "ग्राफ़",
+  title_mine: "मेरा ग्राफ़",
+  title_of: "{{name}} का ग्राफ़",
+  subtitle_of: "{{name}} के विकि पेज, लेख, कार्ड, नोट्स और पोस्ट एक-दूसरे से कैसे जुड़े हैं",
   subtitle: "आपके विकि पेज, लेख, कार्ड, नोट्स और पोस्ट एक-दूसरे से कैसे जुड़े हैं",
   empty: "अभी कुछ भी किसी से लिंक नहीं है। किसी पेज, लेख, नोट या पोस्ट में [[पेज शीर्षक]] या परमालिंक डालें।",
   filter: "दिखाएँ",

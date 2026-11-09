@@ -2,6 +2,9 @@ import type { RawDictionary } from "../namespaces/types";
 
 export const graph: RawDictionary["graph"] = {
   title: "Graph",
+  title_mine: "My graph",
+  title_of: "{{name}}'s graph",
+  subtitle_of: "How {{name}}'s wiki pages, articles, cards, notes and posts link to each other",
   subtitle: "How your wiki pages, articles, cards, notes and posts link to each other",
   empty: "Nothing links to anything yet. Use [[Page title]] or paste a permalink into a page, article, note or post.",
   filter: "Show",
