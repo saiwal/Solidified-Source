@@ -61,3 +61,8 @@ export function zidifyLinks(html: string, address = myAddress, host = currentHos
         : m,
   );
 }
+
+/** zid() for a JSX href/src: same url, unescaped (zid() emits HTML-escaped `&amp;`). */
+export function zrl(url: string): string {
+  return zid(url).replace(/&amp;/g, "&");
+}

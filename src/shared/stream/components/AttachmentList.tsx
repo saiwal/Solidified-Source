@@ -2,7 +2,7 @@ import { createSignal, For, Show } from "solid-js";
 import type { StreamAttachment } from "@utsukta/spa-core/types/post.types";
 import { classifyPreview } from "@utsukta/spa-core/lib/filePreview";
 import FilePreviewModal from "@/shared/views/FilePreviewModal";
-import { zid } from "@utsukta/spa-core/lib/zid";
+import { zrl } from "@utsukta/spa-core/lib/zid";
 import { MdOutlineArticle, MdOutlineAttach_file, MdOutlineExpand_more, MdOutlineOpen_in_new } from "solid-icons/md";
 import { Button } from "@ui/Button";
 
@@ -34,7 +34,7 @@ function photoDisplayUrl(href: string): string {
   const hash = href.split("/attach/").pop() ?? href.split("/").pop() ?? "";
   let origin = "";
   try { origin = new URL(href, location.href).origin; } catch { /* relative */ }
-  return zid(`${origin}/photo/${hash}-2`);
+  return zrl(`${origin}/photo/${hash}-2`);
 }
 
 export default function AttachmentList(props: { attachments: StreamAttachment[]; compact?: boolean }) {
@@ -113,7 +113,7 @@ export default function AttachmentList(props: { attachments: StreamAttachment[];
                       when={previewable()}
                       fallback={
                         <a
-                          href={zid(file.href)}
+                          href={zrl(file.href)}
                           target="_blank"
                           rel="noopener noreferrer"
                           class="flex items-center gap-2 px-3 py-2 rounded-lg border border-rim bg-elevated
@@ -172,7 +172,7 @@ function LinkChip(props: { link: StreamAttachment }) {
 
   return (
     <a
-      href={zid(props.link.href)}
+      href={zrl(props.link.href)}
       target="_blank"
       rel="noopener noreferrer"
       class="flex items-center gap-2 px-3 py-2 rounded-lg border border-rim bg-elevated
@@ -201,7 +201,7 @@ function ImageChip(props: { img: StreamAttachment; compact?: boolean }) {
         when={!failed()}
         fallback={
           <a
-            href={zid(props.img.href)}
+            href={zrl(props.img.href)}
             target="_blank"
             rel="noopener noreferrer"
             class="flex items-center gap-2 px-3 py-2 rounded-lg border border-rim bg-elevated

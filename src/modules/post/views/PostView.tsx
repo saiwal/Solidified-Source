@@ -1,4 +1,5 @@
 // src/modules/post/views/PostView.tsx
+import { zrl } from "@utsukta/spa-core/lib/zid";
 import { createMemo, createSignal, Show } from "solid-js";
 import { useNavigate, useParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -294,7 +295,7 @@ export default function PostView() {
             <PageActions mobileOnly actions={[
               { label: t("share.action"), icon: MdOutlineShare, onClick: () => openShare(shareTargetForPost(n())) },
               // A federated post's home copy; a local one's permalink is this page.
-              { label: t("post.original"), icon: MdOutlineOpen_in_new, href: n().permalink,
+              { label: t("post.original"), icon: MdOutlineOpen_in_new, href: zrl(n().permalink),
                 show: !!n().permalink && !n().permalink.startsWith(location.origin) },
             ]} />
             <PostCard

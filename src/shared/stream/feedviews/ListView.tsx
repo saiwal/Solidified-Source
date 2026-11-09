@@ -1,4 +1,5 @@
 // src/shared/stream/feedviews/ListView.tsx
+import { zrl } from "@utsukta/spa-core/lib/zid";
 import { For, Show, createSignal, onMount, onCleanup } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, flattenThread, isRootPost } from "@utsukta/spa-core/lib/thread";
@@ -182,7 +183,7 @@ function RowDetails(props: {
 
       <Show when={p.permalink}>
         <a
-          href={p.permalink}
+          href={zrl(p.permalink)}
           target="_blank"
           rel="noopener noreferrer"
           class="flex items-center gap-1 text-[0.6875rem] px-2 py-1 rounded-md

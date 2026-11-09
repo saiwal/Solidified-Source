@@ -1,4 +1,5 @@
 // src/shared/stream/components/PostCard.tsx
+import { zrl } from "@utsukta/spa-core/lib/zid";
 import { isolate } from "@utsukta/spa-core/lib/isolate";
 import {
   createSignal,
@@ -107,6 +108,9 @@ function subtreeContainsUuid(nodes: ThreadNode[], uuid: string): boolean {
 // Persists across remounts caused by setNodeChildren updating the post reference.
 // openVersion is bumped on every change so the deep-thread collapse can react to it.
 const openedByMid = new Set<string>();
+// Threads the user closed by hand: expandAll must not reopen them on remount
+// (loading another comment page rebuilds the nodes, remounting every card).
+const closedByMid = new Set<string>();
 const [openVersion, setOpenVersion] = createSignal(0);
 function setOpened(mid: string, open: boolean) {
   if (open === openedByMid.has(mid)) return;
@@ -771,6 +775,8 @@ export default function PostCard(props: {
   }
 
   function persistShow(v: boolean) {
+    if (v) closedByMid.delete(props.post.mid);
+    else closedByMid.add(props.post.mid);
     setOpened(props.post.mid, v);
     setShowComments(v);
   }
@@ -1064,7 +1070,7 @@ export default function PostCard(props: {
   // When a parent post requests expanding all nested threads, open this one.
   // Uses untrack so manual closes aren't overridden by a re-run of the effect.
   createEffect(() => {
-    if (props.expandAll && !untrack(showComments)) {
+    if (props.expandAll && !untrack(showComments) && !closedByMid.has(props.post.mid)) {
       toggleComments();
     }
   });
@@ -1515,7 +1521,7 @@ export default function PostCard(props: {
             <Show when={!!props.post.permalink}>
               <MenuItem
                 icon={<BiRegularLinkExternal size={15} />}
-                href={props.post.permalink}
+                href={zrl(props.post.permalink)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -2142,7 +2148,7 @@ export default function PostCard(props: {
           <Show when={!!props.post.permalink}>
             <MenuItem
               icon={<BiRegularLinkExternal size={15} />}
-              href={props.post.permalink}
+              href={zrl(props.post.permalink)}
               target="_blank"
               rel="noopener noreferrer"
             >
