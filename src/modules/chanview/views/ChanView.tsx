@@ -33,6 +33,7 @@ import { Card } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
+import { ChatAppsButton } from "@/shared/views/ChatApps";
 
 interface RemotePost {
   id: string;
@@ -380,6 +381,10 @@ export default function ChanView() {
                         <MdOutlineMail size={16} />
                         <span>{t("ui.send_dm")}</span>
                       </Button>
+                    </Show>
+
+                    <Show when={!isSelf()}>
+                      <ChatAppsButton xchan={xdata().xchan_hash} size="md" />
                     </Show>
 
                     <Show when={xdata().local_nick}>

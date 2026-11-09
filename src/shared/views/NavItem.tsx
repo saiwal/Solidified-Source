@@ -37,6 +37,7 @@ import {
   MdFillHardware,
   MdFillVideogame_asset,
   MdFillLibrary_music,
+  MdFillForum,
   MdOutlineDrag_indicator,
   MdFillGavel,
   MdFillStyle,
@@ -94,6 +95,7 @@ const ICON_MAP: Record<string, (size: number) => JSX.Element> = {
   tools: (s) => <MdFillHardware size={s} />,
 	games: (s) => <MdFillVideogame_asset size={s}/>,
   jellyfin: (s) => <MdFillLibrary_music size={s} />,
+  matrix: (s) => <MdFillForum size={s} />,
   moderate: (s) => <MdFillGavel size={s} />,
   poll: (s) => <MdFillPoll size={s} />,
 };

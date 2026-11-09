@@ -44,6 +44,8 @@ const NoteComposerModal = lazy(() => import("@/shared/editor/composers/NoteCompo
 const PostDetailModal = lazy(() => import("./PostDetailModal"));
 const EventCreatorModal = lazy(() => import("@/modules/calendar/widgets/EventCreatorModal"));
 const ChatWindow = lazy(() => import("@/modules/chat/views/ChatWindow"));
+// Inside the matrix chunk, so the SDK still loads only when a room is opened.
+const MatrixWindow = lazy(() => import("@/modules/messenger/matrix/MatrixParts").then((m) => ({ default: m.MatrixWindow })));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BY_KIND: Record<ComposerKind, Component<any>> = {
@@ -55,6 +57,7 @@ const BY_KIND: Record<ComposerKind, Component<any>> = {
   thread: PostDetailModal,
   event: EventCreatorModal,
   chat: ChatWindow,
+  matrix: MatrixWindow,
 };
 
 /**

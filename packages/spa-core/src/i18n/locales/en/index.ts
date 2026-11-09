@@ -40,6 +40,7 @@ import { notepad }    from "./notepad";
 import { graph }      from "./graph";
 import { jellyfin }   from "./jellyfin";
 import { messenger }  from "./messenger";
+import { matrix }     from "./matrix";
 import { channel_create } from "./channel_create";
 import { blocklist }  from "./blocklist";
 import { notify }     from "./notify";
@@ -88,6 +89,7 @@ export const dict: RawDictionary = {
   graph,
   jellyfin,
   messenger,
+  matrix,
   channel_create,
   blocklist,
   notify,

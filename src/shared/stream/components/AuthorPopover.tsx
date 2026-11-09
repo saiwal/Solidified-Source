@@ -23,6 +23,7 @@ import { Input } from "@ui/Field";
 import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
+import { ChatAppsButton } from "@/shared/views/ChatApps";
 
 interface Props {
   name: string;
@@ -466,6 +467,7 @@ export default function AuthorPopover(props: Props) {
                     <IconButton label={t("ui.send_dm")} size="sm" onClick={handleDm}>
                       <MdOutlineEmail size={16} />
                     </IconButton>
+                    <ChatAppsButton xchan={xchanHash()} />
                     <Show when={chatroomsInstalled()}>
                       <button
                         onClick={handleChatButtonClick}

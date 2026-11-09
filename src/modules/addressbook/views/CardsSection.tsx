@@ -3,6 +3,7 @@ import {
   MdOutlineAdd,
   MdOutlineDelete,
   MdOutlineEdit,
+  MdOutlineForum,
   MdOutlinePerson,
   MdOutlineSearch,
 } from "solid-icons/md";
@@ -19,10 +20,11 @@ import {
   type CardsResponse,
 } from "../api";
 import CardEditorModal from "./CardEditorModal";
-import { IconButton } from "@ui/Button";
+import { IconButton, iconButtonClass } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { cardClass } from "@ui/Card";
 import { Avatar } from "@ui/Avatar";
+import { CHAT_LABEL, classifyChat } from "@utsukta/spa-core/lib/chat-links";
 
 interface Props {
   book: Addressbook;
@@ -156,6 +158,14 @@ function CardRow(props: { card: Card; onEdit: () => void; onDelete: () => void }
       </div>
 
       <div class="flex items-center gap-1 shrink-0">
+        <For each={c().impps.map((i) => classifyChat(`${i.type} ${i.label}`, i.value)).filter((a) => !!a)}>
+          {(a) => (
+            <a href={a!.href} target="_blank" rel="noopener noreferrer" class={iconButtonClass("default", "sm")}
+               title={a!.value} aria-label={t("ui.chat_on", { app: CHAT_LABEL[a!.type] }) as string}>
+              <MdOutlineForum class="w-4 h-4" />
+            </a>
+          )}
+        </For>
         <IconButton label={t("addressbook.edit_contact") as string} size="sm" onClick={props.onEdit}>
           <MdOutlineEdit class="w-4 h-4" />
         </IconButton>

@@ -41,6 +41,7 @@
     "leaflet": "^1.9.4",
     "libsodium-wrappers": "^0.8.4",
     "marked": "^18.0.0",
+    "matrix-js-sdk": "44.0.0",
     "mermaid": "^11.17.2",
     "photoswipe": "^5.4.4",
     "plyr": "^3.8.4",

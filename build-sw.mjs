@@ -43,7 +43,8 @@ const OUT_DIR = path.resolve(__dirname, SW_OUT_DIR_REL);
 // This replaced a hand-kept list of filename globs, two of them rolldown
 // chunk ids that silently stopped matching whenever chunk boundaries moved —
 // the precache had crept to 7.4 MB.
-const HEAVY_TOOLS = /\/excalidraw\/|ImageEditor/;
+// messenger/matrix/: the Matrix tab (matrix-js-sdk + 7.8 MB crypto wasm), lazy behind its tab.
+const HEAVY_TOOLS = /\/excalidraw\/|ImageEditor|\/messenger\/matrix\/|matrix-js-sdk|matrix-sdk-crypto|rust-crypto/;
 const manifest = JSON.parse(fs.readFileSync(path.join(OUT_DIR, '.vite/manifest.json'), 'utf8'));
 const shell = new Set();
 const visit = (key) => {

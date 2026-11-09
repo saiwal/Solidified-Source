@@ -28,6 +28,7 @@ export const nav: RawDictionary["nav"] = {
   excalidraw:    "Excalidraw",
   openstreetmap: "OpenStreetMap",
   jellyfin:      "Jellyfin",
+  matrix: "Matrix",
   inbox_desc: "Vereinheitlichter Posteingang mit Ordnern, Filtern und Offline-Lesen.",
   messenger: "Messenger",
   tools_desc: "Kleine Helfer: Konverter, Generatoren und Diagramm-Editoren.",
@@ -35,6 +36,7 @@ export const nav: RawDictionary["nav"] = {
   excalidraw_desc: "Whiteboard-Zeichnungen, in /tools und als Editor-Schaltfläche.",
   openstreetmap_desc: "Karten einbetten und Orte für Beiträge und Termine wählen.",
   jellyfin_desc: "Musik vom eigenen Jellyfin-Server abspielen und teilen, was du gerade hörst.",
+  matrix_desc: "Über Matrix im Messenger chatten – Ende-zu-Ende-verschlüsselt, nur in diesem Browser angemeldet.",
   // action items
   profile:       "Profil",
   edit_profile:  "Profil bearbeiten",

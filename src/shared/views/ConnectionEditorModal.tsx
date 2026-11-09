@@ -27,6 +27,7 @@ import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
 import { Tabs } from "@ui/Tabs";
+import { ChatAddressFields } from "@/shared/views/ChatApps";
 interface Props {
   connection: Connection;
   authorName: string;
@@ -401,6 +402,13 @@ function ConnectionEditorModal(props: Props) {
                     <Badge>{s}</Badge>
                   )}
                 </For>
+              </div>
+
+              <div>
+                <div class="text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">
+                  {t("ui.chat_addresses")}
+                </div>
+                <ChatAddressFields xchan={props.connection.xchan_hash} />
               </div>
             </div>
           </Show>

@@ -47,7 +47,7 @@ export const [defaultPostMode, setDefaultPostMode] = persistedSignal<
 
 // A chat sits beside the page rather than taking it over, so it always docks.
 const defaultModeFor = (kind: ComposerKind): ComposerMode =>
-  kind === "chat" ? "dock" : kind === "thread" ? defaultPostMode() : defaultComposerMode();
+  kind === "chat" || kind === "matrix" ? "dock" : kind === "thread" ? defaultPostMode() : defaultComposerMode();
 
 export const isExpanded = (m: ComposerMode) => m !== "min";
 
@@ -121,7 +121,8 @@ export function enforceModeRules(list: readonly ModeHolder[], id: string): void 
  *  session, and minimizing keeps it joined and polling. */
 /** `event` is EventCreatorModal — a form with no autosaved draft; minimizing it
  *  keeps it mounted, which is all the state it has. */
-export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread" | "event" | "chat";
+/** `matrix` is a Matrix room (messenger/matrix MatrixWindow), docked like `chat`. */
+export type ComposerKind = "post" | "dm" | "article" | "card" | "note" | "thread" | "event" | "chat" | "matrix";
 
 /**
  * Provided per entry by `ModalHost`. Absent for the callsites that still
@@ -316,6 +317,11 @@ export function openEvent(props: Record<string, unknown> & { event?: { id: strin
  */
 export function openChat(nick: string, roomId: number, name = "", mode?: ComposerMode): string {
   return openComposer({ kind: "chat", scope: `chat:${nick}:${roomId}`, title: name, props: { nick, roomId }, mode });
+}
+
+/** Open a Matrix room in a window (docked by default), or bring its open one forward. */
+export function openMatrix(roomId: string, name = "", mode?: ComposerMode): string {
+  return openComposer({ kind: "matrix", scope: `matrix:${roomId}`, title: name, props: { roomId }, mode });
 }
 
 export function closeComposer(id: string): void {

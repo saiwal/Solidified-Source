@@ -7,11 +7,12 @@
 //   /chat/:nick/new                         create a room (owner)
 //   /chat/:nick/:roomId                     a room (core's room url, so
 //                                           invites and bookmarks land here)
+//   /messenger/:nick/matrix[/…]             Matrix (own mailbox only; see matrix/MatrixParts.tsx)
 // The old /messenger/:nick/dms/… and /messenger/:nick/rooms/… urls redirect.
 // On your own nick it's your mailbox, rooms and bookmarks. On another channel
 // (local or remote visitor) it's your DMs with that channel and the rooms it
 // lets you into. Desktop shows list + pane side by side; below md, one at a time.
-import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on, onMount, type JSX } from "solid-js";
+import { For, Match, Show, Suspense, Switch, createEffect, createMemo, createSignal, lazy, on, onMount, type JSX } from "solid-js";
 import { A, useLocation, useNavigate } from "@solidjs/router";
 import { useInfiniteQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -31,6 +32,7 @@ import { groupThreads, groupName, groupMatches, shortTime, type DmGroup } from "
 import DmPane, { PinButton, decodeHtmlEntities, toRecipient } from "../DmPane";
 import { usePins, setPinned } from "../pins";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { matrixEnabled } from "../matrix-session";
 import NewDmPane from "../NewDmPane";
 import RoomPane from "../RoomPane";
 import { Button, IconButton } from "@ui/Button";
@@ -40,6 +42,12 @@ import { Tabs } from "@ui/Tabs";
 import { CountBadge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
+
+// The Matrix tab: one lazy chunk (the SDK + crypto wasm come with it), loaded
+// only when the tab opens. HEAVY_TOOLS in build-sw.mjs keeps it out of the precache.
+const matrixParts = () => import("../matrix/MatrixParts");
+const MatrixList = lazy(() => matrixParts().then((m) => ({ default: m.MatrixList })));
+const MatrixPane = lazy(() => matrixParts().then((m) => ({ default: m.MatrixPane })));
 
 /** A row holding a link plus a pin button beside it. */
 const pinRowClass = (active: boolean) =>
@@ -132,9 +140,9 @@ export default function MessengerView() {
     else if (p[2] === "rooms") navigate(p.length > 4 ? `/chat/${rest}` : `${chatBase()}${rest ? `/${rest}` : ""}`, { replace: true });
   });
   const isOwner = () => !!auth()?.isLocal && nick() === currentNick();
-  const urlTab = () => (segs()[0] === "rooms" ? "rooms" : "dms");
+  const urlTab = () => (segs()[0] === "rooms" ? "rooms" : segs()[0] === "matrix" ? "matrix" : "dms");
   // Local, so flipping tabs keeps the open conversation; follows the url.
-  const [pickedTab, setTab] = createSignal<"dms" | "rooms">(urlTab());
+  const [pickedTab, setTab] = createSignal<"dms" | "rooms" | "matrix">(urlTab());
   createEffect(on(urlTab, setTab, { defer: true }));
   const selected = () => segs().length > 1;
   const [query, setQuery] = createSignal("");
@@ -186,7 +194,14 @@ export default function MessengerView() {
   // so the switcher never flashes in and out. `tab()` folds the gate in, so
   // every caller below stays DMs-only while rooms are off.
   const roomsOn = () => !own.error && own()?.chatrooms_installed === true;
-  const tab = () => (roomsOn() ? pickedTab() : "dms");
+  // Matrix: your own mailbox only (the login lives in this browser, per
+  // channel), and only with the Matrix app on in Settings → Integrations.
+  const matrixOn = () => isOwner() && matrixEnabled();
+  const tab = () => {
+    const p = pickedTab();
+    if (p === "matrix") return matrixOn() ? "matrix" : "dms";
+    return roomsOn() ? p : "dms";
+  };
   // A /rooms url on a channel without the app: back to its DMs. Waits for this
   // nick's own answer (`loading` covers a previous channel's placeholder data).
   createEffect(() => {
@@ -273,7 +288,7 @@ export default function MessengerView() {
               class="flex-1 min-w-0 bg-transparent text-sm text-txt outline-none"
             />
           </label>
-          <Show when={roomsOn()}>
+          <Show when={roomsOn() || matrixOn()}>
           <Tabs
             label={t("nav.messenger")}
             stretch
@@ -291,12 +306,19 @@ export default function MessengerView() {
                   </span>
                 ),
               },
-              { value: "rooms" as const, label: t("messenger.tab_rooms") },
+              ...(roomsOn() ? [{ value: "rooms" as const, label: t("messenger.tab_rooms") }] : []),
+              ...(matrixOn() ? [{ value: "matrix" as const, label: t("matrix.title") }] : []),
             ]}
           />
           </Show>
         </div>
 
+        <Show when={tab() === "matrix"}>
+          <Suspense fallback={<div class="flex-1" />}>
+            <MatrixList base={`${base()}/matrix`} query={query()} activeRoom={segs()[0] === "matrix" ? segs()[1] : undefined} />
+          </Suspense>
+        </Show>
+        <Show when={tab() !== "matrix"}>
         <div class="flex-1 overflow-y-auto min-h-0">
           <Show when={tab() === "dms"}>
             <Show when={dms.isLoading}>
@@ -384,6 +406,7 @@ export default function MessengerView() {
             </Button>
           </div>
         </Show>
+        </Show>
       </aside>
 
       {/* ── Conversation ── */}
@@ -394,6 +417,11 @@ export default function MessengerView() {
             <p class="text-sm">{t("messenger.select")}</p>
           </div>
         }>
+          <Match when={segs()[0] === "matrix" && segs()[1] && matrixOn()}>
+            <Suspense fallback={<div class="flex-1" />}>
+              <MatrixPane base={`${base()}/matrix`} segs={segs().slice(1)} />
+            </Suspense>
+          </Match>
           <Match when={segs()[0] === "dm" && segs()[1] === "new" && auth()?.isLocal}>
             {/* Keyed on the navigation's state: each "new message" starts fresh. */}
             <Show when={location.state || "blank"} keyed>{(_s) => <NewDmPane base={base()} />}</Show>

@@ -39,6 +39,7 @@ import { Menu, MenuItem, MenuSeparator } from "@ui/Menu";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { Toggle } from "@ui/Toggle";
 import { Skeleton } from "@ui/Skeleton";
+import { ChatMenuItems } from "@/shared/views/ChatApps";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -329,6 +330,7 @@ function ConnectionRow(props: { conn: Connection; onChanged: () => void }) {
                   {t("ui.start_chatroom")}
                 </MenuItem>
               </Show>
+              <ChatMenuItems xchan={props.conn.xchan_hash} />
               <MenuItem icon={<MdOutlineEdit size={16} />} onClick={() => setEditOpen(true)}>
                 {t("directory.edit")}
               </MenuItem>

@@ -18,7 +18,7 @@ import {
   type ComposerMode,
 } from "@/shared/views/modal-host";
 import { draftSavedAt } from "../store/createComposerStore";
-import { MdOutlineArticle, MdOutlineCalendar_today, MdOutlineChat, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
+import { MdOutlineArticle, MdOutlineCalendar_today, MdOutlineChat, MdOutlineChat_bubble_outline, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 void helpable;
 
 import { Modal } from "@ui/Modal";
@@ -62,6 +62,9 @@ const KIND_ICON: Record<ComposerKind, () => JSX.Element> = {
   ),
   chat: () => (
     <MdOutlineChat class="w-4 h-4" />
+  ),
+  matrix: () => (
+    <MdOutlineChat_bubble_outline class="w-4 h-4" />
   ),
 };
 

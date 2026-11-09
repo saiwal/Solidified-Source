@@ -19,6 +19,7 @@ import { CopyButton } from "@ui/CopyButton";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
+import { ChatAppsButton } from "@/shared/views/ChatApps";
 
 type ChannelProfile = {
   channel_name: string;
@@ -203,6 +204,7 @@ function ProfileHeader(props: {
             </Show>
           </Show>
           <Show when={!props.isOwner}>
+            <ChatAppsButton xchan={p.channel_hash} size="md" />
             <FollowButton p={p} isVisitor={props.isVisitor} />
           </Show>
         </div>

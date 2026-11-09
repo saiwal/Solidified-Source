@@ -20,6 +20,7 @@ import { Field, Input, Select, Textarea } from "@ui/Field";
 import { Toggle } from "@ui/Toggle";
 import { Card } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
+import { ChatAddressFields } from "@/shared/views/ChatApps";
 // Lazy-loaded so Filerobot + React don't inflate the profile chunk
 const ImageEditor = isolate(lazy(() => import("@/shared/views/ImageEditor")));
 
@@ -505,6 +506,9 @@ export default function ProfileEditView() {
               <Field label={t("profiles.channels")}>
                 <Input class="w-full" type="text" name="channels" value={p().channels ?? ""} />
               </Field>
+            </Section>
+            <Section title={t("ui.chat_addresses")}>
+              <ChatAddressFields />
             </Section>
 </Card>
 <Card class="p-5 space-y-4">
