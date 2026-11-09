@@ -1,16 +1,15 @@
 /**
  * MapPickerModal.tsx
- * Resolves a place (typed name via /spa/geocode, or the browser's own
- * geolocation) to coordinates, previews it, and inserts core's
- * `[map=lat lon]` BBCode.
- *
- * The preview is the same OSM embed iframe the posted map will use — no
- * Leaflet, no tile traffic beyond the one frame the user is looking at.
+ * Resolves a place (typed name via /spa/geocode, the browser's own
+ * geolocation, or a pin dropped/dragged on the map) to coordinates and
+ * inserts core's `[map=lat lon]` BBCode — or hands the coordinates to
+ * `onPick` (photo location, a post's location).
  */
 import { createSignal, onMount, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
-import { DEFAULT_TMS, geocode, osmEmbedSrc, type Coord } from "@utsukta/spa-core/lib/osm";
+import { geocode, type Coord } from "@utsukta/spa-core/lib/osm";
+import PinPicker from "@/shared/views/PinPicker";
 
 import { Modal, ModalPanel } from "@ui/Modal";
 import { Button } from "@ui/Button";
@@ -35,9 +34,6 @@ const MapPickerModal: Component<Props> = (props) => {
   const [busy, setBusy] = createSignal<"search" | "locate" | null>(null);
   const [error, setError] = createSignal("");
   let inputRef: HTMLInputElement | undefined;
-
-  const tms = () => navData()?.osm?.tmsserver || DEFAULT_TMS;
-  const marker = () => navData()?.osm?.marker ?? 1;
 
   onMount(() => inputRef?.focus());
 
@@ -124,17 +120,10 @@ const MapPickerModal: Component<Props> = (props) => {
             <p class="text-sm text-danger-txt">{error()}</p>
           </Show>
 
-          <Show when={coord()}>
-            {(c) => (
-              <div class="space-y-1">
-                <iframe
-                  src={osmEmbedSrc(c(), tms(), marker())}
-                  class="w-full h-[260px] rounded-lg border border-rim"
-                />
-                <p class="text-xs text-muted">{c().lat}, {c().lon}</p>
-              </div>
-            )}
-          </Show>
+          <PinPicker value={coord()} onChange={(c) => { setCoord(c); setError(""); }} label={t("editor.map_pick_hint")} />
+          <p class="text-xs text-muted">
+            {coord() ? `${coord()!.lat}, ${coord()!.lon}` : t("editor.map_pick_hint")}
+          </p>
         </div>
 
         <div class="px-4 py-3 border-t border-rim flex justify-end gap-2">

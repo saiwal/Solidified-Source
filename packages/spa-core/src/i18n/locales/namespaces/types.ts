@@ -1226,6 +1226,8 @@ export type RawDictionary = {
     location_use_browser:     string;
     location_locating:        string;
     location_clear_coord:     string;
+    location_pick_map:        string;
+    location_set:             string;
     publish_at:               string;
     nocomment_toggle:         string;
     local_only_toggle:        string;
@@ -1304,6 +1306,7 @@ export type RawDictionary = {
     map_insert:               string;
     map_not_found:            string;
     map_searching:            string;
+    map_pick_hint:            string;
     dm_new_message:        string;
     dm_subject_placeholder: string;
     to_label:               string;

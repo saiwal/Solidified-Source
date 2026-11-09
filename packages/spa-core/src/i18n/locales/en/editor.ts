@@ -266,6 +266,8 @@ export const editor = {
   location_use_browser:     "Use browser location",
   location_locating:        "Locating…",
   location_clear_coord:     "Clear coordinates",
+  location_pick_map:        "Pick on map",
+  location_set:             "Use this spot",
   publish_at:               "Set publish date",
   nocomment_toggle:         "Disable comments",
   local_only_toggle:        "Local only (don't deliver)",
@@ -352,6 +354,7 @@ export const editor = {
   map_insert:               "Insert",
   map_not_found:            "Location not found",
   map_searching:            "Searching…",
+  map_pick_hint:            "Click the map to drop a pin, drag it to adjust",
 
   // DMComposer
   dm_new_message:        "New message",

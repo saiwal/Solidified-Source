@@ -24,6 +24,9 @@ import FindReplace from "./FindReplace";
 import { TbOutlineFloatCenter, TbOutlineFloatLeft, TbOutlineFloatNone, TbOutlineFloatRight } from "solid-icons/tb";
 import { IconButton } from "@ui/Button";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
+import { hydrateMapEmbeds, useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
+import { useNavData } from "@utsukta/spa-core/store/nav-store";
+import { DEFAULT_TMS } from "@utsukta/spa-core/lib/osm";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
 import { Input, Textarea } from "@ui/Field";
@@ -177,6 +180,18 @@ export default function RichEditor(props: Props) {
   // surface destroys the div on every tab switch, so this must run per mount
   // (a plain onMount fires once per component and would leave the div blank
   // after source → wysiwyg round-trips).
+  // Fill the display side of non-editable embeds after (re)writing the
+  // surface: reshares, cards and [map] previews. Their source lives in data-*
+  // attributes, so none of this touches the body.
+  const mapsOn = useMapsEnabled();
+  const navData = useNavData();
+  const hydrateEmbeds = (el: HTMLElement) => {
+    hydrateShareEmbeds(el);
+    hydrateCardEmbeds(el);
+    const osm = mapsOn() ? navData()?.osm : null;
+    if (osm) hydrateMapEmbeds(el, { tms: osm.tmsserver || DEFAULT_TMS, zoom: osm.zoom ?? 16, marker: osm.marker ?? 1 });
+  };
+
   const seedEditor = (el: HTMLDivElement) => {
     editorRef = el;
     checksObserver.disconnect();
@@ -184,8 +199,7 @@ export default function RichEditor(props: Props) {
     cancelEcho();
     el.innerHTML = sourceToHtml(props.body, mime());
     domSig = sig();
-    hydrateShareEmbeds(el);
-    hydrateCardEmbeds(el);
+    hydrateEmbeds(el);
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(el);
     setImgSel(null);
   };
@@ -265,8 +279,7 @@ export default function RichEditor(props: Props) {
     cancelEcho();
     const next = htmlToSource(editorRef.innerHTML, mime());
     domSig = `${mime()} ${next}`;
-    hydrateShareEmbeds(editorRef);
-    hydrateCardEmbeds(editorRef);
+    hydrateEmbeds(editorRef);
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
     props.onInput(next);
     return true;
@@ -282,8 +295,7 @@ export default function RichEditor(props: Props) {
       cancelEcho();
       editorRef.innerHTML = sourceToHtml(props.body, mime());
       domSig = nextSig;
-      hydrateShareEmbeds(editorRef);
-      hydrateCardEmbeds(editorRef);
+      hydrateEmbeds(editorRef);
       if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
       setImgSel(null); // DOM was replaced — a selected <img> no longer exists
       setLinkEl(null);
@@ -368,8 +380,7 @@ export default function RichEditor(props: Props) {
 
     // The line may have carried bbcode, which sourceToHtml just turned into
     // fresh embeds needing their previews filled in.
-    hydrateShareEmbeds(editorRef);
-    hydrateCardEmbeds(editorRef);
+    hydrateEmbeds(editorRef);
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
   };
 
@@ -570,8 +581,7 @@ export default function RichEditor(props: Props) {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
       domSig = `${mime()} ${next}`;
-      hydrateShareEmbeds(editorRef);
-      hydrateCardEmbeds(editorRef);
+      hydrateEmbeds(editorRef);
     }
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
   };
@@ -925,8 +935,7 @@ export default function RichEditor(props: Props) {
       const next = htmlToSource(editorRef.innerHTML, mime());
       editorRef.innerHTML = sourceToHtml(next, mime());
       domSig = `${mime()} ${next}`;
-      hydrateShareEmbeds(editorRef);
-      hydrateCardEmbeds(editorRef);
+      hydrateEmbeds(editorRef);
       const range = document.createRange();
       const sel = window.getSelection();
       range.selectNodeContents(editorRef);

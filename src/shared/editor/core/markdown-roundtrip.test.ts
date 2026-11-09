@@ -132,6 +132,12 @@ for (const md of [...Object.values(STABLE), "Hello\n=====", "See [x][1].\n\n[1]:
   assert.equal(src, "before [b]dangling and more text");
 }
 
+// ── [map=lat lon] has no closer; it must not swallow a later [map]…[/map] ──
+{
+  const { raws } = protectBbcode("a [map=1.5 2.5] b [map]Paris[/map] c");
+  assert.deepEqual(raws, ["[map=1.5 2.5]", "[map]Paris[/map]"]);
+}
+
 // ── A markdown link must never be mistaken for bbcode ─────────────────────
 {
   const { raws } = protectBbcode("See [the docs](https://example.com) and [x][1].");

@@ -86,29 +86,35 @@ export function useOsmMap(
       }
     }
 
-    const anchors = Array.from(el.querySelectorAll<HTMLAnchorElement>("a.map-embed"));
-    if (!anchors.length) return;
-
     const ac = new AbortController();
     onCleanup(() => ac.abort());
-
-    for (const a of anchors) {
-      const coordAttr = a.getAttribute("href")?.includes("#map=")
-        ? a.textContent ?? ""
-        : "";
-      const c = coordAttr ? parseCoord(coordAttr) : null;
-
-      if (c) {
-        a.replaceWith(buildFrame(c, a.textContent || `${c.lat}, ${c.lon}`, tms, zoom, marker));
-        continue;
-      }
-
-      // Place name — needs a lookup. Leave the link in place if it fails.
-      const place = a.textContent?.trim();
-      if (!place) continue;
-      geocode(place, ac.signal)
-        .then((hit) => { if (hit && a.isConnected) a.replaceWith(buildFrame(hit, place, tms, zoom, marker)); })
-        .catch(() => { /* offline or not found — the plain link stands */ });
-    }
+    hydrateMapEmbeds(el, { tms, zoom, marker }, ac.signal);
   });
+}
+
+/**
+ * Replace every `a.map-embed` under `el` with an embedded map. Coordinate
+ * links resolve from their own text; place names take one /spa/geocode round
+ * trip and stay plain links if it fails. Caller checks useMapsEnabled().
+ * Shared by useOsmMap (rendered posts) and the WYSIWYG editor's [map] chips.
+ */
+export function hydrateMapEmbeds(
+  el: HTMLElement,
+  cfg: { tms: string; zoom: number; marker: number },
+  signal?: AbortSignal,
+): void {
+  const { tms, zoom, marker } = cfg;
+  for (const a of Array.from(el.querySelectorAll<HTMLAnchorElement>("a.map-embed"))) {
+    const c = a.getAttribute("href")?.includes("#map=") ? parseCoord(a.textContent ?? "") : null;
+    if (c) {
+      a.replaceWith(buildFrame(c, a.textContent || `${c.lat}, ${c.lon}`, tms, zoom, marker));
+      continue;
+    }
+    // Place name — needs a lookup. Leave the link in place if it fails.
+    const place = a.textContent?.trim();
+    if (!place) continue;
+    geocode(place, signal)
+      .then((hit) => { if (hit && a.isConnected) a.replaceWith(buildFrame(hit, place, tms, zoom, marker)); })
+      .catch(() => { /* offline or not found — the plain link stands */ });
+  }
 }

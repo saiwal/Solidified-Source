@@ -106,7 +106,8 @@ export function protectBbcode(md: string): Protected {
     if (m.index < cursor) continue;
 
     const tag = m[1].toLowerCase();
-    const end = VOID_TAGS.has(tag)
+    // [map=lat lon] is void too; only the [map]place[/map] form closes.
+    const end = VOID_TAGS.has(tag) || (tag === "map" && m[0][4] === "=")
       ? m.index + m[0].length
       : findTagEnd(md, m.index, tag);
     // Unclosed — leave it as literal text rather than swallowing the rest of

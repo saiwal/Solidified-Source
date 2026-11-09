@@ -17,11 +17,16 @@ import {
   onCleanup,
   useContext,
   Show,
+  Suspense,
+  lazy,
   type Component,
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { MdOutlineClose, MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
+import { MdOutlineClose, MdOutlineMap, MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
+import { parseCoord, reverseGeocode, type Coord } from "@utsukta/spa-core/lib/osm";
+import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
+const MapPickerModal = lazy(() => import("../map/MapPickerModal"));
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
@@ -169,6 +174,13 @@ const PostComposer: Component<ComposerProps> = (props) => {
   const [location, setLocation] = createSignal("");
   const [coord, setCoord] = createSignal("");
   const [locating, setLocating] = createSignal(false);
+  const [mapPickOpen, setMapPickOpen] = createSignal(false);
+  const mapsOn = useMapsEnabled();
+  const pickOnMap = (c: Coord) => {
+    setCoord(`${c.lat} ${c.lon}`);
+    // Name the spot too, unless the user already typed one.
+    if (!location().trim()) void reverseGeocode(c).then((n) => { if (n && !location().trim()) setLocation(n); }).catch(() => {});
+  };
   const [publishAt, setPublishAt] = createSignal("");
   const [noComment, setNoComment] = createSignal(false);
   const [localOnly, setLocalOnly] = createSignal(false);
@@ -712,8 +724,28 @@ const PostComposer: Component<ComposerProps> = (props) => {
                     </Button>
                   </Show>
                   </Show>
+                  <Show when={mapsOn()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setLocationOpen(false); setMapPickOpen(true); }}
+                    >
+                      <MdOutlineMap class="w-3.5 h-3.5 shrink-0" />
+                      {t("editor.location_pick_map")}
+                    </Button>
+                  </Show>
                 </div>
               </PopoverButton>
+              <Show when={mapPickOpen()}>
+                <Suspense>
+                  <MapPickerModal
+                    initial={parseCoord(coord())}
+                    onPick={pickOnMap}
+                    actionLabel={t("editor.location_set")}
+                    onClose={() => setMapPickOpen(false)}
+                  />
+                </Suspense>
+              </Show>
               </Show>
 
               {/* Delayed publish — gated behind Settings → Features → Delayed Posting */}

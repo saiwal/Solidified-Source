@@ -7,7 +7,8 @@ import DayDetailModal from "@/modules/calendar/views/DayDetailModal";
 import { localDay, todayKey, evTitle } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
-import { IconButton } from "@ui/Button";
+import { IconButton, iconButtonClass } from "@ui/Button";
+import { A } from "@solidjs/router";
 import { WidgetShell } from "@ui/WidgetShell";
 
 function next30DaysRange() {
@@ -79,9 +80,19 @@ export default function UpcomingEventsWidget() {
         class="flex flex-col"
         title={t("hq.upcoming_events")}
         actions={
+          <>
+          <A
+            href={`/cal/${currentNick()}`}
+            class={iconButtonClass("default", "sm")}
+            aria-label={t("nav.calendar")}
+            title={t("nav.calendar")}
+          >
+            <MdOutlineCalendar_today class="w-4 h-4" />
+          </A>
           <IconButton label={t("hq.new_event")} size="sm" onClick={() => openEvent({ onCreated: load })}>
             <MdOutlineAdd class="w-4 h-4" />
           </IconButton>
+          </>
         }
       >
 

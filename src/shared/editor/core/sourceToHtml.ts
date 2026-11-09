@@ -333,6 +333,13 @@ function bbcodeToEditorHtml(body: string): string {
     raws.push(block);
     return `\x01MEDIARAW:${raws.length - 1}\x01`;
   });
+  // [map] renders as an a.map-embed link, which htmlToSource would spell back
+  // as [url] — the map lost on the first WYSIWYG edit. Keep it verbatim too;
+  // RichEditor swaps the link for a live map preview (hydrateMapEmbeds).
+  src = src.replace(/\[map=[^\]]*\]|\[map\](?:[^[]*\[\/map\])?/gi, (block) => {
+    raws.push(block);
+    return `\x01MEDIARAW:${raws.length - 1}\x01`;
+  });
 
   const { src: litSrc, lits } = protectLiterals(src);
   let html = bbcodeToHtml(litSrc);

@@ -26,8 +26,8 @@ export interface MapPoint {
 }
 
 // ponytail: hardcoded public tiles; add an admin tile-template setting if a hub wants its own server
-const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+export const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+export const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 function thumbIcon(src: string): L.DivIcon {
   const img = document.createElement("img");

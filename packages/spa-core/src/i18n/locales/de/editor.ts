@@ -266,6 +266,8 @@ export const editor = {
   location_use_browser:     "Browser-Standort verwenden",
   location_locating:        "Wird ermittelt…",
   location_clear_coord:     "Koordinaten löschen",
+  location_pick_map:        "Auf Karte wählen",
+  location_set:             "Diesen Ort verwenden",
   publish_at:               "Veröffentlichungsdatum festlegen",
   nocomment_toggle:         "Kommentare deaktivieren",
   local_only_toggle:        "Nur lokal (keine Zustellung)",
@@ -352,6 +354,7 @@ export const editor = {
   map_insert:               "Einfügen",
   map_not_found:            "Ort nicht gefunden",
   map_searching:            "Wird gesucht…",
+  map_pick_hint:            "Auf die Karte klicken, um eine Markierung zu setzen; zum Anpassen ziehen",
 
   // DMComposer
   dm_new_message:        "Neue Nachricht",

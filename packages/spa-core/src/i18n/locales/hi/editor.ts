@@ -257,6 +257,8 @@ export const editor: RawDictionary["editor"] = {
   location_use_browser:     "ब्राउज़र स्थान उपयोग करें",
   location_locating:        "पता लगाया जा रहा है…",
   location_clear_coord:     "निर्देशांक हटाएँ",
+  location_pick_map:        "मानचित्र पर चुनें",
+  location_set:             "यह स्थान उपयोग करें",
   publish_at:               "प्रकाशन तिथि निर्धारित करें",
   nocomment_toggle:         "टिप्पणियाँ अक्षम करें",
   local_only_toggle:        "केवल स्थानीय (डिलीवर न करें)",
@@ -343,6 +345,7 @@ export const editor: RawDictionary["editor"] = {
   map_insert:               "डालें",
   map_not_found:            "स्थान नहीं मिला",
   map_searching:            "खोजा जा रहा है…",
+  map_pick_hint:            "पिन लगाने के लिए मानचित्र पर क्लिक करें, समायोजित करने के लिए खींचें",
 
   // DMComposer
   dm_new_message:        "नया संदेश",
