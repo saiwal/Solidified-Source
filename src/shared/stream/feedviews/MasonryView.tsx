@@ -1,14 +1,14 @@
 // src/shared/stream/feedviews/MasonryView.tsx
 import {
   For,
-  Index,
   Show,
   createSignal,
   createMemo,
   onMount,
   onCleanup,
 } from "solid-js";
-import { splitIntoColumns, useColumnCount as useMasonryColumnCount } from "@utsukta/spa-core/lib/masonry";
+import { rowSpan, splitIntoColumns, useColumnCount as useMasonryColumnCount } from "@utsukta/spa-core/lib/masonry";
+void rowSpan;
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
@@ -389,51 +389,49 @@ export default function MasonryView(props: {
       (_, index): MasonryItem => ({ kind: "skeleton", index }),
     ),
   ]);
-  const columns = createMemo(() => splitIntoColumns(items(), colCount()));
 
+  // Packed like the widget grid (.slot-grid-packed): 1px rows, each card
+  // spans its measured height (rowSpan → --rows), and `dense` drops every
+  // card into the topmost free gap — i.e. the shortest column. A plain
+  // round-robin split ignored heights, so one tall post left its column far
+  // longer than its neighbours. Cards keep their own mb-3 as the row gap
+  // (a grid item is its own BFC, so the margin counts in the measured height).
   return (
-    <>
-      <Show
-        when={items().length > 0}
-        fallback={
-          <EmptyState>Nothing here yet.</EmptyState>
-        }
+    <Show
+      when={items().length > 0}
+      fallback={<EmptyState>Nothing here yet.</EmptyState>}
+    >
+      <div
+        class="grid auto-rows-[1px] grid-flow-row-dense gap-x-3 items-start"
+        style={{ "grid-template-columns": `repeat(${colCount()}, minmax(0, 1fr))` }}
+        ref={setGridEl}
       >
-        <div class="flex gap-3 items-start" ref={setGridEl}>
-          {/* Index, not For: splitIntoColumns builds new column arrays on
-              every append, which <For> would treat as new columns and
-              remount wholesale. */}
-          <Index each={columns()}>
-            {(col) => (
-              <div class="flex-1 flex flex-col min-w-0">
-                <For each={col()}>
-                  {(item) => (
-                    <Show
-                      when={item.kind === "post" ? item.post : null}
-                      fallback={
-                        <SkeletonMasonryCard
-                          index={item.kind === "skeleton" ? item.index : 0}
-                        />
-                      }
-                    >
-                      {(post) => (
-                        <CardShell uuid={post().uuid}>
-                        <MasonryCard
-                          post={post()}
-                          handlers={props.handlers}
-                          onOpenModal={() => openPost(post().uuid)}
-                        />
-                        </CardShell>
-                      )}
-                    </Show>
-                  )}
-                </For>
-              </div>
-            )}
-          </Index>
-        </div>
-      </Show>
-    </>
+        <For each={items()}>
+          {(item) => (
+            <div class="min-w-0 [grid-row:span_var(--rows,1)]" use:rowSpan={0}>
+              <Show
+                when={item.kind === "post" ? item.post : null}
+                fallback={
+                  <SkeletonMasonryCard
+                    index={item.kind === "skeleton" ? item.index : 0}
+                  />
+                }
+              >
+                {(post) => (
+                  <CardShell uuid={post().uuid}>
+                    <MasonryCard
+                      post={post()}
+                      handlers={props.handlers}
+                      onOpenModal={() => openPost(post().uuid)}
+                    />
+                  </CardShell>
+                )}
+              </Show>
+            </div>
+          )}
+        </For>
+      </div>
+    </Show>
   );
 }
 

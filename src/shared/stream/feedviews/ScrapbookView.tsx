@@ -1,7 +1,8 @@
 // src/shared/stream/feedviews/ScrapbookView.tsx
-import { For, Index, Show, createSignal, createMemo } from "solid-js";
+import { For, Show, createSignal, createMemo } from "solid-js";
 import CardShell from "../CardShell";
-import { splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
+import { rowSpan, splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
+void rowSpan;
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
@@ -161,39 +162,38 @@ export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: St
   const { t } = useI18n();
   const [gridEl, setGridEl] = createSignal<HTMLDivElement>();
   const colCount = useColumnCount(gridEl, 16, 4);
-  const columns = createMemo(() => splitIntoColumns(props.posts, colCount()));
 
+  // Shortest-column packing, as in MasonryView: 1px rows, each card spans its
+  // measured height, `dense` fills the topmost gap. Cards keep their own mb-5.
   return (
     <div class="max-w-6xl mx-auto">
       <Show
         when={props.posts.length > 0}
         fallback={<EmptyState>{t("network.all_caught_up")}</EmptyState>}
       >
-        <div class="flex gap-5 items-start" ref={setGridEl}>
-          {/* Index, not For: splitIntoColumns builds new column arrays on
-              every append, which <For> would remount wholesale. */}
-          <Index each={columns()}>
-            {(col) => (
-              <div class="flex-1 flex flex-col min-w-0">
-                <For each={col()}>
-                  {(post) => {
-                    const src = firstImageSrc(post.body);
-                    const rotate = pickFor(post.uuid, ROTATIONS);
-                    const onOpen = () => openPost(post.uuid);
-                    return (
-                      <CardShell uuid={post.uuid}>
-                        {src ? (
-                          <PhotoCard post={post} src={src} rotate={rotate} handlers={props.handlers} onOpen={onOpen} />
-                        ) : (
-                          <StickyNote post={post} rotate={rotate} color={pickFor(post.uuid + ":c", NOTE_COLORS)} handlers={props.handlers} onOpen={onOpen} />
-                        )}
-                      </CardShell>
-                    );
-                  }}
-                </For>
-              </div>
-            )}
-          </Index>
+        <div
+          class="grid auto-rows-[1px] grid-flow-row-dense gap-x-5 items-start"
+          style={{ "grid-template-columns": `repeat(${colCount()}, minmax(0, 1fr))` }}
+          ref={setGridEl}
+        >
+          <For each={props.posts}>
+            {(post) => {
+              const src = firstImageSrc(post.body);
+              const rotate = pickFor(post.uuid, ROTATIONS);
+              const onOpen = () => openPost(post.uuid);
+              return (
+                <div class="min-w-0 [grid-row:span_var(--rows,1)]" use:rowSpan={0}>
+                  <CardShell uuid={post.uuid}>
+                    {src ? (
+                      <PhotoCard post={post} src={src} rotate={rotate} handlers={props.handlers} onOpen={onOpen} />
+                    ) : (
+                      <StickyNote post={post} rotate={rotate} color={pickFor(post.uuid + ":c", NOTE_COLORS)} handlers={props.handlers} onOpen={onOpen} />
+                    )}
+                  </CardShell>
+                </div>
+              );
+            }}
+          </For>
         </div>
       </Show>
 
