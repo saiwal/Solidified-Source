@@ -203,9 +203,28 @@ export async function quickConnectNewDevice(anchor: JellyfinSession, deviceId: s
   return sessionFrom(server, await res.json(), deviceId);
 }
 
-/** Revoke the token server-side. Best effort — the local session is dropped regardless. */
-export function logout(s: JellyfinSession): Promise<void> {
-  return jf<void>(s, "/Sessions/Logout", { method: "POST" }).catch(() => undefined);
+/** Revoke the token server-side. Best effort — the local session is dropped regardless. False when Jellyfin didn't confirm. */
+export function logout(s: JellyfinSession): Promise<boolean> {
+  return jf<void>(s, "/Sessions/Logout", { method: "POST" }).then(() => true, () => false);
+}
+
+/**
+ * On hub logout: revoke every token this browser holds and forget the
+ * sessions, queue and party state. The recap reminder is a preference, kept.
+ */
+export function forgetJellyfin(): void {
+  for (const s of loadStore().servers) {
+    // keepalive: outlives the redirect to /login.
+    void fetch(`${s.server}/Sessions/Logout`, {
+      method: "POST", keepalive: true, headers: { Authorization: authHeader(s.deviceId, s.token) },
+    }).catch(() => {});
+  }
+  try {
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith("hz-jellyfin") && k !== "hz-jellyfin-recap") localStorage.removeItem(k);
+    }
+    sessionStorage.removeItem("hz-jellyfin-party");
+  } catch { /* storage blocked — nothing was stored either */ }
 }
 
 const PAGE_SIZE = 60;

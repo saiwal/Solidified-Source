@@ -2,7 +2,7 @@
 // created here, outside any component, so playback survives every route change
 // and widget remount. The NowPlaying widget is only a view onto it.
 import { createSignal } from "solid-js";
-import { vaultList, vaultPut, vaultDelete, vaultStatus, vaultSlots } from "@utsukta/spa-core/lib/vault";
+import { vaultList, vaultPut, vaultDelete, vaultStatus, vaultSlots, resetVault } from "@utsukta/spa-core/lib/vault";
 import {
   loadStore, saveStore, logout, streamUrl, imageUrl, ticksToSeconds, quickConnectNewDevice, JellyfinError,
   reportStart, reportProgress, reportStopped,
@@ -133,7 +133,16 @@ interface HubEntry {
   userName: string;
   anchor: string;
   anchorDevice: string;
+  /** When the anchor was made (ms) — absent on entries from before rotation existed. */
+  created?: number;
 }
+
+/**
+ * An anchor older than this is replaced by the next unlocked browser that is
+ * signed in to its server — so a copy of the vault in an old backup or on a
+ * stale clone stops being worth cracking.
+ */
+const ANCHOR_MAX_AGE = 30 * 86_400_000;
 
 /** Server ids (ServerId) stored on the hub, as last read. */
 const [hubStored, setHubStored] = createSignal<Set<string>>(new Set());
@@ -181,21 +190,41 @@ export async function rememberOnHub(s: JellyfinSession): Promise<void> {
     .catch((e) => { throw new Error(`creating the stored sign-in: ${e instanceof Error ? e.message : e}`); });
   await vaultPut<HubEntry>(VAULT, await slot(s.id), {
     id: s.id,
-    server: s.server, name: s.name, userId: s.userId, userName: s.userName, anchor: anchor.token, anchorDevice,
+    server: s.server, name: s.name, userId: s.userId, userName: s.userName, anchor: anchor.token, anchorDevice, created: Date.now(),
   }).catch((e) => { throw new Error(`saving to the hub: ${e instanceof Error ? e.message : e}`); });
   setHubStored(new Set([...hubStored(), s.id]));
 }
 
-/** Remove a server from the hub (and revoke its anchor). Browsers already signed in keep their own tokens. */
-export async function forgetOnHub(id: string): Promise<void> {
+/**
+ * Remove a server from the hub (and revoke its anchor). Browsers already
+ * signed in keep their own tokens. False when the anchor could not be revoked
+ * — it stays valid on Jellyfin until removed there, so the caller says so.
+ */
+export async function forgetOnHub(id: string): Promise<boolean> {
   const key = await slot(id);
   // Revoking the anchor needs it decrypted; locked, the entry is still deleted
   const e = (await vaultList<HubEntry>(VAULT).catch(() => ({} as Record<string, HubEntry>)))[key];
-  if (e) await logout(anchorSession(id, e));
+  const revoked = !!e && (await logout(anchorSession(id, e)));
   await vaultDelete(VAULT, key);
   const next = new Set(hubStored());
   next.delete(id);
   setHubStored(next);
+  return revoked;
+}
+
+/**
+ * Forgotten passphrase: delete the vault. Anchors this browser can still
+ * decrypt are revoked first; false when any stored sign-in may be left alive
+ * on Jellyfin (locked or unreadable vault, server unreachable).
+ */
+export async function resetHubVault(): Promise<boolean> {
+  const total = await vaultSlots(VAULT).catch(() => -1); // -1: unreadable on the hub, count unknown
+  const entries = await vaultList<HubEntry>(VAULT).catch(() => ({} as Record<string, HubEntry>));
+  let revoked = 0;
+  for (const e of Object.values(entries)) if (await logout(anchorSession(e.id, e))) revoked++;
+  await resetVault([VAULT]);
+  setHubStored(new Set<string>());
+  return total >= 0 && revoked === total;
 }
 
 let hubSync: Promise<void> | null = null;
@@ -229,6 +258,14 @@ export function syncFromHub(): Promise<void> {
     let first: HubEntry | null = null;
     for (const e of Object.values(entries)) {
       const id = e.id;
+      const own = store().servers.find((x) => x.id === id);
+      if (own && (e.created ?? 0) < Date.now() - ANCHOR_MAX_AGE) {
+        // Rotate: store a fresh anchor first, revoke the old one only once that held.
+        // ponytail: two browsers rotating at once each mint an anchor and one is
+        // orphaned (alive, held by nobody) — add a hub-side lock if that shows up.
+        await rememberOnHub(own).then(() => logout(anchorSession(id, e)))
+          .catch((err) => console.warn("[jellyfin] anchor rotation failed for", e.server, err));
+      }
       if (skip.has(id) || store().servers.some((x) => x.id === id || x.server === e.server)) continue;
       try {
         addServer(await quickConnectNewDevice(anchorSession(id, e), deviceId()), false);

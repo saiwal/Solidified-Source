@@ -9,8 +9,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import PostComposer from "@/shared/editor/composers/PostComposer";
 import { audience, audienceLoaded, loadAudience, setAudience, reminder, setReminder, setSettingsOpen, type Audience } from "./settings";
 import { buildRecap, type RecapPeriod } from "./recap";
-import { vaultStatus, lockVault, resetVault, type VaultStatus } from "@utsukta/spa-core/lib/vault";
-import { resyncFromHub } from "./store";
+import { vaultStatus, lockVault, type VaultStatus } from "@utsukta/spa-core/lib/vault";
+import { resyncFromHub, resetHubVault } from "./store";
 import { Button, IconButton } from "@ui/Button";
 import { Select } from "@ui/Field";
 
@@ -141,7 +141,9 @@ function VaultSettings() {
               <span class="text-sm text-danger-txt self-center">{t("jellyfin.vault_reset_confirm")}</span>
               <Button variant="ghost" onClick={() => setConfirming(false)}>{t("jellyfin.cancel")}</Button>
               <Button variant="ghost" class="!text-danger-txt" onClick={async () => {
-                await resetVault(["jellyfin"]).catch(() => toast.error(t("jellyfin.save_failed")));
+                await resetHubVault()
+                  .then((clean) => { if (!clean) toast.warning(t("jellyfin.hub_anchor_left"), 30_000); })
+                  .catch(() => toast.error(t("jellyfin.save_failed")));
                 setConfirming(false);
                 await refresh();
                 void resyncFromHub();

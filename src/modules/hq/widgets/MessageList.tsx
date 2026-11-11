@@ -348,6 +348,9 @@ const MessageItem: Component<{
           // background; HQ's rows stay transparent on their card.
           // surface: the inbox list sits in a bg-surface panel.
           "bg-surface": !!props.actions && !isAnyUnseen(),
+          // Glass: the row drops its fill so the frosted card shows through;
+          // the action rail gets its own (index.css, .hz-glass-clear > .bg-inherit).
+          "hz-glass-clear": !!props.actions && !isAnyUnseen(),
           "focus-within:bg-overlay": !!props.actions,
           "ring-2 ring-inset ring-accent": props.cursored,
           "bg-elevated": props.active || props.selected,
@@ -511,7 +514,7 @@ const SkeletonRow: Component = () => (
 // ── Group header ──────────────────────────────────────────────────────────
 
 const GroupHeader: Component<{ label: string; count: number }> = (props) => (
-  <div class="sticky top-0 z-10 bg-surface px-3.5 py-1 flex items-center gap-2 border-b border-rim">
+  <div class="hz-glass-sticky sticky top-0 z-10 bg-surface px-3.5 py-1 flex items-center gap-2 border-b border-rim">
     <span class="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
       {props.label}
     </span>

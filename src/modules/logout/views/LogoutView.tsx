@@ -3,6 +3,8 @@ import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
 import { clearOfflineData } from "@utsukta/spa-core/lib/offline-fallback";
 import { clearMessageStore } from "@utsukta/spa-core/lib/message-store";
 import { forgetMatrix } from "@/modules/messenger/matrix-session";
+import { forgetJellyfin } from "@/modules/jellyfin/api";
+import { forgetVault } from "@utsukta/spa-core/lib/vault";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 export default function LogoutView() {
@@ -23,7 +25,8 @@ export default function LogoutView() {
       // ignore — redirect regardless
     }
     // Even if the POST failed: the user asked to leave this device.
-    await Promise.all([clearOfflineData(), clearMessageStore(), forgetMatrix()]).catch(() => {});
+    forgetJellyfin();
+    await Promise.all([clearOfflineData(), clearMessageStore(), forgetMatrix(), forgetVault()]).catch(() => {});
     window.location.href = "/login";
   });
 

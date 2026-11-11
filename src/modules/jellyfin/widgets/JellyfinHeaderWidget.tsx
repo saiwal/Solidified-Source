@@ -141,7 +141,7 @@ export default function JellyfinHeaderWidget() {
                 icon: MdOutlineCloud_off,
                 onClick: () => {
                   const s = session();
-                  if (s) forgetOnHub(s.id).then(() => toast.success(t("jellyfin.hub_forgotten"))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
+                  if (s) forgetOnHub(s.id).then((revoked) => (revoked ? toast.success(t("jellyfin.hub_forgotten")) : toast.warning(t("jellyfin.hub_anchor_left"), 30_000))).catch(() => toast.error(t("jellyfin.hub_store_failed")));
                 },
                 overflow: true,
                 show: !!session() && hubStored().has(session()!.id),

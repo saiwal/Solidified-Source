@@ -262,6 +262,18 @@
 :root[data-glass] .hz-glass-clear {
   background-color: transparent;
 }
+/* A hover rail that inherits a cleared row's fill would be see-through over
+   the row's text — give it the surface back. */
+:root[data-glass] .hz-glass-clear > .bg-inherit {
+  background-color: var(--color-surface);
+}
+/* Sticky headers inside a frosted list: still cover rows scrolling under
+   them, but as frost rather than an opaque band. */
+:root[data-glass] .hz-glass-sticky {
+  background-color: color-mix(in oklab, var(--color-surface) 50%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
 /* Embedded posts/cards ([share] blocks from bbcode.ts). Tint only, no blur:
    they sit inside a post card whose backdrop-filter makes it the backdrop
    root, so a blur here could only blur the card itself. */

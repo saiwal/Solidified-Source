@@ -8,7 +8,7 @@ import PlayerBar from "../player/PlayerBar";
 import FullPlayer from "../player/FullPlayer";
 import { Browser } from "../library/views";
 import VaultUnlock from "../VaultUnlock";
-import { vaultStatus, unlockVault, type VaultStatus } from "@utsukta/spa-core/lib/vault";
+import { vaultStatus, unlockVault, VAULT_MIN_PASSPHRASE, type VaultStatus } from "@utsukta/spa-core/lib/vault";
 import SettingsPanel, { useRecapComposer } from "../SettingsPanel";
 import { settingsOpen, setSettingsOpen } from "../settings";
 import { videoActive } from "../video/state";
@@ -153,7 +153,9 @@ function ConnectForm() {
       if (remember()) {
         const unlocked = vault() === "unlocked" || (await unlockVault(vpass()).catch(() => false));
         if (!unlocked) toast.error(t("jellyfin.vault_wrong_saved"));
-        else await rememberOnHub(session).catch((e) => {
+        else await rememberOnHub(session).then(() => {
+          if (session.isAdmin) toast.warning(t("jellyfin.hub_admin_warning"), 30_000);
+        }).catch((e) => {
           console.warn("[jellyfin] Remember on my hub failed", e);
           toast.error(`${t("jellyfin.hub_store_failed")} (${e instanceof Error ? e.message : e})`, 20_000);
         });
@@ -223,7 +225,7 @@ function ConnectForm() {
           class="w-full"
           type="password"
           required
-          minLength={vault() === "new" ? 10 : undefined}
+          minLength={vault() === "new" ? VAULT_MIN_PASSPHRASE : undefined}
           value={vpass()}
           onInput={(e) => setVpass(e.currentTarget.value)}
           autocomplete={vault() === "new" ? "new-password" : "current-password"}
