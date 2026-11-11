@@ -16,6 +16,7 @@ import { client, sdk, tick } from "./client";
 import { MatrixAttachment, isAttachment } from "./MatrixMedia";
 import { sendAttachment } from "./media";
 import { POST_PROSE } from "@/shared/lib/prose";
+import { escapeHtml } from "@/shared/editor/lib/linkMeta";
 
 // The HTML subset the Matrix spec allows in formatted_body, minus <img>
 // (inline images would be an unauthenticated mxc fetch; attachments go through MatrixMedia).
@@ -25,14 +26,25 @@ const ALLOWED_TAGS = ["font", "del", "h1", "h2", "h3", "h4", "h5", "h6", "blockq
 // No colour attributes: a sender-picked colour can vanish on some of the 23 theme presets.
 const ALLOWED_ATTR = ["href", "start", "colspan", "rowspan"];
 
+// Own instance: the hook must not leak into the app's other DOMPurify calls.
+// Links are retargeted on the DOM node — rewriting the serialized string would
+// let an "<a " inside an attribute value break out of it.
+const purify = DOMPurify(window);
+purify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.nodeName !== "A") return;
+  node.setAttribute("target", "_blank");
+  node.setAttribute("rel", "noopener noreferrer nofollow");
+});
+
 /** formatted_body is federated HTML: allowlisted, links forced to a new tab. */
 export function renderMatrixHtml(html: string): string {
-  const clean = DOMPurify.sanitize(html.replace(/<mx-reply>[\s\S]*?<\/mx-reply>/g, ""), {
+  return purify.sanitize(html.replace(/<mx-reply>[\s\S]*?<\/mx-reply>/g, ""), {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
+    ALLOW_DATA_ATTR: false,
+    ALLOW_ARIA_ATTR: false,
     ALLOWED_URI_REGEXP: /^(?:https?|mailto):/i,
   });
-  return clean.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer nofollow" ');
 }
 
 // Quick reactions: Matrix keys are plain Unicode, so the hub's image-smiley
@@ -200,9 +212,10 @@ export default function Timeline(props: { roomId: string; back?: string }) {
             const c = content();
             const type = String(c.msgtype ?? "");
             if (isAttachment(p.ev.getType(), type)) return <MatrixAttachment type={p.ev.getType()} content={c} />;
+            // The display name is the sender's to choose: escaped before it meets innerHTML below.
             const prefix = type === "m.emote" ? `* ${senderName(p.ev)} ` : "";
             return c.format === "org.matrix.custom.html" && typeof c.formatted_body === "string"
-              ? <div class={`${POST_PROSE} text-txt prose-p:my-0 prose-headings:my-1 prose-blockquote:my-1 prose-pre:my-1 prose-ul:my-0 prose-ol:my-0`} innerHTML={prefix + renderMatrixHtml(c.formatted_body)} />
+              ? <div class={`${POST_PROSE} text-txt prose-p:my-0 prose-headings:my-1 prose-blockquote:my-1 prose-pre:my-1 prose-ul:my-0 prose-ol:my-0`} innerHTML={escapeHtml(prefix) + renderMatrixHtml(c.formatted_body)} />
               : <div class="whitespace-pre-wrap break-words">{prefix + plainBody(p.ev)}</div>;
           })()}
         </Show>

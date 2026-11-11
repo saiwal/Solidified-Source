@@ -8,7 +8,7 @@ import {
   CryptoEvent, decodeRecoveryKey, deriveRecoveryKeyFromPassphrase, type VerificationRequest,
 } from "matrix-js-sdk/lib/crypto-api/index.js";
 import { createSignal } from "solid-js";
-import { clearSession, currentUid, dbPrefix, loadSession, saveSession, type MatrixSession } from "../matrix-session";
+import { clearSession, currentUid, dbPrefix, dropDatabases, live, loadSession, saveSession, type MatrixSession } from "../matrix-session";
 
 export { sdk };
 
@@ -88,6 +88,7 @@ async function start(s: MatrixSession): Promise<void> {
   c.on(sdk.HttpApiEvent.SessionLoggedOut, () => { void logout(false); });
   await c.startClient({ initialSyncLimit: 20, lazyLoadMembers: true });
   setClient(c);
+  live.logout = () => logout();
 }
 
 /** Homeserver base url for a Matrix ID's server part, via .well-known. */
@@ -142,8 +143,10 @@ export async function logout(serverSide = true): Promise<void> {
   const c = client();
   const s = loadSession();
   setClient(null);
+  live.logout = undefined;
   if (s) clearSession(s.uid);
-  if (!c) return;
+  // No running client (never started, or start failed): the keys are still on disk.
+  if (!c) return void (s && await dropDatabases(dbPrefix(s)));
   if (serverSide) await c.logout(true).catch(() => {});
   c.stopClient();
   if (s) await c.clearStores({ cryptoDatabasePrefix: dbPrefix(s) }).catch(() => {});
@@ -191,15 +194,24 @@ export function directRoomIds(c: sdk.MatrixClient): Set<string> {
   return new Set(Object.values(directMap(c)).flat());
 }
 
+/** Existing joined/invited DM with `mxid`, if there is one. */
+export function findDirect(mxid: string): string | null {
+  const c = client();
+  if (!c) return null;
+  for (const id of directMap(c)[mxid] ?? []) {
+    const m = c.getRoom(id)?.getMyMembership();
+    if (m === sdk.KnownMembership.Join || m === sdk.KnownMembership.Invite) return id;
+  }
+  return null;
+}
+
 /** Existing joined/invited DM with `mxid`, or a new encrypted one. */
 export async function openDirect(mxid: string): Promise<string> {
   const c = client();
   if (!c) throw new Error("not logged in");
+  const existing = findDirect(mxid);
+  if (existing) return existing;
   const direct = directMap(c);
-  for (const id of direct[mxid] ?? []) {
-    const m = c.getRoom(id)?.getMyMembership();
-    if (m === sdk.KnownMembership.Join || m === sdk.KnownMembership.Invite) return id;
-  }
   const { room_id } = await c.createRoom({
     is_direct: true,
     invite: [mxid],

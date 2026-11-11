@@ -41,6 +41,36 @@ export function clearSession(uid: number): void {
 export const hasMatrixSession = () => !!loadSession();
 export { currentUid };
 
+/** client.ts sets `logout` while a client runs, so a live session can be
+ *  ended from here without importing the SDK. */
+export const live: { logout?: () => Promise<void> } = {};
+
+/** Delete the SDK's sync + crypto databases whose name contains `match`. Not
+ *  awaited: a delete waits for open connections, i.e. for the page to go. */
+export async function dropDatabases(match: string): Promise<void> {
+  const dbs = await indexedDB.databases?.().catch(() => []) ?? [];
+  for (const d of dbs) if (d.name?.includes(match)) indexedDB.deleteDatabase(d.name);
+}
+
+/** Hub logout: sign every stored Matrix session out and wipe its token and
+ *  E2EE keys from this browser — every channel's, since the account is leaving. */
+export async function forgetMatrix(): Promise<void> {
+  await live.logout?.().catch(() => {});
+  try {
+    for (const k of Object.keys(localStorage).filter((k) => k.startsWith("hz-matrix:"))) {
+      const s = JSON.parse(localStorage.getItem(k) ?? "null") as MatrixSession | null;
+      localStorage.removeItem(k);
+      if (s?.accessToken && /^https?:\/\//.test(s.baseUrl)) {
+        // keepalive: outlives the redirect to /login.
+        void fetch(`${s.baseUrl.replace(/\/$/, "")}/_matrix/client/v3/logout`, {
+          method: "POST", keepalive: true, headers: { Authorization: `Bearer ${s.accessToken}` },
+        }).catch(() => {});
+      }
+    }
+  } catch { /* storage unavailable: nothing was stored */ }
+  await dropDatabases("hz-matrix-");
+}
+
 /** Database prefix for the SDK's sync + crypto stores. */
 export const dbPrefix = (s: MatrixSession) => `hz-matrix-${s.uid}-${s.userId}`;
 

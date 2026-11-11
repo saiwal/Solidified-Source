@@ -4,7 +4,7 @@
 // Urls, under /messenger/:nick/matrix:
 //   (none)        list only
 //   /<roomId>     a room
-//   /dm/<mxid>    open-or-create a DM, then replace with its room (chat buttons link here)
+//   /dm/<mxid>    open the DM with them, or /new prefilled if there is none (chat buttons link here)
 //   /new          start a DM
 //   /login        SSO return leg (?loginToken=)
 import { For, Match, Show, Switch, createEffect, createMemo, createSignal, onMount } from "solid-js";
@@ -27,7 +27,7 @@ import { MdOutlineAdd, MdOutlineDevices, MdOutlineHome, MdOutlineKey, MdOutlineL
 import { Chip } from "@ui/Chip";
 import { MxcAvatar } from "./MatrixMedia";
 import {
-  client, directRoomIds, discover, finishSso, loginFlows, loginWithPassword, logout, needsRecovery,
+  client, directRoomIds, discover, findDirect, finishSso, loginFlows, loginWithPassword, logout, needsRecovery,
   openDirect, recover, resume, sdk, serverOf, startSelfVerification, startSso, tick, verification,
 } from "./client";
 import Verification from "./Verification";
@@ -345,14 +345,15 @@ export function MatrixPane(props: { base: string; segs: string[] }) {
       .finally(() => navigate(props.base, { replace: true }));
   });
 
-  // /dm/<mxid>: find or create the DM, then show it under its room url.
+  // /dm/<mxid>: show the existing DM. A url must never create a room and
+  // invite someone by itself (any link in a post could), so a new one goes to
+  // the prefilled /new form, where the user presses Start.
   createEffect(() => {
     if (props.segs[0] !== "dm" || !ready()) return;
     const mxid = normalizeChat("matrix", props.segs[1] ?? "")?.value;
     if (!mxid) return navigate(props.base, { replace: true });
-    void openDirect(mxid)
-      .then((id) => navigate(`${props.base}/${encodeURIComponent(id)}`, { replace: true }))
-      .catch((e) => { toast.error((e as Error).message); navigate(props.base, { replace: true }); });
+    const existing = findDirect(mxid);
+    navigate(existing ? `${props.base}/${encodeURIComponent(existing)}` : `${props.base}/new?mxid=${encodeURIComponent(mxid)}`, { replace: true });
   });
   // Not signed in: the list column shows the login form.
   createEffect(() => { if (!booting() && !client() && props.segs[0] !== "login") navigate(props.base, { replace: true }); });
@@ -372,7 +373,8 @@ export function MatrixPane(props: { base: string; segs: string[] }) {
 function NewDm(props: { base: string }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [mxid, setMxid] = createSignal("");
+  const [params] = useSearchParams();
+  const [mxid, setMxid] = createSignal(typeof params.mxid === "string" ? params.mxid : "");
   const [busy, setBusy] = createSignal(false);
   const suggestions = useQuery(() => ({
     queryKey: ["chatids", "matrix-connections"],
