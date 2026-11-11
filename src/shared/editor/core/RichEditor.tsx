@@ -405,6 +405,23 @@ export default function RichEditor(props: Props) {
 
   const onEditorInput = (e?: InputEvent) => {
     if (!editorRef) return;
+    // Backstop for image inserts that never fire paste/drop (mobile keyboards'
+    // clipboard images, a browser's own image paste): a data: <img> would be
+    // saved as a megabytes-long [img]data:…[/img]. Upload it instead.
+    const inlined = editorRef.querySelectorAll<HTMLImageElement>('img[src^="data:"]');
+    if (inlined.length) {
+      const files = Array.from(inlined, (img, i) => {
+        img.remove();
+        const m = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(img.src);
+        if (!m?.[2]) return null;
+        try {
+          const type = m[1] || "image/png";
+          const bytes = Uint8Array.from(atob(m[3]), (c) => c.charCodeAt(0));
+          return new File([bytes], `pasted-${Date.now()}-${i}.${type.split("/")[1]}`, { type });
+        } catch { return null; }
+      }).filter((f): f is File => f !== null);
+      if (files.length) props.onPasteFiles?.(files);
+    }
     // Enter (not Shift+Enter, which is insertLineBreak) finished a block.
     if (e?.inputType === "insertParagraph") { boxNewItem(); renderCompletedBlock(); }
     typed = isTyping(e);
@@ -513,6 +530,12 @@ export default function RichEditor(props: Props) {
   const onBeforeInput = (e: InputEvent) => {
     if (e.inputType === "historyUndo") { e.preventDefault(); undo(); }
     else if (e.inputType === "historyRedo") { e.preventDefault(); redo(); }
+    // Gboard & co. insert a clipboard image as insertFromPaste with no paste
+    // event — the browser default inlines it as base64. Same route as paste.
+    else if (e.dataTransfer && filesOf(e.dataTransfer).length) {
+      e.preventDefault();
+      props.onPasteFiles?.(filesOf(e.dataTransfer));
+    }
   };
 
   let toolbarShortcut: ((e: KeyboardEvent) => boolean) | undefined;
