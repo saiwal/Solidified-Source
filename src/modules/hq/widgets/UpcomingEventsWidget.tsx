@@ -1,4 +1,5 @@
-import { createSignal, For, Show, onMount } from "solid-js";
+import { createSignal, createEffect, For, Show } from "solid-js";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
@@ -49,29 +50,18 @@ const SkeletonRow = () => (
 
 export default function UpcomingEventsWidget() {
   const { t } = useI18n();
-  const [events, setEvents] = createSignal<CalEvent[]>([]);
-  const [loading, setLoading] = createSignal(false);
-  const [error, setError] = createSignal<string | null>(null);
+  // Cached: returning to HQ shows the list at once and revalidates behind it.
+  const [data, { refetch: load }] = createQueryResource(
+    "hq-upcoming-events",
+    () => currentNick() || null,
+    async (nick) => (await fetchEvents(nick, next30DaysRange())).slice(0, 8),
+    { staleTime: 0 }, // events change in the calendar module
+  );
+  const events = () => data() ?? [];
+  const loading = () => data() === undefined && !data.error;
+  const error = () => (data() === undefined ? data.error : undefined);
+  createEffect(() => { if (data.error) toast.error(data.error.message); });
   const [activeEvent, setActiveEvent] = createSignal<CalEvent | null>(null);
-
-  async function load() {
-    const nick = currentNick();
-    if (!nick) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchEvents(nick, next30DaysRange());
-      setEvents(data.slice(0, 8));
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to load events";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  onMount(load);
 
   return (
     <>

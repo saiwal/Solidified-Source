@@ -1,17 +1,13 @@
-import { createSignal, createEffect, on, For, Show, onMount } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
-import type { SavedDraft } from "@/shared/editor/store/createComposerStore";
-import { listServerDrafts, deleteServerDraft, draftsVersion } from "@/shared/editor/api/drafts";
+import { storageDel } from "@utsukta/spa-core/lib/storage";
+import { deleteServerDraft } from "@/shared/editor/api/drafts";
+import DraftsWidgetBase, { type DraftEntry } from "@/shared/editor/components/DraftsWidgetBase";
 import { openComposer, type ComposerKind } from "@/shared/views/modal-host";
 import { useAuth, channelKey } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { MdFillDelete, MdOutlineDescription, MdOutlineRefresh } from "solid-icons/md";
-import { IconButton } from "@ui/Button";
-import { WidgetShell } from "@ui/WidgetShell";
 
+// Comma-separated scope prefixes — the /spa/drafts type filter.
 const DRAFT_TYPES = "post,article,card,webpage,wiki,note,dm";
-const SHOWN_TYPES = ["post", "article", "card", "webpage", "wiki", "note", "dm"];
 
 // ── Scope helpers ─────────────────────────────────────────────────────────────
 
@@ -53,39 +49,16 @@ function badgeClass(scope: string): string {
   return TYPE_BADGE[scopeParts(scope).type] ?? DEFAULT_BADGE;
 }
 
-// Short absolute date — "Jul 30", falling back to a year suffix once it's stale
-function formatDate(ms: number): string {
-  const d = new Date(ms);
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
-  return d.toLocaleDateString(undefined, opts);
-}
-
-type DraftEntry = { scope: string; draft: SavedDraft };
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-const SkeletonRow = () => (
-  <div class="px-(--ws-px) py-3 animate-pulse space-y-2">
-    <div class="h-3.5 bg-overlay rounded w-2/3" />
-    <div class="h-3 bg-overlay rounded w-4/5" />
-    <div class="flex items-center justify-between pt-0.5">
-      <div class="h-3.5 w-12 bg-overlay rounded" />
-      <div class="h-3 w-10 bg-overlay rounded" />
-    </div>
-  </div>
-);
-
 // ── Widget ────────────────────────────────────────────────────────────────────
+// The list itself (fetch, refetch on draftsVersion, delete, rows) is
+// DraftsWidgetBase, shared with the per-module drafts widgets; this supplies
+// what is HQ's own: every type at once, a badge per type, and where each
+// kind of draft reopens.
 
 export default function DraftsWidget() {
   const auth = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
-
-  const [entries, setEntries] = createSignal<DraftEntry[]>([]);
-  const [loading, setLoading] = createSignal(true);
-  const [deleting, setDeleting] = createSignal<string | null>(null);
 
   // Reactive label — called in JSX so Solid tracks t() reads
   function scopeLabel(scope: string): string {
@@ -103,54 +76,14 @@ export default function DraftsWidget() {
     return t("hq.draft_label");
   }
 
-  // ── Data loading ──────────────────────────────────────────────────────────
-
-  async function loadAll() {
-    setLoading(true);
-    try {
-      const serverDrafts = await listServerDrafts(DRAFT_TYPES);
-      const results = serverDrafts
-        .filter((sd) => SHOWN_TYPES.includes(scopeParts(sd.scope).type))
-        .map((sd) => ({
-          scope: sd.scope,
-          draft: { ...sd, id: sd.serverMid },
-        }));
-      results.sort((a, b) => b.draft.updated - a.draft.updated);
-      setEntries(results);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  onMount(loadAll);
-
-  // Composers are mounted by ModalHost now, so one can publish a draft from
-  // another page entirely — there is no per-composer callback that could refresh
-  // this list. deleteServerDraft bumps draftsVersion; that is the signal.
-  // (Same wiring as DraftsWidgetBase, which the per-module drafts widgets use.)
-  createEffect(on(draftsVersion, () => void loadAll(), { defer: true }));
-
-  // ── Delete ────────────────────────────────────────────────────────────────
-
-  async function deleteDraft(scope: string, id: string) {
-    setDeleting(id);
-    try {
-      void deleteServerDraft(id); // id === serverMid for server-only drafts
-      setEntries((prev) => prev.filter((e) => !(e.scope === scope && e.draft.id === id)));
-    } finally {
-      setDeleting(null);
-    }
-  }
-
-
   // ── Load ──────────────────────────────────────────────────────────────────
 
   async function handleLoad(entry: DraftEntry) {
     const { type, action, id } = scopeParts(entry.scope);
 
-    // Always write a pending-draft so the target composer restores ALL fields
-    // (and sets loadedDraftId, which auto-deletes the draft on publish)
-    await storageSet(channelKey(`pending-draft:${entry.scope}`), entry.draft);
+    // DraftsWidgetBase has already written the pending-draft, so the target
+    // composer restores ALL fields (and sets loadedDraftId, which auto-deletes
+    // the draft on publish).
 
     // Webpage/wiki composers live on their own routed pages, not modals —
     // the pending-draft written above is picked up automatically once that
@@ -179,7 +112,7 @@ export default function DraftsWidget() {
         initial: composerInitial(entry),
         // DM recipients ride in the draft's `extra`, restored by DMComposer
         // from the pending-draft written above.
-        onPosted: () => void deleteDraft(entry.scope, entry.draft.id),
+        onPosted: () => void deleteServerDraft(entry.draft.id),
         onClose: () => void storageDel(channelKey(`pending-draft:${entry.scope}`)),
       },
     });
@@ -204,108 +137,21 @@ export default function DraftsWidget() {
     };
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <>
-      <div data-tour="hq.drafts">
-      <WidgetShell
-        class="flex flex-col max-h-[480px]"
+    <div data-tour="hq.drafts">
+      <DraftsWidgetBase
+        scopeType={DRAFT_TYPES}
         title={t("hq.drafts")}
-        actions={
-          <>
-            <Show when={!loading() && entries().length > 0}>
-              <span class="text-xs text-muted tabular-nums">{entries().length}</span>
-            </Show>
-            <IconButton label={t("hq.retry")} size="sm" onClick={loadAll} disabled={loading()}>
-              <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
-            </IconButton>
-          </>
-        }
-      >
-
-        {/* Loading skeletons */}
-        <Show when={loading()}>
-          <For each={[1, 2, 3]}>{() => <SkeletonRow />}</For>
-        </Show>
-
-        {/* Empty state */}
-        <Show when={!loading() && entries().length === 0}>
-          <div class="px-(--ws-px) py-6 flex flex-col items-center gap-2 text-muted">
-            <MdOutlineDescription class="w-7 h-7 opacity-30" />
-            <span class="text-xs">{t("hq.no_drafts")}</span>
-          </div>
-        </Show>
-
-        {/* Draft list */}
-        <Show when={!loading()}>
-          <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-rim">
-            <For each={entries()}>
-              {(entry) => {
-                const loadable = () => isLoadable(entry.scope);
-                const isDeleting = () => deleting() === entry.draft.id;
-
-                return (
-                  <div class="px-(--ws-px) py-3 hover:bg-elevated group transition-colors"
-                    classList={{ "opacity-50 pointer-events-none": isDeleting() }}>
-
-                    {/* Line 1 + 2 — title & summary */}
-                    <div
-                      class={loadable() ? "cursor-pointer" : ""}
-                      onClick={() => { if (loadable()) void handleLoad(entry); }}
-                    >
-                      <p class="text-sm font-medium text-txt truncate leading-snug">
-                        <Show when={entry.draft.title} fallback={<em class="font-normal text-muted">{t("hq.untitled_draft")}</em>}>
-                          {entry.draft.title}
-                        </Show>
-                      </p>
-                      <p class="text-xs text-muted truncate mt-0.5">
-                        <Show when={entry.draft.preview} fallback={<em>{t("hq.empty_draft")}</em>}>
-                          {entry.draft.preview}
-                        </Show>
-                      </p>
-                    </div>
-
-                    {/* Line 3 — type badge · delete · date (right-aligned) */}
-                    <div class="flex items-center justify-between mt-1.5">
-                      <span class={`shrink-0 text-[0.625rem] font-semibold px-1.5 py-0.5 rounded
-                                    border leading-none select-none ${badgeClass(entry.scope)}`}>
-                        {scopeLabel(entry.scope)}
-                      </span>
-                      <div class="flex items-center gap-2.5">
-                        <IconButton
-                          label={t("hq.delete_draft")}
-                          variant="danger"
-                          size="sm"
-                          class="-m-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
-                          onClick={() => void deleteDraft(entry.scope, entry.draft.id)}
-                        >
-                          <Show
-                            when={!isDeleting()}
-                            fallback={
-                              <MdOutlineRefresh class="w-3 h-3 animate-spin" />
-                            }
-                          >
-                            <MdFillDelete size={12} />
-                          </Show>
-                        </IconButton>
-                        <span
-                          class="text-[0.625rem] text-muted/60 tabular-nums shrink-0"
-                          title={new Date(entry.draft.created).toLocaleString()}
-                        >
-                          {formatDate(entry.draft.created)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }}
-            </For>
-          </div>
-        </Show>
-      </WidgetShell>
-      </div>
-
-    </>
+        emptyText={t("hq.no_drafts")}
+        refreshTitle={t("hq.retry")}
+        deleteTitle={t("hq.delete_draft")}
+        untitledText={t("hq.untitled_draft")}
+        emptyDraftText={t("hq.empty_draft")}
+        badgeClassName={badgeClass}
+        badgeLabel={scopeLabel}
+        isLoadable={isLoadable}
+        onLoad={handleLoad}
+      />
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createSignal, createEffect, on, For, Show, onMount } from "solid-js";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { storageSet } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import type { SavedDraft } from "../store/createComposerStore";
@@ -21,7 +22,8 @@ export interface DraftsWidgetApi {
 }
 
 export interface DraftsWidgetBaseProps {
-  /** Scope prefix before the first ":" — also the `listServerDrafts` type filter */
+  /** Scope prefix before the first ":" — also the `listServerDrafts` type
+   *  filter. Comma-separated for several at once (the HQ widget lists all). */
   scopeType: string;
   title: string;
   emptyText: string;
@@ -29,8 +31,9 @@ export interface DraftsWidgetBaseProps {
   deleteTitle: string;
   untitledText: string;
   emptyDraftText: string;
-  /** Tailwind classes for the line-3 type/status badge (constant per widget) */
-  badgeClassName: string;
+  /** Tailwind classes for the line-3 type/status badge — constant per widget,
+   *  or per scope where one widget lists several types. */
+  badgeClassName: string | ((scope: string) => string);
   badgeLabel: (scope: string) => string;
   /** Defaults to always-loadable when omitted */
   isLoadable?: (scope: string) => boolean;
@@ -60,30 +63,31 @@ const SkeletonRow = () => (
 );
 
 export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
-  const [entries, setEntries] = createSignal<DraftEntry[]>([]);
-  const [loading, setLoading] = createSignal(true);
+  // Cached per scope: a remount (leaving HQ and coming back) or a reload shows
+  // the list it already has and revalidates behind it — the skeleton is for
+  // the very first load only.
+  const [data, { refetch, mutate }] = createQueryResource(
+    "drafts",
+    () => props.scopeType,
+    async (scopeType): Promise<DraftEntry[]> => {
+      const types = scopeType.split(",");
+      const results = (await listServerDrafts(scopeType))
+        .filter((sd) => types.includes(sd.scope.split(":")[0]))
+        .map((sd) => ({ scope: sd.scope, draft: { ...sd, id: sd.serverMid } }));
+      results.sort((a, b) => b.draft.updated - a.draft.updated);
+      return results;
+    },
+    // Drafts are saved from composers that never invalidate this.
+    { staleTime: 0 },
+  );
+  const entries = () => data() ?? [];
+  const loading = () => data() === undefined;
+  const loadAll = async () => refetch();
   const [deleting, setDeleting] = createSignal<string | null>(null);
 
   const loadable = (scope: string) => (props.isLoadable ? props.isLoadable(scope) : true);
 
-  async function loadAll() {
-    setLoading(true);
-    try {
-      const serverDrafts = await listServerDrafts(props.scopeType);
-      const results = serverDrafts
-        .filter((sd) => sd.scope.split(":")[0] === props.scopeType)
-        .map((sd) => ({ scope: sd.scope, draft: { ...sd, id: sd.serverMid } }));
-      results.sort((a, b) => b.draft.updated - a.draft.updated);
-      setEntries(results);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  onMount(() => {
-    void loadAll();
-    props.apiRef?.({ reload: loadAll });
-  });
+  onMount(() => props.apiRef?.({ reload: loadAll }));
 
   // A draft deleted elsewhere (e.g. published from a routed composer that
   // navigated here, leaving this widget mounted) still needs to drop off
@@ -94,7 +98,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
     setDeleting(id);
     try {
       void deleteServerDraft(id); // id === serverMid for server-only drafts
-      setEntries((prev) => prev.filter((e) => !(e.scope === scope && e.draft.id === id)));
+      mutate((prev) => prev?.filter((e) => !(e.scope === scope && e.draft.id === id)));
     } finally {
       setDeleting(null);
     }
@@ -119,9 +123,9 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
             label={props.refreshTitle}
             size="sm"
             onClick={() => void loadAll()}
-            disabled={loading()}
+            disabled={data.fetching}
           >
-            <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": loading() }} />
+            <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": data.fetching }} />
           </IconButton>
         </>
       }
@@ -172,7 +176,10 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
                   {/* Line 3 — badge · delete · date (right-aligned) */}
                   <div class="flex items-center justify-between mt-1.5">
                     <span class={`shrink-0 text-[0.625rem] font-semibold px-1.5 py-0.5 rounded
-                                  border leading-none select-none ${props.badgeClassName}`}>
+                                  border leading-none select-none ${
+                                    typeof props.badgeClassName === "function"
+                                      ? props.badgeClassName(entry.scope)
+                                      : props.badgeClassName}`}>
                       {props.badgeLabel(entry.scope)}
                     </span>
                     <div class="flex items-center gap-2.5">

@@ -28,6 +28,9 @@ import {
 export type QueryResource<T> = {
   (): T | undefined;
   readonly loading: boolean;
+  /** Any fetch in flight, background revalidation included — for a refresh
+   *  spinner. Never gate content on it; that's what brings the flash back. */
+  readonly fetching: boolean;
   readonly error: Error | undefined;
   readonly latest: T | undefined;
 };
@@ -43,6 +46,9 @@ type InitOpts<T> = {
    *  replies) — a focus/reconnect refetch would replace it with page one. */
   refetchOnWindowFocus?: boolean;
   refetchOnReconnect?: boolean;
+  /** 0 = revalidate on every mount (the cached list still renders at once).
+   *  For lists other views change without invalidating this query. */
+  staleTime?: number;
 };
 
 export function createQueryResource<T>(
@@ -82,6 +88,7 @@ export function createQueryResource<T, S>(
       // Only when set — an explicit undefined would override the client defaults.
       ...(options.refetchOnWindowFocus !== undefined && { refetchOnWindowFocus: options.refetchOnWindowFocus }),
       ...(options.refetchOnReconnect !== undefined && { refetchOnReconnect: options.refetchOnReconnect }),
+      ...(options.staleTime !== undefined && { staleTime: options.staleTime }),
       // Cast: TanStack's NonFunctionGuard<T> rejects generic T even though
       // the runtime shape is exactly what placeholderData expects.
       placeholderData: (options.initialValue !== undefined
@@ -93,6 +100,7 @@ export function createQueryResource<T, S>(
   const accessor = (() => query.data) as QueryResource<T>;
   Object.defineProperties(accessor, {
     loading: { get: () => query.isLoading || query.isPlaceholderData },
+    fetching: { get: () => query.isFetching },
     error: { get: () => query.error ?? undefined },
     latest: { get: () => query.data },
   });

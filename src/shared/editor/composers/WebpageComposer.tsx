@@ -6,10 +6,10 @@ import TemplateNameForm from "@/shared/views/TemplateNameForm";
 import { setCurrentPageTemplateId } from "@/modules/webpages/store";
 import { editingWidgets, setEditingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { MdFillAdd, MdOutlineEdit, MdFillCheck } from "solid-icons/md";
-import { createComposerStore } from "../store/createComposerStore";
+import { createComposerStore, resumeEdit } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
-import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
+import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useEncrypt } from "../useEncrypt";
 import EncryptToggle from "../components/EncryptToggle";
 // Lazy: these panels are only ever shown once a user opts into encrypting or
@@ -152,51 +152,25 @@ export default function WebpageComposer(props: Props) {
   }
 
   const store = createComposerStore(async (body, meta) => {
-    if (isEditing()) {
-      const csrf = await getCsrfToken();
-      const res = await fetch("/spa/webpages", {
-        method:      "POST",
-        headers:     { "X-CSRF-Token": csrf, "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action:    "update",
-          nick:      props.nick,
-          uuid:      props.initial!.uuid,
-          title:     meta.title    ?? "",
-          summary:   meta.summary  ?? "",
-          body:      withFileAttachments(body),
-          mimetype:  meta.mimetype ?? "text/bbcode",
-          pagetitle: meta.slug     ?? "",
-          layout_template: layoutTemplate() || null,
-          ...aclJson(),
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error?.message ?? err?.error ?? "Save failed");
-      }
-    } else {
-      const csrf = await getCsrfToken();
-      const res = await fetch("/spa/webpages", {
-        method: "POST",
-        headers: { "X-CSRF-Token": csrf, "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action:    "create",
-          nick:      props.nick,
-          title:     meta.title    ?? "",
-          summary:   meta.summary  ?? "",
-          body:      withFileAttachments(body),
-          mimetype:  meta.mimetype ?? "text/bbcode",
-          pagetitle: meta.slug     ?? "",
-          layout_template: layoutTemplate() || null,
-          ...aclJson(),
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error?.message ?? "Save failed");
-      }
+    // One request for both: an update is a create plus the target's uuid.
+    const res = await apiFetch("/spa/webpages", {
+      method: "POST",
+      body: JSON.stringify({
+        action:    isEditing() ? "update" : "create",
+        nick:      props.nick,
+        uuid:      props.initial?.uuid,
+        title:     meta.title    ?? "",
+        summary:   meta.summary  ?? "",
+        body:      withFileAttachments(body),
+        mimetype:  meta.mimetype ?? "text/bbcode",
+        pagetitle: meta.slug     ?? "",
+        layout_template: layoutTemplate() || null,
+        ...aclJson(),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error?.message ?? err?.error ?? "Save failed");
     }
 
     // PageView's createQueryResource("webpage", ...) caches by [nick, pagelink]
@@ -210,6 +184,7 @@ export default function WebpageComposer(props: Props) {
     props.onSaved?.();
   }, scope, {
     initialBody: props.initial?.body,
+    mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
   });

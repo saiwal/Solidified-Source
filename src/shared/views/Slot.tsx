@@ -93,13 +93,22 @@ const Slot: Component<SlotProps> = (props) => {
   const authReady = () => auth() !== undefined;
 
   const widgetVersion = getWidgetVersion();
-  // Reactive: re-derives when new modules register widgets after async import
+  // Reactive: re-derives when new modules register widgets after async import.
+  // Entries are reference-stable: this memo also re-runs when viewerRole()
+  // flips (navigating from your page to someone else's), and fresh objects
+  // made <For> remount every "always mounted" widget — the notifications
+  // panel dropped to its skeleton and refetched on each such navigation.
+  const globalCache = new Map<string, { widget: RegisteredWidget; Widget: Component }>();
   const globalWidgets = createMemo(() => {
     widgetVersion(); // track
     if (!authReady()) return [];
     return resolveGlobalSlots(props.name)
       .filter(visibleToViewer)
-      .map((w) => ({ widget: w, Widget: getLazy(w.loader) }));
+      .map((w) => {
+        let e = globalCache.get(w.id);
+        if (e?.widget !== w) globalCache.set(w.id, (e = { widget: w, Widget: getLazy(w.loader) }));
+        return e;
+      });
   });
 
   // Module-local widgets: the user's saved layout when one exists, otherwise

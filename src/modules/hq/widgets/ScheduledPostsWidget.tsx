@@ -1,4 +1,5 @@
-import { createSignal, For, Show, onMount } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -41,21 +42,19 @@ function publishAt(created: string): string {
  */
 export default function ScheduledPostsWidget() {
   const { t } = useI18n();
-  const [posts, setPosts] = createSignal<ScheduledPost[]>([]);
-  const [busy, setBusy] = createSignal<string | null>(null);
-
-  async function load() {
-    try {
+  // Cached, so the widget is there on return to HQ instead of popping in
+  // after its fetch. A failed fetch throws → no data → stays hidden.
+  const [data, { refetch: load, mutate }] = createQueryResource(
+    "hq-scheduled",
+    async () => {
       const res = await apiFetch("/spa/scheduled");
-      if (!res.ok) return;
-      const json = (await res.json()) as { data?: ScheduledPost[] };
-      setPosts(json.data ?? []);
-    } catch {
-      /* stay hidden */
-    }
-  }
-
-  onMount(load);
+      if (!res.ok) throw new Error(String(res.status));
+      return ((await res.json()) as { data?: ScheduledPost[] }).data ?? [];
+    },
+    { staleTime: 0 }, // posts are scheduled from the composer
+  );
+  const posts = () => data() ?? [];
+  const [busy, setBusy] = createSignal<string | null>(null);
 
   async function act(uuid: string, action: "publish" | "delete") {
     setBusy(uuid);
@@ -64,7 +63,7 @@ export default function ScheduledPostsWidget() {
         method: "POST",
         body: JSON.stringify({ uuid }),
       });
-      if (res.ok) setPosts((p) => p.filter((x) => x.uuid !== uuid));
+      if (res.ok) mutate((p) => p?.filter((x) => x.uuid !== uuid));
     } finally {
       setBusy(null);
     }

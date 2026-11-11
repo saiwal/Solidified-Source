@@ -75,7 +75,13 @@ export type ComposerMeta = {
   mimetype?: MimeType;
 };
 
-export const CAPABILITIES: Record<string, EditorCapabilities> = {
+// A closed key set, so a misspelt flavor is a compile error rather than an
+// `undefined` capabilities object at runtime.
+export type ComposerFlavor =
+  | "post" | "comment" | "dm" | "article" | "card" | "webpage"
+  | "block" | "wiki" | "note" | "quick" | "chat";
+
+export const CAPABILITIES: Record<ComposerFlavor, EditorCapabilities> = {
   // Wall post (HQ / network composer)
   post: {
     toolbar: "full",
@@ -101,7 +107,7 @@ export const CAPABILITIES: Record<string, EditorCapabilities> = {
     summary: false,
     slug: false,
     category: false,
-    attachments: "none",
+    attachments: "both",
     aclPicker: false,
     submitOnCtrlEnter: true,
     latexMode: "image",

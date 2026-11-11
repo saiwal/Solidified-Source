@@ -78,6 +78,14 @@ export default function CommentComposer(props: Props) {
     scope,
     {
       initialBody: props.initialBody,
+      autosave: false,
+      // The seed is "@{author} " plus an optional quote of the selected text.
+      // What was typed wins; only a quote it doesn't hold yet is added.
+      mergeDraft: (draft, initial) => {
+        const at = initial.indexOf("[quote");
+        const quote = at >= 0 ? initial.slice(at) : "";
+        return quote && !draft.includes(quote.trim()) ? `${draft}\n${quote}` : draft;
+      },
       // Same "Markdown" feature as PostComposer (the mdpost addon's toggle);
       // the server converts to bbcode on save (ContentTypes::toBbcode).
       initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",

@@ -1,6 +1,6 @@
 import { Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createComposerStore } from "../store/createComposerStore";
+import { createComposerStore, resumeEdit } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import { isAuthorable } from "@utsukta/spa-core/lib/mimetypes";
@@ -103,6 +103,7 @@ export default function NoteComposer(props: Props) {
     props.onSaved?.();
   }, scope, {
     initialBody: props.initial?.body,
+    mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     initialCategory: props.initial?.categories?.join(","),
     // Same "Markdown" feature toggle posts/comments/DMs follow — an input
     // format only: Notes.php / Item.php editItem store it as bbcode.

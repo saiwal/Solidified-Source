@@ -3,7 +3,7 @@ import { createSignal, createEffect, onCleanup, useContext } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
-import { listServerDrafts, saveServerDraft, deleteServerDraft } from "../api/drafts";
+import { saveServerDraft, deleteServerDraft } from "../api/drafts";
 import { isEncryptedBody } from "@utsukta/spa-core/lib/postCrypto";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
 import type { MimeType, ComposerMeta } from "../types/editor.types";
@@ -58,7 +58,17 @@ type LocalDraft = {
   slug: string;
   category: string;
   mimetype: MimeType;
+  /** The initialBody this snapshot was typed on top of — see resumeEdit. */
+  seed?: string;
 };
+
+/**
+ * mergeDraft for edit mode: an unfinished edit comes back only while the
+ * stored item is still what it was typed over. Edited elsewhere since, the
+ * stored body wins — a stale snapshot must not silently revert it.
+ */
+export const resumeEdit = (draft: string, initial: string, draftSeed?: string) =>
+  draftSeed === initial ? draft : initial;
 
 export function createComposerStore(
   submitFn: SubmitFn,
@@ -83,6 +93,27 @@ export function createComposerStore(
      * leaving body() empty, so without this they never autosaved at all.
      */
     autosaveBody?: () => string;
+    /**
+     * Lets a local draft survive an initialBody. Without it a seeded composer
+     * never restores (right for edit mode, where initialBody is the stored
+     * item) — but a reply is seeded with "@{author} " on every open, which
+     * threw away the typed comment and then overwrote it in storage.
+     * Returns the body to start from, given the draft and the seed.
+     */
+    mergeDraft?: (draft: string, initial: string, draftSeed?: string) => string;
+    /**
+     * false = no server draft, only the local snapshot. For comments and chat:
+     * nothing lists their drafts, so each one was an orphan `item` row unless
+     * it happened to be sent. Also for post edits, whose draft would reopen as
+     * a new post.
+     */
+    autosave?: boolean;
+    /**
+     * Throws what would stop a submit (too few poll answers, an empty custom
+     * ACL). Runs before the server draft is deleted, so a refused submit
+     * leaves it alone.
+     */
+    validate?: () => void;
   },
 ) {
   const DRAFT_KEY = channelKey(`draft:${scope}`);
@@ -109,7 +140,6 @@ export function createComposerStore(
   const [tab, setTab] = createSignal<"wysiwyg" | "source">(
     options?.initialBody && isEncryptedBody(options.initialBody) ? "source" : "wysiwyg",
   );
-  const [savedDrafts, setSavedDrafts] = createSignal<SavedDraft[]>([]);
   const [loadedDraftId, setLoadedDraftId] = createSignal<string | null>(null);
   // Creation time of the currently-loaded draft, so re-saving it doesn't
   // stomp its original `created` with "now" (cosmetic — see saveAsDraft).
@@ -123,13 +153,9 @@ export function createComposerStore(
   // the async storage read has had a chance to restore the previous body.
   const [initialized, setInitialized] = createSignal(false);
 
-  // Load saved drafts from server, filtered to this scope
-  listServerDrafts(scope.split(":")[0]).then((serverDrafts) => {
-    const forScope = serverDrafts
-      .filter((sd) => sd.scope === scope)
-      .map((sd) => ({ ...sd, id: sd.serverMid }));
-    setSavedDrafts(forScope);
-  });
+  // True once a local snapshot was restored: content the server has not seen,
+  // so the autosave below must not treat it as "nothing changed".
+  let restoredLocal = false;
 
   // On init, a pending-draft (written cross-navigation by the HQ DraftsWidget) takes
   // priority over the regular auto-save; fall back to auto-save if none present.
@@ -147,14 +173,20 @@ export function createComposerStore(
       if (isEncryptedBody(pending.body)) setTab("source");
       if (pending.extra) setRestoredExtra(pending.extra);
       await storageDel(PENDING_KEY);
-    } else if (!options?.initialBody) {
+    } else if (!options?.initialBody || options.mergeDraft) {
       // Support both the new LocalDraft shape and the old plain-string format
       const raw = await storageGet<LocalDraft | string | null>(DRAFT_KEY, null);
-      if (raw) {
-        const local: LocalDraft = typeof raw === "string"
-          ? { body: raw, title: "", summary: "", slug: "", category: "", mimetype: "text/bbcode" }
-          : raw;
-        setBody(local.body);
+      const local: LocalDraft | null = typeof raw === "string"
+        ? { body: raw, title: "", summary: "", slug: "", category: "", mimetype: "text/bbcode" }
+        : raw;
+      const seed = options?.initialBody;
+      const merged = local && seed && options?.mergeDraft
+        ? options.mergeDraft(local.body, seed, local.seed)
+        : local?.body;
+      // merged === seed: the merge kept the seed, so none of the snapshot applies.
+      if (local && merged !== undefined && merged !== seed) {
+        restoredLocal = true;
+        setBody(merged);
         setTitle(local.title);
         setSummary(local.summary);
         setSlug(local.slug);
@@ -178,8 +210,10 @@ export function createComposerStore(
       slug:     slug(),
       category: category(),
       mimetype: mimetype(),
+      seed:     options?.initialBody,
     };
-    if (snapshot.body) storageSet(DRAFT_KEY, snapshot);
+    // An untouched seed is not a draft.
+    if (snapshot.body && snapshot.body !== options?.initialBody) storageSet(DRAFT_KEY, snapshot);
     else storageDel(DRAFT_KEY);
   });
 
@@ -197,18 +231,23 @@ export function createComposerStore(
   let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
   /** The autosave in flight, so submit() can wait for its draft to exist. */
   let pendingAutosave: Promise<void> | undefined;
+  // What the composer opened with (a seed, or a server draft just loaded).
+  // Until the content differs there is nothing to save: merely opening an edit
+  // or a draft and idling used to write one. null = a restored local snapshot,
+  // which never matches and so does get saved.
+  let baseline: string | null | undefined;
 
   createEffect(() => {
-    if (!initialized()) return;
+    if (!initialized() || options?.autosave === false) return;
     // Track what a draft is made of, so any of them restarts the countdown.
     const draftBody = options?.autosaveBody?.() ?? body();
     const snapshot = [draftBody, title(), summary(), slug(), category()].join("\u0000");
     clearTimeout(autosaveTimer);
-    if (!draftBody.trim() || submitting()) return;
+    if (baseline === undefined) baseline = restoredLocal ? null : snapshot;
+    if (!draftBody.trim() || submitting() || snapshot === baseline) return;
     autosaveTimer = setTimeout(() => {
       pendingAutosave = saveAsDraft(options?.autosaveExtra?.() ?? undefined, options?.autosaveBody?.(), true);
     }, AUTOSAVE_MS);
-    void snapshot;
   });
 
   onCleanup(() => clearTimeout(autosaveTimer));
@@ -219,6 +258,7 @@ export function createComposerStore(
     setError(null);
     setSubmitting(true);
     try {
+      options?.validate?.();
       // A draft is an `item` row holding this same body, and core's "Suppress
       // duplicates" matches any item of the uid with an identical body from the
       // last 2 minutes — unpublished ones included. Left in place, it cancels
@@ -229,7 +269,6 @@ export function createComposerStore(
       if (draftId) {
         setLoadedDraftId(null);
         setLoadedDraftCreated(null);
-        setSavedDrafts(savedDrafts().filter((d) => d.id !== draftId));
         await deleteServerDraft(draftId);
       }
       await submitFn(submitBody, {
@@ -315,26 +354,7 @@ export function createComposerStore(
     const draft: SavedDraft = { ...tempDraft, id: serverMid, serverMid };
     setLoadedDraftId(serverMid);
     setLoadedDraftCreated(draft.created);
-    setSavedDrafts([draft, ...savedDrafts().filter((d) => d.id !== serverMid)]);
     setDraftSavedAt(Date.now());
-  }
-
-  function loadSavedDraft(draft: SavedDraft): void {
-    setBody(draft.body);
-    setTitle(draft.title);
-    setSummary(draft.summary);
-    setSlug(draft.slug);
-    setCategory(draft.category);
-    setMimetype(draft.mimetype);
-    setLoadedDraftId(draft.id);
-    setLoadedDraftCreated(draft.created);
-    setTab(isEncryptedBody(draft.body) ? "source" : "wysiwyg");
-    setRestoredExtra(draft.extra ?? null);
-  }
-
-  async function deleteSavedDraft(id: string): Promise<void> {
-    setSavedDrafts(savedDrafts().filter((d) => d.id !== id));
-    void deleteServerDraft(id); // id === serverMid for server-only drafts
   }
 
   return {
@@ -348,13 +368,9 @@ export function createComposerStore(
     submitting,
     error,
     tab, setTab,
-    savedDrafts,
     restoredExtra,
     // Actions
     submit,
     reset,
-    saveAsDraft,
-    loadSavedDraft,
-    deleteSavedDraft,
   };
 }

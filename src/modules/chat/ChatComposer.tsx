@@ -97,7 +97,7 @@ export default function ChatComposer(props: Props) {
     },
     props.scope,
     // Same "Markdown" feature toggle as PostComposer/CommentComposer.
-    { initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode" },
+    { initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode", autosave: false },
   );
 
   const wiring = useMentionEmojiWiring({

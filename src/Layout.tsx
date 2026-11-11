@@ -1,5 +1,6 @@
 import { type ParentComponent, Show, ErrorBoundary, Suspense, createEffect } from "solid-js";
 import { useLayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
+import { useAppliedBg } from "@utsukta/spa-core/lib/background";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 void helpable;
 import Slot from "./shared/views/Slot";
@@ -34,6 +35,7 @@ const Layout: ParentComponent = (props) => {
   // The hook is called once here and handed to the menu components as-is: it
   // owns singleton state (focus restoration, drag reorder, scroll tracking),
   // so a menu can't call it a second time. See shared/views/layout/.
+  const appliedBg = useAppliedBg();
   const chrome = useLayoutChrome();
   const {
     rightOpen, setRightOpen,
@@ -68,6 +70,14 @@ const Layout: ParentComponent = (props) => {
 
   return (
     <div class="fixed inset-0 bg-base text-txt hz-app-root">
+      {/* Cover wallpaper — see .hz-wallpaper in index.css for why an <img>. */}
+      <Show when={appliedBg().fit === "cover" && appliedBg().url}>
+        {(url) => (
+          <div class="hz-wallpaper" aria-hidden="true">
+            <img src={url()} alt="" decoding="sync" />
+          </div>
+        )}
+      </Show>
       <a
         href="#main-content"
         class="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2

@@ -27,7 +27,8 @@ import { MdOutlineClose, MdOutlineMap, MdOutlineRemove_circle_outline, MdOutline
 import { parseCoord, reverseGeocode, type Coord } from "@utsukta/spa-core/lib/osm";
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 const MapPickerModal = lazy(() => import("../map/MapPickerModal"));
-import { createComposerStore } from "../store/createComposerStore";
+import { apiFetch } from "@utsukta/spa-core/lib/fetch";
+import { createComposerStore, resumeEdit } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import ComposerModal from "../components/ComposerModal";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
@@ -59,7 +60,6 @@ import { bbcodeToInsert, patchInsertedAlt, missingVideoEmbeds, patchInsertedPost
 import type { FileAcl } from "@/modules/files/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
 import { useEncrypt } from "../useEncrypt";
 import EncryptToggle from "../components/EncryptToggle";
 // Lazy: these panels are only ever shown once a user opts into encrypting or
@@ -274,8 +274,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
         return;
       }
 
-      const csrf = await getCsrfToken();
-
       // ── Build ACL scope ──
       const mode = acl.mode();
       const payload: Record<string, unknown> = {
@@ -303,10 +301,6 @@ const PostComposer: Component<ComposerProps> = (props) => {
       } else if (mode === "me") {
         payload.scope = "private";
       } else {
-        // Custom — require at least one allow entry
-        if (acl.allowEntries().size === 0) {
-          throw new Error("Select at least one connection or group to allow.");
-        }
         payload.scope = "custom";
         const contactAllow: string[] = [];
         const groupAllow: string[] = [];
@@ -339,13 +333,8 @@ const PostComposer: Component<ComposerProps> = (props) => {
         payload.poll_multiple_answers = pollPayload.multiple ? 1 : 0;
       }
 
-      const res = await fetch("/spa/item", {
+      const res = await apiFetch("/spa/item", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
-        },
         body: JSON.stringify(payload),
       });
 
@@ -374,6 +363,17 @@ const PostComposer: Component<ComposerProps> = (props) => {
       initialMimetype: props.initialMimetype ?? postMimetype(),
       // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
       autosaveExtra: buildDraftExtra,
+      // An edit keeps only its local snapshot: the drafts widget lists a
+      // post:edit draft but cannot reopen one (see its isLoadable).
+      autosave: !props.onSubmitEdit,
+      mergeDraft: props.onSubmitEdit ? resumeEdit : undefined,
+      validate: () => {
+        if (props.onSubmitEdit) return; // ACL and poll are not editable
+        if (acl.mode() === "custom" && acl.allowEntries().size === 0) {
+          throw new Error("Select at least one connection or group to allow.");
+        }
+        poll.toFormPayload(); // throws on fewer than two answers
+      },
     },
   );
 
@@ -396,7 +396,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
       extra.deny = [...acl.denyEntries()];
     }
     if (poll.enabled()) {
-      extra.poll = { answers: poll.answers(), expireValue: poll.expireValue(), expireUnit: poll.expireUnit() };
+      extra.poll = { answers: poll.answers(), expireValue: poll.expireValue(), expireUnit: poll.expireUnit(), multiple: poll.multiple() };
     }
     return extra;
   }
@@ -413,7 +413,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
     if (typeof extra.publishAt === "string") setPublishAt(extra.publishAt);
     if (typeof extra.noComment === "boolean") setNoComment(extra.noComment);
     if (typeof extra.localOnly === "boolean") setLocalOnly(extra.localOnly);
-    const p = extra.poll as { answers: string[]; expireValue: string; expireUnit: string } | undefined;
+    const p = extra.poll as { answers: string[]; expireValue: string; expireUnit: string; multiple?: boolean } | undefined;
     if (p) {
       poll.setEnabled(true);
       p.answers.forEach((a, i) => {
@@ -422,6 +422,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
       });
       poll.setExpireValue(p.expireValue);
       poll.setExpireUnit(p.expireUnit);
+      poll.setMultiple(!!p.multiple);
     }
   });
 

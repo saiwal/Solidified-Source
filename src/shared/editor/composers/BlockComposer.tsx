@@ -1,8 +1,8 @@
 import { Show, onCleanup, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
+import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
-import { createComposerStore } from "../store/createComposerStore";
+import { createComposerStore, resumeEdit } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
 import { useEncrypt } from "../useEncrypt";
@@ -113,47 +113,23 @@ export default function BlockComposer(props: Props) {
   }
 
   const store = createComposerStore(async (body, meta) => {
-    if (isEditing()) {
-      const csrf = await getCsrfToken();
-      const res = await fetch("/spa/blocks", {
-        method:      "POST",
-        headers:     { "X-CSRF-Token": csrf, "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action:   "update",
-          nick:     props.nick,
-          uuid:     props.initial!.uuid,
-          title:    meta.title    ?? "",
-          body:     withFileAttachments(body),
-          mimetype: meta.mimetype ?? "text/bbcode",
-          name:     meta.slug     ?? "",
-          ...aclJson(),
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error?.message ?? err?.error ?? "Save failed");
-      }
-    } else {
-      const csrf = await getCsrfToken();
-      const res = await fetch("/spa/blocks", {
-        method: "POST",
-        headers: { "X-CSRF-Token": csrf, "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          action:   "create",
-          nick:     props.nick,
-          title:    meta.title    ?? "",
-          body:     withFileAttachments(body),
-          mimetype: meta.mimetype ?? "text/bbcode",
-          name:     meta.slug     ?? "",
-          ...aclJson(),
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error?.message ?? "Save failed");
-      }
+    // One request for both: an update is a create plus the target's uuid.
+    const res = await apiFetch("/spa/blocks", {
+      method: "POST",
+      body: JSON.stringify({
+        action:   isEditing() ? "update" : "create",
+        nick:     props.nick,
+        uuid:     props.initial?.uuid,
+        title:    meta.title    ?? "",
+        body:     withFileAttachments(body),
+        mimetype: meta.mimetype ?? "text/bbcode",
+        name:     meta.slug     ?? "",
+        ...aclJson(),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.error?.message ?? err?.error ?? "Save failed");
     }
 
     void queryClient.invalidateQueries({ queryKey: ["block"] });
@@ -162,6 +138,7 @@ export default function BlockComposer(props: Props) {
     props.onSaved?.();
   }, scope, {
     initialBody: props.initial?.body,
+    mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
   });

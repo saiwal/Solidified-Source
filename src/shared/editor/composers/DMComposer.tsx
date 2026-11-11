@@ -39,8 +39,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { MdOutlineSchedule } from "solid-icons/md";
 import DateTimePicker from "../components/DateTimePicker";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
+import { apiError, apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useEncrypt } from "../useEncrypt";
 import EncryptToggle from "../components/EncryptToggle";
 import { Input } from "@ui/Field";
@@ -149,16 +148,10 @@ const DMComposer: Component<DMComposerProps> = (props) => {
       .join("\n");
     const augmentedBody = fileTags ? `${body}\n${fileTags}` : body;
 
-    const csrf = await getCsrfToken();
     let sentUuid: string | undefined;
     const send = async (contactAllow: string[]): Promise<number> => {
-      const res = await fetch("/spa/item", {
+      const res = await apiFetch("/spa/item", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
-        },
         body: JSON.stringify({
           body: augmentedBody,
           title: store.title().trim(),
