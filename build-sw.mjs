@@ -14,12 +14,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // they're routed NetworkOnly. Same for the live-count poll
 // (refreshCounts), whose URL changes with whatever posts are on screen, and
 // the admin log tail (?after=<offset> every few seconds).
-const POLL_URL = /\/spa\/(.*[?&]dbegin=|item\/counts\b|admin\/logs\b)/;
+// The credential vault rides the same rule: its ciphertext must never be cached.
+const POLL_URL = /\/spa\/(.*[?&]dbegin=|item\/counts\b|admin\/logs\b|vault\b)/;
 assert(POLL_URL.test('https://h/spa/network?order=created&dbegin=2026-08-16%2010%3A00%3A00'));
 assert(POLL_URL.test('https://h/spa/channel/bob?dbegin=x'));
 assert(!POLL_URL.test('https://h/spa/network?star=1'));
 assert(POLL_URL.test('https://h/spa/item/counts?uid=2&uuids%5B%5D=x'));
 assert(POLL_URL.test('https://h/spa/admin/logs?after=1024'));
+assert(POLL_URL.test('https://h/spa/vault/jellyfin'));
 
 // The "remote-avatars" rule below must never match the hub's own images: a
 // same-origin /cloud/ hit lands in SabreDAV, and /photo/ has its own rule.
