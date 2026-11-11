@@ -189,6 +189,7 @@ registerModule({
       slot: "footer",
       defaultModules: ["hq"],
       contexts: ["hq"],
+      configComponent: () => import("./widgets/PerfStatsConfig"),
       helpTarget: "widgets.perf_stats",
     },
 

@@ -4,6 +4,7 @@ import { createSignal, createEffect, on, onCleanup, onMount, For, Show } from "s
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { WidgetShell } from "@ui/WidgetShell";
+import type { PlotStyle } from "./PerfStatsConfig";
 
 interface PerfStats {
   loadavg: [number, number, number];
@@ -27,15 +28,15 @@ interface TimePoint {
   workqsz: number;
 }
 
-export default function PerfStatsPanel() {
+export default function PerfStatsPanel(props: { config?: Record<string, unknown> }) {
   return (
     <Show when={isAdmin()}>
-      <PerfStatsPanelInner />
+      <PerfStatsPanelInner style={(props.config?.style as PlotStyle) ?? "area"} />
     </Show>
   );
 }
 
-function PerfStatsPanelInner() {
+function PerfStatsPanelInner(props: { style: PlotStyle }) {
   const { t } = useI18n();
   const [points, setPoints] = createSignal<TimePoint[]>([]);
   const [latest, setLatest] = createSignal<PerfStats | null>(null);
@@ -95,23 +96,28 @@ function PerfStatsPanelInner() {
 
   function Sparkline(p: { data: number[]; color: string }) {
     const W = 120, H = 28, pad = 2;
-    const path = () => {
+    const geom = () => {
       const vals = p.data;
-      if (vals.length < 2) return { line: "", area: "" };
       const max = Math.max(...vals, 0.01);
       const min = Math.min(...vals);
       const range = max - min || 1;
-      const step = (W - pad * 2) / (vals.length - 1);
-      const pts = vals.map((v, i) => {
-        const x = pad + i * step;
-        const y = H - pad - ((v - min) / range) * (H - pad * 2);
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      });
-      const lastX = (pad + (vals.length - 1) * step).toFixed(1);
-      return {
-        line: `M${pts.join("L")}`,
-        area: `M${pad},${H - pad} L${pts.join("L")} L${lastX},${H - pad}Z`,
-      };
+      // Fixed slot width (full buffer), anchored right: few points stay short and grow leftward.
+      const step = (W - pad * 2) / (MAX_POINTS - 1);
+      return vals.map((v, i) => ({
+        x: W - pad - (vals.length - 1 - i) * step,
+        y: H - pad - ((v - min) / range) * (H - pad * 2),
+        w: step,
+      }));
+    };
+    const path = () => {
+      const pts = geom();
+      if (pts.length < 2) return { line: "", area: "" };
+      const f = (n: number) => n.toFixed(1);
+      const line = props.style === "step"
+        ? pts.map((q, i) => i === 0 ? `M${f(q.x)},${f(q.y)}` : `H${f(q.x)}V${f(q.y)}`).join("")
+        : `M${pts.map((q) => `${f(q.x)},${f(q.y)}`).join("L")}`;
+      const lastX = f(pts[pts.length - 1].x);
+      return { line, area: `${line} L${lastX},${H - pad} L${f(pts[0].x)},${H - pad}Z` };
     };
     return (
       <svg
@@ -119,15 +125,30 @@ function PerfStatsPanelInner() {
         preserveAspectRatio="none"
         style={{ width: "100%", height: "28px", display: "block", overflow: "visible" }}
       >
-        <path d={path().area} fill={p.color} opacity="0.15" />
-        <path
-          d={path().line}
-          fill="none"
-          stroke={p.color}
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
+        <Show when={props.style === "bars"}>
+          <For each={geom()}>
+            {(q) => <rect x={q.x - q.w * 0.35} y={q.y} width={q.w * 0.7} height={Math.max(H - pad - q.y, 0.5)} fill={p.color} opacity="0.8" />}
+          </For>
+        </Show>
+        <Show when={props.style === "dots"}>
+          {/* non-scaling stroke on a zero-length segment = a round dot that survives preserveAspectRatio="none" */}
+          <For each={geom()}>
+            {(q) => <path d={`M${q.x},${q.y}h0`} stroke={p.color} stroke-width="3" stroke-linecap="round" vector-effect="non-scaling-stroke" />}
+          </For>
+        </Show>
+        <Show when={props.style === "area"}>
+          <path d={path().area} fill={p.color} opacity="0.15" />
+        </Show>
+        <Show when={props.style === "area" || props.style === "line" || props.style === "step"}>
+          <path
+            d={path().line}
+            fill="none"
+            stroke={p.color}
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </Show>
       </svg>
     );
   }

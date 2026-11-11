@@ -667,6 +667,12 @@ export type RawDictionary = {
     cfg_count: string;
     cfg_unseen_only: string;
     cfg_default_tab:    string;
+    cfg_plot_style: string;
+    plot_area: string;
+    plot_line: string;
+    plot_step: string;
+    plot_bars: string;
+    plot_dots: string;
     cfg_room:           string;
     cfg_event:          string;
     photo_albums:       string;
