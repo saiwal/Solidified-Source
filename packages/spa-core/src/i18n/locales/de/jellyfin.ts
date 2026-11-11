@@ -202,6 +202,8 @@ export const jellyfin: RawDictionary["jellyfin"] = {
   hub_forget: "Auf meinem Hub vergessen",
   hub_forget_help: "Deine anderen Browser und Klone nicht mehr automatisch bei diesem Server anmelden. Bereits angemeldete Browser bleiben angemeldet.",
   hub_forgotten: "Von deinem Hub entfernt.",
+  hub_anchor_left: "Von deinem Hub entfernt – aber eine gespeicherte Anmeldung konnte bei Jellyfin nicht abgemeldet werden und funktioniert dort weiterhin. Entferne im Jellyfin-Dashboard unter „Geräte“ die Einträge namens „Hubzilla (stored)“ (oder bitte den Server-Admin darum).",
+  hub_admin_warning: "Dies ist ein Jellyfin-Administratorkonto: Wer deinen Tresor öffnet, erhält Admin-Zugriff auf diesen Server. Speichere besser ein Konto ohne Adminrechte.",
   vault_locked: "Dein Hub hat gespeicherte Jellyfin-Anmeldungen. Gib deine Tresor-Passphrase ein, um sie in diesem Browser zu nutzen.",
   vault_passphrase: "Tresor-Passphrase",
   vault_unlock: "Entsperren",

@@ -24,6 +24,8 @@ import { apiFetch } from "./fetch";
 import { useAuth } from "../store/auth-store";
 
 const ITER = 600_000;
+/** Offline guessing is the only attack on a stored vault, so length is the defence. */
+export const VAULT_MIN_PASSPHRASE = 10;
 const META = "_vault";
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -44,7 +46,7 @@ const channel = () => useAuth()()?.hash ?? "";
 
 async function rawList(integration: string): Promise<Record<string, unknown>> {
   const r = await apiFetch(path(integration));
-  if (!r.ok) throw new Error(`vault ${r.status}`);
+  if (!r.ok) throw Object.assign(new Error(`vault ${r.status}`), { status: r.status });
   return (await r.json()).data ?? {};
 }
 
@@ -117,7 +119,15 @@ export type VaultStatus = "new" | "locked" | "unlocked";
 
 /** "new": no passphrase chosen yet; "locked": one exists but this browser hasn't unlocked it. */
 export async function vaultStatus(): Promise<VaultStatus> {
-  const meta = (await rawList(META)).meta as Meta | undefined;
+  let meta: Meta | undefined;
+  try {
+    meta = (await rawList(META)).meta as Meta | undefined;
+  } catch (e) {
+    // 409: the hub holds a vault it can't open (rotated channel key). Not "new" —
+    // that would invite a passphrase over it; "locked" leaves reset as the way out.
+    if ((e as { status?: number }).status === 409) return "locked";
+    throw e;
+  }
   if (!meta) return "new";
   return (await currentKey()) ? "unlocked" : "locked";
 }
@@ -133,6 +143,7 @@ export async function unlockVault(passphrase: string): Promise<boolean> {
   let meta = (await rawList(META)).meta as Meta | undefined;
   let key: CryptoKey;
   if (!meta) {
+    if (passphrase.length < VAULT_MIN_PASSPHRASE) return false;
     const salt = crypto.getRandomValues(new Uint8Array(16));
     key = await derive(passphrase, salt, ITER);
     meta = { v: 1, kdf: "PBKDF2-SHA256", iter: ITER, salt: b64(salt), check: await seal(key, `${META}/check`, CHECK) };
@@ -153,15 +164,22 @@ export async function lockVault(): Promise<void> {
   if (ch) await idb("readwrite", (s) => s.delete(ch)).catch(() => undefined);
 }
 
+/** On hub logout: drop every cached key in this browser, whichever channel it was for. */
+export function forgetVault(): Promise<void> {
+  cached = null;
+  return new Promise((resolve) => {
+    const req = indexedDB.deleteDatabase("hz-vault");
+    req.onsuccess = req.onerror = req.onblocked = () => resolve();
+  });
+}
+
 /**
  * A forgotten passphrase can't be recovered: this deletes the passphrase and
  * every entry of the named integrations, so a new one can be chosen.
  */
 export async function resetVault(integrations: string[]): Promise<void> {
-  for (const i of integrations) {
-    for (const k of Object.keys(await rawList(i))) await rawPost(i, { key: k, delete: 1 });
-  }
-  await rawPost(META, { key: "meta", delete: 1 });
+  // `clear` rather than per-key deletes: it also works on a vault the hub can't open
+  for (const i of [...integrations, META]) await rawPost(i, { clear: 1 });
   await lockVault();
 }
 

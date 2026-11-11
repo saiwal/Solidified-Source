@@ -16,8 +16,9 @@ import { storageDel, storageGet, storageKeys, storageSet } from "./storage.ts";
 
 // The stream poll mints a unique ?dbegin=<now> URL every tick; caching those
 // would write an IndexedDB entry per poll forever.
-const SKIP = /[?&]dbegin=|\/spa\/item\/counts\b|\/spa\/admin\/logs\b/; // + the live-count poll (createStreamStore.refreshCounts)
-// and the admin log tail (polled every few seconds; server logs don't belong in IndexedDB)
+const SKIP = /[?&]dbegin=|\/spa\/item\/counts\b|\/spa\/admin\/logs\b|\/spa\/vault\b/; // + the live-count poll (createStreamStore.refreshCounts)
+// and the admin log tail (polled every few seconds; server logs don't belong in IndexedDB);
+// the credential vault — its ciphertext must not sit on disk beside the key that opens it
 const MAX_BODY = 512 * 1024;
 const key = (url: string) => `offline:${url}`;
 

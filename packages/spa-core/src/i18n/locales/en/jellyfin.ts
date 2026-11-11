@@ -202,6 +202,8 @@ export const jellyfin: RawDictionary["jellyfin"] = {
   hub_forget: "Forget on my hub",
   hub_forget_help: "Stop signing your other browsers and clones in to this server. Browsers already signed in stay signed in.",
   hub_forgotten: "Removed from your hub.",
+  hub_anchor_left: "Removed from your hub — but a stored sign-in could not be signed out of Jellyfin and still works there. In Jellyfin's dashboard, under Devices, remove the ones named “Hubzilla (stored)” (or ask the server's admin to).",
+  hub_admin_warning: "This is a Jellyfin administrator account: anyone who opens your vault gets admin access to that server. Consider remembering a non-admin user instead.",
   vault_locked: "Your hub has saved Jellyfin sign-ins. Enter your vault passphrase to use them in this browser.",
   vault_passphrase: "Vault passphrase",
   vault_unlock: "Unlock",

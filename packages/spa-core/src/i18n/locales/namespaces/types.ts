@@ -3199,6 +3199,8 @@ export type RawDictionary = {
     hub_forget: string;
     hub_forget_help: string;
     hub_forgotten: string;
+    hub_anchor_left: string;
+    hub_admin_warning: string;
     clip_time_hint: string;
     screenshot: string;
     screenshot_failed: string;
