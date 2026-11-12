@@ -11,6 +11,7 @@ import CommandPalette from "@/shared/views/search/CommandPalette";
 import { MdFillSwitch_left, MdFillVolume_off, MdFillVolume_up, MdOutlineExpand_less } from "solid-icons/md";
 import { createMediaQuery } from "@solid-primitives/media";
 import { stardate } from "./stardate";
+import "./scheme-lock";
 import { templateUsageCount, templateName } from "@utsukta/spa-core/store/widget-templates";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { formatCount } from "@/modules/notify/rows";
@@ -31,7 +32,7 @@ import FloatingActions from "@/shared/views/layout/FloatingActions";
 import BrandBlock from "@/shared/views/layout/BrandBlock";
 import { beep, soundOn, toggleSound } from "./sounds";
 
-// LCARS overlay of solidified's src/Layout.tsx (THEME=lcars_solidified; see
+// LCARS overlay of solidified's src/Layout.tsx (THEME=stardate; see
 // docs/dev/en/5-extending/theme-scaffold.md "Overlay themes"). Same chrome
 // state, slots and hosts — keep those in step with the original; only the
 // frame differs: an elbow column around DesktopMenu, a bar across the top and

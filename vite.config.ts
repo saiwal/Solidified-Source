@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import solid from "vite-plugin-solid";
 import path from "path";
-import { readdirSync, readFileSync, writeFileSync, statSync, rmSync } from "fs";
+import { readdirSync, readFileSync, writeFileSync, statSync, rmSync, existsSync } from "fs";
 import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL, OVERLAY_DIR_REL } from "./theme.config.mjs";
 import { SPA_CORE_PLACEHOLDER } from "@utsukta/spa-core";
 import { uiShadow, srcShadow } from "@utsukta/spa-ui/vite-plugin";
@@ -182,6 +182,10 @@ export default defineConfig({
         { src: "src/php", dest: "../", rename: { stripBase: 1 } },
         { src: "src/hooks", dest: "../", rename: { stripBase: 1 } },
         { src: "src/composer.json", dest: "../", rename: { stripBase: 1 } },
+        // An overlay theme's own PHP (e.g. php/fixed_settings.php), next to src/php's.
+        ...(OVERLAY_DIR_REL && existsSync(path.resolve(import.meta.dirname, OVERLAY_DIR_REL, "../php"))
+          ? [{ src: path.posix.join(OVERLAY_DIR_REL, "../php"), dest: "../", rename: { stripBase: 2 } }]
+          : []),
         // Shared Router/Handlers — deployed alongside this theme so its composer.json's
         // path repository (utsukta/spa-core) can resolve via a same-directory relative path.
         { src: "packages/spa-core/php", dest: "../spa-core", rename: { stripBase: 3 } },

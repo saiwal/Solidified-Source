@@ -1,4 +1,4 @@
-/* LCARS overlay theme (THEME=lcars_solidified). Replaces src/index.css in this build by
+/* LCARS overlay theme (THEME=stardate). Replaces src/index.css in this build by
    the srcShadow plugin; everything solidified styles is imported first, and
    this file only adds the LCARS frame on top. The @import must stay the first
    statement (see src/index.css on @import order).
@@ -6,9 +6,9 @@
    Palette and font live here only; solidified knows nothing about LCARS. */
 @import "../../../src/index.css";
 
-/* The LCARS palette is the theme, not a scheme: :root[data-theme] (0,2,0)
-   outranks every [data-theme="…"] block in theme.css and the injected custom
-   scheme, so Settings → colour scheme has no effect in this theme. */
+/* The LCARS palette is the theme, not a scheme. scheme-lock.ts pins
+   <html data-theme="lcars">, so no scheme's block (or its fonts and shapes)
+   ever matches; :root[data-theme] outranks them all the same, as a backstop. */
 :root,
 :root[data-theme] {
   color-scheme: dark;
@@ -552,6 +552,10 @@ h1, h2 { color: var(--lcars-orange); font-weight: 500; }
 :is(.hz-setting-color-scheme, .hz-setting-custom-colors, .hz-setting-font-family, .hz-setting-widget-shell) {
   display: none;
 }
+
+/* The scheme picker (ThemeToggle) renders nothing here; drop its empty
+   wrapper so the utility row keeps even spacing. */
+.justify-evenly > div:empty { display: none; }
 
 /* ── Mobile nav (MobileMenu: nav[data-tour="nav.bottom"], #favorites-sheet;
    AppDrawer: #app-drawer). The bottom bar is a row of LCARS blocks with end
