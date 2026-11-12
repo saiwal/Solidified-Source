@@ -85,7 +85,6 @@ export default function LoginForm(props: LoginFormProps) {
           class="inline-block w-20 h-20 rounded-xl object-contain mb-4"
         />
         <h1 class="text-2xl font-bold text-txt">{t("auth.sign_in")}</h1>
-        <p class="text-sm text-muted mt-1">{t("auth.continue_to")}</p>
       </div>
 
       {/* Local login */}
