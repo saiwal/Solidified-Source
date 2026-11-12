@@ -43,7 +43,7 @@ export default function SiteCredits() {
           rel="noopener noreferrer"
           class="text-accent hover:underline"
         >
-          Solidified{__THEME_VERSION__ ? ` v${__THEME_VERSION__}` : ""}
+          {__THEME_NAME__}{__THEME_VERSION__ ? ` v${__THEME_VERSION__}` : ""}
         </a>
       </p>
     </footer>

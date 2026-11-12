@@ -71,6 +71,20 @@ function serveFFmpegCore(): Plugin {
 }
 const OUT_DIR = path.resolve(import.meta.dirname, BUILD_OUT_DIR_REL);
 
+// Theme name/version/description: solidified's come from the theme.php header
+// comment (the one Hubzilla's theme list reads); an overlay theme's
+// themes/<slug>/theme.json overrides any of them, in the footer (__THEME_*__)
+// and in its deployed theme.php header (templateThemeSlug).
+const phpHeader = (k: string) =>
+  readFileSync("src/php/theme.php", "utf-8").match(new RegExp(`^[\\s*]*${k}:\\s*(.+)$`, "m"))?.[1].trim() ?? "";
+const overlayMetaFile = OVERLAY_DIR_REL && path.resolve(import.meta.dirname, OVERLAY_DIR_REL, "../theme.json");
+const THEME_META: { name: string; version: string; description: string } = {
+  name: phpHeader("Name"),
+  version: phpHeader("Version"),
+  description: phpHeader("Description"),
+  ...(overlayMetaFile && existsSync(overlayMetaFile) ? JSON.parse(readFileSync(overlayMetaFile, "utf-8")) : {}),
+};
+
 // Dev-server only: when the app is served by the hub itself these paths are
 // already same-origin, so none of this applies to a built theme.
 const hubProxy = { target: "https://hz-ddev.ddev.site", changeOrigin: true, secure: false };
@@ -113,9 +127,14 @@ function templateThemeSlug(): Plugin {
       }
       for (const file of files) {
         const content = readFileSync(file, "utf-8");
-        const replaced = content
+        let replaced = content
           .replaceAll("solidified", slugLower)
           .replaceAll("Solidified", slugPascal);
+        // An overlay's theme.json names and versions it in Hubzilla's list.
+        if (OVERLAY_DIR_REL && file.endsWith(`${path.sep}php${path.sep}theme.php`)) {
+          for (const [k, v] of [["Name", THEME_META.name], ["Version", THEME_META.version], ["Description", THEME_META.description]])
+            replaced = replaced.replace(new RegExp(`^([\\s*]*${k}:\\s*).*$`, "m"), `$1${v}`);
+        }
         if (replaced !== content) writeFileSync(file, replaced);
       }
     },
@@ -198,10 +217,8 @@ export default defineConfig({
   ],
   define: {
     __THEME_SLUG__: JSON.stringify(THEME_SLUG),
-    // Version lives in the theme.php header comment — the one Hubzilla reads.
-    __THEME_VERSION__: JSON.stringify(
-      readFileSync("src/php/theme.php", "utf-8").match(/^[\s*]*Version:\s*(.+)$/m)?.[1].trim() ?? "",
-    ),
+    __THEME_NAME__: JSON.stringify(THEME_META.name),
+    __THEME_VERSION__: JSON.stringify(THEME_META.version),
   },
   build: {
     outDir: OUT_DIR,

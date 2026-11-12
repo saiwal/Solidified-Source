@@ -7,4 +7,5 @@ declare module "virtual:public-listing/*" {
 
 /** Injected via vite.config.ts `define`, sourced from theme.config.mjs. */
 declare const __THEME_SLUG__: string;
+declare const __THEME_NAME__: string;
 declare const __THEME_VERSION__: string;
