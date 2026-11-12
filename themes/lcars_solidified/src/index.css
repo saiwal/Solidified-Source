@@ -547,6 +547,12 @@ h1, h2 { color: var(--lcars-orange); font-weight: 500; }
 [role="group"] > .hz-composer-pill :is(button, span) { color: #000; text-transform: uppercase; letter-spacing: 0.04em; }
 [role="group"] > .hz-composer-pill:nth-child(2n) { background: var(--lcars-lavender); }
 
+/* ── Settings → Display: hide what this theme fixes (palette, font,
+   widget frame). Hook classes hz-setting-* in DisplaySection. */
+:is(.hz-setting-color-scheme, .hz-setting-custom-colors, .hz-setting-font-family, .hz-setting-widget-shell) {
+  display: none;
+}
+
 /* ── Mobile nav (MobileMenu: nav[data-tour="nav.bottom"], #favorites-sheet;
    AppDrawer: #app-drawer). The bottom bar is a row of LCARS blocks with end
    caps; the sheets that rise from it are elbow frames whose bar and rail

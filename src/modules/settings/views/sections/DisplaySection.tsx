@@ -124,7 +124,9 @@ export default function DisplaySection() {
           </Show>
 
           {/* SPA color scheme */}
-          <Field label={t("settings.color_scheme")}>
+          {/* hz-setting-<key>: hook classes, so a theme that fixes one of these
+              (an overlay theme with its own palette, font or frame) can hide it. */}
+          <Field label={t("settings.color_scheme")} class="hz-setting-color-scheme">
             <div class="flex items-center gap-2">
               <Select class="flex-1 min-w-0" name="color_scheme" onChange={(e) => {
                   const scheme = e.currentTarget.value as ThemeId;
@@ -158,7 +160,7 @@ export default function DisplaySection() {
 
           {/* Custom theme color editor */}
           <Show when={previewScheme() === "custom"}>
-            <div class="rounded-xl border border-rim bg-elevated p-4 space-y-4">
+            <div class="hz-setting-custom-colors rounded-xl border border-rim bg-elevated p-4 space-y-4">
               <p class="text-sm font-medium text-txt">{t("settings.custom_theme_colors")}</p>
               <p class="text-xs text-muted -mt-2">
                 {t("settings.custom_theme_hint")}
@@ -289,7 +291,7 @@ export default function DisplaySection() {
             </div>
           </Field>
 
-          <Field label={t("settings.font_family")}>
+          <Field label={t("settings.font_family")} class="hz-setting-font-family">
             <Select class="w-full" name="font_family" onChange={(e) => {
                 const fam = e.currentTarget.value as FontFamily;
                 setPreviewFamily(fam);
@@ -335,7 +337,7 @@ export default function DisplaySection() {
 
 
           {/* Widget frame (@ui/WidgetShell) — previews live, saved with the form */}
-          <Field label={t("settings.widget_shell")} hint={t("settings.widget_shell_hint")}>
+          <Field label={t("settings.widget_shell")} hint={t("settings.widget_shell_hint")} class="hz-setting-widget-shell">
             <Select class="w-full" name="widget_shell" onChange={(e) => applyWidgetShell(e.currentTarget.value)}>
               <For each={WIDGET_SHELLS}>
                 {(id) => <option value={id} selected={id === widgetShell()}>{t(`settings.widget_shell_${id}`)}</option>}
