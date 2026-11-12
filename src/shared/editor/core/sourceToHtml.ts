@@ -9,7 +9,9 @@ import { emojify } from "@utsukta/spa-core/lib/emojify";
 import { getEmojiMap } from "@utsukta/spa-core/store/emoji-store";
 import { useEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
 import type { MimeType } from "../types/editor.types";
-import { protectBbcode, restoreBbcode, isBlockBbcode, encodeRaw } from "./markdownProtect";
+import {
+  protectBbcode, restoreBbcode, isBlockBbcode, encodeRaw, findTagEnd, editableBbcodeTag, isBlockEditable,
+} from "./markdownProtect";
 
 /** Convert source-format body to HTML for the WYSIWYG editor. */
 export function sourceToHtml(body: string, mimetype: MimeType): string {
@@ -19,6 +21,22 @@ export function sourceToHtml(body: string, mimetype: MimeType): string {
     bbcodeToEditorHtml(body);
   return useEmojiAsImages()() ? emojify(html, getEmojiMap()) : html;
 }
+
+/**
+ * A body ending in a block you type into (a list, table, plain quote, code)
+ * leaves the caret nowhere to go but inside it: bbcodeToHtml swallows the
+ * newline after it and turndown trims it. An empty paragraph after it gives
+ * the caret a line to land on, and serializes back to nothing, so the round
+ * trip stays a fixed point. Locked embeds end in a ZWSP and never match.
+ * Whole-document renders only — a single re-rendered line must not grow one.
+ */
+export const padTrailingBlock = (html: string) =>
+  /(?:<\/(?:blockquote|pre|ul|ol|dl|table|h[1-6]|details|div|center)>|<hr\s*\/?>)\s*$/i.test(html)
+    ? `${html}<p><br></p>`
+    : html;
+
+const escHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /**
  * Markdown for the WYSIWYG surface.
@@ -33,15 +51,33 @@ export function sourceToHtml(body: string, mimetype: MimeType): string {
  * bbcode path uses, so hydrateShareEmbeds()/hydrateCardEmbeds() fill in their
  * previews here too without any extra wiring.
  */
-function markdownToEditorHtml(body: string): string {
-  const { src, raws } = protectBbcode(body);
+function markdownToEditorHtml(body: string, inline = false): string {
+  const { src: protectedSrc, raws } = protectBbcode(body);
+  // Editable [center]/[spoiler] get a paragraph of their own, so their block
+  // isn't nested in marked's <p> (the browser would split it). On a markdown
+  // "> " line that would split the surrounding blockquote, so there they stay
+  // locked embeds.
+  const ownLine = new Set<string>();
+  const src = inline ? protectedSrc : protectedSrc.replace(/^.*$/gm, (line) => /^\s*>/.test(line) ? line :
+    line.replace(/\x01BB:(\d+)\x01/g, (m, i: string) => {
+      const tag = editableBbcodeTag(raws[Number(i)] ?? "");
+      if (!tag || !isBlockEditable(tag)) return m;
+      ownLine.add(i);
+      return `\n\n${m}\n\n`;
+    }));
   // breaks: a single newline is a line break, not a soft wrap. Markdown's own
   // rule (a blank line to end a paragraph) is wrong for this composer: the body
   // is converted to bbcode on save with preserve_lf, where "\n" *is* a break,
   // so one Enter has to mean one line — the same as in bbcode mode.
-  const html = marked.parse(src, { breaks: true }) as string;
+  const html = inline
+    ? marked.parseInline(src, { breaks: true }) as string
+    : (marked.parse(src, { breaks: true }) as string)
+        .replace(/<p>(\x01BB:(\d+)\x01)<\/p>/g, (m, s: string, i: string) => (ownLine.has(i) ? s : m));
 
-  return restoreBbcode(html, raws, (raw) => {
+  return restoreBbcode(html, raws, (raw, i) => {
+    const editTag = editableBbcodeTag(raw);
+    if (editTag && (!isBlockEditable(editTag) || ownLine.has(String(i)))) return editableBbcodeHtml(raw, editTag);
+
     const share = /^\[share=(\d+)\]\s*\[\/share\]$/i.exec(raw);
     if (share) return compactShareEmbed(share[1]);
 
@@ -53,6 +89,26 @@ function markdownToEditorHtml(body: string): string {
     const cls = isBlockBbcode(raw) ? "bb-raw-embed bb-raw-block" : "bb-raw-embed";
     return `${ZWSP}<${tag} class="${cls}" data-bb-raw="${encodeRaw(raw)}" contenteditable="false">${renderShareHtml(raw)}</${tag}>${ZWSP}`;
   });
+}
+
+/**
+ * Underline, colour, size, font, highlight, center, spoiler and a sized image
+ * as ordinary editable formatting — the shape the toolbar itself inserts, so
+ * markdownTurndown spells it back as the same bbcode. The content between the
+ * tags is markdown again (and may hold more bbcode), rendered recursively.
+ */
+function editableBbcodeHtml(raw: string, tag: string): string {
+  if (tag === "img" || tag === "zmg") return bbcodeToHtml(raw);
+  const open = /^\[[^\]]*\]/.exec(raw)![0];
+  const inner = raw.slice(open.length, raw.length - `[/${tag}]`.length);
+  if (tag === "spoiler") {
+    // bbcode.ts wraps a spoiler body in a <blockquote>, which turndown would
+    // read back as "> "; the toolbar's <div> shape is the one that round-trips.
+    const label = /^\[spoiler=["']?(.*?)["']?\]$/i.exec(open)?.[1] || "Spoiler";
+    return `<details><summary>${escHtml(label)}</summary><div>${markdownToEditorHtml(inner)}</div></details>`;
+  }
+  return bbcodeToHtml(`${open}\x02[/${tag}]`)
+    .replace("\x02", markdownToEditorHtml(inner, tag !== "center"));
 }
 
 // ---------------------------------------------------------------------------
@@ -340,6 +396,24 @@ function bbcodeToEditorHtml(body: string): string {
     raws.push(block);
     return `\x01MEDIARAW:${raws.length - 1}\x01`;
   });
+
+  // A named [quote=X] is a locked block, the same embed markdown mode gives
+  // it: the reply's seeded quote stays verbatim, and the ZWSP after it gives
+  // the caret a line below it. Unnamed [quote] stays editable — it is the
+  // toolbar's plain quote, which markdown spells as an editable "> ".
+  // Depth-aware, so a nested quote stays one block.
+  let quoted = "";
+  let qCursor = 0;
+  const quoteRe = /\[quote=/gi;
+  while ((m = quoteRe.exec(src))) {
+    const end = findTagEnd(src, m.index, "quote");
+    if (end < 0) break;
+    raws.push(src.slice(m.index, end));
+    quoted += src.slice(qCursor, m.index) + `\x01MEDIARAW:${raws.length - 1}\x01`;
+    qCursor = end;
+    quoteRe.lastIndex = end;
+  }
+  src = quoted + src.slice(qCursor);
 
   const { src: litSrc, lits } = protectLiterals(src);
   let html = bbcodeToHtml(litSrc);

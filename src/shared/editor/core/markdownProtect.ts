@@ -67,7 +67,7 @@ const OPEN_RE = new RegExp(`\\[(${BB_TAGS.join("|")})(?:[=\\s][^\\]]*)?\\]`, "gi
  * which turndown then escapes. That is exactly the corruption this module
  * exists to prevent.
  */
-function findTagEnd(s: string, start: number, tag: string): number {
+export function findTagEnd(s: string, start: number, tag: string): number {
   const tokRe = new RegExp(`\\[${tag}(?:[=\\s][^\\]]*)?\\]|\\[\\/${tag}\\]`, "gi");
   tokRe.lastIndex = start;
   let depth = 0;
@@ -125,6 +125,29 @@ export function protectBbcode(md: string): Protected {
   return { src: out, raws };
 }
 
+/**
+ * Formatting tags markdown has no spelling for, which the WYSIWYG surface
+ * renders as ordinary editable formatting instead of a locked embed: turndown
+ * (markdownTurndown.ts) spells each back as the same bbcode, so the round trip
+ * holds. Everything else — attachments, shares, maps, named quotes, plain
+ * images — stays locked. [hl] is left out (turndown drops it), and so is an
+ * image without attributes (it would come back as ![Image/photo](…), the
+ * renderer's placeholder alt).
+ */
+const EDITABLE_TAGS = new Set(["u", "color", "size", "font", "mark", "center", "spoiler"]);
+
+/** The tag name when `raw` is one of those, else null. */
+export function editableBbcodeTag(raw: string): string | null {
+  const m = /^\[([a-z]+)([=\s\]])/i.exec(raw);
+  if (!m) return null;
+  const tag = m[1].toLowerCase();
+  if (EDITABLE_TAGS.has(tag)) return tag;
+  return (tag === "img" || tag === "zmg") && m[2] === " " ? tag : null;
+}
+
+/** Block-level editable tags need a paragraph of their own (see sourceToHtml). */
+export const isBlockEditable = (tag: string) => tag === "center" || tag === "spoiler";
+
 /** True when this block should be wrapped in a <div> rather than a <span>. */
 export function isBlockBbcode(raw: string): boolean {
   const m = /^\[([a-z0-9]+)/i.exec(raw);
@@ -142,11 +165,11 @@ export function isBlockBbcode(raw: string): boolean {
 export function restoreBbcode(
   html: string,
   raws: string[],
-  renderEmbed: (raw: string) => string,
+  renderEmbed: (raw: string, index: number) => string,
 ): string {
   return html.replace(/\x01BB:(\d+)\x01/g, (_m, i: string) => {
     const raw = raws[Number(i)];
-    return raw === undefined ? "" : renderEmbed(raw);
+    return raw === undefined ? "" : renderEmbed(raw, Number(i));
   });
 }
 

@@ -10,7 +10,7 @@ import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.ty
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { countWords } from "../lib/textStats";
 import EditorToolbar from "./EditorToolbar";
-import { sourceToHtml, hydrateShareEmbeds, hydrateCardEmbeds, hydrateLatexEmbeds } from "./sourceToHtml";
+import { sourceToHtml, padTrailingBlock, hydrateShareEmbeds, hydrateCardEmbeds, hydrateLatexEmbeds } from "./sourceToHtml";
 import { completesMarkdownBlock } from "./markdownProtect";
 import { htmlToSource } from "./htmlToSource";
 import { indentListItem, outdentListItem } from "./listIndent";
@@ -197,7 +197,7 @@ export default function RichEditor(props: Props) {
     checksObserver.disconnect();
     checksObserver.observe(el, { childList: true, subtree: true });
     cancelEcho();
-    el.innerHTML = sourceToHtml(props.body, mime());
+    el.innerHTML = padTrailingBlock(sourceToHtml(props.body, mime()));
     domSig = sig();
     hydrateEmbeds(el);
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(el);
@@ -293,7 +293,7 @@ export default function RichEditor(props: Props) {
     // splice a redo's suffix in at the caret instead of where it belongs.
     if (tab() === "wysiwyg" && editorRef && nextSig !== domSig && (restoring || !insertAtCaret())) {
       cancelEcho();
-      editorRef.innerHTML = sourceToHtml(props.body, mime());
+      editorRef.innerHTML = padTrailingBlock(sourceToHtml(props.body, mime()));
       domSig = nextSig;
       hydrateEmbeds(editorRef);
       if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
@@ -602,7 +602,7 @@ export default function RichEditor(props: Props) {
     setTableCell(null);
     if (wysiwygAllowed()) {
       const next = htmlToSource(editorRef.innerHTML, mime());
-      editorRef.innerHTML = sourceToHtml(next, mime());
+      editorRef.innerHTML = padTrailingBlock(sourceToHtml(next, mime()));
       domSig = `${mime()} ${next}`;
       hydrateEmbeds(editorRef);
     }
@@ -956,7 +956,7 @@ export default function RichEditor(props: Props) {
       document.execCommand("insertText", false, text);
       cancelEcho();
       const next = htmlToSource(editorRef.innerHTML, mime());
-      editorRef.innerHTML = sourceToHtml(next, mime());
+      editorRef.innerHTML = padTrailingBlock(sourceToHtml(next, mime()));
       domSig = `${mime()} ${next}`;
       hydrateEmbeds(editorRef);
       const range = document.createRange();
