@@ -3,9 +3,9 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 import solid from "vite-plugin-solid";
 import path from "path";
 import { readdirSync, readFileSync, writeFileSync, statSync, rmSync } from "fs";
-import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL } from "./theme.config.mjs";
+import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL, OVERLAY_DIR_REL } from "./theme.config.mjs";
 import { SPA_CORE_PLACEHOLDER } from "@utsukta/spa-core";
-import { uiShadow } from "@utsukta/spa-ui/vite-plugin";
+import { uiShadow, srcShadow } from "@utsukta/spa-ui/vite-plugin";
 
 // Step 2 plumbing check: this repo (theme-solidified) resolving
 // @utsukta/spa-core via the npm workspace. Remove once Step 3 gives this
@@ -165,7 +165,10 @@ export default defineConfig({
   plugins: [
     assertThemeCss(),
     cleanDeployedDocs(),
-    uiShadow({ themeUiDir: path.resolve(import.meta.dirname, "src/ui") }),
+    uiShadow({ themeUiDir: path.resolve(import.meta.dirname, OVERLAY_DIR_REL ? `${OVERLAY_DIR_REL}/ui` : "src/ui") }),
+    ...(OVERLAY_DIR_REL
+      ? [srcShadow({ base: path.resolve(import.meta.dirname, "src"), overlay: path.resolve(import.meta.dirname, OVERLAY_DIR_REL) })]
+      : []),
     publicDirListing(),
     serveFFmpegCore(),
     solid(),

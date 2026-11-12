@@ -43,6 +43,7 @@
 	},
 	"include": [
 		"src",
+		"themes/*/src",
 		"packages/spa-ui/src"
 	]
 }

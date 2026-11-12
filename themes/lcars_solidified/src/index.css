@@ -1,0 +1,622 @@
+/* LCARS overlay theme (THEME=lcars_solidified). Replaces src/index.css in this build by
+   the srcShadow plugin; everything solidified styles is imported first, and
+   this file only adds the LCARS frame on top. The @import must stay the first
+   statement (see src/index.css on @import order).
+
+   Palette and font live here only; solidified knows nothing about LCARS. */
+@import "../../../src/index.css";
+
+/* The LCARS palette is the theme, not a scheme: :root[data-theme] (0,2,0)
+   outranks every [data-theme="…"] block in theme.css and the injected custom
+   scheme, so Settings → colour scheme has no effect in this theme. */
+:root,
+:root[data-theme] {
+  color-scheme: dark;
+  --lcars-orange:   #ff9900;
+  --lcars-peach:    #ffaa66;
+  --lcars-tan:      #ffcc99;
+  --lcars-lavender: #cc99cc;
+  --lcars-violet:   #9977aa;
+  --lcars-blue:     #9999ff;
+  --lcars-red:      #cc6666;
+
+  --color-base: #000000;
+  --color-surface: #000000;
+  --color-elevated: #141414;
+  --color-overlay: #0a0a0a;
+
+  --color-txt: #ffcc99;
+  --color-muted: #cc99cc;
+  --color-subtle: #9977aa;
+
+  --color-rim: #4d3a52;
+  --color-rim-strong: #9977aa;
+
+  --color-accent: #ff9900;
+  --color-accent-muted: #3d2600;
+  --color-accent-txt: #ffaa66;
+  --color-accent-fg: #000000;
+
+  /* danger */
+  --color-danger: #cc6666;
+  --color-danger-muted: #3a1a1a;
+  --color-danger-txt: #ff8a80;
+  --color-danger-fg: #000000;
+  /* success */
+  --color-success: #99cc99;
+  --color-success-muted: #1a2e1a;
+  --color-success-txt: #a8e0a8;
+  --color-success-fg: #000000;
+  /* warning */
+  --color-warning: #ffcc66;
+  --color-warning-muted: #3a2e10;
+  --color-warning-txt: #ffd98a;
+  --color-warning-fg: #000000;
+
+  --lcars-gap: 4px;
+  --lcars-bar: 1.5rem;
+  --lcars-col: 224px;
+}
+
+/* Antonio (SIL OFL, variable 100–700): the usual free stand-in for the LCARS
+   condensed face. Bundled from ./fonts, so it ships only with this theme. */
+@font-face {
+  font-family: 'Antonio';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('./fonts/Antonio-LatinExt.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Antonio';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url('./fonts/Antonio-Latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Type ───────────────────────────────────────────────────────────
+   Antonio everywhere; uppercase only on chrome, never in post bodies or
+   inputs. Overrides the user's font pick — the face is the theme. */
+/* Antonio is condensed, so every Settings → font size step moves up one
+   (small = solidified's medium). typography.ts writes the size inline on
+   <html>, hence !important; data-font-size names the step. */
+html[data-font-size="small"]  { font-size: 16px !important; }
+html[data-font-size="medium"] { font-size: 18px !important; }
+html[data-font-size="large"]  { font-size: 21px !important; }
+html[data-font-size="xl"]     { font-size: 24px !important; }
+
+body {
+  font-family: Antonio, var(--hz-font-family, ui-sans-serif, system-ui, sans-serif);
+  letter-spacing: 0.01em;
+}
+:where(h1, h2, h3, .hz-btn, .hz-menu-item, [role="tab"], .hz-lcars-left nav, nav[data-tour="nav.bottom"]) {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+:is(.prose, .prose *, input, textarea, [contenteditable]) {
+  text-transform: none;
+  letter-spacing: normal;
+}
+h1, h2 { color: var(--lcars-orange); font-weight: 500; }
+
+/* ── Frame: left elbow column ───────────────────────────────────── */
+.hz-lcars-left {
+  width: var(--lcars-col);
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--lcars-gap);
+  padding-left: 0.5rem;
+  background: var(--color-base);
+}
+.hz-lcars-left .hz-nav-sidebar {
+  flex: 1;
+  min-height: 0;
+  width: auto;
+  background: transparent;
+  border: 0;
+  padding: 0 0 0 0;
+}
+.hz-lcars-elbow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0.25rem 0.75rem;
+  color: #000;
+  font-size: 1.125rem;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.hz-lcars-elbow-top {
+  height: 5rem;
+  background: var(--lcars-orange);
+  border-top-left-radius: 3rem;
+}
+/* Brand block in the top elbow: black on the fill, divider included. */
+.hz-lcars-elbow-top a { color: #000; max-width: 100%; }
+.hz-lcars-elbow-top a span { color: #000; text-transform: uppercase; letter-spacing: 0.06em; }
+.hz-lcars-elbow-top a span.bg-rim { background: #000; }
+.hz-lcars-elbow-top a :is(span, img) { min-width: 0; }
+.hz-lcars-elbow-top a > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1rem; }
+/* …and not again at the top of DesktopMenu (its first child is the brand row). */
+.hz-lcars-left .hz-nav-sidebar > :first-child { display: none; }
+.hz-lcars-elbow-bottom {
+  height: 3rem;
+  background: var(--lcars-lavender);
+  border-bottom-left-radius: 2.5rem;
+  align-items: flex-start;
+}
+/* The bottom elbow is the audio toggle: readout left, state right. */
+.hz-lcars-sound {
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.125rem;
+}
+.hz-lcars-sound[aria-pressed="false"] { background: var(--lcars-violet); }
+.hz-lcars-sound:hover { filter: brightness(1.15); }
+.hz-lcars-sound:focus-visible { outline: 2px solid var(--lcars-tan); outline-offset: 2px; }
+
+/* ── Frame: bars across the main column ─────────────────────────── */
+.hz-lcars-bar {
+  flex-shrink: 0;
+  height: var(--lcars-bar);
+  align-items: center;
+  gap: var(--lcars-gap);
+  padding-right: 0.5rem;
+}
+.hz-lcars-bar .seg { display: block; height: 100%; background: var(--lcars-orange); }
+.hz-lcars-bar-bottom .seg { background: var(--lcars-lavender); }
+.hz-lcars-bar .seg.alt { background: var(--lcars-peach); }
+.hz-lcars-bar .seg.alt2 { background: var(--lcars-blue); }
+.hz-lcars-bar .seg.cap { border-radius: 0 9999px 9999px 0; }
+.hz-lcars-bar :is(.label, .num) {
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--lcars-orange);
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 0 0.25rem;
+}
+.hz-lcars-bar .label { max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.hz-lcars-bar .num { color: var(--lcars-tan); font-size: 1rem; }
+/* The bottom bar's colour runs on from the bottom elbow. */
+.hz-lcars-bar-bottom .seg:first-child { background: var(--lcars-lavender); }
+
+/* Scroll to top, a segment of the bottom bar. */
+.hz-lcars-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+  height: 100%;
+  padding: 0 0.6rem 0 0.4rem;
+  background: var(--lcars-orange);
+  color: #000;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 0;
+  cursor: pointer;
+}
+.hz-lcars-top:hover { filter: brightness(1.15); }
+.hz-lcars-top:focus-visible { outline: 2px solid var(--lcars-tan); outline-offset: 2px; }
+
+/* Concave joints: a square of the bar's colour with a base-coloured
+   quarter-circle over it, where the elbow turns into the bar. */
+.hz-lcars-joint {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+  pointer-events: none;
+}
+.hz-lcars-joint::after { content: ""; position: absolute; inset: 0; background: var(--color-base); }
+.hz-lcars-joint-top { top: var(--lcars-bar); background: var(--lcars-orange); }
+.hz-lcars-joint-top::after { border-top-left-radius: 100%; }
+.hz-lcars-joint-bottom { bottom: var(--lcars-bar); background: var(--lcars-lavender); }
+.hz-lcars-joint-bottom::after { border-bottom-left-radius: 100%; }
+
+/* ── Nav blocks ─────────────────────────────────────────────────────
+   Each item is a coloured block, label bottom-right. In @layer base on
+   purpose: NavItem's active state is `!bg-elevated !text-txt`, and for
+   !important declarations an *earlier* layer wins — base beats utilities,
+   where an unlayered rule would lose. */
+@layer base {
+  .hz-lcars-left nav a {
+    --blk: var(--lcars-peach);
+    min-height: 2.25rem !important;
+    margin-bottom: var(--lcars-gap);
+    padding: 0.2rem 0.6rem !important;
+    border-radius: 0 !important;
+    align-items: flex-end !important;
+    justify-content: flex-end;
+    background: var(--blk) !important;
+    color: #000 !important;
+    font-weight: 500 !important;
+  }
+  .hz-lcars-left nav :nth-child(4n + 2) a { --blk: var(--lcars-lavender); }
+  .hz-lcars-left nav :nth-child(4n + 3) a { --blk: var(--lcars-tan); }
+  .hz-lcars-left nav :nth-child(4n + 4) a { --blk: var(--lcars-blue); }
+  .hz-lcars-left nav a:hover { filter: brightness(1.15); }
+  .hz-lcars-left nav a[aria-current="page"] { background: var(--lcars-orange) !important; }
+  /* Badge, label, then the icon at the right edge, so icons line up in a
+     column whatever the label's length (NavItem renders icon, label, badge). */
+  .hz-lcars-left nav a > span:first-child { order: 2; }
+  .hz-lcars-left nav a > .label:not(.hz-count) { order: 1; margin-left: auto; }
+  .hz-lcars-left nav a > .hz-count { order: 0; margin-left: 0 !important; }
+  /* Category group headers: thin violet spacer blocks. */
+  .hz-lcars-left nav button[aria-expanded] {
+    border-radius: 0 !important;
+    background: var(--lcars-violet) !important;
+    color: #000 !important;
+    justify-content: flex-end;
+  }
+}
+
+/* The favourite star (DesktopMenu's hover toggle) sits at the block's left
+   end — the right is where the LCARS label is. */
+.hz-lcars-left [class~="group/fav"] > .hz-btn-icon { right: auto; left: 0.25rem; }
+
+/* ── Right sidebar: the bars turn down its left edge ──────────────
+   The top and bottom bars run on, without a seam, across the sidebar (as
+   its border-top/-bottom, the bar's height) and bend down into a rail — one
+   elbow frame, both curves drawn by border-radius (the inner one is the
+   outer radius minus the border). When a docked sidebar follows, each bar's
+   last segment drops its cap, takes the rail's colour and runs flush into
+   it. As an off-canvas drawer (< xl) the same frame just closes on its own. */
+:root { --side-c: var(--lcars-lavender); }
+#right-sidebar {
+  border: 0;
+  border-top: var(--lcars-bar) solid var(--side-c);
+  border-bottom: var(--lcars-bar) solid var(--side-c);
+  border-left: 10px solid var(--side-c);
+  border-radius: 2.25rem 0 0 2.25rem;
+  background: var(--color-base);
+}
+@media (min-width: 1280px) {
+  /* Docked, the bars come in from the left, so the outer corners are square
+     (the bar runs straight on) and only the inner corners curve: two fillets
+     painted as background tiles in the padding box's corners — a base-coloured
+     quarter circle cut out of a rail-coloured square, as the left joints do.
+     Background (attachment: scroll) stays put while the sidebar scrolls.
+     The padding matches the fillet, so no widget's background covers it. */
+  #right-sidebar {
+    --fillet: 1.25rem;
+    border-radius: 0;
+    padding-top: var(--fillet);
+    padding-bottom: var(--fillet);
+    padding-left: var(--fillet);
+    background:
+      radial-gradient(circle at 100% 100%, var(--color-base) calc(var(--fillet) - 0.5px), var(--side-c) var(--fillet))
+        top left / var(--fillet) var(--fillet) no-repeat,
+      radial-gradient(circle at 100% 0, var(--color-base) calc(var(--fillet) - 0.5px), var(--side-c) var(--fillet))
+        bottom left / var(--fillet) var(--fillet) no-repeat,
+      var(--color-base);
+    background-origin: padding-box;
+  }
+  .hz-lcars-center:has(~ #right-sidebar) .hz-lcars-bar { padding-right: 0; }
+  .hz-lcars-center:has(~ #right-sidebar) .hz-lcars-bar .seg:last-child {
+    border-radius: 0;
+    background: var(--side-c);
+    margin-right: calc(-1 * var(--lcars-gap));  /* overlap the rail a little: no sub-pixel seam */
+  }
+}
+/* ── UI primitives ──────────────────────────────────────────────────
+   Every @ui primitive restyled through its hz-* hooks — no src/ui override
+   files, so the a11y wiring check-ui asserts stays solidified's own.
+   Unlayered rules beat the primitives' utility classes; the few `!`
+   utilities (pressed buttons, the count bubble on a selected tab) need the
+   @layer base + !important pair at the end, as the nav blocks do.
+   LCARS grammar: solid blocks, black lettering on a fill, pills with end
+   caps, coloured rails instead of boxes. */
+
+/* Buttons: pill blocks. Ghost stays light until hovered, so toolbars of
+   them don't turn into a wall of colour. */
+.hz-btn:not(.hz-btn-icon) { border-radius: 9999px; font-weight: 500; }
+.hz-btn-primary { background: var(--lcars-orange); color: #000; }
+.hz-btn-danger { background: var(--lcars-red); color: #000; }
+.hz-btn-ghost { color: var(--lcars-peach); }
+.hz-btn-ghost:hover { background: var(--lcars-peach); color: #000; }
+.hz-btn-md:not(.hz-btn-icon) { padding-inline: 1.5rem; }
+.hz-btn-icon { border-radius: 9999px; color: var(--lcars-tan); }
+.hz-btn-icon:hover { background: var(--lcars-lavender); color: #000; }
+.hz-btn-icon-danger:hover { background: var(--lcars-red); }
+.hz-btn-icon-outline { border: 2px solid var(--lcars-violet); background: transparent; }
+:is(.hz-btn, .hz-chip, .hz-tab, .hz-switch):focus-visible { outline-color: var(--lcars-tan); }
+
+/* Fields: a thicker underline, label as an LCARS caption. */
+.hz-input { border-bottom-width: 2px; border-color: var(--lcars-violet); }
+/* The 2px rule is the focus line itself, so drop the field's inset one. */
+.hz-input:focus { border-color: var(--lcars-orange); box-shadow: none; }
+.hz-input[aria-invalid="true"] { border-color: var(--color-danger); }
+.hz-field > label {
+  color: var(--lcars-lavender);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Switch: a block track, black knob. */
+.hz-switch { border: 0; background: var(--lcars-violet); }
+.hz-switch:checked { background: var(--lcars-orange); }
+.hz-switch::after { background: #000; }
+
+/* Tabs. Segmented = a row of blocks with end caps; underline = uppercase
+   labels over a thick orange bar. */
+.hz-tabs-segmented { background: transparent; padding: 0; gap: var(--lcars-gap); }
+.hz-tabs-segmented .hz-tab {
+  border-radius: 0;
+  background: var(--lcars-violet);
+  color: #000;
+  padding-inline: 0.9rem;
+}
+.hz-tabs-segmented .hz-tab:first-child { border-radius: 9999px 0 0 9999px; }
+.hz-tabs-segmented .hz-tab:last-child { border-radius: 0 9999px 9999px 0; }
+.hz-tabs-segmented .hz-tab:only-child { border-radius: 9999px; }
+.hz-tabs-segmented .hz-tab:hover { background: var(--lcars-lavender); }
+.hz-tabs-segmented .hz-tab[aria-selected="true"] { background: var(--lcars-orange); }
+.hz-tabs-underline .hz-tab { text-transform: uppercase; letter-spacing: 0.04em; color: var(--lcars-lavender); }
+.hz-tabs-underline .hz-tab[aria-selected="true"] { color: var(--lcars-orange); }
+.hz-tabs-underline .hz-tab > span:last-child { height: 4px; background: var(--lcars-orange); }
+
+/* Badges: small black-lettered blocks in the tone's colour. */
+.hz-badge { border-radius: 0.25rem; color: #000; text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-badge-neutral { background: var(--lcars-lavender); }
+.hz-badge-accent  { background: var(--lcars-orange); }
+.hz-badge-danger  { background: var(--lcars-red); }
+.hz-badge-success { background: var(--color-success); }
+.hz-badge-warning { background: var(--color-warning); }
+.hz-count { background: var(--lcars-orange); color: #000; }
+
+/* Chips: outlined pills; selected fills orange. */
+.hz-chip { border-radius: 9999px; border-width: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-chip[aria-pressed="false"] { background: transparent; border-color: var(--lcars-violet); color: var(--lcars-lavender); }
+.hz-chip[aria-pressed="false"]:hover { border-color: var(--lcars-lavender); color: var(--lcars-tan); }
+.hz-chip[aria-pressed="true"] { background: var(--lcars-orange); border-color: var(--lcars-orange); color: #000; }
+
+/* Panels: a rail down the left edge, rounded foot — no box. */
+.hz-card {
+  border-width: 0 0 0 6px;
+  border-color: var(--lcars-violet);
+  border-radius: 0 0 0 1rem;
+}
+.hz-card-header { border-bottom: 0; color: var(--lcars-orange); text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-stat { border-color: var(--lcars-blue); }
+.hz-banner { border-width: 0 0 0 6px; border-radius: 0 1rem 1rem 0; }
+.hz-dropzone { border: 2px dashed var(--lcars-violet); border-radius: 1.5rem; }
+.hz-table [role="columnheader"] { color: var(--lcars-lavender); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Floating layers: a coloured bar on top (modal, sheet) or a rail (menu,
+   popover). Opaque black, no blur — LCARS has no glass. */
+.hz-modal-panel, .hz-sheet {
+  border: 0;
+  border-top: 1.25rem solid var(--lcars-orange);
+  border-radius: 1.5rem 1.5rem 0 1.5rem;
+}
+.hz-menu, .hz-popover {
+  border: 0;
+  border-left: 6px solid var(--lcars-peach);
+  border-radius: 0 1rem 1rem 1rem;
+  background: var(--color-base);
+  box-shadow: 0 0 0 1px var(--lcars-violet);
+  backdrop-filter: none;
+}
+.hz-popover { border-left-color: var(--lcars-lavender); }
+.hz-menu-item { border-radius: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-menu-item:is(:hover, :focus) { background: var(--lcars-peach); color: #000; }
+.hz-menu-separator { height: 4px; border: 0; border-radius: 9999px; background: var(--lcars-violet); }
+.hz-progress { background: var(--color-elevated); }
+
+/* The `!` utilities: an earlier layer wins between !important rules. */
+@layer base {
+  .hz-btn-pressed { background: var(--lcars-lavender) !important; color: #000 !important; }
+  .hz-tabs-segmented .hz-tab[aria-selected="true"] .hz-count { background: #000 !important; color: var(--lcars-orange) !important; }
+}
+
+/* ── Widget shell (src/ui/WidgetShell.tsx, the only look here) ────
+   Colour cycles from widget to widget. */
+:nth-child(4n + 2) > .hz-ws-lcars { --ws-lcars: var(--lcars-lavender); }
+:nth-child(4n + 3) > .hz-ws-lcars { --ws-lcars: var(--lcars-peach); }
+:nth-child(4n + 4) > .hz-ws-lcars { --ws-lcars: var(--lcars-blue); }
+
+/* [share] embeds: src/index.css restyles .bb-share per the user's saved
+   widget style (<html data-widget-shell>), which this theme ignores. Same
+   specificity as those rules and later in the cascade, so these win for
+   every value: the shell's rail-and-foot, no box. */
+:root[data-widget-shell] .bb-share {
+  border: 0;
+  border-left: 6px solid var(--lcars-violet);
+  border-radius: 0 0 0 1rem;
+  background: transparent;
+  padding: 0;
+}
+:root[data-widget-shell] .bb-share-header {
+  padding: 0.25rem 0.75rem;
+  color: var(--lcars-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 0;
+  background: transparent;
+}
+:root[data-widget-shell] .bb-share-body { padding: 0.25rem 0.75rem 0.5rem; }
+
+/* ── Stream cards (hook classes hz-post / hz-post-tile) ───────────────
+   A post is an elbow frame: top bar and left rail in one colour, meeting
+   in a rounded corner, the rail ending in a curved foot — the frame of
+   the page in miniature. A masonry tile is a dark block under a coloured
+   cap. Colours cycle down the stream; CardShell wraps each card, so the
+   wrapper is what counts. */
+.hz-post {
+  --post-c: var(--lcars-violet);
+  border: 0;
+  border-top: 0.5rem solid var(--post-c);
+  border-left: 6px solid var(--post-c);
+  border-radius: 1.5rem 0 0 1.5rem;
+  box-shadow: none;
+}
+:nth-child(4n + 2) > .hz-post { --post-c: var(--lcars-lavender); }
+:nth-child(4n + 3) > .hz-post { --post-c: var(--lcars-peach); }
+:nth-child(4n + 4) > .hz-post { --post-c: var(--lcars-blue); }
+/* A flat (unthreaded) reply keeps a distinct rail: orange, no top bar. */
+.hz-post.border-l-4 { --post-c: var(--lcars-orange); border-top-width: 0; border-top-left-radius: 0; }
+/* Author name, and the rule above the action bar. */
+.hz-post .font-semibold.text-txt { color: var(--lcars-orange); text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-post .border-t.border-rim { border-top: 2px solid var(--post-c); }
+
+.hz-post-tile {
+  --post-c: var(--lcars-peach);
+  border: 0;
+  border-top: 1rem solid var(--post-c);
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+  background: var(--color-elevated);
+  box-shadow: none;
+}
+:nth-child(4n + 2) > .hz-post-tile { --post-c: var(--lcars-lavender); }
+:nth-child(4n + 3) > .hz-post-tile { --post-c: var(--lcars-orange); }
+:nth-child(4n + 4) > .hz-post-tile { --post-c: var(--lcars-blue); }
+.hz-post-tile:hover { filter: brightness(1.12); }
+.hz-post-tile.border-l-4 { border-left: 4px solid var(--lcars-orange); }
+.hz-post-tile p.font-semibold { color: var(--lcars-orange); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Post detail (hooks: hz-post-detail = the seamless post inside the
+   modal, hz-comment = each comment). The modal's frame and header bar are
+   ComposerModal's, styled under "Composer" below. */
+.hz-post-detail { background: var(--color-base); }
+.hz-post-detail .font-semibold.text-txt { color: var(--lcars-orange); text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-post-detail .border-t.border-rim { border-top: 4px solid var(--lcars-violet); }
+/* Thread lines become lavender rails; the highlighted comment's goes orange. */
+.hz-comment.border-l-2 { border-left-width: 4px; border-left-color: var(--lcars-lavender); }
+.hz-comment.border-accent { border-left-color: var(--lcars-orange); background: color-mix(in oklab, var(--lcars-orange) 8%, transparent); }
+.hz-comment a.font-medium.text-txt { color: var(--lcars-peach); text-transform: uppercase; letter-spacing: 0.04em; }
+.hz-comment .border-t.border-rim { border-top: 2px solid var(--lcars-violet); }
+
+/* ── Composer, every mode (hooks: hz-composer[-modal|-dock|-page],
+   -header, -footer, -pill; .rich-editor and its role=toolbar) ──────────
+   The header is an LCARS bar, black lettering on orange, joined to a rail
+   down the left edge — the post card's elbow at panel size. */
+.hz-composer-modal, .hz-composer-dock {
+  border: 0;
+  border-left: 6px solid var(--lcars-orange);
+  background: var(--color-base);
+  box-shadow: 0 0 0 1px var(--lcars-violet), 0 1.5rem 3rem -1rem #000;
+}
+.hz-composer-modal { border-radius: 1.75rem 1.75rem 0 1.75rem; }
+.hz-composer-dock  { border-radius: 1.75rem 1.75rem 0 0; }
+.hz-composer-page  { border-left: 6px solid var(--lcars-orange); border-radius: 1.75rem 0 0 1.75rem; }
+.hz-composer-header {
+  background: var(--lcars-orange);
+  border-bottom: 0;
+  color: #000;
+  padding-block: 0.4rem;
+}
+.hz-composer-page .hz-composer-header { border-radius: 1.25rem 0 0 0; }
+.hz-composer-header :is(h2, span, button, .hz-btn-icon) { color: #000; }
+.hz-composer-header h2 { text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+.hz-composer-header .hz-btn-icon:hover { background: #000; color: var(--lcars-orange); }
+.hz-composer-footer { border-top: 4px solid var(--lcars-violet); background: var(--color-base); }
+
+/* Editor (every composer, inline comment boxes included): the toolbar is a
+   bar under a violet rule; its buttons fill lavender when hovered. */
+.rich-editor [role="toolbar"] {
+  background: transparent;
+  border-top: 2px solid var(--lcars-violet);
+  border-radius: 0;
+}
+.rich-editor [role="toolbar"] button { border-radius: 9999px; }
+.rich-editor [role="toolbar"] button:hover { background: var(--lcars-lavender); color: #000; }
+.rich-editor [role="toolbar"] button[aria-pressed="true"] { background: var(--lcars-orange); color: #000; }
+
+/* Minimized strip: tabs with rounded tops, black on peach. Scoped to the
+   strip (role=group); the same rows in the overflow popover stay plain. */
+[role="group"] > .hz-composer-pill {
+  border: 0;
+  border-radius: 1rem 1rem 0 0;
+  background: var(--lcars-peach);
+  box-shadow: none;
+}
+[role="group"] > .hz-composer-pill :is(button, span) { color: #000; text-transform: uppercase; letter-spacing: 0.04em; }
+[role="group"] > .hz-composer-pill:nth-child(2n) { background: var(--lcars-lavender); }
+
+/* ── Mobile nav (MobileMenu: nav[data-tour="nav.bottom"], #favorites-sheet;
+   AppDrawer: #app-drawer). The bottom bar is a row of LCARS blocks with end
+   caps; the sheets that rise from it are elbow frames whose bar and rail
+   sit on the side they open from. */
+nav[data-tour="nav.bottom"] {
+  border-top: 0;
+  background: var(--color-base);
+  gap: var(--lcars-gap);
+  padding: 0.4rem 0.5rem;
+}
+nav[data-tour="nav.bottom"] > button {
+  --blk: var(--lcars-peach);
+  height: 100%;
+  border-radius: 0;
+  background: var(--blk);
+  color: #000;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+nav[data-tour="nav.bottom"] > button:nth-child(4n + 2) { --blk: var(--lcars-lavender); }
+nav[data-tour="nav.bottom"] > button:nth-child(4n + 3) { --blk: var(--lcars-tan); }
+nav[data-tour="nav.bottom"] > button:nth-child(4n + 4) { --blk: var(--lcars-blue); }
+nav[data-tour="nav.bottom"] > button:first-child { border-radius: 1.5rem 0 0 1.5rem; }
+nav[data-tour="nav.bottom"] > button:last-child { border-radius: 0 1.5rem 1.5rem 0; }
+nav[data-tour="nav.bottom"] > button[aria-expanded="true"] { --blk: var(--lcars-orange); }
+nav[data-tour="nav.bottom"] > button:hover { filter: brightness(1.12); }
+/* The icon sits top-left of the block, the label bottom-right. */
+nav[data-tour="nav.bottom"] > button > span:first-child { align-self: flex-start; }
+
+/* Sheets: an orange bar across the top turning down a rail on the left. */
+:is(#app-drawer, #favorites-sheet) {
+  border: 0;
+  border-top: 1.25rem solid var(--lcars-orange);
+  border-left: 10px solid var(--lcars-orange);
+  border-radius: 2rem 0 0 0;
+  background: var(--color-base);
+  box-shadow: 0 -1rem 2rem -1rem #000;
+}
+#favorites-sheet { border-color: var(--lcars-lavender); }
+/* The grab handle is the bar now. */
+:is(#app-drawer, #favorites-sheet) > div:first-child.w-9 { display: none; }
+#app-drawer > div:first-child.w-9 + div { padding-top: 0.75rem; }
+#favorites-sheet > div:first-child.w-9 + div { padding-top: 0.75rem; }
+/* Section captions. */
+#app-drawer p.uppercase { color: var(--lcars-lavender); }
+/* App tiles: pill icon blocks, black glyph; the current app's goes orange. */
+:is(#app-drawer, #favorites-sheet) [class~="group"] > span.w-12 {
+  border: 0;
+  border-radius: 9999px;
+  background: var(--lcars-peach);
+  color: #000;
+}
+:is(#app-drawer, #favorites-sheet) [class~="group"]:nth-child(3n + 2) > span.w-12,
+:is(#app-drawer, #favorites-sheet) div:nth-child(3n + 2) > [class~="group"] > span.w-12 { background: var(--lcars-lavender); }
+:is(#app-drawer, #favorites-sheet) [class~="group"]:nth-child(3n + 3) > span.w-12,
+:is(#app-drawer, #favorites-sheet) div:nth-child(3n + 3) > [class~="group"] > span.w-12 { background: var(--lcars-tan); }
+:is(#app-drawer, #favorites-sheet) .hz-active > span.w-12 { background: var(--lcars-orange) !important; color: #000 !important; }
+:is(#app-drawer, #favorites-sheet) [class~="group"]:hover { background: transparent; }
+:is(#app-drawer, #favorites-sheet) [class~="group"]:hover > span.w-12 { filter: brightness(1.15); }
+:is(#app-drawer, #favorites-sheet) [class~="group"] > span:last-child { text-transform: uppercase; letter-spacing: 0.04em; }
+/* Category groups: a violet rail with a rounded foot, header in caps. */
+#app-drawer .rounded-2xl.border {
+  border: 0;
+  border-left: 6px solid var(--lcars-violet);
+  border-radius: 0 0 0 1rem;
+  background: transparent;
+}
+#app-drawer .rounded-2xl.border > button { text-transform: uppercase; letter-spacing: 0.04em; color: var(--lcars-tan); }
+/* Footer (search, account row): under a violet bar. */
+#app-drawer > .border-t { border-top: 4px solid var(--lcars-violet); background: var(--color-base); }
