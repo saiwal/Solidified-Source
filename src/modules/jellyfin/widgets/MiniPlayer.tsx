@@ -1,6 +1,6 @@
 // Loaded only once Jellyfin is enabled — see NowPlayingWidget.tsx.
-// Compact sidebar mini-player: cover thumbnail + title (opens /jellyfin, where
-// NowPlayingPanel has the full controls), prev/play-pause/next. Shows local
+// Compact sidebar mini-player: cover + title/artist/album (opens /jellyfin,
+// where NowPlayingPanel has the full controls), prev/play-pause/next below. Shows local
 // playback, or — when nothing plays here — what another of the user's devices
 // is playing, controlled remotely. Renders nothing when neither.
 import { Show, onCleanup } from "solid-js";
@@ -104,44 +104,57 @@ function Row(props: {
 }) {
   const { t } = useI18n();
 
+  // Cover, then a column with the details on top and the controls under
+  // them, so title/artist get the full width beside the cover instead of
+  // sharing one row with three buttons. The cover repeats the text's link
+  // for the pointer only (one tab stop, one announcement).
+  const open = () => { if (props.local) openPlayer(); };
   return (
-    <Motion.div {...slideUp} class="flex w-full items-center gap-2 p-1.5 pr-2 rounded-2xl bg-surface ring-1 ring-rim/40">
-      <A href="/jellyfin" title={t("jellyfin.open_player")} class="flex flex-1 items-center gap-2 min-w-0"
-        onClick={() => { if (props.local) openPlayer(); }}>
-        <Art src={props.s ? imageUrl(props.s, props.item, 96) : null} class="w-10 h-10" />
-        <span class="min-w-0 flex-1">
-          <span class="flex items-center gap-1 text-sm text-txt min-w-0">
-            <Show when={party()}>
-              <span title={t("jellyfin.party_badge", { name: party()!.name })} class="shrink-0 text-accent-txt"><MdFillGroups size={14} /></span>
-            </Show>
-            <span class="truncate">{props.item.Name}</span>
-          </span>
-          <span class="block text-xs text-muted truncate">{props.subtitle}</span>
-        </span>
+    <Motion.div {...slideUp} class="flex w-full items-start gap-3 p-2 rounded-2xl bg-surface ring-1 ring-rim/40">
+      <A href="/jellyfin" tabindex="-1" aria-hidden="true" class="shrink-0" onClick={open}>
+        <Art src={props.s ? imageUrl(props.s, props.item, 160) : null} class="w-16 h-16" />
       </A>
-      <Show when={props.controllable}>
-        <IconButton label={t("jellyfin.previous")} size="sm" onClick={() => props.onPrev()}>
-          <MdFillSkip_previous size={20} />
-        </IconButton>
-        <IconButton
-          label={props.playing ? t("jellyfin.pause") : t("jellyfin.play")}
-          size="sm"
-          class={props.loading ? "animate-pulse" : ""}
-          onClick={() => props.onToggle()}
-        >
-          <Show when={props.playing} fallback={<MdFillPlay_arrow size={24} />}>
-            <MdFillPause size={24} />
+      <div class="min-w-0 flex-1 flex flex-col gap-1">
+        <A href="/jellyfin" title={t("jellyfin.open_player")} class="min-w-0 block" onClick={open}>
+          <span class="flex items-start gap-1 text-sm font-medium leading-snug text-txt">
+            <Show when={party()}>
+              <span title={t("jellyfin.party_badge", { name: party()!.name })} class="shrink-0 mt-0.5 text-accent-txt"><MdFillGroups size={14} /></span>
+            </Show>
+            <span class="line-clamp-2 break-words">{props.item.Name}</span>
+          </span>
+          <Show when={props.subtitle}>
+            <span class="block text-xs text-muted truncate">{props.subtitle}</span>
           </Show>
-        </IconButton>
-        <IconButton
-          label={t("jellyfin.next")}
-          size="sm"
-          disabled={!props.hasNext}
-          onClick={() => props.onNext()}
-        >
-          <MdFillSkip_next size={20} />
-        </IconButton>
-      </Show>
+          <Show when={props.item.Album && props.item.Album !== props.item.Name}>
+            <span class="block text-xs text-subtle truncate">{props.item.Album}</span>
+          </Show>
+        </A>
+        <Show when={props.controllable}>
+          <div class="flex items-center gap-1 -ml-1.5">
+            <IconButton label={t("jellyfin.previous")} size="sm" onClick={() => props.onPrev()}>
+              <MdFillSkip_previous size={20} />
+            </IconButton>
+            <IconButton
+              label={props.playing ? t("jellyfin.pause") : t("jellyfin.play")}
+              size="sm"
+              class={props.loading ? "animate-pulse" : ""}
+              onClick={() => props.onToggle()}
+            >
+              <Show when={props.playing} fallback={<MdFillPlay_arrow size={24} />}>
+                <MdFillPause size={24} />
+              </Show>
+            </IconButton>
+            <IconButton
+              label={t("jellyfin.next")}
+              size="sm"
+              disabled={!props.hasNext}
+              onClick={() => props.onNext()}
+            >
+              <MdFillSkip_next size={20} />
+            </IconButton>
+          </div>
+        </Show>
+      </div>
     </Motion.div>
   );
 }

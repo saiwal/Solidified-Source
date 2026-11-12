@@ -78,9 +78,14 @@ export function rowSpan(el: HTMLElement, accessor: () => number | undefined) {
   const gap = accessor();
   if (gap === undefined) return;
   const measure = () => {
+    // --rows only means something to a grid parent; an unpacked Slot is a
+    // flex column. Writing it there anyway dirtied layout on every height
+    // change — for a feed, a full reflow per image load.
+    const parent = el.parentElement;
+    if (!parent || getComputedStyle(parent).display !== "grid") return;
     // ceil so a fractional height never clips the last pixel of content
-    const rows = Math.max(1, Math.ceil(el.getBoundingClientRect().height + gap));
-    el.style.setProperty("--rows", String(rows));
+    const rows = String(Math.max(1, Math.ceil(el.getBoundingClientRect().height + gap)));
+    if (el.style.getPropertyValue("--rows") !== rows) el.style.setProperty("--rows", rows);
   };
   const obs = new ResizeObserver(measure);
   obs.observe(el);

@@ -337,7 +337,10 @@ function NotifRow(props: {
 
   return (
     <Show when={!hidden()}>
-    <div class="flex items-start gap-0.5 pr-2 group">
+    {/* The mark-read × sits over the right end of the date row (a button
+        can't live inside the link), so the text takes the full width; the
+        date row always keeps one line for it. */}
+    <div class="relative group">
       <a
         href={resolveNotifyPath(props.n.notify_link)}
         onClick={handleClick}
@@ -354,7 +357,7 @@ function NotifRow(props: {
             </Show>
             <span innerHTML={DOMPurify.sanitize(props.n.message ?? "")} />
           </p>
-          <div class="flex items-center gap-1.5 mt-0.5">
+          <div class="flex items-center gap-1.5 mt-0.5 min-h-6 pr-7">
             <Show when={props.n.when}>
               <p class="text-[0.6875rem] text-muted tabular-nums">{when()}</p>
             </Show>
@@ -366,7 +369,7 @@ function NotifRow(props: {
         <IconButton
           label={t("notify.mark_read")}
           size="sm"
-          class="shrink-0 mt-1 opacity-60 hover:opacity-100"
+          class="absolute right-1.5 bottom-2 !p-1 opacity-60 hover:opacity-100 focus-visible:opacity-100"
           onClick={handleDismiss}
         >
           <MdFillClose class="w-3.5 h-3.5" />

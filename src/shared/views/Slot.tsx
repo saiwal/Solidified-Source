@@ -333,8 +333,14 @@ const Slot: Component<SlotProps> = (props) => {
   const packed = createMemo(
     () => editing() || localEntries().some((e) => (e.span ?? 12) < 12),
   );
+  // Unpacked = every item full width, so a plain column lays out the same.
+  // Not a grid on purpose: a grid item isn't laid out incrementally, so in
+  // Firefox every image load or card reveal inside an infinite feed reflowed
+  // the whole feed — seconds of frozen page per stream page.
   const gridClass = () =>
-    `slot-grid ${packed() ? "slot-grid-packed " : ""}grid grid-cols-12 gap-4 items-start`;
+    packed()
+      ? "slot-grid slot-grid-packed grid grid-cols-12 gap-4 items-start"
+      : "slot-grid flex flex-col gap-4";
 
   const content = () => (
     <>

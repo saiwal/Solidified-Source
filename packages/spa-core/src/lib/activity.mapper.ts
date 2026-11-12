@@ -188,3 +188,19 @@ export function mapActivityToPost(activity: any): Post {
     children: [],
   };
 }
+
+// A stream page can carry hundreds of comments, and every body goes through
+// bbcode + DOMPurify here. Mapped in one synchronous pass that froze the whole
+// page while the skeleton showed; this hands the main thread back every frame.
+export async function mapActivitiesYielding(activities: any[]): Promise<Post[]> {
+  const out: Post[] = [];
+  let frame = performance.now();
+  for (const a of activities) {
+    out.push(mapActivityToPost(a));
+    if (performance.now() - frame > 12) {
+      await new Promise((r) => setTimeout(r));
+      frame = performance.now();
+    }
+  }
+  return out;
+}

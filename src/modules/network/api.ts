@@ -1,5 +1,5 @@
 import type { Post } from "@utsukta/spa-core/types/post.types";
-import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
+import { mapActivitiesYielding } from "@utsukta/spa-core/lib/activity.mapper";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { resolveRange, rangeToDbegin, type SortOrder, type SortRange } from "@/shared/stream/filters";
 import { savePosts } from "@utsukta/spa-core/lib/message-store";
@@ -258,7 +258,7 @@ export async function fetchNetworkStream(params: NetworkParams = {}): Promise<Ne
   // without a single extra request.
   void savePosts(activities);
 
-  const items = activities.filter(shouldDisplay).map(mapActivityToPost);
+  const items = await mapActivitiesYielding(activities.filter(shouldDisplay));
   return { items, rootCount, limit, nouveau };
 }
 // Re-export shared item API helpers for use within this module

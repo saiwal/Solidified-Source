@@ -12,7 +12,7 @@
     "build:sw": "node build-sw.mjs",
     "build:stardate": "tsc -b && THEME=stardate vite build && THEME=stardate node build-sw.mjs",
     "dev:stardate": "THEME=stardate vite",
-    "build:all": "vite build && node build-sw.mjs",
+    "build:all": "vite build && node build-sw.mjs && THEME=stardate vite build && THEME=stardate node build-sw.mjs",
     "watch": "vite build --watch",
     "typecheck": "tsc -b --watch",
     "games:download": "node scripts/download-puzzles.mjs",

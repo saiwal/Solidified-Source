@@ -1,7 +1,7 @@
 // src/modules/channel/api.ts
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { savePosts } from "@utsukta/spa-core/lib/message-store";
-import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
+import { mapActivitiesYielding } from "@utsukta/spa-core/lib/activity.mapper";
 // import type { Post } from "@utsukta/spa-core/types/post.types";
 import type { StreamResult } from "@/shared/stream/store/createStreamStore";
 import type { SortOrder } from "@/shared/stream/filters";
@@ -46,7 +46,7 @@ export async function fetchChannelPosts(
   const activities: any[] = Array.isArray(data) ? data : [];
   // See fetchNetworkStream — bodies are already in hand, so store them.
   void savePosts(activities);
-  const mainItems = activities.map(mapActivityToPost);
+  const mainItems = await mapActivitiesYielding(activities);
 
   // Pinned posts are excluded from `data` by the backend whenever this meta
   // key is present (base wall view, first page) — merge them back in as real
@@ -55,7 +55,7 @@ export async function fetchChannelPosts(
   // for display; see ChannelView's mainPosts/pinnedPosts split.
   const pinnedActivities: any[] = meta && Array.isArray(meta.pinned) ? meta.pinned : [];
   const mainMids = new Set(mainItems.map((p) => p.mid));
-  const pinnedItems = pinnedActivities.map(mapActivityToPost).filter((p) => !mainMids.has(p.mid));
+  const pinnedItems = (await mapActivitiesYielding(pinnedActivities)).filter((p) => !mainMids.has(p.mid));
 
   return {
     items:        [...pinnedItems, ...mainItems],
