@@ -1115,13 +1115,33 @@ img.emoji.single-emoji:hover {
   background: var(--color-elevated);
   color: inherit;
 }
-.addon-admin-form input[type="submit"] {
+.addon-admin-form input[type="submit"],
+.addon-admin-form button {
   padding: 0.375rem 0.75rem;
   border-radius: 0.25rem;
+  border: 1px solid var(--color-accent);
   background: var(--color-accent);
   color: var(--color-accent-fg);
   cursor: pointer;
 }
+/* A named button is a secondary action posted alongside the form fields
+   (HookSettingsForm sends the submitter), not the form's own Submit. */
+.addon-admin-form button[name] { background: transparent; color: var(--color-accent-txt); }
+.addon-admin-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* solidified's hub custom-colour block (php/config.php): swatches in a row */
+.addon-admin-form legend { font-size: 0.875rem; font-weight: 600; }
+.addon-admin-form .spa-swatches { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; margin-top: 0.5rem; }
+.addon-admin-form .spa-swatch { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 0.8125rem; font-weight: 400; cursor: pointer; }
+.addon-admin-form input[type="color"] {
+  inline-size: 1.75rem; block-size: 1.75rem; padding: 0;
+  border: 1px solid var(--color-rim-strong); border-radius: 9999px;
+  background: none; cursor: pointer; overflow: hidden;
+}
+.addon-admin-form input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.addon-admin-form input[type="color"]::-webkit-color-swatch { border: none; border-radius: 9999px; }
+.addon-admin-form input[type="color"]::-moz-color-swatch { border: none; border-radius: 9999px; }
+.addon-admin-form .spa-copy { margin-top: 1rem; }
 /* Bootstrap-only switch chrome around the real checkbox — nothing to show. */
 .addon-admin-form .onoffswitch-inner,
 .addon-admin-form .onoffswitch-switch { display: none; }

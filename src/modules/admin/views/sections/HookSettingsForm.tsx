@@ -37,10 +37,12 @@ function purify(html: string): string {
 }
 
 /** Scrape the rendered form. Unchecked boxes are absent from FormData, which is
- *  what the addons expect — they all read `isset($_POST[x]) ? … : 0`. */
-function collect(form: HTMLFormElement): Record<string, string | string[]> {
+ *  what the addons expect — they all read `isset($_POST[x]) ? … : 0`. The
+ *  submitter rides along so a named action button (solidified's "use my custom
+ *  color scheme") posts its name=value, as a native submit would. */
+function collect(form: HTMLFormElement, submitter: HTMLElement | null): Record<string, string | string[]> {
   const out: Record<string, string | string[]> = {};
-  for (const [k, v] of new FormData(form)) {
+  for (const [k, v] of new FormData(form, submitter)) {
     if (v instanceof File) continue; // no upload path through the JSON body
     const prev = out[k];
     if (prev === undefined) out[k] = v;
@@ -65,7 +67,7 @@ const HookSettingsForm: Component<{
     setSaving(true);
     try {
       // The response is the re-rendered form, so the fields show what stored.
-      mutate(await props.save(props.id, collect(e.currentTarget as HTMLFormElement)));
+      mutate(await props.save(props.id, collect(e.currentTarget as HTMLFormElement, e.submitter)));
       toast.success(t("admin.settings_saved") as string);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
