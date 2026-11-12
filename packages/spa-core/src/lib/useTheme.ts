@@ -12,6 +12,7 @@ const CUSTOM_COLORS_KEY = "hz-custom-theme";
 
 export const DARK_THEMES = new Set<ThemeId>([
   "dark",
+  "sketchy-dark",
   "nord",
   "dracula",
   "monokai",

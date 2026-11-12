@@ -138,7 +138,7 @@ function UnreadBadge(props: { count: number }) {
 function MinimizedItem(props: { entry: ComposerEntry; class: string; onRestore?: () => void }) {
   const { t } = useI18n();
   return (
-    <div class={`flex items-center gap-1 ${props.class}`}>
+    <div class={`hz-composer-pill flex items-center gap-1 ${props.class}`}>
       <button
         type="button"
         class="flex items-center gap-1.5 min-w-0 flex-1 text-xs font-medium text-txt

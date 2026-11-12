@@ -1,33 +1,33 @@
 /* Locally-hosted fonts — files live in public/fonts/ */
-/* Served at /view/theme/solidified/assets/fonts/ in both dev and prod */
+/* Root-relative to public/: Vite prefixes the build's base, so each theme slug gets its own /view/theme/<slug>/assets/fonts/ */
 
 @font-face {
   font-family: 'Nunito';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Nunito-RegularItalic.woff2') format('woff2');
+  src: url('/fonts/Nunito-RegularItalic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Nunito';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Nunito-Regular.woff2') format('woff2');
+  src: url('/fonts/Nunito-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Nunito';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Nunito-SemiBold.woff2') format('woff2');
+  src: url('/fonts/Nunito-SemiBold.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Nunito';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Nunito-Bold.woff2') format('woff2');
+  src: url('/fonts/Nunito-Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -35,21 +35,21 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/PlayfairDisplay-RegularItalic.woff2') format('woff2');
+  src: url('/fonts/PlayfairDisplay-RegularItalic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/PlayfairDisplay-Regular.woff2') format('woff2');
+  src: url('/fonts/PlayfairDisplay-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Playfair Display';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/PlayfairDisplay-SemiBold.woff2') format('woff2');
+  src: url('/fonts/PlayfairDisplay-SemiBold.woff2') format('woff2');
 }
 
 @font-face {
@@ -57,21 +57,21 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Comfortaa-Regular.woff2') format('woff2');
+  src: url('/fonts/Comfortaa-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Comfortaa';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Comfortaa-SemiBold.woff2') format('woff2');
+  src: url('/fonts/Comfortaa-SemiBold.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Comfortaa';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Comfortaa-Bold.woff2') format('woff2');
+  src: url('/fonts/Comfortaa-Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -79,21 +79,21 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/SpaceMono-RegularItalic.woff2') format('woff2');
+  src: url('/fonts/SpaceMono-RegularItalic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Space Mono';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/SpaceMono-Regular.woff2') format('woff2');
+  src: url('/fonts/SpaceMono-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Space Mono';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/SpaceMono-Bold.woff2') format('woff2');
+  src: url('/fonts/SpaceMono-Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -101,7 +101,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Righteous-Regular.woff2') format('woff2');
+  src: url('/fonts/Righteous-Regular.woff2') format('woff2');
 }
 
 @font-face {
@@ -109,21 +109,21 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/ComicNeue-RegularItalic.woff2') format('woff2');
+  src: url('/fonts/ComicNeue-RegularItalic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Comic Neue';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/ComicNeue-Regular.woff2') format('woff2');
+  src: url('/fonts/ComicNeue-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Comic Neue';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/ComicNeue-Bold.woff2') format('woff2');
+  src: url('/fonts/ComicNeue-Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -131,7 +131,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/OpenDyslexic-Regular.woff') format('woff');
+  src: url('/fonts/OpenDyslexic-Regular.woff') format('woff');
 }
 
 @font-face {
@@ -139,21 +139,21 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Iosevka-Regular.woff2') format('woff2');
+  src: url('/fonts/Iosevka-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Iosevka';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Iosevka-Italic.woff2') format('woff2');
+  src: url('/fonts/Iosevka-Italic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Iosevka';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Iosevka-Bold.woff2') format('woff2');
+  src: url('/fonts/Iosevka-Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -161,7 +161,7 @@
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Saira.woff2') format('woff2');
+  src: url('/fonts/Saira.woff2') format('woff2');
 }
 
 @font-face {
@@ -169,7 +169,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/ShareTech-Regular.woff2') format('woff2');
+  src: url('/fonts/ShareTech-Regular.woff2') format('woff2');
 }
 
 @font-face {
@@ -177,14 +177,14 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/LibreBaskerville-Regular.woff2') format('woff2');
+  src: url('/fonts/LibreBaskerville-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Libre Baskerville';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/LibreBaskerville-Italic.woff2') format('woff2');
+  src: url('/fonts/LibreBaskerville-Italic.woff2') format('woff2');
 }
 
 @font-face {
@@ -192,7 +192,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/PlaywriteEnglandJoined-Regular.woff2') format('woff2');
+  src: url('/fonts/PlaywriteEnglandJoined-Regular.woff2') format('woff2');
 }
 
 @font-face {
@@ -200,14 +200,14 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Inter-Regular.woff2') format('woff2');
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Inter';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Inter-Italic.woff2') format('woff2');
+  src: url('/fonts/Inter-Italic.woff2') format('woff2');
 }
 
 @font-face {
@@ -215,28 +215,28 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/AtkinsonHyperlegible-Regular.woff2') format('woff2');
+  src: url('/fonts/AtkinsonHyperlegible-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Atkinson Hyperlegible';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/AtkinsonHyperlegible-Bold.woff2') format('woff2');
+  src: url('/fonts/AtkinsonHyperlegible-Bold.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Atkinson Hyperlegible';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/AtkinsonHyperlegible-Italic.woff2') format('woff2');
+  src: url('/fonts/AtkinsonHyperlegible-Italic.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Atkinson Hyperlegible';
   font-style: italic;
   font-weight: 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/AtkinsonHyperlegible-BoldItalic.woff2') format('woff2');
+  src: url('/fonts/AtkinsonHyperlegible-BoldItalic.woff2') format('woff2');
 }
 
 @font-face {
@@ -244,14 +244,14 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Literata-Regular.woff2') format('woff2');
+  src: url('/fonts/Literata-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Literata';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/Literata-Italic.woff2') format('woff2');
+  src: url('/fonts/Literata-Italic.woff2') format('woff2');
 }
 
 @font-face {
@@ -259,14 +259,14 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
 }
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('/view/theme/solidified/assets/fonts/JetBrainsMono-Italic.woff2') format('woff2');
+  src: url('/fonts/JetBrainsMono-Italic.woff2') format('woff2');
 }
 
 /* Noto Sans Devanagari — Hindi locale companion. unicode-range means browsers only
@@ -277,7 +277,7 @@
   font-weight: 100 900;
   font-display: swap;
   unicode-range: U+0900-097F, U+1CD0-1CFF, U+A8E0-A8FF;
-  src: url('/view/theme/solidified/assets/fonts/NotoSansDevanagari.woff2') format('woff2');
+  src: url('/fonts/NotoSansDevanagari.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Devanagari';
@@ -285,5 +285,32 @@
   font-weight: 100 900;
   font-display: swap;
   unicode-range: U+0900-097F, U+1CD0-1CFF, U+A8E0-A8FF;
-  src: url('/view/theme/solidified/assets/fonts/NotoSansDevanagari.woff2') format('woff2');
+  src: url('/fonts/NotoSansDevanagari.woff2') format('woff2');
+}
+
+/* Sketchy scheme (index.css "Sketchy look"). Same files and ranges as the
+   adminlte theme's Bootswatch sketchy.css (SIL OFL fonts). */
+@font-face {
+  font-family: 'Neucha';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Neucha-Cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Neucha';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Neucha-Latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cabin Sketch';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/CabinSketch.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }

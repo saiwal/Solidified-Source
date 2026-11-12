@@ -186,7 +186,9 @@ export default function ComposerModal(props: ComposerModalProps) {
     // rounding) belongs to the two modes that are *boxes*. Page mode is a page —
     // carrying a border and a floating card over a backdrop is exactly what it
     // exists to get away from.
-    const base = "flex flex-col overflow-hidden text-txt pointer-events-auto ";
+    // hz-composer / hz-composer-<mode>: hook classes for themes (like the
+    // primitives' hz-*), one per mode.
+    const base = `hz-composer hz-composer-${mode()} flex flex-col overflow-hidden text-txt pointer-events-auto `;
     // Accent frame, not rim: a rim border vanished against the cards behind it.
     const card = "bg-surface border border-accent/40 shadow-2xl ";
     switch (mode()) {
@@ -238,7 +240,7 @@ export default function ComposerModal(props: ComposerModalProps) {
         <div class={dialogClass()} data-docked={mode() === "dock" ? "" : undefined} use:helpable={props.helpTarget}>
           {/* ── Header ── */}
           <header
-            class="flex items-center justify-between gap-2 px-3 py-2 border-b border-accent/40 bg-accent-muted shrink-0"
+            class="hz-composer-header flex items-center justify-between gap-2 px-3 py-2 border-b border-accent/40 bg-accent-muted shrink-0"
           >
             <div class="flex items-center gap-2 min-w-0">
               <Show when={frame}>
@@ -301,7 +303,7 @@ export default function ComposerModal(props: ComposerModalProps) {
           {/* ── Optional pinned footer ── */}
           <Show when={props.footer}>
             <footer
-              class="flex flex-col gap-2 px-3 py-2 border-t border-rim bg-surface shrink-0"
+              class="hz-composer-footer flex flex-col gap-2 px-3 py-2 border-t border-rim bg-surface shrink-0"
             >
               {props.footer}
             </footer>

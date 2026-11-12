@@ -43,3 +43,24 @@ export function uiShadow({ themeUiDir }) {
     },
   };
 }
+
+// Overlay themes (THEME=<slug>, see theme-scaffold.md): any module that
+// resolves into `base` is swapped for the file at the same relative path under
+// `overlay`, when there is one. Covers relative imports, `@/` aliases and CSS
+// imported from JS — not an @import inside CSS, which Tailwind resolves itself.
+// Overlay files reach base code through `@/…`, never `./…`, so tsc agrees.
+/** @param {{ base: string, overlay: string }} opts absolute dirs */
+export function srcShadow({ base, overlay }) {
+  return {
+    name: "src-shadow",
+    enforce: "pre",
+    async resolveId(id, importer, options) {
+      if (id.startsWith("\0")) return null;
+      const r = await this.resolve(id, importer, { ...options, skipSelf: true });
+      if (!r || r.external || !r.id.startsWith(base + path.sep)) return r;
+      const [file, query] = r.id.split("?");
+      const shadow = path.join(overlay, path.relative(base, file));
+      return existsSync(shadow) ? shadow + (query ? "?" + query : "") : r;
+    },
+  };
+}

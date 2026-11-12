@@ -1103,7 +1103,7 @@ export default function PostCard(props: {
       <div
         ref={cardRef}
         data-mid={props.post.mid}
-        class={`relative transition-colors duration-500
+        class={`hz-comment relative transition-colors duration-500
                ${autoCollapsed() ? "mb-0.5" : `${(props.depth ?? 1) > 1 ? "border-l-2 " : ""}pl-2 wide-md:pl-3 py-2 wide-md:py-2.5 mb-1`}
                ${props.highlighted ? "border-accent bg-accent/5" :  "border-rim/60"}`}
       >
@@ -1669,8 +1669,8 @@ export default function PostCard(props: {
       ref={cardRef}
       class={
         (props.seamless
-          ? "hz-glass-clear relative bg-surface p-3 wide-md:p-5"
-          : "relative bg-surface border border-rim rounded-2xl p-3 wide-md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
+          ? "hz-post-detail hz-glass-clear relative bg-surface p-3 wide-md:p-5"
+          : "hz-post relative bg-surface border border-rim rounded-2xl p-3 wide-md:p-5 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200") +
         // Flat (unthreaded) reply: same card, with an accent rail down its left edge.
         (isFlatReply() && !props.seamless && !props.split ? " border-l-4 border-l-accent/50" : "") +
         (props.split ? " grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] h-full !p-0" : "")

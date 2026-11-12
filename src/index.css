@@ -1262,3 +1262,39 @@ html.hz-theme-fade *::after {
 img[style*="float: left"], img[style*="float:left"] { margin: 0.25rem 1rem 0.5rem 0; }
 img[style*="float: right"], img[style*="float:right"] { margin: 0.25rem 0 0.5rem 1rem; }
 .prose:has(img[style*="float"]) { display: flow-root; }
+
+/* ── Sketchy look (schemes "sketchy" / "sketchy-dark", theme.css) ──
+   The adminlte/Bootswatch Sketchy look is more than colours: hand-drawn
+   corners, 2px pencil borders, Neucha + Cabin Sketch. Scoped to the two
+   schemes so no other preset changes.
+   - Radii: !important because Settings → corner radius writes the --radius-*
+     tokens inline on <html> (lib/corner-radius.ts). rounded-sm/-full keep
+     their shape (avatars, pills, switches look broken when wobbly).
+   - Borders: Tailwind's `border` is a literal 1px, not a token, so the 2px
+     needs a rule; only boxed panels (cards, modals, menus), not every hairline.
+   ponytail: the scheme fonts override the user's font pick while Sketchy is
+   active; gate on a data-font-family attribute from applyTypographyCSS if an
+   explicit pick should win. */
+:root[data-theme^="sketchy"] {
+  --hz-sketch-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  --radius: var(--hz-sketch-radius) !important;
+  --radius-md: var(--hz-sketch-radius) !important;
+  --radius-lg: var(--hz-sketch-radius) !important;
+  --radius-xl: var(--hz-sketch-radius) !important;
+  --radius-2xl: var(--hz-sketch-radius) !important;
+  --radius-3xl: var(--hz-sketch-radius) !important;
+}
+:root[data-theme^="sketchy"] body {
+  font-family: Neucha, var(--hz-font-family, ui-sans-serif, system-ui, sans-serif);
+}
+:root[data-theme^="sketchy"] :is(h1, h2, h3) {
+  font-family: "Cabin Sketch", Neucha, cursive;
+  font-weight: 400;
+}
+:root[data-theme^="sketchy"] :is(.hz-card, .hz-modal-panel, .bg-surface.border.rounded-xl, .bg-surface.border.rounded-2xl) {
+  border-width: 2px;
+  border-color: var(--color-rim);
+}
+:root[data-theme^="sketchy"] .hz-menu {
+  --tw-ring-color: var(--color-rim);
+}

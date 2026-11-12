@@ -19,7 +19,7 @@ import {
 } from "@utsukta/spa-core/lib/widget-shell";
 import { cardClass, cardHeaderClass } from "@ui/Card";
 
-interface Look {
+export interface Look {
   root: string;
   header: string;
   title: string;
@@ -217,7 +217,14 @@ function Rail(p: { tabs: WidgetShellTabs; uid: string; inline?: boolean }) {
 const filled = (v: unknown) => (Array.isArray(v) ? (v.length ? v : undefined) : (v ?? undefined));
 
 export function WidgetShell(props: WidgetShellProps) {
-  const l = () => LOOKS[widgetShell()];
+  return <ShellView {...props} look={LOOKS[widgetShell()]} />;
+}
+
+// The renderer behind WidgetShell, for a theme that ships a fixed look of its
+// own: an @ui/WidgetShell override can render <ShellView look={…}> and keep
+// the header/tabs/fold/footer wiring instead of copying it.
+export function ShellView(props: WidgetShellProps & { look: Look }) {
+  const l = () => props.look;
   const title = children(() => props.title);
   const icon = children(() => props.icon);
   const actions = children(() => props.actions);

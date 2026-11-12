@@ -822,3 +822,76 @@
   --color-warning-txt: #e6ff00;
   --color-warning-fg: #111111;
 }
+
+/* ── Sketchy / Sketchy Dark ──────────────────────────────────────
+   After Bootswatch "Sketchy" (MIT, Thomas Park), as shipped by the adminlte
+   theme. Paper-white with pencil-grey ink; shapes/fonts in index.css. */
+[data-theme="sketchy"] {
+  --color-base: #f7f7f9;
+  --color-surface: #ffffff;
+  --color-elevated: #ffffff;
+  --color-overlay: #f8f9fa;
+
+  --color-txt: #212529;
+  --color-muted: #555555;
+  --color-subtle: #868e96;
+
+  --color-rim: #333333;
+  --color-rim-strong: #212529;
+
+  --color-accent: #333333;
+  --color-accent-muted: #e2e2e2;
+  --color-accent-txt: #141414;
+  --color-accent-fg: #ffffff;
+
+  /* danger */
+  --color-danger: #dc3545;
+  --color-danger-muted: #f8d7da;
+  --color-danger-txt: #a71d2a;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #28a745;
+  --color-success-muted: #d4edda;
+  --color-success-txt: #186429;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #ffc107;
+  --color-warning-muted: #fff3cd;
+  --color-warning-txt: #806104;
+  --color-warning-fg: #111111;
+}
+
+[data-theme="sketchy-dark"] {
+  --color-base: #1a1d20;
+  --color-surface: #212529;
+  --color-elevated: #2a2c2e;
+  --color-overlay: #16181b;
+
+  --color-txt: #dee2e6;
+  --color-muted: #adb5bd;
+  --color-subtle: #868e96;
+
+  --color-rim: #555555;
+  --color-rim-strong: #868e96;
+
+  --color-accent: #dee2e6;
+  --color-accent-muted: #333333;
+  --color-accent-txt: #f8f9fa;
+  --color-accent-fg: #212529;
+
+  /* danger */
+  --color-danger: #dc3545;
+  --color-danger-muted: #2c0b0e;
+  --color-danger-txt: #ea868f;
+  --color-danger-fg: #ffffff;
+  /* success */
+  --color-success: #28a745;
+  --color-success-muted: #08210e;
+  --color-success-txt: #7eca8f;
+  --color-success-fg: #111111;
+  /* warning */
+  --color-warning: #ffc107;
+  --color-warning-muted: #332701;
+  --color-warning-txt: #ffda6a;
+  --color-warning-fg: #111111;
+}

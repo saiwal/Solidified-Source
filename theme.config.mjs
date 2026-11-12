@@ -1,7 +1,10 @@
 // Single source of truth for this theme package's slug. Every place that
 // currently hardcodes "solidified" (asset paths, PHP namespace/function
 // names copied into the deployed theme) derives from this constant instead.
-export const THEME_SLUG = "solidified";
+// THEME=<slug> builds an overlay theme: solidified's src/ with the files in
+// themes/<slug>/src shadowing their counterparts (vite.config.ts srcShadow).
+export const THEME_SLUG = process.env.THEME || "solidified";
+export const OVERLAY_DIR_REL = THEME_SLUG === "solidified" ? null : `themes/${THEME_SLUG}/src`;
 
 export const ASSET_WEB_PATH = `/view/theme/${THEME_SLUG}/assets`;
 

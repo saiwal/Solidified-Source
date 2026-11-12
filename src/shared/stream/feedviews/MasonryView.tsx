@@ -115,7 +115,7 @@ function MasonryCard(props: {
         ref={cardRef}
         onClick={() => props.onOpenModal()}
         class={
-          "relative mb-3 bg-surface border border-rim rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          "hz-post-tile relative mb-3 bg-surface border border-rim rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
         }
         classList={{ "border-l-4 border-l-accent/50": isFlatReply() }}
       >

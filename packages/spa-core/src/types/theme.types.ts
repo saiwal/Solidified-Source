@@ -22,6 +22,8 @@ export const THEMES = [
   { id: "matrix", label: "Matrix" },
   { id: "high-contrast", label: "High Contrast" },
   { id: "high-contrast-light", label: "High Contrast Light" },
+  { id: "sketchy", label: "Sketchy (own font & corners)" },
+  { id: "sketchy-dark", label: "Sketchy Dark (own font & corners)" },
   { id: "custom", label: "Custom" },
 ] as const;
 
