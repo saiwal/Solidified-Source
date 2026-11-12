@@ -15,6 +15,8 @@ interface FeatureEntry {
   description: string;
   group: string;
   enabled: boolean;
+  /** Set by the hub admin (feature_lock); the member's own toggle has no effect. */
+  locked?: boolean;
 }
 
 interface FeaturesData {
@@ -142,10 +144,13 @@ function FeatureRow(props: {
         <Show when={f.description}>
           <p class="text-xs text-muted mt-0.5 leading-relaxed">{f.description}</p>
         </Show>
+        <Show when={f.locked}>
+          <p class="text-xs text-muted mt-1 italic">{t("settings.feat_locked")}</p>
+        </Show>
       </div>
       <Switch
         checked={f.enabled}
-        disabled={props.isBusy}
+        disabled={props.isBusy || f.locked}
         onChange={props.onToggle}
         label={f.enabled ? t("settings.feat_toggle_off") : t("settings.feat_toggle_on")}
       />

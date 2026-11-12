@@ -62,6 +62,7 @@ export const settings: RawDictionary["settings"] = {
   feat_toggle_off:     "Aus",
   feat_load_error:     "Funktionen konnten nicht geladen werden.",
   feat_no_features:    "Keine konfigurierbaren Funktionen verfügbar.",
+  feat_locked:  "Vom Hub-Admin festgelegt",
   feat_toggle_failed:  "Funktion konnte nicht umgeschaltet werden",
   manage_profiles:     "Mehrere Profile verwalten",
   // Common actions

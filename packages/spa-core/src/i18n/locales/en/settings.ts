@@ -62,6 +62,7 @@ export const settings: RawDictionary["settings"] = {
   feat_toggle_off:     "Off",
   feat_load_error:     "Failed to load features.",
   feat_no_features:    "No configurable features available.",
+  feat_locked:  "Set by your hub admin",
   feat_toggle_failed:  "Failed to toggle feature",
   manage_profiles:     "Manage multiple profiles",
   // Common actions

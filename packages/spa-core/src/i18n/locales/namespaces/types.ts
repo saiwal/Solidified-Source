@@ -1496,6 +1496,7 @@ export type RawDictionary = {
     feat_toggle_off:     string;
     feat_load_error:     string;
     feat_no_features:    string;
+    feat_locked:  string;
     feat_toggle_failed:  string;
     manage_profiles:     string;
     // Common actions

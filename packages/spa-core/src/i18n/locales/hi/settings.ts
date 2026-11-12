@@ -61,6 +61,7 @@ export const settings: RawDictionary["settings"] = {
   feat_toggle_off:     "बंद",
   feat_load_error:     "सुविधाएँ लोड करने में विफल।",
   feat_no_features:    "कोई कॉन्फ़िगर करने योग्य सुविधा उपलब्ध नहीं।",
+  feat_locked:  "आपके हब एडमिन द्वारा निर्धारित",
   feat_toggle_failed:  "सुविधा टॉगल करने में विफल",
   manage_profiles:     "कई प्रोफ़ाइलें प्रबंधित करें",
   // Common actions
