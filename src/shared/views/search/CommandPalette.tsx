@@ -1,10 +1,10 @@
-// Ctrl/Cmd+K: jump to any app, or (local users) search wiki, articles, cards,
-// notes, posts, files and bookmarks at once. Mounted once in Layout. The
+// Ctrl/Cmd+K: jump to any app, or search wiki, articles, cards, notes, posts,
+// files and bookmarks at once — your own, or on another channel's page what
+// you may see of theirs (useSearchScope). Mounted once in Layout. The
 // mobile app drawer reuses the same search pieces in its own sheet.
 import { createMemo, createSignal, onCleanup, onMount, Show, type Accessor } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
 import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
 import { Modal, modalPanelClass } from "@ui/Modal";
 import { SearchField } from "@ui/SearchField";
@@ -15,7 +15,7 @@ import { getNavIcon } from "../NavItem";
 import ResultList, { entryId, type Entry } from "./ResultList";
 import SearchFilters from "./SearchFilters";
 import {
-  emptyFilters, FIND_ICON, paletteOpen, setPaletteOpen, useContentSearch, type FindResult,
+  emptyFilters, FIND_ICON, paletteOpen, setPaletteOpen, useContentSearch, useSearchScope, type FindResult,
 } from "./search";
 
 const label = (i: NavItemDef) => (typeof i.label === "function" ? i.label() : i.label);
@@ -67,7 +67,8 @@ function Palette(props: { navItems: Accessor<NavItemDef[]>; onClose: () => void 
   const [filters, setFilters] = createSignal(emptyFilters());
   const [showFilters, setShowFilters] = createSignal(false);
   const [active, setActive] = createSignal(0);
-  const { results } = useContentSearch(term, filters, isLocalUser);
+  const scope = useSearchScope();
+  const { results } = useContentSearch(term, filters, scope.canSearch, scope.channel);
 
   const entries = createMemo(() => {
     const nav = navEntries(props.navItems(), term(), t("layout.palette_jump"));
@@ -109,7 +110,7 @@ function Palette(props: { navItems: Accessor<NavItemDef[]>; onClose: () => void 
             onInput={(v) => { setTerm(v); setActive(0); }}
             label={t("layout.palette_title")}
             clearLabel={t("layout.clear_search")}
-            placeholder={t("layout.palette_placeholder")}
+            placeholder={scope.channel() ? t("layout.palette_placeholder_channel", { nick: scope.channel() }) : t("layout.palette_placeholder")}
             autofocus
             role="combobox"
             aria-expanded="true"
@@ -117,7 +118,7 @@ function Palette(props: { navItems: Accessor<NavItemDef[]>; onClose: () => void 
             aria-autocomplete="list"
             aria-activedescendant={entries().length ? entryId("hz-palette", activeIdx()) : undefined}
           />
-          <Show when={isLocalUser()}>
+          <Show when={scope.canSearch()}>
             <IconButton label={t("layout.palette_filters")} pressed={showFilters()} onClick={() => setShowFilters(!showFilters())}>
               <MdOutlineTune size={18} />
             </IconButton>
@@ -125,7 +126,7 @@ function Palette(props: { navItems: Accessor<NavItemDef[]>; onClose: () => void 
         </div>
         <Show when={showFilters()}>
           <div class="px-3 py-2 border-b border-rim">
-            <SearchFilters value={filters()} onChange={(f) => { setFilters(f); setActive(0); }} />
+            <SearchFilters value={filters()} types={scope.types()} onChange={(f) => { setFilters(f); setActive(0); }} />
           </div>
         </Show>
         <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain">

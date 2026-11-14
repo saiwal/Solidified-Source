@@ -190,6 +190,7 @@ export type RawDictionary = {
     palette_title: string;
     palette_filters: string;
     palette_placeholder: string;
+    palette_placeholder_channel: string;
     palette_jump: string;
     palette_no_results: string;
     palette_searching: string;

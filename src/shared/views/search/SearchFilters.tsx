@@ -3,9 +3,9 @@ import { For } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Chip } from "@ui/Chip";
 import { Input } from "@ui/Field";
-import { FIND_TYPES, type FindFilters, type FindType } from "./search";
+import type { FindFilters, FindType } from "./search";
 
-export default function SearchFilters(props: { value: FindFilters; onChange: (f: FindFilters) => void }) {
+export default function SearchFilters(props: { value: FindFilters; types: FindType[]; onChange: (f: FindFilters) => void }) {
   const { t } = useI18n();
   const set = (patch: Partial<FindFilters>) => props.onChange({ ...props.value, ...patch });
   const toggle = (ty: FindType) => {
@@ -19,7 +19,7 @@ export default function SearchFilters(props: { value: FindFilters; onChange: (f:
         <Chip size="sm" selected={props.value.types.length === 0} onClick={() => set({ types: [] })}>
           {t("layout.palette_all")}
         </Chip>
-        <For each={FIND_TYPES}>
+        <For each={props.types}>
           {(ty) => (
             <Chip size="sm" selected={props.value.types.includes(ty)} onClick={() => toggle(ty)}>
               {t(`layout.palette_type_${ty}`)}

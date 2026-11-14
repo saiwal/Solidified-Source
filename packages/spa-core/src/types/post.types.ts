@@ -38,6 +38,7 @@ export interface Post {
   iid?: number; // local integer item id — used by /like/{iid}
   uuid: string;
   profileUid?: number; // local channel uid — used by /item comment POST
+  wallNick?: string; // /spa/display only: the local channel whose wall this post is on
   mid: string;
   parent_mid: string;
   thr_parent: string;

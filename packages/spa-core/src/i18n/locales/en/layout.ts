@@ -20,6 +20,7 @@ export const layout: RawDictionary["layout"] = {
   palette_filters: "Filters",
   palette_title: "Search and jump",
   palette_placeholder: "Search everything or jump to an app…",
+  palette_placeholder_channel: "Search {{nick}}'s content or jump to an app…",
   palette_jump: "Go to",
   palette_no_results: "Nothing found.",
   palette_searching: "Searching…",

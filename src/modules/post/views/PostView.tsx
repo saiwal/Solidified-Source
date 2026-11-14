@@ -1,7 +1,8 @@
 // src/modules/post/views/PostView.tsx
 import { zrl } from "@utsukta/spa-core/lib/zid";
-import { createMemo, createSignal, Show } from "solid-js";
-import { useNavigate, useParams } from "@solidjs/router";
+import { createEffect, createMemo, createSignal, Show } from "solid-js";
+import { useLocation, useNavigate, useParams } from "@solidjs/router";
+import { setPathSubject } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import PostCard from "@/shared/stream/components/PostCard";
 import type { StreamHandlers } from "@/shared/stream/types";
@@ -126,6 +127,10 @@ export default function PostView() {
     })));
   }
   const [localReactions, setLocalReactions] = createSignal<Record<string, ReactionOverride>>({});
+
+  // A wall post makes this the channel's page: nav, theme and search follow.
+  const route = useLocation();
+  createEffect(() => setPathSubject(route.pathname, node()?.wallNick ?? ""));
 
   async function loadMoreComments(rootUuid: string, attachMid: string, isRoot: boolean, offset: number, order: CommentOrder): Promise<void> {
     const existingChildren = findInTree(node(), attachMid)?.children ?? [];

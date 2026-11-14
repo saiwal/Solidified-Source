@@ -171,6 +171,12 @@ class Display
         // and a per-row iconfig lookup would add a query per post in a stream.
         $root_item['imported'] = (bool) \Zotlabs\Lib\IConfig::Get(intval($item['id']), 'spa', 'imported');
 
+        // A post on a local channel's wall names that channel, so the SPA can
+        // dress /display like the channel's own pages (nav, theme, search).
+        // Not for a stream copy: that row's uid is merely who received it.
+        $wall = intval($item['item_wall']) ? channelx_by_n(intval($item['uid'])) : null;
+        $root_item['channel_nick'] = $wall ? $wall['channel_address'] : null;
+
         Response::send([
             'post' => $root_item,
         ]);

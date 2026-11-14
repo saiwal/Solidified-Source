@@ -21,11 +21,10 @@ import { SearchField } from "@ui/SearchField";
 import { IconButton } from "@ui/Button";
 import { Spinner } from "@ui/Spinner";
 import { MdOutlineTune } from "solid-icons/md";
-import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
 import ResultList from "../search/ResultList";
 import SearchFilters from "../search/SearchFilters";
 import { contentEntries } from "../search/CommandPalette";
-import { emptyFilters, useContentSearch } from "../search/search";
+import { emptyFilters, useContentSearch, useSearchScope } from "../search/search";
 import { getNavIcon } from "../NavItem";
 import { NavUtilityIcons } from "../NavUtilities";
 import BrandBlock from "./BrandBlock";
@@ -167,11 +166,13 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
     );
   });
 
-  // Content search (local users): the same /spa/find results as the desktop
+  // Content search (whoever useSearchScope allows): the same /spa/find results as the desktop
   // Ctrl+K palette, listed under the matching apps.
   const [filters, setFilters] = createSignal(emptyFilters());
   const [showFilters, setShowFilters] = createSignal(false);
-  const { results } = useContentSearch(query, filters, () => moreOpen() && isLocalUser());
+  const scope = useSearchScope();
+  const canSearch = scope.canSearch;
+  const { results } = useContentSearch(query, filters, () => moreOpen() && canSearch(), scope.channel);
   const content = createMemo(() =>
     contentEntries(results() ?? [], (r) => t(`layout.palette_type_${r.type}`)),
   );
@@ -244,7 +245,7 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
               <Show
                 when={matches().length > 0}
                 fallback={
-                  <Show when={!isLocalUser()}>
+                  <Show when={!canSearch()}>
                     <p class="px-1 py-6 text-center text-sm text-muted">
                       {t("layout.no_app_matches")}
                     </p>
@@ -260,7 +261,7 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
                   />
                 </section>
               </Show>
-              <Show when={isLocalUser()}>
+              <Show when={canSearch()}>
                 <section class="-mx-3">
                   <ResultList
                     entries={content()}
@@ -328,18 +329,18 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
           stays reachable while the content scrolls. */}
       <div class="shrink-0 border-t border-rim bg-surface px-3 py-3 space-y-2">
         <Show when={showFilters()}>
-          <SearchFilters value={filters()} onChange={setFilters} />
+          <SearchFilters value={filters()} types={scope.types()} onChange={setFilters} />
         </Show>
         <div class="flex items-center gap-2">
           <SearchField
             class="flex-1"
             value={query()}
             onInput={setQuery}
-            label={isLocalUser() ? t("layout.palette_title") : t("layout.search_apps")}
+            label={canSearch() ? t("layout.palette_title") : t("layout.search_apps")}
             clearLabel={t("layout.clear_search")}
-            placeholder={isLocalUser() ? t("layout.palette_placeholder") : t("layout.search_apps")}
+            placeholder={scope.channel() ? t("layout.palette_placeholder_channel", { nick: scope.channel() }) : canSearch() ? t("layout.palette_placeholder") : t("layout.search_apps")}
           />
-          <Show when={isLocalUser()}>
+          <Show when={canSearch()}>
             <IconButton
               label={t("layout.palette_filters")}
               pressed={showFilters()}

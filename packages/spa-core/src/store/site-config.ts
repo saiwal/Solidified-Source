@@ -1,5 +1,5 @@
 // src/site-config-store.ts
-import { createMemo } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import { useLocation } from "@solidjs/router";
 import { useAuth } from "./auth-store";
 
@@ -27,7 +27,18 @@ export function subjectNickFromPath(pathname: string): string {
  */
 export function useSubjectNick(): () => string {
   const location = useLocation();
-  return createMemo(() => subjectNickFromPath(location.pathname));
+  return createMemo(() => {
+    const s = pathSubject();
+    return subjectNickFromPath(location.pathname) || (s && s.path === location.pathname ? s.nick : "");
+  });
+}
+
+// A page whose URL carries no nick but which belongs to a channel all the same
+// (/display/<uuid> of a wall post): the view reports the owner once it knows.
+// Keyed by path, so it lapses by itself on navigation.
+const [pathSubject, setPathSubjectSignal] = createSignal<{ path: string; nick: string } | null>(null);
+export function setPathSubject(path: string, nick: string) {
+  setPathSubjectSignal(nick ? { path, nick } : null);
 }
 
 /**

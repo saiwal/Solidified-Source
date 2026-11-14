@@ -85,6 +85,7 @@ export function mapActivityToPost(activity: any): Post {
     iid: activity.iid ? Number(activity.iid) : undefined,
     uuid: activity.uuid,
     profileUid: activity.profile_uid ? Number(activity.profile_uid) : undefined,
+    wallNick: activity.channel_nick || undefined,
     mid: activity.mid,
     parent_mid: activity.parent_mid,
     thr_parent: activity.thr_parent,

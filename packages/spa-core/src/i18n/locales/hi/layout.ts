@@ -20,6 +20,7 @@ export const layout: RawDictionary["layout"] = {
   palette_filters: "फ़िल्टर",
   palette_title: "खोजें और जाएँ",
   palette_placeholder: "सब कुछ खोजें या किसी ऐप पर जाएँ…",
+  palette_placeholder_channel: "{{nick}} की सामग्री खोजें या किसी ऐप पर जाएँ…",
   palette_jump: "जाएँ",
   palette_no_results: "कुछ नहीं मिला।",
   palette_searching: "खोज रहे हैं…",
