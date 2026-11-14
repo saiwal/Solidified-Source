@@ -1298,3 +1298,13 @@ img[style*="float: right"], img[style*="float:right"] { margin: 0.25rem 0 0.5rem
 :root[data-theme^="sketchy"] .hz-menu {
   --tw-ring-color: var(--color-rim);
 }
+
+/* Off-screen stream posts skip layout/paint — the feed never drops loaded
+   posts, so on long scrolls this is what keeps low-RAM devices responsive.
+   On .hz-post itself (not CardShell) so the card's own shadow isn't clipped
+   by paint containment; masonry tiles are .hz-post-tile and measured by
+   rowSpan(), so they must stay out of this. */
+.hz-post {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}

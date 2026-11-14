@@ -88,7 +88,7 @@ function PhotoCard(props: { post: ThreadNode; src: string; rotate: string; handl
           <MdFillPush_pin size={11} />
         </span>
       </Show>
-      <img src={props.src} alt="" class="w-full aspect-square object-cover" />
+      <img loading="lazy" decoding="async" src={props.src} alt="" class="w-full aspect-square object-cover" />
       <Show when={props.post.title || excerptOf(props.post, 80)}>
         <p class="mt-2 text-sm font-serif text-neutral-800 line-clamp-2">
           {props.post.title || excerptOf(props.post, 80)}

@@ -218,7 +218,7 @@ function ImageChip(props: { img: StreamAttachment; compact?: boolean }) {
         }
       >
         <button type="button" onClick={() => setOpen(true)} class="block w-full">
-          <img
+          <img decoding="async"
             src={displayUrl}
             alt={filename()}
             onError={() => setFailed(true)}

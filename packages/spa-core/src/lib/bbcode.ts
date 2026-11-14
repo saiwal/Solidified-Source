@@ -256,7 +256,7 @@ function bbShareAttributes(
     : "";
 
   const avatarHtml = avatar
-    ? `<img src="${escapeHtml(avatar)}" class="share-avatar" alt="${escapeHtml(author)}" />`
+    ? `<img loading="lazy" src="${escapeHtml(avatar)}" class="share-avatar" alt="${escapeHtml(author)}" />`
     : `<div class="share-avatar share-avatar-init">${escapeHtml(author[0]?.toUpperCase() ?? "?")}</div>`;
 
   // One-line header: "Bob wrote a card on Jan 2, 2026", the kind word being the

@@ -12,8 +12,9 @@ export const queryClient = new QueryClient({
     queries: {
       // Data younger than this is served from cache without a network request.
       staleTime: 60_000,
-      // Unused cache entries are garbage-collected after 30 minutes.
-      gcTime: 30 * 60_000,
+      // Unused cache entries are garbage-collected after 5 minutes — kept short
+      // for low-RAM devices; offline-fallback.ts (IndexedDB) still covers back-nav.
+      gcTime: 5 * 60_000,
       // A redirect answer (fetchDisplayItem) is final, not a failure to retry.
       retry: (failures, err) => !(err as { redirect?: string }).redirect && failures < 2,
       refetchOnWindowFocus: true,

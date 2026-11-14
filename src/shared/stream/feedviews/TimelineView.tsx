@@ -72,7 +72,7 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
       </Show>
 
       <Show when={image()}>
-        {(src) => <img src={src()} alt="" class="w-full h-48 sm:h-56 object-cover rounded-xl" />}
+        {(src) => <img loading="lazy" decoding="async" src={src()} alt="" class="w-full h-48 sm:h-56 object-cover rounded-xl" />}
       </Show>
 
       <Show when={p.title}>
@@ -93,7 +93,7 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
               </div>
             }
           >
-            <img src={p.authorAvatar} alt={p.authorName} class={`${isRootPost(p) ? "w-8 h-8" : "w-5 h-5"} rounded-full object-cover shrink-0`} />
+            <img loading="lazy" decoding="async" src={p.authorAvatar} alt={p.authorName} class={`${isRootPost(p) ? "w-8 h-8" : "w-5 h-5"} rounded-full object-cover shrink-0`} />
           </Show>
           <div class="min-w-0 leading-tight">
             <p class="flex items-center gap-1 text-sm font-semibold text-txt min-w-0">

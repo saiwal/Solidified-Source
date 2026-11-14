@@ -149,7 +149,7 @@ function MasonryCard(props: {
               </div>
             }
           >
-            <img
+            <img loading="lazy" decoding="async"
               src={p.authorAvatar}
               alt={p.authorName}
               class={`${isFlatReply() ? "w-5 h-5" : "w-7 h-7"} rounded-full object-cover shrink-0`}

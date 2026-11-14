@@ -108,7 +108,7 @@ function LeadStory(props: { post: ThreadNode; onOpen: () => void; handlers: Stre
             class="overflow-hidden rounded-sm border border-rim"
             classList={{ "order-1 md:order-2": hasText() }}
           >
-            <img
+            <img loading="lazy" decoding="async"
               src={src()}
               alt=""
               class="w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
@@ -154,7 +154,7 @@ function SecondaryStory(props: { post: ThreadNode; onOpen: () => void; handlers:
           </div>
         }
       >
-        {(src) => <img src={src()} alt="" class="w-16 h-16 shrink-0 rounded-sm object-cover border border-rim" />}
+        {(src) => <img loading="lazy" decoding="async" src={src()} alt="" class="w-16 h-16 shrink-0 rounded-sm object-cover border border-rim" />}
       </Show>
       <div class="min-w-0">
         <Show when={props.post.title}>
@@ -328,7 +328,7 @@ function SkyboxTeaser(props: { post: Post }) {
       class="group flex items-start gap-2.5 min-w-0 text-left"
     >
       <Show when={image()}>
-        {(src) => <img src={src()} alt="" class="w-12 h-12 shrink-0 rounded-sm object-cover border border-rim" />}
+        {(src) => <img loading="lazy" decoding="async" src={src()} alt="" class="w-12 h-12 shrink-0 rounded-sm object-cover border border-rim" />}
       </Show>
       <p class="min-w-0 font-serif text-xs leading-snug text-txt line-clamp-3">
         <Show when={props.post.title}>

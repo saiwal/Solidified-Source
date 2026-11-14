@@ -1120,7 +1120,7 @@ export default function PostCard(props: {
               when={props.post.authorAvatar}
               fallback={<span class="w-4 h-4 rounded-full bg-elevated shrink-0" />}
             >
-              <img src={props.post.authorAvatar} width="16" height="16" class="rounded-full object-cover shrink-0" />
+              <img loading="lazy" decoding="async" src={props.post.authorAvatar} width="16" height="16" class="rounded-full object-cover shrink-0" />
             </Show>
             <span class="font-medium text-txt shrink-0 max-w-[40%] truncate">{props.post.authorName}</span>
             <span class="truncate">{excerptOf(props.post, 80)}</span>
@@ -1196,7 +1196,7 @@ export default function PostCard(props: {
                 </div>
               }
             >
-              <img
+              <img loading="lazy" decoding="async"
                 src={props.post.authorAvatar}
                 width="24"
                 height="24"
@@ -1706,7 +1706,7 @@ export default function PostCard(props: {
             }
           >
             {/* A flat (unthreaded) reply takes the comment avatar size. */}
-            <img
+            <img loading="lazy" decoding="async"
               src={props.post.authorAvatar}
               width={isFlatReply() ? 24 : 44}
               height={isFlatReply() ? 24 : 44}
