@@ -28,6 +28,7 @@ export default function CartHeaderWidget() {
             value: s.id,
             label: <>{s.label()}<Show when={s.id === "cart" && cartCount() > 0}>{" "}({cartCount()})</Show></>,
           })),
+          ...((viewerRole() === "local" || viewerRole() === "remote") ? [{ value: "purchases" as const, label: t("cart.my_orders_tab") }] : []),
           ...(isOwner() ? [{ value: "orders" as const, label: t("cart.orders_tab") }] : []),
         ]}
       />

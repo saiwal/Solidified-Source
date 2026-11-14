@@ -43,6 +43,24 @@ registerModule({
       helpTarget: "cart.shopping_cart_widget",
     },
     {
+      // The viewer's subscriptions at this channel's shop; empty = renders nothing
+      id: "cart.my_subscriptions",
+      label: () => useI18n().t("widgets.my_subscriptions"),
+      loader: () => import("./widgets/MySubscriptionsWidget"),
+      slot: "right",
+      defaultModules: ["cart"],
+      contexts: ["cart", "channel", "profile"],
+    },
+    {
+      id: "cart.subscribers",
+      label: () => useI18n().t("widgets.shop_subscribers"),
+      loader: () => import("./widgets/SubscribersWidget"),
+      slot: "right",
+      defaultModules: ["cart"],
+      contexts: ["cart", "channel"],
+      visitorVisible: false,
+    },
+    {
       // Opt-in showcase card; place several, each configured with its own sku
       id: "cart.item_card",
       label: () => useI18n().t("widgets.item_card"),

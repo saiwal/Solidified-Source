@@ -1,4 +1,5 @@
 import { createMemo, createSignal } from 'solid-js';
+import type { Subscription, SalesSummary } from './api';
 import type { CatalogItem, CatalogItemInput, Order, OrderItem, SellerOrder, PaymentConfig, PaymentSettings } from './api';
 import {
   fetchCatalog, fetchCatalogAll, fetchOrder,
@@ -12,7 +13,9 @@ import {
   paypalCreateOrder as apiPaypalCreate, paypalCapture as apiPaypalCapture,
   razorpayCreateOrder as apiRzpCreate, razorpayVerify as apiRzpVerify,
   cashfreeCreateOrder as apiCfCreate, cashfreeVerify as apiCfVerify,
-  fetchSellerOrders, fetchSellerOrder,
+  fetchSellerOrders, fetchSellerOrder, fetchMyOrders, fetchGroups,
+  setItemOptions as apiSetOptions, fetchSummary,
+  fetchMySubscriptions, fetchSubscribers, manageSubscriber as apiManageSubscriber,
   markOrderPaid as apiMarkPaid, addOrderNote as apiAddNote,
   fulfillOrderItem as apiFulfill, cancelOrderItem as apiCancel,
 } from './api';
@@ -35,11 +38,19 @@ const [orderDetailLoading, setOrderDetailLoading] = createSignal(false);
 const [managedCatalog, setManagedCatalog]         = createSignal<CatalogItem[]>([]);
 const [catalogManageLoading, setCatalogManageLoading] = createSignal(false);
 
-export type CartTab = 'catalog' | 'cart' | 'orders';
+const [myOrders, setMyOrders]                     = createSignal<Order[]>([]);
+const [myOrdersLoading, setMyOrdersLoading]       = createSignal(false);
+const [mySubs, setMySubs]                         = createSignal<Subscription[]>([]);
+const [subscribers, setSubscribers]               = createSignal<Subscription[]>([]);
+const [summary, setSummary]                       = createSignal<SalesSummary | null>(null);
+const [groups, setGroups]                         = createSignal<{ hash: string; name: string }[]>([]);
+
+export type CartTab = 'catalog' | 'cart' | 'purchases' | 'orders';
 const [tab, setTab] = createSignal<CartTab>('catalog');
 
 export function switchTab(next: CartTab) {
-  if (next === 'orders') loadSellerOrders();
+  if (next === 'orders') { loadSellerOrders(); loadSummary(); }
+  if (next === 'purchases') loadMyOrders();
   setTab(next);
   setSelectedOrder(null);
 }
@@ -52,7 +63,14 @@ export const cartCount = createMemo(() =>
   cartItems().reduce((n, i) => n + i.qty, 0)
 );
 
-export const cartSubtotal = createMemo(() => order()?.subtotal ?? '0.00');
+/** What will be charged: subtotal + tax. */
+export const cartSubtotal = createMemo(() => order()?.total ?? order()?.subtotal ?? '0.00');
+
+/** A required buyer option is still empty — the server refuses checkout until it isn't. */
+export const missingRequired = createMemo(() =>
+  cartItems().some(i =>
+    (catalog().find(c => c.sku === i.sku)?.options ?? []).some(o =>
+      o.required && !i.options?.find(v => v.id === o.id)?.value)));
 
 export const isCheckedOut = createMemo(() => order()?.checked_out ?? false);
 
@@ -127,6 +145,16 @@ export async function setItemQty(sku: string, qty: number) {
     setOrder(await apiSetQty(n, sku, qty));
   } catch {
     setOrder(await fetchOrder(n).catch(() => null));
+  }
+}
+
+export async function setItemOptions(sku: string, options: Record<string, string>) {
+  const n = nick();
+  if (!n) return;
+  try {
+    setOrder(await apiSetOptions(n, sku, options));
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to save.');
   }
 }
 
@@ -228,6 +256,67 @@ export async function savePaymentSettings(settings: PaymentSettings) {
   }
 }
 
+// ── Buyer: placed orders ──────────────────────────────────────────────────────
+
+export async function loadMyOrders() {
+  const n = nick();
+  if (!n) return;
+  setMyOrdersLoading(true);
+  try {
+    const [orders, subs] = await Promise.all([fetchMyOrders(n), fetchMySubscriptions(n)]);
+    setMyOrders(orders);
+    setMySubs(subs);
+  } catch {
+    toast.error('Failed to load orders.');
+  } finally {
+    setMyOrdersLoading(false);
+  }
+}
+
+/** Renew = buy the product again; paying extends the same subscription. */
+export async function renewSubscription(sku: string) {
+  await addItem(sku);
+  switchTab('cart');
+}
+
+export async function loadSummary() {
+  const n = nick();
+  if (!n) return;
+  // Decoration on the orders page: a failure just leaves the tiles out.
+  setSummary(await fetchSummary(n).catch(() => null));
+}
+
+export async function loadSubscribers() {
+  const n = nick();
+  if (!n) return;
+  try {
+    setSubscribers(await fetchSubscribers(n));
+  } catch {
+    toast.error('Failed to load subscribers.');
+  }
+}
+
+export async function manageSubscriber(id: number, action: 'extend' | 'revoke') {
+  const n = nick();
+  if (!n) return;
+  try {
+    setSubscribers(await apiManageSubscriber(n, id, action));
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Failed to update subscription.');
+  }
+}
+
+/** Privacy groups for the product form's grants picker (seller). */
+export async function loadGroups() {
+  const n = nick();
+  if (!n) return;
+  try {
+    setGroups(await fetchGroups(n));
+  } catch {
+    toast.error('Failed to load privacy groups.');
+  }
+}
+
 // ── Seller order actions ──────────────────────────────────────────────────────
 
 export async function loadSellerOrders() {
@@ -263,6 +352,7 @@ export async function markOrderPaid(hash: string) {
     const updated = await apiMarkPaid(n, hash);
     setSelectedOrder(updated);
     setSellerOrders(prev => prev.map(o => o.hash === hash ? updated : o));
+    loadSummary();
     toast.success('Order marked as paid.');
   } catch {
     toast.error('Failed to mark order paid.');
@@ -369,5 +459,6 @@ export {
   sellerOrders, ordersLoading, selectedOrder, orderDetailLoading,
   setSelectedOrder,
   managedCatalog, catalogManageLoading,
+  myOrders, myOrdersLoading, groups, mySubs, subscribers, summary,
   tab,
 };

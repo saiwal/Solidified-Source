@@ -1,5 +1,51 @@
 import { apiFetch } from '@utsukta/spa-core/lib/fetch';
 
+/** What an access product hands its buyer. `groups` are privacy-group hashes. */
+export interface Grants {
+  groups: string[];
+  connect: boolean;
+}
+
+/** Recurring billing: one paid order buys one period. */
+export interface Billing {
+  interval: number;
+  term: 'day' | 'week' | 'month' | 'year';
+}
+
+/** A question the seller asks the buyer about an item ("Name to engrave"). */
+export interface ProductOption {
+  /** Issued by the server; omit for a new one. */
+  id?: string;
+  label: string;
+  type: 'text' | 'textarea';
+  required: boolean;
+}
+
+export interface SalesSummary {
+  orders: number;
+  unpaid: number;
+  to_fulfil: number;
+  subscribers: number;
+  /** One entry per currency — never summed across. */
+  revenue: { currency: string; amount: string }[];
+}
+
+export interface Subscription {
+  id: number;
+  sku: string;
+  desc: string;
+  active: boolean;
+  /** UTC "Y-m-d H:i:s"; kept after it ends as the record of the paid period. */
+  expires: string | null;
+  ended: string | null;
+  reason: 'expired' | 'cancelled' | null;
+  billing: Billing | null;
+  renewable: boolean;
+  // seller-only
+  buyer?: string;
+  buyer_name?: string;
+}
+
 export interface CatalogItem {
   sku: string;
   desc: string;
@@ -8,6 +54,14 @@ export interface CatalogItem {
   photo_url: string | null;
   type: string;
   active?: boolean;
+  /** Buying it grants access (group membership / a connection). */
+  access?: boolean;
+  /** Seller's catalog (?all=1) only. */
+  grants?: Grants;
+  billing?: Billing | null;
+  /** Added on top of the price. */
+  tax_percent?: number;
+  options?: ProductOption[];
 }
 
 export interface CatalogItemInput {
@@ -16,6 +70,11 @@ export interface CatalogItemInput {
   price: number;
   photo_url?: string;
   active?: boolean;
+  grants?: Grants;
+  /** null = one-time. */
+  billing?: Billing | null;
+  tax_percent?: number;
+  options?: ProductOption[];
 }
 
 export interface OrderItem {
@@ -25,8 +84,12 @@ export interface OrderItem {
   qty: number;
   price_raw: number;
   price: string;
-  // seller-only
+  type?: string;
+  access?: boolean;
+  /** The buyer's answers to the product's options. */
+  options?: { id: string; label: string; value: string }[];
   fulfilled?: boolean;
+  // seller-only
   confirmed?: boolean;
   exception?: boolean;
   notes?: string[];
@@ -37,9 +100,16 @@ export interface Order {
   items: OrderItem[];
   subtotal_raw: number;
   subtotal: string;
+  tax_raw: number;
+  tax: string;
+  /** subtotal + tax: what is charged. */
+  total_raw: number;
+  total: string;
   currency: string;
   checked_out: boolean;
   paid: boolean;
+  checked_out_at?: string | null;
+  paid_at?: string | null;
 }
 
 export interface SellerOrder extends Order {
@@ -159,6 +229,27 @@ export const setItemQty = (nick: string, sku: string, qty: number) =>
 
 export const checkout = (nick: string, paymentHint = '') =>
   cartPost<{ checked_out: boolean; order_hash: string }>(`${nick}/checkout`, { payment_hint: paymentHint });
+
+export const setItemOptions = (nick: string, sku: string, options: Record<string, string>) =>
+  cartPost<Order>(`${nick}/item/options`, { sku, options });
+
+export const fetchSummary = (nick: string) =>
+  cartGet<SalesSummary>(`${nick}/summary`);
+
+export const fetchMyOrders = (nick: string) =>
+  cartGet<Order[]>(`${nick}/my-orders`);
+
+export const fetchGroups = (nick: string) =>
+  cartGet<{ hash: string; name: string }[]>(`${nick}/groups`);
+
+export const fetchMySubscriptions = (nick: string) =>
+  cartGet<Subscription[]>(`${nick}/my-subscriptions`);
+
+export const fetchSubscribers = (nick: string) =>
+  cartGet<Subscription[]>(`${nick}/subscribers`);
+
+export const manageSubscriber = (nick: string, id: number, action: 'extend' | 'revoke') =>
+  cartPost<Subscription[]>(`${nick}/subscribers/${id}/${action}`);
 
 // ── Payment ───────────────────────────────────────────────────────────────────
 

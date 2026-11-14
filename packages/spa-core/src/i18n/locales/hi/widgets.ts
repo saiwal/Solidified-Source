@@ -50,6 +50,8 @@ export const widgets: RawDictionary["widgets"] = {
   calendar:           "कैलेंडर",
   shopping_cart:      "शॉपिंग कार्ट",
   item_card:          "दुकान आइटम कार्ड",
+  my_subscriptions:   "मेरी सदस्यताएँ",
+  shop_subscribers:   "दुकान के सदस्य",
   rss_feed:           "RSS फ़ीड",
   html_block:         "HTML ब्लॉक",
   added_to_cart:      "कार्ट में जोड़ा गया।",
