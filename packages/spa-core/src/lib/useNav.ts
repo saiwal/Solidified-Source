@@ -345,7 +345,8 @@ export function useNavActionItems(): () => NavItemDef[] {
     };
 
     return ACTION_ORDER.filter((key) => {
-      if (key === "admin") return isAdmin();
+      // Not on someone else's channel — "Take me home" is the way out there.
+      if (key === "admin") return isAdmin() && role === "owner";
       if (!actions[key]) return false;
       return matchesRole(ACTION_META[key].context, role);
     }).map((key): NavItemDef => {
