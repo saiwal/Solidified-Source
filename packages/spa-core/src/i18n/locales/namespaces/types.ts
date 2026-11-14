@@ -1822,6 +1822,20 @@ export type RawDictionary = {
     portability_old_password_label:  string;
     portability_migrate_btn:         string;
     portability_migrating:           string;
+    portability_section_extras: string;
+    portability_content_title: string;
+    portability_content_desc: string;
+    portability_year: string;
+    portability_content_btn: string;
+    portability_files_title: string;
+    portability_files_desc: string;
+    portability_files_btn: string;
+    portability_dav_title: string;
+    portability_dav_desc: string;
+    portability_content_import_title: string;
+    portability_content_import_desc: string;
+    portability_content_import_btn: string;
+    portability_content_import_done: string;
   };
   network: {
     latest:               string;

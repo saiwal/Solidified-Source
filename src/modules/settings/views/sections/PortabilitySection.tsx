@@ -7,15 +7,29 @@ import PageActions from "@/shared/views/layout/PageActions";
 import { MdOutlineDownload } from "solid-icons/md";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { Button } from "@ui/Button";
+import { Button, buttonClass } from "@ui/Button";
 import { Card } from "@ui/Card";
+import { Field, Select } from "@ui/Field";
+import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
+
+interface DavLink {
+  name: string;
+  url: string;
+}
 
 interface PortabilityMeta {
   export_enabled: boolean;
   sections: string[];
   default_sections: string[];
   years: number[];
+  files_url: string;
+  calendars: DavLink[];
+  addressbooks: DavLink[];
 }
+
+const FILE_INPUT =
+  "block w-full text-sm text-txt file:mr-3 file:px-3 file:py-1.5 file:rounded-lg " +
+  "file:border-0 file:bg-elevated file:text-txt file:text-sm file:cursor-pointer cursor-pointer";
 
 const SECTION_OPTIONS = [
   { value: "channel", labelKey: "settings.portability_section_channel" },
@@ -29,6 +43,7 @@ const SECTION_OPTIONS = [
   { value: "events", labelKey: "settings.portability_section_events" },
   { value: "webpages", labelKey: "settings.portability_section_webpages" },
   { value: "wikis", labelKey: "settings.portability_section_wikis" },
+  { value: "extras", labelKey: "settings.portability_section_extras" },
 ] as const;
 
 export default function PortabilitySection() {
@@ -58,6 +73,40 @@ export default function PortabilitySection() {
     if (next.has(name)) next.delete(name);
     else next.add(name);
     setSelected(next);
+  }
+
+  const [year, setYear] = createSignal("");
+  const [contentFile, setContentFile] = createSignal<File | null>(null);
+  const [importing, setImporting] = createSignal(false);
+
+  async function handleContentImport() {
+    const file = contentFile();
+    if (!file) return;
+    setImporting(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file, file.name);
+      const res = await fetch("/spa/portability/import/items", {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-CSRF-Token": await getCsrfToken().catch(() => "") },
+        body: fd,
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error?.message);
+      toast.success(
+        t("settings.portability_content_import_done", {
+          count: String(json?.data?.items ?? 0),
+        }),
+      );
+    } catch (e) {
+      toast.error(
+        (e instanceof Error && e.message) ||
+          t("settings.portability_import_failed"),
+      );
+    } finally {
+      setImporting(false);
+    }
   }
 
   function handleDownload() {
@@ -147,6 +196,119 @@ export default function PortabilitySection() {
           )}
         </Show>
       </Card>
+
+      <Show when={meta()?.export_enabled && meta()}>
+        {(m) => (
+          <Card class="p-5 space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-txt">
+                {t("settings.portability_content_title")}
+              </h3>
+              <p class="text-xs text-muted mt-1">
+                {t("settings.portability_content_desc")}
+              </p>
+            </div>
+            <div class="flex flex-wrap items-end gap-3">
+              <Field label={t("settings.portability_year")} size="sm">
+                <Select
+                  size="sm"
+                  class="w-28"
+                  value={year() || String(m().years[0] ?? "")}
+                  onChange={(e) => setYear(e.currentTarget.value)}
+                >
+                  <For each={m().years}>
+                    {(y) => <option value={y}>{y}</option>}
+                  </For>
+                </Select>
+              </Field>
+              <a
+                class={buttonClass("ghost")}
+                href={`/spa/portability/export/items?year=${year() || m().years[0]}`}
+                download=""
+              >
+                <MdOutlineDownload />
+                {t("settings.portability_content_btn")}
+              </a>
+            </div>
+          </Card>
+        )}
+      </Show>
+
+      <Show when={meta()}>
+        {(m) => (
+          <>
+            <Card class="p-5 space-y-4">
+              <div>
+                <h3 class="text-sm font-semibold text-txt">
+                  {t("settings.portability_files_title")}
+                </h3>
+                <p class="text-xs text-muted mt-1">
+                  {t("settings.portability_files_desc")}
+                </p>
+              </div>
+              <a class={buttonClass("ghost")} href={m().files_url} download="">
+                <MdOutlineDownload />
+                {t("settings.portability_files_btn")}
+              </a>
+            </Card>
+
+            <Show when={m().calendars.length + m().addressbooks.length > 0}>
+              <Card class="p-5 space-y-4">
+                <div>
+                  <h3 class="text-sm font-semibold text-txt">
+                    {t("settings.portability_dav_title")}
+                  </h3>
+                  <p class="text-xs text-muted mt-1">
+                    {t("settings.portability_dav_desc")}
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <For each={[...m().calendars, ...m().addressbooks]}>
+                    {(link) => (
+                      <a
+                        class={buttonClass("ghost", "sm")}
+                        href={link.url}
+                        download=""
+                      >
+                        <MdOutlineDownload />
+                        {link.name}
+                      </a>
+                    )}
+                  </For>
+                </div>
+              </Card>
+            </Show>
+          </>
+        )}
+      </Show>
+
+      <Card class="p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-semibold text-txt">
+            {t("settings.portability_content_import_title")}
+          </h3>
+          <p class="text-xs text-muted mt-1">
+            {t("settings.portability_content_import_desc")}
+          </p>
+        </div>
+        <input
+          type="file"
+          accept=".json,.zip,application/json,application/zip"
+          aria-label={t("settings.portability_content_import_title")}
+          disabled={importing()}
+          onChange={(e) => setContentFile(e.currentTarget.files?.[0] ?? null)}
+          class={FILE_INPUT}
+        />
+        <Button
+          disabled={!contentFile() || importing()}
+          onClick={handleContentImport}
+        >
+          {importing()
+            ? t("settings.portability_importing")
+            : t("settings.portability_content_import_btn")}
+        </Button>
+      </Card>
+
       <Card class="p-5 space-y-4">
         <h3 class="text-sm font-semibold text-txt">
           {t("settings.portability_import_title")}
