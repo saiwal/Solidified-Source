@@ -11,11 +11,40 @@ class Display
     use FormatsItems;
     use FiltersBlockedChannels;
 
+    /** SPA path of the page a non-post thread lives on, or null for a post. */
+    private function ownPageUrl(array $target): ?string
+    {
+        $root = q("SELECT id, uuid, item_type FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
+            dbesc($target['parent_mid']), intval($target['uid']));
+        $type = intval($root[0]['item_type'] ?? ITEM_TYPE_POST);
+        if (!in_array($type, [ITEM_TYPE_ARTICLE, ITEM_TYPE_CARD, ITEM_TYPE_WEBPAGE], true)) {
+            return null;
+        }
+        $channel = channelx_by_n(intval($target['uid']));
+        if (!$channel) {
+            return null;
+        }
+        $nick = $channel['channel_address'];
+        if ($type !== ITEM_TYPE_WEBPAGE) {
+            return ($type === ITEM_TYPE_ARTICLE ? '/articles/' : '/cards/') . $nick . '/' . $root[0]['uuid'];
+        }
+        $slug = q("SELECT v FROM iconfig WHERE iid = %d AND cat = 'system' AND k = 'WEBPAGE' LIMIT 1",
+            intval($root[0]['id']));
+        return $slug ? "/page/$nick/" . implode('/', array_map('rawurlencode',
+            explode('/', urldecode(str_replace('%2f', '/', (string) $slug[0]['v']))))) : null;
+    }
+
     public function get(): void
     {
         require_once 'include/items.php';
         require_once 'include/conversation.php';
         require_once 'include/channel.php';
+
+        // As core's Display: a hub closed to the public shows visitors nothing.
+        // The public fallback below (stream_perms_api_uids) doesn't check it.
+        if (observer_prohibited()) {
+            Response::error(403, 'Public access denied');
+        }
 
         $item_hash = \App::$argv[2] ?? null;
         if (!$item_hash) {
@@ -47,10 +76,13 @@ class Display
                 intval(local_channel()));
         }
 
+        // No copy of your own: take the wall copy (as core's Item::init does),
+        // not whichever recipient's row comes first — it is the one whose
+        // channel the page is dressed as (channel_nick below).
         if (!$target) {
             $target = q("SELECT id, uid, mid, parent_mid, thr_parent, verb,
                                 item_type, item_deleted, item_blocked, author_xchan
-                         FROM item WHERE $identifier = '%s' LIMIT 1",
+                         FROM item WHERE $identifier = '%s' ORDER BY item_wall DESC LIMIT 1",
                 dbesc($item_hash));
         }
 
@@ -66,6 +98,13 @@ class Display
 
         $observer_hash = get_observer_hash();
         $owner_uid     = intval($target_item['uid']);
+
+        // An article, card or webpage (or a comment on one) has its own page;
+        // core redirects there, so tell the SPA to. That page checks its own
+        // permissions.
+        if ($url = $this->ownPageUrl($target_item)) {
+            Response::send(['redirect' => $url]);
+        }
         // item_normal($owner_uid) relaxes the item_blocked filter to include
         // ITEM_MODERATED (pending-moderation) rows, but only when the viewer
         // IS that channel — same "owners see their own pending items" rule

@@ -1,6 +1,8 @@
 // src/modules/post/views/PostView.tsx
 import { zrl } from "@utsukta/spa-core/lib/zid";
-import { createEffect, createMemo, createSignal, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, on, onCleanup, Show, untrack } from "solid-js";
+import { updateInterval } from "@utsukta/spa-core/store/auth-store";
+import { cardClass } from "@ui/Card";
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
 import { setPathSubject } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -46,29 +48,43 @@ function updateNodeInTree(node: ThreadNode, mid: string, updater: (n: ThreadNode
 // this route has no target-comment param today; see PostDetailModal for the
 // sibling-window fetch used when opening a permalink to a specific nested
 // comment instead of the thread root).
-async function fetchPost([uuid, threaded, order]: readonly [string, boolean, CommentOrder]): Promise<ThreadNode> {
+// ponytail: a b64-encoded mid can't be told apart from its root by uuid, so a
+// comment opened that way isn't highlighted; decode and compare mids if needed.
+const isCommentLink = (uuid: string, rootUuid: string) => uuid !== rootUuid && !uuid.startsWith("b64.");
+
+async function fetchPost([uuid, threaded, order, full]: readonly [string, boolean, CommentOrder, boolean]): Promise<ThreadNode> {
   const rawRoot = await fetchDisplayItem(uuid);
+  // The link names a comment: load that comment's ancestors and siblings
+  // (as PostDetailModal does) instead of page one, until "show all".
+  const context = !full && isCommentLink(uuid, rawRoot.uuid);
   // Comments are a second request — see PostDetailModal: offline the root can
   // come from the local store while the comments have no copy, and a post
   // without its replies beats an error page.
   const commentsResult = await (
-    threaded
-      ? fetchComments(rawRoot.uuid, { count: COMMENTS_PAGE_SIZE, order })
-      : fetchComments(rawRoot.uuid, { count: COMMENTS_PAGE_SIZE, flat: true, order })
+    context
+      ? fetchComments(rawRoot.uuid, { around: uuid })
+      : threaded
+        ? fetchComments(rawRoot.uuid, { count: COMMENTS_PAGE_SIZE, order })
+        : fetchComments(rawRoot.uuid, { count: COMMENTS_PAGE_SIZE, flat: true, order })
   ).catch(
     () => ({ mid: rawRoot.uuid, total: 0, comments: [] }) as Awaited<ReturnType<typeof fetchComments>>,
   );
 
   const rootPost: Post = mapActivityToPost(rawRoot);
   const posts = (commentsResult.comments ?? []).map(mapActivityToPost);
-  const children = threaded
-    ? applyBranchMeta(buildThreadTree(posts, order), commentsResult.branches)
-    : flatNodes(posts);
+  // The context window isn't ordered by the server.
+  const byCreated = (a: Post, b: Post) =>
+    order === "newest_first" ? b.created.localeCompare(a.created) : a.created.localeCompare(b.created);
+  const children = context
+    ? (threaded ? buildThreadTree(posts) : flatNodes([...posts].sort(byCreated)))
+    : threaded
+      ? applyBranchMeta(buildThreadTree(posts, order), commentsResult.branches)
+      : flatNodes(posts);
   return {
     ...rootPost,
     children,
-    hasMoreComments: !!(threaded ? commentsResult.has_more_roots : commentsResult.has_more),
-    commentsOffset: threaded ? commentsResult.next_roots_offset : commentsResult.next_offset,
+    hasMoreComments: !context && !!(threaded ? commentsResult.has_more_roots : commentsResult.has_more),
+    commentsOffset: context ? undefined : (threaded ? commentsResult.next_roots_offset : commentsResult.next_offset),
   };
 }
 
@@ -106,11 +122,15 @@ export default function PostView() {
   const { t } = useI18n();
   const navViewer = useNavViewer();
 
+  // A comment link opens in context; "show all" swaps in the paged thread.
+  const [fullThread, setFullThread] = createSignal(false);
+  createEffect(on(() => params.uuid, () => setFullThread(false), { defer: true }));
+
   const [node, { refetch, mutate }] = createQueryResource(
     "post",
     // Comment style and order are part of the key, so changing either in
     // Settings refetches instead of serving the cached shape.
-    () => (params.uuid ? ([params.uuid, useThreadMode()(), useCommentOrder()()] as const) : undefined),
+    () => (params.uuid ? ([params.uuid, useThreadMode()(), useCommentOrder()(), fullThread()] as const) : undefined),
     fetchPost,
     // loadMoreComments/addLocalComment grow the cached tree; a background
     // refetch would cut it back to the first comment page and jump the page.
@@ -125,7 +145,56 @@ export default function PostView() {
       ...n,
       children: [...n.children, tempCommentNode(parentMid, body, navViewer(), { ...created, profileUid: n.profileUid, parent_mid: prev.mid })],
     })));
+    setKnownTotal((k) => (k === null ? k : k + 1)); // mine isn't news
   }
+
+  const highlightUuid = createMemo(() => {
+    const n = node();
+    return n && params.uuid && isCommentLink(params.uuid, n.uuid) ? params.uuid : undefined;
+  });
+
+  // An article, card or webpage answers with the page it lives on.
+  createEffect(() => {
+    const to = (node.error as { redirect?: string } | undefined)?.redirect;
+    if (to) navigate(to, { replace: true });
+  });
+
+  // The layout titles a page after its module, and this one has no nav label.
+  createEffect(() => {
+    const n = node();
+    if (n) document.title = `${(!n.titleNsfw && n.title) || n.authorName} · Hubzilla`;
+  });
+
+  // New comments: poll the thread's total and offer a refresh — refetching
+  // unasked would cut a paged-in thread back to page one under the reader.
+  // The first answer is the baseline, so both sides count the same way.
+  const [knownTotal, setKnownTotal] = createSignal<number | null>(null);
+  const [liveTotal, setLiveTotal] = createSignal(0);
+  const newComments = () => (knownTotal() === null ? 0 : Math.max(0, liveTotal() - knownTotal()!));
+  const rootUuid = createMemo(() => node()?.uuid);
+  createEffect(() => {
+    const uuid = rootUuid();
+    if (!uuid) return;
+    setKnownTotal(null);
+    let stopped = false;
+    const check = async () => {
+      if (document.visibilityState !== "visible") return;
+      const r = await fetchComments(uuid, { count: 1, flat: true }).catch(() => null);
+      if (!r || stopped) return;
+      if (untrack(knownTotal) === null) setKnownTotal(r.total);
+      setLiveTotal(r.total);
+    };
+    void check();
+    const id = setInterval(check, updateInterval());
+    onCleanup(() => { stopped = true; clearInterval(id); });
+  });
+  const showNewComments = () => {
+    setKnownTotal(liveTotal());
+    // Leaving a comment-in-context view fetches by itself (new query key).
+    if (highlightUuid() && !fullThread()) setFullThread(true);
+    else refetch();
+  };
+
   const [localReactions, setLocalReactions] = createSignal<Record<string, ReactionOverride>>({});
 
   // A wall post makes this the channel's page: nav, theme and search follow.
@@ -283,7 +352,7 @@ export default function PostView() {
         </div>
       </Show>
 
-      <Show when={node.error}>
+      <Show when={node.error && !(node.error as { redirect?: string }).redirect}>
         <div class="bg-surface rounded-2xl p-6 text-center">
           <p class="text-sm text-danger-txt">
             {t("post.load_error")}: {node.error?.message}
@@ -303,10 +372,26 @@ export default function PostView() {
               { label: t("post.original"), icon: MdOutlineOpen_in_new, href: zrl(n().permalink),
                 show: !!n().permalink && !n().permalink.startsWith(location.origin) },
             ]} />
+            <Show when={newComments() > 0}>
+              <Button class="w-full mb-3" onClick={showNewComments}>
+                ↑ {newComments()} {newComments() === 1 ? t("post.comments_singular") : t("post.comments_plural")}
+              </Button>
+            </Show>
             <PostCard
               post={n()}
+              highlightUuid={highlightUuid()}
               initiallyExpanded
               handlers={handlers}
+              contextBanner={
+                <Show when={highlightUuid() && !fullThread()}>
+                  <div class={`${cardClass()} flex items-center justify-between gap-3 px-4 py-2 mb-3 text-xs text-muted`}>
+                    <span>{t("post.viewing_in_context")}</span>
+                    <Button variant="ghost" size="sm" class="shrink-0" onClick={() => setFullThread(true)}>
+                      {t("post.show_all_comments")}
+                    </Button>
+                  </div>
+                </Show>
+              }
             />
           </Show>
         )}

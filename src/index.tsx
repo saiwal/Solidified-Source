@@ -27,6 +27,15 @@ if (handle) {
   );
 }
 
+// Core answers a wall post's permalink (/item/<uuid>) with a redirect to
+// /channel/<nick>?mid=<uuid>. Go straight to the post, before the router reads
+// the URL — otherwise the whole channel page boots only to redirect again.
+const wallMid = /^\/channel\/[^/]+\/?$/.test(location.pathname)
+  && new URLSearchParams(location.search).get("mid");
+if (wallMid) {
+  history.replaceState(null, "", `/display/${encodeURIComponent(wallMid)}`);
+}
+
 
 // applyTheme, not a bare data-theme attribute: "custom" has no stylesheet rule
 // of its own, so it needs its <style> injected here or the page paints with the

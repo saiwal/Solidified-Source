@@ -14,7 +14,8 @@ export const queryClient = new QueryClient({
       staleTime: 60_000,
       // Unused cache entries are garbage-collected after 30 minutes.
       gcTime: 30 * 60_000,
-      retry: 2,
+      // A redirect answer (fetchDisplayItem) is final, not a failure to retry.
+      retry: (failures, err) => !(err as { redirect?: string }).redirect && failures < 2,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
       // solid-query forces structuralSharing off and, with no `reconcile`,

@@ -27,6 +27,8 @@ export async function fetchDisplayItem(id: string): Promise<any> {
     const json = await res.json();
     const data = json.data ?? json;
     if (data.error) throw new Error(data.error);
+    // An article, card or webpage: not a post, it has its own page.
+    if (data.redirect) throw Object.assign(new Error("This item has its own page"), { redirect: String(data.redirect) });
     void savePosts([data.post]);
     return data.post;
   } catch (err) {
