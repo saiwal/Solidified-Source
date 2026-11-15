@@ -14,6 +14,8 @@ export interface NavViewer {
    * Empty for an anonymous visitor.
    */
   hash: string;
+  /** The channel's default post audience, as classic's editor preselects it. */
+  default_scope?: "public" | "contacts";
   name: string;
   /** Federated address — @user@domain */
   addr: string;

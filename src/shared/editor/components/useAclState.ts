@@ -8,6 +8,18 @@
 
 import { createSignal, createEffect } from "solid-js";
 import { entryKey, type AclMode, type AclEntry } from "./AclPicker";
+import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
+
+/**
+ * The picker mode anything new starts in: the channel's own default audience
+ * (public channel → "public", restricted/private → "connections"), as classic
+ * does. Call at setup; the accessor is "connections" until /spa/nav lands, so
+ * pass it through `resync` too.
+ */
+export function useDefaultAclMode(): () => AclMode {
+  const viewer = useNavViewer();
+  return () => (viewer()?.default_scope === "public" ? "public" : "connections");
+}
 
 export interface AclStateOptions {
   mode?: AclMode;
@@ -86,7 +98,7 @@ export function useAclState(initial?: AclStateOptions): AclState {
   }
 
   function reset() {
-    setMode(initialMode);
+    setMode(initial?.resync?.()?.mode ?? initialMode);
     clearEntries();
   }
 

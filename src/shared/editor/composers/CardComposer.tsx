@@ -25,7 +25,7 @@ import { setZenMode } from "@utsukta/spa-core/store/zen";
 import { createAttachmentStore } from "../attachments/useAttachments";
 import { useAttachmentActions } from "../attachments/useAttachmentActions";
 import { bbcodeToInsert, patchInsertedAlt, patchInsertedPoster, appendInsert } from "../attachments/insertHelpers";
-import { useAclState } from "../components/useAclState";
+import { useAclState, useDefaultAclMode } from "../components/useAclState";
 import type { AclMode } from "../components/AclPicker";
 import { useCategoryTags } from "../components/useCategoryTags";
 import CategoryTagsField from "../components/CategoryTagsField";
@@ -96,8 +96,10 @@ export default function CardComposer(props: Props) {
   // "Only me" is stored as allow_cid = [the owner's own hash], so recovering it
   // needs the viewer's hash; without it the mode falls back to "custom".
   const selfHash = useNavViewer();
+  // New items start on the channel's own default audience, like classic.
+  const defaultAclMode = useDefaultAclMode();
   const initialAclMode = (): AclMode =>
-    props.initial ? aclModeFrom(props.initial, selfHash()?.hash) : "connections";
+    props.initial ? aclModeFrom(props.initial, selfHash()?.hash) : defaultAclMode();
   // Entries are only meaningful for "custom" — seeding them for "me" would
   // leave the owner's own hash sitting in the picker as an unresolvable chip.
   const initialEntries = () =>

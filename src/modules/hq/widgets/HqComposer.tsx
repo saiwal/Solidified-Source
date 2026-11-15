@@ -11,7 +11,8 @@ import RichEditor from "@/shared/editor/core/RichEditor";
 import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
 import { bbcodeToInsert, appendInsert } from "@/shared/editor/attachments/insertHelpers";
 import { CAPABILITIES, type EditorTab } from "@/shared/editor/types/editor.types";
-import AclPicker, { entryKey, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
+import AclPicker, { type AclMode } from "@/shared/editor/components/AclPicker";
+import { useAclState, useDefaultAclMode, splitAclEntries } from "@/shared/editor/components/useAclState";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { apiError } from "@utsukta/spa-core/lib/fetch";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
@@ -48,9 +49,9 @@ function HqComposer() {
   const viewer = useNavViewer();
   const quickActions = useQuickActions();
   const [body, setBody] = createSignal("");
-  const [aclMode, setAclMode] = createSignal<AclMode>("connections");
-  const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set<string>());
-  const [denyKeys, setDenyKeys] = createSignal<Set<string>>(new Set<string>());
+  // Starts on the channel's own default audience, like classic's editor.
+  const defaultAclMode = useDefaultAclMode();
+  const acl = useAclState({ mode: defaultAclMode(), resync: () => ({ mode: defaultAclMode() }) });
   const [submitting, setSubmitting] = createSignal(false);
   const [expanded, setExpandedRaw] = createSignal(false);
   // Swapping placeholder ↔ editor changes the card's height in one frame; glide
@@ -88,14 +89,16 @@ function HqComposer() {
     if (d.body && !body()) {
       setBody(d.body);
       setExpanded(true);
+      // Only with a body: an empty draft is autosaved on every mount, and its
+      // mode would otherwise pin the picker against the channel default.
+      if (d.aclMode) acl.setMode(d.aclMode as AclMode);
     }
-    if (d.aclMode) setAclMode((d.aclMode as AclMode) ?? "connections");
   });
 
   // Auto-save draft
   let draftTimer: ReturnType<typeof setTimeout> | undefined;
   createEffect(() => {
-    const snap = { body: body(), aclMode: aclMode() };
+    const snap = { body: body(), aclMode: acl.mode() };
     clearTimeout(draftTimer);
     draftTimer = setTimeout(() => storageSet(DRAFT_KEY(), snap), 800);
   });
@@ -141,25 +144,6 @@ function HqComposer() {
     );
   }
 
-  function toggleEntry(entry: AclEntry, list: "allow" | "deny") {
-    const key = entryKey(entry);
-    if (list === "allow") {
-      setAllowKeys((prev) => {
-        const next = new Set(prev);
-        next.has(key) ? next.delete(key) : next.add(key);
-        return next;
-      });
-      setDenyKeys((prev) => { const next = new Set(prev); next.delete(key); return next; });
-    } else {
-      setDenyKeys((prev) => {
-        const next = new Set(prev);
-        next.has(key) ? next.delete(key) : next.add(key);
-        return next;
-      });
-      setAllowKeys((prev) => { const next = new Set(prev); next.delete(key); return next; });
-    }
-  }
-
   async function handleSubmit() {
     if (!body().trim()) return;
     setSubmitting(true);
@@ -172,7 +156,7 @@ function HqComposer() {
       .map((a) => `[attachment]${a.hash ?? a.resourceId},0[/attachment]`)
       .join("\n");
 
-    const mode = aclMode();
+    const mode = acl.mode();
     const payload: Record<string, unknown> = {
       body: fileTags ? `${body()}\n${fileTags}` : body(),
       mimetype: MIME,
@@ -186,32 +170,18 @@ function HqComposer() {
     } else if (mode === "me") {
       payload.scope = "private";
     } else {
-      if (allowKeys().size === 0) {
+      if (acl.allowEntries().size === 0) {
         toast.error("Select at least one connection to allow.");
         setSubmitting(false);
         return;
       }
       payload.scope = "custom";
-      const contactAllow: string[] = [];
-      const groupAllow: string[] = [];
-      const contactDeny: string[] = [];
-      const groupDeny: string[] = [];
-      for (const key of allowKeys()) {
-        const [type, ...rest] = key.split(":");
-        const xid = rest.join(":");
-        if (type === "c") contactAllow.push(xid);
-        if (type === "g") groupAllow.push(xid);
-      }
-      for (const key of denyKeys()) {
-        const [type, ...rest] = key.split(":");
-        const xid = rest.join(":");
-        if (type === "c") contactDeny.push(xid);
-        if (type === "g") groupDeny.push(xid);
-      }
-      payload.contact_allow = contactAllow;
-      payload.group_allow = groupAllow;
-      payload.contact_deny = contactDeny;
-      payload.group_deny = groupDeny;
+      const allow = splitAclEntries(acl.allowEntries());
+      const deny = splitAclEntries(acl.denyEntries());
+      payload.contact_allow = allow.contactIds;
+      payload.group_allow = allow.groupIds;
+      payload.contact_deny = deny.contactIds;
+      payload.group_deny = deny.groupIds;
     }
 
     try {
@@ -238,9 +208,7 @@ function HqComposer() {
     setBody("");
     attach.clear();
     inserted.clear();
-    setAllowKeys(new Set<string>());
-    setDenyKeys(new Set<string>());
-    setAclMode("connections");
+    acl.reset();
     storageDel(DRAFT_KEY());
     setExpanded(false);
   }
@@ -256,8 +224,8 @@ function HqComposer() {
       props: {
         profileUid: auth()!.uid,
         initialBody: body(),
-        initialAclMode: aclMode(),
-        initialAllowEntries: allowKeys(),
+        initialAclMode: acl.mode(),
+        initialAllowEntries: acl.allowEntries(),
         onPosted: () => resetComposer(),
         ...extra,
       },
@@ -361,12 +329,12 @@ function HqComposer() {
         <div class="flex items-center gap-1 flex-wrap" use:motion={{ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }}>
           <AclPicker
             dataTour="hq.composer.acl"
-            mode={aclMode()}
-            onModeChange={setAclMode}
-            allowEntries={allowKeys()}
-            denyEntries={denyKeys()}
-            onToggle={toggleEntry}
-            onClear={() => { setAllowKeys(new Set<string>()); setDenyKeys(new Set<string>()); }}
+            mode={acl.mode()}
+            onModeChange={acl.setMode}
+            allowEntries={acl.allowEntries()}
+            denyEntries={acl.denyEntries()}
+            onToggle={acl.toggleEntry}
+            onClear={acl.clearEntries}
           />
 
           <IconButton

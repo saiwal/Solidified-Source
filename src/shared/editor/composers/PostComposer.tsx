@@ -39,7 +39,7 @@ import AclPicker from "../components/AclPicker";
 import DateTimePicker from "../components/DateTimePicker";
 import type { AclMode } from "../components/AclPicker";
 import type { AclEntry } from "@/modules/network/api";
-import { useAclState } from "../components/useAclState";
+import { useAclState, useDefaultAclMode } from "../components/useAclState";
 import { useCategoryTags } from "../components/useCategoryTags";
 import CategoryTagsField from "../components/CategoryTagsField";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -163,9 +163,14 @@ const PostComposer: Component<ComposerProps> = (props) => {
   const attachActions = useAttachmentActions(() => attach, () => attachNick, () => "both", !props.wallOwner);
 
   // ── ACL state ───────────────────────────────────────────────────────────────
+  const defaultAclMode = useDefaultAclMode();
   const acl = useAclState({
-    mode: props.hideAcl ? "connections" : (props.initialAclMode ?? "connections"),
+    mode: props.hideAcl ? "connections" : (props.initialAclMode ?? defaultAclMode()),
     allowEntries: props.initialAllowEntries,
+    // Only the channel default is late-bound; an explicit mode stays put.
+    resync: props.hideAcl || props.initialAclMode
+      ? undefined
+      : () => ({ mode: defaultAclMode(), allowEntries: props.initialAllowEntries }),
   });
   const [expiry, setExpiry] = createSignal("");
 

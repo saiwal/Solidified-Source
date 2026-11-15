@@ -13,7 +13,7 @@ import { useAttachmentActions } from "@/shared/editor/attachments/useAttachmentA
 import { bbcodeToInsert, patchInsertedAlt } from "@/shared/editor/attachments/insertHelpers";
 import { currentNick, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import AclPicker, { aclModeToScope } from "@/shared/editor/components/AclPicker";
-import { useAclState, splitAclEntries } from "@/shared/editor/components/useAclState";
+import { useAclState, splitAclEntries, useDefaultAclMode } from "@/shared/editor/components/useAclState";
 import CategoryTagsField from "@/shared/editor/components/CategoryTagsField";
 import { useCategoryTags } from "@/shared/editor/components/useCategoryTags";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
@@ -142,8 +142,11 @@ export default function EventCreatorModal(props: Props) {
     () => (existingCategories() ?? []).map((c) => c.name),
   );
 
+  // A new event starts on the channel's own default audience, like classic.
+  const defaultAclMode = useDefaultAclMode();
   const acl = useAclState({
-    mode: ev?.scope === "private" ? "me" : ev?.scope === "custom" ? "custom" : "public",
+    mode: !ev ? defaultAclMode() : ev.scope === "private" ? "me" : ev.scope === "custom" ? "custom" : "public",
+    resync: ev ? undefined : () => ({ mode: defaultAclMode() }),
     allowEntries: [
       ...(ev?.contactAllow ?? []).map((h) => `c:${h}`),
       ...(ev?.groupAllow ?? []).map((h) => `g:${h}`),
