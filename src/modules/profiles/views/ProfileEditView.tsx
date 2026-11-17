@@ -21,6 +21,7 @@ import { Toggle } from "@ui/Toggle";
 import { Card } from "@ui/Card";
 import { Spinner } from "@ui/Spinner";
 import { ChatAddressFields } from "@/shared/views/ChatApps";
+import ProfileVisibility from "./ProfileVisibility";
 // Lazy-loaded so Filerobot + React don't inflate the profile chunk
 const ImageEditor = isolate(lazy(() => import("@/shared/views/ImageEditor")));
 
@@ -248,6 +249,7 @@ export default function ProfileEditView() {
       {/* Form */}
       <Show when={profile()}>
         {(p) => (
+          <>
           <form onSubmit={handleSubmit} class="space-y-8">
 
             {/* Cover + avatar header — same card geometry as the
@@ -534,6 +536,10 @@ export default function ProfileEditView() {
             </div>
 </Card>
 						</form>
+            <Show when={!p().is_default}>
+              <div class="mt-8"><ProfileVisibility profileId={p().id} /></div>
+            </Show>
+          </>
         )}
       </Show>
     </div>

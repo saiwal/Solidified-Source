@@ -125,6 +125,48 @@ export async function deleteProfile(id: string | number): Promise<void> {
   invalidateProfileViews();
 }
 
+export interface ProfileContact {
+  abook_id: number;
+  xchan_hash: string;
+  name: string;
+  address: string;
+  photo: string;
+}
+
+/** Connections assigned to this profile (abook_profile). */
+export async function fetchProfileContacts(id: number): Promise<ProfileContact[]> {
+  const res = await apiFetch(`/spa/profiles/${id}/contacts`);
+  if (!res.ok) throw new Error(`Failed to load profile contacts: ${res.status}`);
+  return (await res.json()).data ?? [];
+}
+
+/** Toggles one connection's assignment to this profile. */
+export async function toggleProfileContact(id: number, abookId: number): Promise<void> {
+  const res = await apiFetch(`/spa/profiles/${id}/contacts`, {
+    method: "POST",
+    body: JSON.stringify({ abook_id: abookId }),
+  });
+  if (!res.ok) throw new Error(`Failed to update profile contact: ${res.status}`);
+}
+
+/**
+ * Assign/unassign every member of a contact role or privacy group.
+ * dryRun reports what would change: `moved` = members leaving another profile.
+ */
+export async function bulkProfileContacts(
+  id: number,
+  source: { role: string } | { gid: number },
+  mode: "add" | "remove",
+  dryRun = false,
+): Promise<{ changed: number; moved: number }> {
+  const res = await apiFetch(`/spa/profiles/${id}/contacts`, {
+    method: "POST",
+    body: JSON.stringify({ ...source, mode, dry_run: dryRun }),
+  });
+  if (!res.ok) throw new Error(`Failed to update profile contacts: ${res.status}`);
+  return (await res.json()).data;
+}
+
 export interface AvatarUploadResult {
   avatar_l?: string;
   avatar_m?: string;

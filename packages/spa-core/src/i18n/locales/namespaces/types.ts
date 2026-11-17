@@ -1437,6 +1437,26 @@ export type RawDictionary = {
     contacts_none_found: string;
     contacts_load_error: string;
     contacts_save_error: string;
+    visibility_title:  string;
+    visibility_hint:   string;
+    visibility_empty:  string;
+    visibility_search: string;
+    visibility_clear:  string;
+    visibility_add:    string;
+    visibility_remove: string;
+    visibility_moves:  string;
+    visibility_error:  string;
+    visibility_bulk_label:         string;
+    visibility_bulk_pick:          string;
+    visibility_bulk_roles:         string;
+    visibility_bulk_groups:        string;
+    visibility_bulk_add:           string;
+    visibility_bulk_remove:        string;
+    visibility_bulk_none:          string;
+    visibility_bulk_move_confirm:  string;
+    visibility_bulk_remove_confirm:string;
+    visibility_bulk_added:         string;
+    visibility_bulk_removed:       string;
   };
   settings: {
     // Section titles and descriptions
