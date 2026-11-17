@@ -78,9 +78,9 @@ export const post: RawDictionary["post"] = {
   parent_not_loaded:    "[Reply to a comment not shown here]",
   // Folder save
   save_to_folder:        "Save to folder",
-  new_folder_placeholder: "New folder name…",
-  add_folder:            "Add",
-  no_folders_yet:        "No folders yet — type a name below to create one",
+  new_folder_placeholder: "Add to new folder…",
+  add_folder:            "Create new folder",
+  no_folders_yet:        "No folders yet — press + to create one",
   // Delivery report
   delivery_report:       "Delivery report",
   delivery_no_data:      "No delivery records found.",

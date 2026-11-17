@@ -70,9 +70,9 @@ export const post: RawDictionary["post"] = {
   parent_not_loaded:    "[यहाँ न दिखाई गई किसी टिप्पणी का उत्तर]",
   // Folder save
   save_to_folder:        "फ़ोल्डर में सहेजें",
-  new_folder_placeholder: "नए फ़ोल्डर का नाम…",
-  add_folder:            "जोड़ें",
-  no_folders_yet:        "अभी कोई फ़ोल्डर नहीं — नीचे नाम टाइप करके बनाएँ",
+  new_folder_placeholder: "नए फ़ोल्डर में जोड़ें…",
+  add_folder:            "नया फ़ोल्डर बनाएं",
+  no_folders_yet:        "अभी कोई फ़ोल्डर नहीं — बनाने के लिए + दबाएँ",
   // Delivery report
   delivery_report:       "डिलीवरी रिपोर्ट",
   delivery_no_data:      "कोई डिलीवरी रिकॉर्ड नहीं मिला।",

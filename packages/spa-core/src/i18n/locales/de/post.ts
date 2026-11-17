@@ -78,9 +78,9 @@ export const post: RawDictionary["post"] = {
   parent_not_loaded:    "[Antwort auf einen hier nicht angezeigten Kommentar]",
   // Folder save
   save_to_folder:        "In Ordner speichern",
-  new_folder_placeholder: "Neuer Ordnername…",
-  add_folder:            "Hinzufügen",
-  no_folders_yet:        "Noch keine Ordner — gib unten einen Namen ein, um einen zu erstellen",
+  new_folder_placeholder: "In neuen Ordner legen…",
+  add_folder:            "Neuen Ordner erstellen",
+  no_folders_yet:        "Noch keine Ordner — + drücken, um einen zu erstellen",
   // Delivery report
   delivery_report:       "Zustellbericht",
   delivery_no_data:      "Keine Zustelldaten gefunden.",

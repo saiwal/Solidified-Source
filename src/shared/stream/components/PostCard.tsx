@@ -2590,6 +2590,7 @@ function FolderPicker(props: {
   onAdd: () => void;
 }) {
   const { t } = useI18n();
+  const [creating, setCreating] = createSignal(false);
   const mergedFolders = () => {
     const all = new Set([...props.allFolders, ...props.itemFolders]);
     return [...all].sort();
@@ -2666,19 +2667,29 @@ function FolderPicker(props: {
               }}
             </For>
           </Show>
-          <Input
-            size="sm"
-            class="ml-auto"
-            type="text"
-            placeholder={t("post.new_folder_placeholder")}
-            value={props.newInput}
-            onInput={(e) => props.onSetInput(e.currentTarget.value)}
-            onKeyDown={(e) => e.key === "Enter" && props.onAdd()}
-          />
-          <Button size="sm" onClick={props.onAdd} disabled={!props.newInput.trim() || !!props.saving}>
-            <MdFillAdd size={13} />
-            <span>{t("post.add_folder")}</span>
-          </Button>
+          <Show
+            when={creating()}
+            fallback={
+              <IconButton size="sm" label={t("post.add_folder")} onClick={() => setCreating(true)}>
+                <MdFillAdd size={16} />
+              </IconButton>
+            }
+          >
+            <Input
+              ref={(el) => queueMicrotask(() => el.focus())}
+              size="sm"
+              type="text"
+              placeholder={t("post.new_folder_placeholder")}
+              value={props.newInput}
+              disabled={!!props.saving}
+              onInput={(e) => props.onSetInput(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && props.newInput.trim()) { props.onAdd(); setCreating(false); }
+                else if (e.key === "Escape") { props.onSetInput(""); setCreating(false); }
+              }}
+              onBlur={() => !props.newInput.trim() && setCreating(false)}
+            />
+          </Show>
         </div>
       </Show>
     </div>
