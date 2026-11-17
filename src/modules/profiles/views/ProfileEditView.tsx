@@ -127,7 +127,7 @@ export default function ProfileEditView() {
     setAvatarFile(null);
     setAvatarUploading(true);
     try {
-      const res = await uploadPhoto("avatar", blob);
+      const res = await uploadPhoto("avatar", blob, undefined, params.id);
       if (res.avatar_l) setAvatarUrl(res.avatar_l);
       toast.success(t("profiles.avatar_saved"));
     } catch (err) {

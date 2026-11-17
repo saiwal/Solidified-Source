@@ -143,6 +143,7 @@ export function uploadPhoto(
   type: "avatar" | "cover",
   blob: Blob,
   onProgress?: (pct: number) => void,
+  profileId?: number | string,
 ): Promise<AvatarUploadResult> {
   return new Promise(async (resolve, reject) => {
     const token = await getCsrfToken().catch(() => "");
@@ -151,7 +152,8 @@ export function uploadPhoto(
     fd.append("file", blob, `${type}.${ext}`);
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `/spa/avatar?type=${type}`);
+    const profile = profileId != null ? `&profile=${encodeURIComponent(profileId)}` : "";
+    xhr.open("POST", `/spa/avatar?type=${type}${profile}`);
     xhr.withCredentials = true;
     xhr.setRequestHeader("X-CSRF-Token", token);
 
