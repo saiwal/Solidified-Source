@@ -87,8 +87,8 @@ export default function DirectorySection() {
           value={globalDir() === 1 ? "global" : "local"}
           onChange={(v) => setGlobalDir(v === "global" ? 1 : 0)}
           items={[
-            { value: "global", label: t("directory.global_dir") },
             { value: "local", label: t("directory.local_dir") },
+            { value: "global", label: t("directory.global_dir") },
           ]}
         />
         <Chip
