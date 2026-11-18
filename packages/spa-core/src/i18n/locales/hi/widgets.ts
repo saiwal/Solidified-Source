@@ -134,6 +134,7 @@ export const widgets: RawDictionary["widgets"] = {
   cfg_preset_all: "सभी पोस्ट",
   cfg_scope: "इन तक सीमित",
   cfg_scope_everyone: "सभी",
+  cfg_scope_all_forums: "सभी फ़ोरम",
   cfg_count: "दिखाई जाने वाली पोस्ट",
   cfg_unseen_only: "केवल अपठित",
   cfg_default_tab:    "डिफ़ॉल्ट टैब",

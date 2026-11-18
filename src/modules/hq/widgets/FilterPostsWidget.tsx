@@ -7,7 +7,7 @@ import { FilteredPostsList, PRESETS, type CardConfig, type PresetKey } from "./F
 
 export type FilterConfig = CardConfig & {
   preset?: PresetKey;
-  /** "g:<gid>" privacy group, "f:<cid>" forum, absent = everyone */
+  /** "g:<gid>" privacy group, "f:<cid>" forum, "forums" every forum, absent = everyone */
   scope?: string;
   scopeLabel?: string;
 };
@@ -16,6 +16,7 @@ export function filterParams(c: FilterConfig): Record<string, string> {
   const p: Record<string, string> = {};
   if (c.preset) p[c.preset] = "1";
   const [kind, id] = (c.scope ?? "").split(":");
+  if (c.scope === "forums") p.forums = "1";
   if (kind === "g" && id) p.gid = id;
   if (kind === "f" && id) { p.cid = id; p.xchan_label = c.scopeLabel ?? ""; }
   if (c.unseen) p.unseen = "1";

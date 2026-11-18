@@ -305,9 +305,10 @@ export default function StreamFiltersWidget() {
   // Clicking the active forum/connection again clears the filter.
   const selectListed = (c: ForumConnection) => {
     const off = str(searchParams.cid) === String(c.id);
-    sp({ cid: off ? undefined : String(c.id), xchan_label: off ? undefined : c.name, gid: undefined });
+    sp({ cid: off ? undefined : String(c.id), xchan_label: off ? undefined : c.name, gid: undefined, forums: undefined });
     setTimeout(applyNow, 0);
   };
+  const allForums = () => searchParams.forums === "1";
 
   const tag    = () => str(searchParams.tag);
   const lang   = () => str(searchParams.lang);
@@ -319,7 +320,7 @@ export default function StreamFiltersWidget() {
 
   const [folderOpen,    setFolderOpen]    = createSignal(!!str(searchParams.file));
   const [groupsOpen,    setGroupsOpen]    = createSignal(!!str(searchParams.gid));
-  const [forumsOpen,    setForumsOpen]    = createSignal(!!str(searchParams.cid));
+  const [forumsOpen,    setForumsOpen]    = createSignal(!!str(searchParams.cid) || allForums());
   const [tagOpen,       setTagOpen]       = createSignal(!!str(searchParams.tag));
   const [langOpen,      setLangOpen]      = createSignal(!!str(searchParams.lang));
   const [dateOpen,      setDateOpen]      = createSignal(!!(str(searchParams.dbegin) || str(searchParams.dend)));
@@ -327,7 +328,7 @@ export default function StreamFiltersWidget() {
 
   createEffect(() => { if (file())                                    setFolderOpen(true); });
   createEffect(() => { if (str(searchParams.gid))                     setGroupsOpen(true); });
-  createEffect(() => { if (str(searchParams.cid))                     setForumsOpen(true); });
+  createEffect(() => { if (str(searchParams.cid) || allForums())      setForumsOpen(true); });
   createEffect(() => { if (tag())                                      setTagOpen(true); });
   createEffect(() => { if (lang())                                     setLangOpen(true); });
   createEffect(() => { if (dbegin() || dend())                         setDateOpen(true); });
@@ -370,7 +371,7 @@ export default function StreamFiltersWidget() {
     searchParams.star === "1" || searchParams.pf === "1" ||
     searchParams.conv === "1" || searchParams.dm === "1" || searchParams.event === "1" || searchParams.poll === "1" || searchParams.rss === "1" ||
     !!(tag() || lang() || file() || dbegin() || dend() || cmin() || cmax()) ||
-    !!(searchParams.cid || searchParams.gid);
+    !!(searchParams.cid || searchParams.gid || allForums());
 
   function applyNow() {
     applyNetwork(parseNetworkParams(searchParams));
@@ -419,6 +420,7 @@ export default function StreamFiltersWidget() {
       cid:         c.type === "c" ? String(c.id) : undefined,
       gid:         c.type === "g" ? String(c.id) : undefined,
       xchan_label: c.name,
+      forums:      undefined,
     });
     setConnInput("");
     setTimeout(applyNow, 0);
@@ -433,7 +435,7 @@ export default function StreamFiltersWidget() {
   const hasSaveableSearch = () => !!(search() || tag() || xchanLabel());
 
   function captureParams(): Record<string, string> {
-    const keys = ["order","range","search","tag","lang","file","star","pf","conv","dm","event","poll","rss","dbegin","dend","cmin","cmax","cid","gid","xchan_label"];
+    const keys = ["order","range","search","tag","lang","file","star","pf","conv","dm","event","poll","rss","dbegin","dend","cmin","cmax","cid","gid","forums","xchan_label"];
     const p: Record<string, string> = {};
     for (const k of keys) {
       const v = str(searchParams[k]);
@@ -464,7 +466,7 @@ export default function StreamFiltersWidget() {
         star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined, poll: undefined, rss: undefined,
         dbegin: undefined, dend: undefined,
         cmin: undefined, cmax: undefined,
-        cid: undefined, gid: undefined, xchan_label: undefined,
+        cid: undefined, gid: undefined, forums: undefined, xchan_label: undefined,
       },
       { replace: true },
     );
@@ -742,7 +744,7 @@ export default function StreamFiltersWidget() {
             >
               <MdFillForum size={15} class="shrink-0" />
               <span class="flex-1">{t("network.forums")}</span>
-              <Show when={!!str(searchParams.cid)}>
+              <Show when={!!str(searchParams.cid) || allForums()}>
                 <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
               </Show>
               <Show
@@ -765,15 +767,20 @@ export default function StreamFiltersWidget() {
                     />
                   </div>
                 </Show>
-                {/* Clears a forum filter even when its entry isn't listed (URL cid, search). */}
-                <Show when={!!cid()}>
-                  <button
-                    onClick={() => { sp({ cid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
-                    class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left text-muted hover:bg-elevated hover:text-txt"
-                  >
-                    {t("network.folder_all")}
-                  </button>
-                </Show>
+                {/* Posts from every forum (forums=1); toggles off when active. Also
+                    clears a single-forum filter whose entry isn't listed. */}
+                <button
+                  onClick={() => { sp({ forums: allForums() ? undefined : "1", cid: undefined, gid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
+                  aria-pressed={allForums()}
+                  class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
+                  classList={{
+                    "bg-accent-muted text-accent font-medium": allForums(),
+                    "text-muted hover:bg-elevated hover:text-txt": !allForums(),
+                  }}
+                >
+                  <MdFillForum size={13} class="shrink-0" />
+                  {t("network.folder_all")}
+                </button>
                 <ConnFilterList
                   items={forumList()}
                   cid={cid()}

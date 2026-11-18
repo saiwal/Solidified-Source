@@ -667,6 +667,7 @@ export type RawDictionary = {
     cfg_preset_all: string;
     cfg_scope: string;
     cfg_scope_everyone: string;
+    cfg_scope_all_forums: string;
     cfg_count: string;
     cfg_unseen_only: string;
     cfg_default_tab:    string;

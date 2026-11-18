@@ -134,6 +134,7 @@ export const widgets: RawDictionary["widgets"] = {
   cfg_preset_all: "Alle Beiträge",
   cfg_scope: "Beschränken auf",
   cfg_scope_everyone: "Alle",
+  cfg_scope_all_forums: "Alle Foren",
   cfg_count: "Angezeigte Beiträge",
   cfg_unseen_only: "Nur ungelesene",
   cfg_default_tab:    "Standard-Tab",

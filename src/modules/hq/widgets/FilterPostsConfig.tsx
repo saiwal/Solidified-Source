@@ -41,6 +41,7 @@ export default function FilterPostsConfig(props: WidgetConfigProps) {
 
   // The scope's display name is stored so the card title needs no lookup.
   const scopeLabel = () => {
+    if (scope() === "forums") return t("widgets.cfg_scope_all_forums");
     const [kind, id] = scope().split(":");
     const list = kind === "g" ? groups.latest : kind === "f" ? forums.latest : undefined;
     return list?.find((x) => String(x.id) === id)?.name;
@@ -62,6 +63,7 @@ export default function FilterPostsConfig(props: WidgetConfigProps) {
             <For each={groups.latest ?? []}>{(g) => <option value={`g:${g.id}`} selected={scope() === `g:${g.id}`}>{g.name}</option>}</For>
           </optgroup>
           <optgroup label={t("network.forums")}>
+            <option value="forums" selected={scope() === "forums"}>{t("widgets.cfg_scope_all_forums")}</option>
             <For each={forums.latest ?? []}>{(f) => <option value={`f:${f.id}`} selected={scope() === `f:${f.id}`}>{f.name}</option>}</For>
           </optgroup>
         </Select>
