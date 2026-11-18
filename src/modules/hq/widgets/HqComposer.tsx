@@ -5,7 +5,7 @@ import { getNavIcon } from "@/shared/views/NavItem";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useAuth, currentNick, channelKey, isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useNavViewer } from "@utsukta/spa-core/store/nav-store";
-import { motion } from "solid-motionone";
+import { animateIn } from "@utsukta/spa-core/lib/motion-presets";
 import { openComposer } from "@/shared/views/modal-host";
 import RichEditor from "@/shared/editor/core/RichEditor";
 import { createAttachmentStore } from "@/shared/editor/attachments/useAttachments";
@@ -22,7 +22,6 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button, IconButton } from "@ui/Button";
 import { WidgetShell } from "@ui/WidgetShell";
 import { Avatar } from "@ui/Avatar";
-void motion;
 
 const DRAFT_KEY = () => channelKey("hz_hq_draft");
 // Same surface and attachment pipeline as every other composer — this bar used
@@ -280,7 +279,7 @@ function HqComposer() {
             </button>
           }
         >
-          <div ref={bodyEl} class="flex-1 min-w-0" use:motion={{ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }}>
+          <div ref={(el) => { bodyEl = el; animateIn(el, { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }); }} class="flex-1 min-w-0">
             <RichEditor
               body={body()}
               onInput={setBody}
@@ -326,7 +325,7 @@ function HqComposer() {
 
       {/* ACL + submit row */}
       <Show when={expanded()}>
-        <div class="flex items-center gap-1 flex-wrap" use:motion={{ initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } }}>
+        <div ref={(el) => animateIn(el, { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } })} class="flex items-center gap-1 flex-wrap">
           <AclPicker
             dataTour="hq.composer.acl"
             mode={acl.mode()}

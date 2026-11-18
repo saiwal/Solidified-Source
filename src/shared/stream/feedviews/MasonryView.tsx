@@ -8,7 +8,6 @@ import {
   onCleanup,
 } from "solid-js";
 import { rowSpan, splitIntoColumns, useColumnCount as useMasonryColumnCount } from "@utsukta/spa-core/lib/masonry";
-void rowSpan;
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
@@ -408,7 +407,7 @@ export default function MasonryView(props: {
       >
         <For each={items()}>
           {(item) => (
-            <div class="min-w-0 [grid-row:span_var(--rows,1)]" use:rowSpan={0}>
+            <div class="min-w-0 [grid-row:span_var(--rows,1)]" ref={rowSpan(0)}>
               <Show
                 when={item.kind === "post" ? item.post : null}
                 fallback={

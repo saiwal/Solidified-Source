@@ -8,7 +8,7 @@
 // In a grid pass class="grid" so the card still fills its cell; image tiles
 // pass waitForImage so they enter once the picture is there (see reveal.ts).
 import { Show, type JSX } from "solid-js";
-import { Motion, Presence } from "solid-motionone";
+import { Motion, Presence } from "@utsukta/spa-core/lib/motion-presets";
 import { reveal, isExiting, EXIT_MS } from "./reveal";
 
 export default function CardShell(props: { uuid: string; class?: string; waitForImage?: boolean; children: JSX.Element }) {

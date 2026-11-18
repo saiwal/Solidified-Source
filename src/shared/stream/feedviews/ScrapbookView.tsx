@@ -2,7 +2,6 @@
 import { For, Show, createSignal, createMemo } from "solid-js";
 import CardShell from "../CardShell";
 import { rowSpan, splitIntoColumns, useColumnCount } from "@utsukta/spa-core/lib/masonry";
-void rowSpan;
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
@@ -182,7 +181,7 @@ export default function ScrapbookView(props: { posts: ThreadNode[]; handlers: St
               const rotate = pickFor(post.uuid, ROTATIONS);
               const onOpen = () => openPost(post.uuid);
               return (
-                <div class="min-w-0 [grid-row:span_var(--rows,1)]" use:rowSpan={0}>
+                <div class="min-w-0 [grid-row:span_var(--rows,1)]" ref={rowSpan(0)}>
                   <CardShell uuid={post.uuid}>
                     {src ? (
                       <PhotoCard post={post} src={src} rotate={rotate} handlers={props.handlers} onOpen={onOpen} />

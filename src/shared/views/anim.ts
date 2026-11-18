@@ -1,5 +1,5 @@
 // The shared motion presets, made instant under prefers-reduced-motion —
-// solid-motionone doesn't look at that setting itself.
+// the animation layer doesn't look at that setting itself.
 import { fadePreset, scalePreset, slideDownPreset, slideUpPreset } from "@utsukta/spa-core/lib/motion-presets";
 
 export { Motion, Presence } from "@utsukta/spa-core/lib/motion-presets";

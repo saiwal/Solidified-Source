@@ -2,7 +2,6 @@ import { type ParentComponent, Show, ErrorBoundary, Suspense, createEffect, crea
 import { useLayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
 import { useAppliedBg } from "@utsukta/spa-core/lib/background";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
 import Slot from "@/shared/views/Slot";
 import SiteCredits from "@/shared/views/SiteCredits";
 import RemoteAuthBanner from "@/shared/views/RemoteAuthBanner";
@@ -390,7 +389,7 @@ const Layout: ParentComponent = (props) => {
             aria-expanded={rightOpen()}
             aria-controls="right-sidebar"
             aria-label={rightOpen() ? "Close panel" : "Open panel"}
-            use:helpable="nav.panel"
+            ref={helpable(() => "nav.panel")}
             class={`fixed bottom-6 right-6 z-50 w-10 h-10 rounded-full shadow-lg
                    bg-elevated border border-rim
                    ${showsMobileSidebarFab() ? "flex" : "hidden lg:flex"} xl:hidden items-center justify-center

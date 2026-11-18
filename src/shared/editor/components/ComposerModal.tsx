@@ -19,7 +19,6 @@ import {
 } from "@/shared/views/modal-host";
 import { draftSavedAt } from "../store/createComposerStore";
 import { MdOutlineArticle, MdOutlineCalendar_today, MdOutlineChat, MdOutlineChat_bubble_outline, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
-void helpable;
 
 import { Modal } from "@ui/Modal";
 // Shared modal shell for the compose surfaces (post, DM, article, note) —
@@ -87,7 +86,7 @@ export interface ComposerModalProps {
   pageWidthClass?: string;
   /** Extra header controls rendered before the close button. */
   headerExtra?: JSX.Element;
-  /** use:helpable target for the backdrop (help-mode tutorial picker). */
+  /** helpable() target for the backdrop (help-mode tutorial picker). */
   helpTarget?: string;
   /**
    * False when the caller already manages its own Escape-key handling (e.g.
@@ -237,7 +236,7 @@ export default function ComposerModal(props: ComposerModalProps) {
       style={{ "margin-right": railOffset() }}
       label={props.ariaLabel ?? props.title}
     >
-        <div class={dialogClass()} data-docked={mode() === "dock" ? "" : undefined} use:helpable={props.helpTarget}>
+        <div class={dialogClass()} data-docked={mode() === "dock" ? "" : undefined} ref={helpable(() => props.helpTarget)}>
           {/* ── Header ── */}
           <header
             class="hz-composer-header flex items-center justify-between gap-2 px-3 py-2 border-b border-accent/40 bg-accent-muted shrink-0"

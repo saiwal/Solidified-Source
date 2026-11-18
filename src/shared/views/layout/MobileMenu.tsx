@@ -10,7 +10,7 @@ import {
 } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
+import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { notifyCountLimit } from "@utsukta/spa-core/store/auth-store";
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
@@ -203,7 +203,7 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
             <button
               {...triggerProps}
               data-tour="nav.user_menu"
-              use:helpable="nav.account_menu"
+              ref={helpable(() => "nav.account_menu")}
               class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                       text-[0.625rem] font-medium transition-colors
                       ${
@@ -284,11 +284,10 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
 
         {/* Favorites quick menu — always there, so the bar never reflows */}
           <button
-            ref={favButtonRef}
+            ref={mergeRefs<HTMLButtonElement>((el) => (favButtonRef = el), helpable(() => "nav.favorites"))}
             onClick={toggleFavorites}
             aria-expanded={favOpen()}
             aria-controls="favorites-sheet"
-            use:helpable="nav.favorites"
             class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                     text-[0.625rem] font-medium transition-colors
                     ${
@@ -305,11 +304,10 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
 
         {/* App drawer */}
         <button
-          ref={setMoreButtonRef}
+          ref={mergeRefs<HTMLButtonElement>((el) => setMoreButtonRef(el), helpable(() => "nav.apps"))}
           onClick={toggleDrawer}
           aria-expanded={moreOpen()}
           aria-controls="app-drawer"
-          use:helpable="nav.apps"
           class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                   text-[0.625rem] font-medium transition-colors
                   ${
@@ -327,13 +325,12 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
         {/* Panel — kept in place (disabled) on pages without a sidebar, so the
             bar never reflows */}
           <button
-            ref={setPanelButtonRef}
+            ref={mergeRefs<HTMLButtonElement>((el) => setPanelButtonRef(el), helpable(() => "nav.panel"))}
             onClick={togglePanel}
             disabled={hidesRightSidebar()}
             aria-expanded={rightOpen()}
             aria-controls="right-sidebar"
             aria-label={rightOpen() ? "Close panel" : "Open panel"}
-            use:helpable="nav.panel"
             class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                     text-[0.625rem] font-medium transition-colors
                     ${

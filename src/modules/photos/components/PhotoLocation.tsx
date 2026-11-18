@@ -6,7 +6,8 @@
  * shows the coordinates. People who may edit the photo can add, move or
  * remove the position with the composer's map picker.
  */
-import { createResource, createSignal, lazy, Show } from "solid-js";
+import { createSignal, lazy, Show } from "solid-js";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { MdOutlineLocation_on, MdFillKeyboard_arrow_down } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { osmLink, parseCoord, reverseGeocode, type Coord } from "@utsukta/spa-core/lib/osm";
@@ -25,7 +26,7 @@ export default function PhotoLocation(props: { nick: string; resourceId: string;
   const { t } = useI18n();
   const mapsOn = useMapsEnabled();
   const coord = () => (props.coord ? parseCoord(props.coord) : null);
-  const [name] = createResource(() => (mapsOn() && coord()) || null, (c) => reverseGeocode(c).catch(() => null));
+  const [name] = createQueryResource("reverse-geocode", () => (mapsOn() && coord()) || null, (c) => reverseGeocode(c).catch(() => null));
   const [open, setOpen] = createSignal(false);
   const [picking, setPicking] = createSignal(false);
 

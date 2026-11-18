@@ -20,10 +20,9 @@ import { fetchConnections } from "@/modules/network/api";
 import type { AclEntry } from "@/modules/network/api";
 import { useConnectionSearch } from "./useConnectionSearch";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
-import { motion } from "solid-motionone";
+import { animateIn } from "@utsukta/spa-core/lib/motion-presets";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillCheck, MdFillLock, MdFillPerson, MdOutlineExpand_more, MdOutlineGroup, MdOutlinePerson, MdOutlinePublic, MdOutlineTune } from "solid-icons/md";
-void motion;
 
 import { entryKey, type AclMode } from "./acl-mode";
 import { Button, IconButton } from "@ui/Button";
@@ -207,11 +206,13 @@ const AclPicker: Component<AclPickerProps> = (props) => {
       <Show when={open()}>
         <Portal mount={topLayer()}>
           <div
-            ref={(el) => setPanelRef(el)}
-            use:motion={{
-              initial: { opacity: 0, scale: 0.97, y: 6 },
-              animate: { opacity: 1, scale: 1, y: 0 },
-              transition: { duration: 0.15 },
+            ref={(el) => {
+              setPanelRef(el);
+              animateIn(el, {
+                initial: { opacity: 0, scale: 0.97, y: 6 },
+                animate: { opacity: 1, scale: 1, y: 0 },
+                transition: { duration: 0.15 },
+              });
             }}
             style={floatStyle()}
             class={`z-[200] rounded-xl border border-rim bg-surface shadow-xl overflow-hidden

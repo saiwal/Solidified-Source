@@ -1,9 +1,8 @@
 import { type Component, type Accessor, type JSX, For, Show } from "solid-js";
 import { getLazy, type RegisteredWidget } from "@utsukta/spa-core/module-registry";
 import { rowSpan } from "@utsukta/spa-core/lib/masonry";
-void rowSpan;
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
+import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdFillAdd,
@@ -106,8 +105,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
     <div
       class="rounded-xl border border-dashed border-accent/50 overflow-hidden"
       data-span={props.onSetSpan ? (props.entry.span ?? 12) : undefined}
-      use:rowSpan={props.onSetSpan ? 16 : undefined}
-      use:helpable={widgetHelpTarget(props.entry.widget)}
+      ref={mergeRefs(rowSpan(props.onSetSpan ? 16 : undefined), helpable(() => widgetHelpTarget(props.entry.widget)))}
     >
       <div class="flex items-center justify-between gap-1 px-2 py-1 bg-elevated">
         <span class="text-xs font-medium truncate">{widgetLabel(props.entry.widget)}</span>
@@ -209,7 +207,7 @@ const WidgetPickerFooter: Component<WidgetPickerFooterProps> = (props) => {
   const { t } = useI18n();
 
   return (
-    <div class="space-y-2" use:rowSpan={16}>
+    <div class="space-y-2" ref={rowSpan(16)}>
       <button
         onClick={props.onTogglePicker}
         aria-expanded={props.pickerOpen}

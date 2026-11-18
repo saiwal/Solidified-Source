@@ -4,7 +4,8 @@
  * OSM embed iframe [map] uses, so no Leaflet. Place names resolve through
  * /spa/geocode; nothing renders if that fails or maps are off.
  */
-import { createResource, Show } from "solid-js";
+import { Show } from "solid-js";
+import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { DEFAULT_TMS, geocode, osmEmbedSrc, osmLink, parseCoord } from "@utsukta/spa-core/lib/osm";
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
@@ -12,7 +13,7 @@ import { useNavData } from "@utsukta/spa-core/store/nav-store";
 export default function LocationMap(props: { location: string; class?: string; /** Link text; defaults to the location. */ label?: string }) {
   const enabled = useMapsEnabled();
   const navData = useNavData();
-  const [coord] = createResource(
+  const [coord] = createQueryResource("geocode",
     () => (enabled() && props.location.trim()) || null,
     async (loc) => parseCoord(loc) ?? (await geocode(loc).catch(() => null)),
   );

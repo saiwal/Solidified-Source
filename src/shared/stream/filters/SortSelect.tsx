@@ -17,8 +17,8 @@ import FilterChip from "./FilterChip";
 import { RANGE_AWARE, RANGES, DEFAULT_RANGE, resolveRange, type SortOrder, type SortRange } from "./ranked";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
+import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { Button, IconButton } from "@ui/Button";
-void helpable;
 
 type IconType = Component<{ size?: number; class?: string }>;
 
@@ -103,7 +103,7 @@ export default function SortSelect(props: {
      ${active ? "bg-accent text-accent-fg" : "bg-surface text-muted hover:bg-elevated"}`;
 
   return (
-    <div class="min-w-0" ref={(el) => { root = el; ref(el); }} use:helpable={props.help ?? "network.sort_order"}>
+    <div class="min-w-0" ref={mergeRefs<HTMLDivElement>((el) => { root = el; ref(el); }, helpable(() => props.help ?? "network.sort_order"))}>
       <Show
         when={wide()}
         fallback={

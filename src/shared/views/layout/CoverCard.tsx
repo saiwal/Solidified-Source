@@ -4,7 +4,6 @@ import { MdOutlineExpand_more } from "solid-icons/md";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Avatar } from "@ui/Avatar";
-void helpable;
 
 export interface CoverIdentity {
   name: string;
@@ -118,7 +117,7 @@ export default function CoverCard(props: {
         title={props.who.name}
         aria-expanded={!!props.open}
         data-tour="nav.user_menu"
-        use:helpable="nav.account_menu"
+        ref={helpable(() => "nav.account_menu")}
         class="group block w-full text-left select-none focus-visible:outline-none"
       >
         {body}

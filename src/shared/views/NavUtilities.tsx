@@ -8,7 +8,6 @@ import { MdFillCheck, MdOutlineEdit, MdOutlineSearch } from "solid-icons/md";
 import { setPaletteOpen } from "./search/search";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets, setEditingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { openFeedModal } from "@utsukta/spa-core/store/feed-modal";
@@ -37,10 +36,10 @@ export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
       >
         <MdOutlineSearch size={18} />
       </IconButton>
-      <div use:helpable="nav.language">
+      <div ref={helpable(() => "nav.language")}>
         <LanguageSwitcher />
       </div>
-      <div use:helpable="nav.theme">
+      <div ref={helpable(() => "nav.theme")}>
         <ThemeToggle />
       </div>
       <Show when={isOwner()}>
@@ -65,10 +64,10 @@ export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
           <BiRegularRss size={18} />
         </IconButton>
       </Show>
-      <div use:helpable="nav.help_mode">
+      <div ref={helpable(() => "nav.help_mode")}>
         <HelpTrigger />
       </div>
-      <div use:helpable="nav.siteinfo">
+      <div ref={helpable(() => "nav.siteinfo")}>
         <A
           href="/siteinfo"
           title={t("ui.site_info")}

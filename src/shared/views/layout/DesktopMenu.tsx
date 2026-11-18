@@ -2,7 +2,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "so
 import { MdOutlineExpand_more } from "solid-icons/md";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
+import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
@@ -98,8 +98,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     const draggable = () => p.favorite && editingWidgets();
     return (
       <div
-        use:helpable={navItemHelpTarget(p.item)}
-        ref={p.favorite ? favDrag.registerRef(p.item.path) : undefined}
+        ref={mergeRefs(helpable(() => navItemHelpTarget(p.item)), p.favorite ? favDrag.registerRef(p.item.path) : undefined)}
         class="group/fav relative"
         classList={{ "rounded-xl border border-dashed border-accent/50": draggable() }}
       >
@@ -151,7 +150,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
   const ActionList = () => (
     <For each={actionItems()}>
       {(item) => (
-        <div use:helpable={navItemHelpTarget(item)}>
+        <div ref={helpable(() => navItemHelpTarget(item))}>
           <Show
             when={channelSwitcherActive() && item.path === "/manage"}
             fallback={<NavItem href={item.href} label={item.label} icon={item.icon} />}
@@ -290,12 +289,11 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
                 <For each={desktopNavDrag.displayItems()}>
                   {(item) => (
                     <div
-                      ref={desktopNavDrag.registerRef(item.path)}
+                      ref={mergeRefs(desktopNavDrag.registerRef(item.path), helpable(() => navItemHelpTarget(item)))}
                       classList={{
                         "rounded-xl border border-dashed border-accent/50":
                           editingWidgets(),
                       }}
-                      use:helpable={navItemHelpTarget(item)}
                     >
                       <Show when={item.separatorBefore}>
                         <hr class="my-1.5 mx-2 border-rim" />
@@ -398,7 +396,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
                     {navViewer()?.name || t("layout.account")}
                   </span>
                 </span>
-                <div class="shrink-0" use:helpable="nav.account_menu">
+                <div class="shrink-0" ref={helpable(() => "nav.account_menu")}>
                   <IconButton
                     label={t("layout.account")}
                     size="sm"

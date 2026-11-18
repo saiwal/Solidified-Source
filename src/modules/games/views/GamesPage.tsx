@@ -8,7 +8,6 @@ import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { GAMES } from "../games-registry";
 import GameCanvas from "../components/GameCanvas";
 
-void helpable;
 
 export default function GamesPage() {
   const { t } = useI18n();
@@ -58,7 +57,7 @@ export default function GamesPage() {
           <div class="relative flex-1 min-h-0">
             {/* Captures clicks for help mode; transparent otherwise so iframe works normally */}
             <div
-              use:helpable={`games.${game.id}`}
+              ref={helpable(() => `games.${game.id}`)}
               class="absolute inset-0 z-10 cursor-default"
               style={`pointer-events:${helpMode() ? "auto" : "none"}`}
             />

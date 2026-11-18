@@ -72,30 +72,24 @@ export function useColumnCount(
  * ponytail: one observer per item. Slots hold well under a dozen widgets; if a
  * slot ever gets big, share a single observer across the grid's children.
  */
-export function rowSpan(el: HTMLElement, accessor: () => number | undefined) {
+export function rowSpan(gap: number | undefined) {
   // Slots that aren't grids pass undefined — nothing to measure, and no
   // observer to pay for.
-  const gap = accessor();
-  if (gap === undefined) return;
-  const measure = () => {
-    // --rows only means something to a grid parent; an unpacked Slot is a
-    // flex column. Writing it there anyway dirtied layout on every height
-    // change — for a feed, a full reflow per image load.
-    const parent = el.parentElement;
-    if (!parent || getComputedStyle(parent).display !== "grid") return;
-    // ceil so a fractional height never clips the last pixel of content
-    const rows = String(Math.max(1, Math.ceil(el.getBoundingClientRect().height + gap)));
-    if (el.style.getPropertyValue("--rows") !== rows) el.style.setProperty("--rows", rows);
+  if (gap === undefined) return undefined;
+  let obs: ResizeObserver | undefined;
+  onCleanup(() => obs?.disconnect());
+  return (el: HTMLElement) => {
+    const measure = () => {
+      // --rows only means something to a grid parent; an unpacked Slot is a
+      // flex column. Writing it there anyway dirtied layout on every height
+      // change — for a feed, a full reflow per image load.
+      const parent = el.parentElement;
+      if (!parent || getComputedStyle(parent).display !== "grid") return;
+      // ceil so a fractional height never clips the last pixel of content
+      const rows = String(Math.max(1, Math.ceil(el.getBoundingClientRect().height + gap)));
+      if (el.style.getPropertyValue("--rows") !== rows) el.style.setProperty("--rows", rows);
+    };
+    obs = new ResizeObserver(measure);
+    obs.observe(el);
   };
-  const obs = new ResizeObserver(measure);
-  obs.observe(el);
-  onCleanup(() => obs.disconnect());
-}
-
-declare module "solid-js" {
-  namespace JSX {
-    interface Directives {
-      rowSpan: number | undefined;
-    }
-  }
 }

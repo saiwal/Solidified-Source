@@ -12,7 +12,6 @@ import { MdOutlineExpand_more } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
 import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
 import { moduleIdForPath } from "@utsukta/spa-core/module-registry";
@@ -79,7 +78,7 @@ function AppTile(props: {
   starFor: StarFor;
 }) {
   return (
-    <div use:helpable={navItemHelpTarget(props.item)} class="relative">
+    <div ref={helpable(() => navItemHelpTarget(props.item))} class="relative">
       <A
         href={hrefOf(props.item)}
         onClick={props.onNavigate}

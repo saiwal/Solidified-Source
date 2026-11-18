@@ -36,9 +36,8 @@ import {
 } from "@utsukta/spa-core/store/widget-templates";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-void helpable;
+import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { rowSpan } from "@utsukta/spa-core/lib/masonry";
-void rowSpan;
 import { useI18n } from "@utsukta/spa-core/i18n";
 import WidgetArrangementEditor, {
   SlotRegionBox,
@@ -349,8 +348,7 @@ const Slot: Component<SlotProps> = (props) => {
         {(g) => (
           <div
             class="empty:hidden"
-            use:rowSpan={isFullWidth ? 16 : undefined}
-            use:helpable={widgetHelpTarget(g.widget)}
+            ref={mergeRefs(rowSpan(isFullWidth ? 16 : undefined), helpable(() => widgetHelpTarget(g.widget)))}
           >
             <WidgetKeyContext.Provider value={g.widget.id}>
               <g.Widget />
@@ -370,8 +368,7 @@ const Slot: Component<SlotProps> = (props) => {
                 <div
                   class="empty:hidden"
                   data-span={entry.span ?? 12}
-                  use:rowSpan={isFullWidth ? 16 : undefined}
-                  use:helpable={widgetHelpTarget(entry.widget)}
+                  ref={mergeRefs(rowSpan(isFullWidth ? 16 : undefined), helpable(() => widgetHelpTarget(entry.widget)))}
                 >
                   <WidgetKeyContext.Provider value={entry.key}>
                     <Widget config={entry.config} />
