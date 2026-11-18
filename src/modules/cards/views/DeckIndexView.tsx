@@ -3,7 +3,8 @@ import { Show, For } from "solid-js";
 import { useParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchDeckList } from "../api";
 import { EmptyState } from "@ui/EmptyState";
 
@@ -13,11 +14,8 @@ export default function DeckIndexView() {
   const nick = () => params.nick || pageNick();
   const { t } = useI18n();
 
-  const [data] = createQueryResource(
-    "deck-list",
-    () => nick(),
-    (n) => fetchDeckList(n),
-  );
+  const q = useAsyncQuery(() => ({ queryKey: ["deck-list", nick()], queryFn: () => fetchDeckList(nick()) }));
+  const data = () => q.data;
 
   return (
     <div class="space-y-6 max-w-3xl mx-auto">
@@ -30,9 +28,9 @@ export default function DeckIndexView() {
 
       <h1 class="text-xl font-bold text-txt">{t("cards.deck_index_title")}</h1>
 
-      <Show when={!data.loading}>
+      <AsyncBoundary>
         <Show
-          when={(data() ?? []).length > 0}
+          when={data().length > 0}
           fallback={<EmptyState>{t("cards.deck_no_decks")}</EmptyState>}
         >
           <div class="space-y-2">
@@ -50,7 +48,7 @@ export default function DeckIndexView() {
             </For>
           </div>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </div>
   );
 }

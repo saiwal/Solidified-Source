@@ -1,6 +1,8 @@
 // src/modules/cards/views/CardView.tsx
-import { createSignal, createMemo, Show, For, createEffect } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, createMemo, Show, For, createEffect, createOptimistic, createOptimisticStore, action, isPending } from "solid-js";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useParams, useNavigate } from "@solidjs/router";
@@ -38,7 +40,6 @@ import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBo
 import { Button, IconButton } from "@ui/Button";
 import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 import { Card, cardClass } from "@ui/Card";
-import { deepOf } from "@utsukta/spa-core/lib/deep";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -92,31 +93,28 @@ export default function CardView() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
 
-  const [data, { refetch }] = createQueryResource(
-    "card-detail",
-    () => ({ nick: nick(), uuid: params.uuid }),
-    ({ nick, uuid }) => fetchCard(nick, uuid),
-  );
+  // Solid 2 async read (see ArticleView): uuid is pinned so the leaving view's
+  // key doesn't change mid-navigation, which would hold the router forever.
+  const uuid = createMemo((prev?: string) => params.uuid || prev || "");
+  const key = () => ["card-detail", { nick: nick(), uuid: uuid() }] as const;
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchCard(nick(), uuid()) }));
+  const data = () => q.data;
+  const reload = () => invalidate(key());
 
-  const rendered = () =>
-    data()?.card ? rootRelativeLinks(DOMPurify.sanitize(data()!.card.body ?? "")) : "";
+  const rendered = () => rootRelativeLinks(DOMPurify.sanitize(data().card.body ?? ""));
 
   // Canonicalize the URL to the slug once the card's loaded — covers both
-  // a bookmarked uuid link on an card that's since gained a slug, and a
+  // a bookmarked uuid link on a card that's since gained a slug, and a
   // slug change from editing.
-  createEffect(() => {
-    const art = data()?.card;
-    return art ? { canonical: cardPath(nick(), art), here: `/cards/${nick()}/${params.uuid}` } : null;
-  }, (at) => {
-    if (at && at.here !== at.canonical) navigate(at.canonical, { replace: true });
+  createEffect(() => ({ canonical: cardPath(nick(), data().card), here: `/cards/${nick()}/${uuid()}` }), (at) => {
+    if (at.here !== at.canonical) navigate(at.canonical, { replace: true });
   });
 
   // ── Editing / deleting ────────────────────────────────────────────────────
   // The editor is handed to ModalHost, so it can be docked or minimized
-  // while the card itself stays on screen. `initial` is read eagerly here, as
-  // the <Show>-mounted modal used to do on open. refetch() is this route's
-  // resource: saving after the reader navigated away is a harmless no-op.
-  type Card = NonNullable<ReturnType<typeof data>>["card"];
+  // while the card itself stays on screen. reload() refetches this route's
+  // query: saving after the reader navigated away refreshes an unseen entry.
+  type Card = ReturnType<typeof data>["card"];
 
   const openEditor = (card: Card) =>
     openComposer({
@@ -145,33 +143,21 @@ export default function CardView() {
           deck:          card.deck,
           mimetype:      card.mimetype,
         },
-        onSaved: () => refetch(),
+        onSaved: () => void reload(),
       },
     });
   const [confirmDelete, setConfirmDelete] = createSignal(false);
 
-  // Reaction state — optimistic local copy initialised from fetched card
-  const [reactions, setReactions] = createSignal({
-    likeCount: 0, dislikeCount: 0,
-    viewerLiked: false, viewerDisliked: false,
-  });
-  createEffect(() => {
-    const art = data()?.card;
-    return art && {
-      likeCount: art.likeCount,
-      dislikeCount: art.dislikeCount,
-      viewerLiked: art.viewerLiked,
-      viewerDisliked: art.viewerDisliked,
-    };
-  }, (r) => {
-    if (r) setReactions(r);
+  // Reactions: shown from the fetched card; a click writes the expected
+  // result optimistically, and the action hands over to refetched data — or
+  // rolls back on its own if the request fails.
+  const [reactions, setReactions] = createOptimistic(() => {
+    const c = data().card;
+    return { likeCount: c.likeCount, dislikeCount: c.dislikeCount, viewerLiked: c.viewerLiked, viewerDisliked: c.viewerDisliked };
   });
 
-  // Local comments list — updated optimistically when a new comment is posted
-  const [localComments, setLocalComments] = createSignal<Post[]>([]);
-  createEffect(() => deepOf(data()?.comments), (comments) => {
-    if (comments) setLocalComments(comments);
-  });
+  // Comments: the fetched list, with optimistic adds/edits/deletes on top.
+  const [comments, setComments] = createOptimisticStore(() => data().comments, [] as Post[]);
 
   // Comment composer visibility
   const [replyOpen, setReplyOpen] = createSignal(false);
@@ -179,35 +165,25 @@ export default function CardView() {
   // Link, [card=<iid>][/card] embed token and quote-share all live in the
   // shared share popup now.
   function shareCard() {
-    const card = data()?.card;
-    if (card) openShare(shareTargetForCard(nick(), card));
+    openShare(shareTargetForCard(nick(), data().card));
   }
 
-  function handleLike() {
-    const art = data()?.card;
-    if (!art?.uuid) return;
-    const wasLiked = reactions().viewerLiked;
-    const delta = wasLiked ? -1 : 1;
-    setReactions(r => ({ ...r, viewerLiked: !wasLiked, likeCount: r.likeCount + delta }));
-    apiToggleLike(art.uuid).then(res => {
-      setReactions(r => ({ ...r, likeCount: res.like_count, viewerLiked: res.state === "added" }));
-    }).catch(() => {
-      setReactions(r => ({ ...r, viewerLiked: wasLiked, likeCount: r.likeCount - delta }));
-    });
-  }
-
-  function handleDislike() {
-    const art = data()?.card;
-    if (!art?.uuid) return;
-    const wasDisliked = reactions().viewerDisliked;
-    const delta = wasDisliked ? -1 : 1;
-    setReactions(r => ({ ...r, viewerDisliked: !wasDisliked, dislikeCount: r.dislikeCount + delta }));
-    apiToggleDislike(art.uuid).then(res => {
-      setReactions(r => ({ ...r, dislikeCount: res.dislike_count, viewerDisliked: res.state === "added" }));
-    }).catch(() => {
-      setReactions(r => ({ ...r, viewerDisliked: wasDisliked, dislikeCount: r.dislikeCount - delta }));
-    });
-  }
+  const toggleReaction = action(function* (kind: "like" | "dislike") {
+    const card = data().card;
+    if (!card.uuid) return;
+    const r = reactions();
+    setReactions(kind === "like"
+      ? { ...r, viewerLiked: !r.viewerLiked, likeCount: r.likeCount + (r.viewerLiked ? -1 : 1) }
+      : { ...r, viewerDisliked: !r.viewerDisliked, dislikeCount: r.dislikeCount + (r.viewerDisliked ? -1 : 1) });
+    try {
+      yield (kind === "like" ? apiToggleLike : apiToggleDislike)(card.uuid);
+    } catch {
+      return; // the optimistic value reverts with the action
+    }
+    yield reload();
+  });
+  const handleLike = () => void toggleReaction("like");
+  const handleDislike = () => void toggleReaction("dislike");
 
   // ── Comment thread ─────────────────────────────────────────────────────────
   // Card + comments -> nested tree, same architecture PostView.tsx uses for
@@ -220,8 +196,10 @@ export default function CardView() {
     likeCount?: number;
     dislikeCount?: number;
   };
+  // Optimistic only: reverts when the action settles, by which point the
+  // refetched comments carry the result.
   const [commentReactions, setCommentReactions] =
-    createSignal<Record<string, CommentReactionOverride>>({});
+    createOptimistic<Record<string, CommentReactionOverride>>({});
 
   function findInTree(nodes: ThreadNode[], mid: string): ThreadNode | undefined {
     for (const n of nodes) {
@@ -241,33 +219,35 @@ export default function CardView() {
   }
 
   const rawCommentTree = createMemo((): ThreadNode[] => {
-    const art = data()?.card;
-    if (!art) return [];
-    const realComments = localComments().filter(c => !REACTION_VERBS.has(c.verb ?? ""));
-    const tree = buildThreadTree([art, ...realComments]);
+    const card = data().card;
+    const realComments = comments.filter(c => !REACTION_VERBS.has(c.verb ?? ""));
+    const tree = buildThreadTree([card, ...realComments]);
     return tree[0]?.children ?? [];
   });
 
   const commentTree = createMemo(() => rawCommentTree().map(applyCommentOverrides));
 
-  function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
-    const art = data()?.card;
-    if (!art) return;
-    const a = auth();
-    const viewer = navViewer();
-    let renderedBody = "";
+  const renderBody = (body: string) => {
     try {
       const converted = bbcodeDisplay(body, { oembedResolver });
-      renderedBody = sanitizeHtml(typeof converted === "string" ? converted : "");
+      return sanitizeHtml(typeof converted === "string" ? converted : "");
     } catch {
-      renderedBody = "";
+      return "";
     }
+  };
+
+  // The composer has already posted it: show it at once, then refetch so the
+  // stored comment replaces the stand-in.
+  const addComment = action(function* (parentMid: string, body: string, created?: CreatedComment) {
+    const card = data().card;
+    const a = auth();
+    const viewer = navViewer();
     const tempId = crypto.randomUUID();
-    setLocalComments(prev => [...prev, {
+    const temp = {
       uuid: tempId, id: tempId, mid: tempId,
-      parent_mid: art.mid, thr_parent: parentMid,
-      top_mid: art.mid, parent: art.uuid,
-      body: renderedBody, rawBody: body, title: "",
+      parent_mid: card.mid, thr_parent: parentMid,
+      top_mid: card.mid, parent: card.uuid,
+      body: renderBody(body), rawBody: body, title: "",
       authorName: viewer?.name || a?.nick || "You",
       authorAvatar: viewer?.avatar ?? "",
       authorUrl: viewer?.url ?? "",
@@ -278,60 +258,61 @@ export default function CardView() {
       likeCount: 0, dislikeCount: 0, repeatCount: 0,
       viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
       item_thread_top: 0, children: [],
-      ...created, profileUid: art.profileUid,
-    } satisfies Post]);
-  }
+      ...created, profileUid: card.profileUid,
+    } satisfies Post;
+    setComments((s) => { s.push(temp); });
+    yield reload();
+  });
 
-  function toggleCommentReaction(
+  const toggleCommentReaction = action(function* (
     mid: string,
     field: "viewerLiked" | "viewerDisliked",
     countField: "likeCount" | "dislikeCount",
-    call: (uuid: string) => Promise<{ like_count?: number; dislike_count?: number; state: string }>,
+    call: (uuid: string) => Promise<unknown>,
   ) {
     const node = findInTree(rawCommentTree(), mid);
     if (!node?.uuid) return;
     const o = commentReactions()[mid] ?? {};
     const current = o[field] ?? node[field];
     const count = o[countField] ?? node[countField];
-    setCommentReactions(prev => ({
-      ...prev,
-      [mid]: { ...prev[mid], [field]: !current, [countField]: current ? count - 1 : count + 1 },
-    }));
-    call(node.uuid).catch(() => {
-      setCommentReactions(prev => ({ ...prev, [mid]: { ...prev[mid], [field]: current, [countField]: count } }));
+    setCommentReactions((prev) => ({ ...prev, [mid]: { ...prev[mid], [field]: !current, [countField]: current ? count - 1 : count + 1 } }));
+    try {
+      yield call(node.uuid);
+    } catch {
+      return;
+    }
+    yield reload();
+  });
+
+  // Errors propagate to CommentThread, which reports them; the optimistic
+  // change reverts on its own.
+  const deleteComment = action(function* (mid: string) {
+    const node = findInTree(rawCommentTree(), mid);
+    if (!node?.uuid) return;
+    setComments((s) => { const i = s.findIndex((c) => c.mid === mid); if (i >= 0) s.splice(i, 1); });
+    yield apiDeleteItem(node.uuid);
+    yield reload();
+  });
+
+  const editComment = action(function* (mid: string, payload: Parameters<typeof apiEditItem>[1]) {
+    const node = findInTree(rawCommentTree(), mid);
+    if (!node?.uuid) return;
+    setComments((s) => {
+      const c = s.find((x) => x.mid === mid);
+      if (c) Object.assign(c, { body: renderBody(payload.body), rawBody: payload.body, title: payload.title ?? "" });
     });
-  }
+    yield apiEditItem(node.uuid, payload);
+    yield reload();
+  });
 
   const commentHandlers: StreamHandlers = {
-    onLike: (mid) => toggleCommentReaction(mid, "viewerLiked", "likeCount",
-      (uuid) => apiToggleLike(uuid).then(r => ({ like_count: r.like_count, state: r.state }))),
-    onDislike: (mid) => toggleCommentReaction(mid, "viewerDisliked", "dislikeCount",
-      (uuid) => apiToggleDislike(uuid).then(r => ({ dislike_count: r.dislike_count, state: r.state }))),
+    onLike: (mid) => void toggleCommentReaction(mid, "viewerLiked", "likeCount", apiToggleLike),
+    onDislike: (mid) => void toggleCommentReaction(mid, "viewerDisliked", "dislikeCount", apiToggleDislike),
     onRepeat: () => {},
-    onComment: (parentMid, body, _name, _avatar, created) => addLocalComment(parentMid, body, created),
+    onComment: (parentMid, body, _name, _avatar, created) => void addComment(parentMid, body, created),
     onLoadComments: async () => {},
-    async onDelete(mid) {
-      const node = findInTree(rawCommentTree(), mid);
-      if (!node?.uuid) return;
-      await apiDeleteItem(node.uuid);
-      setLocalComments(prev => prev.filter(c => c.mid !== mid));
-    },
-    async onEdit(mid, payload) {
-      const node = findInTree(rawCommentTree(), mid);
-      if (!node?.uuid) return;
-      await apiEditItem(node.uuid, payload);
-      const body = payload.body;
-      let renderedBody = "";
-      try {
-        const converted = bbcodeDisplay(body, { oembedResolver });
-        renderedBody = sanitizeHtml(typeof converted === "string" ? converted : "");
-      } catch {
-        renderedBody = "";
-      }
-      setLocalComments(prev => prev.map(c =>
-        c.mid === mid ? { ...c, body: renderedBody, rawBody: body, title: payload.title ?? "" } : c
-      ));
-    },
+    onDelete: (mid) => deleteComment(mid),
+    onEdit: (mid, payload) => editComment(mid, payload),
   };
 
   // TOC
@@ -348,9 +329,10 @@ export default function CardView() {
 
   return (
     <div class="relative max-w-3xl mx-auto py-4">
-      <Show when={!data.loading && data()} fallback={<CardViewSkeleton />}>
+      <AsyncBoundary fallback={<CardViewSkeleton />}>
+      <Show when={data()}>
         {(d) => (
-          <div class="xl:flex xl:gap-8">
+          <div class={["xl:flex xl:gap-8 transition-opacity", { "opacity-60": isPending(() => data()) }]}>
             {/* ── Card ── */}
             <article class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-6`}>
               {/* Back link */}
@@ -508,7 +490,7 @@ export default function CardView() {
                     parentUuid={d().card.uuid}
                     profileUid={d().card.profileUid!}
                     onSubmitted={(body, created) => {
-                      addLocalComment(d().card.mid, body, created);
+                      void addComment(d().card.mid, body, created);
                       setReplyOpen(false);
                     }}
                   />
@@ -567,6 +549,7 @@ export default function CardView() {
           </div>
         )}
       </Show>
+      </AsyncBoundary>
     </div>
   );
 }

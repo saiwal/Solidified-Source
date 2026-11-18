@@ -1,11 +1,13 @@
 // src/modules/cards/views/DeckView.tsx
-import { createSignal, Show, For, createEffect, deep } from "solid-js";
+import { createMemo, Show, For, createOptimistic, action } from "solid-js";
 import { useParams } from "@solidjs/router";
 import { BiRegularChevronUp, BiRegularChevronDown, BiRegularEdit } from "solid-icons/bi";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchDeckDetail, renameDeck, reorderDeck } from "../api";
 import { cardPath } from "@/shared/lib/shareLinks";
 import type { Post } from "@utsukta/spa-core/types/post.types";
@@ -17,29 +19,28 @@ export default function DeckView() {
   const params = useParams<{ nick: string; name: string }>();
   const pageNick = usePageNick();
   const nick = () => params.nick || pageNick();
-  const name = () => decodeURIComponent(params.name);
+  // Pinned so the leaving view's key doesn't change mid-navigation (see SeriesView).
+  const name = createMemo((prev?: string) => (params.name ? decodeURIComponent(params.name) : prev ?? ""));
   const role = useViewerRole();
   const { t } = useI18n();
   const isOwner = () => role() === "owner";
 
-  const [data, { refetch }] = createQueryResource(
-    "deck-detail",
-    () => ({ nick: nick(), name: name() }),
-    ({ nick, name }) => fetchDeckDetail(nick, name),
-  );
+  const key = () => ["deck-detail", { nick: nick(), name: name() }] as const;
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchDeckDetail(nick(), name()) }));
 
-  const [order, setOrder] = createSignal<Post[]>([]);
-  createEffect(() => { const c = data()?.cards; return c ? deep(c) : ([] as Post[]); }, (cards) => { setOrder(cards); });
+  // The fetched order, with a move shown at once; a failed save rolls it back.
+  const [order, setOrder] = createOptimistic((): Post[] => q.data.cards);
 
-  async function persistOrder(next: Post[]) {
+  const persistOrder = action(function* (next: Post[]) {
     setOrder(next);
     try {
-      await reorderDeck(nick(), name(), next.map((a) => a.uuid));
+      yield reorderDeck(nick(), name(), next.map((a) => a.uuid));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Reorder failed");
-      refetch();
+      return;
     }
-  }
+    yield invalidate(key());
+  });
 
   function move(index: number, dir: -1 | 1) {
     const next = [...order()];
@@ -80,7 +81,7 @@ export default function DeckView() {
         <p class="text-xs text-muted">{t("cards.deck_reorder_hint")}</p>
       </Show>
 
-      <Show when={!data.loading} fallback={<p class="text-sm text-muted">…</p>}>
+      <AsyncBoundary fallback={<p class="text-sm text-muted">…</p>}>
         <Show
           when={order().length > 0}
           fallback={<EmptyState>{t("cards.deck_no_decks")}</EmptyState>}
@@ -121,7 +122,7 @@ export default function DeckView() {
             </For>
           </ol>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </div>
   );
 }

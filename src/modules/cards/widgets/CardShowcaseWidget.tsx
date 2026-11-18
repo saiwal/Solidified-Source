@@ -2,8 +2,8 @@
 // rather than a text teaser, so it keeps the template-specific layout it has on
 // the board. multiInstance.
 
-import { Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { Errored, Loading, Show } from "solid-js";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -27,23 +27,21 @@ export default function CardShowcaseWidget(props: WidgetProps) {
   const nick = usePageNick();
   const uuid = () => String(props.config?.uuid ?? "");
 
-  const [card] = createQueryResource(
-    "card-showcase",
-    () => (nick() && uuid() ? { nick: nick(), uuid: uuid() } : null),
-    async (p) => (await fetchCard(p.nick, p.uuid)).card,
-  );
+  const q = useAsyncQuery(() => ({
+    queryKey: ["card-showcase", { nick: nick(), uuid: uuid() }],
+    queryFn: async () => (await fetchCard(nick(), uuid())).card,
+    enabled: !!nick() && !!uuid(),
+  }));
 
   return (
     <Show when={uuid()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={card.loading}>
-        <div class="h-40 w-full bg-surface border border-rim rounded-2xl animate-pulse" />
-      </Show>
-
-      <Show when={!card.loading}>
-        <Show when={card()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
+      <Errored fallback={<EditHint text={t("widgets.item_unavailable")} />}>
+      <Loading fallback={<div class="h-40 w-full bg-surface border border-rim rounded-2xl animate-pulse" />}>
+        <Show when={q.data} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(c) => <CardFace card={c()} nick={nick()} />}
         </Show>
-      </Show>
+      </Loading>
+      </Errored>
     </Show>
   );
 }

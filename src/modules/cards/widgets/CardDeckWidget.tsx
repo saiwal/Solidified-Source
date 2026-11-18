@@ -12,7 +12,8 @@ import { useNavigate } from "@solidjs/router";
 import { MdOutlineShuffle } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchDeckDetail } from "../api";
 import { cardPath } from "@/shared/lib/shareLinks";
 import { IconButton } from "@ui/Button";
@@ -49,11 +50,8 @@ export default function CardDeckWidget() {
   const nick = usePageNick();
   const navigate = useNavigate();
 
-  const [data] = createQueryResource(
-    "stream-decks",
-    () => nick(),
-    (n) => fetchDecks(n),
-  );
+  const q = useAsyncQuery(() => ({ queryKey: ["stream-decks", nick()], queryFn: () => fetchDecks(nick()) }));
+  const data = () => q.data;
 
   // ponytail: fetches the deck on click rather than prefetching every deck's
   // members up front. One extra request on a rare action beats N requests on
@@ -69,9 +67,9 @@ export default function CardDeckWidget() {
   return (
     <WidgetShell title={t("widgets.card_deck")}>
 
-      <Show when={!data.loading}>
+      <AsyncBoundary>
         <Show
-          when={(data() ?? []).length > 0}
+          when={data().length > 0}
           fallback={<p class="px-(--ws-px) py-3 text-xs text-muted">{t("cards.deck_no_decks")}</p>}
         >
           <ul class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
@@ -101,7 +99,7 @@ export default function CardDeckWidget() {
             </For>
           </ul>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 }

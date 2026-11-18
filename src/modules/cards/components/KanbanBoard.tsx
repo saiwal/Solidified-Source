@@ -8,7 +8,7 @@
 // masonry view's paginated, filter-driven singleton, and sharing it would make
 // a category click in one view mutate the other.
 
-import { createMemo, createSignal, Show, For } from "solid-js";
+import { createMemo, createSignal, Show, For, createOptimistic, action, isPending } from "solid-js";
 import { MdOutlineStyle, MdOutlineAdd, MdOutlineEdit, MdOutlineClose,
          MdOutlineDrag_indicator, MdOutlineView_kanban } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -16,7 +16,9 @@ import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import CardComposer from "@/shared/editor/composers/CardComposer";
 import ComposerModal from "@/shared/editor/components/ComposerModal";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { toast } from "@utsukta/spa-core/store/toast";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import CardFace from "./CardFace";
@@ -37,16 +39,15 @@ export default function KanbanBoard(props: { nick: string }) {
   // the Unfiled column, so this can't be a plain string.
   const [composeIn, setComposeIn] = createSignal<string | null>(null);
 
-  const [config, { mutate: mutateConfig }] = createQueryResource(
-    "kanban-config",
-    () => props.nick,
-    fetchKanban,
-  );
+  // Same cache keys the header/content widgets read through createQueryResource.
+  const configKey = () => ["kanban-config", props.nick] as const;
+  const configQ = useAsyncQuery(() => ({ queryKey: configKey(), queryFn: () => fetchKanban(props.nick) }));
+  // The saved board list, with an edit shown at once; a failed save rolls it back.
+  const [boards, setBoards] = createOptimistic((): KanbanBoardDef[] => configQ.data?.boards ?? []);
 
   // A board is a category; the active one lives in the URL so it is linkable
   // and survives a reload, unlike the board/masonry choice.
   const [params, setParams] = useSearchParams<{ board?: string }>();
-  const boards = (): KanbanBoardDef[] => config()?.boards ?? [];
   // "" means the channel has no boards yet — nothing to fetch, nothing to show
   // but the invitation to create one.
   const activeBoard = () => {
@@ -56,11 +57,16 @@ export default function KanbanBoard(props: { nick: string }) {
     return list[0]?.name ?? "";
   };
 
-  const [cards, { mutate: mutateCards, refetch: refetchCards }] = createQueryResource(
-    "kanban-cards",
-    () => (activeBoard() ? { nick: props.nick, board: activeBoard() } : null),
-    async ({ nick, board }) => (await fetchCards(nick, { cat: board })).cards,
-  );
+  // No `enabled`: a disabled native query never settles. With no board the
+  // fn answers [] without a request.
+  const cardsKey = () => ["kanban-cards", { nick: props.nick, board: activeBoard() }] as const;
+  const cardsQ = useAsyncQuery(() => ({
+    queryKey: cardsKey(),
+    queryFn: async () => (activeBoard() ? (await fetchCards(props.nick, { cat: activeBoard() })).cards : []),
+  }));
+  const refetchCards = () => invalidate(cardsKey());
+  // The fetched cards, with a drop shown at once until the write settles.
+  const [cards, setCards] = createOptimistic((): Post[] => cardsQ.data);
 
   const columnNames = () =>
     boards().find((b) => b.name === activeBoard())?.columns ?? [];
@@ -71,7 +77,7 @@ export default function KanbanBoard(props: { nick: string }) {
     const names = columnNames();
     const cols: Column<Post>[] = [...names, UNFILED].map((key) => ({ key, items: [] }));
     const byKey = new Map(cols.map((c) => [c.key, c]));
-    for (const card of cards() ?? []) {
+    for (const card of cards()) {
       const deck = card.deck?.name ?? "";
       (byKey.get(deck) ?? byKey.get(UNFILED)!).items.push(card);
     }
@@ -87,22 +93,25 @@ export default function KanbanBoard(props: { nick: string }) {
     (card, columnKey, index) => void commitMove(card, columnKey, index),
   );
 
-  async function commitMove(card: Post, columnKey: string, index: number) {
+  const commitMove = action(function* (card: Post, columnKey: string, index: number) {
     if ((card.deck?.name ?? "") === columnKey && (card.deck?.order ?? 0) === index + 1) return;
-    // Patch the cached list so the card stays put while the write is in flight.
-    mutateCards((list) =>
-      (list ?? []).map((c) =>
-        c.uuid === card.uuid
-          ? { ...c, deck: columnKey ? { name: columnKey, order: index + 1 } : null }
-          : c,
+    // The target column as dropped: its other cards in order, the card at
+    // `index`. Built here, not read back from the board — writes are batched,
+    // so the board still shows the old layout until this action yields.
+    const siblings = (grouped().find((c) => c.key === columnKey)?.items ?? []).filter((c) => c.uuid !== card.uuid);
+    siblings.splice(index, 0, card);
+    const order = new Map(siblings.map((c, i) => [c.uuid, i + 1]));
+    // Every card in the column keeps its slot while the writes are in flight.
+    setCards((list) =>
+      list.map((c) =>
+        order.has(c.uuid) ? { ...c, deck: columnKey ? { name: columnKey, order: order.get(c.uuid)! } : null } : c,
       ),
     );
     try {
-      await moveCard(props.nick, card.uuid, columnKey, index + 1);
+      yield moveCard(props.nick, card.uuid, columnKey, index + 1);
       // Renumber the rest of the target column so a later drop lands where it
       // was aimed rather than behind every unnumbered sibling.
-      const siblings = drag.display().find((c) => c.key === columnKey)?.items ?? [];
-      await Promise.all(
+      yield Promise.all(
         siblings.map((s, i) =>
           s.uuid === card.uuid ? null : moveCard(props.nick, s.uuid, columnKey, i + 1),
         ),
@@ -110,19 +119,19 @@ export default function KanbanBoard(props: { nick: string }) {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("cards.kanban_move_failed"));
     }
-    refetchCards();
-  }
+    yield refetchCards();
+  });
 
-  async function persistBoards(next: KanbanBoardDef[]) {
-    const prev = boards();
-    mutateConfig((c) => (c ? { ...c, boards: next } : c));
+  const persistBoards = action(function* (next: KanbanBoardDef[]) {
+    setBoards(next);
     try {
-      await saveKanbanBoards(props.nick, next);
+      yield saveKanbanBoards(props.nick, next);
     } catch (e) {
-      mutateConfig((c) => (c ? { ...c, boards: prev } : c));
       toast.error(e instanceof Error ? e.message : "Saving boards failed");
+      return;
     }
-  }
+    yield invalidate(configKey());
+  });
 
   /** Rewrite only the active board's columns. */
   const persistColumns = (next: string[]) => {
@@ -154,7 +163,7 @@ export default function KanbanBoard(props: { nick: string }) {
     }
     await persistBoards(boards().map((b) => (b.name === from ? { ...b, name: to } : b)));
     setParams({ board: to });
-    refetchCards();
+    void refetchCards();
   }
 
   /** Removes the board from the list only — its cards keep the category. */
@@ -180,7 +189,7 @@ export default function KanbanBoard(props: { nick: string }) {
       return;
     }
     await persistColumns(columnNames().map((n) => (n === from ? to : n)));
-    refetchCards();
+    void refetchCards();
   }
 
   /** Removes the column from the board only — its cards fall into Unfiled. */
@@ -195,7 +204,7 @@ export default function KanbanBoard(props: { nick: string }) {
     (grouped().find((c) => c.key === key)?.items.length ?? 0) + 1;
 
   return (
-    <Show when={!config.loading && !cards.loading} fallback={<BoardSkeleton />}>
+    <AsyncBoundary fallback={<BoardSkeleton />}>
      <Show when={boards().length > 0} fallback={<NoBoards onCreate={addBoard} owner={isOwner()} />}>
       {/* Board tabs. A board is a category, so switching boards refetches with
           a different `cat` — the URL carries it so the tab is linkable. */}
@@ -240,7 +249,7 @@ export default function KanbanBoard(props: { nick: string }) {
         </Show>
       </div>
 
-      <div class="flex gap-3 items-start overflow-x-auto pb-2 pt-3">
+      <div class={["flex gap-3 items-start overflow-x-auto pb-2 pt-3 transition-opacity", { "opacity-60": isPending(() => cardsQ.data) }]}>
         <For each={drag.display()}>
           {(col) => (
             // The Unfiled column is noise when it's empty — on an empty board
@@ -363,13 +372,13 @@ export default function KanbanBoard(props: { nick: string }) {
                 ? { name: composeIn()!, order: nextOrderIn(composeIn()!) }
                 : null,
             }}
-            onSaved={() => { setComposeIn(null); refetchCards(); }}
+            onSaved={() => { setComposeIn(null); void refetchCards(); }}
             onCancel={() => setComposeIn(null)}
           />
         </ComposerModal>
       </Show>
      </Show>
-    </Show>
+    </AsyncBoundary>
   );
 }
 
