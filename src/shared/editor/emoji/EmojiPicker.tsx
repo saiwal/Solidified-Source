@@ -11,6 +11,8 @@
  */
 
 import { createSignal, createMemo, For, Show, type JSX } from "solid-js";
+import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import {
   MdOutlineEmoji_emotions, MdOutlineEmoji_people, MdOutlineEmoji_nature,
   MdOutlineEmoji_food_beverage, MdOutlineEmoji_transportation, MdOutlineEmoji_events,
@@ -214,9 +216,10 @@ export default function EmojiPicker(props: EmojiPickerProps) {
       </button>
 
       <Show when={open()}>
+        <Portal mount={topLayer()}>
         <div
           ref={setPanelRef}
-          class="z-50 w-[22rem] max-w-[calc(100vw-1rem)] bg-surface border border-rim rounded-xl shadow-xl overflow-hidden flex flex-col"
+          class="z-50 w-[22rem] max-w-[calc(100vw-1rem)] bg-surface border border-rim rounded-lg shadow-xl overflow-hidden flex flex-col"
           style={floatStyle()}
         >
           <div class="p-2 border-b border-rim">
@@ -315,6 +318,7 @@ export default function EmojiPicker(props: EmojiPickerProps) {
             </Show>
           </div>
         </div>
+        </Portal>
       </Show>
     </>
   );

@@ -18,11 +18,13 @@
  */
 
 import { For, Show, onCleanup, type JSX } from "solid-js";
+import { Portal } from "solid-js/web";
+import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { Button, iconButtonClass } from "@ui/Button";
 
 const PANEL =
-  "z-50 bg-surface border border-rim rounded-xl shadow-xl p-2 max-h-72 overflow-y-auto";
+  "z-50 bg-surface border border-rim rounded-lg shadow-xl p-2 max-h-72 overflow-y-auto";
 
 function triggerClass(open: boolean) {
   return `${iconButtonClass("default", "sm")} ${open ? "bg-elevated text-txt" : ""}`;
@@ -76,6 +78,7 @@ export function ColorPicker(props: {
       </button>
 
       <Show when={open()}>
+        <Portal mount={topLayer()}>
         <div ref={setPanelRef} class={`${PANEL} w-52`} style={floatStyle()}>
           <Show when={props.onClear}>
             <button type="button"
@@ -106,6 +109,7 @@ export function ColorPicker(props: {
             <span>Custom…</span>
           </label>
         </div>
+        </Portal>
       </Show>
     </>
   );
@@ -179,6 +183,7 @@ export function PromptPanel(props: {
       </button>
 
       <Show when={open()}>
+        <Portal mount={topLayer()}>
         <div
           ref={setPanelRef}
           class={`${PANEL} w-60 flex flex-col gap-2`}
@@ -211,6 +216,7 @@ export function PromptPanel(props: {
             {props.submitLabel}
           </Button>
         </div>
+        </Portal>
       </Show>
     </>
   );
@@ -248,6 +254,7 @@ export function OptionMenu(props: {
       </button>
 
       <Show when={open()}>
+        <Portal mount={topLayer()}>
         <div ref={setPanelRef} class={`${PANEL} w-44`} style={floatStyle()}>
           <For each={props.options}>
             {(o) => (
@@ -261,6 +268,7 @@ export function OptionMenu(props: {
             )}
           </For>
         </div>
+        </Portal>
       </Show>
     </>
   );
