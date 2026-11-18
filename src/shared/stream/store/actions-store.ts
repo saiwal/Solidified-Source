@@ -15,7 +15,7 @@ import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { buildThreadTree, appendNewBranches, mergeReplies, applyBranchMeta } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import type { createStreamStore } from "./createStreamStore";
-import { updateNode } from "./createStreamStore";
+import { updateNode, setReaction } from "./createStreamStore";
 import { fetchComments, fetchItemDetail, apiDeleteItem, apiEditItem, apiToggleStar, type EditPayload } from "@utsukta/spa-core/lib/item-api";
 import { mapActivityToPost } from "@utsukta/spa-core/lib/activity.mapper";
 import { exitCard } from "@/shared/stream/reveal";
@@ -134,52 +134,34 @@ export function createActionHandlers(store: StreamStore) {
   }
 
   return {
+    // Each toggles from what the viewer sees now; the store shows it at once
+    // and rolls it back if the request fails (createStreamStore.optimistic).
     handleLike(mid: string) {
-      const iid = iidFor(mid);
-      store.optimisticToggle(mid, "like", "likeCount", () => toggleVerb(iid, "like"));
+      const node = findNode(store.posts(), mid);
+      if (!node) return;
+      const on = !node.viewerLiked;
+      void store.optimistic(node.mid, (n) => setReaction(n, "like", on), () => toggleVerb(iidFor(mid), "like"));
     },
 
     handleDislike(mid: string) {
-      const iid = iidFor(mid);
-      store.optimisticToggle(mid, "dislike", "dislikeCount", () => toggleVerb(iid, "dislike"));
+      const node = findNode(store.posts(), mid);
+      if (!node) return;
+      const on = !node.viewerDisliked;
+      void store.optimistic(node.mid, (n) => setReaction(n, "dislike", on), () => toggleVerb(iidFor(mid), "dislike"));
     },
 
     handleRepeat(mid: string) {
-      const iid = iidFor(mid);
       const node = findNode(store.posts(), mid);
       if (!node || node.viewerRepeated) return;
-      store.setPosts((prev) =>
-        updateNode(prev, mid, (n) => ({
-          ...n,
-          viewerRepeated: true,
-          repeatCount: n.repeatCount + 1,
-        })),
-      );
-      store.track(mid, repeatItem(iid)).catch(() => {
-        store.setPosts((prev) =>
-          updateNode(prev, mid, (n) => ({
-            ...n,
-            viewerRepeated: false,
-            repeatCount: n.repeatCount - 1,
-          })),
-        );
-      });
+      void store.optimistic(node.mid, (n) => setReaction(n, "announce", true), () => repeatItem(iidFor(mid)));
     },
 
     handleStar(mid: string) {
       const node = findNode(store.posts(), mid);
       if (!node?.iid) return;
-      const newStarred = !(node.viewerStarred ?? false);
-      store.setPosts((prev) =>
-        updateNode(prev, mid, (n) => ({ ...n, viewerStarred: newStarred })),
-      );
-      apiToggleStar(node.iid).catch(() => {
-        store.setPosts((prev) =>
-          updateNode(prev, mid, (n) => ({ ...n, viewerStarred: !newStarred })),
-        );
-      });
-      // TODO: handleFileInFolder — add folder assignment here once Hubzilla
-      // collection/folder API (/api/item/:id/file or equivalent) is integrated
+      const on = !(node.viewerStarred ?? false);
+      const iid = node.iid;
+      void store.optimistic(node.mid, (n) => { n.viewerStarred = on; }, () => apiToggleStar(iid));
     },
 
     async handleDelete(mid: string): Promise<void> {

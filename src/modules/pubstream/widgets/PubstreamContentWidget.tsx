@@ -9,8 +9,7 @@ import {
   meta,
   loadPubstream,
   loadMore,
-  optimisticLike,
-  optimisticRepeat,
+  optimistic,
   removePost,
   viewMode,
   changeView,
@@ -30,6 +29,7 @@ import { useScrollStyle } from "@utsukta/spa-core/store/scroll-style";
 import { Button, IconButton } from "@ui/Button";
 import { Input } from "@ui/Field";
 import { useMobileActions, usePageSearch } from "@/shared/views/layout/PageActions";
+import { setReaction } from "@/shared/stream/store/createStreamStore";
 
 // ── iid lookup from the pubstream flat posts signal ────────────────────────
 function iidForMid(mid: string): number {
@@ -41,17 +41,17 @@ function iidForMid(mid: string): number {
 function usePubstreamHandlers(tag: () => string): StreamHandlers {
   return {
     onLike(mid: string) {
-      const iid = iidForMid(mid);
-      optimisticLike(mid);
-      toggleVerb(iid, "like").catch(() => optimisticLike(mid));
+      const node = posts().find((p) => p.mid === mid || p.uuid === mid);
+      if (!node) return;
+      const on = !node.viewerLiked;
+      void optimistic(mid, (n) => setReaction(n, "like", on), () => toggleVerb(iidForMid(mid), "like"));
     },
     onDislike(_mid: string) {},
     onRepeat(mid: string) {
       const iid = iidForMid(mid);
       const node = posts().find((p) => p.mid === mid || p.uuid === mid);
       if (!node || node.viewerRepeated) return;
-      optimisticRepeat(mid);
-      repeatItem(iid).catch(() => optimisticRepeat(mid));
+      void optimistic(mid, (n) => setReaction(n, "announce", true), () => repeatItem(iid));
     },
     onComment(_parentMid, _body, _name, _avatar) {
       loadPubstream(tag() || undefined);

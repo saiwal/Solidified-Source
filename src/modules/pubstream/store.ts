@@ -1,5 +1,5 @@
 // src/modules/pubstream/store.ts
-import { createSignal, createStore, reconcile } from "solid-js";
+import { createSignal, createStore, reconcile, createOptimisticStore, createRoot, action, deep } from "solid-js";
 import { resetReveal } from "@/shared/stream/reveal";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { fetchPubstream, type PubstreamMeta } from "./api";
@@ -22,7 +22,11 @@ const [posts,    setPosts]    = createSyncSignal<Post[]>([]);
 // makes every node a fresh object, and <For> keys by reference, so as a
 // signal each like remounted every card on the page.
 const [threadState, setThreadState] = createStore<{ list: ThreadNode[] }>({ list: [] });
-const threads = () => threadState.list;
+// What the view renders: the confirmed threads plus reactions in flight —
+// same shape as createStreamStore's (see `optimistic` below).
+const [view, setView] = createRoot(() =>
+  createOptimisticStore(() => deep(threadState.list), [] as ThreadNode[], { key: "mid" }));
+const threads = () => view;
 const setThreads = (next: ThreadNode[]) =>
   setThreadState((s) => { reconcile(next, "mid")(s.list); });
 const [loading,  setLoading]  = createSignal(false);
@@ -116,37 +120,35 @@ export async function loadMore(tag?: string, net?: string): Promise<void> {
   }
 }
 
-/** Optimistically update like count. */
-export function optimisticLike(mid: string): void {
-  setPosts((prev) =>
-    prev.map((p) => {
-      if (p.mid !== mid) return p;
-      const liked = !p.viewerLiked;
-      return {
-        ...p,
-        viewerLiked: liked,
-        likeCount: p.likeCount + (liked ? 1 : -1),
-      };
-    }),
-  );
-  rebuildThreads(posts());
+function findDraft(nodes: ThreadNode[], mid: string): ThreadNode | undefined {
+  for (const n of nodes) {
+    if (n.mid === mid || n.uuid === mid) return n;
+    const found = n.children.length ? findDraft(n.children, mid) : undefined;
+    if (found) return found;
+  }
+  return undefined;
 }
 
-/** Optimistically update repeat count. */
-export function optimisticRepeat(mid: string): void {
-  setPosts((prev) =>
-    prev.map((p) => {
-      if (p.mid !== mid) return p;
-      const repeated = !p.viewerRepeated;
-      return {
-        ...p,
-        viewerRepeated: repeated,
-        repeatCount: p.repeatCount + (repeated ? 1 : -1),
-      };
-    }),
-  );
+/** Shows `apply` on the post at once, runs `request`, and on success writes
+ *  the change into the confirmed posts; a failure rolls back on its own.
+ *  `apply` must be idempotent (setReaction is). */
+export const optimistic = action(function* (mid: string, apply: (n: ThreadNode) => void, request: () => Promise<unknown>) {
+  setView((s) => { const n = findDraft(s, mid); if (n) apply(n); });
+  try {
+    yield request();
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+  setPosts((prev) => prev.map((p) => {
+    if (p.mid !== mid && p.uuid !== mid) return p;
+    const next = { ...p, children: [] } as ThreadNode;
+    apply(next);
+    const { children: _, ...post } = next;
+    return post as Post;
+  }));
   rebuildThreads(posts());
-}
+});
 
 /** Remove a deleted post (and rebuild its thread) from the local view. */
 export function removePost(mid: string): void {

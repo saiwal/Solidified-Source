@@ -1,5 +1,5 @@
 // src/shared/stream/store/createStreamStore.ts
-import { createSignal, untrack, createStore, reconcile, snapshot } from "solid-js";
+import { createSignal, untrack, createStore, reconcile, snapshot, createOptimisticStore, createRoot, action, deep } from "solid-js";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
@@ -40,12 +40,29 @@ function postToThreadNode(p: Post): ThreadNode {
   return { ...p, children: [] };
 }
 
-function registerActivated(set: Set<string>, data: Post[]) {
-  data.forEach((p) => {
-    if (p.viewerLiked) set.add(`${p.mid}:like`);
-    if (p.viewerDisliked) set.add(`${p.mid}:dislike`);
-    if (p.viewerRepeated) set.add(`${p.mid}:announce`);
-  });
+function findDraft(nodes: ThreadNode[], mid: string): ThreadNode | undefined {
+  for (const n of nodes) {
+    if (n.mid === mid) return n;
+    const found = n.children.length ? findDraft(n.children, mid) : undefined;
+    if (found) return found;
+  }
+  return undefined;
+}
+
+const REACTION_FIELDS = {
+  like: ["viewerLiked", "likeCount"],
+  dislike: ["viewerDisliked", "dislikeCount"],
+  announce: ["viewerRepeated", "repeatCount"],
+} as const;
+
+/** Sets a reaction on a node, adjusting its count only if it changes —
+ *  idempotent, so applying it to the view and then to the confirmed store
+ *  (which a poll may already have updated) never double-counts. */
+export function setReaction(n: ThreadNode, verb: keyof typeof REACTION_FIELDS, on: boolean) {
+  const [flag, count] = REACTION_FIELDS[verb];
+  if (n[flag] === on) return;
+  n[flag] = on;
+  n[count] += on ? 1 : -1;
 }
 
 export function updateNode(
@@ -76,7 +93,17 @@ export function createStreamStore<P extends StreamParams>(
   // dropping its open reply box, expanded body and playing media. Reconciling
   // patches the existing node in place, so only the changed text re-renders.
   const [state, setState] = createStore<{ posts: ThreadNode[] }>({ posts: [] });
-  const posts = () => state.posts;
+  // What views render: the confirmed posts plus whatever is in flight. A
+  // reaction runs as an action (`optimistic` below): it shows at once, and
+  // when it settles the view falls back to the confirmed store — which by
+  // then holds the result, or never changed if the request failed. A poll
+  // writing the confirmed store meanwhile can't undo it on screen, which is
+  // what the old activated/inflight bookkeeping existed for.
+  // ponytail: deep() re-snapshots the whole feed on every store write — fine
+  // at feed sizes; project per thread if HOT_SCOPE_TIME ever flags it.
+  const [view, setView] = createRoot(() =>
+    createOptimisticStore(() => deep(state.posts), [] as ThreadNode[], { key: "mid" }));
+  const posts = () => view;
   function setPosts(next: ThreadNode[] | ((prev: ThreadNode[]) => ThreadNode[])) {
     const value = typeof next === "function" ? next(snapshot(state.posts)) : next;
     setState((s) => { reconcile(value, "mid")(s.posts); });
@@ -92,7 +119,6 @@ export function createStreamStore<P extends StreamParams>(
   let currentOffset = 0;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
   let pollGeneration = 0;
-  const activated = new Set<string>();
 
   // ── polling ─────────────────────────────────────────────────────────────────
 
@@ -135,25 +161,12 @@ export function createStreamStore<P extends StreamParams>(
     }
   }
 
-  // Mids with a reaction request still in flight. The poll skips them, or a
-  // tick landing before the server stores the like would undo it on screen.
-  const inflight = new Map<string, number>();
-  function track<T>(mid: string, p: Promise<T>): Promise<T> {
-    inflight.set(mid, (inflight.get(mid) ?? 0) + 1);
-    const done = () => {
-      const n = (inflight.get(mid) ?? 1) - 1;
-      n ? inflight.set(mid, n) : inflight.delete(mid);
-    };
-    p.then(done, done);
-    return p;
-  }
-
   // checkForNew() only asks for posts newer than the top one, so this keeps
   // the counts on already-loaded posts live. On-screen posts first; with
   // none tracked (a view without use:reveal) the newest loaded ones.
   async function refreshCounts() {
     const uid = profileUid();
-    const loaded = posts();
+    const loaded = snapshot(state.posts); // the confirmed store, not the optimistic view
     if (!uid || !loaded.length) return;
     const onScreen = loaded.filter((p) => visibleUuids.has(p.uuid));
     const uuids = (onScreen.length ? onScreen : loaded).slice(0, COUNTS_MAX).map((p) => p.uuid);
@@ -169,7 +182,7 @@ export function createStreamStore<P extends StreamParams>(
       setPosts((prev) =>
         prev.map((n) => {
           const c = counts[n.uuid];
-          if (!c || inflight.has(n.mid) || before.get(n.uuid) !== countsKey(n)) return n;
+          if (!c || before.get(n.uuid) !== countsKey(n)) return n;
           const next = {
             ...n,
             likeCount: c.like_count,
@@ -183,13 +196,6 @@ export function createStreamStore<P extends StreamParams>(
           return countsKey(next) === countsKey(n) ? n : next;
         }),
       );
-      // Keep the undo bookkeeping in step with what the server now reports.
-      for (const [uuid, c] of Object.entries(counts)) {
-        const mid = loaded.find((p) => p.uuid === uuid)?.mid;
-        if (!mid || inflight.has(mid)) continue;
-        for (const [verb, on] of [["like", c.viewer_liked], ["dislike", c.viewer_disliked], ["announce", c.viewer_repeated]] as const)
-          on ? activated.add(`${mid}:${verb}`) : activated.delete(`${mid}:${verb}`);
-      }
     } catch (err) {
       console.error("Count refresh failed", err);
     }
@@ -266,8 +272,6 @@ export function createStreamStore<P extends StreamParams>(
       setHasMore(more);
       if (result.items.length && result.items[0].profileUid)
         setProfileUid(result.items[0].profileUid);
-      activated.clear();
-      registerActivated(activated, result.items);
       startPolling();
     } catch (err) {
       if (gen !== loadGen) return;
@@ -283,14 +287,13 @@ export function createStreamStore<P extends StreamParams>(
     setLoadingMore(true);
     const gen = loadGen;
     try {
-      const { threads, offset, more, result } = await fetchDisplayablePage(currentOffset);
+      const { threads, offset, more } = await fetchDisplayablePage(currentOffset);
       if (gen !== loadGen) return; // a fresh load replaced the list meanwhile
       const existingMids = new Set(posts().map((t) => t.mid));
       const fresh = threads.filter((t) => !existingMids.has(t.mid));
       if (fresh.length) setPosts((prev) => [...prev, ...fresh]);
       currentOffset = offset;
       setHasMore(more);
-      registerActivated(activated, result.items);
     } catch (err) {
       console.error(err);
       toast.error("Failed to load more posts. Check your connection and try again.");
@@ -299,35 +302,21 @@ export function createStreamStore<P extends StreamParams>(
     }
   }
 
-  // ── reaction helper ─────────────────────────────────────────────────────────
+  // ── optimistic changes ──────────────────────────────────────────────────────
 
-  function optimisticToggle(
-    mid: string,
-    verbKey: "like" | "dislike" | "announce",
-    field: "likeCount" | "dislikeCount" | "repeatCount",
-    apiFn: () => Promise<void>,
-  ) {
-    const viewerFieldMap = {
-      like: "viewerLiked",
-      dislike: "viewerDisliked",
-      announce: "viewerRepeated",
-    } as const;
-    const viewerField = viewerFieldMap[verbKey];
-
-    const key = `${mid}:${verbKey}`;
-    const isUndo = activated.has(key);
-    isUndo ? activated.delete(key) : activated.add(key);
-    const delta = isUndo ? -1 : 1;
-    setPosts((prev) =>
-      updateNode(prev, mid, (n) => ({ ...n, [field]: n[field] + delta, [viewerField]: !n[viewerField] })),
-    );
-    track(mid, apiFn()).catch(() => {
-      isUndo ? activated.add(key) : activated.delete(key);
-      setPosts((prev) =>
-        updateNode(prev, mid, (n) => ({ ...n, [field]: n[field] - delta, [viewerField]: !n[viewerField] })),
-      );
-    });
-  }
+  /** Shows `apply` on the node at once, runs `request`, and on success writes
+   *  the same change to the confirmed store; a failure rolls back on its own.
+   *  `apply` must be idempotent (see setReaction). */
+  const optimistic = action(function* (mid: string, apply: (n: ThreadNode) => void, request: () => Promise<unknown>) {
+    setView((s) => { const n = findDraft(s, mid); if (n) apply(n); });
+    try {
+      yield request();
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+    setState((s) => { const n = findDraft(s.posts, mid); if (n) apply(n); });
+  });
 
   // ── misc ────────────────────────────────────────────────────────────────────
 
@@ -371,7 +360,6 @@ export function createStreamStore<P extends StreamParams>(
       const fresh = threads.filter((t) => !existingMids.has(t.mid));
       if (fresh.length) {
         prependWithMotion(() => setPosts((prev) => [...fresh, ...prev]), posts()[0]?.uuid, fresh[0].uuid);
-        registerActivated(activated, result.items);
       }
     } catch (err) {
       console.error("Refresh failed", err);
@@ -403,9 +391,8 @@ export function createStreamStore<P extends StreamParams>(
     flushNewPosts,
     reset,
     stopPolling,
-    optimisticToggle,
+    optimistic,
     setPosts,
     patchNodeChildren,
-    track,
   };
 }
