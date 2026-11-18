@@ -4,10 +4,11 @@
  * and which sites keep failing. Hidden until there's something to report.
  */
 import { For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { WidgetShell } from "@ui/WidgetShell";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 interface Health {
   ok: number; pending: number; failed: number; total: number; oldest: string | null;
@@ -22,27 +23,29 @@ async function fetchHealth(): Promise<Health> {
 
 export default function DeliveryHealthWidget() {
   const { t } = useI18n();
-  const [health] = createQueryResource("delivery-health", fetchHealth);
+  const q = useAsyncQuery(() => ({ queryKey: ["delivery-health"], queryFn: fetchHealth }));
+  const health = () => q.data;
   const pct = () => {
-    const h = health()!;
+    const h = health();
     const settled = h.ok + h.failed;
     return settled ? Math.round((h.ok / settled) * 100) : 100;
   };
 
   return (
-    <Show when={health()?.total}>
+    <AsyncBoundary quiet>
+    <Show when={health().total}>
       <WidgetShell title={t("widgets.delivery_health")}>
 <div class="px-(--ws-px) py-3">
         <p class="text-sm text-txt">
-          {t("widgets.delivery_summary", { pct: pct(), total: health()!.total })}
+          {t("widgets.delivery_summary", { pct: pct(), total: health().total })}
         </p>
         <Show
-          when={health()!.sites.length}
+          when={health().sites.length}
           fallback={<p class="text-xs text-success-txt mt-1">{t("widgets.delivery_all_ok")}</p>}
         >
           <p class="text-xs text-muted mt-3 mb-1">{t("widgets.delivery_failing")}</p>
           <ul class="space-y-1">
-            <For each={health()!.sites}>
+            <For each={health().sites}>
               {(s) => (
                 <li class="flex items-baseline gap-2 text-xs" title={s.last_result}>
                   <span class="truncate flex-1 text-txt">{s.site}</span>
@@ -55,5 +58,6 @@ export default function DeliveryHealthWidget() {
       </div>
 </WidgetShell>
     </Show>
+    </AsyncBoundary>
   );
 }

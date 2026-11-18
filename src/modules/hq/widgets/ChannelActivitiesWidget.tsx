@@ -2,11 +2,12 @@ import { createSignal, createMemo, For, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isModuleActive } from "@utsukta/spa-core/module-registry";
 import { WidgetShell } from "@ui/WidgetShell";
 import { EmptyState } from "@ui/EmptyState";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 // ── Types & API ───────────────────────────────────────────────────────────────
 
@@ -70,17 +71,13 @@ export default function ChannelActivitiesWidget() {
   const installedApps = useInstalledApps();
   const [activeId, setActiveId] = createSignal<string | null>(null);
 
-  const [data] = createQueryResource(
-    "channel-activities",
-    () => true,
-    fetchChannelActivities,
-  );
+  const q = useAsyncQuery(() => ({ queryKey: ["channel-activities", true], queryFn: () => fetchChannelActivities() }));
 
   const sections = createMemo(() => {
     const apps = installedApps();
     // An unmapped section id is an addon we know nothing about — show it
     // rather than silently dropping whatever the hook contributed.
-    return (data() ?? []).filter(
+    return q.data.filter(
       (s) => !SECTION_MODULE[s.id] || isModuleActive(SECTION_MODULE[s.id], apps),
     );
   });
@@ -90,11 +87,20 @@ export default function ChannelActivitiesWidget() {
   );
 
   return (
+    <AsyncBoundary fallback={
+      <WidgetShell title={t("hq.channel_activities")}>
+        <div class="px-(--ws-px) pb-3.5 space-y-2">
+          <For each={[1, 2, 3]}>
+            {() => <div class="h-3 bg-overlay rounded w-3/5 animate-pulse" />}
+          </For>
+        </div>
+      </WidgetShell>
+    }>
     <WidgetShell
       title={t("hq.channel_activities")}
       // Vertical rail — rotated labels so seven sections fit one masonry cell.
       tabs={
-        !data.loading && sections().length > 0
+        sections().length > 0
           ? {
               items: sections().map((s) => ({
                 id: s.id,
@@ -114,21 +120,13 @@ export default function ChannelActivitiesWidget() {
       }
     >
 
-      <Show when={data.loading}>
-        <div class="px-(--ws-px) pb-3.5 space-y-2">
-          <For each={[1, 2, 3]}>
-            {() => <div class="h-3 bg-overlay rounded w-3/5 animate-pulse" />}
-          </For>
-        </div>
-      </Show>
-
-      <Show when={!data.loading && sections().length === 0}>
+      <Show when={sections().length === 0}>
         <EmptyState size="sm" class="px-(--ws-px)">
           {t("hq.ca_empty")}
         </EmptyState>
       </Show>
 
-      <Show when={!data.loading && sections().length > 0}>
+      <Show when={sections().length > 0}>
           <div class="max-h-80 overflow-y-auto">
             <Show when={active()} keyed>
               {(s) => (
@@ -160,6 +158,7 @@ export default function ChannelActivitiesWidget() {
           </div>
       </Show>
     </WidgetShell>
+    </AsyncBoundary>
   );
 }
 

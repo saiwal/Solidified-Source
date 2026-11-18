@@ -1,13 +1,15 @@
 // Mail actions for the inbox list - star, read/unread, move to folder, trash.
 //
-// Every one follows the same shape: patch the row locally (and in the offline
-// store, so reloading offline doesn't show the pre-action state again), call
-// the API, revert + toast on failure. Deleting is a move to the TRASH folder
+// Every one follows the same shape, as a Solid action: show the change at
+// once (the list's optimistic view), call the API, and only when it succeeds
+// write it to the list and the offline store — so a failure rolls the row back
+// on its own and the offline copy never holds an unconfirmed state. Deleting is a move to the TRASH folder
 // tag, so it stays reversible and federates nothing - HqMessages.php hides
 // tagged items from every feed but the Trash folder view.
 import { apiDeleteItem, apiSaveToFolder, apiSetSeen, apiSetStar } from "@utsukta/spa-core/lib/item-api";
 import { fetchMessages, patchEntry, type MessageEntry } from "@utsukta/spa-core/lib/message-store";
 import { toast } from "@utsukta/spa-core/store/toast";
+import { action } from "solid-js";
 import type { useI18n } from "@utsukta/spa-core/i18n";
 
 /** Must match HqMessages::TRASH. */
@@ -17,34 +19,29 @@ type T = ReturnType<typeof useI18n>["t"];
 /** Applies a partial to the row in the list's own signal. */
 export type PatchFn = (b64mid: string, partial: Partial<MessageEntry>) => void;
 
-export function createInboxActions(t: T, patch: PatchFn) {
-  // Local signal + IndexedDB in one call: the two must never disagree.
-  function apply(b64mid: string, partial: Partial<MessageEntry>) {
-    patch(b64mid, partial);
-    void patchEntry(b64mid, partial);
-  }
-
-  async function run(b64mid: string, optimistic: Partial<MessageEntry>,
-                     revert: Partial<MessageEntry>, call: () => Promise<unknown>): Promise<boolean> {
-    apply(b64mid, optimistic);
+/** `show` patches the list's optimistic view, `patch` its confirmed entries. */
+export function createInboxActions(t: T, patch: PatchFn, show: PatchFn) {
+  // Resolves to whether the call succeeded. (Solid types an action as its
+  // generator; at runtime a call returns a promise of the return value.)
+  const run = action(function* (b64mid: string, partial: Partial<MessageEntry>, call: () => Promise<unknown>) {
+    show(b64mid, partial);
     try {
-      await call();
-      return true;
+      yield call();
     } catch (err) {
-      apply(b64mid, revert);
       toast.error(err instanceof Error ? err.message : String(err));
       return false;
     }
-  }
+    // List + IndexedDB together: the two must never disagree.
+    patch(b64mid, partial);
+    void patchEntry(b64mid, partial);
+    return true;
+  }) as unknown as (b64mid: string, partial: Partial<MessageEntry>, call: () => Promise<unknown>) => Promise<boolean>;
 
   const star = (e: MessageEntry, on = !e.starred) =>
-    run(e.b64mid, { starred: on }, { starred: !on }, () => apiSetStar(e.b64mid, on));
+    run(e.b64mid, { starred: on }, () => apiSetStar(e.b64mid, on));
 
   const setRead = (e: MessageEntry, read: boolean) =>
-    run(e.b64mid,
-        { unseen: !read, unseen_count: read ? "" : e.unseen_count },
-        { unseen: !!e.unseen, unseen_count: e.unseen_count },
-        () => apiSetSeen(e.b64mid, read));
+    run(e.b64mid, { unseen: !read, unseen_count: read ? "" : e.unseen_count }, () => apiSetSeen(e.b64mid, read));
 
   // The one folder primitive. Undo is literally the inverse call, which is why
   // add/remove are lists rather than a single "move" argument.
@@ -56,7 +53,7 @@ export function createInboxActions(t: T, patch: PatchFn) {
       ...before.filter((f) => !remove.includes(f)),
       ...add.filter((f) => !before.includes(f)),
     ];
-    const ok = await run(e.b64mid, { folders: after }, { folders: before }, async () => {
+    const ok = await run(e.b64mid, { folders: after }, async () => {
       for (const f of add) await apiSaveToFolder(e.b64mid, f);
       for (const f of remove) await apiSaveToFolder(e.b64mid, f, true);
     });

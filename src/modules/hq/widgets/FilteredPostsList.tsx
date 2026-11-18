@@ -9,7 +9,6 @@ import { For, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { MdOutlineOpen_in_new, MdOutlineRefresh, MdOutlineInbox } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import formatPostDate from "@utsukta/spa-core/lib/date";
 import { fetchNetworkStream, parseNetworkParams } from "@/modules/network/api";
 import { openPost } from "@/shared/views/modal-host";
@@ -17,8 +16,10 @@ import { WidgetShell } from "@ui/WidgetShell";
 import { IconButton, iconButtonClass } from "@ui/Button";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
-import { ErrorState } from "@ui/ErrorState";
 import { Skeleton } from "@ui/Skeleton";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 export type CardConfig = { count?: number; unseen?: boolean };
 export const COUNTS = [5, 10] as const;
@@ -50,12 +51,16 @@ export function FilteredPostsList(props: {
   empty?: JSX.Element;
 }) {
   const { t, locale } = useI18n();
-  const [posts, { refetch }] = createQueryResource(
-    "hq-filtered",
-    () => props.params,
-    (p) => fetchNetworkStream(parseNetworkParams(p)).then((r) => r.items),
-  );
-  const shown = () => (posts.latest ?? []).slice(0, props.count ?? 5);
+  // A changed filter keeps the current list up until the new one is ready.
+  const key = () => ["hq-filtered", props.params] as const;
+  const q = useAsyncQuery(() => ({
+    queryKey: key(),
+    queryFn: () => fetchNetworkStream(parseNetworkParams(props.params!)).then((r) => r.items),
+    enabled: !!props.params,
+  }));
+  const shown = () => q.data.slice(0, props.count ?? 5);
+  const refetch = () => invalidate(key());
+  const fetching = () => q.fetchStatus === "fetching";
 
   return (
     <WidgetShell
@@ -64,8 +69,8 @@ export function FilteredPostsList(props: {
       actions={
         props.params ? (
           <>
-            <IconButton label={t("hq.retry")} size="sm" onClick={() => void refetch()} disabled={posts.loading}>
-              <MdOutlineRefresh class={["w-3.5 h-3.5", { "animate-spin": posts.loading }]} />
+            <IconButton label={t("hq.retry")} size="sm" onClick={() => void refetch()} disabled={fetching()}>
+              <MdOutlineRefresh class={["w-3.5 h-3.5", { "animate-spin": fetching() }]} />
             </IconButton>
             <a
               href={`/network?${new URLSearchParams(props.params)}`}
@@ -81,8 +86,7 @@ export function FilteredPostsList(props: {
     >
 
       <Show when={props.params} fallback={<EmptyState size="sm" class="px-(--ws-px) pb-4">{props.empty}</EmptyState>}>
-        <Show when={!posts.error} fallback={<ErrorState message={t("widgets.load_error")} retry={() => void refetch()} />}>
-          <Show when={posts.latest} fallback={<div class="px-(--ws-px) pb-3.5 space-y-3"><Skeleton class="h-10" /><Skeleton class="h-10" /><Skeleton class="h-10" /></div>}>
+        <AsyncBoundary fallback={<div class="px-(--ws-px) pb-3.5 space-y-3"><Skeleton class="h-10" /><Skeleton class="h-10" /><Skeleton class="h-10" /></div>}>
             <Show
               when={shown().length > 0}
               fallback={<EmptyState size="sm" class="px-(--ws-px) pb-4" icon={<MdOutlineInbox class="w-7 h-7" />}>{t("widgets.no_matching_posts")}</EmptyState>}
@@ -114,8 +118,7 @@ export function FilteredPostsList(props: {
                 </For>
               </ul>
             </Show>
-          </Show>
-        </Show>
+        </AsyncBoundary>
       </Show>
     </WidgetShell>
   );

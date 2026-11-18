@@ -5,12 +5,13 @@
  * just 7–14 days out; this looks a month ahead. Hidden when there are none.
  */
 import { For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { WidgetShell } from "@ui/WidgetShell";
 import { Avatar } from "@ui/Avatar";
 import { ListRow } from "@ui/ListRow";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 interface Birthday { id: number; hash: string; name: string; photo: string; addr: string; date: string; days: number }
 
@@ -22,7 +23,8 @@ async function fetchBirthdays(): Promise<Birthday[]> {
 
 export default function BirthdaysWidget() {
   const { t, locale } = useI18n();
-  const [list] = createQueryResource("birthdays", fetchBirthdays);
+  const q = useAsyncQuery(() => ({ queryKey: ["birthdays"], queryFn: fetchBirthdays }));
+  const list = () => q.data;
 
   // "05-14" → "14 May"; a fixed leap year so Feb 29 formats.
   const day = (md: string) =>
@@ -32,7 +34,8 @@ export default function BirthdaysWidget() {
       : new Intl.RelativeTimeFormat(locale(), { numeric: "auto" }).format(days, "day");
 
   return (
-    <Show when={(list() ?? []).length > 0}>
+    <AsyncBoundary quiet>
+    <Show when={list().length > 0}>
       <WidgetShell title={t("widgets.birthdays")}>
 <div class="px-(--ws-px) py-3">
         <For each={list()}>
@@ -49,5 +52,6 @@ export default function BirthdaysWidget() {
       </div>
 </WidgetShell>
     </Show>
+    </AsyncBoundary>
   );
 }

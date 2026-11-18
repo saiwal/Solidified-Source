@@ -1,5 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { For, Show, createOptimistic, action } from "solid-js";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -8,6 +7,9 @@ import { ComposerKindIcon } from "@/shared/editor/components/ComposerModal";
 import { openPost } from "@/shared/views/modal-host";
 import { Button } from "@ui/Button";
 import { WidgetShell } from "@ui/WidgetShell";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 type ScheduledPost = {
   iid: number;
@@ -44,32 +46,33 @@ export default function ScheduledPostsWidget() {
   const { t } = useI18n();
   // Cached, so the widget is there on return to HQ instead of popping in
   // after its fetch. A failed fetch throws → no data → stays hidden.
-  const [data, { refetch: load, mutate }] = createQueryResource(
-    "hq-scheduled",
-    async () => {
+  const key = ["hq-scheduled"] as const;
+  const q = useAsyncQuery(() => ({
+    queryKey: key,
+    queryFn: async () => {
       const res = await apiFetch("/spa/scheduled");
       if (!res.ok) throw new Error(String(res.status));
       return ((await res.json()) as { data?: ScheduledPost[] }).data ?? [];
     },
-    { staleTime: 0 }, // posts are scheduled from the composer
-  );
-  const posts = () => data() ?? [];
-  const [busy, setBusy] = createSignal<string | null>(null);
+    staleTime: 0, // posts are scheduled from the composer
+  }));
+  const load = () => void invalidate(key);
+  // The queue, with a publish/cancel taking the row out at once; a failed
+  // request puts it back on its own.
+  const [posts, setPosts] = createOptimistic((): ScheduledPost[] => q.data);
 
-  async function act(uuid: string, action: "publish" | "delete") {
-    setBusy(uuid);
-    try {
-      const res = await apiFetch(`/spa/scheduled/${action}`, {
-        method: "POST",
-        body: JSON.stringify({ uuid }),
-      });
-      if (res.ok) mutate((p) => p?.filter((x) => x.uuid !== uuid));
-    } finally {
-      setBusy(null);
-    }
-  }
+  const act = action(function* (uuid: string, what: "publish" | "delete") {
+    setPosts((p) => p.filter((x) => x.uuid !== uuid));
+    const res: Response = yield apiFetch(`/spa/scheduled/${what}`, {
+      method: "POST",
+      body: JSON.stringify({ uuid }),
+    });
+    if (!res.ok) return;
+    yield invalidate(key);
+  });
 
   return (
+    <AsyncBoundary quiet>
     <Show when={posts().length > 0}>
       <WidgetShell
         class="flex flex-col max-h-[480px]"
@@ -81,7 +84,7 @@ export default function ScheduledPostsWidget() {
           <For each={posts()}>
             {(post) => (
               <div
-                class={["px-(--ws-px) py-2.5 hover:bg-elevated transition-colors cursor-pointer", { "opacity-50 pointer-events-none": busy() === post.uuid }]}
+                class="px-(--ws-px) py-2.5 hover:bg-elevated transition-colors cursor-pointer"
                 onClick={() => openPost(post.uuid, { onClose: () => void load() })}
               >
                 {/* The queue mixes wall posts and DMs — the same glyphs the
@@ -133,5 +136,6 @@ export default function ScheduledPostsWidget() {
       </WidgetShell>
 
     </Show>
+    </AsyncBoundary>
   );
 }

@@ -1,7 +1,7 @@
 import { markItemSeen } from '@utsukta/spa-core/lib/markSeen';
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineChevron_left, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineMenu, MdOutlineSearch, MdOutlineWarning } from "solid-icons/md";
-import { createSignal, createMemo, onCleanup, lazy, For, Show, Loading, type Component, createEffect } from "solid-js";
+import { createSignal, createMemo, onCleanup, lazy, For, Show, Loading, type Component, createEffect, createOptimisticStore, deep } from "solid-js";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 import { openPost } from "@/shared/views/modal-host";
 
@@ -590,7 +590,12 @@ export const MessageList: Component<{
   const patch: PatchFn = (b64mid, partial) =>
     setEntries((prev) => prev.map((e) => (e.b64mid === b64mid ? { ...e, ...partial } : e)));
 
-  const acts = createInboxActions(t, patch);
+  // What the rows show: the confirmed entries plus mail actions in flight —
+  // createInboxActions writes `show` at once and `patch` once the call lands.
+  const [view, setView] = createOptimisticStore(() => deep(entries()), [] as MessageEntry[], { key: "b64mid" });
+  const show: PatchFn = (b64mid, partial) =>
+    setView((s) => { const e = s.find((x) => x.b64mid === b64mid); if (e) Object.assign(e, partial); });
+  const acts = createInboxActions(t, patch, show);
   const currentFolder = () => (props.type === "folder" ? props.file ?? "" : undefined);
   // Notices come from the notify table, not from item — there is no mid to
   // star, file or mark unread, so the mail chrome stays off for that feed.
@@ -634,9 +639,9 @@ export const MessageList: Component<{
   // Trash, a moved row leaves the folder it was filed under. The server applies
   // the same rules on the next fetch.
   const visible = createMemo(() => {
-    if (!mailable()) return entries();
+    if (!mailable()) return view;
     const folder = currentFolder();
-    return entries().filter((e) => {
+    return view.filter((e) => {
       const f = e.folders;
       if (!f) return true;
       if (folder) return f.includes(folder);
@@ -757,6 +762,19 @@ export const MessageList: Component<{
   // poll: refresh page 0 in place instead of replacing the list — a reset
   // drops every paged-in row, so a reader scrolled past page 1 would have the
   // list shrink under them and land back at the top every 30s.
+  // The props a fetch depends on, read once here. loadPage runs from an
+  // effect's callback and from timers, which have no owner — reading a
+  // conditional prop there compiles to creating a memo, which Solid 2 forbids
+  // (PRIMITIVE_IN_EFFECT_CALLBACK, shown as this list's load error).
+  const query = createMemo(() => ({
+    type: props.type,
+    file: props.file,
+    search: (props.authorFilter ?? "").trim(),
+    xchan: props.xchan,
+    unread: props.unread,
+    filters: props.filters,
+  }));
+
   async function loadPage(reset = false, poll = false) {
     if (!reset && loadMoreActive) return;
     // Never cut in on a tab switch or page load — skip this tick instead.
@@ -782,15 +800,16 @@ export const MessageList: Component<{
     if (reset) props.onRefreshingChange?.(true);
 
     try {
-      const feedType = props.type;
+      const qy = query();
+      const feedType = qy.type;
       const data = await fetchMessages({
         offset: currentOffset,
         type: feedType === "folder" ? "filed" : feedType,
-        file: feedType === "folder" ? (props.file ?? "") : "",
-        search: (props.authorFilter ?? "").trim(),
-        xchan: props.xchan,
-        unread: props.unread,
-        filters: props.filters,
+        file: feedType === "folder" ? (qy.file ?? "") : "",
+        search: qy.search,
+        xchan: qy.xchan,
+        unread: qy.unread,
+        filters: qy.filters,
         signal,
       });
 
@@ -978,7 +997,11 @@ export const MessageList: Component<{
           <>
             <GroupHeader label={group.label} count={group.items.length} />
             <For each={group.items}>
-              {(entry) => (
+              {(entry) => {
+                // Here, not in registerRef: a ref callback has no owner in
+                // Solid 2, so onCleanup there throws and halts the app.
+                onCleanup(() => rowEls.delete(entry.b64mid));
+                return (
                 <MessageItem
                   entry={entry}
                   feedType={props.type}
@@ -992,12 +1015,10 @@ export const MessageList: Component<{
                   dragging={drag.draggingId() === entry.b64mid}
                   swipeDx={drag.swipeOffset(entry.b64mid)}
                   onPointerDown={mailable() ? drag.onRowPointerDown(entry.b64mid) : undefined}
-                  registerRef={(el) => {
-                    rowEls.set(entry.b64mid, el);
-                    onCleanup(() => rowEls.delete(entry.b64mid));
-                  }}
+                  registerRef={(el) => { rowEls.set(entry.b64mid, el); }}
                 />
-              )}
+                );
+              }}
             </For>
           </>
         )}

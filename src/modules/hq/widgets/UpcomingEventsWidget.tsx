@@ -1,6 +1,4 @@
-import { createSignal, For, Show, createEffect } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { toast } from "@utsukta/spa-core/store/toast";
+import { createSignal, For, Show } from "solid-js";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchEvents, type CalEvent } from "@/modules/calendar/api";
 import { openEvent } from "@/shared/views/modal-host";
@@ -10,6 +8,9 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
 import { IconButton, iconButtonClass } from "@ui/Button";
 import { WidgetShell } from "@ui/WidgetShell";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 function next30DaysRange() {
   const start = new Date();
@@ -50,16 +51,14 @@ const SkeletonRow = () => (
 export default function UpcomingEventsWidget() {
   const { t } = useI18n();
   // Cached: returning to HQ shows the list at once and revalidates behind it.
-  const [data, { refetch: load }] = createQueryResource(
-    "hq-upcoming-events",
-    () => currentNick() || null,
-    async (nick) => (await fetchEvents(nick, next30DaysRange())).slice(0, 8),
-    { staleTime: 0 }, // events change in the calendar module
-  );
-  const events = () => data() ?? [];
-  const loading = () => data() === undefined && !data.error;
-  const error = () => (data() === undefined ? data.error : undefined);
-  createEffect(() => data.error?.message, (msg) => { if (msg) toast.error(msg); });
+  const q = useAsyncQuery(() => ({
+    queryKey: ["hq-upcoming-events", currentNick() || null],
+    queryFn: async () => (await fetchEvents(currentNick(), next30DaysRange())).slice(0, 8),
+    enabled: !!currentNick(),
+    staleTime: 0, // events change in the calendar module
+  }));
+  const events = () => q.data;
+  const load = () => void invalidate(["hq-upcoming-events"]);
   const [activeEvent, setActiveEvent] = createSignal<CalEvent | null>(null);
 
   return (
@@ -87,17 +86,8 @@ export default function UpcomingEventsWidget() {
 
         {/* Body */}
         <div class="flex flex-col">
-          <Show when={loading()}>
-            <For each={[1, 2, 3]}>{() => <SkeletonRow />}</For>
-          </Show>
-
-          <Show when={!loading() && error()}>
-            <div class="px-(--ws-px) py-4 text-center">
-              <button onClick={load} class="text-xs text-accent hover:underline">{t("hq.retry")}</button>
-            </div>
-          </Show>
-
-          <Show when={!loading() && !error() && events().length === 0}>
+          <AsyncBoundary fallback={<For each={[1, 2, 3]}>{() => <SkeletonRow />}</For>}>
+          <Show when={events().length === 0}>
             <div class="px-(--ws-px) py-6 flex flex-col items-center gap-2 text-muted">
               <MdOutlineCalendar_today class="w-7 h-7 opacity-30" />
               <span class="text-xs">{t("hq.no_upcoming_events")}</span>
@@ -170,6 +160,7 @@ export default function UpcomingEventsWidget() {
               );
             }}
           </For>
+          </AsyncBoundary>
         </div>
       </WidgetShell>
       </div>

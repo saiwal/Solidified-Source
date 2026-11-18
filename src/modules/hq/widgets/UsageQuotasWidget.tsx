@@ -4,24 +4,26 @@
 // just means the widget renders nothing).
 
 import { For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchAccountSettings } from "@/modules/settings/api/api";
 import type { AccountQuota } from "@/modules/settings/store/types";
 import { formatQuotaValue, quotaPercent } from "@/shared/lib/quota-format";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { WidgetShell } from "@ui/WidgetShell";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 export default function UsageQuotasWidget() {
   const { t } = useI18n();
-  const [settings] = createQueryResource("hq-usage-quotas", fetchAccountSettings);
+  const q = useAsyncQuery(() => ({ queryKey: ["hq-usage-quotas"], queryFn: fetchAccountSettings }));
 
   // Only the quotas with a running total can render as a bar — limit-only
   // values (a floor, or a per-room concurrent count) have nothing to fill;
   // they still show up in full on the Account settings page.
-  const quotas = () => (settings()?.quotas ?? []).filter((q) => quotaPercent(q) !== null);
+  const quotas = () => (q.data.quotas ?? []).filter((x) => quotaPercent(x) !== null);
 
   return (
-    <Show when={!settings.loading && quotas().length > 0}>
+    <AsyncBoundary quiet>
+    <Show when={quotas().length > 0}>
       <WidgetShell title={t("widgets.usage_quotas")}>
 <div class="px-(--ws-px) py-3" data-tour="hq.quotas">
 
@@ -38,6 +40,7 @@ export default function UsageQuotasWidget() {
       </div>
 </WidgetShell>
     </Show>
+    </AsyncBoundary>
   );
 }
 

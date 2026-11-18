@@ -127,6 +127,10 @@ export default function InboxView() {
   const feedBadge = (type: MessageType) =>
     type === "direct" ? folderData()?.unread_direct ?? 0 : 0;
 
+  // Folder rows register as drop targets from their ref; a ref callback has
+  // no owner in Solid 2 (onCleanup there throws), so unregister them here.
+  const dropTargets: (() => void)[] = [];
+  onCleanup(() => dropTargets.forEach((off) => off()));
   const items = createMemo<SubPageItem[]>(() => [
     ...feedSections().map((s, i, all) => ({
       path: s.key,
@@ -148,7 +152,7 @@ export default function InboxView() {
       dropTarget: !!dragPreview(),
       // Registers the row as a drop target, so a message can be dragged from
       // the list straight onto the folder.
-      ref: (el: HTMLElement) => onCleanup(registerDropTarget(f.name, el)),
+      ref: (el: HTMLElement) => { dropTargets.push(registerDropTarget(f.name, el)); },
     })),
     // Not a feed — every message filter that decides what reaches this channel.
     {
