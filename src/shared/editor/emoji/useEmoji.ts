@@ -7,7 +7,7 @@
  */
 
 import { createSignal, createMemo } from "solid-js";
-import { getEmojiMap, type EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
+import { getEmojiMap, addRecentEmoji, type EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { getCaretRect } from "../mention/useMention";
 
 export type { EmojiEntry };
@@ -131,6 +131,7 @@ export function useEmoji(): EmojiState {
   }
 
   function insertWysiwyg(entry: EmojiEntry, syncBody: () => void) {
+    addRecentEmoji(entry.shortname);
     const sel = window.getSelection();
     const q = query() ?? "";
     if (sel && sel.rangeCount > 0) {
@@ -158,6 +159,7 @@ export function useEmoji(): EmojiState {
   }
 
   function insertTextarea(entry: EmojiEntry, ta: HTMLTextAreaElement, setBody: (v: string) => void) {
+    addRecentEmoji(entry.shortname);
     const tag = entry.shortname;
     const cursor = ta.selectionStart;
     const before = ta.value.slice(0, cursor);

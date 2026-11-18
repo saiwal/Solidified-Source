@@ -1144,6 +1144,20 @@ export type RawDictionary = {
     emoji_picker_title:       string;
     emoji_search_placeholder: string;
     emoji_no_results:         string;
+    emoji_recent:             string;
+    emoji_all:                string;
+    emoji_categories:         string;
+    emoji_server:             string;
+    emoji_group_smileys:      string;
+    emoji_group_people:       string;
+    emoji_group_nature:       string;
+    emoji_group_food:         string;
+    emoji_group_travel:       string;
+    emoji_group_activities:   string;
+    emoji_group_objects:      string;
+    emoji_group_symbols:      string;
+    emoji_group_flags:        string;
+    emoji_group_other:        string;
     // RichEditor tabs
     write_tab:   string;
     source_tab:  string;
