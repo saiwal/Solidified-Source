@@ -12,7 +12,7 @@
  * undo step.
  */
 
-import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
+import { createSignal, onCleanup, onSettled, createEffect, untrack } from "solid-js";
 import { MdOutlineClose, MdOutlineKeyboard_arrow_down, MdOutlineKeyboard_arrow_up } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { IconButton, Button } from "@ui/Button";
@@ -63,7 +63,7 @@ export default function FindReplace(props: FindReplaceProps) {
     setCur((c) => Math.min(c, Math.max(0, list.length - 1)));
   };
 
-  createEffect(() => { query(); matchCase(); search(); });
+  createEffect(() => [query(), matchCase()], () => { search(); });
 
   // Typing in the document while the bar is open moves every match.
   let raf = 0;
@@ -71,16 +71,17 @@ export default function FindReplace(props: FindReplaceProps) {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(search);
   });
-  onMount(() => {
-    observer.observe(props.surface, { childList: true, subtree: true, characterData: true });
-    (props.focusReplace ? replaceEl : findEl)?.focus();
+  const mount = untrack(() => ({ surface: props.surface, focusReplace: props.focusReplace }));
+  onSettled(() => {
+    observer.observe(mount.surface, { childList: true, subtree: true, characterData: true });
+    (mount.focusReplace ? replaceEl : findEl)?.focus();
     findEl?.select();
   });
 
   createEffect(() => {
-    const reg = highlights();
     const all = ranges();
-    const current = all[cur()];
+    return { reg: highlights(), all, current: all[cur()] };
+  }, ({ reg, all, current }) => {
     if (reg && Highlight) {
       reg.set("hz-find", new Highlight(...all));
       reg.set("hz-find-current", current ? new Highlight(current) : new Highlight());

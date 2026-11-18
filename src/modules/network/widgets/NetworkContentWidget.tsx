@@ -1,4 +1,4 @@
-import { createEffect, on, onCleanup, Show, For, Switch, Match } from "solid-js";
+import { createEffect, onCleanup, Show, For, Switch, Match } from "solid-js";
 import { useLocation, useSearchParams } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -40,8 +40,8 @@ export default function NetworkContentWidget() {
   let initialized = false;
   let sentinel!: HTMLDivElement;
 
-  createEffect(() => {
-    if (auth.loading) return;
+  createEffect(() => auth.loading, (loading) => {
+    if (loading) return;
     if (initialized) return;
     initialized = true;
     // A bare /network starts from the remembered sort. Merge it into the params
@@ -56,26 +56,25 @@ export default function NetworkContentWidget() {
   // notifications panel, saved-search-style URLs) only change the URL.
   // `search` is left to the search box, which debounces its own apply.
   const location = useLocation();
-  createEffect(on(() => location.search, () => {
+  createEffect(() => location.search, () => {
     const loaded = loadedNetworkParams();
     if (!loaded) return;
     const next = parseNetworkParams(searchParams);
     const { search: _a, ...a } = next;
     const { search: _b, ...b } = loaded;
     if (JSON.stringify(a) !== JSON.stringify(b)) applyNetwork(next);
-  }, { defer: true }));
+  }, { defer: true });
 
   onCleanup(() => resetPosts());
 
-  createEffect(() => {
-    if (scrollStyle() !== "endless") return;
-    if (!sentinel) return;
+  createEffect(() => scrollStyle() === "endless", (endless) => {
+    if (!endless || !sentinel) return;
     const observer = new IntersectionObserver(
       (entries) => { if (entries[0].isIntersecting) loadMore(); },
       { rootMargin: "200px" },
     );
     observer.observe(sentinel);
-    onCleanup(() => observer.disconnect());
+    return () => observer.disconnect();
   });
 
   return (

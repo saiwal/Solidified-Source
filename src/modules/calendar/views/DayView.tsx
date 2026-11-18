@@ -1,4 +1,4 @@
-import { For, Show, createMemo, onMount } from "solid-js";
+import { For, Show, createMemo, onSettled } from "solid-js";
 import type { CalEvent } from "../api";
 import {
   HOUR_H, isoDateStr, todayKey, prevDay,
@@ -55,7 +55,7 @@ export default function DayView(props: Props) {
   const colItems = createMemo(() => columnLayout(timedEvs()));
 
   let scrollRef!: HTMLDivElement;
-  onMount(() => scrollRef?.scrollTo({ top: 7 * HOUR_H - 16 }));
+  onSettled(() => { scrollRef?.scrollTo({ top: 7 * HOUR_H - 16 }); });
 
   return (
     <div class="flex flex-col h-full">

@@ -3,7 +3,7 @@
 // section headers carry links and buttons beside the toggle target — markup
 // that cannot live inside a <button>. Spread the trigger props onto each
 // toggle so aria-expanded/aria-controls are wired once.
-import { Show, createEffect, createSignal, createUniqueId, on, onCleanup } from "solid-js";
+import { Show, createEffect, createSignal, createUniqueId, onCleanup } from "solid-js";
 import type {
   CollapsibleProps,
   CollapsibleTriggerProps,
@@ -20,7 +20,7 @@ export function Collapsible(props: CollapsibleProps) {
   const panelId = createUniqueId();
   const trigger: CollapsibleTriggerProps = {
     get "aria-expanded"() {
-      return props.open;
+      return props.open ? "true" : "false";
     },
     "aria-controls": panelId,
     onClick: () => props.onOpenChange(!props.open),
@@ -42,9 +42,7 @@ export function Collapsible(props: CollapsibleProps) {
   });
 
   createEffect(
-    on(
-      () => props.open,
-      (open) => {
+    () => props.open, (open) => {
         clearTimeout(timer);
         if (frame) cancelAnimationFrame(frame);
         setSettled(false);
@@ -68,9 +66,7 @@ export function Collapsible(props: CollapsibleProps) {
           setExpanded(false);
           timer = setTimeout(() => setMounted(false), DURATION);
         }
-      },
-      { defer: true },
-    ),
+      }, { defer: true },
   );
 
   return (

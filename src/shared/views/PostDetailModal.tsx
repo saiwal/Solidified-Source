@@ -1,6 +1,6 @@
 // src/shared/views/PostDetailModal.tsx
 import RelatedPostsFooter from "@/shared/stream/components/RelatedPostsFooter";
-import { type Component, createEffect, createMemo, createSignal, on, Show, onMount, useContext } from "solid-js";
+import { createEffect, createMemo, createSignal, Show, onSettled, useContext, type Component } from "solid-js";
 import PostCard from "../stream/components/PostCard";
 import type { StreamHandlers } from "../stream/types";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
@@ -164,7 +164,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   // comes from ComposerModal, and the pill is named after the post.
   const frame = useContext(ComposerFrameContext);
   let scrollRef!: HTMLDivElement;
-  onMount(() => scrollRef?.focus());
+  onSettled(() => { scrollRef?.focus(); });
 
   async function loadNode(uuid: string) {
     setNodeLoading(true);
@@ -269,7 +269,7 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
     }
   }
 
-  createEffect(on(() => props.uuid, (uuid) => { void loadNode(uuid); }));
+  createEffect(() => props.uuid, (uuid) => { void loadNode(uuid); });
 
   function refetch() { void loadNode(props.uuid); }
 
@@ -428,7 +428,9 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
     nodeData() && isDirectMessage(nodeData()!) ? t("post.dm_title") : t("post.modal_title");
   createEffect(() => {
     const n = nodeData();
-    if (frame && n) frame.setDocTitle(n.title || n.authorName);
+    return n && { title: n.title || n.authorName, uuid: n.uuid };
+  }, (n) => {
+    if (frame && n) frame.setDocTitle(n.title);
     if (frame && n) frame.setThreadRoot?.(n.uuid);
   });
 
@@ -436,13 +438,13 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   const isLg = createMediaQuery("(min-width: 1024px)");
   const split = () => frame?.mode() === "page" && isLg();
   // The outer body doesn't scroll when split, so hand keyboard focus to a column.
-  createEffect(on([split, () => !!displayNode()], ([s, loaded]) => {
+  createEffect(() => [split(), (() => !!displayNode())()], ([s, loaded]) => {
     if (!s || !loaded) return;
     requestAnimationFrame(() => {
       const col = displayNode()?.children.length ? "comments" : "post";
       scrollRef?.querySelector<HTMLElement>(`[data-col=${col}]`)?.focus({ preventScroll: true });
     });
-  }));
+  });
 
   // No header of its own: ComposerModal supplies it, and inline the host (the
   // inbox reader) has its own toolbar with a Back button.
@@ -543,12 +545,12 @@ const PostDetailModal: Component<PostDetailModalProps> = (props) => {
   // top of it — only this outermost view is ever inline.
   const nested = (
     <Show when={nestedUuid()}>
-      <ComposerFrameContext.Provider value={undefined}>
+      <ComposerFrameContext value={null}>
       <PostDetailModal
         uuid={nestedUuid()!}
         onClose={() => setNestedUuid(null)}
       />
-      </ComposerFrameContext.Provider>
+      </ComposerFrameContext>
     </Show>
   );
 

@@ -9,16 +9,8 @@
  * part of the footer-feature-button row being standardized here.
  */
 
-import {
-  Show,
-  createContext,
-  createSignal,
-  createEffect,
-  onCleanup,
-  useContext,
-  type Component,
-  type JSX,
-} from "solid-js";
+import { Show, createContext, createSignal, useContext, type Component, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdOutlineExpand_less } from "solid-icons/md";
 import { buttonClass, iconButtonClass } from "@ui/Button";
 
@@ -122,7 +114,7 @@ export const ToggleButton: Component<ToggleButtonProps> = (props) => {
       type="button"
       onClick={props.onClick}
       title={props.title}
-      aria-pressed={props.active}
+      aria-pressed={props.active === undefined ? undefined : props.active ? "true" : "false"}
       class={composerTriggerClass(props.active, inMenu)}
     >
       {props.children}
@@ -186,14 +178,14 @@ export const PopoverButton: Component<PopoverButtonProps> = (props) => {
 
   // Dismiss on an outside click. Registered only while open, and it tolerates
   // the click that opened the panel because that target is inside `wrapper`.
-  createEffect(() => {
-    // In the menu the panel is part of the flow, and the menu owns dismissal.
-    if (!props.open() || inMenu) return;
+  // In the menu the panel is part of the flow, and the menu owns dismissal.
+  createEffect(() => props.open() && !inMenu, (on) => {
+    if (!on) return;
     const onDocClick = (e: MouseEvent) => {
       if (!clickedInside(e, wrapper)) props.setOpen(false);
     };
     document.addEventListener("click", onDocClick);
-    onCleanup(() => document.removeEventListener("click", onDocClick));
+    return () => document.removeEventListener("click", onDocClick);
   });
 
   return (
@@ -202,7 +194,7 @@ export const PopoverButton: Component<PopoverButtonProps> = (props) => {
         type="button"
         onClick={() => props.setOpen(!props.open())}
         title={props.title}
-        aria-expanded={props.open()}
+        aria-expanded={(props.open()) ? "true" : "false"}
         class={composerTriggerClass(props.active ?? props.open(), inMenu)}
       >
         {props.icon}
@@ -261,13 +253,13 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
   const [open, setOpen] = createSignal(false);
   let wrapper: HTMLSpanElement | undefined;
 
-  createEffect(() => {
-    if (!open()) return;
+  createEffect(open, (on) => {
+    if (!on) return;
     const onDocClick = (e: MouseEvent) => {
       if (!clickedInside(e, wrapper)) setOpen(false);
     };
     document.addEventListener("click", onDocClick);
-    onCleanup(() => document.removeEventListener("click", onDocClick));
+    return () => document.removeEventListener("click", onDocClick);
   });
 
   return (
@@ -293,7 +285,7 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
           type="button"
           title={props.menuLabel}
           aria-label={props.menuLabel}
-          aria-expanded={open()}
+          aria-expanded={(open()) ? "true" : "false"}
           onClick={() => setOpen(!open())}
           class={
             (props.icon ? "pl-1.5 pr-2 rounded-r-lg" : "px-2 rounded-r-lg") +
@@ -313,9 +305,9 @@ export const SplitSubmitButton: Component<SplitSubmitButtonProps> = (props) => {
                    overflow-y-auto bg-surface border border-rim rounded-xl shadow-xl p-1.5
                    flex flex-col gap-0.5 items-stretch"
           >
-            <ComposerMenuContext.Provider value={true}>
+            <ComposerMenuContext value={true}>
               {props.menu}
-            </ComposerMenuContext.Provider>
+            </ComposerMenuContext>
           </div>
         </Show>
       </Show>

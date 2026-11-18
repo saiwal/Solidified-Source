@@ -1,4 +1,4 @@
-import { Show, createEffect, onCleanup, onMount, createSignal, Switch, Match, For } from "solid-js";
+import { Show, onSettled, createSignal, Switch, Match, For, createEffect, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   threads,
@@ -76,26 +76,24 @@ export default function PubstreamContentWidget() {
   let sentinel!: HTMLDivElement;
   let searchInputRef: HTMLInputElement | undefined;
 
-  onMount(() => {
+  onSettled(() => {
     if (threads().length === 0) loadPubstream();
   });
 
   let tagInitialized = false;
-  createEffect(() => {
-    const currentTag = tag();
+  createEffect(tag, (currentTag) => {
     if (!tagInitialized) { tagInitialized = true; return; }
     loadPubstream(currentTag || undefined);
   });
 
-  createEffect(() => {
-    if (scrollStyle() !== "endless") return;
-    if (!sentinel) return;
+  createEffect(() => scrollStyle() === "endless", (endless) => {
+    if (!endless || !sentinel) return;
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(tag() || undefined); },
+      (entries) => { if (entries[0].isIntersecting) loadMore(untrack(tag) || undefined); },
       { rootMargin: "200px" },
     );
     observer.observe(sentinel);
-    onCleanup(() => observer.disconnect());
+    return () => observer.disconnect();
   });
 
   function openSearch() {

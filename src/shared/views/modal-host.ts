@@ -146,7 +146,7 @@ export interface ComposerFrame {
   setThreadRoot?: (uuid: string) => void;
 }
 
-export const ComposerFrameContext = createContext<ComposerFrame | undefined>(undefined);
+export const ComposerFrameContext = createContext<ComposerFrame | null>(null);
 
 export interface ComposerEntry extends ModeHolder {
   kind: ComposerKind;

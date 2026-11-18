@@ -1,25 +1,25 @@
 // Settings form for ArticleTeaserWidget instances: pick one of the channel's
 // articles.
 
-import { createSignal, For } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Loading } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchArticles } from "../api";
 import { Button } from "@ui/Button";
 import { Select } from "@ui/Field";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
 
 export default function ArticleTeaserConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
   const nick = usePageNick();
   const [uuid, setUuid] = createSignal(String(props.config.uuid ?? ""));
 
-  const [articles] = createQueryResource(
-    "articles-list",
-    () => nick() || null,
-    async (n) => (await fetchArticles(n)).articles,
-  );
+  const q = useAsyncQuery(() => ({
+    queryKey: ["articles-list", nick()],
+    queryFn: async () => (await fetchArticles(nick())).articles,
+    enabled: !!nick(),
+  }));
 
   return (
     <div class="flex flex-col gap-2">
@@ -27,9 +27,11 @@ export default function ArticleTeaserConfig(props: WidgetConfigProps) {
         {t("widgets.cfg_article")}
         <Select size="sm" class="mt-1 w-full" value={uuid()} onChange={(e) => setUuid(e.currentTarget.value)}>
           <option value="">—</option>
-          <For each={articles() ?? []}>
-            {(a) => <option value={a.uuid}>{a.title || a.created.slice(0, 10)}</option>}
-          </For>
+          <Loading>
+            <For each={q.data}>
+              {(a) => <option value={a.uuid}>{a.title || a.created.slice(0, 10)}</option>}
+            </For>
+          </Loading>
         </Select>
       </label>
       <Button size="sm" class="self-end" onClick={() => props.onSave({ uuid: uuid() })} disabled={!uuid()}>

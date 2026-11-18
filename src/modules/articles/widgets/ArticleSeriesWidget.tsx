@@ -6,11 +6,11 @@
 // ordered sequence, not a facet of the current list.
 
 import { For, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { WidgetShell } from "@ui/WidgetShell";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 interface SeriesItem {
   name: string;
@@ -31,25 +31,22 @@ export default function ArticleSeriesWidget() {
   const { t } = useI18n();
   const nick = usePageNick();
 
-  const [data] = createQueryResource(
-    "stream-series",
-    () => nick(),
-    (n) => fetchSeries(n),
-  );
+  const q = useAsyncQuery(() => ({ queryKey: ["stream-series", nick()], queryFn: () => fetchSeries(nick()) }));
+  const data = () => q.data;
 
   return (
     <WidgetShell title={t("widgets.article_series")}>
 
-      <Show when={!data.loading}>
+      <AsyncBoundary>
         <Show
-          when={(data() ?? []).length > 0}
+          when={data().length > 0}
           fallback={<p class="px-(--ws-px) py-3 text-xs text-muted">{t("articles.series_no_series")}</p>}
         >
           <ul class="p-1.5 space-y-0.5 max-h-[26rem] overflow-y-auto">
             <For each={data()}>
               {(series) => (
                 <li>
-                  <A
+                  <a
                     href={`/articles/${nick()}/series/${encodeURIComponent(series.name)}`}
                     class="w-full px-2.5 py-2 rounded-xl flex items-center gap-2 text-left hover:bg-elevated/40 transition-colors group"
                   >
@@ -57,13 +54,13 @@ export default function ArticleSeriesWidget() {
                       {series.name}
                     </span>
                     <span class="text-xs text-muted shrink-0 tabular-nums">{series.count}</span>
-                  </A>
+                  </a>
                 </li>
               )}
             </For>
           </ul>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 }

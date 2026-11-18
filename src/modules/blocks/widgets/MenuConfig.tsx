@@ -49,7 +49,7 @@ export default function MenuConfig(props: WidgetConfigProps) {
           class="mt-1 w-full"
           type="text"
           value={title()}
-          maxLength={60}
+          maxlength={60}
           onInput={(e) => setTitle(e.currentTarget.value)}
         />
       </label>

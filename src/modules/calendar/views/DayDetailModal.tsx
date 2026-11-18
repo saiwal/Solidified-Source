@@ -101,7 +101,7 @@ export default function DayDetailModal(props: Props) {
                   <div class={`rounded-xl transition-colors ${open() ? "bg-elevated/60" : "hover:bg-elevated/40"}`}>
                     <button
                       type="button"
-                      aria-expanded={open()}
+                      aria-expanded={(open()) ? "true" : "false"}
                       onClick={() => setActiveEventId((prev) => (prev === ev.id ? null : ev.id))}
                       class="w-full text-left px-3 py-2 flex items-start gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-accent"
                     >

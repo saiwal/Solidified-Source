@@ -4,17 +4,11 @@
  * Allows selecting public/connections/custom visibility for posts.
  */
 
-import {
-  createSignal,
-  createEffect,
-  Show,
-  For,
-  type Component,
-  type JSX,
-} from "solid-js";
+import { createSignal, Show, For, type Component, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { fetchConnections } from "@/modules/network/api";
 import type { AclEntry } from "@/modules/network/api";
@@ -118,14 +112,13 @@ const AclPicker: Component<AclPickerProps> = (props) => {
   // by the caller — so an already-selected chip keeps its name/photo even
   // after the search box is cleared or changed to a different query.
   const [resolvedCache, setResolvedCache] = createSignal<Map<string, AclEntry>>(new Map());
-  createEffect(() => {
-    const incoming = [
+  createEffect(() => [
       ...(props.entries ?? []),
       ...(props.seedEntries ?? []),
       ...(groupsRes() ?? []),
       ...contacts.initial(),
       ...contacts.results(),
-    ];
+    ], (incoming) => {
     if (!incoming.length) return;
     setResolvedCache((prev) => {
       let changed = false;

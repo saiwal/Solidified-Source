@@ -1,4 +1,4 @@
-import { Show, For, createEffect, createSignal } from "solid-js";
+import { Show, For, createSignal, createEffect } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchDisplaySettings, saveDisplaySettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
@@ -39,6 +39,7 @@ import { Modal, ModalPanel } from "@ui/Modal";
 import { useWidgetLayout, saveWidgetLayout } from "@utsukta/spa-core/store/widget-layout";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { Card } from "@ui/Card";
+import { deepOf } from "@utsukta/spa-core/lib/deep";
 
 /** The vars beyond base/txt/accent, shown in the "Advanced" disclosure. */
 const ADVANCED_VARS = THEME_VARS.filter(
@@ -74,8 +75,7 @@ export default function DisplaySection() {
     reloadOn: (prev, next) => prev?.theme !== next.theme,
   });
 
-  createEffect(() => {
-    const d = data();
+  createEffect(() => deepOf(data()), (d) => {
     if (!d) return;
     setPreviewSize(d.font_size as FontSize);
     setPreviewFamily(d.font_family as FontFamily);
@@ -648,8 +648,7 @@ function BackgroundPicker() {
     bgUrl() && !bgUrl().startsWith(PATTERN_FOLDER) && !bgUrl().startsWith(BG_FOLDER) ? bgUrl() : ""
   );
 
-  createEffect(() => {
-    const url = bgUrl();
+  createEffect(bgUrl, (url) => {
     if (url.startsWith(PATTERN_FOLDER)) setKind("pattern");
     else if (url.startsWith(BG_FOLDER)) setKind("background");
     else if (url) setCustomUrlVal(url);
@@ -802,7 +801,7 @@ function ColorSwatch(props: {
               else e.currentTarget.value = props.value;
             }
           }}
-          maxLength={7}
+          maxlength={7}
         />
       </div>
       <Show when={props.hint}>

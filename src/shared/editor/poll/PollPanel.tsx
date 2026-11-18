@@ -1,4 +1,4 @@
-import { Index, Show, type Component } from "solid-js";
+import { For, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { PollState } from "./usePollState";
 import { MdOutlineClose } from "solid-icons/md";
@@ -20,7 +20,7 @@ const PollPanel: Component<PollPanelProps> = (props) => {
       </span>
       {/* Index, not For: answers are plain strings, so For would key on the
           value and recreate the input on every keystroke (focus loss). */}
-      <Index each={poll.answers()}>
+      <For keyed={false} each={poll.answers()}>
         {(ans, i) => (
           <div class="flex items-center gap-2">
             <Input
@@ -42,7 +42,7 @@ const PollPanel: Component<PollPanelProps> = (props) => {
             </Show>
           </div>
         )}
-      </Index>
+      </For>
       <label class="flex items-center gap-2 text-xs text-muted cursor-pointer">
         <Switch checked={poll.multiple()} onChange={poll.setMultiple} />
         {t("editor.poll_multiple")}

@@ -1,5 +1,5 @@
 // Payment methods offered under the cart: PayPal, Razorpay, Cashfree, UPI, contact-seller.
-import { createSignal, onMount, onCleanup, Show } from 'solid-js';
+import { createSignal, onSettled, onCleanup, Show } from "solid-js";
 import {
   cartSubtotal, paymentConfig, order,
   checkout,
@@ -72,7 +72,7 @@ function PayPalButton() {
   const { t } = useI18n();
   const [sdkError, setSdkError] = createSignal(false);
 
-  onMount(() => {
+  onSettled(() => {
     const config = paymentConfig();
     const ppProvider = config?.providers.find(p => p.id === 'paypal');
     if (!ppProvider?.client_id) return;

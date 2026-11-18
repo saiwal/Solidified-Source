@@ -1,7 +1,8 @@
 // One grouped result list for the palette and the drawer. Rows are links (so
 // middle-click/new tab works); `active` + ids drive the palette's
 // aria-activedescendant keyboard focus.
-import { For, Show, type JSX } from "solid-js";
+import { For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 
 export interface Entry {
   key: string;
@@ -37,7 +38,7 @@ export default function ResultList(props: {
               <a
                 id={entryId(props.idPrefix, i())}
                 role="option"
-                aria-selected={props.active === i()}
+                aria-selected={(props.active === i()) ? "true" : "false"}
                 href={e.href}
                 target={e.external ? "_blank" : undefined}
                 rel={e.external ? "noopener noreferrer" : undefined}

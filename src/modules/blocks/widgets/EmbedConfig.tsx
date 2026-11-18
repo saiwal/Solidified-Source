@@ -52,7 +52,7 @@ export default function EmbedConfig(props: WidgetConfigProps) {
           class="mt-1 w-full"
           type="text"
           value={title()}
-          maxLength={100}
+          maxlength={100}
           onInput={(e) => setTitle(e.currentTarget.value)}
         />
       </label>

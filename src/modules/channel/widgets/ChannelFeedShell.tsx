@@ -1,5 +1,6 @@
 // src/modules/channel/widgets/ChannelFeedShell.tsx
-import { createEffect, createSignal, onCleanup, Show, type Component, type JSX } from "solid-js";
+import { createSignal, onCleanup, Show, type Component, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useScrollStyle } from "@utsukta/spa-core/store/scroll-style";
@@ -95,9 +96,11 @@ export default function ChannelFeedShell(props: {
     });
   };
 
-  const submitSearch = (e?: Event) => {
+  // `query` is passed by callers that just set searchInput: Solid 2 batches
+  // the write, so reading the signal back here would still see the old text.
+  const submitSearch = (e?: Event, query = searchInput()) => {
     e?.preventDefault();
-    const q = searchInput().trim();
+    const q = query.trim();
     setSearchParams({ search: q || undefined });
     if (!q) setSearchOpen(false);
   };
@@ -112,7 +115,7 @@ export default function ChannelFeedShell(props: {
   usePageSearch(() => ({
     value: currentSearch(),
     placeholder: t("channel.search_placeholder"),
-    onSearch: (q) => { setSearchInput(q); submitSearch(); },
+    onSearch: (q) => { setSearchInput(q); submitSearch(undefined, q); },
     onClear: clearSearch,
   }));
 
@@ -142,9 +145,8 @@ export default function ChannelFeedShell(props: {
       range: !r || r === DEFAULT_RANGE ? undefined : r,
     });
 
-  createEffect(() => {
-    const uuid = mid();
-    if (uuid) { navigate(`/display/${uuid}`, { replace: true }); return; }
+  createEffect(mid, (uuid) => {
+    if (uuid) navigate(`/display/${uuid}`, { replace: true });
   });
 
   createEffect(() => {
@@ -160,15 +162,16 @@ export default function ChannelFeedShell(props: {
       ...(str("dend") && { dend: str("dend") }),
       ...(dbegin && { dbegin }),
     };
-    loadChannel(nick(), p);
+    return { nick: nick(), p };
+  }, ({ nick, p }) => {
+    loadChannel(nick, p);
   });
 
   onCleanup(() => resetPosts());
 
   let sentinel!: HTMLDivElement;
-  createEffect(() => {
-    if (scrollStyle() !== "endless") return;
-    if (!sentinel) return;
+  createEffect(() => scrollStyle() === "endless", (endless) => {
+    if (!endless || !sentinel) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) loadMore();
@@ -176,7 +179,7 @@ export default function ChannelFeedShell(props: {
       { rootMargin: "200px" },
     );
     observer.observe(sentinel);
-    onCleanup(() => observer.disconnect());
+    return () => observer.disconnect();
   });
 
   return (

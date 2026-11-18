@@ -1,7 +1,7 @@
 // Frequency bars under the full player's controls. Mounting it is what routes
 // the <audio> element through Web Audio (see analyser() in the store). Draws
 // only while playing; rAF already stops in a hidden tab.
-import { createEffect, onCleanup } from "solid-js";
+import { createEffect } from "solid-js";
 import { analyser, playing } from "../store";
 
 const BARS = 48; // of the 64 bins — the top ones are near-empty for music
@@ -11,8 +11,9 @@ export default function Visualizer() {
   const node = analyser();
   const bins = new Uint8Array(node.frequencyBinCount);
 
-  createEffect(() => {
-    if (!playing()) return;
+  createEffect(playing, (on) => {
+    const cleanups: (() => void)[] = [];
+    if (!on) return;
     const g = canvas.getContext("2d")!;
     const color = getComputedStyle(canvas).getPropertyValue("--color-accent");
     let raf = 0;
@@ -29,7 +30,8 @@ export default function Visualizer() {
       raf = requestAnimationFrame(draw);
     };
     draw();
-    onCleanup(() => cancelAnimationFrame(raf));
+    cleanups.push(() => cancelAnimationFrame(raf));
+    return () => cleanups.forEach((f) => f());
   });
 
   return <canvas ref={canvas} width={480} height={64} class="w-full h-12 opacity-80" aria-hidden="true" />;

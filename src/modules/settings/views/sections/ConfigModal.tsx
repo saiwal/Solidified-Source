@@ -3,7 +3,8 @@
 // everything around it — backdrop, header, close, save/cancel footer — is here
 // so a second app config doesn't mean a second copy of it.
 
-import { Show, type JSX } from "solid-js";
+import { Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { Button } from "@ui/Button";

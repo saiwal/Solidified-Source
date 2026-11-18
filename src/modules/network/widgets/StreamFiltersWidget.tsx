@@ -25,7 +25,8 @@ import {
   MdFillLock,
   MdFillRss_feed,
 } from "solid-icons/md";
-import { createSignal, createEffect, createMemo, on, For, Show, type JSX } from "solid-js";
+import { createSignal, createEffect, createMemo, For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useInfiniteQuery, useQuery } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -115,11 +116,10 @@ function ConnFilterList(props: {
               <button
                 onClick={() => props.onSelect(c)}
                 title={c.address}
-                class="flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                classList={{
+                class={["flex-1 min-w-0 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                   "bg-accent-muted text-accent font-medium": active(),
                   "text-muted hover:bg-elevated hover:text-txt": !active(),
-                }}
+                }]}
               >
                 <props.Icon size={13} class="shrink-0" />
                 <span class="flex-1 truncate">{c.name}</span>
@@ -218,8 +218,8 @@ function AffinitySlider(props: { min: number; max: number; onChange: (min: numbe
   const { t } = useI18n();
   const [lo, setLo] = createSignal(props.min);
   const [hi, setHi] = createSignal(props.max);
-  createEffect(() => setLo(props.min));
-  createEffect(() => setHi(props.max));
+  createEffect(() => props.min, (v) => { setLo(v); });
+  createEffect(() => props.max, (v) => { setHi(v); });
 
   const commit = () => props.onChange(lo(), hi());
   const lPct = () => `${(lo() / AFFINITY_MAX) * 100}%`;
@@ -326,13 +326,13 @@ export default function StreamFiltersWidget() {
   const [dateOpen,      setDateOpen]      = createSignal(!!(str(searchParams.dbegin) || str(searchParams.dend)));
   const [affinityOpen,  setAffinityOpen]  = createSignal(!!(str(searchParams.cmin) || str(searchParams.cmax)));
 
-  createEffect(() => { if (file())                                    setFolderOpen(true); });
-  createEffect(() => { if (str(searchParams.gid))                     setGroupsOpen(true); });
-  createEffect(() => { if (str(searchParams.cid) || allForums())      setForumsOpen(true); });
-  createEffect(() => { if (tag())                                      setTagOpen(true); });
-  createEffect(() => { if (lang())                                     setLangOpen(true); });
-  createEffect(() => { if (dbegin() || dend())                         setDateOpen(true); });
-  createEffect(() => { if (cmin() || cmax())                           setAffinityOpen(true); });
+  createEffect(() => !!(file()), (on) => { if (on) setFolderOpen(true); });
+  createEffect(() => !!(str(searchParams.gid)), (on) => { if (on) setGroupsOpen(true); });
+  createEffect(() => !!(str(searchParams.cid) || allForums()), (on) => { if (on) setForumsOpen(true); });
+  createEffect(() => !!(tag()), (on) => { if (on) setTagOpen(true); });
+  createEffect(() => !!(lang()), (on) => { if (on) setLangOpen(true); });
+  createEffect(() => !!(dbegin() || dend()), (on) => { if (on) setDateOpen(true); });
+  createEffect(() => !!(cmin() || cmax()), (on) => { if (on) setAffinityOpen(true); });
 
   const search     = () => str(searchParams.search);
   const cid        = () => str(searchParams.cid);
@@ -344,12 +344,12 @@ export default function StreamFiltersWidget() {
   const [connInput, setConnInput] = createSignal("");
   const [debouncedConnQuery, setDebouncedConnQuery] = createSignal("");
   let connDebounceTimer: number | undefined;
-  createEffect(on(connInput, (q) => {
+  createEffect(connInput, (q) => {
     window.clearTimeout(connDebounceTimer);
     const trimmed = q.trim();
     if (trimmed.length < CONN_SEARCH_MIN_CHARS) { setDebouncedConnQuery(""); return; }
     connDebounceTimer = window.setTimeout(() => setDebouncedConnQuery(trimmed), CONN_SEARCH_DEBOUNCE_MS);
-  }));
+  });
   const [connResults] = createQueryResource(
     "acl-stream-search",
     () => debouncedConnQuery() || false,
@@ -509,8 +509,7 @@ export default function StreamFiltersWidget() {
             }
           >
             <div class="relative">
-              <span class="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                classList={{ "text-success-txt": isUrl(search()), "text-muted": !isUrl(search()) }}>
+              <span class={["absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none", { "text-success-txt": isUrl(search()), "text-muted": !isUrl(search()) }]}>
                 <MdFillSearch size={13} />
               </span>
               <input
@@ -524,11 +523,10 @@ export default function StreamFiltersWidget() {
                     handleUrlImport(search());
                   }
                 }}
-                classList={{
+                class={[`${INPUT_CLS} pl-6`, {
                   "border-success focus:ring-success": isUrl(search()),
                   "pr-7": hasSaveableSearch(),
-                }}
-                class={`${INPUT_CLS} pl-6`}
+                }]}
               />
               <Show when={hasSaveableSearch()}>
                 <button onClick={() => void saveSearch()} title={t("network.save_search")}
@@ -547,12 +545,10 @@ export default function StreamFiltersWidget() {
             return (
               <button
                 onClick={() => toggle(chip.key)}
-                class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm
-                       transition-colors text-left"
-                classList={{
+                class={["w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm\n                       transition-colors text-left", {
                   "bg-accent-muted text-accent font-medium": active(),
                   "text-muted hover:bg-elevated hover:text-txt": !active(),
-                }}
+                }]}
               >
                 <chip.Icon size={15} class="shrink-0" />
                 <span>{t(chip.labelKey as any)}</span>
@@ -701,11 +697,10 @@ export default function StreamFiltersWidget() {
               <div class="pl-6 pt-1 pb-0.5 space-y-0.5">
                 <button
                   onClick={() => { sp({ gid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
-                  class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                  classList={{
+                  class={["w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                     "bg-accent text-accent-fg font-medium": !str(searchParams.gid),
                     "text-muted hover:bg-elevated hover:text-txt": !!str(searchParams.gid),
-                  }}
+                  }]}
                 >
                   {t("network.folder_all")}
                 </button>
@@ -718,11 +713,10 @@ export default function StreamFiltersWidget() {
                           sp({ gid: String(group.id), xchan_label: group.name, cid: undefined });
                           setTimeout(applyNow, 0);
                         }}
-                        class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                        classList={{
+                        class={["w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                           "bg-accent-muted text-accent font-medium": active(),
                           "text-muted hover:bg-elevated hover:text-txt": !active(),
-                        }}
+                        }]}
                       >
                         <MdFillGroup size={13} class="shrink-0" />
                         <span class="truncate">{group.name}</span>
@@ -771,12 +765,11 @@ export default function StreamFiltersWidget() {
                     clears a single-forum filter whose entry isn't listed. */}
                 <button
                   onClick={() => { sp({ forums: allForums() ? undefined : "1", cid: undefined, gid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
-                  aria-pressed={allForums()}
-                  class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left"
-                  classList={{
+                  aria-pressed={(allForums()) ? "true" : "false"}
+                  class={["w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                     "bg-accent-muted text-accent font-medium": allForums(),
                     "text-muted hover:bg-elevated hover:text-txt": !allForums(),
-                  }}
+                  }]}
                 >
                   <MdFillForum size={13} class="shrink-0" />
                   {t("network.folder_all")}

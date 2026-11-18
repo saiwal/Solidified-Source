@@ -15,7 +15,7 @@
  *   in-app rather than federated as standalone objects, so a live KaTeX
  *   render beats a static raster image.
  */
-import { createEffect, createSignal, onCleanup, onMount, Show, type Component } from "solid-js";
+import { createSignal, onCleanup, onSettled, Show, type Component, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -41,13 +41,11 @@ const LatexComposerModal: Component<Props> = (props) => {
   let previewRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
 
-  onMount(() => textareaRef?.focus());
+  onSettled(() => { textareaRef?.focus(); });
 
   // Live preview — uses the app's already-loaded katex.min.css directly, no
   // font inlining needed here (that's only for the exported, standalone image).
-  createEffect(() => {
-    const src = source();
-    const mode = displayMode();
+  createEffect(() => [source(), displayMode()] as const, ([src, mode]) => {
     if (!previewRef) return;
     if (!src.trim()) {
       previewRef.textContent = t("editor.latex_preview_empty");

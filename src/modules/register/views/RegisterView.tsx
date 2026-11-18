@@ -1,5 +1,4 @@
 import { createSignal, Show, Switch, Match } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchRegisterConfig, submitRegister } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -110,9 +109,9 @@ export default function RegisterView() {
                   <p class="text-sm text-muted">{t("auth.register_closed")}</p>
                   <p class="text-sm text-muted">
                     {t("auth.register_affiliated_hub_note")}{" "}
-                    <A href="/directory/hubs" class="text-accent hover:underline font-medium">
+                    <a href="/directory/hubs" class="text-accent hover:underline font-medium">
                       {t("auth.register_browse_hubs")}
-                    </A>
+                    </a>
                   </p>
                 </div>
               </Match>
@@ -152,9 +151,9 @@ export default function RegisterView() {
                     <p class="text-xs text-muted bg-elevated rounded-lg px-3 py-2">
                       {t("auth.register_approval_note")}{" "}
                       {t("auth.register_affiliated_hub_note")}{" "}
-                      <A href="/directory/hubs" class="text-accent hover:underline font-medium">
+                      <a href="/directory/hubs" class="text-accent hover:underline font-medium">
                         {t("auth.register_browse_hubs")}
-                      </A>
+                      </a>
                     </p>
                   </Show>
                   <Show when={cfg().invite_only}>
@@ -171,7 +170,7 @@ export default function RegisterView() {
                     />
                   </Show>
 
-                  <form onSubmit={handleSubmit} class="space-y-4" noValidate>
+                  <form onSubmit={handleSubmit} class="space-y-4" novalidate>
 
                     {/* Name */}
                     <Show when={cfg().auto_channel_create}>
@@ -377,9 +376,9 @@ export default function RegisterView() {
                   {/* Sign-in link */}
                   <p class="text-center text-sm text-muted pt-2">
                     {t("auth.already_have_account")}{" "}
-                    <A href="/login" class="text-accent hover:underline font-medium">
+                    <a href="/login" class="text-accent hover:underline font-medium">
                       {t("auth.sign_in")}
-                    </A>
+                    </a>
                   </p>
                 </div>
               </Match>

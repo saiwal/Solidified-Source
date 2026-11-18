@@ -1,5 +1,6 @@
-import { createSignal, createEffect, Show, onCleanup, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, Show, onCleanup, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import { MdOutlinePerson, MdOutlinePerson_add, MdOutlineEdit, MdOutlineEmail, MdOutlineChat_bubble, MdOutlineCheck, MdOutlineBlock, MdOutlineGavel } from "solid-icons/md";
@@ -122,13 +123,13 @@ export default function AuthorPopover(props: Props) {
   // link fell back to the raw xchan url.
   const [profileFetch, setProfileFetch] = createSignal<"idle" | "loading" | "done">("idle");
 
-  createEffect(() => {
-    if (!open() || !props.url || profileFetch() !== "idle") return;
+  createEffect(() => (open() && profileFetch() === "idle" ? props.url : null), (url) => {
+    if (!url) return;
     const needsConnState = isLocal() && !isSelf();
     setProfileFetch("loading");
     if (needsConnState) setConnState({ tag: "loading" });
 
-    fetch(`/spa/xchan?hash=${encodeURIComponent(props.url)}`, { credentials: "include" })
+    fetch(`/spa/xchan?hash=${encodeURIComponent(url)}`, { credentials: "include" })
       .then(r => (r.ok ? r.json() : null))
       .then((body: { data?: { is_connected?: boolean; xchan_hash?: string; pdesc?: string } } | null) => {
         setProfileFetch("done");
@@ -157,8 +158,8 @@ export default function AuthorPopover(props: Props) {
       });
   });
 
-  createEffect(() => {
-    if (open() && triggerRef && popoverRef) popMount(triggerRef, popoverRef);
+  createEffect(open, (isOpen) => {
+    if (isOpen && triggerRef && popoverRef) popMount(triggerRef, popoverRef);
     else popUnmount();
   });
 
@@ -170,14 +171,16 @@ export default function AuthorPopover(props: Props) {
     if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
   }
 
-  createEffect(() => {
-    if (!open()) return;
+  createEffect(open, (isOpen) => {
+    const cleanups: (() => void)[] = [];
+    if (!isOpen) return;
     const handler = (e: MouseEvent) => {
       if (!triggerRef?.contains(e.target as Node) && !popoverRef?.contains(e.target as Node))
         setOpen(false);
     };
     document.addEventListener("mousedown", handler);
-    onCleanup(() => document.removeEventListener("mousedown", handler));
+    cleanups.push(() => document.removeEventListener("mousedown", handler));
+    return () => cleanups.forEach((f) => f());
   });
 
   async function handleConnect(e: MouseEvent) {

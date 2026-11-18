@@ -8,7 +8,7 @@
 // concern (see the ponytail note on pickRandom below).
 
 import { For, Show } from "solid-js";
-import { A, useNavigate } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 import { MdOutlineShuffle } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -78,7 +78,7 @@ export default function CardDeckWidget() {
             <For each={data()}>
               {(deck) => (
                 <li>
-                  <A
+                  <a
                     href={`/cards/${nick()}/deck/${encodeURIComponent(deck.name)}`}
                     class="w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left hover:bg-elevated transition-colors group"
                   >
@@ -95,7 +95,7 @@ export default function CardDeckWidget() {
                     >
                       <MdOutlineShuffle size={15} />
                     </IconButton>
-                  </A>
+                  </a>
                 </li>
               )}
             </For>

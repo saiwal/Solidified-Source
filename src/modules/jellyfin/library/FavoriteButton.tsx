@@ -11,7 +11,7 @@ export default function FavoriteButton(props: { s: JellyfinSession; item: JfItem
   const { t } = useI18n();
   const qc = useQueryClient();
   const [fav, setFav] = createSignal(!!props.item.UserData?.IsFavorite);
-  createEffect(() => setFav(!!props.item.UserData?.IsFavorite));
+  createEffect(() => !!props.item.UserData?.IsFavorite, (f) => { setFav(f); });
 
   const flip = async (e: MouseEvent) => {
     e.stopPropagation();

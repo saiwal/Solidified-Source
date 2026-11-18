@@ -1,10 +1,4 @@
-import {
-  createEffect,
-  createSignal,
-  Show,
-  For,
-  type Component,
-} from "solid-js";
+import { createSignal, Show, For, type Component, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { listFolderMeta } from "@/modules/files/api";
 import type { FileMeta } from "@/modules/files/api";
@@ -40,9 +34,7 @@ const FilesPicker: Component<Props> = (props) => {
   const [crumbs, setCrumbs] = createSignal<BreadcrumbEntry[]>([]);
   const currentHash = () => crumbs()[crumbs().length - 1]?.hash ?? "";
   const currentPath = () => crumbs()[crumbs().length - 1]?.displayPath ?? "";
-  createEffect(() =>
-    props.onFolderChange?.({ hash: currentHash(), displayPath: currentPath() }),
-  );
+  createEffect(() => ({ hash: currentHash(), displayPath: currentPath() }), (folder) => { props.onFolderChange?.(folder); });
 
   // listFolderMeta, not listFolder: this shares the cache key "files-folder"
   // with the files widget, and two fetchers on one key must return the same

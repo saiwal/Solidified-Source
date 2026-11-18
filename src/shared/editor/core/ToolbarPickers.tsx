@@ -17,8 +17,9 @@
  * nothing (colour / highlight / font / size all silently did nothing).
  */
 
-import { For, Show, onCleanup, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { For, Show, onCleanup } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useDropdown } from "@utsukta/spa-core/lib/useDropdown";
 import { Button, iconButtonClass } from "@ui/Button";

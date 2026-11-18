@@ -1,4 +1,5 @@
-import { Show, For, createSignal, createMemo, type JSX } from "solid-js";
+import { Show, For, createSignal, createMemo } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useQuery, useMutation, useQueryClient } from "@utsukta/spa-core/lib/query";
 import SubPageContent from "@/shared/views/SubPageContent";

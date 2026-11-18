@@ -7,7 +7,7 @@
 // Text subtitles ride along as <track>s; image subtitles (PGS, VobSub) and a
 // non-default audio track need the server, so picking one restarts the stream
 // at the current position with that burned in / selected.
-import { For, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createSignal, onCleanup, onSettled, createEffect, untrack } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { MdFillReplay, MdFillSkip_next, MdOutlinePhoto_camera, MdOutlineContent_cut } from "solid-icons/md";
@@ -159,7 +159,8 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
     videoReloaded();
   };
 
-  onMount(() => {
+  const itemId = untrack(() => props.id); // read once, outside onSettled (see Solid 2 notes)
+  onSettled(() => {
     setVideoActive(true);
     video.addEventListener("playing", () => {
       if (!started) { started = true; report("start"); }
@@ -184,22 +185,22 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
     video.addEventListener("seeking", () => {
       if (userAct()) partyRequest.seek(video.currentTime);
     });
-    onCleanup(attachVideo({ itemId: props.id, el: () => video, load: (at) => load(at, {}, false) }));
 
     video.addEventListener("ended", () => {
       // A party's queue is just this episode: move the whole party on ourselves
       if (partyHere()) { if (next()) goNext(); return; }
       setEnded(true);
     });
+    return attachVideo({ itemId, el: () => video, load: (at) => load(at, {}, false) });
   });
 
   // An episode's successor, looked up as soon as it opens — so "Next episode"
   // is available throughout, not only once it has ended.
   createEffect(() => {
     const it = item.data;
-    if (it?.Type === "Episode" && it.SeriesId) {
-      nextEpisode(props.s, it.SeriesId, it.Id).then(setNext).catch(() => undefined);
-    }
+    return it?.Type === "Episode" && it.SeriesId ? [it.SeriesId, it.Id] as const : null;
+  }, (ep) => {
+    if (ep) nextEpisode(props.s, ep[0], ep[1]).then(setNext).catch(() => undefined);
   });
 
   const goNext = () => {
@@ -212,8 +213,7 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
   // Start once the item is known: ?t= wins, else resume from Jellyfin's saved
   // position unless it's near the end (finished — start over).
   let kicked = false;
-  createEffect(() => {
-    const it = item.data;
+  createEffect(() => item.data, (it) => {
     if (!it || kicked) return;
     kicked = true;
     if (partyWants(props.id)) return; // the party loads it, at the group's position
@@ -225,10 +225,7 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
   });
 
   // Show the chosen text track, hide the rest. Tracks render in textSubs() order.
-  createEffect(() => {
-    const chosen = textSub();
-    const subs = textSubs();
-    loaded();
+  createEffect(() => [textSub(), textSubs(), loaded()] as const, ([chosen, subs]) => {
     queueMicrotask(() => {
       if (!video) return;
       Array.from(video.textTracks).forEach((tt, i) => { tt.mode = subs[i]?.Index === chosen ? "showing" : "disabled"; });

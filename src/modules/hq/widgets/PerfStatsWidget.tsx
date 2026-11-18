@@ -1,6 +1,6 @@
 import { apiError } from "@utsukta/spa-core/lib/fetch";
 import { isAdmin } from "@utsukta/spa-core/store/auth-store";
-import { createSignal, createEffect, on, onCleanup, onMount, For, Show } from "solid-js";
+import { createSignal, createEffect, onSettled, For, Show } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { WidgetShell } from "@ui/WidgetShell";
@@ -82,16 +82,16 @@ function PerfStatsPanelInner(props: { style: PlotStyle }) {
   }
 
   // Only toast on the first error, not every polling cycle
-  createEffect(on(error, (err, prev) => { if (err && !prev) toast.error(`Performance stats: ${err}`); }));
+  createEffect(error, (err, prev) => { if (err && !prev) toast.error(`Performance stats: ${err}`); });
 
-  onMount(() => {
+  onSettled(() => {
     fetchStats();
     const poll = setInterval(fetchStats, POLL_INTERVAL);
     const tick = setInterval(
       () => setAge(Math.round((Date.now() - lastFetch) / 1000)),
       1000
     );
-    onCleanup(() => { clearInterval(poll); clearInterval(tick); });
+    return () => { clearInterval(poll); clearInterval(tick); };
   });
 
   function Sparkline(p: { data: number[]; color: string }) {

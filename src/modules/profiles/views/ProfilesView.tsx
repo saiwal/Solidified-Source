@@ -1,5 +1,5 @@
 import { createSignal, Show, For } from "solid-js";
-import { A, useNavigate } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -154,13 +154,13 @@ function ProfileCard(props: {
       </div>
 
       <div class="flex items-center gap-2 shrink-0">
-        <A
+        <a
           href={`/settings/profile/${p.id}`}
           class="px-3 py-1.5 text-xs font-medium rounded-lg border border-rim
                  text-txt hover:bg-elevated transition-colors"
         >
           {t("profiles.edit")}
-        </A>
+        </a>
         <Show when={props.multiEnabled && !p.is_default}>
           <Button variant="ghost" size="sm" onClick={props.onDelete}>
             {t("profiles.delete")}

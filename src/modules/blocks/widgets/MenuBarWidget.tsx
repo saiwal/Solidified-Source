@@ -3,7 +3,7 @@
 // click-to-open dropdowns for submenu items (items linking "menu:<name>").
 // Below md it collapses into a hamburger toggle over the shared accordion.
 
-import { createEffect, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, For, onSettled, Show, createEffect } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
@@ -35,8 +35,8 @@ function TopMenu(props: {
   let panelRef: HTMLDivElement | undefined;
   const { x, y, mount, unmount } = useFloating({ placement: "bottom-start", offset: 4 });
 
-  createEffect(() => {
-    if (props.open && triggerRef && panelRef) mount(triggerRef, panelRef);
+  createEffect(() => props.open, (open) => {
+    if (open && triggerRef && panelRef) mount(triggerRef, panelRef);
     else unmount();
   });
 
@@ -45,7 +45,7 @@ function TopMenu(props: {
       <button
         ref={triggerRef}
         onClick={props.onToggle}
-        aria-expanded={props.open}
+        aria-expanded={(props.open) ? "true" : "false"}
         class={topItemClass}
       >
         <span class="truncate">{props.label}</span>
@@ -94,12 +94,12 @@ export default function MenuBarWidget(props: WidgetProps) {
   const [mobileOpen, setMobileOpen] = createSignal(false);
 
   let rootEl: HTMLElement | undefined;
-  onMount(() => {
+  onSettled(() => {
     const close = (e: MouseEvent) => {
       if (rootEl && !rootEl.contains(e.target as Node)) setOpenTop(null);
     };
     document.addEventListener("click", close);
-    onCleanup(() => document.removeEventListener("click", close));
+    return () => document.removeEventListener("click", close);
   });
 
   return (
@@ -112,7 +112,7 @@ export default function MenuBarWidget(props: WidgetProps) {
               <nav class="bg-surface border border-rim rounded-xl overflow-hidden">
                 <button
                   onClick={() => setMobileOpen(!mobileOpen())}
-                  aria-expanded={mobileOpen()}
+                  aria-expanded={(mobileOpen()) ? "true" : "false"}
                   class="w-full flex items-center justify-between px-4 py-2.5 text-sm
                          font-semibold text-txt hover:bg-elevated transition-colors"
                 >

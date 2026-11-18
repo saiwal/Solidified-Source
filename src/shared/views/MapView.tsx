@@ -12,7 +12,7 @@
  * (textContent / img.src), never as HTML strings, which Leaflet would
  * innerHTML.
  */
-import { createEffect, onCleanup, onMount } from "solid-js";
+import { onCleanup, onSettled, createEffect } from "solid-js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -43,17 +43,17 @@ export default function MapView(props: { points: MapPoint[]; class?: string }) {
   let map: L.Map | undefined;
   let layer: L.LayerGroup | undefined;
 
-  onMount(() => {
+  onSettled(() => {
     map = L.map(el, { worldCopyJump: true }).setView([20, 0], 2);
     L.tileLayer(TILES, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(map);
     layer = L.layerGroup().addTo(map);
   });
 
-  createEffect(() => {
+  createEffect(() => props.points.slice(), (points) => {
     if (!map || !layer) return;
     layer.clearLayers();
     const accent = getComputedStyle(el).getPropertyValue("--color-accent").trim() || "#3b82f6";
-    for (const p of props.points) {
+    for (const p of points) {
       const m = p.thumb
         ? L.marker([p.lat, p.lon], { icon: thumbIcon(p.thumb), title: p.label })
         : L.circleMarker([p.lat, p.lon], { radius: 7, color: accent, fillOpacity: 0.8 });
@@ -65,8 +65,8 @@ export default function MapView(props: { points: MapPoint[]; class?: string }) {
       if (p.onClick) m.on("click", p.onClick);
       m.addTo(layer);
     }
-    if (props.points.length) {
-      map.fitBounds(L.latLngBounds(props.points.map((p) => [p.lat, p.lon])), { padding: [40, 40], maxZoom: 14 });
+    if (points.length) {
+      map.fitBounds(L.latLngBounds(points.map((p) => [p.lat, p.lon])), { padding: [40, 40], maxZoom: 14 });
     }
   });
 

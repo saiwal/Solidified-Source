@@ -66,11 +66,11 @@ export default function PhotoLocation(props: { nick: string; resourceId: string;
                 </a>
               }
             >
-              <button type="button" aria-expanded={open()} onClick={() => setOpen((o) => !o)}
+              <button type="button" aria-expanded={(open()) ? "true" : "false"} onClick={() => setOpen((o) => !o)}
                 class="inline-flex items-center gap-1 text-xs text-muted hover:text-accent-txt rounded focus-visible:outline-2 focus-visible:outline-accent">
                 <MdOutlineLocation_on size={14} class="shrink-0" />
                 <span>{label()}</span>
-                <MdFillKeyboard_arrow_down size={14} class="transition-transform" classList={{ "rotate-180": open() }} />
+                <MdFillKeyboard_arrow_down size={14} class={["transition-transform", { "rotate-180": open() }]} />
               </button>
             </Show>
 

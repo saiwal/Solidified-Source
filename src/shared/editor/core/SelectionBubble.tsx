@@ -8,8 +8,9 @@
  * copy/paste menu above it.
  */
 
-import { Portal } from "solid-js/web";
-import { For, Show, createSignal, type JSX } from "solid-js";
+import { Portal } from "@solidjs/web";
+import { For, Show, createSignal } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdOutlineLink } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";

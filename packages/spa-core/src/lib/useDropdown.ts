@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup } from "solid-js";
+import { createSignal, createEffect } from "solid-js";
 import { useFloating, type UseFloatingOptions } from "./useFloating";
 
 /**
@@ -28,22 +28,20 @@ export function useDropdown(options: UseFloatingOptions = {}) {
 
   const { x, y, positioned, mount, unmount } = useFloating(options);
 
-  createEffect(() => {
-    const trigger = triggerEl();
-    const panel = panelEl();
-    if (open() && trigger && panel) mount(trigger, panel);
+  createEffect(() => [open(), triggerEl(), panelEl()] as const, ([isOpen, trigger, panel]) => {
+    if (isOpen && trigger && panel) mount(trigger, panel);
     else unmount();
   });
 
   // Only listen while open — list views mount one of these per row.
-  createEffect(() => {
-    if (!open()) return;
+  createEffect(open, (isOpen) => {
+    if (!isOpen) return;
     const onDocClick = (e: MouseEvent) => {
       const t = e.target as Node;
       if (!triggerEl()?.contains(t) && !panelEl()?.contains(t)) setOpen(false);
     };
     document.addEventListener("click", onDocClick);
-    onCleanup(() => document.removeEventListener("click", onDocClick));
+    return () => document.removeEventListener("click", onDocClick);
   });
 
   return {

@@ -2,8 +2,9 @@
 // Positioning and outside-click/Escape dismissal come from createPopover; this
 // adds the menu semantics: role="menu", arrow-key focus, focus back to the
 // trigger on close. ContextMenu opens the same panel at the pointer.
-import { Show, createContext, createEffect, on, onCleanup, splitProps, useContext, type JSX } from "solid-js";
-import { Dynamic, Portal } from "solid-js/web";
+import { Show, createContext, createEffect, onCleanup, useContext, omit } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Dynamic, Portal } from "@solidjs/web";
 import { MdOutlineMore_horiz } from "solid-icons/md";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
@@ -17,7 +18,7 @@ export const menuItemClass =
   "hover:bg-elevated/70 focus:bg-elevated/70 focus:outline-none " +
   "aria-disabled:opacity-60 aria-disabled:pointer-events-none disabled:opacity-60 disabled:pointer-events-none";
 
-const MenuContext = createContext<{ close: () => void }>();
+const MenuContext = createContext<{ close: () => void } | null>(null);
 
 type Popover = ReturnType<typeof createPopover>;
 
@@ -44,12 +45,12 @@ function MenuPanel(props: {
     if (wasInside) props.returnFocus()?.focus({ preventScroll: true });
   };
 
-  createEffect(on(pop.open, (open) => props.onOpenChange?.(open), { defer: true }));
+  createEffect(pop.open, (open) => { props.onOpenChange?.(open); }, { defer: true });
 
   // Focus the first item once the panel is in place, so the keyboard user
   // lands inside the menu (a mouse user never sees the difference).
-  createEffect(() => {
-    if (pop.open()) queueMicrotask(() => items()[0]?.focus({ preventScroll: true }));
+  createEffect(pop.open, (isOpen) => {
+    if (isOpen) queueMicrotask(() => items()[0]?.focus({ preventScroll: true }));
   });
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -70,7 +71,7 @@ function MenuPanel(props: {
   return (
     <Show when={pop.open()}>
       <Portal mount={topLayer()}>
-        <MenuContext.Provider value={{ close }}>
+        <MenuContext value={{ close }}>
           <div
             ref={(el) => { panel = el; pop.floating(el); }}
             role="menu"
@@ -92,7 +93,7 @@ function MenuPanel(props: {
           >
             {props.children}
           </div>
-        </MenuContext.Provider>
+        </MenuContext>
       </Portal>
     </Show>
   );
@@ -107,7 +108,7 @@ export function Menu(props: MenuProps) {
     // A ⋯ usually sits in a clickable row or card; the click is the menu's.
     onClick: (e?: MouseEvent) => { e?.stopPropagation(); pop.setOpen(!pop.open()); },
     "aria-haspopup": "menu" as const,
-    get "aria-expanded"() { return pop.open(); },
+    get "aria-expanded"() { return pop.open() ? "true" : "false"; },
   };
 
   return (
@@ -201,13 +202,13 @@ export function useMenu() {
 }
 
 export function MenuItem(props: MenuItemProps) {
-  const [own, rest] = splitProps(props, ["icon", "danger", "href", "download", "target", "rel", "keepOpen", "class", "children", "onClick"]);
+  const own = props, rest = omit(props, "icon", "danger", "href", "download", "target", "rel", "keepOpen", "class", "children", "onClick");
   const menu = useContext(MenuContext);
   return (
     <Dynamic
       component={own.href ? "a" : "button"}
       role="menuitem"
-      tabIndex={-1}
+      tabindex={-1}
       type={own.href ? undefined : "button"}
       href={own.href}
       download={own.download}

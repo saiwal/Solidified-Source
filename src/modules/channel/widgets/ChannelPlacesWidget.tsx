@@ -4,7 +4,7 @@
  * set by the composer's location button or a geotagged photo). A pin opens the
  * post's thread. Renders nothing while maps are off (see useMapsEnabled).
  */
-import { lazy, Show, Suspense } from "solid-js";
+import { lazy, Show, Loading } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { parseCoord } from "@utsukta/spa-core/lib/osm";
@@ -42,9 +42,9 @@ export default function ChannelPlacesWidget() {
       <WidgetShell title={t("widgets.channel_places")}>
 <div class="px-(--ws-px) py-3">
         <Show when={points().length} fallback={<p class="text-xs text-muted">{t("widgets.channel_places_empty")}</p>}>
-          <Suspense>
+          <Loading>
             <MapView points={points()} class="h-64" />
-          </Suspense>
+          </Loading>
         </Show>
       </div>
 </WidgetShell>

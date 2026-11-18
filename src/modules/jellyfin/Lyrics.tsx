@@ -1,6 +1,6 @@
 // Lyrics for the playing track. Synced (LRC-style, each line has a Start)
 // lyrics highlight and follow the current line; plain ones just scroll.
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal, createEffect } from "solid-js";
 import { MdFillText_decrease, MdFillText_increase } from "solid-icons/md";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -50,9 +50,8 @@ export default function Lyrics(props: { s: JellyfinSession; itemId: string }) {
   const refs: HTMLElement[] = [];
   // Scroll the box itself (not the page) to keep the active line centred —
   // also after a zoom, which moves every line
-  createEffect(() => {
-    size();
-    const el = refs[active()];
+  createEffect(() => [size(), active()] as const, ([, i]) => {
+    const el = refs[i];
     if (!box || !el) return;
     box.scrollTo({ top: el.offsetTop - box.clientHeight / 2 + el.clientHeight / 2, behavior: "smooth" });
   });

@@ -15,7 +15,7 @@
 // packer decides), and the store's own pagination caps what's mounted. Revisit
 // only if a board of many hundreds of cards is a real workload.
 
-import { createEffect, createMemo, createSignal, onCleanup, Show, For } from "solid-js";
+import { createMemo, createSignal, onCleanup, Show, For, createEffect } from "solid-js";
 import { MdOutlineStyle } from "solid-icons/md";
 import { useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -80,16 +80,22 @@ export default function CardsContentWidget() {
   // Classic Hubzilla filter params (?cat=, ?tag=, ?dbegin=/?dend=, ?search=)
   // are the source of truth, so those URLs keep working when pasted or linked.
   createEffect(() => {
-    if (auth.loading) return;
-    if (showKanban()) return; // the board runs its own query
+    if (auth.loading) return null;
+    if (showKanban()) return null; // the board runs its own query
+    return {
+      nick: nick(),
+      params: {
+        ...(str("cat") && { cat: str("cat") }),
+        ...(str("tag") && { tag: str("tag") }),
+        ...(str("dbegin") && { dbegin: str("dbegin") }),
+        ...(str("dend") && { dend: str("dend") }),
+        ...(str("search") && { search: str("search") }),
+      },
+    };
+  }, (q) => {
+    if (!q) return;
     resetPosts();
-    loadCards(nick(), {
-      ...(str("cat") && { cat: str("cat") }),
-      ...(str("tag") && { tag: str("tag") }),
-      ...(str("dbegin") && { dbegin: str("dbegin") }),
-      ...(str("dend") && { dend: str("dend") }),
-      ...(str("search") && { search: str("search") }),
-    });
+    loadCards(q.nick, q.params);
   });
 
   onCleanup(() => resetPosts());
@@ -99,7 +105,7 @@ export default function CardsContentWidget() {
       {/* The kanban board fills the main column like the post streams do — its
           columns scroll horizontally, so a reading-width cap only shrinks how
           many fit. The masonry board keeps its cap. */}
-      <div class="space-y-4" classList={{ "max-w-5xl mx-auto": !showKanban() }}>
+      <div class={["space-y-4", { "max-w-5xl mx-auto": !showKanban() }]}>
         <Show when={!showKanban()} fallback={<KanbanBoard nick={nick()} />}>
         <Show when={!loading()} fallback={<CardsBoardSkeleton />}>
           <Show

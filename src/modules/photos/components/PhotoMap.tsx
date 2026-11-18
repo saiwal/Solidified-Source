@@ -3,7 +3,7 @@
  * The photos "Map" tab: every geotagged photo as a thumbnail pin, click to
  * open it. NSFW photos get a plain dot rather than their thumbnail.
  */
-import { lazy, Show, Suspense } from "solid-js";
+import { lazy, Show, Loading } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { MdOutlineMap } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -48,9 +48,9 @@ export default function PhotoMap(props: { nick: string }) {
           </EmptyState>
         }
       >
-        <Suspense fallback={<div class="flex justify-center py-12"><Spinner /></div>}>
+        <Loading fallback={<div class="flex justify-center py-12"><Spinner /></div>}>
           <MapView points={points()} />
-        </Suspense>
+        </Loading>
       </Show>
     </Show>
   );

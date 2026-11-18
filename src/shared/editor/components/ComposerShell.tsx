@@ -20,7 +20,8 @@
  * its own render root.
  */
 
-import { Show, onCleanup, createContext, useContext, type Component, type JSX } from "solid-js";
+import { Show, onCleanup, createContext, useContext, type Component } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { zenMode, setZenMode } from "@utsukta/spa-core/store/zen";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
 
@@ -104,7 +105,7 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
   const zenHidden = () => (zenMode() ? "hidden" : "");
 
   return (
-    <ZenHostContext.Provider value={true}>
+    <ZenHostContext value={true}>
     {/* Opaque backing for the centred zen column — the column itself is
         width-capped for readability, so it no longer covers the screen. */}
     <Show when={zenMode()}>
@@ -142,7 +143,7 @@ const ComposerShell: Component<ComposerShellProps> = (props) => {
         {props.actions}
       </div>
     </div>
-    </ZenHostContext.Provider>
+    </ZenHostContext>
   );
 };
 

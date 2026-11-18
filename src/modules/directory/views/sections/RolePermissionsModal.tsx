@@ -1,5 +1,5 @@
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import { createSignal, createMemo, For, Show } from "solid-js";
+import { createEffect, createSignal, createMemo, For, Show, untrack } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchPermcatDetail, updatePermcatPerms } from "../../connections/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -27,13 +27,10 @@ function RolePermissionsModal(props: Props) {
   const [error, setError] = createSignal<string | null>(null);
 
   // Seed local editable state once the detail loads.
-  const perms = createMemo(() => {
-    const d = detail();
-    if (d && checked() === null) {
-      setChecked(new Set(d.perms.filter((p) => p.value).map((p) => p.key)));
-    }
-    return d?.perms ?? [];
+  createEffect(detail, (d) => {
+    if (d && untrack(checked) === null) setChecked(new Set(d.perms.filter((p) => p.value).map((p) => p.key)));
   });
+  const perms = createMemo(() => detail()?.perms ?? []);
 
   function toggle(key: string) {
     setChecked((prev) => {

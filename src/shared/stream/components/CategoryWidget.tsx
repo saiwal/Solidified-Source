@@ -4,7 +4,7 @@
 // Response: { data: { categories: { name: string; slug: string; count: number }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { type Component, createEffect, createSignal, on, For, Show } from "solid-js";
+import { createEffect, createSignal, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -101,7 +101,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
     (p) => (p ? fetchCategories(p) : Promise.resolve([])),
   );
 
-  createEffect(on(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); }));
+  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const categories = (): CategoryItem[] => props.data ?? remote() ?? [];
   const total = () => categories().reduce((s, c) => s + c.count, 0);
@@ -136,28 +136,24 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
                   <li>
                     <button
                       onClick={() => props.onCategoryClick?.(cat.slug)}
-                      class="w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left
-                             hover:bg-elevated transition-colors group"
-                      classList={{ "bg-accent-muted": isActive() }}
+                      class={["w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left\n                             hover:bg-elevated transition-colors group", { "bg-accent-muted": isActive() }]}
                     >
                       {/* Colour dot */}
                       <span
-                        class="w-2 h-2 rounded-full shrink-0 bg-accent transition-opacity"
-                        classList={{
+                        class={["w-2 h-2 rounded-full shrink-0 bg-accent transition-opacity", {
                           "opacity-100": isActive(),
                           "opacity-50": !isActive(),
-                        }}
+                        }]}
                       />
 
                       {/* Label */}
                       <span
-                        class="flex-1 text-sm truncate transition-colors"
-                        style={rainbowStyle(cat.name, props.rainbow)}
-                        classList={{
+                        class={["flex-1 text-sm truncate transition-colors", {
                           "text-accent font-medium": isActive(),
                           "rainbow-text": !isActive() && !!props.rainbow,
                           "text-txt group-hover:text-accent": !isActive() && !props.rainbow,
-                        }}
+                        }]}
+                        style={rainbowStyle(cat.name, props.rainbow)}
                       >
                         {cat.name}
                       </span>

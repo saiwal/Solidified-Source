@@ -6,7 +6,7 @@
  * Nominatim's 1 request/second, so pins fill in progressively on a cold
  * cache and instantly after. Items sharing a place share one pin.
  */
-import { createEffect, createMemo, createSignal, lazy, onCleanup, Show, Suspense, untrack } from "solid-js";
+import { createMemo, createSignal, lazy, onCleanup, Show, Loading, untrack, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { geocode, type Coord } from "@utsukta/spa-core/lib/osm";
 import type { MapPoint } from "./MapView";
@@ -44,8 +44,7 @@ export default function PlaceMap(props: {
 
   const pending = () => [...untrack(groups).keys()].filter((p) => !known.has(p));
 
-  createEffect(() => {
-    groups();
+  createEffect(groups, () => {
     if (running) return;
     running = true;
     void (async () => {
@@ -86,9 +85,9 @@ export default function PlaceMap(props: {
           {t("ui.map_locating", { done: resolved(), total: groups().size })}
         </p>
       </Show>
-      <Suspense>
+      <Loading>
         <MapView points={points()} />
-      </Suspense>
+      </Loading>
     </div>
   );
 }

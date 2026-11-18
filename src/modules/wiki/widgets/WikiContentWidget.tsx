@@ -1,5 +1,4 @@
-import { createEffect, Show, For, createSignal, createMemo } from "solid-js";
-import { A } from "@solidjs/router";
+import { Show, For, createSignal, createMemo, createEffect } from "solid-js";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { wikis, wikisLoading, isOwner, wikisError, loadWikis, resetWikis, patchWiki } from "../store";
 import { deleteWiki, fetchWikiAcl, saveWikiAcl } from "../api";
@@ -65,8 +64,7 @@ export default function WikiContentWidget() {
   const [allowKeys, setAllowKeys]       = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys]         = createSignal<Set<string>>(new Set<string>());
 
-  createEffect(() => {
-    const n = nick();
+  createEffect(nick, (n) => {
     if (n) loadWikis(n);
   });
 
@@ -220,12 +218,12 @@ export default function WikiContentWidget() {
             <For each={sortedWikis()}>
               {(wiki) => (<CardShell uuid={`wiki:${wiki.url_name}`}>
                 <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg group transition-colors hover:bg-elevated">
-                  <A
+                  <a
                     href={`/wiki/${nick()}/${wiki.url_name}`}
                     class="flex-1 min-w-0 text-sm font-medium text-txt hover:text-accent transition-colors truncate"
                   >
                     {wiki.name}
-                  </A>
+                  </a>
 
                   <span class="hidden sm:block w-24 shrink-0 text-xs text-muted">
                     {mimeLabel(wiki.mime_type, t as (k: string) => string)}

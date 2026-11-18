@@ -4,14 +4,7 @@
 // Response: { data: { archive: { year: number; count: number; months: { month: number; count: number }[] }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import {
-  type Component,
-  createEffect,
-  createSignal,
-  For,
-  on,
-  Show,
-} from "solid-js";
+import { createEffect, createSignal, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -155,9 +148,9 @@ const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
   );
 
   createEffect(
-    on(() => remote.error, (err) => {
+    () => remote.error, (err) => {
       if (err) toast.error((err as Error).message ?? t("widgets.load_error"));
-    }),
+    },
   );
 
   const years = (): ArchiveYear[] => remote() ?? [];
@@ -230,16 +223,13 @@ const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
                                 <button
                                   type="button"
                                   onClick={() => props.onMonthClick?.(yr.year, mo.month)}
-                                  class="w-full pl-9 pr-(--ws-px) py-2 flex items-center gap-2 text-left
-                                         hover:bg-elevated transition-colors"
-                                  classList={{ "bg-accent-muted": active() }}
+                                  class={["w-full pl-9 pr-(--ws-px) py-2 flex items-center gap-2 text-left\n                                         hover:bg-elevated transition-colors", { "bg-accent-muted": active() }]}
                                 >
                                   <span
-                                    class="flex-1 text-sm transition-colors"
-                                    classList={{
+                                    class={["flex-1 text-sm transition-colors", {
                                       "text-accent font-medium": active(),
                                       "text-txt": !active(),
-                                    }}
+                                    }]}
                                   >
                                     {monthName(mo.month, locale())}
                                   </span>

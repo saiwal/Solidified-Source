@@ -19,7 +19,7 @@ const LanguageSwitcher = () => {
     <>
       <IconButton
         label={t("ui.language")}
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         onClick={toggle}

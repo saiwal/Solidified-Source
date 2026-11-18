@@ -5,7 +5,7 @@
  * them as one undo step.
  */
 
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { Show, createSignal } from "solid-js";
 import { MdOutlineEdit, MdOutlineLink_off, MdOutlineOpen_in_new } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";

@@ -1,5 +1,4 @@
 import { Show, For } from 'solid-js';
-import { A } from '@solidjs/router';
 import { MdFillShopping_cart, MdFillStore, MdFillReceipt_long } from 'solid-icons/md';
 import { cartCount, cartItems, nick, sellerOrders } from '../store';
 import { useI18n } from '@utsukta/spa-core/i18n';
@@ -28,9 +27,9 @@ export default function CartWidget() {
             </Badge>
           }
           footer={
-            <A href={`/cart/${nick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
+            <a href={`/cart/${nick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
               {t('cart.view_cart')}
-            </A>
+            </a>
           }
         >
           <div class="px-(--ws-px) py-3 flex flex-col gap-1">
@@ -61,9 +60,9 @@ export default function CartWidget() {
           icon={<MdFillStore size={16} class="text-accent" />}
           title={t('cart.orders_tab')}
           footer={
-            <A href={`/cart/${nick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
+            <a href={`/cart/${nick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
               {t('cart.orders_tab')} →
-            </A>
+            </a>
           }
         >
           <div class="px-(--ws-px) py-3 flex flex-col gap-1">

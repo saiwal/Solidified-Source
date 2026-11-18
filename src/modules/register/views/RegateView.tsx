@@ -1,5 +1,5 @@
 import { createSignal, Show, Switch, Match } from "solid-js";
-import { useParams, A } from "@solidjs/router";
+import { useParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchRegateState, submitRegate } from "../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -68,9 +68,9 @@ export default function RegateView() {
         <Show when={state.error}>
           <div class="text-center space-y-4">
             <p class="text-sm text-muted">{t("auth.regate_invalid")}</p>
-            <A href="/register" class="text-sm text-accent hover:underline">
+            <a href="/register" class="text-sm text-accent hover:underline">
               {t("auth.register_link")}
-            </A>
+            </a>
           </div>
         </Show>
 
@@ -82,12 +82,12 @@ export default function RegateView() {
               <Match when={s().expired}>
                 <div class="text-center space-y-4">
                   <p class="text-sm text-muted">{t("auth.regate_expired")}</p>
-                  <A
+                  <a
                     href="/register"
                     class="inline-block py-2 px-4 rounded-lg bg-accent text-accent-fg text-sm font-medium hover:opacity-90 transition-opacity"
                   >
                     {t("auth.register_link")}
-                  </A>
+                  </a>
                 </div>
               </Match>
 
@@ -136,7 +136,7 @@ export default function RegateView() {
                         value={pin()}
                         onInput={(e) => setPin(e.currentTarget.value.toLowerCase().replace(/\s/g, ""))}
                         placeholder={t("auth.regate_code_ph")}
-                        maxLength={s().type === "e" ? 24 : 6}
+                        maxlength={s().type === "e" ? 24 : 6}
                       />
                       <Show when={s().type === "e"}>
                         <p class="text-xs text-muted">
@@ -160,9 +160,9 @@ export default function RegateView() {
 
                   <p class="text-center text-sm text-muted pt-1">
                     {t("auth.already_have_account")}{" "}
-                    <A href="/login" class="text-accent hover:underline font-medium">
+                    <a href="/login" class="text-accent hover:underline font-medium">
                       {t("auth.sign_in")}
-                    </A>
+                    </a>
                   </p>
                 </div>
               </Match>

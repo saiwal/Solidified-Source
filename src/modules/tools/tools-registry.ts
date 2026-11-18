@@ -1,5 +1,4 @@
-import type { Component } from "solid-js";
-import { lazy } from "solid-js";
+import { lazy, type Component } from "solid-js";
 import type * as i18n from "@solid-primitives/i18n";
 import type { RawDictionary } from "@utsukta/spa-core/i18n/locales/namespaces/types";
 import {

@@ -1,8 +1,8 @@
-import { type Component, type Accessor, type JSX, For, Show } from "solid-js";
+import { For, Show, type Component, type Accessor } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { getLazy, type RegisteredWidget } from "@utsukta/spa-core/module-registry";
 import { rowSpan } from "@utsukta/spa-core/lib/masonry";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdFillAdd,
@@ -105,7 +105,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
     <div
       class="rounded-xl border border-dashed border-accent/50 overflow-hidden"
       data-span={props.onSetSpan ? (props.entry.span ?? 12) : undefined}
-      ref={mergeRefs(rowSpan(props.onSetSpan ? 16 : undefined), helpable(() => widgetHelpTarget(props.entry.widget)))}
+      ref={[rowSpan(props.onSetSpan ? 16 : undefined), helpable(() => widgetHelpTarget(props.entry.widget))]}
     >
       <div class="flex items-center justify-between gap-1 px-2 py-1 bg-elevated">
         <span class="text-xs font-medium truncate">{widgetLabel(props.entry.widget)}</span>
@@ -128,11 +128,10 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
           <Show when={ConfigForm}>
             <button
               onClick={() => props.onToggleConfig(props.entry.key)}
-              aria-expanded={configOpen()}
+              aria-expanded={(configOpen()) ? "true" : "false"}
               aria-label={t("widgets.configure_widget")}
               title={t("widgets.configure_widget")}
-              class={editButtonClass}
-              classList={{ "text-accent": configOpen() }}
+              class={[editButtonClass, { "text-accent": configOpen() }]}
             >
               <MdFillSettings size={14} />
             </button>
@@ -210,7 +209,7 @@ const WidgetPickerFooter: Component<WidgetPickerFooterProps> = (props) => {
     <div class="space-y-2" ref={rowSpan(16)}>
       <button
         onClick={props.onTogglePicker}
-        aria-expanded={props.pickerOpen}
+        aria-expanded={(props.pickerOpen) ? "true" : "false"}
         class="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl
                border border-dashed border-rim rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 hover:opacity-90 transition-opacity text-xs font-medium"
       >

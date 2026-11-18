@@ -1,4 +1,5 @@
-import { createEffect, createResource, createSignal, For, lazy, Match, onCleanup, Show, Suspense, Switch, type Component, createUniqueId } from "solid-js";
+import { createSignal, For, lazy, Match, onCleanup, Show, Loading, Switch, createUniqueId, type Component, createEffect } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
 import { marked } from "marked";
 import type { Rendition } from "epubjs";
 import { MdFillClose_fullscreen, MdFillOpen_in_full, MdOutlineChevron_left, MdOutlineChevron_right, MdOutlineEdit } from "solid-icons/md";
@@ -6,7 +7,7 @@ import { classifyPreview, HTML_PREVIEW_MAX_BYTES, parseCsv, TEXT_PREVIEW_MAX_BYT
 import { bbcode } from "@utsukta/spa-core/lib/bbcode";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { mountPlyr } from "@utsukta/spa-core/lib/usePlyr";
+import { plyrRef } from "@utsukta/spa-core/lib/usePlyr";
 import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
 
 import type { ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
@@ -189,8 +190,8 @@ const FilePreviewModal: Component<Props> = (props) => {
   );
   let epubContainer: HTMLDivElement | undefined;
   let rendition: Rendition | undefined;
-  createEffect(() => {
-    const loaded = epubBuffer();
+  createEffect(epubBuffer, (loaded) => {
+    const cleanups: (() => void)[] = [];
     if (!loaded || !epubContainer) return;
     const book = loaded.ePub(loaded.buf);
     rendition = book.renderTo(epubContainer, { width: "100%", height: "100%", flow: "scrolled-doc" });
@@ -211,12 +212,13 @@ const FilePreviewModal: Component<Props> = (props) => {
     rendition.on("relocated", (loc: { start: { cfi: string } }) => {
       try { localStorage.setItem(posKey, loc.start.cfi); } catch {}
     });
-    onCleanup(() => { rendition?.destroy(); book.destroy(); rendition = undefined; });
+    cleanups.push(() => { rendition?.destroy(); book.destroy(); rendition = undefined; });
+    return () => cleanups.forEach((f) => f());
   });
 
-  createEffect(() => { if (text.error) logFetchFailure("text", props.url, text.error); });
-  createEffect(() => { if (pdfBlobUrl.error) logFetchFailure("pdf", props.url, pdfBlobUrl.error); });
-  createEffect(() => { if (epubBuffer.error) logFetchFailure("epub", props.url, epubBuffer.error); });
+  createEffect(() => text.error, (err) => { if (err) logFetchFailure("text", props.url, err); });
+  createEffect(() => pdfBlobUrl.error, (err) => { if (err) logFetchFailure("pdf", props.url, err); });
+  createEffect(() => epubBuffer.error, (err) => { if (err) logFetchFailure("epub", props.url, err); });
 
   async function openEditor() {
     try {
@@ -350,16 +352,16 @@ const FilePreviewModal: Component<Props> = (props) => {
                 }
               >
                 <div class="h-[80vh] rounded-lg border border-rim overflow-hidden">
-                  <Suspense fallback={<p class="text-sm text-muted p-4">Loading…</p>}>
+                  <Loading fallback={<p class="text-sm text-muted p-4">Loading…</p>}>
                     <ExcalidrawCanvas viewMode onReady={(api) => void loadScene(api)} />
-                  </Suspense>
+                  </Loading>
                 </div>
               </Show>
             </Show>
 
             <Show when={kind() === "video"}>
               <video
-                ref={(el) => onCleanup(mountPlyr(el))}
+                ref={plyrRef()}
                 src={props.url}
                 controls
                 preload="none"
@@ -369,7 +371,7 @@ const FilePreviewModal: Component<Props> = (props) => {
 
             <Show when={kind() === "audio"}>
               <audio
-                ref={(el) => onCleanup(mountPlyr(el))}
+                ref={plyrRef()}
                 src={props.url}
                 controls
                 preload="none"
@@ -460,13 +462,13 @@ const FilePreviewModal: Component<Props> = (props) => {
 
       <Show when={editingImage()}>
         {(file) => (
-          <Suspense>
+          <Loading>
             <ImageEditor
               file={file()}
               onConfirm={handleImageEditConfirm}
               onCancel={() => setEditingImage(null)}
             />
-          </Suspense>
+          </Loading>
         )}
       </Show>
 
@@ -485,9 +487,9 @@ const FilePreviewModal: Component<Props> = (props) => {
               </button>
             </div>
             <div class="p-4">
-              <Suspense>
+              <Loading>
                 <VideoEditor initialFile={file()} />
-              </Suspense>
+              </Loading>
             </div>
           </Modal>
         )}

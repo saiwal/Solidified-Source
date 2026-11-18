@@ -1,22 +1,14 @@
 // solidified's implementation of the search-field contract
 // (spa-core types/ui.types.ts): the field, its magnifier and the clear button
 // are one control, so every search box clears the same way and keeps a label.
-import { Show, splitProps } from "solid-js";
+import { Show, omit } from "solid-js";
 import type { SearchFieldProps } from "@utsukta/spa-core/types/ui.types";
 import { Input } from "@ui/Field";
 import { IconButton } from "@ui/Button";
 import { MdOutlineSearch, MdFillClose } from "solid-icons/md";
 
 export function SearchField(props: SearchFieldProps) {
-  const [own, rest] = splitProps(props, [
-    "value",
-    "onInput",
-    "label",
-    "clearLabel",
-    "onSearch",
-    "size",
-    "class",
-  ]);
+  const own = props, rest = omit(props, "value", "onInput", "label", "clearLabel", "onSearch", "size", "class");
   let inputEl: HTMLInputElement | undefined;
 
   const clear = () => {

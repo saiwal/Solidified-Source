@@ -4,14 +4,7 @@
 // CategoryWidget list style), instead of the size-scaled pill cloud in
 // TagWidget. Same API and props.
 
-import {
-  type Component,
-  createEffect,
-  createSignal,
-  For,
-  on,
-  Show,
-} from "solid-js";
+import { createEffect, createSignal, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -52,7 +45,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
     (p) => (p ? fetchTags(p) : Promise.resolve([])),
   );
 
-  createEffect(on(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); }));
+  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const tags = (): TagItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...tags().map((t) => t.count), 1);
@@ -83,28 +76,24 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
                   <li>
                     <button
                       onClick={() => props.onTagClick?.(tag.name)}
-                      class="w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left
-                             hover:bg-elevated transition-colors group"
-                      classList={{ "bg-accent-muted": isActive() }}
+                      class={["w-full px-(--ws-px) py-2.5 flex items-center gap-2 text-left\n                             hover:bg-elevated transition-colors group", { "bg-accent-muted": isActive() }]}
                     >
                       <span
-                        class="text-xs shrink-0 -mr-2 transition-colors"
-                        classList={{
+                        class={["text-xs shrink-0 -mr-2 transition-colors", {
                           "text-accent": isActive(),
                           "text-muted": !isActive(),
-                        }}
+                        }]}
                       >
                         #
                       </span>
 
                       <span
-                        class="flex-1 text-sm truncate transition-colors"
-                        style={rainbowStyle(tag.name, props.rainbow)}
-                        classList={{
+                        class={["flex-1 text-sm truncate transition-colors", {
                           "text-accent font-medium": isActive(),
                           "rainbow-text": !isActive() && !!props.rainbow,
                           "text-txt group-hover:text-accent": !isActive() && !props.rainbow,
-                        }}
+                        }]}
+                        style={rainbowStyle(tag.name, props.rainbow)}
                       >
                         {tag.name}
                       </span>

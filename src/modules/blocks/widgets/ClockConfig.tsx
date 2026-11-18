@@ -94,7 +94,7 @@ export default function ClockConfig(props: WidgetConfigProps) {
             class="mt-1 w-full"
             type="text"
             value={label()}
-            maxLength={60}
+            maxlength={60}
             onInput={(e) => setLabel(e.currentTarget.value)}
           />
         </label>
@@ -135,7 +135,7 @@ export default function ClockConfig(props: WidgetConfigProps) {
                 <input
                   type="text"
                   value={zone.label}
-                  maxLength={30}
+                  maxlength={30}
                   placeholder={zone.timezone.split("/").pop()?.replace(/_/g, " ") || t("widgets.cfg_zone_label")}
                   onInput={(e) => updateZone(i(), { label: e.currentTarget.value })}
                   class={inputClass + " flex-1"}

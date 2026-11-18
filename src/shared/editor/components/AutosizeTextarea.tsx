@@ -11,7 +11,7 @@
  * manual max-height clamp to cap growth at N lines.
  */
 
-import { createEffect, onMount, type Component } from "solid-js";
+import { onSettled, type Component, createEffect } from "solid-js";
 
 export interface AutosizeTextareaProps {
   value: () => string;
@@ -44,9 +44,8 @@ const AutosizeTextarea: Component<AutosizeTextareaProps> = (props) => {
     ref.style.overflowY = ref.scrollHeight > maxHeight ? "auto" : "hidden";
   }
 
-  onMount(resize);
-  createEffect(() => {
-    void props.value();
+  onSettled(() => { void (resize)(); });
+  createEffect(() => props.value(), () => {
     resize();
   });
 

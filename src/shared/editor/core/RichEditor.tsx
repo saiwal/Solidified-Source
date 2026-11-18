@@ -1,10 +1,11 @@
 import { POST_PROSE } from "@/shared/lib/prose";
-import { createEffect, createSignal, on, onCleanup, useContext, For, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, useContext, For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import EditorStats, { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { ComposerFrameContext } from "@/shared/views/modal-host";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { EditorCapabilities, EditorTab, MimeType } from "../types/editor.types";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
@@ -287,13 +288,12 @@ export default function RichEditor(props: Props) {
 
   // Re-render whenever body/mimetype changed for a reason other than us
   // echoing the DOM back (attachment insert, draft load, tab switch, reset, …).
-  createEffect(() => {
-    const nextSig = sig();
+  createEffect(() => ({ nextSig: sig(), wysiwyg: tab() === "wysiwyg", body: props.body, mime: mime() }), ({ nextSig, wysiwyg, body, mime: m }) => {
     // An undo step is a whole new body, never an append: insertAtCaret would
     // splice a redo's suffix in at the caret instead of where it belongs.
-    if (tab() === "wysiwyg" && editorRef && nextSig !== domSig && (restoring || !insertAtCaret())) {
+    if (wysiwyg && editorRef && nextSig !== domSig && (restoring || !insertAtCaret())) {
       cancelEcho();
-      editorRef.innerHTML = padTrailingBlock(sourceToHtml(props.body, mime()));
+      editorRef.innerHTML = padTrailingBlock(sourceToHtml(body, m));
       domSig = nextSig;
       hydrateEmbeds(editorRef);
       if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(editorRef);
@@ -469,13 +469,13 @@ export default function RichEditor(props: Props) {
       : { body, mode: "wysiwyg", sel: surfaceSel() };
 
   let last: Snapshot = { body: props.body, mode: tab(), sel: null };
-  createEffect(on(() => props.body, (body) => {
+  createEffect(() => props.body, (body) => {
     if (restoring || body === last.body) return;
     history.change(last, typed);
     typed = false;
     last = snap(body);
     setHistVer((v) => v + 1);
-  }, { defer: true }));
+  }, { defer: true });
 
   const restoreSnapshot = (s: Snapshot) => {
     restoring = true;

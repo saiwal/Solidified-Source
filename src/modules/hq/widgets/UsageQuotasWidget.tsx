@@ -4,7 +4,6 @@
 // just means the widget renders nothing).
 
 import { For, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchAccountSettings } from "@/modules/settings/api/api";
 import type { AccountQuota } from "@/modules/settings/store/types";
@@ -30,12 +29,12 @@ export default function UsageQuotasWidget() {
           <For each={quotas()}>{(q) => <QuotaTile quota={q} />}</For>
         </div>
 
-        <A
+        <a
           href="/settings/account"
           class="block text-xs text-accent hover:underline mt-3"
         >
           {t("widgets.usage_quotas_view_all")}
-        </A>
+        </a>
       </div>
 </WidgetShell>
     </Show>
@@ -54,8 +53,7 @@ function QuotaTile(props: { quota: AccountQuota }) {
       <span class="text-txt truncate shrink-0 max-w-[40%]">{label()}</span>
       <div class="flex-1 min-w-0 h-1.5 rounded-full bg-elevated overflow-hidden">
         <div
-          class="h-full rounded-full bg-accent transition-all"
-          classList={{ "bg-danger": pct() >= 90 }}
+          class={["h-full rounded-full bg-accent transition-all", { "bg-danger": pct() >= 90 }]}
           style={{ width: `${pct()}%` }}
         />
       </div>

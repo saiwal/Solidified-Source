@@ -2,7 +2,6 @@ import { Show } from "solid-js";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeToggle from "./ThemeToggle";
 import HelpTrigger from "./HelpTrigger";
-import { A } from "@solidjs/router";
 import { BiRegularInfoCircle, BiRegularRss } from "solid-icons/bi";
 import { MdFillCheck, MdOutlineEdit, MdOutlineSearch } from "solid-icons/md";
 import { setPaletteOpen } from "./search/search";
@@ -68,13 +67,13 @@ export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
         <HelpTrigger />
       </div>
       <div ref={helpable(() => "nav.siteinfo")}>
-        <A
+        <a
           href="/siteinfo"
           title={t("ui.site_info")}
           class="inline-flex items-center justify-center p-[8px] rounded-lg text-muted hover:bg-elevated hover:text-txt transition-colors"
         >
           <BiRegularInfoCircle size={18} />
-        </A>
+        </a>
       </div>
     </div>
   );

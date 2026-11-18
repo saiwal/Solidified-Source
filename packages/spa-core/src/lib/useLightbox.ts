@@ -1,4 +1,4 @@
-import { createEffect, onCleanup } from 'solid-js';
+import { createSignal, createEffect } from "solid-js";
 
 // Images wrapped in a link to something other than a photo/image keep their
 // link (banner → website). Hubzilla photo posts link to /photos/…/image/….
@@ -21,8 +21,8 @@ function eligible(img: HTMLImageElement): boolean {
  * whatever innerHTML the body is re-rendered with.
  */
 export function useLightbox(ref: () => HTMLElement | undefined) {
-  createEffect(() => {
-    const el = ref();
+  createEffect(ref, (el) => {
+    const cleanups: (() => void)[] = [];
     if (!el) return;
     el.classList.add('hz-lightbox');
 
@@ -90,6 +90,15 @@ export function useLightbox(ref: () => HTMLElement | undefined) {
     };
 
     el.addEventListener('click', onClick);
-    onCleanup(() => el.removeEventListener('click', onClick));
+    cleanups.push(() => el.removeEventListener('click', onClick));
+    return () => cleanups.forEach((f) => f());
   });
+}
+
+/** Ref factory: `ref={lightboxRef()}`. Call it during render — Solid 2 runs ref
+ *  callbacks unowned, so useLightbox inside one would never clean up. */
+export function lightboxRef() {
+  const [el, setEl] = createSignal<HTMLElement>();
+  useLightbox(el);
+  return (node: HTMLElement) => { setEl(() => node); };
 }

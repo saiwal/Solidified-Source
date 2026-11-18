@@ -47,8 +47,8 @@ export function Tabs<T extends string>(props: TabsProps<T>) {
             <button
               type="button"
               role="tab"
-              aria-selected={on()}
-              tabIndex={on() ? 0 : -1}
+              aria-selected={(on()) ? "true" : "false"}
+              tabindex={on() ? 0 : -1}
               id={props.id ? tabId(props.id, item.value) : undefined}
               aria-controls={props.id ? panelId(props.id, item.value) : undefined}
               onClick={() => props.onChange(item.value)}
@@ -86,7 +86,7 @@ export function TabPanel<T extends string>(props: TabPanelProps<T>) {
       role="tabpanel"
       id={panelId(props.tabs, props.value)}
       aria-labelledby={tabId(props.tabs, props.value)}
-      tabIndex={0}
+      tabindex={0}
       class={`hz-tabpanel rounded-md ${focus} ${props.class ?? ""}`}
     >
       {props.children}

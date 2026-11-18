@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show, batch } from "solid-js";
+import { createSignal, For, Show, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import PageActions from "@/shared/views/layout/PageActions";
@@ -10,6 +10,7 @@ import { Field, Input } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { DataTable } from "@ui/DataTable";
 import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
+import { deepOf } from "@utsukta/spa-core/lib/deep";
 
 const JOB_COLUMNS: DataTableColumn<WorkerJob>[] = [
   { key: "id", header: "ID", width: 5, class: "text-xs font-mono text-muted", cell: (job) => job.id },
@@ -46,9 +47,8 @@ export default function QueueworkerSection() {
   const [saving, setSaving] = createSignal(false);
   const [saved, setSaved] = createSignal(false);
 
-  createEffect(() => {
-    const d = data();
-    if (d) setSettings(d.settings);
+  createEffect(() => deepOf(data()?.settings), (s) => {
+    if (s) setSettings(s);
   });
 
   function setSetting<K extends keyof QueueworkerSettings>(k: K, v: QueueworkerSettings[K]) {
@@ -59,7 +59,7 @@ export default function QueueworkerSection() {
     setSaving(true);
     try {
       await saveQueueworkerSettings(settings());
-      batch(() => { setSaving(false); setSaved(true); });
+      { setSaving(false); setSaved(true); }
       setTimeout(() => setSaved(false), 2000);
       refetch();
     } catch { setSaving(false); }

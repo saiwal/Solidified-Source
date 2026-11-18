@@ -1,5 +1,4 @@
 import { createSignal, Show, Switch, Match } from "solid-js";
-import { A } from "@solidjs/router";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
@@ -240,9 +239,9 @@ export default function ImportChannelView() {
         </Switch>
 
         <p class="text-xs text-muted text-center pt-2">
-          <A href="/new_channel" class="text-accent hover:underline">
+          <a href="/new_channel" class="text-accent hover:underline">
             {t("channel_create.title")}
-          </A>
+          </a>
         </p>
       </Card>
     </div>

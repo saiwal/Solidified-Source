@@ -1,6 +1,6 @@
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createEffect, createSignal, For, Show, lazy } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, For, Show, lazy, createEffect } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineClose, MdOutlineRefresh, MdOutlineSearch } from "solid-icons/md";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
@@ -40,8 +40,8 @@ function ConnectionFilter(props: { value: AclEntry | null; onChange: (c: AclEntr
   let rowRef: HTMLDivElement | undefined;
   let listRef: HTMLUListElement | undefined;
   const { x, y, mount, unmount } = useFloating({ placement: "bottom-start", offset: 4 });
-  createEffect(() => {
-    if (open() && rowRef && listRef) mount(rowRef, listRef);
+  createEffect(open, (isOpen) => {
+    if (isOpen && rowRef && listRef) mount(rowRef, listRef);
     else unmount();
   });
 

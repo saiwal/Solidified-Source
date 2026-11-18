@@ -1,5 +1,4 @@
 import { Show, For } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -47,9 +46,9 @@ export default function ChannelConnectionsWidget() {
 
         <Show when={total() > conns().length}>
           <div class="mt-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-            <A href={`/viewconnections/${nick()}`} class="text-xs text-accent hover:underline">
+            <a href={`/viewconnections/${nick()}`} class="text-xs text-accent hover:underline">
               {t("widgets.view_all")} ({total()})
-            </A>
+            </a>
             <Show when={viewerRole() === "owner"}>
               <a href="/directory/connections" class="text-xs text-muted hover:underline">
                 {t("widgets.manage")}

@@ -1,13 +1,5 @@
-import {
-  onMount,
-  onCleanup,
-  createEffect,
-  createSignal,
-  on,
-  useContext,
-  Show,
-  type JSX,
-} from "solid-js";
+import { onSettled, createEffect, createSignal, useContext, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
@@ -125,20 +117,16 @@ export default function ComposerModal(props: ComposerModalProps) {
   // writer has no signal that their draft is safe.
   const [savedFlash, setSavedFlash] = createSignal(false);
   createEffect(
-    on(
-      draftSavedAt,
-      (at) => {
+    draftSavedAt, (at) => {
         if (!at) return;
         setSavedFlash(true);
         const id = setTimeout(() => setSavedFlash(false), 2500);
-        onCleanup(() => clearTimeout(id));
-      },
-      { defer: true },
-    ),
+        return () => clearTimeout(id);
+      }, { defer: true },
   );
 
   if (props.manageEscape !== false) {
-    onMount(() => {
+    onSettled(() => {
       const onKey = (e: KeyboardEvent) => {
         // A minimized composer is still mounted, so every pill in the dock
         // would otherwise answer one Escape press.
@@ -148,7 +136,7 @@ export default function ComposerModal(props: ComposerModalProps) {
         if (e.key === "Escape" && mode() !== "min" && !isModalLike()) dismiss();
       };
       document.addEventListener("keydown", onKey);
-      onCleanup(() => document.removeEventListener("keydown", onKey));
+      return () => document.removeEventListener("keydown", onKey);
     });
   }
 

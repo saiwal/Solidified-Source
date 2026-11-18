@@ -6,8 +6,9 @@
 // the pills toggle flags. So the box always shows exactly what the list is
 // filtered by, and there is no second copy of "what is applied" to keep in
 // step. query.ts parses it; php Concerns/StreamFilters turns it into SQL.
-import { For, Show, createMemo, type Component, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { For, Show, createMemo, type Component } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
@@ -113,7 +114,7 @@ export const InboxSearchBar: Component<{
                 label={t("hq.search_tags")}
                 size="sm"
                 onClick={() => pop.setOpen(!pop.open())}
-                aria-expanded={pop.open()}
+                aria-expanded={(pop.open()) ? "true" : "false"}
               >
                 <MdOutlineExpand_more class="w-4 h-4" />
               </IconButton>

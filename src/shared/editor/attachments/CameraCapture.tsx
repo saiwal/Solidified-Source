@@ -11,6 +11,7 @@ import { MdOutlineChevron_left, MdOutlineRefresh, MdOutlineVideocam } from "soli
 
 import { Modal, ModalPanel } from "@ui/Modal";
 import { Button, IconButton, buttonClass } from "@ui/Button";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 type Mode  = "photo" | "video" | "audio";
 type Stage = "initializing" | "streaming" | "captured" | "editing" | "editing-video" | "error";
 
@@ -29,7 +30,7 @@ const CameraCapture: Component<Props> = (props) => {
   const [capturedUrl, setCapturedUrl] = createSignal<string | null>(null);
   const [capturedFile,setCapturedFile]= createSignal<File | null>(null);
   const [editFile,    setEditFile]    = createSignal<File | null>(null);
-  const [facing,      setFacing]      = createSignal<"environment" | "user">("environment");
+  const [facing,      setFacing]      = createSyncSignal<"environment" | "user">("environment");
   const [torchOn,     setTorchOn]     = createSignal(false);
   const [hasTorch,    setHasTorch]    = createSignal(false);
 

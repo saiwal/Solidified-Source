@@ -1,4 +1,4 @@
-import { type Component, createMemo, createSignal, For, Show } from "solid-js";
+import { type Component, createMemo, createSignal, For, Loading, Show } from "solid-js";
 import { useLocation } from "@solidjs/router";
 import {
   resolveModuleSlot,
@@ -36,7 +36,6 @@ import {
 } from "@utsukta/spa-core/store/widget-templates";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { rowSpan } from "@utsukta/spa-core/lib/masonry";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import WidgetArrangementEditor, {
@@ -348,11 +347,14 @@ const Slot: Component<SlotProps> = (props) => {
         {(g) => (
           <div
             class="empty:hidden"
-            ref={mergeRefs(rowSpan(isFullWidth ? 16 : undefined), helpable(() => widgetHelpTarget(g.widget)))}
+            ref={[rowSpan(isFullWidth ? 16 : undefined), helpable(() => widgetHelpTarget(g.widget))]}
           >
-            <WidgetKeyContext.Provider value={g.widget.id}>
-              <g.Widget />
-            </WidgetKeyContext.Provider>
+            <WidgetKeyContext value={g.widget.id}>
+              {/* Own boundary: a lazy widget read outside one defers the whole app's first paint. */}
+              <Loading>
+                <g.Widget />
+              </Loading>
+            </WidgetKeyContext>
           </div>
         )}
       </For>
@@ -368,11 +370,11 @@ const Slot: Component<SlotProps> = (props) => {
                 <div
                   class="empty:hidden"
                   data-span={entry.span ?? 12}
-                  ref={mergeRefs(rowSpan(isFullWidth ? 16 : undefined), helpable(() => widgetHelpTarget(entry.widget)))}
+                  ref={[rowSpan(isFullWidth ? 16 : undefined), helpable(() => widgetHelpTarget(entry.widget))]}
                 >
-                  <WidgetKeyContext.Provider value={entry.key}>
-                    <Widget config={entry.config} />
-                  </WidgetKeyContext.Provider>
+                  <WidgetKeyContext value={entry.key}>
+                    <Loading><Widget config={entry.config} /></Loading>
+                  </WidgetKeyContext>
                 </div>
               );
             }}

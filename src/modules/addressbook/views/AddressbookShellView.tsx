@@ -1,4 +1,4 @@
-import { createMemo, Show, Suspense } from "solid-js";
+import { createMemo, Show, Loading } from "solid-js";
 import { useLocation, useNavigate } from "@solidjs/router";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -60,11 +60,11 @@ export default function AddressbookShellView() {
         />
       }
     >
-      <Suspense fallback={<SectionSkeleton />}>
+      <Loading fallback={<SectionSkeleton />}>
         <Show when={activeBook()} fallback={<EmptyState>{emptyMessage()}</EmptyState>}>
           {(book) => <CardsSection book={book()} />}
         </Show>
-      </Suspense>
+      </Loading>
     </SubPageLayout>
   );
 

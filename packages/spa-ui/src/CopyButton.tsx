@@ -1,21 +1,13 @@
 // solidified's implementation of the copy-button contract
 // (spa-core types/ui.types.ts): one clipboard path instead of a copied signal,
 // a timer and a check icon re-implemented at every call site.
-import { Show, createSignal, onCleanup, splitProps } from "solid-js";
+import { Show, createSignal, onCleanup, omit } from "solid-js";
 import type { CopyButtonProps } from "@utsukta/spa-core/types/ui.types";
 import { IconButton } from "@ui/Button";
 import { MdOutlineContent_copy, MdOutlineCheck } from "solid-icons/md";
 
 export function CopyButton(props: CopyButtonProps) {
-  const [own, rest] = splitProps(props, [
-    "value",
-    "label",
-    "copiedLabel",
-    "timeout",
-    "onCopied",
-    "onError",
-    "class",
-  ]);
+  const own = props, rest = omit(props, "value", "label", "copiedLabel", "timeout", "onCopied", "onError", "class");
   const [copied, setCopied] = createSignal(false);
   let timer: ReturnType<typeof setTimeout> | undefined;
 

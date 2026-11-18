@@ -1,4 +1,5 @@
-import { createSignal, createMemo, For, Show, batch, onMount, onCleanup, type JSX } from "solid-js";
+import { createSignal, createMemo, For, Show, onSettled } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useSearchParams } from "@solidjs/router";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminLogs, saveLogSettings } from "../../api";
@@ -12,6 +13,7 @@ import { Input, Select } from "@ui/Field";
 import { Switch } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
 import { Card } from "@ui/Card";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 const POLL_MS = 3000;
 const MAX_ENTRIES = 2000; // client-side cap while live-tailing
@@ -108,7 +110,7 @@ export default function LogsSection() {
 
   const [meta, setMeta] = createSignal<Meta>();
   const [entries, setEntries] = createSignal<LogEntry[]>([]);
-  const [live, setLive] = createSignal(true);
+  const [live, setLive] = createSyncSignal(true);
   const [pollError, setPollError] = createSignal(false);
   const [unseen, setUnseen] = createSignal(0);
   const [expanded, setExpanded] = createSignal<Set<LogEntry>>(new Set());
@@ -130,15 +132,13 @@ export default function LogsSection() {
       // overflow-anchor:none, so compensate scrollTop for what we prepend.
       const scrolled = !!listEl && listEl.scrollTop > 8;
       const before = listEl?.scrollHeight ?? 0;
-      batch(() => {
-        setMeta(m);
+      { setMeta(m);
         setPollError(false);
         if (first) setEntries(fresh);
         else if (fresh.length) {
           setEntries((prev) => [...fresh, ...prev].slice(0, MAX_ENTRIES));
           if (scrolled) setUnseen((n) => n + fresh.length);
-        }
-      });
+        } }
       if (scrolled && listEl) listEl.scrollTop += listEl.scrollHeight - before;
     } catch {
       setPollError(true);
@@ -147,15 +147,15 @@ export default function LogsSection() {
     }
   }
 
-  onMount(() => {
+  onSettled(() => {
     tick(true);
     const id = setInterval(tick, POLL_MS);
     const onVisible = () => void tick();
     document.addEventListener("visibilitychange", onVisible);
-    onCleanup(() => {
+      return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
-    });
+    };
   });
 
   function toggleLive() {
@@ -382,7 +382,7 @@ function LogSettings(props: { meta: Meta; onSaved: () => void }) {
     setSaving(true);
     try {
       await saveLogSettings({ debugging: debugging(), logfile: logfile(), loglevel: loglevel() });
-      batch(() => { setSaving(false); setSaved(true); });
+      { setSaving(false); setSaved(true); }
       setTimeout(() => setSaved(false), 2000);
       props.onSaved();
     } catch (e) {

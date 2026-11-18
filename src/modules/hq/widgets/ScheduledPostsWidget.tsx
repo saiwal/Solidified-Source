@@ -81,8 +81,7 @@ export default function ScheduledPostsWidget() {
           <For each={posts()}>
             {(post) => (
               <div
-                class="px-(--ws-px) py-2.5 hover:bg-elevated transition-colors cursor-pointer"
-                classList={{ "opacity-50 pointer-events-none": busy() === post.uuid }}
+                class={["px-(--ws-px) py-2.5 hover:bg-elevated transition-colors cursor-pointer", { "opacity-50 pointer-events-none": busy() === post.uuid }]}
                 onClick={() => openPost(post.uuid, { onClose: () => void load() })}
               >
                 {/* The queue mixes wall posts and DMs — the same glyphs the

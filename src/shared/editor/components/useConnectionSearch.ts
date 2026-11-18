@@ -8,7 +8,7 @@
  * TanStack query cache.
  */
 
-import { createSignal, createEffect, on } from "solid-js";
+import { createSignal, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchConnections, type AclEntry } from "@/modules/network/api";
 
@@ -70,7 +70,7 @@ export function useConnectionSearch(
 
   const [debouncedQuery, setDebouncedQuery] = createSignal("");
   let debounceTimer: number | undefined;
-  createEffect(on(query, (q) => {
+  createEffect(query, (q) => {
     window.clearTimeout(debounceTimer);
     const trimmed = q.trim();
     if (trimmed.length < minChars) {
@@ -78,7 +78,7 @@ export function useConnectionSearch(
       return;
     }
     debounceTimer = window.setTimeout(() => setDebouncedQuery(trimmed), debounceMs);
-  }));
+  });
 
   const [searchRes] = createQueryResource(
     `${prefix}-search`,

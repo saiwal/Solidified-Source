@@ -1,4 +1,5 @@
-import { Show, Suspense, createResource, createSignal, type Component } from "solid-js";
+import { Show, Loading, createSignal, type Component } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
 import DOMPurify from "dompurify";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -84,7 +85,7 @@ const HookSettingsForm: Component<{
           Suspense, and AdminView wraps the whole section in one — without this
           the entire list is swapped for its skeleton and remounted, which
           flashes the page and resets the scroll position. */}
-      <Suspense fallback={loading()}>
+      <Loading fallback={loading()}>
       <Show
         when={form()}
         fallback={
@@ -100,16 +101,15 @@ const HookSettingsForm: Component<{
           >
           <form
             onSubmit={onSubmit}
-            classList={{ "opacity-50 pointer-events-none": saving() }}
             /* Core's markup is Bootstrap-classed and the SPA has no Bootstrap;
                .addon-admin-form in src/index.css gives the controls a baseline. */
-            class="addon-admin-form"
+            class={["addon-admin-form", { "opacity-50 pointer-events-none": saving() }]}
             innerHTML={purify(f().html)}
           />
           </Show>
         )}
       </Show>
-      </Suspense>
+      </Loading>
     </div>
   );
 };

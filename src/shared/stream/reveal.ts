@@ -84,8 +84,21 @@ function nameCard(el: HTMLElement, name: string) {
   el.style.setProperty("view-transition-class", "hz-card");
 }
 
-export function reveal(el: HTMLElement, uuid: () => string) {
+// Ref factory (`ref={reveal(() => uuid)}`): call it during render so the
+// cleanup has an owner — Solid 2 runs ref callbacks unowned.
+export function reveal(uuid: () => string) {
+  let el: HTMLElement | undefined;
   const id = uuid();
+  onCleanup(() => {
+    if (!el) return;
+    observer?.unobserve(el);
+    visibleUuids.delete(id);
+    if (els.get(id) === el) els.delete(id);
+  });
+  return (node: HTMLElement) => attach((el = node), id);
+}
+
+function attach(el: HTMLElement, id: string) {
   uuidOf.set(el, id);
   els.set(id, el);
   // Hidden synchronously: the observer's first callback is async, so adding
@@ -99,11 +112,6 @@ export function reveal(el: HTMLElement, uuid: () => string) {
   const name = transitionNames.get(id);
   if (name) nameCard(el, name);
   getObserver().observe(el);
-  onCleanup(() => {
-    observer?.unobserve(el);
-    visibleUuids.delete(id);
-    if (els.get(id) === el) els.delete(id);
-  });
 }
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;

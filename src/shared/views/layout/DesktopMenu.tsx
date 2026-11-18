@@ -1,8 +1,7 @@
-import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
+import { createMemo, createSignal, For, onCleanup, Show, createEffect } from "solid-js";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
@@ -98,9 +97,8 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     const draggable = () => p.favorite && editingWidgets();
     return (
       <div
-        ref={mergeRefs(helpable(() => navItemHelpTarget(p.item)), p.favorite ? favDrag.registerRef(p.item.path) : undefined)}
-        class="group/fav relative"
-        classList={{ "rounded-xl border border-dashed border-accent/50": draggable() }}
+        ref={[helpable(() => navItemHelpTarget(p.item)), p.favorite ? favDrag.registerRef(p.item.path) : undefined]}
+        class={["group/fav relative", { "rounded-xl border border-dashed border-accent/50": draggable() }]}
       >
         <NavItem
           href={p.item.href}
@@ -140,7 +138,9 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
   createEffect(() => {
     const id = activeModuleId();
     const group = groups().find((g) => g.items.some((i) => moduleIdForPath(i.path) === id));
-    if (group && !openGroups().has(group.id)) setGroupOpen(group.id, true);
+    return group && !openGroups().has(group.id) ? group.id : null;
+  }, (gid) => {
+    if (gid) setGroupOpen(gid, true);
   });
 
   // The account/visitor action items: expanded inline under the user's own
@@ -213,13 +213,9 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
     requestAnimationFrame(syncScrollFades);
   };
   onCleanup(() => navScrollObserver?.disconnect());
-  createEffect(() => {
-    // Read the nav's rendered inputs so the geometry is re-measured after
-    // they change; rAF waits for the DOM commit.
-    navItems();
-    openGroups();
-    actionsOpen();
-    editingWidgets();
+  // Re-measure the geometry after the nav's rendered inputs change; rAF
+  // waits for the DOM commit.
+  createEffect(() => [navItems(), openGroups(), actionsOpen(), editingWidgets()], () => {
     requestAnimationFrame(syncScrollFades);
   });
 
@@ -289,8 +285,7 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
                 <For each={desktopNavDrag.displayItems()}>
                   {(item) => (
                     <div
-                      ref={mergeRefs(desktopNavDrag.registerRef(item.path), helpable(() => navItemHelpTarget(item)))}
-                      classList={{
+                      ref={[desktopNavDrag.registerRef(item.path), helpable(() => navItemHelpTarget(item))]} class={{
                         "rounded-xl border border-dashed border-accent/50":
                           editingWidgets(),
                       }}

@@ -1,4 +1,4 @@
-import { createEffect, createSignal, lazy, Show, For } from "solid-js";
+import { createSignal, lazy, Show, For, createEffect } from "solid-js";
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import {
   entries, loading, loadingMore, hasMore, keywordCloud,
@@ -43,15 +43,15 @@ export default function DirectorySection() {
   const mapsOn = useMapsEnabled();
   const showMap = () => mapsOn() && view() === "map";
 
-  createEffect(() => {
-    loadDirectory({
+  createEffect(() => ({
       search: appliedSearch(),
       keywords: keyword() || undefined,
       order: order(),
       global: globalDir(),
       safe: safe(),
       pubforums: pubforums(),
-    });
+    }), (q) => {
+    loadDirectory(q);
   });
 
 
@@ -152,7 +152,7 @@ export default function DirectorySection() {
           <Show when={showMap()}>
             <PlaceMap items={entries().map((e) => ({ place: e.location ?? "", name: e.name, open: () => setSelected(e) }))} />
           </Show>
-          <div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]" classList={{ hidden: showMap() }}>
+          <div class={["grid gap-3 grid-cols-[repeat(auto-fit,minmax(17rem,1fr))]", { hidden: showMap() }]}>
             <For each={entries()}>
               {(entry) => <CardShell uuid={entry.hash} class="grid"><DirectoryCard entry={entry} onSelect={setSelected} /></CardShell>}
             </For>

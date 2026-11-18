@@ -5,7 +5,6 @@ import { useSectionForm } from "../../store/useSectionForm";
 import { SaveBar } from "../../store/FormHelpers";
 import type { AccountQuota, AccountSettings } from "../../store/types";
 import { formatQuotaValue, humanBytes, quotaPercent } from "@/shared/lib/quota-format";
-import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Field, Input } from "@ui/Field";
 import { Card } from "@ui/Card";
@@ -81,7 +80,7 @@ function StorageBreakdown(props: { storage: NonNullable<AccountSettings["storage
           <For each={props.storage.largest}>
             {(f) => (
               <li class="flex items-center gap-2 min-w-0">
-                <A href={f.href} class="flex-1 truncate text-accent-txt hover:underline">{f.name}</A>
+                <a href={f.href} class="flex-1 truncate text-accent-txt hover:underline">{f.name}</a>
                 <span class="w-20 text-right tabular-nums text-muted shrink-0">{humanBytes(f.bytes)}</span>
               </li>
             )}
@@ -113,8 +112,7 @@ function QuotaRow(props: { quota: AccountQuota }) {
       <Show when={pct() !== null}>
         <div class="h-1.5 rounded-full bg-elevated overflow-hidden">
           <div
-            class="h-full rounded-full bg-accent transition-all"
-            classList={{ "bg-danger": (pct() ?? 0) >= 90 }}
+            class={["h-full rounded-full bg-accent transition-all", { "bg-danger": (pct() ?? 0) >= 90 }]}
             style={{ width: `${pct()}%` }}
           />
         </div>

@@ -1,5 +1,5 @@
 import { For, Show, createSignal, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import {
@@ -17,7 +17,6 @@ import FilterChip from "./FilterChip";
 import { RANGE_AWARE, RANGES, DEFAULT_RANGE, resolveRange, type SortOrder, type SortRange } from "./ranked";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { Button, IconButton } from "@ui/Button";
 
 type IconType = Component<{ size?: number; class?: string }>;
@@ -103,7 +102,7 @@ export default function SortSelect(props: {
      ${active ? "bg-accent text-accent-fg" : "bg-surface text-muted hover:bg-elevated"}`;
 
   return (
-    <div class="min-w-0" ref={mergeRefs<HTMLDivElement>((el) => { root = el; ref(el); }, helpable(() => props.help ?? "network.sort_order"))}>
+    <div class="min-w-0" ref={[(el) => { root = el; ref(el); }, helpable(() => props.help ?? "network.sort_order")]}>
       <Show
         when={wide()}
         fallback={
@@ -112,7 +111,7 @@ export default function SortSelect(props: {
               variant="ghost"
               size="sm"
               title={t("network.sort_by")}
-              aria-expanded={open()}
+              aria-expanded={(open()) ? "true" : "false"}
               aria-haspopup="listbox"
               onClick={() => { ref(root); setRangeFor(null); setOpen(!open()); }}
             >
@@ -142,7 +141,7 @@ export default function SortSelect(props: {
                     >
                       <button
                         role="option"
-                        aria-selected={props.order === o.id}
+                        aria-selected={(props.order === o.id) ? "true" : "false"}
                         onClick={() => pickOrder(o.id)}
                         class="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 text-sm text-left"
                       >
@@ -153,7 +152,7 @@ export default function SortSelect(props: {
                         <IconButton
                           label={t("network.date_range")}
                           class="self-stretch rounded-r-md"
-                          aria-expanded={rangeFor() === o.id}
+                          aria-expanded={(rangeFor() === o.id) ? "true" : "false"}
                           onClick={() => toggleRanges(o.id)}
                         >
                           <MdFillKeyboard_arrow_down size={14}
@@ -197,7 +196,7 @@ export default function SortSelect(props: {
                   <button
                     role="tab"
                     title={labelFor(o.id, o.key)}
-                    aria-selected={props.order === o.id}
+                    aria-selected={(props.order === o.id) ? "true" : "false"}
                     onClick={() => pickOrder(o.id)}
                     class={segCls(props.order === o.id)}
                   >
@@ -211,7 +210,7 @@ export default function SortSelect(props: {
                       title={t("network.date_range")}
                       aria-label={t("network.date_range")}
                       aria-haspopup="listbox"
-                      aria-expanded={open() && rangeFor() === o.id}
+                      aria-expanded={(open() && rangeFor() === o.id) ? "true" : "false"}
                       onClick={() => toggleRanges(o.id, groupEls[o.id])}
                       class={`${segCls(props.order === o.id)} pl-0! pr-1!`}
                     >
@@ -241,7 +240,7 @@ export default function SortSelect(props: {
                 {(r) => (
                   <button
                     role="option"
-                    aria-selected={panelRange() === r.id}
+                    aria-selected={(panelRange() === r.id) ? "true" : "false"}
                     onClick={() => pickRange(r.id)}
                     class={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap
                       transition-colors

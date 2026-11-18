@@ -1,5 +1,5 @@
 import { createSignal, onCleanup, Show, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { Attachment } from "./types";
 import { useI18n } from "@utsukta/spa-core/i18n";

@@ -1,5 +1,5 @@
 import { truncateError } from "@utsukta/spa-core/lib/fetch";
-import { createSignal, createEffect, onCleanup, useContext } from "solid-js";
+import { createSignal, onCleanup, useContext, createEffect } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
@@ -81,6 +81,11 @@ export function createComposerStore(
     initialSummary?: string;
     initialCategory?: string;
     initialMimetype?: MimeType;
+    initialSlug?: string;
+    /** A starting body that, unlike initialBody, still lets a saved draft
+     *  restore over it (Article/Card edit seeding). Passed here rather than
+     *  written after creation: Solid 2 forbids writes during render. */
+    seedBody?: string;
     /**
      * Composer-specific fields (ACL, poll, article language, …) for the
      * autosaved server draft — the same shape the manual save used to build.
@@ -118,10 +123,10 @@ export function createComposerStore(
 ) {
   const DRAFT_KEY = channelKey(`draft:${scope}`);
 
-  const [body, setBody]         = createSignal(options?.initialBody ?? "");
+  const [body, setBody]         = createSignal(options?.initialBody ?? options?.seedBody ?? "");
   const [title, setTitle]       = createSignal(options?.initialTitle ?? "");
   const [summary, setSummary]   = createSignal(options?.initialSummary ?? "");
-  const [slug, setSlug]         = createSignal("");
+  const [slug, setSlug]         = createSignal(options?.initialSlug ?? "");
   const [category, setCategory] = createSignal(options?.initialCategory ?? "");
   const [mimetype, setMimetype] = createSignal<MimeType>(options?.initialMimetype ?? "text/bbcode");
   const [submitting, setSubmitting] = createSignal(false);
@@ -131,7 +136,7 @@ export function createComposerStore(
   // shows the title field instead of the generic heading. No frame (locally
   // mounted composer) means nobody is listening.
   const frame = useContext(ComposerFrameContext);
-  if (frame) createEffect(() => frame.setDocTitle(title().trim()));
+  if (frame) createEffect(() => title().trim(), (t) => { frame.setDocTitle(t); });
   const [error, setError]       = createSignal<string | null>(null);
   // WYSIWYG has nothing meaningful to show for already-encrypted content —
   // bbcodeToHtml() just renders an inert "🔒 Encrypted content" placeholder
@@ -201,9 +206,7 @@ export function createComposerStore(
   // Persist the full local draft while typing; clear when submitted or reset.
   // Guard on `initialized` so the effect doesn't fire (and delete the saved
   // draft) during the async window before storage has been read on mount.
-  createEffect(() => {
-    if (!initialized()) return;
-    const snapshot: LocalDraft = {
+  createEffect((): LocalDraft | null => initialized() ? {
       body:     body(),
       title:    title(),
       summary:  summary(),
@@ -211,7 +214,8 @@ export function createComposerStore(
       category: category(),
       mimetype: mimetype(),
       seed:     options?.initialBody,
-    };
+    } : null, (snapshot) => {
+    if (!snapshot) return;
     // An untouched seed is not a draft.
     if (snapshot.body && snapshot.body !== options?.initialBody) storageSet(DRAFT_KEY, snapshot);
     else storageDel(DRAFT_KEY);
@@ -237,14 +241,17 @@ export function createComposerStore(
   // which never matches and so does get saved.
   let baseline: string | null | undefined;
 
+  // Track what a draft is made of, so any of them restarts the countdown.
   createEffect(() => {
-    if (!initialized() || options?.autosave === false) return;
-    // Track what a draft is made of, so any of them restarts the countdown.
+    if (!initialized() || options?.autosave === false) return null;
     const draftBody = options?.autosaveBody?.() ?? body();
-    const snapshot = [draftBody, title(), summary(), slug(), category()].join("\u0000");
+    return { draftBody, snapshot: [draftBody, title(), summary(), slug(), category()].join("\u0000"), submitting: submitting() };
+  }, (at) => {
+    if (!at) return;
+    const { draftBody, snapshot } = at;
     clearTimeout(autosaveTimer);
     if (baseline === undefined) baseline = restoredLocal ? null : snapshot;
-    if (!draftBody.trim() || submitting() || snapshot === baseline) return;
+    if (!draftBody.trim() || at.submitting || snapshot === baseline) return;
     autosaveTimer = setTimeout(() => {
       pendingAutosave = saveAsDraft(options?.autosaveExtra?.() ?? undefined, options?.autosaveBody?.(), true);
     }, AUTOSAVE_MS);

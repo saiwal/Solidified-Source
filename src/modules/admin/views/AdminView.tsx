@@ -1,6 +1,6 @@
-import { lazy, createMemo, Suspense, Show } from "solid-js";
-import { Dynamic } from "solid-js/web";
-import { useLocation, Navigate } from "@solidjs/router";
+import { lazy, createEffect, createMemo, Loading, Show } from "solid-js";
+import { Dynamic } from "@solidjs/web";
+import { useLocation, useNavigate } from "@solidjs/router";
 import SubPageLayout from "@/shared/views/SubPageLayout";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { ADMIN_ITEMS } from "../index";
@@ -27,6 +27,10 @@ const DEFAULT_SECTION = "summary";
 export default function AdminView() {
   const auth = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  // Was <Navigate> as the Show fallback; router 2 has none. Waits for auth
+  // to resolve instead of bouncing an admin during boot.
+  createEffect(auth, (a) => { if (a && !a.isAdmin) navigate("/", { replace: true }); });
 
   const activeKey = createMemo<string>(() => {
     const seg = location.pathname.replace(/^\/admin\/?/, "").split("/")[0];
@@ -34,11 +38,11 @@ export default function AdminView() {
   });
 
   return (
-    <Show when={auth()?.isAdmin} fallback={<Navigate href="/" />}>
+    <Show when={auth()?.isAdmin}>
       <SubPageLayout base="/admin" items={ADMIN_ITEMS} activeKey={activeKey()}>
-        <Suspense fallback={<SectionSkeleton />}>
+        <Loading fallback={<SectionSkeleton />}>
           <Dynamic component={SECTIONS[activeKey()]} />
-        </Suspense>
+        </Loading>
       </SubPageLayout>
     </Show>
   );

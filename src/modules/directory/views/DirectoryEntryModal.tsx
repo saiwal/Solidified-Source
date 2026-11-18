@@ -1,5 +1,5 @@
 // modules/directory/views/DirectoryEntryModal.tsx
-import { Show, For, type Component, createEffect, createSignal, on } from "solid-js";
+import { Show, For, createEffect, createSignal, type Component } from "solid-js";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { chanviewHref, type DirectoryEntry } from "../people/api";
 import { connectToChannel } from "../connections/api";
@@ -37,10 +37,10 @@ const DirectoryEntryModal: Component<Props> = (props) => {
     }
   }
 
-  createEffect(on(() => props.entry, () => {
+  createEffect(() => props.entry, () => {
     setJustConnected(false);
     setConnectError("");
-  }));
+  });
 
   return (
     <Show when={e()}>

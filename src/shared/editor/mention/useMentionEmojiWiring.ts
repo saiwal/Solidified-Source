@@ -81,8 +81,7 @@ export function useMentionEmojiWiring(
     return wrapperEl?.querySelector<HTMLTextAreaElement>("textarea") ?? null;
   }
 
-  createEffect(() => {
-    void opts.body();
+  createEffect(() => opts.body(), () => {
     const editor = getEditor();
     if (editor) {
       const mq = getWysiwygMentionQuery();

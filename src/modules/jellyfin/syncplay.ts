@@ -26,6 +26,7 @@ import {
   type RepeatMode,
 } from "./store";
 import { onSocketMessage } from "./remote";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 const TICKS = 10_000_000;
 const ZERO_ID = "00000000000000000000000000000000";
@@ -48,7 +49,7 @@ interface PartyQueue {
   repeat: RepeatMode;
 }
 
-const [party, setParty] = createSignal<Party | null>(null);
+const [party, setParty] = createSyncSignal<Party | null>(null);
 const [queue, setQueue] = createSignal<PartyQueue | null>(null);
 /** What the group is playing right now: music (the audio player) or a video. */
 const [kind, setKind] = createSignal<"audio" | "video" | null>(null);

@@ -18,7 +18,12 @@ export interface RegisteredWidget extends WidgetDef {
 const modules = new Map<string, ModuleDef>();
 const widgets = new Map<string, RegisteredWidget>();
 const [navItems, setNavItems] = createSignal<NavItemDef[]>([]);
-const [routes, setRoutes] = createSignal<RouteDef[]>([]);
+// A plain array behind the signal: Solid 2 batches writes, so a signal read
+// right after registerModule() (App building its router at import time)
+// would still see the old list. The signal is only the change notification.
+let routeList: RouteDef[] = [];
+const [routesVersion, setRoutesVersion] = createSignal(0);
+const routes = () => (routesVersion(), routeList);
 const [widgetVersion, setWidgetVersion] = createSignal(0);
 
 // The visited channel's frontend-feature overrides, for `channelScoped`
@@ -70,7 +75,8 @@ export function registerModule(def: ModuleDef) {
 
   if (def.navItem) setNavItems((prev) => [...prev, def.navItem!]);
   const taggedRoutes = def.routes.map((r) => ({ ...r, component: withStrings(r.component), moduleId: def.id }));
-  setRoutes((prev) => [...prev, ...taggedRoutes]);
+  routeList = [...routeList, ...taggedRoutes];
+  setRoutesVersion((v) => v + 1);
 }
 
 export function getNavItems() {

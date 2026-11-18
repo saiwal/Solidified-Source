@@ -1,14 +1,14 @@
 // src/modules/help/widgets/HelpContentWidget.tsx
-import { createEffect, Show, For } from "solid-js";
+import { Show, For, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { useSearchParams, useLocation, A } from "@solidjs/router";
+import { useSearchParams, useLocation } from "@solidjs/router";
 import DOMPurify from "dompurify";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useToc } from "@utsukta/spa-core/lib/useToc";
 import ArticleToc from "@/shared/views/ArticleToc";
 import { fetchTopic, fetchHelpSearch } from "../api";
 import { Card, cardClass } from "@ui/Card";
-import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
+import { lightboxRef } from "@utsukta/spa-core/lib/useLightbox";
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
@@ -73,10 +73,7 @@ export default function HelpContentWidget() {
   const { toc, activeId, setToc, setActiveId } = useToc(rendered, () => bodyRef);
 
   // Clear TOC whenever the route changes so stale entries don't linger
-  createEffect(() => {
-    section();
-    topic();
-    query(); // track all three
+  createEffect(() => [section(), topic(), query()], () => {
     setToc([]);
     setActiveId("");
   });
@@ -90,7 +87,7 @@ export default function HelpContentWidget() {
         </Show>
 
         {/* ── Content ── */}
-        <article ref={(el) => { useLightbox(() => el);}} class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-5`}>
+        <article ref={lightboxRef()} class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-5`}>
           <Show
             when={!query()}
             fallback={
@@ -112,14 +109,14 @@ export default function HelpContentWidget() {
                       <For each={searchData()!.results}>
                         {(r) => (
                           <li>
-                            <A
+                            <a
                               href={`/help/${section()}/${r.path}`}
                               class="block bg-surface border border-rim rounded-xl p-4
                                      hover:border-rim-strong hover:bg-elevated transition-colors"
                             >
                               <div class="text-sm font-semibold text-accent">{r.title}</div>
                               <p class="text-xs text-muted mt-1">{r.snippet}</p>
-                            </A>
+                            </a>
                           </li>
                         )}
                       </For>
@@ -138,12 +135,12 @@ export default function HelpContentWidget() {
                 <p class="text-sm text-danger-txt">
                   {topicData.error?.message ?? "Page not found."}
                 </p>
-                <A
+                <a
                   href={`/help/${section()}`}
                   class="text-sm text-accent hover:underline"
                 >
                   ← Back
-                </A>
+                </a>
               </Card>
             </Show>
 

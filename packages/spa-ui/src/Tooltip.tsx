@@ -1,8 +1,8 @@
 // solidified's implementation of the tooltip contract (spa-core types/ui.types.ts).
 // Hover/focus only, portalled to the top layer and positioned by floating-ui.
 // The wrapper is inline-flex so a bare icon/spans keeps its layout.
-import { Show, createEffect, createSignal } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Show, createSignal, createEffect } from "solid-js";
+import { Portal } from "@solidjs/web";
 import type { TooltipProps } from "@utsukta/spa-core/types/ui.types";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useFloating } from "@utsukta/spa-core/lib/useFloating";
@@ -19,8 +19,8 @@ export function Tooltip(props: TooltipProps) {
 
   // Solid runs render effects before user effects, so floatEl is assigned by
   // the time this fires after visible() becomes true.
-  createEffect(() => {
-    if (visible() && floatEl) mount(triggerEl, floatEl);
+  createEffect(visible, (shown) => {
+    if (shown && floatEl) mount(triggerEl, floatEl);
     else unmount();
   });
 

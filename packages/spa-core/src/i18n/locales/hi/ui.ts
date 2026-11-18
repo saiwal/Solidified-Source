@@ -1,6 +1,8 @@
 import type { RawDictionary } from "../namespaces/types";
 
 export const ui: RawDictionary["ui"] = {
+  load_failed:            "लोड नहीं हो सका।",
+  retry:                  "फिर से कोशिश करें",
   show_more:              "और दिखाएँ",
   show_less:              "कम दिखाएँ",
   reply:                  "उत्तर",

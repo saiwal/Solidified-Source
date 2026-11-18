@@ -1,6 +1,6 @@
 // Watch / listen together: start a party around what's playing, invite
 // Hubzilla connections by DM, see who's in, chat in the invite thread, leave.
-import { For, Show, createEffect, createSignal, lazy, on, Suspense } from "solid-js";
+import { For, Show, createEffect, createSignal, lazy, Loading } from "solid-js";
 import { MdFillGroups, MdFillPerson_add, MdFillChat, MdFillLogout } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -20,17 +20,17 @@ const DmThread = lazy(() => import("@/modules/messenger/DmPane").then((m) => ({ 
 /** Toasts for party events — mount once (the global mini-player does). */
 export function usePartyNotices() {
   const { t } = useI18n();
-  createEffect(on(partyNotice, (n) => {
+  createEffect(partyNotice, (n) => {
     if (!n) return;
     switch (n.type) {
-      case "joined": return toast.info(t("jellyfin.party_user_joined", { name: n.name }));
-      case "left": return toast.info(t("jellyfin.party_user_left", { name: n.name }));
-      case "ended": return toast.info(t("jellyfin.party_ended"));
-      case "not-found": return toast.error(t("jellyfin.party_not_found"));
-      case "denied": return toast.error(t("jellyfin.party_denied"));
-      case "failed": return toast.error(t("jellyfin.party_request_failed"));
+      case "joined": toast.info(t("jellyfin.party_user_joined", { name: n.name })); return;
+      case "left": toast.info(t("jellyfin.party_user_left", { name: n.name })); return;
+      case "ended": toast.info(t("jellyfin.party_ended")); return;
+      case "not-found": toast.error(t("jellyfin.party_not_found")); return;
+      case "denied": toast.error(t("jellyfin.party_denied")); return;
+      case "failed": toast.error(t("jellyfin.party_request_failed")); return;
     }
-  }, { defer: true }));
+  }, { defer: true });
 }
 
 /** The invite: a relative link, so it opens the reader's *own* hub's player. */
@@ -80,7 +80,7 @@ export default function PartyBar(props: {
   };
 
   // An invitee's browser finds the invite thread by the party code in its subject
-  createEffect(on(() => party()?.id, (gid) => {
+  createEffect(() => party()?.id, (gid) => {
     if (!gid || partyThread()) return;
     const code = `#${partyCode(gid)}`;
     fetchMessages({ offset: 0, type: "direct", file: "", search: "" })
@@ -89,7 +89,7 @@ export default function PartyBar(props: {
         if (hit && party()?.id === gid) setPartyThread(hit.b64mid);
       })
       .catch(() => undefined);
-  }));
+  });
 
   const btn = `${ghostPill} !h-9 !px-3`;
 
@@ -120,7 +120,7 @@ export default function PartyBar(props: {
                 <button type="button" class={btn} onClick={() => setInviting(true)}>
                   <MdFillPerson_add size={16} /> {t("jellyfin.party_invite")}
                 </button>
-                <button type="button" aria-pressed={chatOpen()} onClick={() => setChatOpen(!chatOpen())}
+                <button type="button" aria-pressed={(chatOpen()) ? "true" : "false"} onClick={() => setChatOpen(!chatOpen())}
                   class={`${btn} ${chatOpen() ? "!text-accent-txt bg-elevated/70" : ""}`}>
                   <MdFillChat size={16} /> {t("jellyfin.party_chat")}
                 </button>
@@ -141,9 +141,9 @@ export default function PartyBar(props: {
                     <p class="m-auto p-4 text-sm text-muted text-center">{t("jellyfin.party_chat_empty")}</p>
                   }>
                     {(uuid) => (
-                      <Suspense fallback={<p class="m-auto text-sm text-muted animate-pulse">{t("jellyfin.loading")}</p>}>
+                      <Loading fallback={<p class="m-auto text-sm text-muted animate-pulse">{t("jellyfin.loading")}</p>}>
                         <DmThread uuid={uuid} unseen={false} onGone={() => setChatOpen(false)} />
-                      </Suspense>
+                      </Loading>
                     )}
                   </Show>
                 </Motion.div>

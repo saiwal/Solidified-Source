@@ -37,19 +37,15 @@ const FeedRowItem: Component<{ row: FeedRow; variant?: "all" }> = (props) => {
 
   return (
     <li
-      class="flex items-center gap-2 transition-colors"
-      classList={
-        isAll
+      class={["flex items-center gap-2 transition-colors", isAll
           ? { "px-3 py-2.5 rounded-lg bg-accent/10 hover:bg-accent/15": true }
-          : { "px-3 py-2 hover:bg-elevated": true }
-      }
+          : { "px-3 py-2 hover:bg-elevated": true }]}
     >
       <Show when={isAll}>
         <BiRegularRss size={14} class="text-accent shrink-0" />
       </Show>
       <span
-        class="flex-1 text-sm truncate"
-        classList={{ "font-medium text-accent": isAll, "text-txt": !isAll }}
+        class={["flex-1 text-sm truncate", { "font-medium text-accent": isAll, "text-txt": !isAll }]}
       >
         {props.row.label}
       </span>
@@ -176,8 +172,7 @@ const FeedModal: Component<Props> = (props) => {
         <div class="overflow-y-auto p-5">
           <Show when={!loading()} fallback={<EmptyState size="sm">…</EmptyState>}>
             <div
-              class="grid grid-cols-1 gap-x-8 gap-y-6"
-              classList={{ "lg:grid-cols-2": articlesInstalled() }}
+              class={["grid grid-cols-1 gap-x-8 gap-y-6", { "lg:grid-cols-2": articlesInstalled() }]}
             >
               <FeedTypeColumn
                 title={t("widgets.subscribe_posts") as string}

@@ -1,21 +1,8 @@
 // src/shared/stream/components/PostCard.tsx
 import { zrl } from "@utsukta/spa-core/lib/zid";
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import {
-  createSignal,
-  createMemo,
-  createEffect,
-  createUniqueId,
-  untrack,
-  onMount,
-  onCleanup,
-  lazy,
-  Show,
-  For,
-  useContext,
-  type JSX,
-} from "solid-js";
-import { A } from "@solidjs/router";
+import { createSignal, createMemo, createUniqueId, onSettled, onCleanup, lazy, Show, For, useContext, createEffect, untrack } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { openShare } from "@utsukta/spa-core/store/share";
 import { shareTargetForPost } from "@/shared/lib/shareLinks";
 import AuthorPopover from "./AuthorPopover";
@@ -235,7 +222,7 @@ export default function PostCard(props: {
       !!props.highlightUuid &&
       subtreeContainsUuid(props.post.children, props.highlightUuid));
   const [showComments, setShowComments] = createSignal(initiallyOpen);
-  if (initiallyOpen) setOpened(props.post.mid, true);
+  if (initiallyOpen) { const mid = untrack(() => props.post.mid); onSettled(() => { setOpened(mid, true); }); }
   const [commentsLoaded, setCommentsLoaded] = createSignal(
     props.post.children.length > 0,
   );
@@ -619,8 +606,8 @@ export default function PostCard(props: {
   // so the flag stays hidden rather than opening an empty panel.
   const mayModerateReactions = () =>
     (!!props.handlers.onApprove || !!props.handlers.onReject) && ownsStreamCopy();
-  createEffect(() => {
-    if (mayModerateReactions()) ensurePendingModeration();
+  createEffect(mayModerateReactions, (may) => {
+    if (may) ensurePendingModeration();
   });
   const canReactionQueue = () =>
     mayModerateReactions() && pendingReactionMids().has(props.post.mid);
@@ -830,13 +817,15 @@ export default function PostCard(props: {
     if (handleDecryptClick(e)) return;
   }
 
-  onMount(() => {
-    if (props.highlighted && props.compact) {
-      onCleanup(scrollHighlightIntoView(cardRef));
+  const atMount = untrack(() => ({ highlight: !!(props.highlighted && props.compact), uuid: props.post.uuid }));
+  onSettled(() => {
+    const cleanups: (() => void)[] = [];
+    if (atMount.highlight) {
+      cleanups.push(scrollHighlightIntoView(cardRef));
     }
 
-    const uuid = props.post.uuid;
-    if (!uuid) return;
+    const uuid = atMount.uuid;
+    if (!uuid) return () => cleanups.forEach((f) => f());
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -848,14 +837,15 @@ export default function PostCard(props: {
       { threshold: 0.5 },
     );
     observer.observe(cardRef);
-    onCleanup(() => observer.disconnect());
+    cleanups.push(() => observer.disconnect());
+    return () => cleanups.forEach((f) => f());
   });
 
-  createEffect(() => {
-    if (props.compact || props.seamless) return;
-    postHeightPx(); // re-measure when the user changes the setting
+  // re-measure when the user changes the post-height setting
+  createEffect(() => (props.compact || props.seamless ? null : [postHeightPx(), bodyRef()] as const), (at) => {
+    if (!at) return;
     checkBodyOverflow();
-    const imgs = bodyRef()?.querySelectorAll("img");
+    const imgs = at[1]?.querySelectorAll("img");
     imgs?.forEach((img) => {
       if (!img.complete)
         img.addEventListener("load", checkBodyOverflow, { once: true });
@@ -1069,8 +1059,8 @@ export default function PostCard(props: {
 
   // When a parent post requests expanding all nested threads, open this one.
   // Uses untrack so manual closes aren't overridden by a re-run of the effect.
-  createEffect(() => {
-    if (props.expandAll && !untrack(showComments) && !closedByMid.has(props.post.mid)) {
+  createEffect(() => !!props.expandAll, (expand) => {
+    if (expand && !showComments() && !closedByMid.has(props.post.mid)) {
       toggleComments();
     }
   });
@@ -1093,8 +1083,8 @@ export default function PostCard(props: {
   );
   // An unfold holds only while the chain stays deep; once it shrinks back the
   // card follows the rule again.
-  createEffect(() => {
-    if (keepOpen() && !tooDeep()) setKeepOpen(false);
+  createEffect(() => keepOpen() && !tooDeep(), (drop) => {
+    if (drop) setKeepOpen(false);
   });
 
   // ── Compact (comment) layout ──────────────────────────────────────────────
@@ -1126,7 +1116,7 @@ export default function PostCard(props: {
             <span class="truncate">{excerptOf(props.post, 80)}</span>
           </button>
         </Show>
-        <div classList={{ hidden: autoCollapsed() }}>
+        <div class={{ hidden: autoCollapsed() }}>
         <Show when={isPinned()}>
           <span
             class="absolute top-1 right-1 z-10 flex items-center justify-center w-4 h-4 rounded-full bg-accent text-accent-fg leading-none"
@@ -1441,15 +1431,14 @@ export default function PostCard(props: {
               disabled={rssImporting()}
             >
               <MdOutlineCloud_download
-                size={14}
-                classList={{ "animate-spin": rssImporting() }}
+                size={14} class={{ "animate-spin": rssImporting() }}
               />
             </IconButton>
           </Show>
 
           <Show when={totalComments() > 0}>
             <Button variant="ghost" size="sm" onClick={toggleComments}>
-              <MdFillKeyboard_arrow_down size={14} class="transition-transform duration-300" classList={{ "rotate-180": showComments() }} />
+              <MdFillKeyboard_arrow_down size={14} class={["transition-transform duration-300", { "rotate-180": showComments() }]} />
               <span>{totalComments()}</span>
             </Button>
           </Show>
@@ -1696,10 +1685,7 @@ export default function PostCard(props: {
             when={props.post.authorAvatar}
             fallback={
               <div
-                class="rounded-full bg-gradient-to-br from-accent to-accent-txt
-                          shrink-0 flex items-center justify-center text-accent-fg font-bold ring-1 ring-rim
-                          cursor-pointer"
-                classList={{ "w-11 h-11 text-sm": !isFlatReply(), "w-6 h-6 text-[0.625rem]": isFlatReply() }}
+                class={["rounded-full bg-gradient-to-br from-accent to-accent-txt\n                          shrink-0 flex items-center justify-center text-accent-fg font-bold ring-1 ring-rim\n                          cursor-pointer", { "w-11 h-11 text-sm": !isFlatReply(), "w-6 h-6 text-[0.625rem]": isFlatReply() }]}
               >
                 {props.post.authorName?.[0]?.toUpperCase() ?? "?"}
               </div>
@@ -1951,12 +1937,12 @@ export default function PostCard(props: {
                 <Badge>{cat}</Badge>
               }
             >
-              <A
+              <a
                 href={`/channel/${categoryNick()}?cat=${encodeURIComponent(cat)}`}
                 class="px-1.5 py-0.5 rounded bg-elevated text-xs text-txt hover:bg-rim"
               >
                 {cat}
-              </A>
+              </a>
             </Show>
             )}
           </For>
@@ -2064,7 +2050,7 @@ export default function PostCard(props: {
             disabled={props.split}
             title={t("post.toggle_comments")}
           >
-            <MdFillKeyboard_arrow_down size={17} class="hidden wide:block transition-transform duration-300" classList={{ "!hidden": props.split, "rotate-180": showComments() }} />
+            <MdFillKeyboard_arrow_down size={17} class={["hidden wide:block transition-transform duration-300", { "!hidden": props.split, "rotate-180": showComments() }]} />
             <MdFillChat size={15} />
             <span>{totalComments()}</span>
           </Button>
@@ -2157,7 +2143,7 @@ export default function PostCard(props: {
           </Show>
           <Show when={isRss()}>
             <MenuItem
-              icon={<MdOutlineCloud_download size={15} classList={{ "animate-spin": rssImporting() }} />}
+              icon={<MdOutlineCloud_download size={15} class={{ "animate-spin": rssImporting() }} />}
               disabled={rssImporting()}
               onClick={() => handleRssImport()}
             >
@@ -2407,8 +2393,7 @@ function PostStats(props: {
 
   // The data arrives after the panel opens, and a refresh can drop the category
   // currently selected — always land on the first one that still has activity.
-  createEffect(() => {
-    const first = tabs()[0]?.value;
+  createEffect(() => tabs()[0]?.value, (first) => {
     if (first) setTab(first);
   });
 

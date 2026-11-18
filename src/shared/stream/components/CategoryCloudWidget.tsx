@@ -3,7 +3,7 @@
 // Alternate category layout: a tag-cloud of pills with font size scaled by
 // post count, instead of the row list in CategoryWidget. Same API and props.
 
-import { type Component, createEffect, createSignal, For, on, Show } from "solid-js";
+import { createEffect, createSignal, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -43,7 +43,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
     (p) => (p ? fetchCategories(p) : Promise.resolve([])),
   );
 
-  createEffect(on(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); }));
+  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const categories = (): CategoryItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...categories().map((c) => c.count), 1);

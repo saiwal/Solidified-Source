@@ -1,6 +1,6 @@
-import { A, useLocation } from "@solidjs/router";
-import type { Component, JSX } from "solid-js";
-import { Show } from "solid-js";
+import { useLocation } from "@solidjs/router";
+import { Show, type Component } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { biToNavIcon } from "@utsukta/spa-core/lib/nav-api";
 export { biToNavIcon };
@@ -124,7 +124,7 @@ const itemClass =
   "text-sm text-muted transition-colors duration-150 " +
   "hover:bg-elevated hover:text-txt";
 
-const activeClass = "!bg-elevated !text-txt font-medium";
+const activeClass = "data-active:!bg-elevated data-active:!text-txt data-active:font-medium";
 
 const NavItem: Component<Props> = (props) => {
   const { t } = useI18n();
@@ -159,9 +159,9 @@ const NavItem: Component<Props> = (props) => {
     <Show
       when={isAbsolute()}
       fallback={
-        <A href={href()} end={href() === "/"} class={itemClass} activeClass={activeClass} aria-current={isCurrentPage() ? "page" : undefined}>
+        <a href={href()} class={`${itemClass} ${activeClass}`} aria-current={isCurrentPage() ? "page" : undefined}>
           {content()}
-        </A>
+        </a>
       }
     >
       <a
@@ -181,8 +181,7 @@ const NavItem: Component<Props> = (props) => {
   return (
     <Show when={props.draggable} fallback={link()}>
       <div
-        class="flex items-center gap-0.5 rounded-xl transition-opacity"
-        classList={{ "opacity-50": props.dragging }}
+        class={["flex items-center gap-0.5 rounded-xl transition-opacity", { "opacity-50": props.dragging }]}
       >
         <div class="flex-1 min-w-0">{link()}</div>
         <IconButton

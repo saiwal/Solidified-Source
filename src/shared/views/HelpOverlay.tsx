@@ -1,6 +1,6 @@
 // src/shared/views/HelpOverlay.tsx
-import { Show, Suspense } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Show, Loading } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { marked } from "marked";
 import { useHelpMode, type DocType } from "@utsukta/spa-core/store/help-mode";
@@ -111,7 +111,7 @@ function DocContent(props: { target: string }) {
   }
 
   return (
-    <Suspense fallback={
+    <Loading fallback={
       <p class="text-sm text-muted animate-pulse">{t("help.loading")}</p>
     }>
       <Show
@@ -127,7 +127,7 @@ function DocContent(props: { target: string }) {
           innerHTML={renderHtml()}
         />
       </Show>
-    </Suspense>
+    </Loading>
   );
 }
 

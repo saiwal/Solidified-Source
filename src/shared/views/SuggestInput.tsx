@@ -4,8 +4,9 @@
 //
 // It suggests without restricting — every field using it is free text, so a
 // value that isn't in the list is valid and typing just narrows the panel.
-import { For, Show, createSignal, createMemo, onCleanup, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { For, Show, createSignal, createMemo, onCleanup } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 
 const MAX_VISIBLE = 8;
@@ -79,7 +80,7 @@ export default function SuggestInput(props: {
         placeholder={props.placeholder}
         class={props.class}
         role={props.items?.length ? "combobox" : undefined}
-        aria-expanded={props.items?.length ? showing() : undefined}
+        aria-expanded={props.items?.length ? (showing() ? "true" : "false") : undefined}
         autocomplete="off"
         onFocus={start}
         onBlur={stop}
@@ -104,7 +105,7 @@ export default function SuggestInput(props: {
                   <button
                     type="button"
                     role="option"
-                    aria-selected={i() === active()}
+                    aria-selected={(i() === active()) ? "true" : "false"}
                     // Keeps focus in the input, so blur doesn't close the panel
                     // out from under the click.
                     onMouseDown={(e) => { e.preventDefault(); choose(item); }}

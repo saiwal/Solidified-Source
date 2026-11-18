@@ -14,8 +14,8 @@
  * shared thread between the copies — that is what makes them blind.
  */
 
-import { createSignal, createEffect, on, onCleanup, useContext, Show, For, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createEffect, onCleanup, useContext, Show, For, type Component } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
@@ -98,7 +98,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   // Re-check on every add/remove — a recipient seeded via `initialRecipients`
   // (Send DM from a profile/connection) can otherwise be judged against a
   // permission snapshot taken before that fetch has resolved.
-  createEffect(on(allRecipients, () => refreshPermitted(), { defer: true }));
+  createEffect(allRecipients, () => { refreshPermitted(); }, { defer: true });
 
   // One identity can own several xchan rows (a channel seen over both zot6 and
   // ActivityPub), and /acl?type=m returns only the one the abook uses. A seeded
@@ -225,8 +225,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   // not just xids, so the restored chips still have a name and avatar.
   const buildDraftExtra = () => ({ to: recipients(), bcc: bcc(), publishAt: publishAt() });
 
-  createEffect(() => {
-    const extra = store.restoredExtra();
+  createEffect(() => store.restoredExtra(), (extra) => {
     if (!extra) return;
     if (Array.isArray(extra.to)) setRecipients(extra.to as AclEntry[]);
     if (Array.isArray(extra.bcc)) {
@@ -261,12 +260,12 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     }
   }
 
-  createEffect(() => {
+  createEffect(() => !!props.open && frame?.mode() !== "min", (live) => {
     // Gated on the frame mode too: a minimized composer is still mounted, so
     // without this every pill in the dock would keep a live document listener —
     // one Escape would minimize them all and Ctrl+Enter would post from a
     // composer nobody can see.
-    if (props.open && frame?.mode() !== "min") document.addEventListener("keydown", onKey);
+    if (live) document.addEventListener("keydown", onKey);
     else document.removeEventListener("keydown", onKey);
   });
   onCleanup(() => document.removeEventListener("keydown", onKey));

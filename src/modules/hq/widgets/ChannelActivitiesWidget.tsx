@@ -186,9 +186,7 @@ function ItemRows(props: { items: ActivityItem[] }) {
       {(i, idx) => (
         <button
           onClick={() => navigate(i.url)}
-          class="w-full text-left px-(--ws-px) py-2 flex items-start justify-between gap-2.5
-                 hover:bg-elevated transition-colors"
-          classList={{ "border-b border-rim": idx() < props.items.length - 1 }}
+          class={["w-full text-left px-(--ws-px) py-2 flex items-start justify-between gap-2.5\n                 hover:bg-elevated transition-colors", { "border-b border-rim": idx() < props.items.length - 1 }]}
         >
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium text-txt truncate leading-snug">

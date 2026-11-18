@@ -12,8 +12,8 @@
 // Layout.tsx's real, editable <Slot>s show that template's widgets right on
 // this screen. Metadata (name/usage/delete) stays local to this list.
 
-import { createEffect, createMemo, createSignal, onCleanup, For, Show } from "solid-js";
-import { useParams, A, useNavigate } from "@solidjs/router";
+import { createMemo, createSignal, onCleanup, For, Show, createEffect, onSettled } from "solid-js";
+import { useParams, useNavigate } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
@@ -50,12 +50,11 @@ export default function LayoutTemplatesView() {
 
   const nick = () => params.nick || auth()?.nick || "";
 
-  createEffect(() => {
-    if ((auth as any).loading || !nick()) return;
-    if (auth()?.nick !== nick()) navigate(`/page/${nick()}/home`, { replace: true });
+  createEffect(() => ((auth as any).loading || !nick() ? null : { mine: auth()?.nick === nick(), nick: nick() }), (at) => {
+    if (at && !at.mine) navigate(`/page/${at.nick}/home`, { replace: true });
   });
 
-  createEffect(() => void loadTemplates());
+  onSettled(() => { void loadTemplates(); });
 
   // <For> keys rows by reference, so the array it iterates must contain
   // stable values across re-renders — plain id strings, not fresh wrapper
@@ -72,7 +71,7 @@ export default function LayoutTemplatesView() {
   // editing for — same signal PageView.tsx and WebpageComposer.tsx drive.
   // Only one at a time, since there's only one set of real regions on screen.
   const [selectedTemplateId, setSelectedTemplateId] = createSignal<string | null>(null);
-  createEffect(() => setCurrentPageTemplateId(selectedTemplateId()));
+  createEffect(selectedTemplateId, (id) => { setCurrentPageTemplateId(id); });
   onCleanup(() => setCurrentPageTemplateId(null));
 
   const editTemplate = (id: string) => {
@@ -107,9 +106,9 @@ export default function LayoutTemplatesView() {
       <div class="flex items-center justify-between gap-4">
         <div class="min-w-0">
           <h1 class="text-lg font-semibold text-txt">{t("webpages.layout_templates_title")}</h1>
-          <A href={`/webpages/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
+          <a href={`/webpages/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
             {t("webpages.back")}
-          </A>
+          </a>
         </div>
         <PageActions class="shrink-0" label={t("webpages.layout_templates_title")} actions={[
           { label: t("webpages.new_template"), icon: MdFillAdd, onClick: () => setCreating(!creating()), primary: true },

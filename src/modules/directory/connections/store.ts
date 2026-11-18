@@ -10,15 +10,16 @@ import { resetReveal } from "@/shared/stream/reveal";
 import { toast } from '@utsukta/spa-core/store/toast';
 import type { Connection, ConnectionFilter, ConnectionOrder } from './api';
 import { fetchConnections } from './api';
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 export const LIMIT = 20;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-export const [filter, setFilter] = createSignal<ConnectionFilter>('active');
-export const [order,  setOrder]  = createSignal<ConnectionOrder>('name');
-export const [search, setSearch] = createSignal('');
-export const [perms,  setPerms]  = createSignal<string[]>([]);
+export const [filter, setFilter] = createSyncSignal<ConnectionFilter>('active');
+export const [order,  setOrder]  = createSyncSignal<ConnectionOrder>('name');
+export const [search, setSearch] = createSyncSignal('');
+export const [perms,  setPerms]  = createSyncSignal<string[]>([]);
 
 const [connections, setConnections] = createSignal<Connection[]>([]);
 const [loading,     setLoading]     = createSignal(false);

@@ -1,13 +1,6 @@
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import {
-  createSignal,
-  createUniqueId,
-  Show,
-  For,
-  Switch,
-  Match,
-  type JSX,
-} from "solid-js";
+import { createSignal, createUniqueId, Show, For, Switch, Match } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -66,7 +59,7 @@ function ToggleDot(props: { color: string; enabled: boolean; onToggle: () => voi
   const { t } = useI18n();
   const label = () => (props.enabled ? t("calendar.hide_calendar") : t("calendar.show_calendar"));
   return (
-    <button type="button" onClick={props.onToggle} aria-pressed={props.enabled} title={label()} aria-label={label()}
+    <button type="button" onClick={props.onToggle} aria-pressed={(props.enabled) ? "true" : "false"} title={label()} aria-label={label()}
       class="shrink-0 p-1 -m-1 rounded-full focus-visible:outline-2 focus-visible:outline-accent">
       <span class="block w-3 h-3 rounded-full transition-colors"
         style={props.enabled
@@ -313,7 +306,7 @@ function Section(props: { label: string; children: JSX.Element }) {
     <div>
       <button
         type="button"
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         onClick={() => setOpen((o) => !o)}
         class="w-full flex items-center justify-between px-(--ws-px) pt-3 pb-1 text-xs font-semibold text-muted hover:text-txt transition-colors"
       >

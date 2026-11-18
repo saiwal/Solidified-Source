@@ -2,7 +2,6 @@
 // small grid, linking into the gallery. multiInstance.
 
 import { For, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -57,15 +56,15 @@ export default function AlbumStripWidget(props: WidgetProps) {
           <WidgetShell
             title={data()!.album_name || t("widgets.album_strip")}
             footer={
-              <A href={`/photos/${nick()}/album/${album()}`} class="mx-auto font-medium text-accent hover:underline">
+              <a href={`/photos/${nick()}/album/${album()}`} class="mx-auto font-medium text-accent hover:underline">
                 {t("widgets.view_album")}
-              </A>
+              </a>
             }
           >
             <div class="p-2 grid grid-cols-3 gap-1">
               <For each={data()!.photos.slice(0, MAX_THUMBS)}>
                 {(photo) => (
-                  <A
+                  <a
                     href={`/photos/${nick()}/image/${photo.resource_id}`}
                     class="relative block aspect-square overflow-hidden rounded"
                   >
@@ -82,7 +81,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
                         {t("photos.nsfw")}
                       </span>
                     </Show>
-                  </A>
+                  </a>
                 )}
               </For>
             </div>

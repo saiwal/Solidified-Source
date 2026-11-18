@@ -22,8 +22,7 @@ export default function FollowView() {
 
   let started = false;
 
-  createEffect(() => {
-    const a = auth();
+  createEffect(auth, (a) => {
     if (!a || started) return; // auth unresolved — isLoggedIn lies during boot
 
     if (!a.isLoggedIn) {

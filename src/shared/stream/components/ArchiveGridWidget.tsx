@@ -4,15 +4,7 @@
 // has a post, plus prev/next month + prev/next year navigation. Clicking a
 // dotted day toggles a single-day dbegin/dend filter.
 
-import {
-  type Component,
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  on,
-  Show,
-} from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -100,9 +92,9 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
   );
 
   createEffect(
-    on(() => remote.error, (err) => {
+    () => remote.error, (err) => {
       if (err) toast.error((err as Error).message ?? t("widgets.load_error"));
-    }),
+    },
   );
 
   const counts = createMemo(() => {
@@ -184,30 +176,27 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
                     disabled={count() === 0}
                     onClick={() => props.onDayClick?.(viewYear(), viewMonth(), day)}
                     title={count() > 0 ? `${monthName(viewMonth(), locale())} ${day}, ${viewYear()} — ${count()}` : undefined}
-                    class="aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 transition-colors"
-                    classList={{
+                    class={["aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 transition-colors", {
                       "bg-accent-muted": active(),
                       "hover:bg-elevated": !active() && count() > 0,
                       "cursor-default": count() === 0,
-                    }}
+                    }]}
                   >
                     <span
-                      class="text-xs leading-none"
-                      classList={{
+                      class={["text-xs leading-none", {
                         "text-accent font-medium": active(),
                         "text-txt": !active() && count() > 0,
                         "text-muted": count() === 0,
-                      }}
+                      }]}
                     >
                       {day}
                     </span>
                     <Show when={count() > 0}>
                       <span
-                        class="w-1 h-1 rounded-full"
-                        classList={{
+                        class={["w-1 h-1 rounded-full", {
                           "bg-accent": active(),
                           "bg-accent/60": !active(),
-                        }}
+                        }]}
                       />
                     </Show>
                   </button>

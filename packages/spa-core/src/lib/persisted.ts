@@ -10,7 +10,8 @@
 // Not for pconfig caches (nav-order.ts, disabled-frontend-modules.ts) — those
 // mirror a server value and the server has to win at boot.
 
-import { createSignal, type Accessor } from "solid-js";
+import type { Accessor } from "solid-js";
+import { createSyncSignal } from "./syncSignal.ts";
 
 /**
  * Reads `key` once at module load and writes it back on every set.
@@ -35,7 +36,8 @@ export function persistedSignal<T>(
     // storage blocked — fall back
   }
 
-  const [value, setValue] = createSignal<T>(initial);
+  // Sync reads: a preference set in a handler is often read back in the same step.
+  const [value, setValue] = createSyncSignal<T>(initial);
 
   return [
     value,

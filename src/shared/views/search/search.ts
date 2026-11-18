@@ -1,6 +1,6 @@
 // Unified search: GET /spa/find (Handlers/Find.php), shared by the desktop
 // Ctrl+K palette and the mobile app drawer's search.
-import { createEffect, createSignal, onCleanup, type Accessor } from "solid-js";
+import { createSignal, type Accessor, createEffect } from "solid-js";
 import { isLocalUser, useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useSubjectNick } from "@utsukta/spa-core/store/site-config";
 import { apiFetch, apiError } from "@utsukta/spa-core/lib/fetch";
@@ -74,9 +74,10 @@ export function useContentSearch(
   const [settled, setSettled] = createSignal<FindParams | null>(null);
   createEffect(() => {
     const p = { ...filters(), term: term().trim(), channel: channel() };
-    const ready = enabled() && (p.term.length >= 2 || p.tag.trim() !== "");
+    return { p, ready: enabled() && (p.term.length >= 2 || p.tag.trim() !== "") };
+  }, ({ p, ready }) => {
     const id = setTimeout(() => setSettled(ready ? p : null), 200);
-    onCleanup(() => clearTimeout(id));
+    return () => clearTimeout(id);
   });
   const [results] = createQueryResource("find", settled, find);
   return { results, active: () => settled() !== null };

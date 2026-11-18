@@ -92,8 +92,13 @@ export function chatNavBadge(): number | undefined {
   const nick = currentNick();
   if (!isLocalUser() || !nick) return undefined;
   if (!polling) {
-    startPolling(nick);
-    void refreshChatBookmarks(); // first load; later ticks refresh only if any are remote
+    polling = true;
+    // Out of the badge read: it runs inside the nav's computations, where
+    // Solid 2 forbids the loaders' state writes.
+    queueMicrotask(() => {
+      startPolling(nick);
+      void refreshChatBookmarks(); // first load; later ticks refresh only if any are remote
+    });
   }
   cacheTick();
   const data = queryClient.getQueryData<ChatRoomListResponse>(["chat-rooms", nick]);

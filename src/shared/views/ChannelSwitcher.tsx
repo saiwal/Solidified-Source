@@ -1,5 +1,4 @@
 import { For, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import type { NavChannel } from "@utsukta/spa-core/lib/nav-api";
 import { getNavIcon } from "./NavItem";
 import { doSwitchChannel } from "@/modules/manage/store";
@@ -34,7 +33,7 @@ const ChannelSwitcher = (props: ChannelSwitcherProps) => {
       <button
         type="button"
         onClick={props.onToggle}
-        aria-expanded={props.open}
+        aria-expanded={(props.open) ? "true" : "false"}
         class={`group relative flex items-center gap-3 rounded-xl px-2.5 py-2 w-full
                 text-sm text-muted transition-colors duration-150 cursor-pointer
                 hover:bg-elevated hover:text-txt
@@ -78,20 +77,20 @@ const ChannelSwitcher = (props: ChannelSwitcherProps) => {
 
             <div class="my-1 h-px bg-rim" />
 
-            <A
+            <a
               href="/new_channel"
               onClick={props.onNavigate}
               class="rounded-lg px-2.5 py-1.5 text-sm text-muted hover:bg-elevated hover:text-txt transition-colors"
             >
               {t("nav.new_channel")}
-            </A>
-            <A
+            </a>
+            <a
               href="/manage"
               onClick={props.onNavigate}
               class="rounded-lg px-2.5 py-1.5 text-sm text-muted hover:bg-elevated hover:text-txt transition-colors"
             >
               {t("nav.manage_channels")}
-            </A>
+            </a>
           </Motion.div>
         </Show>
       </Presence>

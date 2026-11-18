@@ -1,6 +1,6 @@
 // Settings form for SavedSearchPostsWidget: which saved search, how many posts.
 
-import { createSignal, For, onMount, Show } from "solid-js";
+import { createSignal, For, onSettled, Show } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { savedSearches, loadSavedSearches } from "@/modules/network/saved-searches";
@@ -11,7 +11,7 @@ import { Select } from "@ui/Field";
 
 export default function SavedSearchPostsConfig(props: WidgetConfigProps) {
   const { t } = useI18n();
-  onMount(() => void loadSavedSearches());
+  onSettled(() => { void loadSavedSearches(); });
   const [searchId, setSearchId] = createSignal(Number(props.config.searchId ?? 0));
   const [common, setCommon] = createSignal<CardConfig>({ count: props.config.count as number, unseen: !!props.config.unseen });
 

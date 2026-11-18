@@ -1,4 +1,4 @@
-import { createSignal, createEffect, Show, For, batch } from "solid-js";
+import { createSignal, Show, For, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -202,14 +202,11 @@ function TokenDialog(props: {
 
   // Seed from the row being edited; a new token gets a server-generated
   // password, matching classic's prefilled new_token() field.
-  createEffect(() => {
-    const tok = props.token;
-    batch(() => {
-      setName(tok?.name ?? "");
+  createEffect(() => props.token, (tok) => {
+    { setName(tok?.name ?? "");
       setToken(tok?.token ?? "");
       setExpires(tok?.expires ? tok.expires.slice(0, 10) : "");
-      setRole(tok?.role ?? "");
-    });
+      setRole(tok?.role ?? ""); }
     if (!tok) newTokenValue().then(setToken).catch(() => {});
   });
 

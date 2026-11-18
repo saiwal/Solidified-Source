@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
-import solid from "vite-plugin-solid";
+import solid from "@solidjs/vite-plugin";
 import path from "path";
 import { readdirSync, readFileSync, writeFileSync, statSync, rmSync, existsSync } from "fs";
 import { THEME_SLUG, ASSET_WEB_PATH, BUILD_OUT_DIR_REL, OVERLAY_DIR_REL } from "./theme.config.mjs";
@@ -190,7 +190,7 @@ export default defineConfig({
       : []),
     publicDirListing(),
     serveFFmpegCore(),
-    solid(),
+    solid({ dev: process.env.SOLID_DEV === "1" || undefined }),
     viteStaticCopy({
       // v4 preserves the whole matched path under `dest`; stripBase drops the
       // leading source segments to keep the v3 deploy layout.
@@ -223,6 +223,8 @@ export default defineConfig({
   build: {
     outDir: OUT_DIR,
     emptyOutDir: true,
+    // SOLID_DEV=1: Solid's dev runtime (diagnostics) in a readable bundle.
+    ...(process.env.SOLID_DEV === "1" && { minify: false }),
     // Split: a lazy chunk's CSS (Excalidraw ~134 KB, KaTeX, Leaflet,
     // PhotoSwipe) loads with it — Vite's preload helper fetches it before the
     // import resolves, so no unstyled flash — instead of riding in the one

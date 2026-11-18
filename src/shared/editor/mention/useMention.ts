@@ -11,7 +11,7 @@
  * duplicate network requests.
  */
 
-import { createSignal, createMemo, createEffect, on } from "solid-js";
+import { createSignal, createMemo, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchConnections, type AclConnection } from "@/modules/network/api";
 import { mentionQueryAt, mentionTag } from "./mentionTag";
@@ -129,7 +129,7 @@ export function useMention(): MentionState {
   // connections list.
   const [debouncedQuery, setDebouncedQuery] = createSignal("");
   let debounceTimer: number | undefined;
-  createEffect(on(query, (q) => {
+  createEffect(query, (q) => {
     window.clearTimeout(debounceTimer);
     const trimmed = (q ?? "").trim();
     if (trimmed.length < MENTION_MIN_CHARS) {
@@ -137,7 +137,7 @@ export function useMention(): MentionState {
       return;
     }
     debounceTimer = window.setTimeout(() => setDebouncedQuery(trimmed), MENTION_DEBOUNCE_MS);
-  }));
+  });
 
   const [searchResult] = createQueryResource(
     "mention-search",

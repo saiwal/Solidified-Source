@@ -1,6 +1,4 @@
-import {
-  createEffect, createSignal, createMemo, Show, For, Switch, Match,
-} from "solid-js";
+import { createSignal, createMemo, Show, For, Switch, Match, createEffect } from "solid-js";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -55,10 +53,7 @@ export default function CalendarContentWidget() {
 
   const fetchRange = createMemo(() => rangeForView(viewType(), anchor()));
 
-  createEffect(() => {
-    const version = calendarRefreshVersion();
-    const n = nick();
-    const r = fetchRange();
+  createEffect(() => ({ version: calendarRefreshVersion(), n: nick(), r: fetchRange() }), ({ version, n, r }) => {
     if (!n) return;
     loadCalendar(n, r, version > 0);
   });
@@ -111,9 +106,8 @@ export default function CalendarContentWidget() {
 
   // Drop a filter that the newly loaded range has no events for, so the calendar
   // never looks empty because of a stale selection.
-  createEffect(() => {
-    const c = catFilter();
-    if (c && !allCategories().includes(c)) setCatFilter(null);
+  createEffect(() => [catFilter(), allCategories()] as const, ([c, all]) => {
+    if (c && !all.includes(c)) setCatFilter(null);
   });
 
   const activeDayEvs = createMemo<CalEvent[]>(() => {

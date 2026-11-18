@@ -1,17 +1,7 @@
 import { markItemSeen } from '@utsukta/spa-core/lib/markSeen';
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineChevron_left, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineMenu, MdOutlineSearch, MdOutlineWarning } from "solid-icons/md";
-import {
-  createSignal,
-  createEffect,
-  createMemo,
-  onCleanup,
-  lazy,
-  For,
-  Show,
-  Suspense,
-  type Component,
-} from "solid-js";
+import { createSignal, createMemo, onCleanup, lazy, For, Show, Loading, type Component, createEffect } from "solid-js";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 import { openPost } from "@/shared/views/modal-host";
 
@@ -35,6 +25,7 @@ import { Button, IconButton } from "@ui/Button";
 import { Spinner } from "@ui/Spinner";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 export type { MessageType, FeedType };
 
 // Background auto-refresh so new messages show up without a manual click.
@@ -332,13 +323,12 @@ const MessageItem: Component<{
         }}
         onPointerDown={props.onPointerDown}
         style={props.swipeDx ? { transform: `translateX(${props.swipeDx}px)` } : undefined}
-        class={`
+        class={[`
           group w-full text-left px-3.5 py-2 flex items-start gap-2
           transition-colors duration-150 relative cursor-pointer touch-pan-y
           hover:bg-overlay
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent
-        `}
-        classList={{
+        `, {
           // Lives here, not in the class string above: a reactive `class`
           // rewrites className wholesale and drops whatever classList had
           // applied, so the cursor/selection classes below would vanish the
@@ -355,7 +345,7 @@ const MessageItem: Component<{
           "ring-2 ring-inset ring-accent": props.cursored,
           "bg-elevated": props.active || props.selected,
           "opacity-50": props.dragging,
-        }}
+        }]}
       >
         {/* Type color rail — always shown, full opacity when unseen */}
         <span
@@ -481,12 +471,10 @@ const MessageItem: Component<{
             replies are. */}
         <Show when={isAnyUnseen()}>
           <span
-            class="absolute bottom-1.5 right-2.5 min-w-[1.1rem] h-4 rounded-full text-[0.5625rem] font-bold
-              flex items-center justify-center px-1 tabular-nums"
-            classList={{
+            class={["absolute bottom-1.5 right-2.5 min-w-[1.1rem] h-4 rounded-full text-[0.5625rem] font-bold\n              flex items-center justify-center px-1 tabular-nums", {
               "bg-emerald-500 text-white": e().unseen === true,
               "bg-accent text-surface": e().unseen !== true,
-            }}
+            }]}
             title={t(e().unseen === true ? "hq.badge_new_post" : "hq.badge_new_activity")}
           >
             {hasUnseenReplies() ? unseenReplyCount() : 1}
@@ -563,20 +551,20 @@ export const MessageList: Component<{
   onFocusSearch?: () => void;
 }> = (props) => {
   const { t } = useI18n();
-  const [entries, setEntries] = createSignal<MessageEntry[]>([]);
+  const [entries, setEntries] = createSyncSignal<MessageEntry[]>([]);
   // b64mid of the entry whose detail modal is open. Kept here (not in
   // MessageItem) so the modal survives the background poll replacing the
   // entry objects and recreating the row components.
   const [openMid, setOpenMid] = createSignal<string | null>(null);
   const reading = () => !!(props.reader && openMid());
   let readerRef: HTMLDivElement | undefined;
-  createEffect(() => props.onReaderChange?.(reading()));
+  createEffect(reading, (r) => { props.onReaderChange?.(r); });
   // Next/previous from the bottom of a long message: bring the new one's top
   // back into view, since the page (not the reader) is what scrolled.
-  createEffect(() => {
-    if (openMid()) readerRef?.scrollIntoView({ block: "nearest" });
+  createEffect(openMid, (mid) => {
+    if (mid) readerRef?.scrollIntoView({ block: "nearest" });
   });
-  const [offset, setOffset] = createSignal(0);
+  const [offset, setOffset] = createSyncSignal(0);
   const [loading, setLoading] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
   const [empty, setEmpty] = createSignal(false);
@@ -842,20 +830,22 @@ export const MessageList: Component<{
     }
   }
 
-  createEffect(() => {
+  createEffect(() => [
     // Track type/file (switching folders — same "folder" type, different
     // file — triggers a reset the same way switching feed type does),
     // reloadKey (bumped by the parent's refresh button), and authorFilter
     // (the search box — filtering is done server-side, see fetchMessages).
-    props.reloadKey;
-    props.authorFilter;
-    props.xchan;
-    props.unread;
-    props.filters;
+    props.reloadKey,
+    props.authorFilter,
+    props.xchan,
+    props.unread,
+    props.filters,
+    `${props.type}\0${props.file ?? ""}`,
+  ] as const, (deps) => {
     // Switching feed must not keep showing the old feed's rows while the new
     // one loads. Refreshes, polls and filter edits (the inbox search fires per
     // keystroke) keep them, so they don't flash.
-    const feedKey = `${props.type}\0${props.file ?? ""}`;
+    const feedKey = deps[5];
     if (feedKey !== lastFeedKey) {
       if (lastFeedKey !== undefined) {
         setHoldHeight(scrollRef?.clientHeight ?? 0);
@@ -901,10 +891,9 @@ export const MessageList: Component<{
     <div class="flex-1 min-h-0 relative flex flex-col">
     <div
       ref={scrollRef}
-      class="flex-1 overflow-y-auto focus:outline-none"
+      class={["flex-1 overflow-y-auto focus:outline-none", { "!flex-none h-0 invisible": reading() }]}
       // Collapsed rather than display:none while reading — a display:none
       // scroll container loses scrollTop, so going back would jump to the top.
-      classList={{ "!flex-none h-0 invisible": reading() }}
       onScroll={onScroll}
       tabindex={mailable() && props.selectable ? 0 : undefined}
       onKeyDown={mailable() && props.selectable ? onKeyDown : undefined}
@@ -1075,7 +1064,7 @@ export const MessageList: Component<{
         {/* Own boundary: PostDetailModal is lazy, and without one its first
             load suspends up to Layout's <Suspense> and blanks the whole page. */}
         <div class="flex-1 min-h-0">
-          <Suspense
+          <Loading
             fallback={
               <div class="h-full flex items-center justify-center">
                 <Spinner size="lg" tone="muted" />
@@ -1083,7 +1072,7 @@ export const MessageList: Component<{
             }
           >
             <PostDetailModal uuid={openMid()!} inline onClose={() => setOpenMid(null)} />
-          </Suspense>
+          </Loading>
         </div>
       </div>
     </Show>

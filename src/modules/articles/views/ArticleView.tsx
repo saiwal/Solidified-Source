@@ -1,12 +1,11 @@
 // src/modules/articles/views/ArticleView.tsx
-import {
-  createSignal, createEffect, createMemo, createUniqueId,
-  Show, For
-} from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, createMemo, createUniqueId, Show, For, createEffect, createOptimistic, createOptimisticStore, action, isPending } from "solid-js";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { useParams, A, useNavigate } from "@solidjs/router";
+import { useParams, useNavigate } from "@solidjs/router";
 import { fetchArticle, deleteArticle } from "../api";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
@@ -100,25 +99,28 @@ export default function ArticleView() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
 
-  const [data, { refetch }] = createQueryResource(
-    "article-detail",
-    () => ({ nick: nick(), uuid: params.uuid }),
-    ({ nick, uuid }) => fetchArticle(nick, uuid),
-  );
+  // Solid 2 async read: data() is not ready until the article lands, and the
+  // render below sits in an AsyncBoundary that shows the skeleton meanwhile.
+  // Moving to another article keeps this one on screen (dimmed) until the
+  // next is ready. Same cache key the old createQueryResource used.
+  // Pinned: while this route is being left, the router's params already
+  // describe the next page (uuid gone). Following them would leave this
+  // view's read pending forever, and router 2 holds a navigation until
+  // pending reads settle — Back changed the URL but never the screen.
+  const uuid = createMemo((prev?: string) => params.uuid || prev || "");
+  const key = () => ["article-detail", { nick: nick(), uuid: uuid() }] as const;
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchArticle(nick(), uuid()) }));
+  const data = () => q.data;
+  /** Refetch the article + comments; resolves once they've landed. */
+  const reload = () => invalidate(key());
 
-  const rendered = () =>
-    data()?.article ? rootRelativeLinks(DOMPurify.sanitize(data()!.article.body ?? "")) : "";
+  const rendered = () => rootRelativeLinks(DOMPurify.sanitize(data().article.body ?? ""));
 
   // Canonicalize the URL to the slug once the article's loaded — covers both
   // a bookmarked uuid link on an article that's since gained a slug, and a
   // slug change from editing.
-  createEffect(() => {
-    const art = data()?.article;
-    if (!art) return;
-    const canonical = articlePath(nick(), art);
-    if (`/articles/${nick()}/${params.uuid}` !== canonical) {
-      navigate(canonical, { replace: true });
-    }
+  createEffect(() => ({ canonical: articlePath(nick(), data().article), here: `/articles/${nick()}/${uuid()}` }), (at) => {
+    if (at.here !== at.canonical) navigate(at.canonical, { replace: true });
   });
 
   // ── Deleting state ────────────────────────────────────────────────────────
@@ -128,9 +130,9 @@ export default function ArticleView() {
   // Both hand the composer to ModalHost, so it can be docked or minimized
   // while the article itself stays on screen. `initial` is read eagerly here,
   // which is also what the two <Show>-mounted modals used to do on open.
-  // refetch() is this route's resource: if the composer saves after the reader
-  // has navigated away it is a harmless no-op (the host guards it).
-  type Article = NonNullable<ReturnType<typeof data>>["article"];
+  // reload() refetches this route's query: if the composer saves after the
+  // reader has navigated away it just refreshes a cache entry nobody shows.
+  type Article = ReturnType<typeof data>["article"];
 
   const openEditor = (article: Article) =>
     openComposer({
@@ -160,7 +162,7 @@ export default function ArticleView() {
           series:        article.series,
           mimetype:      article.mimetype,
         },
-        onSaved: () => refetch(),
+        onSaved: () => void reload(),
       },
     });
 
@@ -179,66 +181,45 @@ export default function ArticleView() {
             ...(article.translations ?? []).map((tr) => tr.lang),
           ].filter((l): l is string => !!l),
         },
-        onSaved: () => refetch(),
+        onSaved: () => void reload(),
       },
     });
 
 
-  // Reaction state — optimistic local copy initialised from fetched article
-  const [reactions, setReactions] = createSignal({
-    likeCount: 0, dislikeCount: 0,
-    viewerLiked: false, viewerDisliked: false,
-  });
-  createEffect(() => {
-    const art = data()?.article;
-    if (!art) return;
-    setReactions({
-      likeCount: art.likeCount,
-      dislikeCount: art.dislikeCount,
-      viewerLiked: art.viewerLiked,
-      viewerDisliked: art.viewerDisliked,
-    });
+  // Reactions: shown from the fetched article; a click writes the expected
+  // result optimistically, and the action hands over to refetched data — or
+  // rolls back on its own if the request fails.
+  const [reactions, setReactions] = createOptimistic(() => {
+    const a = data().article;
+    return { likeCount: a.likeCount, dislikeCount: a.dislikeCount, viewerLiked: a.viewerLiked, viewerDisliked: a.viewerDisliked };
   });
 
-  // Local comments list — updated optimistically when a new comment is posted
-  const [localComments, setLocalComments] = createSignal<Post[]>([]);
-  createEffect(() => {
-    if (data()?.comments) setLocalComments(data()!.comments);
-  });
+  // Comments: the fetched list, with optimistic adds/edits/deletes on top.
+  const [comments, setComments] = createOptimisticStore(() => data().comments, [] as Post[]);
 
   // Comment composer visibility
   const [replyOpen, setReplyOpen] = createSignal(false);
 
   function shareArticle() {
-    const art = data()?.article;
-    if (art) openShare(shareTargetForArticle(nick(), art));
+    openShare(shareTargetForArticle(nick(), data().article));
   }
 
-  function handleLike() {
-    const art = data()?.article;
-    if (!art?.uuid) return;
-    const wasLiked = reactions().viewerLiked;
-    const delta = wasLiked ? -1 : 1;
-    setReactions(r => ({ ...r, viewerLiked: !wasLiked, likeCount: r.likeCount + delta }));
-    apiToggleLike(art.uuid).then(res => {
-      setReactions(r => ({ ...r, likeCount: res.like_count, viewerLiked: res.state === "added" }));
-    }).catch(() => {
-      setReactions(r => ({ ...r, viewerLiked: wasLiked, likeCount: r.likeCount - delta }));
-    });
-  }
-
-  function handleDislike() {
-    const art = data()?.article;
-    if (!art?.uuid) return;
-    const wasDisliked = reactions().viewerDisliked;
-    const delta = wasDisliked ? -1 : 1;
-    setReactions(r => ({ ...r, viewerDisliked: !wasDisliked, dislikeCount: r.dislikeCount + delta }));
-    apiToggleDislike(art.uuid).then(res => {
-      setReactions(r => ({ ...r, dislikeCount: res.dislike_count, viewerDisliked: res.state === "added" }));
-    }).catch(() => {
-      setReactions(r => ({ ...r, viewerDisliked: wasDisliked, dislikeCount: r.dislikeCount - delta }));
-    });
-  }
+  const toggleReaction = action(function* (kind: "like" | "dislike") {
+    const art = data().article;
+    if (!art.uuid) return;
+    const r = reactions();
+    setReactions(kind === "like"
+      ? { ...r, viewerLiked: !r.viewerLiked, likeCount: r.likeCount + (r.viewerLiked ? -1 : 1) }
+      : { ...r, viewerDisliked: !r.viewerDisliked, dislikeCount: r.dislikeCount + (r.viewerDisliked ? -1 : 1) });
+    try {
+      yield (kind === "like" ? apiToggleLike : apiToggleDislike)(art.uuid);
+    } catch {
+      return; // the optimistic value reverts with the action
+    }
+    yield reload();
+  });
+  const handleLike = () => void toggleReaction("like");
+  const handleDislike = () => void toggleReaction("dislike");
 
   // ── Comment thread ─────────────────────────────────────────────────────────
   // Article + comments -> nested tree, same architecture PostView.tsx uses for
@@ -251,8 +232,10 @@ export default function ArticleView() {
     likeCount?: number;
     dislikeCount?: number;
   };
+  // Per-comment reaction overrides, optimistic only: they revert when the
+  // action settles, by which point the refetched comments carry the result.
   const [commentReactions, setCommentReactions] =
-    createSignal<Record<string, CommentReactionOverride>>({});
+    createOptimistic<Record<string, CommentReactionOverride>>({});
 
   function findInTree(nodes: ThreadNode[], mid: string): ThreadNode | undefined {
     for (const n of nodes) {
@@ -272,33 +255,35 @@ export default function ArticleView() {
   }
 
   const rawCommentTree = createMemo((): ThreadNode[] => {
-    const art = data()?.article;
-    if (!art) return [];
-    const realComments = localComments().filter(c => !REACTION_VERBS.has(c.verb ?? ""));
+    const art = data().article;
+    const realComments = comments.filter(c => !REACTION_VERBS.has(c.verb ?? ""));
     const tree = buildThreadTree([art, ...realComments]);
     return tree[0]?.children ?? [];
   });
 
   const commentTree = createMemo(() => rawCommentTree().map(applyCommentOverrides));
 
-  function addLocalComment(parentMid: string, body: string, created?: CreatedComment) {
-    const art = data()?.article;
-    if (!art) return;
-    const a = auth();
-    const viewer = navViewer();
-    let renderedBody = "";
+  const renderBody = (body: string) => {
     try {
       const converted = bbcodeDisplay(body, { oembedResolver });
-      renderedBody = sanitizeHtml(typeof converted === "string" ? converted : "");
+      return sanitizeHtml(typeof converted === "string" ? converted : "");
     } catch {
-      renderedBody = "";
+      return "";
     }
+  };
+
+  // The composer has already posted it: show it at once, then refetch so the
+  // stored comment replaces the stand-in.
+  const addComment = action(function* (parentMid: string, body: string, created?: CreatedComment) {
+    const art = data().article;
+    const a = auth();
+    const viewer = navViewer();
     const tempId = crypto.randomUUID();
-    setLocalComments(prev => [...prev, {
+    const temp = {
       uuid: tempId, id: tempId, mid: tempId,
       parent_mid: art.mid, thr_parent: parentMid,
       top_mid: art.mid, parent: art.uuid,
-      body: renderedBody, rawBody: body, title: "",
+      body: renderBody(body), rawBody: body, title: "",
       authorName: viewer?.name || a?.nick || "You",
       authorAvatar: viewer?.avatar ?? "",
       authorUrl: viewer?.url ?? "",
@@ -310,65 +295,66 @@ export default function ArticleView() {
       viewerLiked: false, viewerDisliked: false, viewerRepeated: false,
       item_thread_top: 0, children: [],
       ...created, profileUid: art.profileUid,
-    } satisfies Post]);
-  }
+    } satisfies Post;
+    setComments((s) => { s.push(temp); });
+    yield reload();
+  });
 
-  function toggleCommentReaction(
+  const toggleCommentReaction = action(function* (
     mid: string,
     field: "viewerLiked" | "viewerDisliked",
     countField: "likeCount" | "dislikeCount",
-    call: (uuid: string) => Promise<{ like_count?: number; dislike_count?: number; state: string }>,
+    call: (uuid: string) => Promise<unknown>,
   ) {
     const node = findInTree(rawCommentTree(), mid);
     if (!node?.uuid) return;
     const o = commentReactions()[mid] ?? {};
     const current = o[field] ?? node[field];
     const count = o[countField] ?? node[countField];
-    setCommentReactions(prev => ({
-      ...prev,
-      [mid]: { ...prev[mid], [field]: !current, [countField]: current ? count - 1 : count + 1 },
-    }));
-    call(node.uuid).catch(() => {
-      setCommentReactions(prev => ({ ...prev, [mid]: { ...prev[mid], [field]: current, [countField]: count } }));
+    setCommentReactions((prev) => ({ ...prev, [mid]: { ...prev[mid], [field]: !current, [countField]: current ? count - 1 : count + 1 } }));
+    try {
+      yield call(node.uuid);
+    } catch {
+      return;
+    }
+    yield reload();
+  });
+
+  // Errors propagate to CommentThread, which reports them; the optimistic
+  // change reverts on its own.
+  const deleteComment = action(function* (mid: string) {
+    const node = findInTree(rawCommentTree(), mid);
+    if (!node?.uuid) return;
+    setComments((s) => { const i = s.findIndex((c) => c.mid === mid); if (i >= 0) s.splice(i, 1); });
+    yield apiDeleteItem(node.uuid);
+    yield reload();
+  });
+
+  const editComment = action(function* (mid: string, payload: Parameters<typeof apiEditItem>[1]) {
+    const node = findInTree(rawCommentTree(), mid);
+    if (!node?.uuid) return;
+    setComments((s) => {
+      const c = s.find((x) => x.mid === mid);
+      if (c) Object.assign(c, { body: renderBody(payload.body), rawBody: payload.body, title: payload.title ?? "" });
     });
-  }
+    yield apiEditItem(node.uuid, payload);
+    yield reload();
+  });
 
   const commentHandlers: StreamHandlers = {
-    onLike: (mid) => toggleCommentReaction(mid, "viewerLiked", "likeCount",
-      (uuid) => apiToggleLike(uuid).then(r => ({ like_count: r.like_count, state: r.state }))),
-    onDislike: (mid) => toggleCommentReaction(mid, "viewerDisliked", "dislikeCount",
-      (uuid) => apiToggleDislike(uuid).then(r => ({ dislike_count: r.dislike_count, state: r.state }))),
+    onLike: (mid) => void toggleCommentReaction(mid, "viewerLiked", "likeCount", apiToggleLike),
+    onDislike: (mid) => void toggleCommentReaction(mid, "viewerDisliked", "dislikeCount", apiToggleDislike),
     onRepeat: () => {},
-    onComment: (parentMid, body, _name, _avatar, created) => addLocalComment(parentMid, body, created),
+    onComment: (parentMid, body, _name, _avatar, created) => void addComment(parentMid, body, created),
     onLoadComments: async () => {},
-    async onDelete(mid) {
-      const node = findInTree(rawCommentTree(), mid);
-      if (!node?.uuid) return;
-      await apiDeleteItem(node.uuid);
-      setLocalComments(prev => prev.filter(c => c.mid !== mid));
-    },
-    async onEdit(mid, payload) {
-      const node = findInTree(rawCommentTree(), mid);
-      if (!node?.uuid) return;
-      await apiEditItem(node.uuid, payload);
-      const body = payload.body;
-      let renderedBody = "";
-      try {
-        const converted = bbcodeDisplay(body, { oembedResolver });
-        renderedBody = sanitizeHtml(typeof converted === "string" ? converted : "");
-      } catch {
-        renderedBody = "";
-      }
-      setLocalComments(prev => prev.map(c =>
-        c.mid === mid ? { ...c, body: renderedBody, rawBody: body, title: payload.title ?? "" } : c
-      ));
-    },
+    onDelete: (mid) => deleteComment(mid),
+    onEdit: (mid, payload) => editComment(mid, payload),
   };
 
   // TOC
   let bodyRef: HTMLDivElement | undefined;
-  createEffect(() => {
-    if (rendered() && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
+  createEffect(rendered, (html) => {
+    if (html && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   const { toc, activeId } = useToc(rendered, () => bodyRef);
   usePlyr(() => bodyRef, rendered);
@@ -382,9 +368,10 @@ export default function ArticleView() {
 
   return (
     <div class="relative max-w-5xl mx-auto">
-      <Show when={!data.loading && data()} fallback={<ArticleViewSkeleton />}>
+      <AsyncBoundary fallback={<ArticleViewSkeleton />}>
+      <Show when={data()}>
         {(d) => (
-          <div class="xl:flex xl:gap-8">
+          <div class={["xl:flex xl:gap-8 transition-opacity", { "opacity-60": isPending(() => data()) }]}>
             {/* ── TOC — sticky sidebar on xl+, sticky collapsed launcher below xl ── */}
             <ArticleToc entries={toc()} activeId={activeId()} label={t("articles.on_this_page")} />
 
@@ -474,7 +461,7 @@ export default function ArticleView() {
                     <div class="space-y-0.5 text-sm text-muted">
                       <Show when={d().article.series}>
                         <p>
-                          <A
+                          <a
                             href={`/articles/${nick()}/series/${encodeURIComponent(d().article.series!.name)}`}
                             class="hover:text-accent-txt transition-colors"
                           >
@@ -482,7 +469,7 @@ export default function ArticleView() {
                               order: String(d().article.series!.order ?? "?"),
                               name: d().article.series!.name,
                             })}
-                          </A>
+                          </a>
                         </p>
                       </Show>
                       <Show when={(d().article.translations ?? []).length > 0}>
@@ -548,7 +535,7 @@ export default function ArticleView() {
                           label={t("articles.comment")}
                           pressed={replyOpen()}
                           class="active:scale-90"
-                          aria-expanded={replyOpen()}
+                          aria-expanded={(replyOpen()) ? "true" : "false"}
                           onClick={() => setReplyOpen(v => !v)}
                         >
                           <MdOutlineReply size={17} />
@@ -564,7 +551,7 @@ export default function ArticleView() {
                         parentUuid={d().article.uuid}
                         profileUid={d().article.profileUid!}
                         onSubmitted={(body, created) => {
-                          addLocalComment(d().article.mid, body, created);
+                          void addComment(d().article.mid, body, created);
                           setReplyOpen(false);
                         }}
                       />
@@ -596,6 +583,7 @@ export default function ArticleView() {
           </div>
         )}
       </Show>
+      </AsyncBoundary>
     </div>
   );
 }

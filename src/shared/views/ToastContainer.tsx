@@ -1,5 +1,5 @@
 import { For, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { toasts, dismiss, type Toast, type ToastType } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineCheck, MdOutlineClose } from "solid-icons/md";

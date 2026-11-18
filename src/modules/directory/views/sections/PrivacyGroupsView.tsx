@@ -3,14 +3,8 @@
 // Rendered by ConnectionsShellView when activeKey === "privacy-groups"
 // and there is no :id param present.
 
-import {
-  createSignal,
-  For,
-  Show,
-  onMount,
-  type Component,
-} from "solid-js";
-import { A, useNavigate } from "@solidjs/router";
+import { createSignal, For, Show, onSettled, type Component } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   MdFillGroup,
@@ -142,9 +136,9 @@ const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
           </span>
         }
         title={
-          <A href={href()} class="font-medium hover:underline truncate block">
+          <a href={href()} class="font-medium hover:underline truncate block">
             {props.group.name}
-          </A>
+          </a>
         }
         subtitle={
           <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -227,7 +221,7 @@ const GroupRow: Component<{ group: PrivacyGroup }> = (props) => {
 const PrivacyGroupsView: Component = () => {
   const { t } = useI18n();
   const [showCreate, setShowCreate] = createSignal(false);
-  onMount(() => loadGroups());
+  onSettled(() => { loadGroups(); });
 
   return (
     <Section

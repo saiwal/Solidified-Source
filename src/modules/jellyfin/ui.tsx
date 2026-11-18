@@ -1,4 +1,5 @@
-import { For, Show, createSignal, createEffect, on, type JSX } from "solid-js";
+import { For, Show, createSignal, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdFillMusic_note } from "solid-icons/md";
 
 // The control vocabulary and row skeleton moved to shared/views/ui.tsx once
@@ -49,7 +50,7 @@ export function Art(props: { src: string | null; class?: string }): JSX.Element 
   const [loaded, setLoaded] = createSignal(false);
   const [failed, setFailed] = createSignal(false);
   // A new picture (next track) fades in again rather than popping
-  createEffect(on(() => props.src, () => { setLoaded(false); setFailed(false); }, { defer: true }));
+  createEffect(() => props.src, () => { setLoaded(false); setFailed(false); }, { defer: true });
   // Callers may round differently (artists are circles); two rounded-* would fight
   const box = () => `${/\brounded-/.test(props.class ?? "") ? "" : "rounded-lg"} bg-elevated shrink-0 ${props.class ?? ""}`;
   return (

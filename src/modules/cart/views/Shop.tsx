@@ -188,9 +188,9 @@ export function CartContents(props: { onBrowse: () => void }) {
                     return (
                       <Field label={<>{opt.label}<Show when={opt.required}> *</Show></>} size="sm">
                         <Show when={opt.type === 'textarea'}
-                          fallback={<Input type="text" maxLength={1000} required={opt.required} value={answers()[opt.id!] ?? ''} onChange={save} />}
+                          fallback={<Input type="text" maxlength={1000} required={opt.required} value={answers()[opt.id!] ?? ''} onChange={save} />}
                         >
-                          <Textarea rows={2} maxLength={1000} required={opt.required} value={answers()[opt.id!] ?? ''} onChange={save} />
+                          <Textarea rows={2} maxlength={1000} required={opt.required} value={answers()[opt.id!] ?? ''} onChange={save} />
                         </Show>
                       </Field>
                     );

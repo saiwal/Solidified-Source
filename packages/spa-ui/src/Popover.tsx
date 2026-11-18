@@ -2,8 +2,8 @@
 // (spa-core types/ui.types.ts). Built on createPopover (outside-click, Escape,
 // floating placement) + Portal; the trigger owns its own look via a render prop.
 // Use Menu for role="menu" keyboard behaviour; Popover is the disclosure shell.
-import { createEffect, createUniqueId, Show } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createUniqueId, Show, createEffect } from "solid-js";
+import { Portal } from "@solidjs/web";
 import type {
   PopoverProps,
   PopoverTriggerProps,
@@ -24,8 +24,8 @@ export function Popover(props: PopoverProps) {
   };
 
   // A keyboard user lands inside the panel; Escape returns to the trigger.
-  createEffect(() => {
-    if (pop.open()) queueMicrotask(() => panelEl?.focus());
+  createEffect(pop.open, (isOpen) => {
+    if (isOpen) queueMicrotask(() => panelEl?.focus());
   });
 
   const trigger: PopoverTriggerProps = {
@@ -38,7 +38,7 @@ export function Popover(props: PopoverProps) {
       setOpen(!pop.open());
     },
     get "aria-expanded"() {
-      return pop.open();
+      return pop.open() ? "true" : "false";
     },
     "aria-controls": panelId,
     get "aria-haspopup"() {
@@ -59,7 +59,7 @@ export function Popover(props: PopoverProps) {
             id={panelId}
             role={props.role}
             aria-label={props.role ? props.label : undefined}
-            tabIndex={-1}
+            tabindex={-1}
             style={pop.style()}
             class={`hz-popover z-50 rounded-lg border border-rim bg-surface p-2 shadow-lg outline-none ${props.class ?? ""}`}
             onKeyDown={(e) => {

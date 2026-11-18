@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
+import { createSignal, onCleanup, Show, For, createEffect } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -257,9 +257,8 @@ export default function ChanView() {
     onRefresh: streamActions.handleRefresh,
   };
 
-  createEffect(() => {
-    const h = hashFilter();
-    if (h && auth()?.isLocal) void stream.load({ xchan: h });
+  createEffect(() => (auth()?.isLocal ? hashFilter() : null), (h) => {
+    if (h) void stream.load({ xchan: h });
   });
   onCleanup(() => stream.stopPolling());
 

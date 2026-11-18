@@ -1,4 +1,4 @@
-import { createSignal, For, Index } from "solid-js";
+import { createSignal, For } from "solid-js";
 import { MdOutlineAdd, MdOutlineClose } from "solid-icons/md";
 import ComposerModal from "@/shared/editor/components/ComposerModal";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -240,7 +240,7 @@ function RowGroup(props: {
   return (
     <div class="space-y-2">
       <span class="text-xs font-medium text-muted">{props.label}</span>
-      <Index each={props.rows}>
+      <For keyed={false} each={props.rows}>
         {(row, i) => (
           <div class="flex items-center gap-2">
             <input class={`${fieldClass} min-w-0 flex-1`} type={props.type ?? "text"} value={row().value}
@@ -258,7 +258,7 @@ function RowGroup(props: {
             </IconButton>
           </div>
         )}
-      </Index>
+      </For>
       <button type="button"
               onClick={() => props.setRows([...props.rows, { type: "", label: "", value: "" }])}
               class="flex items-center gap-1.5 text-xs text-muted hover:text-txt">
@@ -282,7 +282,7 @@ function AdrGroup(props: { rows: AdrRow[]; setRows: (rows: AdrRow[]) => void }) 
   return (
     <div class="space-y-2">
       <span class="text-xs font-medium text-muted">{t("addressbook.address")}</span>
-      <Index each={props.rows}>
+      <For keyed={false} each={props.rows}>
         {(row, i) => (
           <div class="rounded-lg border border-rim p-3 space-y-2">
             <div class="flex items-center justify-between gap-2">
@@ -314,7 +314,7 @@ function AdrGroup(props: { rows: AdrRow[]; setRows: (rows: AdrRow[]) => void }) 
             </div>
           </div>
         )}
-      </Index>
+      </For>
       <button type="button"
               onClick={() => props.setRows([
                 ...props.rows,

@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup } from "solid-js";
+import { createSignal, onCleanup, createEffect } from "solid-js";
 
 /** Distributes items round-robin across n columns (item i -> column i % n).
  * Because the source order is preserved within each column, this reads
@@ -36,8 +36,8 @@ export function useColumnCount(
   maxColumns: number,
 ): () => number {
   const [count, setCount] = createSignal(1);
-  createEffect(() => {
-    const node = el();
+  createEffect(el, (node) => {
+    const cleanups: (() => void)[] = [];
     if (!node) return;
     const compute = (widthPx: number) => {
       const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -48,7 +48,8 @@ export function useColumnCount(
     compute(node.getBoundingClientRect().width);
     const obs = new ResizeObserver(([entry]) => compute(entry.contentRect.width));
     obs.observe(node);
-    onCleanup(() => obs.disconnect());
+    cleanups.push(() => obs.disconnect());
+    return () => cleanups.forEach((f) => f());
   });
   return count;
 }

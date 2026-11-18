@@ -70,7 +70,7 @@ export default function OutlineDropdown(props: { editorRef: () => HTMLDivElement
       <IconButton
         label={props.title}
         size="sm"
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         onMouseDown={(e) => e.preventDefault()}

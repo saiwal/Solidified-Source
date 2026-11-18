@@ -8,7 +8,7 @@
 // the header; folded (container narrower than the columns need), the header
 // hides: the first column and any unlabelled (actions) cells share the top
 // line, then a flex-order line break, then the rest wrap as `label value`.
-import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createMemo, createSignal, For, onSettled, Show } from "solid-js";
 import type { DataTableColumn, DataTableProps } from "@utsukta/spa-core/types/ui.types";
 
 const FLEX_MIN = 10; // rem a width-less column needs before the row folds
@@ -19,16 +19,16 @@ export function DataTable<T>(props: DataTableProps<T>) {
 
   let el!: HTMLDivElement;
   const [folded, setFolded] = createSignal(false);
-  onMount(() => {
+  const needRem = createMemo(() => props.columns.reduce((sum, c) => sum + (c.width ?? FLEX_MIN), 0));
+  onSettled(() => {
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const fit = (width: number) => {
-      const need = props.columns.reduce((sum, c) => sum + (c.width ?? FLEX_MIN), 0) * rem;
-      setFolded(width < need);
+      setFolded(width < needRem() * rem);
     };
     fit(el.clientWidth);
     const ro = new ResizeObserver(([e]) => fit(e.contentRect.width));
     ro.observe(el);
-    onCleanup(() => ro.disconnect());
+    return () => ro.disconnect();
   });
 
   const basis = (col: DataTableColumn<T>) =>
@@ -88,7 +88,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
                 class={`flex border-b border-rim last:border-0 ${
                   folded() ? "flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2.5" : "items-center"
                 } ${props.onRowClick ? "cursor-pointer hover:bg-elevated" : ""}`}
-                tabIndex={props.onRowClick ? 0 : undefined}
+                tabindex={props.onRowClick ? 0 : undefined}
                 onClick={() => props.onRowClick?.(row)}
                 onKeyDown={(e) => {
                   if (!props.onRowClick) return;

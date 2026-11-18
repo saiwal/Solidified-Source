@@ -1,4 +1,4 @@
-import { onCleanup, onMount, type Component } from "solid-js";
+import { onSettled, type Component } from "solid-js";
 import { MdOutlineClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
@@ -19,7 +19,7 @@ interface Props {
 const WopiEditorOverlay: Component<Props> = (props) => {
   const { t } = useI18n();
 
-  onMount(() => {
+  onSettled(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -35,10 +35,10 @@ const WopiEditorOverlay: Component<Props> = (props) => {
     };
     window.addEventListener("message", onMessage);
 
-    onCleanup(() => {
+      return () => {
       window.removeEventListener("message", onMessage);
       document.body.style.overflow = prevOverflow;
-    });
+    };
   });
 
   return (

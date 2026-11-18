@@ -2,7 +2,6 @@
 // panel (config: { sku }). multiInstance — a channel can place several cards.
 
 import { createSignal, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -102,7 +101,7 @@ export default function ItemCardWidget(props: WidgetProps) {
                     </Button>
                   }
                 >
-                  <A
+                  <a
                     href={`/cart/${nick()}`}
                     class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg
                            bg-accent-muted text-accent text-xs font-medium
@@ -110,7 +109,7 @@ export default function ItemCardWidget(props: WidgetProps) {
                   >
                     <MdFillShopping_cart size={14} />
                     {t("cart.view_cart")}
-                  </A>
+                  </a>
                 </Show>
               </div>
             </WidgetShell>

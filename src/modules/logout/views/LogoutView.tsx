@@ -1,4 +1,4 @@
-import { onMount } from "solid-js";
+import { onSettled } from "solid-js";
 import { getCsrfToken } from "@utsukta/spa-core/lib/csrf";
 import { clearOfflineData } from "@utsukta/spa-core/lib/offline-fallback";
 import { clearMessageStore } from "@utsukta/spa-core/lib/message-store";
@@ -9,7 +9,7 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 
 export default function LogoutView() {
   const { t } = useI18n();
-  onMount(async () => {
+  onSettled(() => { void (async () => {
     try {
       const csrf = await getCsrfToken();
       await fetch("/spa/logout", {
@@ -28,7 +28,7 @@ export default function LogoutView() {
     forgetJellyfin();
     await Promise.all([clearOfflineData(), clearMessageStore(), forgetMatrix(), forgetVault()]).catch(() => {});
     window.location.href = "/login";
-  });
+  })(); });
 
   return (
     <div class="min-h-[60vh] flex items-center justify-center">

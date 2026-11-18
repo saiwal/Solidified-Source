@@ -1,8 +1,7 @@
 // Random photo slideshow (config: { album, interval }): picks a random photo
 // every `interval` seconds from one album or the whole channel. multiInstance.
 
-import { createSignal, createEffect, onCleanup, Show } from "solid-js";
-import { A } from "@solidjs/router";
+import { createSignal, Show, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -26,11 +25,10 @@ export default function PhotoSlideshowWidget(props: WidgetProps) {
   const photos = () => data() ?? [];
   const current = () => photos()[idx() % Math.max(1, photos().length)];
 
-  createEffect(() => {
-    const n = photos().length;
-    if (n < 2 || paused()) return;
-    const id = setInterval(() => setIdx(Math.floor(Math.random() * n)), interval());
-    onCleanup(() => clearInterval(id));
+  createEffect(() => [photos().length, paused(), interval()] as const, ([n, isPaused, ms]) => {
+    if (n < 2 || isPaused) return;
+    const id = setInterval(() => setIdx(Math.floor(Math.random() * n)), ms);
+    return () => clearInterval(id);
   });
 
   return (
@@ -45,7 +43,7 @@ export default function PhotoSlideshowWidget(props: WidgetProps) {
           onTouchStart={() => setPaused(true)}
           onTouchEnd={() => setPaused(false)}
           onTouchCancel={() => setPaused(false)}>
-          <A href={`/photos/${nick()}/image/${photo().resource_id}`} class="block">
+          <a href={`/photos/${nick()}/image/${photo().resource_id}`} class="block">
             <img
               src={photo().src}
               alt={photo().title || photo().filename}
@@ -53,7 +51,7 @@ export default function PhotoSlideshowWidget(props: WidgetProps) {
                      ${photo().is_nsfw ? "blur-lg scale-110" : ""}`}
               loading="lazy"
             />
-          </A>
+          </a>
           <Show when={photo().title}>
             <p class="px-3 py-2 text-xs text-muted truncate">{photo().title}</p>
           </Show>

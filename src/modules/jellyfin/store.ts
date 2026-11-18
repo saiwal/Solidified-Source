@@ -8,6 +8,7 @@ import {
   reportStart, reportProgress, reportStopped,
   type JellyfinStore, type JellyfinSession, type JfItem,
 } from "./api";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 // ── Servers ───────────────────────────────────────────────────────────────────
 
@@ -329,19 +330,19 @@ const saved = loadPlayer();
 // Tracks from a server signed out since can't stream — drop them on restore
 const savedQueue = Array.isArray(saved.queue) ? saved.queue.filter((q) => q?.Id && q.qid && sessionFor(q.srv)) : [];
 
-const [queue, setQueue] = createSignal<QItem[]>(savedQueue);
-const [unshuffled, setUnshuffled] = createSignal<QItem[] | null>(
+const [queue, setQueue] = createSyncSignal<QItem[]>(savedQueue);
+const [unshuffled, setUnshuffled] = createSyncSignal<QItem[] | null>(
   savedQueue.length && Array.isArray(saved.unshuffled) ? saved.unshuffled.filter((q) => sessionFor(q?.srv)) : null,
 );
-const [index, setIndex] = createSignal(savedQueue.length ? Math.min(Math.max(saved.index ?? 0, 0), savedQueue.length - 1) : -1);
+const [index, setIndex] = createSyncSignal(savedQueue.length ? Math.min(Math.max(saved.index ?? 0, 0), savedQueue.length - 1) : -1);
 const [playing, setPlaying] = createSignal(false);
-const [position, setPosition] = createSignal(savedQueue.length ? (saved.position ?? 0) : 0);
+const [position, setPosition] = createSyncSignal(savedQueue.length ? (saved.position ?? 0) : 0);
 const [duration, setDuration] = createSignal(0);
 const [loading, setLoading] = createSignal(false);
 const [error, setError] = createSignal<string | null>(null);
-const [volume, setVolumeSignal] = createSignal(typeof saved.volume === "number" ? saved.volume : 1);
-const [muted, setMutedSignal] = createSignal(!!saved.muted);
-const [repeat, setRepeatSignal] = createSignal<RepeatMode>(saved.repeat ?? "off");
+const [volume, setVolumeSignal] = createSyncSignal(typeof saved.volume === "number" ? saved.volume : 1);
+const [muted, setMutedSignal] = createSyncSignal(!!saved.muted);
+const [repeat, setRepeatSignal] = createSyncSignal<RepeatMode>(saved.repeat ?? "off");
 
 export { queue, index, playing, position, duration, loading, error, volume, muted, repeat };
 export const shuffled = () => partyShuffle() ?? unshuffled() !== null;

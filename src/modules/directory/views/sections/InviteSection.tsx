@@ -7,7 +7,7 @@
 // language/style template picker with a live preview, an editable subject and
 // a personal note. Field labels are lifted from core so they match the docs.
 
-import { For, Show, createEffect, createMemo, createSignal, type Component } from "solid-js";
+import { For, Show, createMemo, createSignal, type Component, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -27,6 +27,7 @@ import { Stat } from "@ui/Stat";
 import { Banner } from "@ui/Banner";
 import { Collapsible } from "@ui/Collapsible";
 import { Skeleton } from "@ui/Skeleton";
+import { deepOf } from "@utsukta/spa-core/lib/deep";
 
 // Core's field_duration.qmc.tpl offers exactly these three, even though
 // calcdue() also understands w/m/y.
@@ -48,9 +49,8 @@ const InviteSection: Component = () => {
   const [previewOpen, setPreviewOpen] = createSignal(false);
 
   // Seed the pickers from the server's defaults once the payload lands.
-  createEffect(() => {
-    const d = info();
-    if (!d || lang()) return;
+  createEffect(() => [deepOf(info()), lang()] as const, ([d, l]) => {
+    if (!d || l) return;
     setLang(d.default_lang);
     setStyle(d.default_style);
     setDurn(parseInt(d.expire.durn, 10) || 2);
@@ -63,9 +63,8 @@ const InviteSection: Component = () => {
 
   // Core refills the subject from the selected template on every switch, so a
   // half-typed subject doesn't silently ride along into another language.
-  createEffect(() => {
-    const tpl = template();
-    if (tpl) setSubject(tpl.subject);
+  createEffect(() => template()?.subject, (subject) => {
+    if (subject !== undefined) setSubject(subject);
   });
 
   const addresses = () =>

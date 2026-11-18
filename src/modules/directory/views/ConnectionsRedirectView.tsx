@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from "@solidjs/router";
+import { useNavigate, useLocation } from "@solidjs/router";
 import { connectionRequestId } from "@utsukta/spa-core/lib/notifyLink";
 
 // Core redirects to /connections#<abook_id> after a successful follow (and
@@ -7,5 +7,6 @@ import { connectionRequestId } from "@utsukta/spa-core/lib/notifyLink";
 // modal you get after adding someone from the search box.
 export default function ConnectionsRedirectView() {
   const id = connectionRequestId("/connections" + useLocation().hash);
-  return <Navigate href={id ? `/directory/connections?open=${id}` : "/directory/connections"} />;
+  useNavigate()(id ? `/directory/connections?open=${id}` : "/directory/connections", { replace: true });
+  return null;
 }

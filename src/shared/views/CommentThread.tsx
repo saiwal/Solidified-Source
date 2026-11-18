@@ -40,14 +40,14 @@ export default function CommentThread(props: {
       }}
     >
       <div style={{ overflow: "hidden" }}>
-        <div data-comments class="mt-2 space-y-1.5" classList={{ "ml-1": !props.flush }}>
+        <div data-comments class={["mt-2 space-y-1.5", { "ml-1": !props.flush }]}>
           <For each={props.comments}>
             {(comment) => (
               <Show
                 when={!isDeletedStub(comment)}
                 fallback={
                   <div>
-                    <div class="border-dashed border-rim/40 pl-2 md:pl-3 py-2" classList={{ "border-l-2": (props.depth ?? 1) > 1 }}>
+                    <div class={["border-dashed border-rim/40 pl-2 md:pl-3 py-2", { "border-l-2": (props.depth ?? 1) > 1 }]}>
                       <div class="flex items-center gap-2">
                         <div class="w-6 h-6 rounded-full bg-elevated shrink-0" />
                         <span class="text-xs text-muted italic">

@@ -1,7 +1,7 @@
 // solidified's implementation of the switch contract (spa-core types/ui.types.ts).
 // A native checkbox with role="switch": Space, label clicks and form submission
 // come from the browser, and screen readers announce on/off.
-import { Show, createUniqueId, splitProps } from "solid-js";
+import { Show, createUniqueId, omit } from "solid-js";
 import type { SwitchProps, ToggleProps } from "@utsukta/spa-core/types/ui.types";
 
 export const switchClass =
@@ -16,7 +16,7 @@ export const switchClass =
   "focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
 export function Switch(props: SwitchProps) {
-  const [own, rest] = splitProps(props, ["checked", "value", "onChange", "label", "class"]);
+  const own = props, rest = omit(props, "checked", "value", "onChange", "label", "class");
   return (
     <input
       type="checkbox"
@@ -38,7 +38,7 @@ export function Switch(props: SwitchProps) {
 }
 
 export function Toggle(props: ToggleProps) {
-  const [own, rest] = splitProps(props, ["label", "hint", "class"]);
+  const own = props, rest = omit(props, "label", "hint", "class");
   const hintId = createUniqueId();
   return (
     <label class={`hz-toggle flex items-center justify-between gap-4 py-2.5 cursor-pointer select-none ${own.class ?? ""}`}>

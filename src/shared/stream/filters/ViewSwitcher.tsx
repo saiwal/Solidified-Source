@@ -1,5 +1,5 @@
 import { For, Show, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import {
@@ -52,7 +52,7 @@ export default function ViewSwitcher(props: {
               variant="ghost"
               size="sm"
               title={t(`network.${current().key}` as any)}
-              aria-expanded={open()}
+              aria-expanded={(open()) ? "true" : "false"}
               aria-haspopup="listbox"
               onClick={() => setOpen(!open())}
             >
@@ -73,7 +73,7 @@ export default function ViewSwitcher(props: {
                     {(v) => (
                       <button
                         role="option"
-                        aria-selected={props.viewMode === v.id}
+                        aria-selected={(props.viewMode === v.id) ? "true" : "false"}
                         onClick={() => pick(v.id)}
                         class={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-left
                           transition-colors
@@ -98,7 +98,7 @@ export default function ViewSwitcher(props: {
             {(v) => (
               <button
                 title={t(`network.${v.key}` as any)}
-                aria-pressed={props.viewMode === v.id}
+                aria-pressed={(props.viewMode === v.id) ? "true" : "false"}
                 onClick={() => props.onChange(v.id)}
                 class={`px-2 py-1.5 transition-colors
                   ${props.viewMode === v.id

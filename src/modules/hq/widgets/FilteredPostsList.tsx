@@ -5,8 +5,8 @@
 // newest matches. A row opens the post modal; the header links to /network
 // with the same params for the full stream.
 
-import { For, Show, type JSX } from "solid-js";
-import { A } from "@solidjs/router";
+import { For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdOutlineOpen_in_new, MdOutlineRefresh, MdOutlineInbox } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -65,16 +65,16 @@ export function FilteredPostsList(props: {
         props.params ? (
           <>
             <IconButton label={t("hq.retry")} size="sm" onClick={() => void refetch()} disabled={posts.loading}>
-              <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": posts.loading }} />
+              <MdOutlineRefresh class={["w-3.5 h-3.5", { "animate-spin": posts.loading }]} />
             </IconButton>
-            <A
+            <a
               href={`/network?${new URLSearchParams(props.params)}`}
               class={iconButtonClass("default", "sm")}
               aria-label={t("widgets.open_in_network")}
               title={t("widgets.open_in_network")}
             >
               <MdOutlineOpen_in_new class="w-3.5 h-3.5" />
-            </A>
+            </a>
           </>
         ) : undefined
       }

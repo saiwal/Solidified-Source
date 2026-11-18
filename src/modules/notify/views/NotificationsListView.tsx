@@ -114,8 +114,7 @@ export default function NotificationsListView() {
               <button
                 type="button"
                 onClick={() => open(entry)}
-                class="w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-elevated transition-colors"
-                classList={{ "opacity-60": !!entry.seen }}
+                class={["w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-elevated transition-colors", { "opacity-60": !!entry.seen }]}
               >
                 <Show when={entry.photo}>
                   <Avatar src={entry.photo} name={entry.name ?? ""} size={8} />

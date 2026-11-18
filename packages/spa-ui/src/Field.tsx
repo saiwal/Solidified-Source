@@ -6,7 +6,7 @@
 // <Field> wraps a label, hint and error around one of these. It hands its id
 // down through context, so the label's `for`, the control's id and its
 // aria-describedby line up without the call site passing anything.
-import { Show, createContext, createUniqueId, onCleanup, splitProps, useContext } from "solid-js";
+import { Show, createContext, createUniqueId, onCleanup, useContext, omit } from "solid-js";
 import type {
   FieldProps,
   FieldSize,
@@ -21,7 +21,7 @@ type FieldCtx = {
   describedBy: () => string | undefined;
   invalid: () => boolean;
 };
-const FieldContext = createContext<FieldCtx>();
+const FieldContext = createContext<FieldCtx | null>(null);
 
 /**
  * The a11y attributes for a control inside a <Field>; explicit props still win.
@@ -39,7 +39,7 @@ function fieldAttrs() {
   return {
     id,
     get "aria-describedby"() { return ctx.describedBy(); },
-    get "aria-invalid"() { return ctx.invalid() || undefined; },
+    get "aria-invalid"() { return ctx.invalid() ? "true" : undefined; },
   };
 }
 
@@ -57,19 +57,19 @@ export function inputClass(size: FieldSize = "md"): string {
 }
 
 export function Input(props: InputProps) {
-  const [own, rest] = splitProps(props, ["size", "class"]);
+  const own = props, rest = omit(props, "size", "class");
   const a11y = fieldAttrs();
   return <input {...a11y} class={`${inputClass(own.size)} ${own.class ?? ""}`} {...rest} />;
 }
 
 export function Select(props: SelectProps) {
-  const [own, rest] = splitProps(props, ["size", "class"]);
+  const own = props, rest = omit(props, "size", "class");
   const a11y = fieldAttrs();
   return <select {...a11y} class={`${inputClass(own.size)} ${own.class ?? ""}`} {...rest} />;
 }
 
 export function Textarea(props: TextareaProps) {
-  const [own, rest] = splitProps(props, ["size", "class"]);
+  const own = props, rest = omit(props, "size", "class");
   const a11y = fieldAttrs();
   return <textarea {...a11y} class={`${inputClass(own.size)} ${own.class ?? ""}`} {...rest} />;
 }
@@ -86,7 +86,7 @@ export function Field(props: FieldProps) {
   };
   const sm = () => props.size === "sm";
   return (
-    <FieldContext.Provider value={ctx}>
+    <FieldContext value={ctx}>
       <div class={`hz-field ${sm() ? "space-y-1" : "space-y-1.5"} ${props.class ?? ""}`}>
         <label for={id} class={sm() ? "block text-xs font-medium text-muted" : "block text-sm font-medium text-txt"}>
           {props.label}
@@ -98,6 +98,6 @@ export function Field(props: FieldProps) {
           </p>
         </Show>
       </div>
-    </FieldContext.Provider>
+    </FieldContext>
   );
 }

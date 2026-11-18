@@ -1,5 +1,5 @@
 // src/modules/notify/views/NotifyRedirectView.tsx
-import { createEffect, createSignal, Show } from "solid-js";
+import { createSignal, Show, createEffect } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { resolveNotify } from "../api";
@@ -13,8 +13,7 @@ export default function NotifyRedirectView() {
   const [notFound, setNotFound] = createSignal(false);
 
   let started = false;
-  createEffect(() => {
-    const id = params.id;
+  createEffect(() => params.id, (id) => {
     if (!id || started) return;
     started = true;
     resolveNotify(id)

@@ -62,7 +62,7 @@ export default function AddonsSection() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setOpenSettings((s) => (s === addon.slug ? null : addon.slug))}
-                          aria-expanded={openSettings() === addon.slug}
+                          aria-expanded={(openSettings() === addon.slug) ? "true" : "false"}
                         >
                           {t("admin.settings_label")}
                         </Button>

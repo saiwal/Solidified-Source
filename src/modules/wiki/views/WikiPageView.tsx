@@ -1,18 +1,15 @@
 // src/modules/wiki/views/WikiPageView.tsx
-import {
-  createEffect, createSignal, Show, For, onCleanup,
-} from "solid-js";
+import { createSignal, Show, For, onCleanup, createEffect } from "solid-js";
 import WikiComposer from "@/shared/editor/composers/WikiComposer";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { useParams, A, useNavigate } from "@solidjs/router";
+import { useParams, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import DOMPurify from "dompurify";
 import { rootRelativeLinks } from "@utsukta/spa-core/lib/renderBody";
 import { MdOutlineDelete, MdOutlineDrive_file_rename_outline, MdOutlineEdit, MdOutlineHistory, MdOutlineList } from "solid-icons/md";
 import PageActions from "@/shared/views/layout/PageActions";
-import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
-import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
-import { useLightbox } from "@utsukta/spa-core/lib/useLightbox";
+import { hydrateRef } from "@utsukta/spa-core/lib/hydrateRef";
+import { lightboxRef } from "@utsukta/spa-core/lib/useLightbox";
 import { storageGet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import { saveServerDraft, deleteServerDraft } from "@/shared/editor/api/drafts";
@@ -57,7 +54,7 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
         label={t("wiki.wikis")}
         variant="outline"
         onClick={() => setOpen((v) => !v)}
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
       >
         <MdOutlineList size={20} />
       </IconButton>
@@ -91,18 +88,17 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
           <Show when={!pagesLoading()}>
             <For each={pages()}>
               {(p) => (
-                <A
+                <a
                   href={`/wiki/${props.nick}/${props.wikiName}/${p.url_name}`}
                   onClick={() => setOpen(false)}
-                  class="block text-sm px-2 py-1 rounded-lg truncate transition-colors"
-                  classList={{
+                  class={["block text-sm px-2 py-1 rounded-lg truncate transition-colors", {
                     "bg-elevated text-txt": p.url_name === props.pageName,
                     "text-muted hover:bg-elevated hover:text-txt":
                       p.url_name !== props.pageName,
-                  }}
+                  }]}
                 >
                   {p.name}
-                </A>
+                </a>
               )}
             </For>
           </Show>
@@ -149,13 +145,13 @@ function FloatingPageList(props: { nick: string; wikiName: string; pageName: str
           </Show>
 
           <div class="pt-2 border-t border-rim mt-2">
-            <A
+            <a
               href={`/wiki/${props.nick}`}
               onClick={() => setOpen(false)}
               class="text-xs text-muted hover:text-txt transition-colors"
             >
               {t("wiki.all_wikis")}
-            </A>
+            </a>
           </div>
         </div>
       </Show>
@@ -183,8 +179,7 @@ export default function WikiPageView() {
 
   let lastWikiName = "";
 
-  createEffect(() => {
-    const { nick, wikiName, pageName } = params;
+  createEffect(() => ({ nick: params.nick, wikiName: params.wikiName, pageName: params.pageName }), ({ nick, wikiName, pageName }) => {
     if (!nick || !wikiName || !pageName) return;
 
     loadPage(nick, wikiName, pageName);
@@ -197,25 +192,22 @@ export default function WikiPageView() {
 
   // Auto-open edit mode for pages that don't exist yet (new page flow).
   // Guard with !editMode() to avoid double-toggling if canWrite resolves after pageNotFound.
-  createEffect(() => {
-    if (!pageLoading() && pageNotFound() && canWrite() && !editMode()) {
-      toggleEditMode();
-    }
+  createEffect(() => !pageLoading() && pageNotFound() && canWrite() && !editMode(), (create) => {
+    if (create) toggleEditMode();
   });
 
   // Load history when panel is opened
-  createEffect(() => {
-    if (showHistory() && pageData()) {
-      loadHistory(params.nick, params.wikiName, params.pageName);
-    }
+  createEffect(() => (showHistory() && pageData() ? [params.nick, params.wikiName, params.pageName] as const : null), (at) => {
+    if (at) loadHistory(...at);
   });
 
   // Restore a draft saved from the HQ DraftsWidget straight into edit mode.
   // Scope is `wiki:<wikiName>:<pageName>` — both already URL-path-safe params,
   // so no extra encode/decode is needed to round-trip them.
-  createEffect(() => {
-    const { nick, wikiName, pageName } = params;
-    if (pageLoading() || !nick || !wikiName || !pageName) return;
+  createEffect(() => (pageLoading() ? null : { nick: params.nick, wikiName: params.wikiName, pageName: params.pageName }), (at) => {
+    if (!at) return;
+    const { nick, wikiName, pageName } = at;
+    if (!nick || !wikiName || !pageName) return;
     const scope = `wiki:${wikiName}:${pageName}`;
     void storageGet<SavedDraft | null>(channelKey(`pending-draft:${scope}`), null).then(async (pending) => {
       if (!pending) return;
@@ -370,17 +362,16 @@ export default function WikiPageView() {
           <Show when={!pagesLoading()}>
             <For each={pages()}>
               {(p) => (
-                <A
+                <a
                   href={`/wiki/${params.nick}/${params.wikiName}/${p.url_name}`}
-                  class="block text-sm px-2 py-1 rounded-lg truncate transition-colors"
-                  classList={{
+                  class={["block text-sm px-2 py-1 rounded-lg truncate transition-colors", {
                     "bg-elevated text-txt": p.url_name === params.pageName,
                     "text-muted hover:bg-elevated hover:text-txt":
                       p.url_name !== params.pageName,
-                  }}
+                  }]}
                 >
                   {p.name}
-                </A>
+                </a>
               )}
             </For>
           </Show>
@@ -428,12 +419,12 @@ export default function WikiPageView() {
           </Show>
 
           <div class="pt-2 border-t border-rim mt-2">
-            <A
+            <a
               href={`/wiki/${params.nick}`}
               class="text-xs text-muted hover:text-txt transition-colors"
             >
               {t("wiki.all_wikis")}
-            </A>
+            </a>
           </div>
         </Card>
       </aside>
@@ -596,7 +587,7 @@ export default function WikiPageView() {
           {/* Rendered view */}
           <Show when={!editMode()}>
             <article
-              ref={(el) => { useLightbox(() => el); createEffect(() => { safeHtml(); hydrateLatex(el); hydrateMermaid(el); }); }}
+              ref={[lightboxRef(), hydrateRef(safeHtml)]}
               // Same reading panel as a webpage (PageView) — readable over a wallpaper.
               class={`${cardClass()} p-6 prose prose-neutral dark:prose-invert max-w-none
                      [&_a]:text-accent [&_a]:no-underline [&_a:hover]:underline
@@ -627,7 +618,7 @@ export default function WikiPageView() {
                 </Show>
                 <Show when={!previewLoading()}>
                   <article
-                    ref={(el) => { useLightbox(() => el); createEffect(() => { previewHtml(); hydrateLatex(el); hydrateMermaid(el); }); }}
+                    ref={[lightboxRef(), hydrateRef(previewHtml)]}
                     class="prose prose-neutral dark:prose-invert max-w-none
                            [&_a]:text-accent [&_a]:no-underline [&_a:hover]:underline
                            [&_pre]:bg-elevated [&_pre]:border [&_pre]:border-rim [&_pre]:rounded-xl

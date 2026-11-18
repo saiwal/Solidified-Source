@@ -1,4 +1,4 @@
-import { createSignal, createEffect, Show, onMount, onCleanup } from "solid-js";
+import { createSignal, Show, onSettled, onCleanup, createEffect } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -37,7 +37,7 @@ function usePlayerShortcuts() {
     else return;
     e.preventDefault();
   };
-  onMount(() => document.addEventListener("keydown", onKey));
+  onSettled(() => { document.addEventListener("keydown", onKey); });
   onCleanup(() => document.removeEventListener("keydown", onKey));
 }
 
@@ -52,24 +52,27 @@ export { pendingJoin };
 function usePartyJoin() {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
-  createEffect(() => {
-    const gid = String(params.party ?? "");
-    if (!gid) return;
-    setPendingJoin({ gid, srv: String(params.srv ?? ""), jf: String(params.jf ?? "") });
+  createEffect(() => ({ gid: String(params.party ?? ""), srv: String(params.srv ?? ""), jf: String(params.jf ?? "") }), (join) => {
+    if (!join.gid) return;
+    setPendingJoin(join);
     setParams({ party: undefined, srv: undefined, jf: undefined }, { replace: true });
   });
   createEffect(() => {
     const p = pendingJoin();
-    if (!p) return;
+    if (!p) return null;
     // Same server: by ServerId, or by address (a session migrated from the
     // single-server format is keyed by its URL)
     const s = sessionFor(p.srv) ?? servers().find((x) => x.server === p.jf.replace(/\/+$/, "")) ?? null;
+    return { p, s, adding: adding(), partyId: party()?.id };
+  }, (at) => {
+    if (!at) return;
+    const { p, s } = at;
     if (!s) {
-      if (!adding()) startAddServer(p.jf);
+      if (!at.adding) startAddServer(p.jf);
       return;
     }
     setPendingJoin(null);
-    if (party()?.id === p.gid) return;
+    if (at.partyId === p.gid) return;
     setActive(s.id);
     joinParty(s, p.gid).catch(() => toast.error(t("jellyfin.party_request_failed")));
   });
@@ -116,7 +119,7 @@ function ConnectForm() {
   const { t } = useI18n();
   const [server, setServer] = createSignal(prefillUrl());
   // An invite can arrive while this form is already up (signed in nowhere yet)
-  createEffect(() => { const u = prefillUrl(); if (u) setServer(u); });
+  createEffect(prefillUrl, (u) => { if (u) setServer(u); });
   const [user, setUser] = createSignal("");
   const [pass, setPass] = createSignal("");
   const [busy, setBusy] = createSignal(false);
@@ -127,8 +130,8 @@ function ConnectForm() {
   const [vault, setVault] = createSignal<VaultStatus | null>(null);
   const [vpass, setVpass] = createSignal("");
   const [vpass2, setVpass2] = createSignal("");
-  createEffect(() => {
-    if (remember() && vault() === null) vaultStatus().then(setVault).catch(() => setVault("new"));
+  createEffect(() => remember() && vault() === null, (ask) => {
+    if (ask) vaultStatus().then(setVault).catch(() => setVault("new"));
   });
 
   // An https page can't fetch from plain http (except localhost) — the browser
@@ -225,7 +228,7 @@ function ConnectForm() {
           class="w-full"
           type="password"
           required
-          minLength={vault() === "new" ? VAULT_MIN_PASSPHRASE : undefined}
+          minlength={vault() === "new" ? VAULT_MIN_PASSPHRASE : undefined}
           value={vpass()}
           onInput={(e) => setVpass(e.currentTarget.value)}
           autocomplete={vault() === "new" ? "new-password" : "current-password"}

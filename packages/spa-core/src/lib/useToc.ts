@@ -1,5 +1,5 @@
 // src/shared/lib/useToc.ts
-import { createSignal, createEffect, onCleanup } from "solid-js";
+import { createSignal, createEffect } from "solid-js";
 
 export interface TocEntry {
   id: string;
@@ -28,19 +28,20 @@ export function useToc(content: () => unknown, bodyRef: () => HTMLElement | unde
   const [toc, setToc] = createSignal<TocEntry[]>([]);
   const [activeId, setActiveId] = createSignal("");
 
-  createEffect(() => {
-    const tracked = content();
-    const el = bodyRef();
+  createEffect(() => [content(), bodyRef()] as const, ([tracked, el]) => {
     if (!tracked || !el) return;
 
-    requestAnimationFrame(() => {
+    // The observer is made a frame later, so the cleanup is returned here and
+    // reaches it through `observer`.
+    let observer: IntersectionObserver | undefined;
+    const raf = requestAnimationFrame(() => {
       const container = bodyRef();
       if (!container) return;
       const entries = extractHeadings(container);
       setToc(entries);
       if (entries.length) setActiveId(entries[0].id);
 
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         (observations) => {
           const visible = observations
             .filter((o) => o.isIntersecting)
@@ -51,10 +52,10 @@ export function useToc(content: () => unknown, bodyRef: () => HTMLElement | unde
       );
       entries.forEach(({ id }) => {
         const target = document.getElementById(id);
-        if (target) observer.observe(target);
+        if (target) observer!.observe(target);
       });
-      onCleanup(() => observer.disconnect());
     });
+    return () => { cancelAnimationFrame(raf); observer?.disconnect(); };
   });
 
   return { toc, activeId, setToc, setActiveId };

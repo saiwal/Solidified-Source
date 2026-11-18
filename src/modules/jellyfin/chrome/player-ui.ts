@@ -1,4 +1,5 @@
 import { createSignal } from "solid-js";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 export type PlayerTab = "queue" | "lyrics" | "party";
 
@@ -9,7 +10,7 @@ export { fullOpen, setFullOpen, fullTab, setFullTab };
 
 /** Visualizer strip in the full player — per device, off by default. */
 const VIS_KEY = "hz-jellyfin-visualizer";
-const [visualizerOn, setVisualizer] = createSignal((() => {
+const [visualizerOn, setVisualizer] = createSyncSignal((() => {
   try { return localStorage.getItem(VIS_KEY) === "1"; } catch { return false; }
 })());
 export { visualizerOn };

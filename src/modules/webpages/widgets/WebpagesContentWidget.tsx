@@ -1,5 +1,4 @@
-import { createEffect, Show, For } from 'solid-js';
-import { A } from '@solidjs/router';
+import { Show, For, createEffect } from "solid-js";
 import { useAuth } from '@utsukta/spa-core/store/auth-store';
 import { usePageNick, useViewerRole } from '@utsukta/spa-core/store/site-config';
 import { pages, loading, loadWebpages, removePage } from '../store';
@@ -101,13 +100,13 @@ function PageRow(props: {
 
         <Show when={props.isOwner}>
           {/* Edit */}
-          <A
+          <a
             href={`/webpages/${props.nick}/edit/${props.page.iid}`}
             class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
             title={t('webpages.edit') as string}
           >
             <MdOutlineEdit_note size={14} />
-          </A>
+          </a>
 
           {/* Delete */}
           <IconButton
@@ -160,9 +159,8 @@ export default function WebpagesContentWidget() {
   const viewerRole = useViewerRole();
   const isOwner = () => viewerRole() === 'owner';
 
-  createEffect(() => {
-    if ((auth as any).loading || !nick() || !isList()) return;
-    loadWebpages(nick());
+  createEffect(() => ((auth as any).loading || !nick() || !isList() ? null : nick()), (n) => {
+    if (n) loadWebpages(n);
   });
 
   async function handleDelete(iid: number) {
@@ -195,7 +193,7 @@ export default function WebpagesContentWidget() {
                 icon={<MdOutlineDescription />}
                 action={
                   <Show when={isOwner()}>
-                    <A href={`/webpages/${nick()}/new`} class={buttonClass("primary", "sm")}>{t("webpages.create_first")}</A>
+                    <a href={`/webpages/${nick()}/new`} class={buttonClass("primary", "sm")}>{t("webpages.create_first")}</a>
                   </Show>
                 }
               >

@@ -1,13 +1,5 @@
-import {
-  createEffect,
-  createMemo,
-  createSignal,
-  For,
-  on,
-  Show,
-  type JSX,
-} from "solid-js";
-import { A } from "@solidjs/router";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { navItemHelpTarget } from "@utsukta/spa-core/lib/useNav";
@@ -57,8 +49,8 @@ export function TileFace(props: { icon: JSX.Element; label: string }) {
         aria-hidden="true"
         class="w-12 h-12 rounded-2xl bg-elevated border border-rim shrink-0
                flex items-center justify-center text-muted
-               group-[.hz-active]:bg-accent-muted group-[.hz-active]:border-accent
-               group-[.hz-active]:text-accent-txt"
+               group-data-[active]:bg-accent-muted group-data-[active]:border-accent
+               group-data-[active]:text-accent-txt"
       >
         {props.icon}
       </span>
@@ -79,14 +71,13 @@ function AppTile(props: {
 }) {
   return (
     <div ref={helpable(() => navItemHelpTarget(props.item))} class="relative">
-      <A
+      <a
         href={hrefOf(props.item)}
         onClick={props.onNavigate}
-        activeClass="hz-active !text-accent-txt"
-        class={tileClass}
+        class={`${tileClass} data-active:!text-accent-txt`}
       >
         <TileFace icon={getNavIcon(props.item.icon, 24)} label={labelOf(props.item)} />
-      </A>
+      </a>
       {/* Touch has no hover, so the star is always there — filled marks a
           favorite. A sibling of the link, not inside it. */}
       <Show when={props.starFor(props.item)}>
@@ -200,16 +191,17 @@ export default function AppDrawer(props: { chrome: LayoutChrome }) {
 
   // Each open starts on the current app's category, with search cleared.
   createEffect(
-    on(moreOpen, (open) => {
+    moreOpen, (open) => {
       if (!open) {
         setFilters(emptyFilters());
-        return setQuery("");
+        setQuery("");
+        return;
       }
       const current = groups().find((g) =>
         g.items.some((item) => moduleIdForPath(item.path) === activeModuleId()),
       );
       setOpenGroup(current?.id ?? null);
-    }),
+    },
   );
 
   return (

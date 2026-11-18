@@ -16,6 +16,7 @@ import {
   updatePhotoDescription as apiUpdateDescription,
   togglePhotoNsfw as apiToggleNsfw,
 } from "../api/api";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -36,8 +37,8 @@ const [canWrite, setCanWrite]     = createSignal(false);
 const PAGE = 30;
 export type PhotoTab = 'photos' | 'albums' | 'uploads' | 'map';
 const [tab, setTab]               = createSignal<PhotoTab>('photos');
-const [photoSort, setPhotoSort]   = createSignal<PhotoSort>('date');
-const [photoDir, setPhotoDir]     = createSignal<SortDir>('desc');
+const [photoSort, setPhotoSort]   = createSyncSignal<PhotoSort>('date');
+const [photoDir, setPhotoDir]     = createSyncSignal<SortDir>('desc');
 const [hasMore, setHasMore]       = createSignal(false);
 const [loadingMore, setLoadingMore] = createSignal(false);
 // Raw offset, not photos().length — the API filters folder-private rows out of

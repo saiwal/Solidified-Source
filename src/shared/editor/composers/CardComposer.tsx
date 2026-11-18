@@ -1,4 +1,4 @@
-import { createSignal, createEffect, createMemo, Show, For, onCleanup } from "solid-js";
+import { createSignal, createMemo, Show, For, onCleanup, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { fetchDeckList } from "@/modules/cards/api";
@@ -45,6 +45,7 @@ import {
 } from "../lib/cardTemplates";
 import { MdOutlineRefresh } from "solid-icons/md";
 import { Input, Textarea } from "@ui/Field";
+import type { MimeType } from "../types/editor.types";
 
 export type { CardTemplate };
 
@@ -126,13 +127,20 @@ export default function CardComposer(props: Props) {
 
   // Template sub-form fields. Freeform writes store.body directly; the other
   // three collect parts here and assemble on submit (see ../lib/cardTemplates).
-  const [fields, setFields] = createSignal<TemplateFields>(emptyTemplateFields());
+  // The assembled templates submit composedBody(), not store.body() — so
+  // without unpacking the stored body back into their sub-forms, reopening a
+  // quote/definition/link card for editing would show empty fields and save
+  // an empty body over it. Seeded at creation: Solid 2 forbids render writes.
+  const parsedInitial = props.initial ? parseTemplate(props.initial.body) : null;
+  const [fields, setFields] = createSignal<TemplateFields>({ ...emptyTemplateFields(), ...parsedInitial });
   const setField = (k: keyof TemplateFields) => (v: string) =>
     setFields((f) => ({ ...f, [k]: v }));
 
   // Whether a fetched og:image gets prepended to a link body. Off by default —
   // the thumbnail is offered, not imposed.
-  const [includeImage, setIncludeImage] = createSignal(false);
+  // A stored thumbnail means the box was ticked when this card was saved —
+  // without restoring that, re-saving would silently drop the image.
+  const [includeImage, setIncludeImage] = createSignal(!!parsedInitial?.linkImage);
 
   // The body actually submitted: the editor's for freeform, an assembled one
   // otherwise. Kept as a function so the submit path and the disabled-state
@@ -154,7 +162,9 @@ export default function CardComposer(props: Props) {
   const [metaError, setMetaError] = createSignal(false);
   // The URL the last successful/attempted fetch was for, so blurring the field
   // repeatedly doesn't refetch the same page.
-  const [fetchedUrl, setFetchedUrl] = createSignal("");
+  // Seeded with an edited card's URL: it's already described by the card, so
+  // don't auto-fetch over the author's own edits the first time it's blurred.
+  const [fetchedUrl, setFetchedUrl] = createSignal(parsedInitial?.linkUrl ?? "");
 
   // A hand-typed "example.org/a" is a relative URL everywhere downstream — the
   // stored [url=] renders with an empty href and link-meta never fires. Assume
@@ -300,6 +310,17 @@ export default function CardComposer(props: Props) {
     attach.clear();
     props.onSaved?.();
   }, scope, {
+    // Seed from initial if editing. Without the mimetype the toolbar (and the
+    // WYSIWYG probe) read text/bbcode on every edit, so reopening a markdown
+    // card spelled its buttons in bbcode.
+    ...(props.initial && {
+      initialTitle: props.initial.title,
+      initialSummary: props.initial.summary,
+      initialSlug: props.initial.slug,
+      initialCategory: props.initial.category,
+      seedBody: props.initial.body,
+      initialMimetype: isAuthorable(props.initial.mimetype ?? "") ? (props.initial.mimetype as MimeType) : undefined,
+    }),
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
     autosaveBody: () => composedBody(),
@@ -319,30 +340,6 @@ export default function CardComposer(props: Props) {
     () => (existingCategories() ?? []).map((c) => c.name),
   );
 
-  // Seed from initial if editing
-  if (props.initial) {
-    store.setTitle(props.initial.title);
-    store.setSummary(props.initial.summary);
-    store.setSlug(props.initial.slug);
-    store.setCategory(props.initial.category);
-    store.setBody(props.initial.body);
-    // Without this the toolbar (and the WYSIWYG probe) read text/bbcode on
-    // every edit, so reopening a markdown card spelled its buttons in bbcode.
-    const m = props.initial.mimetype ?? "";
-    if (isAuthorable(m)) store.setMimetype(m);
-    // The assembled templates submit composedBody(), not store.body() — so
-    // without unpacking the stored body back into their sub-forms, reopening a
-    // quote/definition/link card for editing would show empty fields and save
-    // an empty body over it.
-    const parsed = parseTemplate(props.initial.body);
-    setFields((f) => ({ ...f, ...parsed }));
-    // A stored thumbnail means the box was ticked when this card was saved —
-    // without restoring that, re-saving would silently drop the image.
-    if (parsed.linkImage) setIncludeImage(true);
-    // The URL is already described by the card, so don't auto-fetch over the
-    // author's own edits the first time the field is blurred.
-    if (parsed.linkUrl) setFetchedUrl(parsed.linkUrl);
-  }
 
   // ── Draft extra — template, deck, and ACL, which createComposerStore
   // doesn't know about ──
@@ -361,8 +358,7 @@ export default function CardComposer(props: Props) {
     return extra;
   }
 
-  createEffect(() => {
-    const extra = store.restoredExtra();
+  createEffect(() => store.restoredExtra(), (extra) => {
     if (!extra) return;
     if (typeof extra.aclMode === "string") acl.setMode(extra.aclMode as AclMode);
     if (Array.isArray(extra.allow)) acl.setAllowEntries(new Set(extra.allow as string[]));
@@ -394,8 +390,8 @@ export default function CardComposer(props: Props) {
 
   // Zen shows only the editor, which the assembled templates hide — leaving a
   // blank screen. Drop out of zen rather than render nothing.
-  createEffect(() => {
-    if (template() !== "freeform") setZenMode(false);
+  createEffect(() => template() !== "freeform", (templated) => {
+    if (templated) setZenMode(false);
   });
 
   // This body is stored in the format it was typed in, so the Write tab is
@@ -451,7 +447,7 @@ export default function CardComposer(props: Props) {
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={template() === tpl}
+                  aria-selected={(template() === tpl) ? "true" : "false"}
                   onClick={() => setTemplate(tpl)}
                   class={`px-3 py-1 text-xs font-medium rounded-md transition-colors
                     ${template() === tpl
@@ -551,7 +547,7 @@ export default function CardComposer(props: Props) {
                   title={metaLoading() ? t("cards.link_fetching") : t("cards.link_fetch")}
                   onClick={() => void loadLinkMeta(true)}
                 >
-                  <MdOutlineRefresh class="w-4 h-4" classList={{ "animate-spin": metaLoading() }} />
+                  <MdOutlineRefresh class={["w-4 h-4", { "animate-spin": metaLoading() }]} />
                 </IconButton>
               </div>
 

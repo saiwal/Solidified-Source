@@ -1,5 +1,4 @@
-import { createSignal, onMount, Show } from "solid-js";
-import { A } from "@solidjs/router";
+import { createSignal, onSettled, Show } from "solid-js";
 import { fetchPasswordResetToken, requestPasswordReset } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -14,13 +13,13 @@ export default function ForgotPasswordView() {
   const [loading, setLoading] = createSignal(false);
   const [sent, setSent] = createSignal(false);
 
-  onMount(async () => {
+  onSettled(() => { void (async () => {
     try {
       setToken(await fetchPasswordResetToken());
     } catch {
       toast.error(t("auth.load_form_error"));
     }
-  });
+  })(); });
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -62,9 +61,9 @@ export default function ForgotPasswordView() {
             <div class="text-center space-y-4">
               <p class="text-sm text-txt font-medium">{t("auth.reset_check_email_title")}</p>
               <p class="text-sm text-muted">{t("auth.reset_check_email_desc")}</p>
-              <A href="/login" class="inline-block text-sm text-accent hover:underline font-medium">
+              <a href="/login" class="inline-block text-sm text-accent hover:underline font-medium">
                 {t("auth.sign_in")}
-              </A>
+              </a>
             </div>
           }
         >
@@ -93,9 +92,9 @@ export default function ForgotPasswordView() {
             </Button>
 
             <p class="text-center text-sm text-muted">
-              <A href="/login" class="text-accent hover:underline font-medium">
+              <a href="/login" class="text-accent hover:underline font-medium">
                 {t("auth.sign_in")}
-              </A>
+              </a>
             </p>
           </form>
         </Show>

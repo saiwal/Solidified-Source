@@ -78,7 +78,7 @@ function FloatingToc(props: { entries: TocEntry[]; activeId: string; label: stri
           label={props.label}
           variant="outline"
           onClick={() => setOpen((v) => !v)}
-          aria-expanded={open()}
+          aria-expanded={(open()) ? "true" : "false"}
         >
           <MdOutlineToc size={20} />
         </IconButton>

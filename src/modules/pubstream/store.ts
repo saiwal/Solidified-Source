@@ -1,6 +1,5 @@
 // src/modules/pubstream/store.ts
-import { createSignal, batch } from "solid-js";
-import { createStore, reconcile } from "solid-js/store";
+import { createSignal, createStore, reconcile } from "solid-js";
 import { resetReveal } from "@/shared/stream/reveal";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { fetchPubstream, type PubstreamMeta } from "./api";
@@ -11,20 +10,21 @@ import { renderBody } from "@utsukta/spa-core/lib/renderBody";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { storageGet, storageSet } from "@utsukta/spa-core/lib/storage";
 import type { ViewMode } from "@/shared/stream/types";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const PAGE_LIMIT = 20;
 const MAX_POSTS  = 200;
 
 // ── Module-level singleton state ───────────────────────────────────────────
-const [posts,    setPosts]    = createSignal<Post[]>([]);
+const [posts,    setPosts]    = createSyncSignal<Post[]>([]);
 // Reconciled by mid, not a signal — see createStreamStore: rebuildThreads()
 // makes every node a fresh object, and <For> keys by reference, so as a
 // signal each like remounted every card on the page.
 const [threadState, setThreadState] = createStore<{ list: ThreadNode[] }>({ list: [] });
 const threads = () => threadState.list;
 const setThreads = (next: ThreadNode[]) =>
-  setThreadState("list", reconcile(next, { key: "mid", merge: true }));
+  setThreadState((s) => { reconcile(next, "mid")(s.list); });
 const [loading,  setLoading]  = createSignal(false);
 const [hasMore,  setHasMore]  = createSignal(true);
 const [page,     setPage]     = createSignal(1);
@@ -70,30 +70,26 @@ export async function loadPubstream(tag?: string, net?: string): Promise<void> {
     const data = await fetchPubstream({ page: 1, limit: PAGE_LIMIT, tag, net });
 
     if (data === null) {
-      batch(() => {
-        setDisabled(true);
+      { setDisabled(true);
         setLoading(false);
         setPosts([]);
-        setThreads([]);
-      });
+        setThreads([]); }
       return;
     }
 
     const fresh = processPosts(data.posts.slice(0, MAX_POSTS));
     resetReveal();
-    batch(() => {
-      setDisabled(false);
+    { setDisabled(false);
       setMeta(data.meta);
       setPage(1);
       setHasMore(data.has_more);
       setPosts(fresh);
       rebuildThreads(fresh);
-      setLoading(false);
-    });
+      setLoading(false); }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to load public stream";
     toast.error(msg);
-    batch(() => { setError(msg); setLoading(false); });
+    { setError(msg); setLoading(false); }
   }
 }
 
@@ -107,18 +103,16 @@ export async function loadMore(tag?: string, net?: string): Promise<void> {
     const data = await fetchPubstream({ page: nextPage, limit: PAGE_LIMIT, tag, net });
     if (!data) { setLoading(false); return; }
 
-    batch(() => {
-      setPage(nextPage);
+    { setPage(nextPage);
       setHasMore(data.has_more);
       const combined = [...posts(), ...processPosts(data.posts)].slice(-MAX_POSTS);
       setPosts(combined);
       rebuildThreads(combined);
-      setLoading(false);
-    });
+      setLoading(false); }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to load more";
     toast.error(msg);
-    batch(() => { setError(msg); setLoading(false); });
+    { setError(msg); setLoading(false); }
   }
 }
 

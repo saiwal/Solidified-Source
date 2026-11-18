@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onMount, Show, For } from "solid-js";
+import { createSignal, onSettled, Show, For, createEffect } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { MdOutlineEdit_note } from "solid-icons/md";
 import { FiChevronDown, FiChevronUp } from "solid-icons/fi";
@@ -43,7 +43,7 @@ function NoteCard(props: {
     setOverflowing(bodyRef.scrollHeight > bodyRef.clientHeight + 1);
   };
 
-  onMount(() => {
+  onSettled(() => {
     checkOverflow();
     // content may reflow after images/fonts load
     const ro = new ResizeObserver(() => checkOverflow());
@@ -51,14 +51,12 @@ function NoteCard(props: {
     return () => ro.disconnect();
   });
 
-  createEffect(() => {
-    // re-check whenever the note body changes (e.g. after edit)
-    props.note.body;
-    if (!expanded()) queueMicrotask(checkOverflow);
+  // re-check whenever the note body changes (e.g. after edit)
+  createEffect(() => [props.note.body, expanded()] as const, ([, open]) => {
+    if (!open) queueMicrotask(checkOverflow);
   });
 
-  createEffect(() => {
-    props.note.body;
+  createEffect(() => props.note.body, () => {
     if (bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
 
@@ -155,17 +153,15 @@ export default function NotepadContentWidget() {
   const activeNote   = () => String(searchParams.note ?? "");
   const hasFilters   = () => !!(activeTag() || activeCat() || activeDbegin() || activeSearch() || activeNote());
 
-  createEffect(() => {
-    if (!auth.loading && nick()) {
-      loadNotes(true, {
+  createEffect(() => (!auth.loading && nick() ? {
         tag:    activeTag()    || undefined,
         cat:    activeCat()    || undefined,
         dbegin: activeDbegin() || undefined,
         dend:   String(searchParams.dend ?? "") || undefined,
         search: activeSearch() || undefined,
         note:   activeNote()   || undefined,
-      });
-    }
+      } : null), (q) => {
+    if (q) loadNotes(true, q);
   });
 
   return (

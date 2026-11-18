@@ -1,4 +1,5 @@
-import { createEffect, createSignal, For, lazy, on, onCleanup, onMount, Show, Suspense, type JSX } from "solid-js";
+import { createEffect, createSignal, For, lazy, onSettled, Show, Loading } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useLocation } from "@solidjs/router";
 import { MdFillEdit, MdFillMore_vert, MdOutlineClose, MdOutlineExpand_less, MdOutlineSearch } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -55,17 +56,17 @@ export default function FloatingActions(props: {
   const [typing, setTyping] = createSignal(false);
   const close = () => { setDialOpen(false); setComposing(false); };
   // A navigation hands the page (and its search) over to the next one.
-  createEffect(on(() => location.pathname, () => { setSearchOpen(false); close(); }, { defer: true }));
+  createEffect(() => location.pathname, () => { setSearchOpen(false); close(); }, { defer: true });
 
-  onMount(() => {
+  onSettled(() => {
     const onIn = (e: FocusEvent) => setTyping(isEditable(e.target));
     const onOut = () => setTyping(false);
     document.addEventListener("focusin", onIn);
     document.addEventListener("focusout", onOut);
-    onCleanup(() => {
+      return () => {
       document.removeEventListener("focusin", onIn);
       document.removeEventListener("focusout", onOut);
-    });
+    };
   });
 
   // Compose is self-targeted, so it is for the owner, and only in the social
@@ -97,11 +98,10 @@ export default function FloatingActions(props: {
       {/* z-[25]: under the drawers' backdrop (z-30) and the drawers/right
           sidebar (z-40), over sticky page headers (z-10/z-20). */}
       <div
-        class={`fixed z-[25] right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
+        class={[`fixed z-[25] right-4 lg:right-6 bottom-[4.5rem] lg:bottom-20 xl:bottom-8
                ${props.hidesRightSidebar ? "xl:right-6" : "xl:right-[19.5rem]"}
-               flex flex-col-reverse items-end gap-2`}
+               flex flex-col-reverse items-end gap-2`, { invisible: hidden(), "mb-11": hasMinimized() }]}
         // Lift the stack above the minimized-composer pills (ModalHost).
-        classList={{ invisible: hidden(), "mb-11": hasMinimized() }}
         onKeyDown={(e) => e.key === "Escape" && close()}
       >
         <Show when={mobile()} fallback={<Show when={floatingAction()}>{(a) => <MainButton action={a()} />}</Show>}>
@@ -115,7 +115,7 @@ export default function FloatingActions(props: {
               type="button"
               class={ROUND}
               aria-label={t("layout.more")}
-              aria-expanded={dialOpen()}
+              aria-expanded={(dialOpen()) ? "true" : "false"}
               aria-controls="floating-more"
               onClick={() => setDialOpen((o) => !o)}
             >
@@ -142,9 +142,9 @@ export default function FloatingActions(props: {
                 </For>
               }
             >
-              <Suspense>
+              <Loading>
                 <ComposeDialItems onPick={close} />
-              </Suspense>
+              </Loading>
             </Show>
           </ul>
         </Show>

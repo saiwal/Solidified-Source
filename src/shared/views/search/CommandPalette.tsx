@@ -2,7 +2,7 @@
 // files and bookmarks at once — your own, or on another channel's page what
 // you may see of theirs (useSearchScope). Mounted once in Layout. The
 // mobile app drawer reuses the same search pieces in its own sheet.
-import { createMemo, createSignal, onCleanup, onMount, Show, type Accessor } from "solid-js";
+import { createMemo, createSignal, onSettled, Show, type Accessor } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { NavItemDef } from "@utsukta/spa-core/types/module.types";
@@ -42,7 +42,7 @@ export function contentEntries(results: FindResult[], groupOf: (r: FindResult) =
 
 export default function CommandPalette(props: { navItems: Accessor<NavItemDef[]> }) {
   // Global shortcut. Ctrl+K in a browser otherwise focuses the URL bar's search.
-  onMount(() => {
+  onSettled(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -50,7 +50,7 @@ export default function CommandPalette(props: { navItems: Accessor<NavItemDef[]>
       }
     };
     document.addEventListener("keydown", onKey);
-    onCleanup(() => document.removeEventListener("keydown", onKey));
+    return () => document.removeEventListener("keydown", onKey);
   });
 
   return (

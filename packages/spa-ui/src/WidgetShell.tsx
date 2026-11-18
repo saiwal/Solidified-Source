@@ -8,7 +8,8 @@
 // Each root sets --ws-px, the horizontal inset widget bodies pad with
 // (`px-(--ws-px)`); :root defaults it to 1rem for anything outside a shell.
 // Class strings stay literal so Tailwind's scanner sees them.
-import { For, Show, children, createSignal, createUniqueId, useContext, type JSX } from "solid-js";
+import { For, Show, children, createSignal, createUniqueId, useContext } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import type { WidgetShellProps, WidgetShellTabs } from "@utsukta/spa-core/types/ui.types";
 import {
   WidgetKeyContext,
@@ -160,7 +161,7 @@ function Rail(p: { tabs: WidgetShellTabs; uid: string; inline?: boolean }) {
               type="button"
               role="tab"
               id={`${p.uid}-tab-${tb.id}`}
-              aria-selected={selected()}
+              aria-selected={(selected()) ? "true" : "false"}
               aria-controls={`${p.uid}-panel`}
               tabindex={selected() ? 0 : -1}
               data-tour={tb.tour}
@@ -176,17 +177,14 @@ function Rail(p: { tabs: WidgetShellTabs; uid: string; inline?: boolean }) {
                 document.getElementById(`${p.uid}-tab-${next.id}`)?.focus();
               }}
               // rotate-180 flips the box, so border-l draws on the panel side.
-              class={
-                p.inline
+              class={[p.inline
                   ? "[writing-mode:vertical-rl] rotate-180 py-1.5 text-xs font-semibold transition-colors"
-                  : "[writing-mode:vertical-rl] rotate-180 border-l px-1.5 py-3 text-xs font-semibold transition-colors"
-              }
-              classList={{
+                  : "[writing-mode:vertical-rl] rotate-180 border-l px-1.5 py-3 text-xs font-semibold transition-colors", {
                 "text-txt": selected(),
                 "text-muted hover:text-txt": !selected(),
                 "border-transparent": !p.inline && selected(),
                 "border-rim": !p.inline && !selected(),
-              }}
+              }]}
             >
               {tb.label}
             </button>
@@ -242,7 +240,7 @@ export function ShellView(props: WidgetShellProps & { look: Look }) {
     l().fold ? (
       // Accordion pattern: the button lives inside the heading, not around it.
       <h3 class={l().title}>
-        <button type="button" class="flex w-full min-w-0 items-center gap-1.5 rounded text-left" aria-expanded={!folded()} onClick={toggle}>
+        <button type="button" class="flex w-full min-w-0 items-center gap-1.5 rounded text-left" aria-expanded={(!folded()) ? "true" : "false"} onClick={toggle}>
           <Chevron open={!folded()} />
           <span class="truncate">{title()}</span>
         </button>

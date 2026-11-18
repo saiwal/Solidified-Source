@@ -1,4 +1,4 @@
-import { createSignal, Show, For, onMount } from "solid-js";
+import { createSignal, Show, For, onSettled } from "solid-js";
 import {
   entries, loading, loadingMore, hasMore, total,
   loadDirectory, loadMoreDirectory, resetDirectory,
@@ -16,7 +16,7 @@ export default function SuggestSection() {
   const { t } = useI18n();
   const [selected, setSelected] = createSignal<DirectoryEntry | null>(null);
 
-  onMount(() => {
+  onSettled(() => {
     resetDirectory();
     loadDirectory({ suggest: 1 });
   });

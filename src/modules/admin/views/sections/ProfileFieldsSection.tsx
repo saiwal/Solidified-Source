@@ -1,4 +1,4 @@
-import { createSignal, createUniqueId, For, Show, batch } from "solid-js";
+import { createSignal, createUniqueId, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { Modal } from "@ui/Modal";
@@ -51,7 +51,7 @@ export default function ProfileFieldsSection() {
     setLayoutSaving(true);
     try {
       await saveProfileFieldLayout(basic(), advanced());
-      batch(() => { setLayoutSaving(false); setLayoutSaved(true); });
+      { setLayoutSaving(false); setLayoutSaved(true); }
       setTimeout(() => setLayoutSaved(false), 2000);
       refetch();
     } catch { setLayoutSaving(false); }

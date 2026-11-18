@@ -1,6 +1,7 @@
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import { createResource, createSignal, For, lazy, Show } from "solid-js";
-import { useParams, A } from "@solidjs/router";
+import { createSignal, For, lazy, Show } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
+import { useParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { fetchProfile, saveProfile, uploadPhoto, type CustomProfileField } from "../api/api";
@@ -173,7 +174,7 @@ export default function ProfileEditView() {
     <div class="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-6">
       {/* Back link */}
       <div class="flex items-center gap-3">
-        <A
+        <a
           href="/settings/profile"
           class="text-sm text-muted hover:text-txt transition-colors flex items-center gap-1"
         >
@@ -183,7 +184,7 @@ export default function ProfileEditView() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
           {t("profiles.back")}
-        </A>
+        </a>
       </div>
 
       <div class="space-y-0.5">

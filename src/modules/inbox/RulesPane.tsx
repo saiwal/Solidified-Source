@@ -7,7 +7,6 @@
 // for the channel-wide pair, ConnectionEditorModal's Filters tab for a
 // connection's. Nothing here writes.
 import { For, Show, createMemo, createSignal } from "solid-js";
-import { A } from "@solidjs/router";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -314,7 +313,7 @@ export default function RulesPane() {
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted">
             {t("filters.scope_channel")}
           </h3>
-          <A href="/settings/channel" class={EDIT_BTN}>{t("filters.edit")}</A>
+          <a href="/settings/channel" class={EDIT_BTN}>{t("filters.edit")}</a>
         </header>
         <div class="px-3.5 divide-y divide-rim">
           <Show
@@ -340,7 +339,7 @@ export default function RulesPane() {
                       bg-warning/10 text-warning-txt">
             <MdOutlineWarning size={16} class="shrink-0" />
             <span class="flex-1 min-w-0 text-xs">{t("filters.connfilter_off")}</span>
-            <A href="/settings/features" class={EDIT_BTN}>{t("filters.connfilter_enable")}</A>
+            <a href="/settings/features" class={EDIT_BTN}>{t("filters.connfilter_enable")}</a>
           </div>
         </Show>
 

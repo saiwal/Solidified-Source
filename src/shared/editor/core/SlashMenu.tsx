@@ -4,8 +4,9 @@
  * button actions) — so this is only the listbox at the caret.
  */
 
-import { Portal } from "solid-js/web";
-import { For, createEffect, type JSX } from "solid-js";
+import { Portal } from "@solidjs/web";
+import { For, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 
@@ -46,8 +47,8 @@ export default function SlashMenu(props: {
       : { left: `${left}px`, top: `${r.bottom + 4}px` };
   };
 
-  createEffect(() => {
-    list?.querySelector(`[data-i="${props.active}"]`)?.scrollIntoView({ block: "nearest" });
+  createEffect(() => props.active, (i) => {
+    list?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: "nearest" });
   });
 
   return (
@@ -65,7 +66,7 @@ export default function SlashMenu(props: {
             <div
               role="option"
               data-i={i()}
-              aria-selected={i() === props.active}
+              aria-selected={(i() === props.active) ? "true" : "false"}
               onMouseDown={(e) => { e.preventDefault(); props.onPick(it); }}
               onMouseEnter={() => props.onHover(i())}
               class={`flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer ${i() === props.active ? "bg-elevated text-txt" : "text-muted"}`}

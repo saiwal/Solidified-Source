@@ -57,10 +57,8 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
   return (
     <div
       onClick={props.onOpen}
-      class="relative bg-surface border border-rim rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg
-             hover:-translate-y-0.5 transition-all cursor-pointer"
+      class={["relative bg-surface border border-rim rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-lg\n             hover:-translate-y-0.5 transition-all cursor-pointer", { "border-l-4 border-l-accent/50": !isRootPost(p) }]}
       // Flat (unthreaded) reply: same card, with an accent rail down its left edge.
-      classList={{ "border-l-4 border-l-accent/50": !isRootPost(p) }}
     >
       <Show when={p.pinned}>
         <span
@@ -76,7 +74,7 @@ function TimelineCard(props: { post: ThreadNode; handlers: StreamHandlers; onOpe
       </Show>
 
       <Show when={p.title}>
-        <p class="text-base font-semibold text-txt leading-snug line-clamp-2" classList={{ "mt-3": !!image() }}>
+        <p class={["text-base font-semibold text-txt leading-snug line-clamp-2", { "mt-3": !!image() }]}>
           {p.title}
         </p>
       </Show>

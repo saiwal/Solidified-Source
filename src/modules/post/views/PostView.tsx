@@ -1,6 +1,6 @@
 // src/modules/post/views/PostView.tsx
 import { zrl } from "@utsukta/spa-core/lib/zid";
-import { createEffect, createMemo, createSignal, on, onCleanup, Show, untrack } from "solid-js";
+import { createEffect, createMemo, createSignal, Show, untrack } from "solid-js";
 import { updateInterval } from "@utsukta/spa-core/store/auth-store";
 import { cardClass } from "@ui/Card";
 import { useLocation, useNavigate, useParams } from "@solidjs/router";
@@ -124,7 +124,7 @@ export default function PostView() {
 
   // A comment link opens in context; "show all" swaps in the paged thread.
   const [fullThread, setFullThread] = createSignal(false);
-  createEffect(on(() => params.uuid, () => setFullThread(false), { defer: true }));
+  createEffect(() => params.uuid, () => { setFullThread(false); }, { defer: true });
 
   const [node, { refetch, mutate }] = createQueryResource(
     "post",
@@ -154,15 +154,16 @@ export default function PostView() {
   });
 
   // An article, card or webpage answers with the page it lives on.
-  createEffect(() => {
-    const to = (node.error as { redirect?: string } | undefined)?.redirect;
+  createEffect(() => (node.error as { redirect?: string } | undefined)?.redirect, (to) => {
     if (to) navigate(to, { replace: true });
   });
 
   // The layout titles a page after its module, and this one has no nav label.
   createEffect(() => {
     const n = node();
-    if (n) document.title = `${(!n.titleNsfw && n.title) || n.authorName} · Hubzilla`;
+    return n ? `${(!n.titleNsfw && n.title) || n.authorName} · Hubzilla` : null;
+  }, (title) => {
+    if (title) document.title = title;
   });
 
   // New comments: poll the thread's total and offer a refresh — refetching
@@ -172,8 +173,8 @@ export default function PostView() {
   const [liveTotal, setLiveTotal] = createSignal(0);
   const newComments = () => (knownTotal() === null ? 0 : Math.max(0, liveTotal() - knownTotal()!));
   const rootUuid = createMemo(() => node()?.uuid);
-  createEffect(() => {
-    const uuid = rootUuid();
+  createEffect(() => [rootUuid(), updateInterval()] as const, ([uuid, every]) => {
+    const cleanups: (() => void)[] = [];
     if (!uuid) return;
     setKnownTotal(null);
     let stopped = false;
@@ -185,8 +186,9 @@ export default function PostView() {
       setLiveTotal(r.total);
     };
     void check();
-    const id = setInterval(check, updateInterval());
-    onCleanup(() => { stopped = true; clearInterval(id); });
+    const id = setInterval(check, every);
+    cleanups.push(() => { stopped = true; clearInterval(id); });
+    return () => cleanups.forEach((f) => f());
   });
   const showNewComments = () => {
     setKnownTotal(liveTotal());
@@ -199,7 +201,7 @@ export default function PostView() {
 
   // A wall post makes this the channel's page: nav, theme and search follow.
   const route = useLocation();
-  createEffect(() => setPathSubject(route.pathname, node()?.wallNick ?? ""));
+  createEffect(() => [route.pathname, node()?.wallNick ?? ""] as const, ([path, wall]) => { setPathSubject(path, wall); });
 
   async function loadMoreComments(rootUuid: string, attachMid: string, isRoot: boolean, offset: number, order: CommentOrder): Promise<void> {
     const existingChildren = findInTree(node(), attachMid)?.children ?? [];

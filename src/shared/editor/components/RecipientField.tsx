@@ -7,8 +7,8 @@
  * would set group_allow and break the server's DM auto-classification.
  */
 
-import { createEffect, createSignal, For, Show, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, For, Show, type Component, createEffect } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { AclEntry } from "@/modules/network/api";
@@ -49,8 +49,8 @@ const RecipientField: Component<RecipientFieldProps> = (props) => {
   let listRef: HTMLUListElement | undefined;
   const { x, y, mount, unmount } = useFloating({ placement: "bottom-start", offset: 4 });
 
-  createEffect(() => {
-    if (open() && rowRef && listRef) mount(rowRef, listRef);
+  createEffect(open, (isOpen) => {
+    if (isOpen && rowRef && listRef) mount(rowRef, listRef);
     else unmount();
   });
 

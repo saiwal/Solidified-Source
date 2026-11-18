@@ -223,6 +223,8 @@ export type RawDictionary = {
     no_favorites:       string;
   };
   ui: {
+    load_failed:             string;
+    retry:                   string;
     show_more:               string;
     show_less:               string;
     reply:                   string;

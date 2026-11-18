@@ -16,8 +16,7 @@
 // than three stores in one.
 
 import { createStore, get, set, getMany, setMany, delMany, keys, clear } from "idb-keyval";
-import { unwrap } from "solid-js/store";
-import { createSignal } from "solid-js";
+import { snapshot, createSignal } from "solid-js";
 import { apiFetch, apiError } from "./fetch";
 
 const entryDb = createStore("hz-inbox-entries", "entries");
@@ -135,7 +134,7 @@ export async function clearMessageStore(): Promise<void> {
 export async function patchEntry(b64mid: string, partial: Partial<MessageEntry>): Promise<void> {
   const cur = await get<MessageEntry>(b64mid, entryDb);
   // unwrap: partials come from UI rows (Solid proxies) — IDB can't clone those.
-  if (cur) await set(b64mid, { ...cur, ...unwrap(partial) }, entryDb);
+  if (cur) await set(b64mid, { ...cur, ...snapshot(partial) }, entryDb);
 }
 
 // Drops entries no list points at any more — the only way stored messages are

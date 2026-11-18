@@ -1,8 +1,9 @@
 // src/modules/cards/store.ts
-import { createSignal } from "solid-js";
+
 import { createStreamStore } from "@/shared/stream/store/createStreamStore";
 import { fetchCards } from "./api";
 import type { StreamResult, StreamParams } from "@/shared/stream/store/createStreamStore";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 export interface CardParams extends StreamParams {
   search?: string;
@@ -14,7 +15,7 @@ export interface CardParams extends StreamParams {
 }
 
 // ── nick signal ───────────────────────────────────────────────────────────────
-const [nick, setNick] = createSignal("");
+const [nick, setNick] = createSyncSignal("");
 export { nick };
 
 // ── fetcher adapter ───────────────────────────────────────────────────────────

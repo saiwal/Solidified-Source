@@ -7,7 +7,7 @@
  * serializes that as an empty [td][/td].
  */
 
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { createMemo } from "solid-js";
 import {
   TbOutlineColumnInsertLeft, TbOutlineColumnInsertRight, TbOutlineColumnRemove,

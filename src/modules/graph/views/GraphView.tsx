@@ -2,8 +2,8 @@
 // Canvas, not SVG: a few hundred nodes re-laid out every frame is what canvas
 // is for. The canvas is mouse/touch only, so the same nodes are also an
 // sr-only link list.
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack } from "solid-js";
-import { A, useParams } from "@solidjs/router";
+import { createMemo, createSignal, For, Show, untrack, createEffect } from "solid-js";
+import { useParams } from "@solidjs/router";
 import {
   forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation,
   type SimulationLinkDatum, type SimulationNodeDatum,
@@ -98,20 +98,25 @@ export default function GraphView() {
       inc: pick(g.edges.filter((e) => e.target === node.id).map((e) => e.source)),
     };
   });
-  createEffect(() => {
-    if (!selected()) return;
+  createEffect(() => !!selected(), (open) => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSelectedId(null); };
     document.addEventListener("keydown", onKey);
-    onCleanup(() => document.removeEventListener("keydown", onKey));
+    return () => document.removeEventListener("keydown", onKey);
   });
 
   let wrap!: HTMLDivElement;
   let canvas!: HTMLCanvasElement;
   let resetView = () => {};
   let fitAll = () => {};
+  let redraw = () => {};
 
-  createEffect(() => {
-    const g = visible();
+  // Re-highlight on search without restarting the layout (a tracked effect
+  // can't create another one, so this lives here and calls the current draw).
+  createEffect(() => [query(), selectedId()], () => { redraw(); });
+
+  createEffect(visible, (g) => {
+    const cleanups: (() => void)[] = [];
     if (!g || !canvas) return;
 
     const deg = new Map<string, number>();
@@ -324,10 +329,10 @@ export default function GraphView() {
     canvas.addEventListener("pointercancel", up);
     canvas.addEventListener("wheel", wheel, { passive: false });
 
-    // Re-highlight on search without restarting the layout.
-    createEffect(() => { query(); selectedId(); draw(); });
+    redraw = draw;
 
-    onCleanup(() => {
+    cleanups.push(() => {
+      redraw = () => {};
       sim.stop();
       ro.disconnect();
       canvas.removeEventListener("pointerdown", down);
@@ -336,6 +341,7 @@ export default function GraphView() {
       canvas.removeEventListener("pointercancel", up);
       canvas.removeEventListener("wheel", wheel);
     });
+    return () => cleanups.forEach((f) => f());
   });
 
   return (
@@ -417,7 +423,7 @@ export default function GraphView() {
               </div>
               <Show when={d().node.url}>
                 <div class="flex justify-end p-2 border-t border-rim">
-                  <A href={d().node.url!} class={buttonClass("primary", "sm")}>{t("graph.open")}</A>
+                  <a href={d().node.url!} class={buttonClass("primary", "sm")}>{t("graph.open")}</a>
                 </div>
               </Show>
             </section>

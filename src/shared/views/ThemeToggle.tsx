@@ -1,5 +1,5 @@
 import { For, Show, createMemo } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useTheme } from "@utsukta/spa-core/lib/useTheme";
 import { THEMES } from "@utsukta/spa-core/types/theme.types";
@@ -29,7 +29,7 @@ const ThemeToggle = () => {
     <>
       <IconButton
         label={t("ui.theme")}
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         onClick={toggle}

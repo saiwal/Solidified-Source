@@ -3,16 +3,7 @@
 // A joined room's body: toolbar, owner editors, messages and composer. Framed
 // by ChatWindow (a ModalHost window) or embedded inline by Messenger; the
 // caller owns the room session, so its header can show the room's name.
-import {
-	createEffect,
-	createSignal,
-	For,
-	Show,
-	createMemo,
-	on,
-	useContext,
-	untrack,
-} from "solid-js";
+import { createEffect, createSignal, For, Show, createMemo, useContext, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { createRoomSession } from "../store";
 import {
@@ -30,7 +21,7 @@ import DOMPurify from "dompurify";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { decryptPayload, getPayloadHint } from "@utsukta/spa-core/lib/postCrypto";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import { Dynamic, Portal } from "solid-js/web";
+import { Dynamic, Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclPayload, fetchAclNames, type AclMode, type AclEntry } from "@/shared/editor/components/AclPicker";
@@ -79,10 +70,10 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 	const isBookmarked = createMemo(() => isRoomBookmarked(props.nick, props.roomId));
 
 	// Load bookmarks once for local users
-	createEffect(() => { if (isLocalUser()) loadChatBookmarks(); });
+	createEffect(isLocalUser, (local) => { if (local) loadChatBookmarks(); });
 
 	// Name the minimized pill after the room once it is known.
-	createEffect(() => frame?.setDocTitle(room.name()));
+	createEffect(() => room.name(), (name) => { frame?.setDocTitle(name); });
 
 	async function toggleBookmark() {
 		if (isBookmarked()) {
@@ -96,16 +87,14 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 	// Unread = others' messages newer than the last one on screen. Ids, not a
 	// count: the session caps its list at 200, so its length stops growing.
 	const [seenId, setSeenId] = createSignal(0);
-	createEffect(() => {
-		const m = room.messages();
-		if (frame?.mode() === "min") return;
-		setSeenId(m.length ? m[m.length - 1].id : 0);
-		if (m.length) markChatSeen(props.nick, props.roomId, m[m.length - 1].created);
+	createEffect(() => (frame?.mode() === "min" ? null : { last: room.messages().at(-1) }), (at) => {
+		if (!at) return;
+		setSeenId(at.last ? at.last.id : 0);
+		if (at.last) markChatSeen(props.nick, props.roomId, at.last.created);
 	});
-	createEffect(() =>
-		frame?.setUnread(
-			room.messages().filter((m) => m.id > seenId() && m.author_hash !== room.viewerHash()).length,
-		),
+	createEffect(
+		() => room.messages().filter((m) => m.id > seenId() && m.author_hash !== room.viewerHash()).length,
+		(n) => { frame?.setUnread(n); },
 	);
 
 	// ── New-message alerts (sound / push / silent, per room) ──
@@ -118,14 +107,13 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 	// Only alert for messages newer than what the room loaded with, and only
 	// while you aren't looking: tab hidden/unfocused or window minimized.
 	let alertedId = -1;
-	createEffect(() => {
-		const msgs = room.messages();
-		if (room.loading()) return;
+	createEffect(() => ({ msgs: room.messages(), loading: room.loading(), min: frame?.mode() === "min" }), ({ msgs, loading, min }) => {
+		if (loading) return;
 		const last = msgs.length ? msgs[msgs.length - 1].id : 0;
 		if (alertedId === -1) { alertedId = last; return; }
 		const fresh = msgs.filter((m) => m.id > alertedId && m.author_hash !== room.viewerHash());
 		alertedId = Math.max(alertedId, last);
-		const away = document.visibilityState !== "visible" || !document.hasFocus() || frame?.mode() === "min";
+		const away = document.visibilityState !== "visible" || !document.hasFocus() || min;
 		const m = fresh[fresh.length - 1];
 		if (!m || !away) return;
 		untrack(() => alertNewMessage(notifyMode(), {
@@ -145,9 +133,9 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 	const onScroll = () => {
 		if (messagesEl) pinned = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
 	};
-	createEffect(on([room.messages, () => frame?.mode()], () => {
+	createEffect(() => [room.messages(), (() => frame?.mode())()], () => {
 		requestAnimationFrame(() => { if (messagesEl && pinned) messagesEl.scrollTop = messagesEl.scrollHeight; });
-	}));
+	});
 
 	// Inline decrypt form for one-off clicks (when no session password is active).
 	// On success we write into decryptedBodies so Solid's reactive render handles display,
@@ -338,7 +326,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 							<button
 								type="button"
 								onClick={() => (aclEditing() ? setAclEditing(false) : openAclEditor())}
-								aria-expanded={aclEditing()}
+								aria-expanded={(aclEditing()) ? "true" : "false"}
 								class="shrink-0 rounded-full hover:opacity-80 transition-opacity"
 							>
 								{privacyBadge()}
@@ -407,7 +395,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 					  class="tabular-nums"
 					  onClick={() => presencePop.setOpen(!presencePop.open())}
 					  aria-haspopup="true"
-					  aria-expanded={presencePop.open()}
+					  aria-expanded={(presencePop.open()) ? "true" : "false"}
 					  title={`${presenceCount()} ${t("chat.online_count")}`}
 					>
 						<MdFillPeople class="w-4 h-4" />
@@ -440,11 +428,10 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 													<Avatar src={member.avatar} name={member.name} size={6} />
 												</Show>
 												<span
-													class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-surface"
-													classList={{
+													class={["absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-surface", {
 														"bg-success": member.status === "online",
 														"bg-warning": member.status !== "online",
-													}}
+													}]}
 												/>
 											</div>
 											<span class="text-xs text-txt truncate">{member.name}</span>
@@ -558,8 +545,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 							<For each={[0, 1, 2, 3]}>
 								{(_, i) => (
 									<div
-										class="flex gap-2 animate-pulse"
-										classList={{ "flex-row-reverse": i() % 3 === 0 }}
+										class={["flex gap-2 animate-pulse", { "flex-row-reverse": i() % 3 === 0 }]}
 									>
 										<div class="w-7 h-7 rounded-full bg-elevated shrink-0" />
 										<div class="space-y-1 flex-1 max-w-xs">
@@ -605,11 +591,10 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 											</div>
 										</Show>
 										<div
-											class="flex gap-2 py-px"
-											classList={{
+											class={["flex gap-2 py-px", {
 												"justify-end": isSelf(),
 												"mt-2.5": msg.isFirst,
-											}}
+											}]}
 										>
 											{/* Avatar — others only, first of a run; your own messages
 											    need no face or name. */}
@@ -633,8 +618,7 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 
 											{/* Bubble */}
 											<div
-												class="max-w-[80%] min-w-0 space-y-0.5"
-												classList={{ "items-end flex flex-col": isSelf() }}
+												class={["max-w-[80%] min-w-0 space-y-0.5", { "items-end flex flex-col": isSelf() }]}
 											>
 												<Show when={!isSelf() && msg.isFirst}>
 													<p class="text-[0.6875rem] font-medium text-muted px-1">
@@ -642,14 +626,13 @@ export default function ChatRoomPane(props: { nick: string; roomId: number; room
 													</p>
 												</Show>
 												<div
-													class="px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words max-w-full"
-													title={chatDate(msg.created).toLocaleString(locale())}
-													classList={{
+													class={["px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words max-w-full", {
 														"bg-accent text-accent-fg rounded-tr-sm": isSelf(),
 														"bg-elevated text-txt rounded-tl-sm": !isSelf(),
 														"rounded-tr-2xl": isSelf() && !msg.isFirst,
 														"rounded-tl-2xl": !isSelf() && !msg.isFirst,
-													}}
+													}]}
+													title={chatDate(msg.created).toLocaleString(locale())}
 													data-msg-id={String(msg.id)}
 													onClick={handleBubbleClick}
 												>

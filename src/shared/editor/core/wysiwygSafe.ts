@@ -19,7 +19,7 @@
  * A body that fails isn't locked out: the toggle asks before switching, so
  * the writer chooses the rewrite (see createWysiwygGate).
  */
-import { createEffect, createMemo, createSignal, on, untrack, type Accessor } from "solid-js";
+import { createEffect, createMemo, createSignal, untrack, type Accessor } from "solid-js";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { sourceToHtml } from "./sourceToHtml";
 import { htmlToSource } from "./htmlToSource";
@@ -83,17 +83,19 @@ export function createWysiwygGate(
   allowNonBbcode?: boolean,
   strict = false,
 ): WysiwygGate {
-  const mode = createMemo(
-    on(mime, (m) => {
+  // Tracks only the format (was on(mime, …)); the body is read untracked.
+  const mode = createMemo(() => {
+    const m = mime();
+    return untrack(() => {
       if (!canUseWysiwyg(m, allowNonBbcode)) return "never" as const;
-      const b = untrack(body);
+      const b = body();
       if ((m === "text/bbcode" && !strict) || roundTripsCleanly(b, m)) return "clean" as const;
       return LOST.test(b) ? ("blocked" as const) : ("confirm" as const);
-    }),
-  );
+    });
+  });
   const [forced, setForced] = createSignal(false);
   // A new format is a new question.
-  createEffect(on(mime, () => setForced(false), { defer: true }));
+  createEffect(mime, () => { setForced(false); }, { defer: true });
   return {
     available: () => mode() === "clean" || (forced() && mode() === "confirm"),
     mode,

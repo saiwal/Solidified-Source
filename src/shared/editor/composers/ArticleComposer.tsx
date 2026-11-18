@@ -1,4 +1,4 @@
-import { createSignal, createEffect, createMemo, Show, onCleanup } from "solid-js";
+import { createSignal, createMemo, Show, onCleanup, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { fetchSeriesList } from "@/modules/articles/api";
@@ -40,6 +40,7 @@ import ComposerShell from "../components/ComposerShell";
 import { underlineFieldClass } from "../lib/fieldStyles";
 import { createWysiwygGate } from "../core/wysiwygSafe";
 import { Input } from "@ui/Field";
+import type { MimeType } from "../types/editor.types";
 
 interface Props {
   profileUid: number;
@@ -239,6 +240,17 @@ export default function ArticleComposer(props: Props) {
     attach.clear();
     props.onSaved?.();
   }, scope, {
+    // Seed from initial if editing. Without the mimetype the toolbar (and the
+    // WYSIWYG probe) read text/bbcode on every edit, so reopening a markdown
+    // article spelled its buttons in bbcode.
+    ...(props.initial && {
+      initialTitle: props.initial.title,
+      initialSummary: props.initial.summary,
+      initialSlug: props.initial.slug,
+      initialCategory: props.initial.category,
+      seedBody: props.initial.body,
+      initialMimetype: isAuthorable(props.initial.mimetype ?? "") ? (props.initial.mimetype as MimeType) : undefined,
+    }),
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
   });
@@ -257,19 +269,6 @@ export default function ArticleComposer(props: Props) {
     () => (existingCategories() ?? []).map((c) => c.name),
   );
 
-  // Seed from initial if editing
-  if (props.initial) {
-    store.setTitle(props.initial.title);
-    store.setSummary(props.initial.summary);
-    store.setSlug(props.initial.slug);
-    store.setCategory(props.initial.category);
-    store.setBody(props.initial.body);
-    // Without this the toolbar (and the WYSIWYG probe) read text/bbcode on
-    // every edit, so reopening a markdown article spelled its buttons in bbcode.
-    const m = props.initial.mimetype ?? "";
-    if (isAuthorable(m)) store.setMimetype(m);
-  }
-
   // ── Draft extra — lang, series, and ACL, which createComposerStore
   // doesn't know about ──
   function buildDraftExtra(): Record<string, unknown> {
@@ -285,8 +284,7 @@ export default function ArticleComposer(props: Props) {
     return extra;
   }
 
-  createEffect(() => {
-    const extra = store.restoredExtra();
+  createEffect(() => store.restoredExtra(), (extra) => {
     if (!extra) return;
     if (typeof extra.aclMode === "string") acl.setMode(extra.aclMode as AclMode);
     if (Array.isArray(extra.allow)) acl.setAllowEntries(new Set(extra.allow as string[]));

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createSignal, For, Show, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -9,7 +9,6 @@ import { localDay, todayKey, evTitle } from "@/modules/calendar/views/calUtils";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineAdd, MdOutlineCalendar_today } from "solid-icons/md";
 import { IconButton, iconButtonClass } from "@ui/Button";
-import { A } from "@solidjs/router";
 import { WidgetShell } from "@ui/WidgetShell";
 
 function next30DaysRange() {
@@ -60,7 +59,7 @@ export default function UpcomingEventsWidget() {
   const events = () => data() ?? [];
   const loading = () => data() === undefined && !data.error;
   const error = () => (data() === undefined ? data.error : undefined);
-  createEffect(() => { if (data.error) toast.error(data.error.message); });
+  createEffect(() => data.error?.message, (msg) => { if (msg) toast.error(msg); });
   const [activeEvent, setActiveEvent] = createSignal<CalEvent | null>(null);
 
   return (
@@ -71,14 +70,14 @@ export default function UpcomingEventsWidget() {
         title={t("hq.upcoming_events")}
         actions={
           <>
-          <A
+          <a
             href={`/cal/${currentNick()}`}
             class={iconButtonClass("default", "sm")}
             aria-label={t("nav.calendar")}
             title={t("nav.calendar")}
           >
             <MdOutlineCalendar_today class="w-4 h-4" />
-          </A>
+          </a>
           <IconButton label={t("hq.new_event")} size="sm" onClick={() => openEvent({ onCreated: load })}>
             <MdOutlineAdd class="w-4 h-4" />
           </IconButton>
@@ -130,21 +129,18 @@ export default function UpcomingEventsWidget() {
               >
                 {/* Date badge — colored when from a CalDAV calendar */}
                 <div
-                  class="shrink-0 flex flex-col items-center justify-center w-8 h-9 rounded-lg"
+                  class={["shrink-0 flex flex-col items-center justify-center w-8 h-9 rounded-lg", { "bg-accent-muted": !ev.calendarColor }]}
                   style={ev.calendarColor
                     ? { background: ev.calendarColor + "22", color: ev.calendarColor }
                     : undefined}
-                  classList={{ "bg-accent-muted": !ev.calendarColor }}
                 >
                   <span
-                    class="text-[0.5625rem] font-bold uppercase tracking-wide leading-none"
-                    classList={{ "text-accent": !ev.calendarColor }}
+                    class={["text-[0.5625rem] font-bold uppercase tracking-wide leading-none", { "text-accent": !ev.calendarColor }]}
                   >
                     {fmtMonth(ev.start)}
                   </span>
                   <span
-                    class="text-sm font-bold leading-tight"
-                    classList={{ "text-accent": !ev.calendarColor }}
+                    class={["text-sm font-bold leading-tight", { "text-accent": !ev.calendarColor }]}
                   >
                     {fmtDay(ev.start)}
                   </span>
@@ -153,8 +149,7 @@ export default function UpcomingEventsWidget() {
                 {/* Info */}
                 <div class="flex-1 min-w-0">
                   <p
-                    class="text-sm font-medium truncate leading-snug"
-                    classList={{ "text-txt": !isPast, "text-muted": isPast }}
+                    class={["text-sm font-medium truncate leading-snug", { "text-txt": !isPast, "text-muted": isPast }]}
                   >
                     {evTitle(ev, "(no title)")}
                   </p>

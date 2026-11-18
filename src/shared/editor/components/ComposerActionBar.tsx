@@ -13,7 +13,8 @@
  * and note scope through their own meta fields instead and pass nothing, so
  * the row is just the action cluster for them.
  */
-import { Show, type Component, type JSX } from "solid-js";
+import { Show, type Component } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { BiRegularEraser } from "solid-icons/bi";
 import { MdOutlineDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";

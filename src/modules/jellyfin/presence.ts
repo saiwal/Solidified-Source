@@ -5,7 +5,7 @@
 // Pushes on track change and pause/resume (debounced), plus a heartbeat every
 // 5 minutes while something plays — the hub treats a state older than 20
 // minutes as stale, so a closed tab stops showing "now playing" on its own.
-import { createEffect, on, onCleanup } from "solid-js";
+import { createEffect, onCleanup } from "solid-js";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { fetchCover, type JellyfinSession, type JfItem } from "./api";
 import { current, currentSession, playing, sessionFor } from "./store";
@@ -63,13 +63,11 @@ export function usePresence(): void {
   let debounce: ReturnType<typeof setTimeout> | undefined;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
 
-  createEffect(on(
-    () => {
+  createEffect(() => {
       if (audience() === "off") return "off";
       const snap = snapshot();
       return snap ? `${snap.s.id}:${snap.item.Id}:${snap.paused}` : "none";
-    },
-    (key) => {
+    }, (key) => {
       clearTimeout(debounce);
       clearInterval(heartbeat);
       if (key === "off") return;
@@ -77,8 +75,7 @@ export function usePresence(): void {
       if (key !== "none" && !key.endsWith(":true")) {
         heartbeat = setInterval(() => void push(snapshot()), HEARTBEAT_MS);
       }
-    },
-  ));
+    });
 
   onCleanup(() => {
     clearTimeout(debounce);

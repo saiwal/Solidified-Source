@@ -65,9 +65,8 @@ export function useAclState(initial?: AclStateOptions): AclState {
   const [touched, setTouched] = createSignal(false);
 
   if (initial?.resync) {
-    createEffect(() => {
-      const next = initial.resync!();
-      if (!next || touched()) return;
+    createEffect(() => [initial.resync!(), touched()] as const, ([next, isTouched]) => {
+      if (!next || isTouched) return;
       setMode(next.mode ?? initialMode);
       setAllowEntries(new Set<string>(next.allowEntries));
       setDenyEntries(new Set<string>(next.denyEntries));

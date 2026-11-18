@@ -18,9 +18,11 @@ export default function NotepadHeaderWidget() {
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());
 
-  const submitSearch = (e?: Event) => {
+  // `query` is passed by callers that just set searchInput: Solid 2 batches
+  // the write, so reading the signal back here would still see the old text.
+  const submitSearch = (e?: Event, query = searchInput()) => {
     e?.preventDefault();
-    const q = searchInput().trim();
+    const q = query.trim();
     setSearchParams({ search: q || undefined });
     if (!q) setSearchOpen(false);
   };
@@ -30,8 +32,8 @@ export default function NotepadHeaderWidget() {
   usePageSearch(() => (true) ? {
     value: activeSearch(),
     placeholder: t("notepad.search_placeholder"),
-    onSearch: (q) => { setSearchInput(q); submitSearch(); },
-    onClear: () => { setSearchInput(""); submitSearch(); },
+    onSearch: (q) => { setSearchInput(q); submitSearch(undefined, q); },
+    onClear: () => { setSearchInput(""); submitSearch(undefined, ""); },
   } : undefined);
 
   const clearAllFilters = () => {

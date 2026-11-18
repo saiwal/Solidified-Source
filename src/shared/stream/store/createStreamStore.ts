@@ -1,6 +1,5 @@
 // src/shared/stream/store/createStreamStore.ts
-import { createSignal, untrack } from "solid-js";
-import { createStore, reconcile, unwrap } from "solid-js/store";
+import { createSignal, untrack, createStore, reconcile, snapshot } from "solid-js";
 import { buildThreadTree } from "@utsukta/spa-core/lib/thread";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import type { Post } from "@utsukta/spa-core/types/post.types";
@@ -79,8 +78,8 @@ export function createStreamStore<P extends StreamParams>(
   const [state, setState] = createStore<{ posts: ThreadNode[] }>({ posts: [] });
   const posts = () => state.posts;
   function setPosts(next: ThreadNode[] | ((prev: ThreadNode[]) => ThreadNode[])) {
-    const value = typeof next === "function" ? next(unwrap(state.posts)) : next;
-    setState("posts", reconcile(value, { key: "mid", merge: true }));
+    const value = typeof next === "function" ? next(snapshot(state.posts)) : next;
+    setState((s) => { reconcile(value, "mid")(s.posts); });
   }
   const [loading, setLoading] = createSignal(false);
   const [loadingMore, setLoadingMore] = createSignal(false);
@@ -88,7 +87,7 @@ export function createStreamStore<P extends StreamParams>(
   const [hasMore, setHasMore] = createSignal(true);
   const [newPosts, setNewPosts] = createSignal<ThreadNode[]>([]);
   const [profileUid, setProfileUid] = createSignal<number>(0);
-  const [params, setParams] = createSignal<P>({} as P);
+  const [params, setParams] = createSignal<P>({} as Exclude<P, Function>);
 
   let currentOffset = 0;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;

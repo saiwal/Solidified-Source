@@ -1,4 +1,4 @@
-import { onCleanup, onMount, Show } from "solid-js";
+import { onCleanup, onSettled, Show, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import FilerobotImageEditor from "filerobot-image-editor";
 import { TABS, TOOLS } from "react-filerobot-image-editor";
@@ -177,19 +177,20 @@ export default function ImageEditor(props: ImageEditorProps) {
   let objectUrl = "";
   let inputOverrideStyle: HTMLStyleElement | null = null;
 
-  onMount(() => {
-    objectUrl = URL.createObjectURL(props.file);
+  const { file, aspect } = untrack(() => ({ file: props.file, aspect: props.aspect }));
+  onSettled(() => {
+    objectUrl = URL.createObjectURL(file);
     inputOverrideStyle = injectInputOverrides();
 
     const cropConfig: Record<string, unknown> = { autoResize: false };
-    if (props.aspect !== undefined) {
-      const isCover = props.aspect > 1.5;
-      cropConfig.ratio = props.aspect;
+    if (aspect !== undefined) {
+      const isCover = aspect > 1.5;
+      cropConfig.ratio = aspect;
       cropConfig.noPresets = false;
       cropConfig.presetsItems = [{
         titleKey:       isCover ? "cover" : "square",
-        descriptionKey: isCover ? `${props.aspect.toFixed(2)}:1` : "1:1",
-        ratio:          props.aspect,
+        descriptionKey: isCover ? `${aspect.toFixed(2)}:1` : "1:1",
+        ratio:          aspect,
       }];
     }
 

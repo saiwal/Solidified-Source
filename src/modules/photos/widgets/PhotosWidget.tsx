@@ -1,5 +1,5 @@
-import { createEffect, createMemo, Show, For, onCleanup } from "solid-js";
-import { A, useParams } from "@solidjs/router";
+import { createMemo, Show, For, onCleanup, createEffect } from "solid-js";
+import { useParams } from "@solidjs/router";
 import { MdFillPhoto_library, MdFillImage } from "solid-icons/md";
 import {
   recentPhotos, albums, albumsLoading,
@@ -26,10 +26,10 @@ export default function PhotosWidget() {
 
   onCleanup(() => { pswpRef?.close(); });
 
-  createEffect(() => {
-    if (!nick()) return;
-    loadRecentPhotos(nick());
-    loadAlbums(nick());
+  createEffect(nick, (n) => {
+    if (!n) return;
+    loadRecentPhotos(n);
+    loadAlbums(n);
   });
 
   function openLightbox(startIndex: number) {
@@ -112,12 +112,12 @@ export default function PhotosWidget() {
             <span class="text-xs font-semibold text-muted uppercase tracking-wide flex items-center gap-1">
               <MdFillImage size={13} /> {t("photos.recent")}
             </span>
-            <A
+            <a
               href={`/photos/${nick()}`}
               class="text-xs text-accent hover:underline"
             >
               {t("photos.see_all")}
-            </A>
+            </a>
           </div>
           <div class="grid grid-cols-4 gap-1">
             <For each={recentPhotos().slice(0, 8)}>
@@ -155,9 +155,9 @@ export default function PhotosWidget() {
               <MdFillPhoto_library size={13} /> {t("photos.albums")}
             </span>
             <Show when={manualAlbums().length > ALBUM_LIMIT}>
-              <A href={`/photos/${nick()}`} class="text-xs text-accent hover:underline">
+              <a href={`/photos/${nick()}`} class="text-xs text-accent hover:underline">
                 {t("photos.see_all")}
-              </A>
+              </a>
             </Show>
           </div>
           {/* Compact rows, not cards: a square-thumb grid fit 6 albums in the
@@ -165,7 +165,7 @@ export default function PhotosWidget() {
           <div class="flex flex-col">
             <For each={manualAlbums().slice(0, ALBUM_LIMIT)}>
               {(album) => (
-                <A
+                <a
                   href={`/photos/${nick()}/album/${album.folder}`}
                   class="group flex items-center gap-2.5 p-1.5 rounded-lg
                          hover:bg-surface transition-colors"
@@ -192,7 +192,7 @@ export default function PhotosWidget() {
                     {album.album}
                   </p>
                   <span class="text-xs text-muted shrink-0">{album.total}</span>
-                </A>
+                </a>
               )}
             </For>
           </div>

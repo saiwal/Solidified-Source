@@ -107,12 +107,11 @@ export default function NoteComposer(props: Props) {
     initialCategory: props.initial?.categories?.join(","),
     // Same "Markdown" feature toggle posts/comments/DMs follow — an input
     // format only: Notes.php / Item.php editItem store it as bbcode.
-    initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
+    // An edited note keeps its own stored format when that is authorable.
+    initialMimetype: props.initial?.mimetype && isAuthorable(props.initial.mimetype)
+      ? (props.initial.mimetype as MimeType)
+      : isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
   });
-
-  if (props.initial?.mimetype) {
-    if (isAuthorable(props.initial.mimetype ?? "")) store.setMimetype(props.initial.mimetype as MimeType);
-  }
 
   const enc = useEncrypt(store.body, store.setBody);
 

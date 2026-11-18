@@ -7,8 +7,8 @@
 //   /dm/<mxid>    open the DM with them, or /new prefilled if there is none (chat buttons link here)
 //   /new          start a DM
 //   /login        SSO return leg (?loginToken=)
-import { For, Match, Show, Switch, createEffect, createMemo, createSignal, onMount } from "solid-js";
-import { A, useNavigate, useSearchParams } from "@solidjs/router";
+import { For, Match, Show, Switch, createMemo, createSignal, onSettled, createEffect, untrack } from "solid-js";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -76,7 +76,7 @@ const section = (text: string) => (
 export function MatrixList(props: { base: string; query: string; activeRoom?: string }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  onMount(boot);
+  onSettled(() => { void (boot)(); });
 
   // Space rail: null = Home (everything). Remembered per browser.
   const [space, setSpaceRaw] = createSignal<string | null>(readSpace());
@@ -119,24 +119,23 @@ export function MatrixList(props: { base: string; query: string; activeRoom?: st
   });
   const nothing = () => !rooms().invites.length && !rooms().list.length;
 
-  const syncedOnce = createMemo((was: boolean) => { tick(); return was || !!client()?.isInitialSyncComplete(); }, false);
+  const syncedOnce = createMemo((was: boolean = false) => { tick(); return was || !!client()?.isInitialSyncComplete(); });
   const [unverified, setUnverified] = createSignal(false);
   // Re-checked whenever a verification dialog closes.
-  createEffect(() => { if (client() && syncedOnce() && !verification()) void needsRecovery().then(setUnverified); });
+  createEffect(() => !!client() && syncedOnce() && !verification(), (check) => { if (check) void needsRecovery().then(setUnverified); });
   const verify = () => void startSelfVerification().catch((e) => toast.error((e as Error).message));
   const [recovering, setRecovering] = createSignal(false);
 
   const unread = (r: sdk.Room) => { tick(); return r.getUnreadNotificationCount(sdk.NotificationCountType.Total); };
   const row = (r: sdk.Room) => (
-    <A
+    <a
       href={`${props.base}/${encodeURIComponent(r.roomId)}`}
-      class="flex items-center gap-3 mx-2 px-2 py-2 rounded-lg transition-colors"
-      classList={{ "bg-elevated": props.activeRoom === r.roomId, "hover:bg-elevated/60": props.activeRoom !== r.roomId }}
+      class={["flex items-center gap-3 mx-2 px-2 py-2 rounded-lg transition-colors", { "bg-elevated": props.activeRoom === r.roomId, "hover:bg-elevated/60": props.activeRoom !== r.roomId }]}
     >
       <MxcAvatar mxc={r.getMxcAvatarUrl() ?? r.getAvatarFallbackMember()?.getMxcAvatarUrl()} name={r.name} size={9} />
-      <span class="flex-1 min-w-0 text-sm text-txt truncate" classList={{ "font-semibold": unread(r) > 0 }}>{r.name}</span>
+      <span class={["flex-1 min-w-0 text-sm text-txt truncate", { "font-semibold": unread(r) > 0 }]}>{r.name}</span>
       <CountBadge n={unread(r)} />
-    </A>
+    </a>
   );
   const railBtn = (active: boolean) =>
     `w-10 h-10 shrink-0 flex items-center justify-center rounded-xl transition-shadow ${
@@ -158,13 +157,13 @@ export function MatrixList(props: { base: string; query: string; activeRoom?: st
           <Show when={spaces().length}>
             <nav class="w-16 shrink-0 flex flex-col items-center gap-3 py-3 border-r border-rim overflow-y-auto" aria-label={t("matrix.spaces") as string}>
               <button type="button" class={`${railBtn(!currentSpace())} bg-elevated text-txt`} title={t("matrix.home") as string}
-                aria-label={t("matrix.home") as string} aria-pressed={!currentSpace()} onClick={() => setSpace(null)}>
+                aria-label={t("matrix.home") as string} aria-pressed={(!currentSpace()) ? "true" : "false"} onClick={() => setSpace(null)}>
                 <MdOutlineHome size={22} />
               </button>
               <For each={spaces()}>
                 {(sp) => (
                   <button type="button" class={railBtn(currentSpace()?.roomId === sp.roomId)} title={sp.name}
-                    aria-label={sp.name} aria-pressed={currentSpace()?.roomId === sp.roomId} onClick={() => setSpace(sp.roomId)}>
+                    aria-label={sp.name} aria-pressed={(currentSpace()?.roomId === sp.roomId) ? "true" : "false"} onClick={() => setSpace(sp.roomId)}>
                     <MxcAvatar mxc={sp.getMxcAvatarUrl()} name={sp.name} size={10} class="rounded-xl" />
                   </button>
                 )}
@@ -332,31 +331,32 @@ function RecoveryModal(props: { onClose: () => void }) {
 export function MatrixPane(props: { base: string; segs: string[] }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  onMount(boot);
+  onSettled(() => { void (boot)(); });
   const ready = () => !booting() && !!client();
 
   // SSO return leg.
-  onMount(() => {
-    if (props.segs[0] !== "login") return;
+  const ssoAt = untrack(() => (props.segs[0] === "login" ? props.base : null));
+  onSettled(() => {
+    if (!ssoAt) return;
     const token = params.loginToken;
-    if (typeof token !== "string") return navigate(props.base, { replace: true });
+    if (typeof token !== "string") { navigate(ssoAt, { replace: true }); return; }
     void finishSso(token)
       .catch((e) => toast.error((e as Error).message))
-      .finally(() => navigate(props.base, { replace: true }));
+      .finally(() => navigate(ssoAt, { replace: true }));
   });
 
   // /dm/<mxid>: show the existing DM. A url must never create a room and
   // invite someone by itself (any link in a post could), so a new one goes to
   // the prefilled /new form, where the user presses Start.
-  createEffect(() => {
-    if (props.segs[0] !== "dm" || !ready()) return;
-    const mxid = normalizeChat("matrix", props.segs[1] ?? "")?.value;
-    if (!mxid) return navigate(props.base, { replace: true });
+  createEffect(() => (props.segs[0] === "dm" && ready() ? { seg: props.segs[1] ?? "", base: props.base } : null), (at) => {
+    if (!at) return;
+    const mxid = normalizeChat("matrix", at.seg)?.value;
+    if (!mxid) { navigate(at.base, { replace: true }); return; }
     const existing = findDirect(mxid);
-    navigate(existing ? `${props.base}/${encodeURIComponent(existing)}` : `${props.base}/new?mxid=${encodeURIComponent(mxid)}`, { replace: true });
+    navigate(existing ? `${at.base}/${encodeURIComponent(existing)}` : `${at.base}/new?mxid=${encodeURIComponent(mxid)}`, { replace: true });
   });
   // Not signed in: the list column shows the login form.
-  createEffect(() => { if (!booting() && !client() && props.segs[0] !== "login") navigate(props.base, { replace: true }); });
+  createEffect(() => (!booting() && !client() && props.segs[0] !== "login" ? props.base : null), (to) => { if (to) navigate(to, { replace: true }); });
 
   return (
     <Switch fallback={<div class="flex-1 flex items-center justify-center"><Spinner /></div>}>
@@ -445,10 +445,10 @@ function NewDm(props: { base: string }) {
 /** A room in a ModalHost window (kind "matrix", opened via openMatrix): docked,
  *  modal, page or minimized, and it stays open across navigation. */
 export function MatrixWindow(props: { roomId: string; onClose: () => void }) {
-  onMount(boot);
+  onSettled(() => { void (boot)(); });
   const name = () => { tick(); return client()?.getRoom(props.roomId)?.name ?? ""; };
   // Signed out (or the app switched off) elsewhere: nothing left to show.
-  createEffect(() => { if (!booting() && !client()) props.onClose(); });
+  createEffect(() => !booting() && !client(), (gone) => { if (gone) props.onClose(); });
   return (
     <ComposerModal title={name()} onClose={props.onClose} widthClass="max-w-3xl">
       <Show when={client()} fallback={<div class="flex-1 flex items-center justify-center"><Spinner /></div>}>

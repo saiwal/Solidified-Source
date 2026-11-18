@@ -200,12 +200,12 @@ export default function TasksWidget() {
                     </button>
                     <p class="flex flex-wrap items-center gap-x-2 text-xs text-muted">
                       <Show when={task.due}>
-                        {(d) => <span classList={{ "text-danger-txt": !task.done && d() < today }}>
+                        {(d) => <span class={{ "text-danger-txt": !task.done && d() < today }}>
                           {t("calendar.tasks_due_on", { date: fmtDue(d()) })}
                         </span>}
                       </Show>
                       <Show when={PRIO(task.priority)}>
-                        {(p) => <span classList={{ "text-warning-txt": p() === "high" }}>{t(`calendar.tasks_prio_${p()}` as any)}</span>}
+                        {(p) => <span class={{ "text-warning-txt": p() === "high" }}>{t(`calendar.tasks_prio_${p()}` as any)}</span>}
                       </Show>
                       <Show when={task.percent > 0 && task.percent < 100}>
                         <span>{task.percent}%</span>

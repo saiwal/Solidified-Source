@@ -1,11 +1,10 @@
 // src/modules/articles/views/SeriesView.tsx
-import { createSignal, createEffect, createUniqueId, Show, For } from "solid-js";
-import { useParams, useNavigate, A } from "@solidjs/router";
+import { createMemo, createSignal, createUniqueId, Show, For, createOptimistic, action } from "solid-js";
+import { useParams, useNavigate } from "@solidjs/router";
 import { MdOutlineEdit, MdFillKeyboard_arrow_up, MdFillKeyboard_arrow_down } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useViewerRole, usePageNick } from "@utsukta/spa-core/store/site-config";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { Modal, modalPanelClass } from "@ui/Modal";
 import { SkeletonRows, BackLink } from "@/shared/views/ui";
 import { Motion, pop } from "@/shared/views/anim";
@@ -17,6 +16,9 @@ import PageActions from "@/shared/views/layout/PageActions";
 import { Input } from "@ui/Field";
 import { EmptyState } from "@ui/EmptyState";
 import { cardClass } from "@ui/Card";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
+import { invalidate } from "@utsukta/spa-core/lib/query-client";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 
 function RenameDialog(props: { name: string; onClose: () => void; onRename: (to: string) => Promise<void> }) {
   const { t } = useI18n();
@@ -63,31 +65,33 @@ export default function SeriesView() {
   const params = useParams<{ nick: string; name: string }>();
   const pageNick = usePageNick();
   const nick = () => params.nick || pageNick();
-  const name = () => decodeURIComponent(params.name);
+  // Pinned: while this route is being left, the router's params already
+  // describe the next page (name gone). Following them would leave this
+  // view's read pending forever, and router 2 holds a navigation until
+  // pending reads settle — Back changed the URL but never the screen.
+  const name = createMemo((prev?: string) => (params.name ? decodeURIComponent(params.name) : prev ?? ""));
   const role = useViewerRole();
   const navigate = useNavigate();
   const { t } = useI18n();
   const isOwner = () => role() === "owner";
   const [renaming, setRenaming] = createSignal(false);
 
-  const [data, { refetch }] = createQueryResource(
-    "series-detail",
-    () => ({ nick: nick(), name: name() }),
-    ({ nick, name }) => fetchSeriesDetail(nick, name),
-  );
+  const key = () => ["series-detail", { nick: nick(), name: name() }] as const;
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchSeriesDetail(nick(), name()) }));
 
-  const [order, setOrder] = createSignal<Post[]>([]);
-  createEffect(() => setOrder(data()?.articles ?? []));
+  // The fetched order, with a move shown at once; a failed save rolls it back.
+  const [order, setOrder] = createOptimistic((): Post[] => q.data.articles);
 
-  async function persistOrder(next: Post[]) {
+  const persistOrder = action(function* (next: Post[]) {
     setOrder(next);
     try {
-      await reorderSeries(nick(), name(), next.map((a) => a.uuid));
+      yield reorderSeries(nick(), name(), next.map((a) => a.uuid));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Reorder failed");
-      refetch();
+      return;
     }
-  }
+    yield invalidate(key());
+  });
 
   function move(index: number, dir: -1 | 1) {
     const next = [...order()];
@@ -111,16 +115,16 @@ export default function SeriesView() {
         <div class={"flex items-start justify-between gap-3 p-6  " + cardClass()} >
           <div class="min-w-0">
             <h1 class="text-2xl font-bold text-txt">{name()}</h1>
-            <Show when={!data.loading}>
+            <AsyncBoundary>
               <p class="text-sm text-muted mt-1 tabular-nums">{t("articles.series_articles_count", { count: order().length })}</p>
-            </Show>
+            </AsyncBoundary>
           </div>
           <PageActions label={name()} actions={[
             { label: t("articles.series_rename"), icon: MdOutlineEdit, onClick: () => setRenaming(true), show: isOwner() },
           ]} />
         </div>
 
-        <Show when={!data.loading} fallback={<SkeletonRows count={5} />}>
+        <AsyncBoundary fallback={<SkeletonRows count={5} />}>
           <Show
             when={order().length > 0}
             fallback={<EmptyState>{t("articles.series_no_series")}</EmptyState>}
@@ -130,12 +134,12 @@ export default function SeriesView() {
                 {(article, i) => (
                   <li class="group flex items-center gap-3 rounded-xl px-3 py-1.5 hover:bg-elevated/40 transition-colors">
                     <span class="text-sm text-muted w-6 shrink-0 tabular-nums">{i() + 1}</span>
-                    <A
+                    <a
                       href={articlePath(nick(), article)}
                       class="flex-1 min-w-0 truncate py-1 text-sm font-medium text-txt hover:text-accent-txt transition-colors"
                     >
                       {article.title || t("articles.untitled")}
-                    </A>
+                    </a>
                     <Show when={isOwner()}>
                       <div class="flex items-center shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
                         <IconButton
@@ -159,7 +163,7 @@ export default function SeriesView() {
               </For>
             </ol>
           </Show>
-        </Show>
+        </AsyncBoundary>
       </div>
 
       <Show when={renaming()}>

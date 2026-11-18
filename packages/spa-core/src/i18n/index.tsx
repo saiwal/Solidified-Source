@@ -1,6 +1,4 @@
-import { createContext, useContext, createSignal, createEffect } from "solid-js";
-import type { ParentComponent } from "solid-js";
-import { createStore } from "solid-js/store";
+import { createContext, useContext, createSignal, createStore, type ParentComponent, createEffect } from "solid-js";
 import * as i18n from "@solid-primitives/i18n";
 import { localeRegistry } from "./locales/index";
 import type { Locale, RawDictionary } from "./locales/index";
@@ -72,7 +70,7 @@ export function ensureNamespaces(nss: readonly string[], loc: Locale = locale())
       if (!p) {
         p = fetchNs(loc, ns)
           .then((d) => {
-            if (d) setDicts(loc, (prev) => ({ ...prev, [ns]: d }));
+            if (d) setDicts((s) => { s[loc] = { ...s[loc], [ns]: d }; });
           })
           .catch((e) => console.warn(`[i18n] failed to load ${key}`, e))
           .finally(() => pending.delete(key));
@@ -156,14 +154,14 @@ const setLocale = (l: Locale) => {
 };
 
 export const I18nProvider: ParentComponent = (props) => {
-  createEffect(() => {
-    document.documentElement.lang = locale();
+  createEffect(locale, (l) => {
+    document.documentElement.lang = l;
   });
 
   return (
-    <I18nContext.Provider value={{ t, locale, setLocale }}>
+    <I18nContext value={{ t, locale, setLocale }}>
       {props.children}
-    </I18nContext.Provider>
+    </I18nContext>
   );
 };
 

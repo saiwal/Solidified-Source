@@ -7,11 +7,12 @@
 // markup needs no hooks. Text inside posts and editors stays silent.
 // On/off is per device (localStorage); it defaults to on only where the
 // toggle (the bottom elbow, desktop-only) is visible.
-import { createSignal } from "solid-js";
+
 import beep1 from "./sounds/beep1.mp3";
 import beep2 from "./sounds/beep2.mp3";
 import beep3 from "./sounds/beep3.mp3";
 import beep4 from "./sounds/beep4.mp3";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 type Beep = 1 | 2 | 3 | 4;
 const KEY = "hz-lcars-sound";
@@ -24,7 +25,7 @@ function initial(): boolean {
   return window.matchMedia("(min-width: 1024px)").matches;
 }
 
-const [soundOn, setSound] = createSignal(initial());
+const [soundOn, setSound] = createSyncSignal(initial());
 export { soundOn };
 
 export function toggleSound(): void {

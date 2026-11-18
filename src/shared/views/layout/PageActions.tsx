@@ -1,4 +1,4 @@
-import { createContext, createEffect, createSignal, For, onCleanup, onMount, Show, useContext } from "solid-js";
+import { createContext, createEffect, createSignal, For, onCleanup, onSettled, Show, useContext } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
 import { MdOutlineMore_horiz } from "solid-icons/md";
 import type { IconTypes } from "solid-icons";
@@ -46,9 +46,9 @@ interface Source {
 // outgoing page's cleanup, so its actions stayed next to the new page's.
 // onMount runs only after the transition commits. Same for every registry here.
 function useRegistration<T>(set: (fn: (s: T[]) => T[]) => void, item: T) {
-  onMount(() => {
+  onSettled(() => {
     set((s) => [...s, item]);
-    onCleanup(() => set((s) => s.filter((x) => x !== item)));
+    return () => set((s) => s.filter((x) => x !== item));
   });
 }
 
@@ -101,7 +101,7 @@ export function pageMenuGroups(): PageActionGroup[] {
 
 /** Default group label for every PageActions below it — SubPageContent
  * provides its title, so a section's actions read apart from the module's. */
-export const PageActionsLabel = createContext<() => string | undefined>();
+export const PageActionsLabel = createContext<(() => string | undefined) | null>(null);
 
 // Set from Layout.tsx whenever the mobile nav chrome is on screen. Chrome
 // modes that hide the nav ("focus"/"compact") keep the desktop rendering, so
@@ -124,10 +124,8 @@ export { floatingAction };
 
 /** Floats `action()` for as long as the calling component is mounted. */
 export function useFloatingAction(action: () => PageAction | undefined) {
-  onMount(() => {
-    createEffect(() => setFloatingAction(action()));
-    onCleanup(() => setFloatingAction(undefined));
-  });
+  createEffect(action, (a) => { setFloatingAction(() => a); });
+  onCleanup(() => setFloatingAction(undefined));
 }
 
 // ── Search ──────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import { fetchArticles } from "./api";
 import type { StreamResult, StreamParams } from "@/shared/stream/store/createStreamStore";
 import { createActionHandlers } from "@/shared/stream/store/actions-store";
 import type { ViewMode } from "@/shared/stream/types";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 export interface ArticleParams extends StreamParams {
   search?: string;
@@ -16,7 +17,7 @@ export interface ArticleParams extends StreamParams {
 }
 
 // ── nick signal ───────────────────────────────────────────────────────────────
-const [nick, setNick] = createSignal("");
+const [nick, setNick] = createSyncSignal("");
 export { nick };
 
 // ── fetcher adapter ───────────────────────────────────────────────────────────

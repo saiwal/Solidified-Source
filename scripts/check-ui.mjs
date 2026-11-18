@@ -1,7 +1,7 @@
 // node scripts/check-ui.mjs — asserts the @ui primitives wire labels, hints,
 // errors and form semantics (fixture: packages/spa-ui/src/ui.check.tsx), via a Vite SSR render.
 import { createServer } from "vite";
-import solid from "vite-plugin-solid";
+import solid from "@solidjs/vite-plugin";
 import { uiShadow } from "@utsukta/spa-ui/vite-plugin";
 import assert from "node:assert";
 import path from "node:path";
@@ -12,7 +12,7 @@ const server = await createServer({
   plugins: [uiShadow({ themeUiDir: path.join(root, "src/ui") }), solid({ ssr: true })],
   resolve: { conditions: ["solid"] },
   optimizeDeps: { noDiscovery: true },
-  ssr: { noExternal: ["solid-js"] },
+  ssr: { noExternal: ["solid-js", "@solidjs/web"] },
   server: { middlewareMode: true },
 });
 try {

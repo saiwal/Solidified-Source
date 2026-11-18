@@ -1,5 +1,6 @@
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import { createSignal, createResource, createEffect, For, Show, createUniqueId } from "solid-js";
+import { createSignal, For, Show, createUniqueId, createEffect } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { Connection } from "@/modules/directory/connections/api";
 import {
@@ -13,7 +14,6 @@ import { useI18n } from "@utsukta/spa-core/i18n";
 import FilterRuleBuilder from "./FilterRuleBuilder";
 import { isFeatureEnabled } from "@utsukta/spa-core/store/auth-store";
 import { MdOutlineCheck, MdOutlineClose, MdOutlineLink, MdOutlineRefresh, MdOutlineWarning } from "solid-icons/md";
-import { A } from "@solidjs/router";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 
@@ -52,10 +52,10 @@ const CrossIcon = () => (
 /** Small icon link beside a section label, to the page that manages that list. */
 function ManageLink(p: { href: string; label: string; onClick: () => void }) {
   return (
-    <A href={p.href} onClick={p.onClick} aria-label={p.label} title={p.label}
+    <a href={p.href} onClick={p.onClick} aria-label={p.label} title={p.label}
        class="text-muted hover:text-accent-txt">
       <MdOutlineLink class="w-4 h-4" />
-    </A>
+    </a>
   );
 }
 
@@ -119,8 +119,7 @@ function ConnectionEditorModal(props: Props) {
     },
   );
 
-  createEffect(() => {
-    const ids = connectionGroupIds();
+  createEffect(() => { const ids = connectionGroupIds(); return ids === undefined ? undefined : [...ids]; }, (ids) => {
     if (ids !== undefined) {
       initialGroupIds = new Set(ids);
       setCheckedGroupIds(new Set(ids));
@@ -488,13 +487,13 @@ function ConnectionEditorModal(props: Props) {
                     tone="warning"
                     icon={<MdOutlineWarning size={16} />}
                     actions={
-                      <A
+                      <a
                         href="/settings/features"
                         onClick={props.onClose}
                         class={buttonClass("ghost", "sm")}
                       >
                         {t("filters.connfilter_enable")}
-                      </A>
+                      </a>
                     }
                   >
                     <span class="text-xs">{t("filters.connfilter_off")}</span>

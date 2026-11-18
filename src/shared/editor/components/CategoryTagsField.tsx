@@ -5,7 +5,8 @@
  * and Article's labelled, bordered-box row.
  */
 
-import { For, Show, createSignal, type Component, type JSX } from "solid-js";
+import { For, Show, createSignal, type Component } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import SuggestPopup from "./SuggestPopup";
 
 export interface CategoryTagsFieldProps {

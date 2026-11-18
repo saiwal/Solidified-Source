@@ -1,7 +1,7 @@
 // The full player: one quiet room around the music. The cover, large, on a
 // slow-breathing wash of itself; the controls beneath; and beside them (below,
 // on a phone) the queue, the lyrics or the party.
-import { Show, Switch, Match, createEffect, onCleanup, lazy } from "solid-js";
+import { Show, Switch, Match, lazy, createEffect } from "solid-js";
 import {
   MdFillPlay_arrow, MdFillPause, MdFillSkip_next, MdFillSkip_previous, MdFillShuffle, MdFillRepeat,
   MdFillRepeat_one, MdFillVolume_up, MdFillVolume_off, MdFillKeyboard_arrow_down, MdOutlineStop_circle, MdOutlineGraphic_eq,
@@ -34,13 +34,13 @@ const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(pr
 /** The cover, blurred and enlarged behind everything, drifting very slowly. */
 function Ambient(props: { src: string | null }) {
   let el: HTMLImageElement | undefined;
-  createEffect(() => {
-    if (!el || !props.src || reducedMotion()) return;
+  createEffect(() => !!props.src, (src) => {
+    if (!el || !src || reducedMotion()) return;
     const a = el.animate(
       [{ transform: "scale(1.35) rotate(0deg)" }, { transform: "scale(1.55) rotate(4deg)" }],
       { duration: 24_000, iterations: Infinity, direction: "alternate", easing: "ease-in-out" },
     );
-    onCleanup(() => a.cancel());
+    return () => a.cancel();
   });
   return (
     <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
@@ -61,7 +61,7 @@ const TABS: { id: PlayerTab; label: "jellyfin.tab_queue" | "jellyfin.lyrics" | "
 export default function FullPlayer() {
   const { t } = useI18n();
   // Nothing to show once the music stops
-  createEffect(() => { if (!current()) setFullOpen(false); });
+  createEffect(() => !!current(), (has) => { if (!has) setFullOpen(false); });
 
 
   return (
@@ -181,7 +181,7 @@ export default function FullPlayer() {
             <section class="flex flex-col min-h-0 px-4 pb-8 lg:py-12 lg:pr-12 lg:pl-0">
               <div role="tablist" class="flex gap-6 px-2 mb-4">
                 {TABS.map((tab) => (
-                  <button type="button" role="tab" aria-selected={fullTab() === tab.id} onClick={() => setFullTab(tab.id)}
+                  <button type="button" role="tab" aria-selected={(fullTab() === tab.id) ? "true" : "false"} onClick={() => setFullTab(tab.id)}
                     class={`relative pb-1.5 text-sm transition-colors ${fullTab() === tab.id ? "text-txt" : "text-muted hover:text-txt"}`}>
                     {t(tab.label)}
                     <Show when={tab.id === "queue"}><span class="ml-1.5 text-xs text-muted tabular-nums">{index() + 1}/{queue().length}</span></Show>

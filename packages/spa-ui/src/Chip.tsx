@@ -4,7 +4,7 @@
 // contain another button. Corners use --radius-lg so the corner-radius setting
 // applies, unlike the old hand-rolled rounded-full pills. `rainbow` is the
 // tag-cloud treatment from index.css, keyed on the caller's --rainbow-h.
-import { Show, splitProps } from "solid-js";
+import { Show, omit } from "solid-js";
 import type {
   ChipProps,
   ChipTone,
@@ -45,19 +45,11 @@ export function chipClass(
 }
 
 export function Chip(props: ChipProps) {
-  const [own, rest] = splitProps(props, [
-    "selected",
-    "tone",
-    "size",
-    "icon",
-    "count",
-    "rainbow",
-    "class",
-  ]);
+  const own = props, rest = omit(props, "selected", "tone", "size", "icon", "count", "rainbow", "class");
   return (
     <button
       type="button"
-      aria-pressed={own.selected}
+      aria-pressed={own.selected === undefined ? undefined : own.selected ? "true" : "false"}
       class={`${chipClass(own.tone, own.size, own.selected, own.rainbow)}${own.class ? ` ${own.class}` : ""}`}
       {...rest}
     >

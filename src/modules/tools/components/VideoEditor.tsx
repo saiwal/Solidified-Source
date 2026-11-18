@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, Show, For } from "solid-js";
+import { createSignal, onCleanup, onSettled, Show, For, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { davDirPath, uploadFile, listFolder, type FileMeta } from "@/modules/files/api";
@@ -139,8 +139,9 @@ export function VideoEditor(props: VideoEditorProps = {}) {
     const thumb = thumbnailUrl(); if (thumb) URL.revokeObjectURL(thumb);
   });
 
-  onMount(() => {
-    if (props.initialFile) openFile(props.initialFile);
+  const initialFile = untrack(() => props.initialFile);
+  onSettled(() => {
+    if (initialFile) openFile(initialFile);
   });
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

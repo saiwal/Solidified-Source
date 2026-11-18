@@ -1,5 +1,5 @@
-import { createEffect, createMemo, createSignal, For, on, Show } from "solid-js";
-import { A, useLocation } from "@solidjs/router";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { useLocation } from "@solidjs/router";
 import {
   MdFillChevron_right,
   MdFillGrid_view,
@@ -10,7 +10,6 @@ import {
 } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
-import { mergeRefs } from "@utsukta/spa-core/lib/refs";
 import { notifCount } from "@utsukta/spa-core/lib/notificationCount";
 import { notifyCountLimit } from "@utsukta/spa-core/store/auth-store";
 import type { LayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
@@ -72,16 +71,13 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
   const [sheetRef, setSheetRef] = createSignal<HTMLElement>();
   let favButtonRef: HTMLButtonElement | undefined;
 
-  createEffect(() => {
-    const el = sheetRef();
-    if (el) el.inert = !favOpen();
+  createEffect(() => [sheetRef(), favOpen()] as const, ([el, isOpen]) => {
+    if (el) el.inert = !isOpen;
   });
   // Move focus into the sheet on open and back to its trigger on close, the
   // same pattern useLayoutChrome uses for the drawers.
   createEffect(
-    on(
-      favOpen,
-      (open) => {
+    favOpen, (open) => {
         if (open) {
           requestAnimationFrame(() =>
             sheetRef()
@@ -91,11 +87,9 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
         } else {
           favButtonRef?.focus({ preventScroll: true });
         }
-      },
-      { defer: true },
-    ),
+      }, { defer: true },
   );
-  createEffect(on(() => location.pathname, () => setFavOpen(false), { defer: true }));
+  createEffect(() => location.pathname, () => { setFavOpen(false); }, { defer: true });
 
   const toggleDrawer = () => {
     const next = !moreOpen();
@@ -150,14 +144,13 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
           <div class="grid grid-cols-4 gap-1 px-3 pb-5">
             <For each={favorites()}>
               {(item) => (
-                <A
+                <a
                   href={hrefOf(item)}
                   onClick={() => setFavOpen(false)}
-                  activeClass="hz-active !text-accent-txt"
-                  class={tileClass}
+                  class={`${tileClass} data-active:!text-accent-txt`}
                 >
                   <TileFace icon={getNavIcon(item.icon, 24)} label={labelOf(item)} />
-                </A>
+                </a>
               )}
             </For>
           </div>
@@ -284,9 +277,9 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
 
         {/* Favorites quick menu — always there, so the bar never reflows */}
           <button
-            ref={mergeRefs<HTMLButtonElement>((el) => (favButtonRef = el), helpable(() => "nav.favorites"))}
+            ref={[(el) => (favButtonRef = el), helpable(() => "nav.favorites")]}
             onClick={toggleFavorites}
-            aria-expanded={favOpen()}
+            aria-expanded={(favOpen()) ? "true" : "false"}
             aria-controls="favorites-sheet"
             class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                     text-[0.625rem] font-medium transition-colors
@@ -304,9 +297,9 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
 
         {/* App drawer */}
         <button
-          ref={mergeRefs<HTMLButtonElement>((el) => setMoreButtonRef(el), helpable(() => "nav.apps"))}
+          ref={[(el) => setMoreButtonRef(el), helpable(() => "nav.apps")]}
           onClick={toggleDrawer}
-          aria-expanded={moreOpen()}
+          aria-expanded={(moreOpen()) ? "true" : "false"}
           aria-controls="app-drawer"
           class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl
                   text-[0.625rem] font-medium transition-colors
@@ -325,10 +318,10 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
         {/* Panel — kept in place (disabled) on pages without a sidebar, so the
             bar never reflows */}
           <button
-            ref={mergeRefs<HTMLButtonElement>((el) => setPanelButtonRef(el), helpable(() => "nav.panel"))}
+            ref={[(el) => setPanelButtonRef(el), helpable(() => "nav.panel")]}
             onClick={togglePanel}
             disabled={hidesRightSidebar()}
-            aria-expanded={rightOpen()}
+            aria-expanded={(rightOpen()) ? "true" : "false"}
             aria-controls="right-sidebar"
             aria-label={rightOpen() ? "Close panel" : "Open panel"}
             class={`flex-1 min-w-0 px-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl

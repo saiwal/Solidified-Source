@@ -1,4 +1,4 @@
-import { createResource } from "solid-js";
+import { createResource } from "../lib/resource";
 import { applyTypography, FONT_FAMILY_IDS, type FontSize, type FontFamily } from "../lib/typography";
 import { initBackground, type BgFit } from "../lib/background";
 import { initTheme } from "../lib/useTheme";

@@ -1,7 +1,8 @@
 // Attachments (m.image / m.video / m.audio / m.file / m.sticker) and mxc
 // avatars. Signals rather than createResource: a resource read here would
 // suspend the whole Messenger pane through the lazy-tab <Suspense>.
-import { Show, Switch, Match, createSignal, type JSX } from "solid-js";
+import { Show, Switch, Match, createSignal } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Avatar } from "@ui/Avatar";
 import { Spinner } from "@ui/Spinner";

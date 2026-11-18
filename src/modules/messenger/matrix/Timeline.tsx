@@ -1,8 +1,8 @@
 // One Matrix room: messages (newest at the bottom), older-page loading, a
 // plain-text composer, read receipts, and accept/decline for an invite.
 import DOMPurify from "dompurify";
-import { For, Show, createEffect, createMemo, createSignal, useContext } from "solid-js";
-import { A, useNavigate } from "@solidjs/router";
+import { For, Show, createMemo, createSignal, useContext, createEffect } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import { ComposerFrameContext, openMatrix } from "@/shared/views/modal-host";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -92,8 +92,10 @@ export default function Timeline(props: { roomId: string; back?: string }) {
   let receipted = "";
   createEffect(() => {
     const last = events().find((e) => e.getSender() !== me());
+    return { last, joined: membership() === sdk.KnownMembership.Join };
+  }, ({ last, joined }) => {
     const id = last?.getId();
-    if (!last || !id || id === receipted || membership() !== sdk.KnownMembership.Join) return;
+    if (!last || !id || id === receipted || !joined) return;
     receipted = id;
     void client()?.sendReadReceipt(last).catch(() => {});
   });
@@ -227,9 +229,9 @@ export default function Timeline(props: { roomId: string; back?: string }) {
     <div class="flex-1 flex flex-col min-h-0">
       <header class="flex items-center gap-2 px-3 py-2 border-b border-rim shrink-0">
         <Show when={props.back}>
-          <A href={props.back!} class="md:hidden p-1 text-muted hover:text-txt" aria-label={t("matrix.back") as string}>
+          <a href={props.back!} class="md:hidden p-1 text-muted hover:text-txt" aria-label={t("matrix.back") as string}>
             <MdOutlineArrow_back size={20} />
-          </A>
+          </a>
         </Show>
         {/* A window's own header already names the room. */}
         <h2 class="flex-1 min-w-0 text-sm font-semibold text-txt truncate">{inWindow ? "" : room()?.name ?? props.roomId}</h2>
@@ -267,11 +269,11 @@ export default function Timeline(props: { roomId: string; back?: string }) {
                 const mine = ev.getSender() === me();
                 const quoted = replyTarget(ev);
                 return (
-                  <div data-event-id={ev.getId()} class="group flex flex-col max-w-[85%]" classList={{ "self-end items-end": mine, "self-start": !mine }}>
+                  <div data-event-id={ev.getId()} class={["group flex flex-col max-w-[85%]", { "self-end items-end": mine, "self-start": !mine }]}>
                     <Show when={!mine}>
                       <span class="text-[0.6875rem] text-muted px-1">{senderName(ev)}</span>
                     </Show>
-                    <div class="flex items-center gap-1" classList={{ "flex-row-reverse": !mine }}>
+                    <div class={["flex items-center gap-1", { "flex-row-reverse": !mine }]}>
                       {/* Actions: hover/focus on desktop, always visible on touch widths. */}
                       <div class="flex items-center gap-0.5 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
                         <Popover
@@ -298,21 +300,20 @@ export default function Timeline(props: { roomId: string; back?: string }) {
                           <MdOutlineReply size={16} />
                         </IconButton>
                       </div>
-                      <div class="min-w-0 rounded-2xl px-3 py-1.5 text-sm" classList={{ "bg-accent-muted text-txt": mine, "bg-elevated text-txt": !mine }}>
+                      <div class={["min-w-0 rounded-2xl px-3 py-1.5 text-sm", { "bg-accent-muted text-txt": mine, "bg-elevated text-txt": !mine }]}>
                         <Show when={quoted}><ReplyQuote id={quoted!} /></Show>
                         <Body ev={ev} />
                       </div>
                     </div>
                     <Show when={reactionsFor(ev).length}>
-                      <div class="flex flex-wrap gap-1 mt-0.5 px-1" classList={{ "justify-end": mine }}>
+                      <div class={["flex flex-wrap gap-1 mt-0.5 px-1", { "justify-end": mine }]}>
                         <For each={reactionsFor(ev)}>
                           {([key, list]) => {
                             const reacted = () => list.some((e) => e.getSender() === me());
                             return (
-                              <button type="button" aria-pressed={reacted()} onClick={() => void toggleReaction(ev, key)}
+                              <button type="button" aria-pressed={(reacted()) ? "true" : "false"} onClick={() => void toggleReaction(ev, key)}
                                 title={list.map((e) => room()?.getMember(e.getSender() ?? "")?.name ?? e.getSender()).join(", ")}
-                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-xs tabular-nums transition-colors"
-                                classList={{ "border-accent bg-accent-muted text-txt": reacted(), "border-rim bg-surface text-muted hover:border-accent": !reacted() }}>
+                                class={["inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-xs tabular-nums transition-colors", { "border-accent bg-accent-muted text-txt": reacted(), "border-rim bg-surface text-muted hover:border-accent": !reacted() }]}>
                                 <span>{key}</span>{list.length}
                               </button>
                             );

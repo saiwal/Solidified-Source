@@ -1,15 +1,5 @@
-import {
-  createSignal,
-  createEffect,
-  createUniqueId,
-  untrack,
-  For,
-  Show,
-  createMemo,
-  onCleanup,
-  type JSX,
-} from "solid-js";
-import { createStore, reconcile, unwrap, produce } from "solid-js/store";
+import { createSignal, createUniqueId, For, Show, createMemo, onCleanup, createStore, reconcile, snapshot, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
@@ -67,6 +57,7 @@ import { Avatar } from "@ui/Avatar";
 import { Collapsible } from "@ui/Collapsible";
 import { ListRow } from "@ui/ListRow";
 import type { CollapsibleTriggerProps } from "@utsukta/spa-core/types/ui.types";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -404,10 +395,10 @@ function StreamGroup(props: {
   // Rows core serves per-bucket. Buckets it sends inline (notify, intros,
   // files, all_events, register) keep using props.bucket and never page —
   // core reports offset -1 for every one of them.
-  const [rows, setRows] = createSignal<HzNotification[]>([]);
-  const [nextOffset, setNextOffset] = createSignal(0);
+  const [rows, setRows] = createSyncSignal<HzNotification[]>([]);
+  const [nextOffset, setNextOffset] = createSyncSignal(0);
   const [loading, setLoading] = createSignal(false);
-  const [nquery, setNquery] = createSignal("");
+  const [nquery, setNquery] = createSyncSignal("");
   const [startersOnly, setStartersOnly] = createSignal(false);
   const [filterText, setFilterText] = createSignal("");
 
@@ -466,19 +457,18 @@ function StreamGroup(props: {
   // Latches on first open and stays latched: unloading on close meant
   // reopening always refetched and reflashed the skeleton over rows we had.
   const [hasOpened, setHasOpened] = createSignal(false);
-  createEffect(() => {
-    if (open() && !hasOpened()) {
+  createEffect(() => open() && !hasOpened(), (first) => {
+    if (first) {
       setHasOpened(true);
       void load("reset");
     }
   });
 
   let prevCount = props.bucket.count;
-  createEffect(() => {
-    const count = props.bucket.count;
+  createEffect(() => [props.bucket.count, fetchable(), open()] as const, ([count, canFetch, isOpen]) => {
     const was = prevCount;
     prevCount = count;
-    if (!fetchable()) return;
+    if (!canFetch) return;
     // Mark-all-read zeroes the bucket in the store, but these rows live in a
     // local signal the store can't reach — drop them too or the list stays on
     // screen under a cleared badge.
@@ -487,15 +477,14 @@ function StreamGroup(props: {
       setNextOffset(0);
       return;
     }
-    if (open() && count > was) void load("refresh");
+    if (isOpen && count > was) void load("refresh");
   });
 
   // Switching a filter on can leave almost nothing visible; core pulls more
   // pages until enough rows survive it.
-  createEffect(() => {
-    const enough = visibleCount(rows()) >= MIN_VISIBLE;
-    if (!open() || !fetchable() || enough) return;
-    if (untrack(loading) || untrack(nextOffset) <= 0) return;
+  createEffect(() => [visibleCount(rows()) >= MIN_VISIBLE, open(), fetchable()] as const, ([enough, isOpen, canFetch]) => {
+    if (!isOpen || !canFetch || enough) return;
+    if (loading() || nextOffset() <= 0) return;
     void load("more");
   });
 
@@ -529,8 +518,8 @@ function StreamGroup(props: {
 
   // Clearing the field (the SearchField's × or deleting the text) also drops
   // the server-side query, so the list returns to everything we had paged.
-  createEffect(() => {
-    if (filterText() !== "" || !nquery()) return;
+  createEffect(() => filterText() === "" && !!nquery(), (clear) => {
+    if (!clear) return;
     setNquery("");
     void load("reset");
   });
@@ -977,7 +966,7 @@ function AnnouncementsGroup(props: {
                   type="text"
                   autofocus
                   value={title()}
-                  maxLength={120}
+                  maxlength={120}
                   onInput={(e) => setTitle(e.currentTarget.value)}
                 />
               </Field>
@@ -988,7 +977,7 @@ function AnnouncementsGroup(props: {
                 <Textarea
                   class="w-full resize-y"
                   value={body()}
-                  maxLength={1000}
+                  maxlength={1000}
                   rows={5}
                   onInput={(e) => setBody(e.currentTarget.value)}
                 />
@@ -1111,12 +1100,12 @@ export default function NotificationsAside() {
   // Opening the announcements group is what marks them seen, as the old toggle
   // did on its "open" half. An effect rather than an onClick because the list
   // can land after the group is already open.
-  createEffect(() => {
-    if (openGroup() !== "announcements") return;
-    const list = announcements();
-    if (!list?.length || list[0].id === seenAnnouncementId()) return;
-    setLastSeenAnnouncementId(list[0].id);
-    setSeenAnnouncementId(list[0].id);
+  createEffect(() => (openGroup() === "announcements" ? [announcements()?.[0]?.id, seenAnnouncementId()] as const : null), (at) => {
+    if (!at) return;
+    const [newest, seen] = at;
+    if (!newest || newest === seen) return;
+    setLastSeenAnnouncementId(newest);
+    setSeenAnnouncementId(newest);
   });
 
   const createAnnouncement = async (title: string, body: string): Promise<boolean> => {
@@ -1164,7 +1153,7 @@ export default function NotificationsAside() {
     const freshNotifs: { key: string; n: HzNotification }[] = [];
     // unwrap() reads through the proxy without subscribing — applyRaw runs from
     // timers and promise callbacks, and tracking here would be a feedback loop.
-    const prev = unwrap(buckets);
+    const prev = snapshot(buckets);
 
     // A snapshot replaces every bucket; a push only speaks for the keys it
     // carried. Walking all of them on a push zeroed everything the delta left
@@ -1194,7 +1183,7 @@ export default function NotificationsAside() {
           offset: prev[key]?.offset ?? inc.offset,
         };
       }
-      setBuckets(key, reconcile(next, { key: "_k" }));
+      setBuckets((s) => { if (s[key]) reconcile(next, "_k")(s[key]); else s[key] = next; });
     }
 
     // Alert on both transports: polling users used to get nothing at all,
@@ -1231,7 +1220,7 @@ export default function NotificationsAside() {
   const markSeen = async (b64mids: string[]) => {
     if (!b64mids.length) return;
     const midSet = new Set(b64mids);
-    const prev = unwrap(buckets);
+    const prev = snapshot(buckets);
     for (const key of Object.keys(prev)) {
       const b = prev[key];
       if (!b) continue;
@@ -1239,9 +1228,11 @@ export default function NotificationsAside() {
         (n) => !n.b64mid || !midSet.has(n.b64mid),
       );
       if (filtered.length === b.notifications.length) continue;
-      setBuckets(key, {
-        count: Math.max(0, b.count - (b.notifications.length - filtered.length)),
-        notifications: filtered,
+      setBuckets((s) => {
+        Object.assign(s[key], {
+          count: Math.max(0, b.count - (b.notifications.length - filtered.length)),
+          notifications: filtered,
+        });
       });
     }
     await markSeenAndRefetch(b64mids, (raw) => applyRaw(raw, false));
@@ -1352,9 +1343,9 @@ export default function NotificationsAside() {
   };
 
   let started = false;
-  createEffect(() => {
-    const uid = auth()?.uid;
-    if (auth.loading) return;
+  createEffect(() => (auth.loading ? null : { uid: auth()?.uid }), (at) => {
+    if (!at) return;
+    const { uid } = at;
     if (started) return;
     started = true;
     if (!uid) {
@@ -1403,7 +1394,7 @@ export default function NotificationsAside() {
   };
 
   const markAllRead = async () => {
-    const currentBuckets = unwrap(buckets);
+    const currentBuckets = snapshot(buckets);
     const promises: Promise<unknown>[] = [];
     // Only buckets a server call actually clears may be zeroed optimistically.
     // `intros` and `register` have no markRead branch in core's
@@ -1434,7 +1425,7 @@ export default function NotificationsAside() {
 
     // Optimistic clear
     setBuckets(
-      produce((s) => {
+      (s) => {
         for (const key of cleared) s[key] = { count: 0, notifications: [], offset: -1 };
         // Files clear only the rows that were loaded, so decrement rather than
         // claiming the whole bucket is gone.
@@ -1446,7 +1437,7 @@ export default function NotificationsAside() {
           );
           files.count = Math.max(0, files.count - fileMids.length);
         }
-      }),
+      },
     );
 
     try {
@@ -1475,7 +1466,7 @@ export default function NotificationsAside() {
   const totalUnread = createMemo(() =>
     panelKeys().reduce((sum, k) => sum + (buckets[k]?.count ?? 0), 0),
   );
-  createEffect(() => setNotifCount(totalUnread()));
+  createEffect(totalUnread, (n) => { setNotifCount(n); });
 
   // Healthy (live) and transient (connecting) states stay silent; the dot
   // only appears when delivery is degraded.
@@ -1564,13 +1555,13 @@ export default function NotificationsAside() {
                     // on the rows we hold instead of zeroing a count
                     // the server will hand straight back.
                     if (!supportsMarkRead(key)) {
-                      const mids = (unwrap(buckets)[key]?.notifications ?? [])
+                      const mids = (snapshot(buckets)[key]?.notifications ?? [])
                         .map((n) => n.b64mid)
                         .filter((m): m is string => !!m);
                       await markSeen(mids);
                       return;
                     }
-                    setBuckets(key, { count: 0, notifications: [], offset: -1 });
+                    setBuckets((s) => { s[key] = { ...s[key], count: 0, notifications: [], offset: -1 }; });
                     try {
                       await markAllSeen(key);
                       await doFetchCounts();

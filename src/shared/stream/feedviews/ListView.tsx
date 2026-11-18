@@ -1,6 +1,6 @@
 // src/shared/stream/feedviews/ListView.tsx
 import { zrl } from "@utsukta/spa-core/lib/zid";
-import { For, Show, createSignal, onMount, onCleanup } from "solid-js";
+import { For, Show, createSignal, onSettled } from "solid-js";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, flattenThread, isRootPost } from "@utsukta/spa-core/lib/thread";
 import { useThreadMode } from "@utsukta/spa-core/store/thread-mode";
@@ -96,12 +96,11 @@ function VoteGutter(props: { post: ThreadNode; handlers: StreamHandlers }) {
       </Show>
 
       <span
-        class="text-[0.6875rem] font-bold tabular-nums leading-none"
-        classList={{
+        class={["text-[0.6875rem] font-bold tabular-nums leading-none", {
           "text-accent": score() > 0,
           "text-muted": score() === 0,
           "text-subtle": score() < 0,
-        }}
+        }]}
       >
         {score()}
       </span>
@@ -214,8 +213,9 @@ function ListRow(props: {
   const { locale, t } = useI18n();
   let rowRef!: HTMLDivElement;
 
-  onMount(() => {
-    if (!p.uuid || !p.flags.includes("unseen")) return;
+  onSettled(() => {
+    const cleanups: (() => void)[] = [];
+    if (!p.uuid || !p.flags.includes("unseen")) return () => cleanups.forEach((f) => f());
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -226,7 +226,8 @@ function ListRow(props: {
       { threshold: 0.5 },
     );
     observer.observe(rowRef);
-    onCleanup(() => observer.disconnect());
+    cleanups.push(() => observer.disconnect());
+    return () => cleanups.forEach((f) => f());
   });
   const isExpired = () => props.post.flags.includes("expired");
   // Expiry set and still in the future — the post will self-destruct.
@@ -249,10 +250,7 @@ function ListRow(props: {
   return (
     <div
       ref={rowRef}
-      class={
-        "group flex items-stretch border-b border-rim last:border-0 hover:bg-overlay transition-colors" 
-			}
-      classList={{ "border-l-2 border-l-accent/40": isFlatReply() }}
+      class={["group flex items-stretch border-b border-rim last:border-0 hover:bg-overlay transition-colors", { "border-l-2 border-l-accent/40": isFlatReply() }]}
     >
       <VoteGutter post={p} handlers={props.handlers} />
 
@@ -580,8 +578,9 @@ function InboxRow(props: {
   const { locale, t } = useI18n();
   let rowRef!: HTMLDivElement;
 
-  onMount(() => {
-    if (!p.uuid || !p.flags.includes("unseen")) return;
+  onSettled(() => {
+    const cleanups: (() => void)[] = [];
+    if (!p.uuid || !p.flags.includes("unseen")) return () => cleanups.forEach((f) => f());
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -592,7 +591,8 @@ function InboxRow(props: {
       { threshold: 0.5 },
     );
     observer.observe(rowRef);
-    onCleanup(() => observer.disconnect());
+    cleanups.push(() => observer.disconnect());
+    return () => cleanups.forEach((f) => f());
   });
 
   // Same rationale as PostCard's totalComments(): trust the server aggregate
@@ -647,12 +647,11 @@ function InboxRow(props: {
   return (
     <div
       ref={rowRef}
-      class="group border-b border-rim last:border-0 flex items-stretch hover:bg-overlay transition-colors"
-      classList={{
+      class={["group border-b border-rim last:border-0 flex items-stretch hover:bg-overlay transition-colors", {
         "bg-accent-muted/10": expanded(),
         "border-l-2 border-l-violet-500/60 bg-violet-500/[0.04]": isDirectMessage(),
         "border-l-2 border-l-accent/40": !isDirectMessage() && isFlatReply(),
-      }}
+      }]}
     >
       <VoteGutter post={p} handlers={props.handlers} />
 
@@ -661,7 +660,7 @@ function InboxRow(props: {
           onClick={toggleExpand}
           class="flex-1 min-w-0 px-3 pt-2.5 pb-1.5 cursor-pointer space-y-0.5 select-none"
           role="button"
-          tabIndex={0}
+          tabindex={0}
           onKeyDown={(e) => e.key === "Enter" && toggleExpand()}
         >
           <div class="flex items-center gap-1.5">
@@ -675,11 +674,10 @@ function InboxRow(props: {
               }
             >
               <p
-                class="text-sm font-semibold leading-snug line-clamp-1"
-                classList={{
+                class={["text-sm font-semibold leading-snug line-clamp-1", {
                   "text-accent": isUnread(),
                   "text-txt": !isUnread(),
-                }}
+                }]}
                 onClick={handleNsfwToggleClick}
                 innerHTML={DOMPurify.sanitize(p.title!)}
               />
@@ -755,7 +753,7 @@ function InboxRow(props: {
               {formatPostDate(p.created, locale())}
             </span>
 
-            <MdOutlineExpand_more class="w-3 h-3 text-muted/50 ml-auto transition-transform duration-200" classList={{ "rotate-180": expanded() }} />
+            <MdOutlineExpand_more class={["w-3 h-3 text-muted/50 ml-auto transition-transform duration-200", { "rotate-180": expanded() }]} />
           </div>
 
           <DmRecipients

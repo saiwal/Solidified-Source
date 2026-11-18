@@ -1,12 +1,9 @@
 // src/modules/cards/views/CardView.tsx
-import {
-  createSignal, createEffect, createMemo,
-  Show, For
-} from "solid-js";
+import { createSignal, createMemo, Show, For, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { useParams, A, useNavigate } from "@solidjs/router";
+import { useParams, useNavigate } from "@solidjs/router";
 import { fetchCard, deleteCard } from "../api";
 import { cardPath, shareTargetForCard } from "@/shared/lib/shareLinks";
 import { openShare } from "@utsukta/spa-core/store/share";
@@ -41,6 +38,7 @@ import { bbcodeDisplay, rootRelativeLinks } from "@utsukta/spa-core/lib/renderBo
 import { Button, IconButton } from "@ui/Button";
 import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
 import { Card, cardClass } from "@ui/Card";
+import { deepOf } from "@utsukta/spa-core/lib/deep";
 
 // ── delete confirm ────────────────────────────────────────────────────────────
 
@@ -108,11 +106,9 @@ export default function CardView() {
   // slug change from editing.
   createEffect(() => {
     const art = data()?.card;
-    if (!art) return;
-    const canonical = cardPath(nick(), art);
-    if (`/cards/${nick()}/${params.uuid}` !== canonical) {
-      navigate(canonical, { replace: true });
-    }
+    return art ? { canonical: cardPath(nick(), art), here: `/cards/${nick()}/${params.uuid}` } : null;
+  }, (at) => {
+    if (at && at.here !== at.canonical) navigate(at.canonical, { replace: true });
   });
 
   // ── Editing / deleting ────────────────────────────────────────────────────
@@ -161,19 +157,20 @@ export default function CardView() {
   });
   createEffect(() => {
     const art = data()?.card;
-    if (!art) return;
-    setReactions({
+    return art && {
       likeCount: art.likeCount,
       dislikeCount: art.dislikeCount,
       viewerLiked: art.viewerLiked,
       viewerDisliked: art.viewerDisliked,
-    });
+    };
+  }, (r) => {
+    if (r) setReactions(r);
   });
 
   // Local comments list — updated optimistically when a new comment is posted
   const [localComments, setLocalComments] = createSignal<Post[]>([]);
-  createEffect(() => {
-    if (data()?.comments) setLocalComments(data()!.comments);
+  createEffect(() => deepOf(data()?.comments), (comments) => {
+    if (comments) setLocalComments(comments);
   });
 
   // Comment composer visibility
@@ -339,8 +336,8 @@ export default function CardView() {
 
   // TOC
   let bodyRef: HTMLDivElement | undefined;
-  createEffect(() => {
-    if (rendered() && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
+  createEffect(rendered, (html) => {
+    if (html && bodyRef) { hydrateLatex(bodyRef); hydrateMermaid(bodyRef); }
   });
   usePlyr(() => bodyRef, rendered);
   useLightbox(() => (rendered(), bodyRef));
@@ -357,12 +354,12 @@ export default function CardView() {
             {/* ── Card ── */}
             <article class={`${cardClass()} min-w-0 flex-1 max-w-none xl:max-w-3xl p-6 space-y-6`}>
               {/* Back link */}
-              <A
+              <a
                 href={`/cards/${nick()}`}
                 class="inline-flex items-center gap-1 text-sm text-muted hover:text-txt transition-colors"
               >
                 {t("cards.all_cards")}
-              </A>
+              </a>
 
               {/* Delete confirm banner */}
               <Show when={confirmDelete()}>
@@ -406,12 +403,12 @@ export default function CardView() {
                         name: d().card.deck!.name,
                       })}
                       {" — "}
-                      <A
+                      <a
                         href={`/cards/${nick()}/deck/${encodeURIComponent(d().card.deck!.name)}`}
                         class="hover:underline text-txt"
                       >
                         {t("cards.view_full_deck")}
-                      </A>
+                      </a>
                     </p>
                   </Show>
 
@@ -534,9 +531,9 @@ export default function CardView() {
                               }
                             >
                               {(path) => (
-                                <A href={path()} class="text-accent hover:underline">
+                                <a href={path()} class="text-accent hover:underline">
                                   {m.title || t("cards.untitled")}
-                                </A>
+                                </a>
                               )}
                             </Show>
                             <span class="text-xs text-muted">

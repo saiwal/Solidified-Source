@@ -1,5 +1,5 @@
-import { createMemo, Suspense } from "solid-js";
-import { Dynamic } from "solid-js/web";
+import { createMemo, Loading } from "solid-js";
+import { Dynamic } from "@solidjs/web";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isModuleActive } from "@utsukta/spa-core/module-registry";
@@ -38,9 +38,9 @@ export default function ToolsPage() {
   return (
     <SubPageLayout base="/tools" items={items()} activeKey={activeKey()}>
       <div class="px-4 md:px-6 py-6">
-        <Suspense>
+        <Loading>
           <Dynamic component={activeComponent()} />
-        </Suspense>
+        </Loading>
       </div>
     </SubPageLayout>
   );

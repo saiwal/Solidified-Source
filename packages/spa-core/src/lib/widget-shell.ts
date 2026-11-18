@@ -61,7 +61,7 @@ export function loadWidgetShell(): void {
 // folded across navigation and reloads. ponytail: per device (localStorage),
 // move into widget_layout entries if it should follow the account.
 
-export const WidgetKeyContext = createContext<string>();
+export const WidgetKeyContext = createContext<string | null>(null);
 
 const FOLD_KEY = "hz-widget-folded";
 

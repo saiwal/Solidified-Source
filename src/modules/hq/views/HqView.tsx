@@ -16,9 +16,9 @@ import { openPost } from "@/shared/views/modal-host";
 export default function DashboardView() {
   const params = useParams<{ uuid?: string }>();
   const navigate = useNavigate();
-  createEffect(() => {
-    if (!params.uuid) return;
-    openPost(params.uuid);
+  createEffect(() => params.uuid, (uuid) => {
+    if (!uuid) return;
+    openPost(uuid);
     navigate("/hq", { replace: true });
   });
   return null;

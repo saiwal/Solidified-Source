@@ -1,6 +1,6 @@
 // src/shared/stream/feedviews/NewspaperView.tsx
-import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { A, useSearchParams } from "@solidjs/router";
+import { For, Show, createMemo, createSignal, onSettled } from "solid-js";
+import { useSearchParams } from "@solidjs/router";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
 import type { StreamHandlers } from "../types";
@@ -98,26 +98,23 @@ function LeadStory(props: { post: ThreadNode; onOpen: () => void; handlers: Stre
   return (
     <article
       onClick={props.onOpen}
-      class="relative cursor-pointer group"
-      classList={{ "grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6": hasText(), [REPLY_RAIL]: !isRootPost(props.post) }}
+      class={["relative cursor-pointer group", { "grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6": hasText(), [REPLY_RAIL]: !isRootPost(props.post) }]}
     >
       <PinRibbon post={props.post} />
       <Show when={image()}>
         {(src) => (
           <div
-            class="overflow-hidden rounded-sm border border-rim"
-            classList={{ "order-1 md:order-2": hasText() }}
+            class={["overflow-hidden rounded-sm border border-rim", { "order-1 md:order-2": hasText() }]}
           >
             <img loading="lazy" decoding="async"
               src={src()}
               alt=""
-              class="w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-              classList={{ "h-56 md:h-full": hasText(), "h-72 sm:h-96": !hasText() }}
+              class={["w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]", { "h-56 md:h-full": hasText(), "h-72 sm:h-96": !hasText() }]}
             />
           </div>
         )}
       </Show>
-      <div classList={{ "order-2 md:order-1 min-w-0": hasText(), "mt-4": !hasText() && !!image() }}>
+      <div class={{ "order-2 md:order-1 min-w-0": hasText(), "mt-4": !hasText() && !!image() }}>
         <Show when={props.post.title}>
           <h2 class="font-serif font-black text-3xl md:text-4xl leading-[1.05] text-txt group-hover:underline decoration-2 underline-offset-2">
             {props.post.title}
@@ -125,10 +122,7 @@ function LeadStory(props: { post: ThreadNode; onOpen: () => void; handlers: Stre
         </Show>
         <Show when={excerpt()}>
           <p
-            class="font-serif text-[0.9375rem] leading-relaxed text-txt/85
-                   first-letter:float-left first-letter:font-black first-letter:text-5xl
-                   first-letter:leading-[0.8] first-letter:pr-2 first-letter:pt-1"
-            classList={{ "mt-3": !!props.post.title }}
+            class={["font-serif text-[0.9375rem] leading-relaxed text-txt/85\n                   first-letter:float-left first-letter:font-black first-letter:text-5xl\n                   first-letter:leading-[0.8] first-letter:pr-2 first-letter:pt-1", { "mt-3": !!props.post.title }]}
           >
             {excerpt()}
           </p>
@@ -144,7 +138,7 @@ function SecondaryStory(props: { post: ThreadNode; onOpen: () => void; handlers:
   const image = () => firstImageSrc(props.post.body);
   const excerpt = () => excerptOf(props.post, props.post.title ? 120 : 140);
   return (
-    <article onClick={props.onOpen} class="relative flex gap-3 cursor-pointer group" classList={{ [REPLY_RAIL]: !isRootPost(props.post) }}>
+    <article onClick={props.onOpen} class={["relative flex gap-3 cursor-pointer group", { [REPLY_RAIL]: !isRootPost(props.post) }]}>
       <PinRibbon post={props.post} />
       <Show
         when={image()}
@@ -164,8 +158,7 @@ function SecondaryStory(props: { post: ThreadNode; onOpen: () => void; handlers:
         </Show>
         <Show when={excerpt()}>
           <p
-            class="text-xs text-muted leading-relaxed line-clamp-2 font-sans"
-            classList={{ "mt-1": !!props.post.title }}
+            class={["text-xs text-muted leading-relaxed line-clamp-2 font-sans", { "mt-1": !!props.post.title }]}
           >
             {excerpt()}
           </p>
@@ -180,7 +173,7 @@ function SecondaryStory(props: { post: ThreadNode; onOpen: () => void; handlers:
 function WireItem(props: { post: ThreadNode; onOpen: () => void; handlers: StreamHandlers }) {
   const { locale } = useI18n();
   return (
-    <article onClick={props.onOpen} class="relative break-inside-avoid mb-5 cursor-pointer group" classList={{ [REPLY_RAIL]: !isRootPost(props.post) }}>
+    <article onClick={props.onOpen} class={["relative break-inside-avoid mb-5 cursor-pointer group", { [REPLY_RAIL]: !isRootPost(props.post) }]}>
       <PinRibbon post={props.post} />
       <p class="font-mono text-[0.625rem] tracking-widest uppercase text-subtle">
         {props.post.authorName} — {new Date(props.post.created + "Z").toLocaleDateString(locale(), { month: "short", day: "numeric" })}
@@ -258,8 +251,9 @@ function Skybox(props: { posts: Post[] }) {
   let scroller!: HTMLDivElement;
   let track!: HTMLDivElement;
 
-  onMount(() => {
-    if (reducedMotion()) return;
+  onSettled(() => {
+    const cleanups: (() => void)[] = [];
+    if (reducedMotion()) return () => cleanups.forEach((f) => f());
     const ro = new ResizeObserver(() => setLooping(track.offsetWidth > scroller.clientWidth));
     ro.observe(scroller);
     ro.observe(track);
@@ -290,7 +284,8 @@ function Skybox(props: { posts: Post[] }) {
       raf = requestAnimationFrame(tick);
     });
 
-    onCleanup(() => { cancelAnimationFrame(raf); ro.disconnect(); });
+    cleanups.push(() => { cancelAnimationFrame(raf); ro.disconnect(); });
+    return () => cleanups.forEach((f) => f());
   });
 
   const items = () => (
@@ -398,17 +393,17 @@ export function Masthead(props: {
       <div class="flex items-center justify-center gap-3 sm:gap-5 min-w-0">
         <Show when={props.emblem}>
           {(src) => (
-            <A href={`/profile/${nick()}`} title={masthead()} class="shrink-0 rounded-full hover:opacity-80 transition-opacity">
+            <a href={`/profile/${nick()}`} title={masthead()} class="shrink-0 rounded-full hover:opacity-80 transition-opacity">
               <img
                 src={src()}
                 alt={masthead()}
                 class="size-[clamp(2.75rem,9vw,4.5rem)] rounded-full object-cover border-2 border-txt p-0.5"
               />
-            </A>
+            </a>
           )}
         </Show>
         <h1 class="font-serif font-black tracking-tight text-txt text-[clamp(2rem,6vw,3.5rem)] leading-none min-w-0 break-words">
-          <A href={`/profile/${nick()}`} class="hover:opacity-80 transition-opacity">{masthead()}</A>
+          <a href={`/profile/${nick()}`} class="hover:opacity-80 transition-opacity">{masthead()}</a>
         </h1>
       </div>
       <Show when={props.tagline}>
@@ -566,8 +561,7 @@ export default function NewspaperView(props: {
         </Show>
 
         <div
-          class="grid grid-cols-1 gap-x-10 gap-y-8 pt-8"
-          classList={{ "lg:grid-cols-[minmax(0,1fr)_280px]": events().length > 0 }}
+          class={["grid grid-cols-1 gap-x-10 gap-y-8 pt-8", { "lg:grid-cols-[minmax(0,1fr)_280px]": events().length > 0 }]}
         >
           <div class="min-w-0">
             {/* Wire copy */}

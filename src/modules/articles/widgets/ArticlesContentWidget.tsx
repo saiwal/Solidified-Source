@@ -1,11 +1,10 @@
-import { createEffect, onCleanup, Show, For, Index } from "solid-js";
+import { onCleanup, Show, For, createEffect } from "solid-js";
 import { MdOutlineArticle, MdOutlineShare } from "solid-icons/md";
-import { A, useNavigate, useSearchParams } from "@solidjs/router";
+import { useNavigate, useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
-import { hydrateLatex } from "@utsukta/spa-core/lib/hydrateLatex";
-import { hydrateMermaid } from "@utsukta/spa-core/lib/hydrateMermaid";
+import { hydrateRef } from "@utsukta/spa-core/lib/hydrateRef";
 import { posts, loading, hasMore, loadArticles, resetPosts, loadMore } from "../store";
 import type { Post } from "@utsukta/spa-core/types/post.types";
 import { articlePath, shareTargetForArticle } from "@/shared/lib/shareLinks";
@@ -59,18 +58,18 @@ function ArticleEntry(props: { post: Post; nick: string; onOpen: () => void }) {
       class={"group cursor-pointer p-6 " + cardClass()}
     >
       <h2 class="text-lg font-semibold leading-snug">
-        <A
+        <a
           href={articlePath(props.nick, props.post)}
           class="text-txt group-hover:text-accent-txt transition-colors focus-visible:outline-2 focus-visible:outline-accent rounded"
         >
           {props.post.title || t("articles.untitled")}
-        </A>
+        </a>
       </h2>
 
       <Show when={ex().text}>
         <p
           class={`mt-1.5 text-sm leading-relaxed max-w-prose ${ex().fromSummary ? "text-txt" : "text-muted"}`}
-          ref={(el) => createEffect(() => { ex(); hydrateLatex(el); hydrateMermaid(el); })}
+          ref={hydrateRef(ex)}
         >
           {ex().text}
         </p>
@@ -82,12 +81,12 @@ function ArticleEntry(props: { post: Post; nick: string; onOpen: () => void }) {
         <Show when={props.post.likeCount > 0}>
           <span class="tabular-nums">♥ {props.post.likeCount}</span>
         </Show>
-        <Index each={props.post.categories}>
+        <For keyed={false} each={props.post.categories}>
           {(cat) => <span class="text-accent-txt">{cat()}</span>}
-        </Index>
-        <Index each={props.post.tags}>
+        </For>
+        <For keyed={false} each={props.post.tags}>
           {(tag) => <span>#{tag()}</span>}
-        </Index>
+        </For>
         <IconButton
           label={t("share.action")}
           class="ml-auto -my-2 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
@@ -135,15 +134,17 @@ export default function ArticlesContentWidget() {
 
   // Classic Hubzilla filter params (?cat=, ?tag=, ?dbegin=/?dend=, ?search=)
   // are the source of truth, so those URLs keep working when pasted or linked.
-  createEffect(() => {
-    if (auth.loading) return;
-    loadArticles(nick(), {
-      ...(str("cat") && { cat: str("cat") }),
-      ...(str("tag") && { tag: str("tag") }),
-      ...(str("dbegin") && { dbegin: str("dbegin") }),
-      ...(str("dend") && { dend: str("dend") }),
-      ...(str("search") && { search: str("search") }),
-    });
+  createEffect(() => (auth.loading ? null : {
+      nick: nick(),
+      params: {
+        ...(str("cat") && { cat: str("cat") }),
+        ...(str("tag") && { tag: str("tag") }),
+        ...(str("dbegin") && { dbegin: str("dbegin") }),
+        ...(str("dend") && { dend: str("dend") }),
+        ...(str("search") && { search: str("search") }),
+      },
+    }), (q) => {
+    if (q) loadArticles(q.nick, q.params);
   });
 
   onCleanup(() => resetPosts());

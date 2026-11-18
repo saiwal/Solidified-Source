@@ -1,4 +1,4 @@
-import { For, Show, Switch, Match, createSignal, createMemo, onMount, onCleanup } from "solid-js";
+import { For, Show, Switch, Match, createSignal, createMemo, onSettled } from "solid-js";
 import {
   connections, loading, loadingMore, total,
   loadConnections, loadMoreConnections,
@@ -224,7 +224,7 @@ function ConnectionRow(props: { conn: Connection; onChanged: () => void }) {
   const [busy, setBusy] = createSignal(false);
   const [expanded, setExpanded] = createSignal(false);
   // Details render on first expand, then stay mounted so collapsing can animate.
-  const detailsMounted = createMemo((was: boolean) => was || expanded(), false);
+  const detailsMounted = createMemo((was: boolean = false) => was || expanded());
   const [editOpen, setEditOpen] = createSignal(false);
   const [chatOpen, setChatOpen] = createSignal(false);
   const profileHref = () => `/chanview?f=&hash=${encodeURIComponent(props.conn.xchan_hash)}`;
@@ -349,7 +349,7 @@ function ConnectionRow(props: { conn: Connection; onChanged: () => void }) {
       <div
         class="grid transition-[grid-template-rows] duration-300 ease-out"
         style={{ "grid-template-rows": expanded() ? "1fr" : "0fr" }}
-        aria-hidden={!expanded()}
+        aria-hidden={(!expanded()) ? "true" : "false"}
       >
         <div class="overflow-hidden">
           <Show when={detailsMounted()}>
@@ -432,7 +432,7 @@ export default function ConnectionsSection() {
   // revisit replays the row entrance.
   resetReveal();
 
-  onMount(() => {
+  onSettled(() => {
     // The list and its offset both live in the store, so a remount renders what
     // is already loaded instead of resetting to page 1.
     if (connections().length === 0) loadConnections();
@@ -449,7 +449,7 @@ export default function ConnectionsSection() {
     }
   });
 
-  onMount(() => {
+  onSettled(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         // Same reason the feeds suspend endless scroll while arranging widgets
@@ -462,7 +462,7 @@ export default function ConnectionsSection() {
       { rootMargin: "200px" },
     );
     observer.observe(sentinelRef);
-    onCleanup(() => observer.disconnect());
+    return () => observer.disconnect();
   });
 
   function applySearch(q: string) {
@@ -546,7 +546,7 @@ export default function ConnectionsSection() {
           <Chip
             selected={permsOpen() || perms().length > 0}
             count={perms().length}
-            aria-expanded={permsOpen()}
+            aria-expanded={(permsOpen()) ? "true" : "false"}
             onClick={() => setPermsOpen((v) => !v)}
           >
             {t("directory.filters")}

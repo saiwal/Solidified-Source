@@ -1,6 +1,5 @@
 // src/modules/wiki/widgets/WikiListWidget.tsx
-import { createEffect, createMemo, For, Show } from "solid-js";
-import { A } from "@solidjs/router";
+import { createMemo, For, Show, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { MdFillLock } from "solid-icons/md";
@@ -12,8 +11,7 @@ export default function WikiListWidget() {
   const { t } = useI18n();
   const nick = usePageNick();
 
-  createEffect(() => {
-    const n = nick();
+  createEffect(nick, (n) => {
     if (n) loadWikis(n);
   });
 
@@ -53,7 +51,7 @@ export default function WikiListWidget() {
           <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
             <For each={wikis()}>
               {(wiki) => (
-                <A
+                <a
                   href={`/wiki/${nick()}/${wiki.url_name}`}
                   class="flex items-center gap-2 px-(--ws-px) py-2.5 hover:bg-elevated transition-colors group"
                 >
@@ -63,7 +61,7 @@ export default function WikiListWidget() {
                   <Show when={wiki.is_private}>
                     <MdFillLock size={12} class="text-muted shrink-0" />
                   </Show>
-                </A>
+                </a>
               )}
             </For>
           </div>

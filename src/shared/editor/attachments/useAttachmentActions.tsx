@@ -11,7 +11,8 @@
  * can no longer live inside either one.
  */
 import { isolate } from "@utsukta/spa-core/lib/isolate";
-import { createSignal, Show, lazy, type JSX } from "solid-js";
+import { createSignal, Show, lazy } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import type { AttachmentStore } from "./types";
 import type { FileMeta } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";

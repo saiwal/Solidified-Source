@@ -1,5 +1,5 @@
-import { lazy, createMemo, onMount, Suspense, Show } from "solid-js";
-import { Dynamic } from "solid-js/web";
+import { lazy, createMemo, onSettled, Loading, Show } from "solid-js";
+import { Dynamic } from "@solidjs/web";
 import { useLocation, useNavigate } from "@solidjs/router";
 import SubPageLayout from "@/shared/views/SubPageLayout";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
@@ -56,7 +56,7 @@ export default function ConnectionsShellView() {
   // section on screen (often mid-skeleton) until the next one's chunk lands —
   // so on a cold chunk you'd see the old section's skeleton, then the new
   // one's. Warming every chunk once the shell is up removes that wait.
-  onMount(() => {
+  onSettled(() => {
     const warm = () => [...Object.values(SECTIONS), PrivacyGroupDetail].forEach((c) => c.preload());
     if ("requestIdleCallback" in window) requestIdleCallback(warm);
     else setTimeout(warm, 1);
@@ -64,7 +64,7 @@ export default function ConnectionsShellView() {
 
   return (
     <SubPageLayout base="/directory" items={CONNECTIONS_ITEMS} activeKey={activeKey()}>
-      <Suspense fallback={<SectionSkeleton />}>
+      <Loading fallback={<SectionSkeleton />}>
         <Show
           when={groupId() !== null}
           fallback={<Dynamic component={SECTIONS[activeKey()]} />}
@@ -74,7 +74,7 @@ export default function ConnectionsShellView() {
             onDeleted={() => navigate("/directory/privacy-groups", { replace: true })}
           />
         </Show>
-      </Suspense>
+      </Loading>
     </SubPageLayout>
   );
 }

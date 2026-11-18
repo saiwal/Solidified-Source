@@ -3,8 +3,8 @@
 // menus. Owner only. Nesting: an item whose link is "menu:<name>" embeds that
 // menu as a submenu wherever the menu is rendered.
 
-import { createEffect, createSignal, For, Show } from "solid-js";
-import { useParams, A, useNavigate } from "@solidjs/router";
+import { createSignal, For, Show, createEffect } from "solid-js";
+import { useParams, useNavigate } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -55,7 +55,7 @@ function MenuForm(props: {
           class="w-full"
           type="text"
           value={name()}
-          maxLength={60}
+          maxlength={60}
           placeholder={t("webpages.menu_name") as string}
           onInput={(e) => setName(e.currentTarget.value)}
         />
@@ -63,7 +63,7 @@ function MenuForm(props: {
           class="w-full"
           type="text"
           value={desc()}
-          maxLength={100}
+          maxlength={100}
           placeholder={t("webpages.menu_desc") as string}
           onInput={(e) => setDesc(e.currentTarget.value)}
         />
@@ -180,7 +180,7 @@ function ItemForm(props: {
           class="w-full"
           type="text"
           value={label()}
-          maxLength={100}
+          maxlength={100}
           placeholder={t("webpages.item_label") as string}
           onInput={(e) => setLabel(e.currentTarget.value)}
         />
@@ -188,7 +188,7 @@ function ItemForm(props: {
           class="w-full"
           type="text"
           value={link()}
-          maxLength={190}
+          maxlength={190}
           placeholder="https://… / menu:name"
           onInput={(e) => setLink(e.currentTarget.value)}
         />
@@ -243,9 +243,8 @@ export default function MenusView() {
 
   const nick = () => params.nick || auth()?.nick || "";
 
-  createEffect(() => {
-    if ((auth as any).loading || !nick()) return;
-    if (auth()?.nick !== nick()) navigate(`/page/${nick()}/home`, { replace: true });
+  createEffect(() => ((auth as any).loading || !nick() ? null : { mine: auth()?.nick === nick(), nick: nick() }), (at) => {
+    if (at && !at.mine) navigate(`/page/${at.nick}/home`, { replace: true });
   });
 
   const [menus] = createQueryResource("my-menus", fetchMyMenus);
@@ -274,9 +273,9 @@ export default function MenusView() {
       <div class="flex items-center justify-between gap-4">
         <div class="min-w-0">
           <h1 class="text-lg font-semibold text-txt">{t("webpages.manage_menus")}</h1>
-          <A href={`/webpages/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
+          <a href={`/webpages/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
             {t("webpages.back")}
-          </A>
+          </a>
         </div>
         <PageActions class="shrink-0" label={t("webpages.manage_menus")} actions={[
           { label: t("webpages.new_menu"), icon: MdFillAdd, onClick: () => setCreating(!creating()), primary: true },

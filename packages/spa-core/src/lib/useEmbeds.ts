@@ -9,7 +9,7 @@
 // embed policy and hands back only an https src; a null src (not allowlisted,
 // no oEmbed, offline) leaves the plain link standing.
 
-import { createEffect, onCleanup } from "solid-js";
+import { createEffect } from "solid-js";
 
 interface Embed { src: string | null; ratio?: number | null; title?: string }
 
@@ -47,20 +47,20 @@ function buildFrame(e: Embed & { src: string }): HTMLElement {
 
 /** Shaped like usePlyr(ref, body) / useOsmMap(ref, body). */
 export function useEmbeds(ref: () => HTMLElement | undefined, body: () => string): void {
-  createEffect(() => {
-    body();
-    const el = ref();
+  createEffect(() => [body(), ref()] as const, ([, el]) => {
+    const cleanups: (() => void)[] = [];
     if (!el) return;
     const anchors = Array.from(el.querySelectorAll<HTMLAnchorElement>("a.oembed-embed"));
     if (!anchors.length) return;
 
     let active = true;
-    onCleanup(() => { active = false; });
+    cleanups.push(() => { active = false; });
 
     for (const a of anchors) {
       lookup(a.href).then((e) => {
         if (active && e?.src && a.isConnected) a.replaceWith(buildFrame(e as Embed & { src: string }));
       });
     }
+    return () => cleanups.forEach((f) => f());
   });
 }

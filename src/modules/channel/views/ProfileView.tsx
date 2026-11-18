@@ -1,6 +1,5 @@
 // src/modules/channel/views/ProfileView.tsx
 import { createSignal, Show, For } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { MdFillLocation_on, MdFillPublic, MdFillRss_feed, MdOutlineMail, MdOutlineEdit, MdOutlineSettings } from "solid-icons/md";
@@ -322,12 +321,12 @@ function CompactCard(props: { p: ChannelProfile; isOwner: boolean; isVisitor: bo
         {/* View full profile (local only) */}
         <Show when={!p.is_remote}>
           <div class="mt-3 flex justify-end">
-            <A
+            <a
               href={`/profile/${p.channel_address}`}
               class="text-xs text-muted hover:text-accent transition-colors"
             >
               {t("channel.more_details")} →
-            </A>
+            </a>
           </div>
         </Show>
       </div>

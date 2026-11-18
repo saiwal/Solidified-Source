@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createEffect, on } from "solid-js";
+import { createSignal, createMemo, createEffect } from "solid-js";
 import { useLocation, useIsRouting } from "@solidjs/router";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useNav, useNavActionItems } from "./useNav";
@@ -34,7 +34,7 @@ export function useLayoutChrome() {
   const [channelMenuOpen, setChannelMenuOpen] = createSignal(false);
 
   const subjectNick = useSubjectNick();
-  createEffect(() => setNavNick(subjectNick()));
+  createEffect(subjectNick, (n) => { setNavNick(n); });
   useChannelTheme(subjectNick);
   const actionItems = useNavActionItems();
   const location = useLocation();
@@ -47,8 +47,11 @@ export function useLayoutChrome() {
   const navData = useNavData();
   // channelScoped modules (the graph) follow the visited channel's owner.
   createEffect(() => {
+    if (navData.loading) return undefined;
     const raw = navData()?.subject_frontend_overrides;
-    setChannelFrontendOverrides(navData.loading ? undefined : raw ? new Set(raw) : null);
+    return raw ? [...raw] : null;
+  }, (raw) => {
+    setChannelFrontendOverrides(raw === undefined ? undefined : raw ? new Set(raw) : null);
   });
   const navChannels = useNavChannels();
   const navChannelSelectEnabled = useNavChannelSelectEnabled();
@@ -80,16 +83,16 @@ export function useLayoutChrome() {
   // app-wide `main` scroller) trying to reveal them — the page visibly yanks
   // every time the drawer/sidebar opens. Focus still moves for keyboard and
   // screen-reader users; only the scroll side effect is dropped.
-  createEffect(() => {
-    if (moreOpen())
+  createEffect(moreOpen, (isOpen) => {
+    if (isOpen)
       requestAnimationFrame(() => {
         morePanelRef()
           ?.querySelector<HTMLElement>("a, button")
           ?.focus({ preventScroll: true });
       });
   });
-  createEffect(() => {
-    if (rightOpen() && !isXl())
+  createEffect(() => rightOpen() && !isXl(), (overlay) => {
+    if (overlay)
       requestAnimationFrame(() =>
         rightPanelRef()?.focus({ preventScroll: true }),
       );
@@ -99,41 +102,27 @@ export function useLayoutChrome() {
   // AT while leaving them in the tab order — focus could land inside a subtree
   // announced as hidden, which is undefined behaviour. inert does both, and is
   // set on the element because Solid's JSX types have no `inert` attribute.
-  createEffect(() => {
-    const el = rightPanelRef();
-    if (el) el.inert = !isXl() && !rightOpen();
+  createEffect(() => [rightPanelRef(), !isXl() && !rightOpen()] as const, ([el, hidden]) => {
+    if (el) el.inert = hidden;
   });
-  createEffect(() => {
-    const el = morePanelRef();
-    if (el) el.inert = !moreOpen();
+  createEffect(() => [morePanelRef(), !moreOpen()] as const, ([el, hidden]) => {
+    if (el) el.inert = hidden;
   });
   createEffect(
-    on(
-      rightOpen,
-      (isOpen, prevOpen) => {
+    rightOpen, (isOpen, prevOpen) => {
         if (prevOpen && !isOpen) panelButtonRef()?.focus({ preventScroll: true });
-      },
-      { defer: true },
-    ),
+      }, { defer: true },
   );
   createEffect(
-    on(
-      moreOpen,
-      (isOpen, prevOpen) => {
+    moreOpen, (isOpen, prevOpen) => {
         if (prevOpen && !isOpen) moreButtonRef()?.focus({ preventScroll: true });
-      },
-      { defer: true },
-    ),
+      }, { defer: true },
   );
   // The desktop account panel (expanded inline in the rail) closes on
   // navigation: picking one of its entries is a navigation, and it shouldn't
   // stay open over the next page's rail.
   createEffect(
-    on(
-      () => location.pathname,
-      () => setActionsOpen(false),
-      { defer: true },
-    ),
+    () => location.pathname, () => { setActionsOpen(false); }, { defer: true },
   );
 
   // `mainRef` is the one persistent scroll container for every routed
@@ -141,9 +130,7 @@ export function useLayoutChrome() {
   // this a module opens still scrolled to wherever the previous module
   // left off.
   createEffect(
-    on(
-      () => location.pathname,
-      () => {
+    () => location.pathname, () => {
         const el = mainRef();
         if (el) el.scrollTop = 0;
         setShowScrollTop(false);
@@ -154,9 +141,7 @@ export function useLayoutChrome() {
         // standard fix; scrollTop is already 0 above, so preventScroll only
         // stops the browser re-scrolling ancestors on the way.
         el?.focus({ preventScroll: true });
-      },
-      { defer: true },
-    ),
+      }, { defer: true },
   );
 
   const activeModuleId = createMemo(() => moduleIdForPath(location.pathname));
@@ -196,17 +181,17 @@ export function useLayoutChrome() {
   // deliberately not part of the boot payload — fetch them once, centrally,
   // when edit mode starts on a templated page, rather than once per
   // templated slot on that page.
-  createEffect(() => {
-    if (pageTemplateId() && editingWidgets()) void loadTemplates();
+  createEffect(() => !!pageTemplateId() && editingWidgets(), (need) => {
+    if (need) void loadTemplates();
   });
 
   // The same resolved label drives the <title> and the live region a theme
   // renders for screen readers — moving focus alone doesn't say what changed.
   const [routeTitle, setRouteTitle] = createSignal("");
   createEffect(() => {
-    const mod = getModule(activeModuleId());
-    const label = mod?.navItem?.label;
-    const resolved = typeof label === "function" ? label() : label;
+    const label = getModule(activeModuleId())?.navItem?.label;
+    return typeof label === "function" ? label() : label;
+  }, (resolved) => {
     document.title = resolved ? `${resolved} · Hubzilla` : "Hubzilla";
     setRouteTitle(resolved ?? "");
   });
@@ -235,8 +220,8 @@ export function useLayoutChrome() {
 
   // Widget editing targets your own layout — leave edit mode when the page
   // stops being yours (e.g. navigating to someone else's channel).
-  createEffect(() => {
-    if (!isOwner()) setEditingWidgets(false);
+  createEffect(isOwner, (owner) => {
+    if (!owner) setEditingWidgets(false);
   });
 
   const isMedium = createMediaQuery("(min-width: 768px)");

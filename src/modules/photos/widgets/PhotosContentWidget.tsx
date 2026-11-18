@@ -1,8 +1,7 @@
-import { A } from "@solidjs/router";
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import { createEffect, createMemo, createSignal, lazy, on, onMount, onCleanup, Show, For } from "solid-js";
-import type { JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, lazy, onSettled, onCleanup, Show, For } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -60,6 +59,7 @@ import { EmptyState } from "@ui/EmptyState";
 import { Menu, MenuItem } from "@ui/Menu";
 import { FileDropZone } from "@ui/FileDropZone";
 import PageActions, { useMobileActions } from "@/shared/views/layout/PageActions";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 const ImageEditor = lazy(() => import("@/shared/views/ImageEditor"));
 const MapPickerModal = lazy(() => import("@/shared/editor/map/MapPickerModal"));
@@ -95,13 +95,11 @@ export default function PhotosContentWidget() {
   // know whether this channel has automatic upload folders. Keyed on nick
   // alone — refetching per photo flipped albumsLoading and blanked the
   // sidebar album list on every prev/next.
-  createEffect(on(() => nick() ?? '', loadAlbums));
+  createEffect(() => nick() ?? '', (n) => { void loadAlbums(n); });
 
-  createEffect(() => {
-    const n = nick() ?? '';
-    const d = datum() ?? '';
-    if (datatype() === 'album') loadAlbum(n, d);
-    else if (datatype() === 'image' && d) loadImage(n, d);
+  createEffect(() => ({ n: nick() ?? '', d: datum() ?? '', type: datatype() }), ({ n, d, type }) => {
+    if (type === 'album') loadAlbum(n, d);
+    else if (type === 'image' && d) loadImage(n, d);
     else loadSummary(n);
   });
 
@@ -592,13 +590,13 @@ function AllPhotosView() {
   );
   let sentinel: HTMLDivElement | undefined;
 
-  onMount(() => {
+  onSettled(() => {
     const io = new IntersectionObserver(
       (entries) => { if (entries[0].isIntersecting) loadMorePhotos(); },
       { rootMargin: '400px' },
     );
     if (sentinel) io.observe(sentinel);
-    onCleanup(() => io.disconnect());
+    return () => io.disconnect();
   });
 
   return (
@@ -844,7 +842,7 @@ function AlbumsView(props: { auto: boolean }) {
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <For each={sortedAlbums()}>
             {(album) => (<CardShell uuid={`album:${album.folder}`} class="grid" waitForImage>
-              <A
+              <a
                 href={`/photos/${nick()}/album/${album.folder}`}
                 class="group block rounded-xl overflow-hidden bg-surface
                        hover:bg-elevated transition-colors border border-rim"
@@ -871,7 +869,7 @@ function AlbumsView(props: { auto: boolean }) {
                   <p class="text-sm font-medium text-txt truncate">{album.album}</p>
                   <p class="text-xs text-muted">{album.total} {t("photos.photos_count")}</p>
                 </div>
-              </A></CardShell>
+              </a></CardShell>
             )}
           </For>
         </div>
@@ -882,7 +880,7 @@ function AlbumsView(props: { auto: boolean }) {
         <div class="flex flex-col divide-y divide-rim">
           <For each={sortedAlbums()}>
             {(album) => (<CardShell uuid={`album:${album.folder}`}>
-              <A
+              <a
                 href={`/photos/${nick()}/album/${album.folder}`}
                 class="flex items-center gap-3 py-2.5 px-2 hover:bg-surface
                        transition-colors rounded-lg"
@@ -909,7 +907,7 @@ function AlbumsView(props: { auto: boolean }) {
                   <p class="text-xs text-muted">{album.total} {t("photos.photos_count")}</p>
                 </div>
                 <MdFillChevron_right size={18} class="text-subtle flex-shrink-0" />
-              </A></CardShell>
+              </a></CardShell>
             )}
           </For>
         </div>
@@ -968,7 +966,7 @@ function AlbumGrid() {
   const [sortBy, setSortBy] = createSignal<'date' | 'name'>('date');
 
   // Album deletion
-  const [confirmAlbum, setConfirmAlbum]   = createSignal(false);
+  const [confirmAlbum, setConfirmAlbum]   = createSyncSignal(false);
   const [deletingAlbum, setDeletingAlbum] = createSignal(false);
 
 
@@ -1233,7 +1231,7 @@ function ImageView() {
   const [threaded, setThreaded]           = createSignal(true);
   const [editFile, setEditFile]           = createSignal<File | null>(null);
   const [editUploading, setEditUploading] = createSignal(false);
-  const [deleteConfirming, setDeleteConfirming] = createSignal(false);
+  const [deleteConfirming, setDeleteConfirming] = createSyncSignal(false);
   const [aclOpen, setAclOpen]                   = createSignal(false);
   const [renameOpen, setRenameOpen]             = createSignal(false);
   const [renameInput, setRenameInput]           = createSignal('');
@@ -1257,7 +1255,7 @@ function ImageView() {
 
   // NSFW blur — revealed per photo, resets when navigating to a sibling
   const [nsfwRevealed, setNsfwRevealed] = createSignal(false);
-  createEffect(on(() => d()?.resource_id, () => setNsfwRevealed(false)));
+  createEffect(() => d()?.resource_id, () => { setNsfwRevealed(false); });
   const nsfwBlurred = () => !!d()?.is_nsfw && !nsfwRevealed();
 
   async function openLightbox() {
@@ -1657,22 +1655,22 @@ function ImageView() {
             </button>
           </Show>
           <Show when={prevPath()}>
-            <A
+            <a
               href={prevPath()!}
               class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full
                      bg-black/40 hover:bg-black/60 text-white transition-colors"
             >
               <MdFillChevron_left size={22} />
-            </A>
+            </a>
           </Show>
           <Show when={nextPath()}>
-            <A
+            <a
               href={nextPath()!}
               class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full
                      bg-black/40 hover:bg-black/60 text-white transition-colors"
             >
               <MdFillChevron_right size={22} />
-            </A>
+            </a>
           </Show>
         </div>
 

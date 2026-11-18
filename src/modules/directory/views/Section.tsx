@@ -1,7 +1,8 @@
 // The frame every directory section shares: one header row (title, tools,
 // page actions), an optional description, then the section's own content.
 // The mobile back bar already names the section, so the title is md+ only.
-import { createSignal, Show, type JSX } from "solid-js";
+import { createSignal, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { createMediaQuery } from "@solid-primitives/media";
 import { MdOutlineClose, MdOutlineSearch } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -24,7 +25,7 @@ export function Section(props: {
   children: JSX.Element;
 }) {
   return (
-    <PageActionsLabel.Provider value={() => props.title}>
+    <PageActionsLabel value={() => props.title}>
       <div class={`${props.narrow ? "max-w-3xl" : "max-w-5xl"} mx-auto px-4 md:px-6 py-6 space-y-4`}>
         <div class="space-y-1">
           <div class="flex items-center justify-end gap-2 flex-wrap">
@@ -42,7 +43,7 @@ export function Section(props: {
           <div class={`${cardClass()} p-2`}>{props.children}</div>
         </Show>
       </div>
-    </PageActionsLabel.Provider>
+    </PageActionsLabel>
   );
 }
 

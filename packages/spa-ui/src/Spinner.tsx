@@ -13,7 +13,7 @@ export function Spinner(props: SpinnerProps) {
     <span
       role={props.label ? "status" : undefined}
       aria-label={props.label}
-      aria-hidden={props.label ? undefined : true}
+      aria-hidden={props.label ? undefined : "true"}
       class={
         `hz-spinner inline-block shrink-0 rounded-full border-current border-t-transparent animate-spin ` +
         `motion-reduce:animate-[spin_1.5s_linear_infinite] ${SIZE[props.size ?? "md"]} ${TONE[props.tone ?? "current"]} ${props.class ?? ""}`

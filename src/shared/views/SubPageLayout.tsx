@@ -1,5 +1,6 @@
-import { type JSX, Show, createMemo, createSignal, createEffect } from "solid-js";
-import { useLocation, useNavigate, A } from "@solidjs/router";
+import { Show, createMemo, createSignal, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { useLocation, useNavigate } from "@solidjs/router";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
@@ -80,11 +81,10 @@ export default function SubPageLayout(props: Props) {
   // Only record while the URL really is under this base: ProfilesView renders
   // with base="/settings" from /profiles and would otherwise poison the map.
   const [lastKey, setLastKey] = createSignal(lastKeyByBase.get(props.base) ?? props.activeKey);
-  createEffect(() => {
-    if (location.pathname.startsWith(props.base + "/")) {
-      setLastKey(props.activeKey);
-      lastKeyByBase.set(props.base, props.activeKey);
-    }
+  createEffect(() => (location.pathname.startsWith(props.base + "/") ? [props.base, props.activeKey] as const : null), (at) => {
+    if (!at) return;
+    setLastKey(at[1]);
+    lastKeyByBase.set(at[0], at[1]);
   });
 
   // Desktop never renders the bare base path: with no section segment the
@@ -93,10 +93,11 @@ export default function SubPageLayout(props: Props) {
   // whatever module-level paging state it shares. Redirect to the real URL.
   // Mobile keeps the base path — there it *is* the section menu.
   createEffect(() => {
-    if (!atBase() || !isDesktop()) return;
+    if (!atBase() || !isDesktop()) return null;
     const key = lastKey();
-    if (visibleItems().some((item) => item.path === key))
-      navigate(`${props.base}/${key}`, { replace: true });
+    return visibleItems().some((item) => item.path === key) ? `${props.base}/${key}` : null;
+  }, (to) => {
+    if (to) navigate(to, { replace: true });
   });
 
   const highlightKey = () => (atBase() ? lastKey() : props.activeKey);
@@ -190,7 +191,7 @@ function SubPageNav(props: {
         const active = () => item.path === props.activeKey;
         return (
           <>
-            <A
+            <a
               ref={item.ref}
               href={`${props.base}/${item.path}`}
               class={[
@@ -216,7 +217,7 @@ function SubPageNav(props: {
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
-            </A>
+            </a>
             {item.dividerAfter && <hr class="my-2 mx-3 border-rim" />}
           </>
         );

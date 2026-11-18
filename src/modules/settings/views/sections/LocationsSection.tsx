@@ -41,7 +41,7 @@ export default function LocationsSection() {
   const isBusy = (id?: number, action?: LocationAction) =>
     mutation.isPending &&
     mutation.variables?.id === id &&
-    (!action || mutation.variables.action === action);
+    (!action || mutation.variables?.action === action);
 
   const run = (action: LocationAction, id?: number) => {
     setConfirmDropId(null);

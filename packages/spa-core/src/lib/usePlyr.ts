@@ -1,5 +1,5 @@
 import type Plyr from 'plyr';
-import { createEffect, onCleanup } from 'solid-js';
+import { onCleanup, createEffect } from "solid-js";
 
 const PLYR_OPTIONS: Plyr.Options = {
   controls: [
@@ -84,9 +84,8 @@ export function usePlyr(
 ) {
   let instances: Plyr[] = [];
 
-  createEffect(() => {
-    body();
-    const el = containerRef();
+  createEffect(() => [body(), containerRef()] as const, ([, el]) => {
+    const cleanups: (() => void)[] = [];
 
     instances.forEach(p => { try { p.destroy(); } catch (_) {} });
     instances = [];
@@ -100,7 +99,7 @@ export function usePlyr(
     // `active` guards against a stale .then() firing after the effect re-runs
     // or the component unmounts before the async import resolves.
     let active = true;
-    onCleanup(() => {
+    cleanups.push(() => {
       active = false;
       instances.forEach(p => { try { p.destroy(); } catch (_) {} });
       instances = [];
@@ -132,5 +131,14 @@ export function usePlyr(
         if (p) instances.push(p);
       });
     });
+    return () => cleanups.forEach((f) => f());
   });
+}
+
+/** Ref factory: `ref={plyrRef()}` — mounts Plyr, tears it down with the owner
+ *  that called it (Solid 2 ref callbacks have none of their own). */
+export function plyrRef() {
+  let off: (() => void) | undefined;
+  onCleanup(() => off?.());
+  return (el: HTMLMediaElement) => { off = mountPlyr(el); };
 }

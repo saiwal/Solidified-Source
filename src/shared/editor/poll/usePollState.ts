@@ -36,9 +36,9 @@ export interface PollState {
   toFormPayload: () => PollFormPayload | null;
 }
 
-export function usePollState(): PollState {
+export function usePollState(initiallyEnabled = false): PollState {
   const { t } = useI18n();
-  const [enabled, setEnabled] = createSignal(false);
+  const [enabled, setEnabled] = createSignal(initiallyEnabled);
   const [answers, setAnswers] = createSignal<string[]>(["", ""]);
   const [expireValue, setExpireValue] = createSignal("1");
   const [expireUnit, setExpireUnit] = createSignal("Days");

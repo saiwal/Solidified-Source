@@ -11,17 +11,8 @@
  * - Submits to POST /spa/item (SPA Item handler) with JSON body + CSRF token
  */
 
-import {
-  createSignal,
-  createEffect,
-  onCleanup,
-  useContext,
-  Show,
-  Suspense,
-  lazy,
-  type Component,
-} from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, onCleanup, useContext, Show, Loading, lazy, type Component, createEffect } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineClose, MdOutlineMap, MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
 import { parseCoord, reverseGeocode, type Coord } from "@utsukta/spa-core/lib/osm";
@@ -204,12 +195,10 @@ const PostComposer: Component<ComposerProps> = (props) => {
   }
 
   // ── Poll state ─────────────────────────────────────────────────────────────
-  const poll = usePollState();
-  if (props.initialPoll) poll.setEnabled(true);
+  const poll = usePollState(!!props.initialPoll);
 
   // ── Sync ACL to attachment store ───────────────────────────────────────────
-  createEffect(() => {
-    const mode = acl.mode();
+  createEffect(() => ({ mode: acl.mode(), allow: [...acl.allowEntries()], deny: [...acl.denyEntries()] }), ({ mode, allow, deny }) => {
     if (mode === "connections") {
       attach.setAcl(null); // leave files at channel defaults
       return;
@@ -218,13 +207,13 @@ const PostComposer: Component<ComposerProps> = (props) => {
     if (mode === "me") {
       fileAcl.scope = "private";
     } else if (mode === "custom") {
-      for (const key of acl.allowEntries()) {
+      for (const key of allow) {
         const [type, ...rest] = key.split(":");
         const xid = rest.join(":");
         if (type === "c") fileAcl.allow_cid.push(xid);
         if (type === "g") fileAcl.allow_gid.push(xid);
       }
-      for (const key of acl.denyEntries()) {
+      for (const key of deny) {
         const [type, ...rest] = key.split(":");
         const xid = rest.join(":");
         if (type === "c") fileAcl.deny_cid.push(xid);
@@ -406,8 +395,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
     return extra;
   }
 
-  createEffect(() => {
-    const extra = store.restoredExtra();
+  createEffect(() => store.restoredExtra(), (extra) => {
     if (!extra) return;
     if (typeof extra.aclMode === "string") acl.setMode(extra.aclMode as AclMode);
     if (Array.isArray(extra.allow)) acl.setAllowEntries(new Set(extra.allow as string[]));
@@ -421,10 +409,10 @@ const PostComposer: Component<ComposerProps> = (props) => {
     const p = extra.poll as { answers: string[]; expireValue: string; expireUnit: string; multiple?: boolean } | undefined;
     if (p) {
       poll.setEnabled(true);
-      p.answers.forEach((a, i) => {
-        while (poll.answers().length <= i) poll.addAnswer();
-        poll.updateAnswer(i, a);
-      });
+      // Writes are batched: answers() wouldn't grow inside the loop, so the
+      // missing rows are counted once up front.
+      for (let k = poll.answers().length; k < p.answers.length; k++) poll.addAnswer();
+      p.answers.forEach((a, i) => poll.updateAnswer(i, a));
       poll.setExpireValue(p.expireValue);
       poll.setExpireUnit(p.expireUnit);
       poll.setMultiple(!!p.multiple);
@@ -488,12 +476,12 @@ const PostComposer: Component<ComposerProps> = (props) => {
     }
   }
 
-  createEffect(() => {
+  createEffect(() => !!props.open && frame?.mode() !== "min", (live) => {
     // Gated on the frame mode too: a minimized composer is still mounted, so
     // without this every pill in the dock would keep a live document listener —
     // one Escape would minimize them all and Ctrl+Enter would post from a
     // composer nobody can see.
-    if (props.open && frame?.mode() !== "min") document.addEventListener("keydown", onKey);
+    if (live) document.addEventListener("keydown", onKey);
     else document.removeEventListener("keydown", onKey);
   });
   onCleanup(() => document.removeEventListener("keydown", onKey));
@@ -743,14 +731,14 @@ const PostComposer: Component<ComposerProps> = (props) => {
                 </div>
               </PopoverButton>
               <Show when={mapPickOpen()}>
-                <Suspense>
+                <Loading>
                   <MapPickerModal
                     initial={parseCoord(coord())}
                     onPick={pickOnMap}
                     actionLabel={t("editor.location_set")}
                     onClose={() => setMapPickOpen(false)}
                   />
-                </Suspense>
+                </Loading>
               </Show>
               </Show>
 

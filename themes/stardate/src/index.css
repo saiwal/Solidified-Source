@@ -616,7 +616,7 @@ nav[data-tour="nav.bottom"] > button > span:first-child { align-self: flex-start
 :is(#app-drawer, #favorites-sheet) div:nth-child(3n + 2) > [class~="group"] > span.w-12 { background: var(--lcars-lavender); }
 :is(#app-drawer, #favorites-sheet) [class~="group"]:nth-child(3n + 3) > span.w-12,
 :is(#app-drawer, #favorites-sheet) div:nth-child(3n + 3) > [class~="group"] > span.w-12 { background: var(--lcars-tan); }
-:is(#app-drawer, #favorites-sheet) .hz-active > span.w-12 { background: var(--lcars-orange) !important; color: #000 !important; }
+:is(#app-drawer, #favorites-sheet) [data-active] > span.w-12 { background: var(--lcars-orange) !important; color: #000 !important; }
 :is(#app-drawer, #favorites-sheet) [class~="group"]:hover { background: transparent; }
 :is(#app-drawer, #favorites-sheet) [class~="group"]:hover > span.w-12 { filter: brightness(1.15); }
 :is(#app-drawer, #favorites-sheet) [class~="group"] > span:last-child { text-transform: uppercase; letter-spacing: 0.04em; }

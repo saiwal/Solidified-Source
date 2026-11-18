@@ -9,7 +9,8 @@
 // a PostCard that could show the flag mounts (visitors, and the feeds that
 // don't wire the moderation handlers, never trigger it).
 
-import { createResource, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
 import { fetchModerationQueue, type PendingItem } from "./api";
 
 const REACTION_VERBS = new Set(["Like", "Dislike", "Announce"]);

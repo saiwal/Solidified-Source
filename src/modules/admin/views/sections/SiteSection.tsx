@@ -1,5 +1,4 @@
 import { createSignal, For, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import SubPageContent from "@/shared/views/SubPageContent";
@@ -188,13 +187,13 @@ export default function SiteSection() {
                       ))}
                     </Show>
                   </Select>
-                  <A
+                  <a
                     href="/admin/themes"
                     class="shrink-0 px-3 py-2 text-sm rounded-lg border border-rim
                          text-muted hover:text-txt hover:bg-elevated transition-colors"
                   >
                     Configure
-                  </A>
+                  </a>
                 </div>
               </Field>
               <Field label="Default permission role for new accounts">

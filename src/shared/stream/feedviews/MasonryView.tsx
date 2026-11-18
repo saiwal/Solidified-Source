@@ -1,12 +1,5 @@
 // src/shared/stream/feedviews/MasonryView.tsx
-import {
-  For,
-  Show,
-  createSignal,
-  createMemo,
-  onMount,
-  onCleanup,
-} from "solid-js";
+import { For, Show, createSignal, createMemo, onSettled } from "solid-js";
 import { rowSpan, splitIntoColumns, useColumnCount as useMasonryColumnCount } from "@utsukta/spa-core/lib/masonry";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
@@ -68,7 +61,8 @@ function MasonryCard(props: {
     setOverflows(natural > COLLAPSED_MAX_PX);
   };
 
-  onMount(() => {
+  onSettled(() => {
+    const cleanups: (() => void)[] = [];
     checkOverflow();
     const imgs = bodyRef?.querySelectorAll("img");
     imgs?.forEach((img) => {
@@ -87,8 +81,9 @@ function MasonryCard(props: {
         { threshold: 0.5 },
       );
       observer.observe(cardRef);
-      onCleanup(() => observer.disconnect());
+      cleanups.push(() => observer.disconnect());
     }
+    return () => cleanups.forEach((f) => f());
   });
   const isExpired = () => props.post.flags.includes("expired");
   // Expiry set and still in the future — the post will self-destruct.
@@ -113,10 +108,7 @@ function MasonryCard(props: {
       <div
         ref={cardRef}
         onClick={() => props.onOpenModal()}
-        class={
-          "hz-post-tile relative mb-3 bg-surface border border-rim rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-        }
-        classList={{ "border-l-4 border-l-accent/50": isFlatReply() }}
+        class={["hz-post-tile relative mb-3 bg-surface border border-rim rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer", { "border-l-4 border-l-accent/50": isFlatReply() }]}
       >
         <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
           <Show when={isPinned()}>

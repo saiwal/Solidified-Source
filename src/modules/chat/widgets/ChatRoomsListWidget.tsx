@@ -2,7 +2,6 @@
 // The page channel's chatrooms; a click joins the room in a hosted chat window
 // (openChat), so it works from HQ or any sidebar without leaving the page.
 import { For, Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -23,9 +22,9 @@ export default function ChatRoomsListWidget() {
       <WidgetShell
         title={t("chat.chatrooms")}
         actions={
-          <A href={`/chat/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
+          <a href={`/chat/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
             {t("widgets.view_all")}
-          </A>
+          </a>
         }
       >
 

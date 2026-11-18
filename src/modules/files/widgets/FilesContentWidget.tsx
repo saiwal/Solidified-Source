@@ -1,14 +1,5 @@
-import {
-  createSignal,
-  createMemo,
-  createEffect,
-  untrack,
-  on,
-  For,
-  Show,
-  type Component,
-  type JSX,
-} from "solid-js";
+import { createSignal, createMemo, createEffect, For, Show, type Component } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useLocation, useNavigate, useSearchParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useQueryClient } from "@utsukta/spa-core/lib/query";
@@ -542,12 +533,11 @@ export default function FilesContentWidget() {
   // would re-run this against the not-yet-updated URL and resolve the *old*
   // folder back in. `resolveSeq` drops resolves overtaken by a newer URL.
   let resolveSeq = 0;
-  createEffect(() => {
-    const segs = cloudPathSegments(location.pathname, nick());
+  createEffect(() => ({ nick: nick(), segs: cloudPathSegments(location.pathname, nick()) }), ({ nick: n, segs }) => {
     const seq = ++resolveSeq;
-    if (segs.join("/") === untrack(current).displayPath) return; // our own navigate()
+    if (segs.join("/") === current().displayPath) return; // our own navigate()
     if (!segs.length) { setNavStack([rootFrame()]); return; }
-    resolveFolderPath(nick(), segs).then(({ frames, file }) => {
+    resolveFolderPath(n, segs).then(({ frames, file }) => {
       if (seq !== resolveSeq) return;
       setNavStack([rootFrame(), ...frames]);
       // A file URL (e.g. a bookmark) previews it. Never window.open() here —
@@ -573,12 +563,12 @@ export default function FilesContentWidget() {
     () => (cat() ? { nick: nick(), cat: cat(), hash: current().hash } : null),
     ({ nick: n, cat: c, hash }) => filesInCategory(n, c, hash)
   );
-  createEffect(on(cat, () => clearSelection(), { defer: true }));
+  createEffect(cat, () => { clearSelection(); }, { defer: true });
 
   // View filter: narrows the open folder by name. Cleared on folder change.
   const [query, setQuery] = createSignal("");
   const [filterOpen, setFilterOpen] = createSignal(false);
-  createEffect(on(() => current().hash, () => setQuery(""), { defer: true }));
+  createEffect(() => current().hash, () => { setQuery(""); }, { defer: true });
 
   // Mutations call this. Every cached listing, not just this folder's: the
   // tree shows other folders (a rename/move changes the parent's listing),

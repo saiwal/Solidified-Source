@@ -1,4 +1,4 @@
-import { render } from "solid-js/web";
+import { render } from "@solidjs/web";
 import "./index.css";
 import App from "./App";
 import { loadTypography } from "@utsukta/spa-core/lib/typography";

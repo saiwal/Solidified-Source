@@ -1,5 +1,5 @@
-import type { JSX } from "solid-js";
 import { Show, children } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { PageActionsLabel } from "./layout/PageActions";
 
 interface Props {
@@ -33,7 +33,7 @@ export default function SubPageContent(props: Props) {
   // entries in the mobile floating menu).
   const action = children(() => props.action);
   return (
-    <PageActionsLabel.Provider value={() => props.title}>
+    <PageActionsLabel value={() => props.title}>
     <div class={`${props.wide ? "max-w-5xl" : "max-w-3xl"} mx-auto px-4 md:px-6 py-6 space-y-6`}>
       {/* Page header */}
       <div class="flex items-start justify-between gap-4">
@@ -61,6 +61,6 @@ export default function SubPageContent(props: Props) {
         {props.children}
       </Show>
     </div>
-    </PageActionsLabel.Provider>
+    </PageActionsLabel>
   );
 }

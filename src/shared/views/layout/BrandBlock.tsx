@@ -1,5 +1,4 @@
 import { Show } from "solid-js";
-import { A } from "@solidjs/router";
 import DOMPurify from "dompurify";
 
 // ── Brand / site banner ────────────────────────────────────────────────────────
@@ -8,7 +7,7 @@ import DOMPurify from "dompurify";
 // name when the hub never set a banner).
 export default function BrandBlock(props: { banner?: string; logoUrl?: string }) {
   return (
-    <A href="/" class="flex items-center gap-3 select-none">
+    <a href="/" class="flex items-center gap-3 select-none">
       <img
         src={props.logoUrl || import.meta.env.BASE_URL + "hubzilla.svg"}
         alt=""
@@ -31,6 +30,6 @@ export default function BrandBlock(props: { banner?: string; logoUrl?: string })
           })}
         />
       </Show>
-    </A>
+    </a>
   );
 }

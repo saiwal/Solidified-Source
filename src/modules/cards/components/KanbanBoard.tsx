@@ -250,8 +250,7 @@ export default function KanbanBoard(props: { nick: string }) {
               <div class="w-64 shrink-0 rounded-2xl bg-elevated/40 border border-rim p-2 flex flex-col gap-2">
                 <div class="flex items-center gap-1 px-1">
                   <h3
-                    class="text-sm font-semibold truncate"
-                    classList={{ "text-txt": !!col.key, "text-muted italic": !col.key }}
+                    class={["text-sm font-semibold truncate", { "text-txt": !!col.key, "text-muted italic": !col.key }]}
                   >
                     {label(col.key)}
                   </h3>
@@ -299,8 +298,7 @@ export default function KanbanBoard(props: { nick: string }) {
                     {(card) => (
                       <div
                         ref={drag.registerCard(card.uuid)}
-                        class="relative transition-opacity"
-                        classList={{ "opacity-50": drag.draggingKey() === card.uuid }}
+                        class={["relative transition-opacity", { "opacity-50": drag.draggingKey() === card.uuid }]}
                       >
                         <CardFace card={card} nick={props.nick} />
                         <Show when={isOwner()}>

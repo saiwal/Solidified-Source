@@ -1,5 +1,4 @@
-import { Show, For, createSignal, createEffect, on } from "solid-js";
-import { A } from "@solidjs/router";
+import { Show, For, createSignal, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -38,7 +37,7 @@ function ConnectionCard(props: { conn: ChannelConn }) {
   return (
     <article
       // Slides up as it scrolls into view, staggered — same entrance as stream cards.
-      ref={(el) => reveal(el, () => `conn:${props.conn.url}`)}
+      ref={reveal(() => `conn:${props.conn.url}`)}
       class={`${cardClass()} group relative flex flex-col items-center text-center min-w-0 px-3 pt-5 pb-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-black/5`}
     >
       <div class="relative">
@@ -119,7 +118,7 @@ export default function ViewConnectionsContentWidget() {
   const [more, setMore] = createSignal<ChannelConn[]>([]);
   const [loadingMore, setLoadingMore] = createSignal(false);
   // The slot keeps this widget mounted across /viewconnections/a → /b.
-  createEffect(on(nick, () => setMore([]), { defer: true }));
+  createEffect(nick, () => { setMore([]); }, { defer: true });
 
   const conns = () => [...(data()?.connections ?? []), ...more()];
   const total = () => data()?.total ?? 0;
@@ -141,13 +140,13 @@ export default function ViewConnectionsContentWidget() {
             <img src={profile()!.channel_cover} alt="" class="w-full h-full object-cover" />
           </Show>
         </div>
-        <A
+        <a
           href={`/channel/${nick()}`}
           class="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium
                  bg-black/35 text-white backdrop-blur-sm hover:bg-black/50 transition-colors"
         >
           <MdOutlineArrow_back size={14} /> {t("ui.back")}
-        </A>
+        </a>
 
         <div class="flex items-start gap-3 sm:gap-4 px-2 sm:px-5">
           <Show

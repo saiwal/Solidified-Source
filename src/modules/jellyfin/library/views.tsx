@@ -1,7 +1,8 @@
 // Library pages: the tabbed browser (Home / Albums / Artists / Playlists /
 // Movies / Shows / Favourites) and the album, artist, playlist, movie, series,
 // player and search pages.
-import { createMemo, createSignal, createEffect, For, Show, Switch, Match, type JSX } from "solid-js";
+import { createMemo, createSignal, For, Show, Switch, Match, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useSearchParams } from "@solidjs/router";
 import { useQuery, useInfiniteQuery } from "@utsukta/spa-core/lib/query";
 import { MdFillPlay_arrow, MdFillShuffle, MdFillRadio, MdOutlineSort, MdFillArrow_upward, MdFillArrow_downward } from "solid-icons/md";
@@ -496,9 +497,8 @@ function SeriesDetail(props: { s: JellyfinSession; id: string }) {
   const series = useItem(() => props.s, () => props.id);
   const seasonList = useQuery(() => ({ queryKey: key(props.s, "seasons", props.id), queryFn: () => seasons(props.s, props.id), ...jfQuery }));
   const [season, setSeason] = createSignal<string | null>(null);
-  createEffect(() => {
-    const first = seasonList.data?.Items[0]?.Id;
-    if (first && !season()) setSeason(first);
+  createEffect(() => [seasonList.data?.Items[0]?.Id, season()] as const, ([first, current]) => {
+    if (first && !current) setSeason(first);
   });
   const eps = useQuery(() => ({
     queryKey: key(props.s, "episodes", props.id, season()),

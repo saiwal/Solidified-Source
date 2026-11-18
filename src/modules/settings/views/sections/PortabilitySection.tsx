@@ -1,5 +1,4 @@
 import { Show, For, createSignal, createEffect } from "solid-js";
-import { A } from "@solidjs/router";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { toast } from "@utsukta/spa-core/store/toast";
 import SubPageContent from "@/shared/views/SubPageContent";
@@ -61,10 +60,9 @@ export default function PortabilitySection() {
   const [selected, setSelected] = createSignal<Set<string>>(new Set());
 
   // Seed the checkbox set from the server's default sections once metadata arrives.
-  createEffect(() => {
-    const m = meta();
-    if (m && selected().size === 0) {
-      setSelected(new Set(m.default_sections));
+  createEffect(() => [meta()?.default_sections, selected().size] as const, ([defaults, size]) => {
+    if (defaults && size === 0) {
+      setSelected(new Set(defaults));
     }
   });
 
@@ -316,13 +314,13 @@ export default function PortabilitySection() {
         <p class="text-xs text-muted">
           {t("settings.portability_import_desc")}
         </p>
-        <A
+        <a
           href="/import"
           class="inline-block px-4 py-2 text-sm font-medium rounded-lg border border-rim text-txt
                  hover:bg-elevated transition-colors"
         >
           {t("settings.portability_import_btn")}
-        </A>
+        </a>
       </Card>
     </SubPageContent>
   );

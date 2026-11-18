@@ -1,5 +1,6 @@
 // Building blocks shared by the library views.
-import { For, Show, Switch, Match, type JSX } from "solid-js";
+import { For, Show, Switch, Match } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useSearchParams } from "@solidjs/router";
 import { MdFillMusic_note, MdFillArrow_back } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";

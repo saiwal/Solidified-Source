@@ -12,11 +12,9 @@
  * Animatable keys: opacity, x/y (px), scale, height, plus any CSS property
  * WAAPI takes. Durations are seconds, as in motionone.
  */
-import {
-  createContext, createSignal, onMount, splitProps, mergeProps,
-  untrack, useContext, type JSX, type Component,
-} from "solid-js";
-import { Dynamic, createComponent } from "solid-js/web";
+import { children, createContext, createSignal, onSettled, merge, untrack, useContext, type Component, omit } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Dynamic, createComponent } from "@solidjs/web";
 import { createSwitchTransition } from "@solid-primitives/transition-group";
 
 type Easing = string | readonly [number, number, number, number];
@@ -83,16 +81,19 @@ function animateOut(el: Element, done: () => void): void {
 }
 
 // false while a <Presence initial={false}> renders its first child.
-const PresenceCtx = createContext<() => boolean>();
+const PresenceCtx = createContext<(() => boolean) | null>(null);
 
 function motionElement(tag: string, props: MotionOptions & { ref?: unknown }): JSX.Element {
-  const [opts, rest] = splitProps(props, ["initial", "animate", "exit", "transition", "ref"]);
+  const rest = omit(props, "initial", "animate", "exit", "transition", "ref");
   const appear = useContext(PresenceCtx);
-  return createComponent(Dynamic, mergeProps(rest, {
+  // Read once here, not in the ref callback: that runs unowned, and spreading
+  // all of props there would also evaluate `children`.
+  const o = untrack(() => ({ initial: props.initial, animate: props.animate, exit: props.exit, transition: props.transition, ref: props.ref }));
+  const refs = (Array.isArray(o.ref) ? o.ref : [o.ref]).filter((r): r is (e: Element) => void => typeof r === "function");
+  return createComponent(Dynamic, merge(rest, {
     component: tag,
     ref(el: Element) {
-      const o = untrack(() => ({ ...opts }));
-      if (typeof o.ref === "function") (o.ref as (e: Element) => void)(el);
+      for (const r of refs) r(el);
       if (o.exit) exits.set(el, o);
       if (!appear || appear()) animateIn(el, o);
     },
@@ -108,21 +109,17 @@ export const Motion = new Proxy({} as MotionProxy, {
 
 /** Keeps its (single) child in the DOM until that child's `exit` animation ends. */
 export function Presence(props: { initial?: boolean; children: JSX.Element }): JSX.Element {
-  const [appear, setAppear] = createSignal(props.initial ?? true);
-  onMount(() => setAppear(true));
-  // Provider resolves its children itself and returns that memo.
-  const resolved = createComponent(PresenceCtx.Provider, {
+  const [appear, setAppear] = createSignal(untrack(() => props.initial ?? true));
+  onSettled(() => { setAppear(true); });
+  return createComponent(PresenceCtx, {
     value: appear,
     get children() {
-      return props.children;
+      // resolved under the context so Motion children see `appear`
+      const resolved = children(() => props.children);
+      const first = () => resolved.toArray().find((n): n is Element => n instanceof Element);
+      return createSwitchTransition(first, { onExit: animateOut }) as unknown as JSX.Element;
     },
-  }) as unknown as () => unknown;
-  const first = () => {
-    const c = resolved();
-    const el = (Array.isArray(c) ? c : [c]).find((n) => n instanceof Element);
-    return el as Element | undefined;
-  };
-  return createSwitchTransition(first, { onExit: animateOut }) as unknown as JSX.Element;
+  });
 }
 
 // ── Presets ───────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, on } from "solid-js";
+import { createSignal, createEffect } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import QRCode from "qrcode";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -12,13 +12,12 @@ export function QRGenerator() {
   const [dataUrl, setDataUrl] = createSignal<string | null>(null);
   const [error, setError] = createSignal<string | null>(null);
 
-  createEffect(async () => {
-    const val = text().trim();
+  createEffect(() => [text().trim(), size()] as const, ([val, width]) => { void (async () => {
     if (!val) { setDataUrl(null); return; }
     setError(null);
     try {
       const url = await QRCode.toDataURL(val, {
-        width: size(),
+        width,
         margin: 2,
         errorCorrectionLevel: "M",
         color: { dark: "#000000", light: "#ffffff" },
@@ -28,9 +27,9 @@ export function QRGenerator() {
       setError(e instanceof Error ? e.message : "Could not generate QR code.");
       setDataUrl(null);
     }
-  });
+  })(); });
 
-  createEffect(on(error, (err, prev) => { if (err && !prev) toast.error(err); }));
+  createEffect(error, (err, prev) => { if (err && !prev) toast.error(err); });
 
   const download = () => {
     if (!dataUrl()) return;

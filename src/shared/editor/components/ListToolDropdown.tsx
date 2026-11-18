@@ -62,7 +62,7 @@ export default function ListToolDropdown(props: ListToolDropdownProps) {
       <IconButton
         label={t("editor.list_toolbar_title")}
         size="sm"
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         disabled={props.disabled}

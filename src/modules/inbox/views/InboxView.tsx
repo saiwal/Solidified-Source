@@ -8,9 +8,8 @@
 // `reader` props. This view owns the chrome around it: the feed + folder
 // sidebar (which doubles as the drag-and-drop target list), InboxSearchBar,
 // and Empty Trash.
-import { createSignal, createMemo, onMount, onCleanup, type Component } from "solid-js";
-import { Show } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createMemo, onSettled, onCleanup, Show, type Component } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -110,7 +109,7 @@ export default function InboxView() {
   // to this module alone: it starts when the inbox is opened and the flag stops
   // body warming again as soon as you navigate away. syncInbox itself throttles
   // repeat runs, so moving between sections doesn't re-walk every feed.
-  onMount(() => {
+  onSettled(() => {
     setInboxActive(true);
     void syncInbox();
   });
@@ -245,8 +244,7 @@ export default function InboxView() {
           Kept as tall as the chrome allows — the reader fills this same box. */}
       <div
         // Reading panel, like a webpage — readable over a wallpaper.
-        class={`${cardClass()} flex flex-col overflow-hidden`}
-        classList={{ "h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem]": !reading() }}
+        class={[`${cardClass()} flex flex-col overflow-hidden`, { "h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem]": !reading() }]}
       >
         <InboxSearchBar
           query={query()}
@@ -286,7 +284,7 @@ export default function InboxView() {
                 class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted hover:bg-overlay hover:text-txt"
               >
                 {/* Spins while syncInbox walks the feeds and stores bodies. */}
-                <span class="block" classList={{ "animate-spin": !!syncProgress() }}>
+                <span class={["block", { "animate-spin": !!syncProgress() }]}>
                   <Icon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </span>
               </button>

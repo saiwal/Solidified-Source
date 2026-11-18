@@ -1,5 +1,4 @@
-import { createSignal, createEffect, on, onCleanup, createMemo, For, Show, Switch, Match } from "solid-js";
-import { A } from "@solidjs/router";
+import { createSignal, createEffect, onCleanup, createMemo, For, Show, Switch, Match } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import {
   fetchNewChannelMeta,
@@ -46,15 +45,14 @@ export default function NewChannelView() {
 
   // Seed the role picker with the site default once meta loads (only meaningful
   // for a first channel — meta.default_role is "" for additional channels).
-  createEffect(() => {
-    const m = meta();
-    if (m && !role() && m.default_role) setRole(m.default_role);
+  createEffect(() => [meta()?.default_role, role()] as const, ([def, r]) => {
+    if (def && !r) setRole(def);
   });
 
   // Autofill the nickname from the channel name, debounced, unless the user
   // has already hand-edited the nickname field themselves.
   let autofillTimer: number | undefined;
-  createEffect(on(name, (n) => {
+  createEffect(name, (n) => {
     if (nicknameEdited() || !n.trim()) return;
     window.clearTimeout(autofillTimer);
     autofillTimer = window.setTimeout(async () => {
@@ -65,7 +63,7 @@ export default function NewChannelView() {
         // best-effort — user can still type a nickname manually
       }
     }, 400);
-  }));
+  });
   onCleanup(() => window.clearTimeout(autofillTimer));
 
   // Live nickname availability check, debounced.
@@ -73,7 +71,7 @@ export default function NewChannelView() {
   const [available, setAvailable] = createSignal<boolean | null>(null);
   const [suggestion, setSuggestion] = createSignal<string | null>(null);
   let checkTimer: number | undefined;
-  createEffect(on(nickname, (nick) => {
+  createEffect(nickname, (nick) => {
     setAvailable(null);
     setSuggestion(null);
     window.clearTimeout(checkTimer);
@@ -93,7 +91,7 @@ export default function NewChannelView() {
         setChecking(false);
       }
     }, 400);
-  }));
+  });
   onCleanup(() => window.clearTimeout(checkTimer));
 
   const steps = createMemo<StepId[]>(() => {
@@ -188,9 +186,9 @@ export default function NewChannelView() {
             <h1 class="text-xl font-bold text-txt">{t("channel_create.title")}</h1>
             <p class="text-sm text-muted mt-1">{t("channel_create.subtitle")}</p>
             <p class="text-xs text-muted mt-3">
-              <A href="/import" class="text-accent hover:underline">
+              <a href="/import" class="text-accent hover:underline">
                 {t("settings.portability_import_btn")}
-              </A>
+              </a>
             </p>
           </div>
         </Show>

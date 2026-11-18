@@ -1,4 +1,4 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, onSettled, Show, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { AclEntry } from "@/shared/editor/components/AclPicker";
 import AclPicker, { entryKey, aclModeFrom, aclEntryKeys, aclPayload, type AclMode } from "@/shared/editor/components/AclPicker";
@@ -22,9 +22,10 @@ export default function AclEditor(props: {
   const [allowKeys, setAllowKeys] = createSignal<Set<string>>(new Set<string>());
   const [denyKeys, setDenyKeys]   = createSignal<Set<string>>(new Set<string>());
 
-  onMount(async () => {
+  const target = untrack(() => [props.nick, props.type, props.datum] as const);
+  onSettled(() => { void (async () => {
     try {
-      const data = await fetchAcl(props.nick, props.type, props.datum);
+      const data = await fetchAcl(...target);
       const m = aclModeFrom(data, selfHash()?.hash);
       const { allow, deny } = aclEntryKeys(data, m);
       setAllowKeys(allow);
@@ -35,7 +36,7 @@ export default function AclEditor(props: {
     } finally {
       setLoading(false);
     }
-  });
+  })(); });
 
   function toggleEntry(entry: AclEntry, list: "allow" | "deny") {
     const key = entryKey(entry);

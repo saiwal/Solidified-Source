@@ -1,4 +1,5 @@
-import { createSignal, lazy, onCleanup, Show, Suspense, type JSX } from "solid-js";
+import { createSignal, lazy, onCleanup, Show, Loading } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import type { LatexInsertMode, MimeType, ToolbarLevel } from "../types/editor.types";
 import type { AttachmentActions } from "../attachments/useAttachmentActions";
 import { persistedSignal, boolFlag } from "@utsukta/spa-core/lib/persisted";
@@ -1046,7 +1047,7 @@ export default function EditorToolbar(props: Props) {
     <PromptPanel
       title={withKeys(t("editor.link"), "Mod+K")}
       opener={(fn) => { openLink = fn; }}
-      icon={<MdOutlineLink class="w-4 h-4" classList={{ "animate-pulse": linkLoading() }} />}
+      icon={<MdOutlineLink class={["w-4 h-4", { "animate-pulse": linkLoading() }]} />}
       fields={[{ key: "url", label: t("editor.url_label") }]}
       submitLabel={t("editor.insert")}
       disabled={linkLoading()}
@@ -1366,44 +1367,44 @@ export default function EditorToolbar(props: Props) {
       </Show>
     </div>
     <Show when={latexOpen()}>
-      <Suspense>
+      <Loading>
         <LatexComposerModal
           mode={props.latexMode}
           onClose={() => setLatexOpen(false)}
           onInsert={insertLatex}
         />
-      </Suspense>
+      </Loading>
     </Show>
 
     <Show when={cardPickerOpen()}>
-      <Suspense>
+      <Loading>
         <CardPickerModal
           onClose={() => setCardPickerOpen(false)}
           onInsert={insertCard}
         />
-      </Suspense>
+      </Loading>
     </Show>
 
     <Show when={mapOpen()}>
-      <Suspense>
+      <Loading>
         <MapPickerModal onClose={() => setMapOpen(false)} onInsert={insertMap} />
-      </Suspense>
+      </Loading>
     </Show>
 
     <Show when={diagramOpen()}>
-      <Suspense>
+      <Loading>
         <DiagramComposerModal
           mode={props.latexMode}
           onClose={() => setDiagramOpen(false)}
           onInsert={insertDiagram}
         />
-      </Suspense>
+      </Loading>
     </Show>
 
     <Show when={excalidrawOpen()}>
       {/* The Excalidraw chunk is heavy (React + the package); show the backdrop
           with a spinner while it downloads instead of nothing. */}
-      <Suspense
+      <Loading
         fallback={
           <div class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60">
             <Spinner size="2xl" class="text-white" />
@@ -1414,7 +1415,7 @@ export default function EditorToolbar(props: Props) {
           onClose={() => setExcalidrawOpen(false)}
           onInsert={insertExcalidraw}
         />
-      </Suspense>
+      </Loading>
     </Show>
     </>
   );

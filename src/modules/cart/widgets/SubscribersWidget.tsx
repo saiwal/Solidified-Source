@@ -1,5 +1,4 @@
 import { For, Show, createMemo } from 'solid-js';
-import { A } from '@solidjs/router';
 import { MdFillGroup } from 'solid-icons/md';
 import { useI18n } from '@utsukta/spa-core/i18n';
 import { usePageNick, useViewerRole } from '@utsukta/spa-core/store/site-config';
@@ -30,9 +29,9 @@ export default function SubscribersWidget() {
         title={t('cart.subscribers')}
         actions={<CountBadge n={active().length} />}
         footer={
-          <A href={`/cart/${pageNick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
+          <a href={`/cart/${pageNick()}`} class="mx-auto font-medium text-accent hover:text-accent-txt transition-colors">
             {t('cart.orders_tab')} →
-          </A>
+          </a>
         }
       >
         <Show when={active().length > 0} fallback={<EmptyState size="sm">{t('cart.no_subscribers')}</EmptyState>}>

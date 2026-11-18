@@ -1,5 +1,4 @@
 import { Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { MdOutlineExpand_more } from "solid-icons/md";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -88,13 +87,13 @@ export default function CoverCard(props: {
             when={props.channelHref && !props.onToggle}
             fallback={<span class="block truncate text-sm font-semibold text-txt">{props.who.name}</span>}
           >
-            <A
+            <a
               href={props.channelHref!}
               class="block truncate text-sm font-semibold text-txt transition-colors
                      hover:text-accent-txt hover:underline hover:underline-offset-2"
             >
               {props.who.name}
-            </A>
+            </a>
           </Show>
           <Show when={props.who.addr}>
             <span class="block truncate text-xs text-muted">@{props.who.addr}</span>
@@ -115,7 +114,7 @@ export default function CoverCard(props: {
       <button
         onClick={props.onToggle}
         title={props.who.name}
-        aria-expanded={!!props.open}
+        aria-expanded={(!!props.open) ? "true" : "false"}
         data-tour="nav.user_menu"
         ref={helpable(() => "nav.account_menu")}
         class="group block w-full text-left select-none focus-visible:outline-none"

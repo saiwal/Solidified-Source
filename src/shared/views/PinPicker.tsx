@@ -6,7 +6,7 @@
  * Callers lazy-load the file that imports this, so Leaflet stays out of the
  * main bundle.
  */
-import { createEffect, onCleanup, onMount } from "solid-js";
+import { onSettled, createEffect } from "solid-js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Coord } from "@utsukta/spa-core/lib/osm";
@@ -40,18 +40,17 @@ export default function PinPicker(props: {
     props.onChange({ lat: round6(w.lat), lon: round6(w.lng) });
   };
 
-  onMount(() => {
+  onSettled(() => {
     map = L.map(el, { worldCopyJump: true }).setView([20, 0], 2);
     L.tileLayer(TILES, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(map);
     map.on("click", (e: L.LeafletMouseEvent) => pick(e.latlng));
     // Mounted inside an opening <dialog>: the first measured size is often 0.
     const ro = new ResizeObserver(() => map?.invalidateSize());
     ro.observe(el);
-    onCleanup(() => { ro.disconnect(); map?.remove(); });
+    return () => { ro.disconnect(); map?.remove(); };
   });
 
-  createEffect(() => {
-    const c = props.value;
+  createEffect(() => props.value, (c) => {
     if (!map) return;
     if (!c) { pin?.remove(); pin = undefined; return; }
     if (pin) pin.setLatLng([c.lat, c.lon]);

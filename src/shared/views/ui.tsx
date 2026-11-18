@@ -1,5 +1,4 @@
 import { For } from "solid-js";
-import { A } from "@solidjs/router";
 import { MdFillArrow_back } from "solid-icons/md";
 
 // The quiet control vocabulary from design-guidelines.md, kept as strings for
@@ -36,10 +35,10 @@ export function SkeletonRows(props: { count?: number }) {
 export function BackLink(props: { fallback: string; label: string }) {
   const nav = (window as { navigation?: { currentEntry?: { index: number } } }).navigation;
   return (
-    <A href={props.fallback}
+    <a href={props.fallback}
       onClick={(e) => { if ((nav?.currentEntry?.index ?? 0) > 0) { e.preventDefault(); history.back(); } }}
       class="inline-flex items-center gap-1.5 -ml-1 px-1 py-1 rounded-lg text-sm text-muted hover:text-txt transition-colors">
       <MdFillArrow_back size={16} /> {props.label}
-    </A>
+    </a>
   );
 }

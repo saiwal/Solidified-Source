@@ -1,9 +1,7 @@
 // Article teaser card (config: { uuid }): title, short excerpt, and a
 // read-more link for one article. multiInstance.
 
-import { Show } from "solid-js";
-import { A } from "@solidjs/router";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { Errored, Loading, Show } from "solid-js";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -13,6 +11,7 @@ import { articlePath } from "@/shared/lib/shareLinks";
 import { bbcodeExcerpt } from "@utsukta/spa-core/lib/bbcode";
 import { Card } from "@ui/Card";
 import { WidgetShell } from "@ui/WidgetShell";
+import { useAsyncQuery } from "@utsukta/spa-core/lib/query";
 
 
 function EditHint(props: { text: string }) {
@@ -30,23 +29,23 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
   const nick = usePageNick();
   const uuid = () => String(props.config?.uuid ?? "");
 
-  const [article] = createQueryResource(
-    "article-teaser",
-    () => (nick() && uuid() ? { nick: nick(), uuid: uuid() } : null),
-    async (p) => (await fetchArticle(p.nick, p.uuid)).article,
-  );
+  const q = useAsyncQuery(() => ({
+    queryKey: ["article-teaser", { nick: nick(), uuid: uuid() }],
+    queryFn: async () => (await fetchArticle(nick(), uuid())).article,
+    enabled: !!nick() && !!uuid(),
+  }));
+  const article = () => q.data;
 
   return (
     <Show when={uuid()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={article.loading}>
+      <Errored fallback={<EditHint text={t("widgets.item_unavailable")} />}>
+      <Loading fallback={
         <WidgetShell><div class="p-4 space-y-2 animate-pulse">
           <div class="h-3 bg-elevated rounded w-2/3" />
           <div class="h-3 bg-elevated rounded w-full" />
           <div class="h-3 bg-elevated rounded w-1/2" />
         </div></WidgetShell>
-      </Show>
-
-      <Show when={!article.loading}>
+      }>
         <Show when={article()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(a) => (
             <WidgetShell>
@@ -57,17 +56,18 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
                 </p>
                 <p class="text-sm text-txt mt-2">{bbcodeExcerpt(a().summary || a().body, 200)}</p>
               </div>
-              <A
+              <a
                 href={articlePath(nick(), a())}
                 class="block px-(--ws-px) py-2 border-t border-rim text-center text-xs font-medium
                        text-accent-txt hover:bg-elevated transition-colors"
               >
                 {t("widgets.read_article")}
-              </A>
+              </a>
             </WidgetShell>
           )}
         </Show>
-      </Show>
+      </Loading>
+      </Errored>
     </Show>
   );
 }

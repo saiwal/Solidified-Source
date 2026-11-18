@@ -1,4 +1,4 @@
-import { For, Show, onMount } from "solid-js";
+import { For, Show, onSettled } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { MdFillBookmarks, MdFillDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -19,7 +19,7 @@ export default function SavedSearchesWidget() {
   const { t } = useI18n();
   const [, setSearchParams] = useSearchParams();
 
-  onMount(() => { void loadSavedSearches(); });
+  onSettled(() => { void loadSavedSearches(); });
 
   function apply(s: SavedSearch) {
     setSearchParams({ ...CLEAR_PARAMS, ...s.params }, { replace: true });

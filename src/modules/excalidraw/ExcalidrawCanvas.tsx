@@ -4,7 +4,7 @@
  * into a plain div. This is the one place React is mounted for this feature —
  * everything above it (the tools subsection, the editor modal) is Solid.
  */
-import { createSignal, onCleanup, onMount, type Component } from "solid-js";
+import { onCleanup, onSettled, type Component } from "solid-js";
 import { createElement, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@excalidraw/excalidraw";
 import { cloudLibraryAdapter } from "./library-store";
 import "@excalidraw/excalidraw/index.css";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 export interface ExcalidrawExport {
   /** Flat PNG with the scene embedded, so the exported image reopens as a drawing. */
@@ -79,7 +80,7 @@ const ExcalidrawCanvas: Component<Props> = (props) => {
   // type lives under the package's internal types entry point; `any` avoids
   // pinning to that unstable path.
   let api: any;
-  const [dark, setDark] = createSignal(isDarkMode());
+  const [dark, setDark] = createSyncSignal(isDarkMode());
 
   function requireApi() {
     if (!api) throw new Error("Excalidraw is not ready yet");
@@ -142,8 +143,9 @@ const ExcalidrawCanvas: Component<Props> = (props) => {
     );
   }
 
-  onMount(() => {
-    if (!containerRef) return;
+  onSettled(() => {
+    const cleanups: (() => void)[] = [];
+    if (!containerRef) return () => cleanups.forEach((f) => f());
     // The "Browse libraries" link is built as `target=${window.name || "_blank"}`,
     // and libraries.excalidraw.com opens the return URL into that target before
     // closing itself. With no window.name it targets _blank, so the import lands
@@ -163,7 +165,8 @@ const ExcalidrawCanvas: Component<Props> = (props) => {
       }
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    onCleanup(() => observer.disconnect());
+    cleanups.push(() => observer.disconnect());
+    return () => cleanups.forEach((f) => f());
   });
 
   onCleanup(() => root?.unmount());
@@ -171,8 +174,7 @@ const ExcalidrawCanvas: Component<Props> = (props) => {
   return (
     <div
       ref={containerRef}
-      class="w-full h-full min-h-[400px] bg-surface"
-      classList={{ "excalidraw-minimal": !!(props.minimal || props.viewMode) }}
+      class={["w-full h-full min-h-[400px] bg-surface", { "excalidraw-minimal": !!(props.minimal || props.viewMode) }]}
     />
   );
 };

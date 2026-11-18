@@ -10,8 +10,9 @@
  * emoji, grouped into packs by its image folder (images/emoji/custom/kitties).
  */
 
-import { createSignal, createMemo, For, Show, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createMemo, For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import {
   MdOutlineEmoji_emotions, MdOutlineEmoji_people, MdOutlineEmoji_nature,
@@ -208,7 +209,7 @@ export default function EmojiPicker(props: EmojiPickerProps) {
         type="button"
         title={t("editor.emoji_picker_title")}
         aria-label={t("editor.emoji_picker_title")}
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         onClick={onToggle}
         class={triggerClass()}
       >

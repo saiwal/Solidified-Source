@@ -1,4 +1,4 @@
-import { Show, onCleanup, createSignal, createEffect, For } from "solid-js";
+import { Show, onCleanup, createSignal, For, createEffect, onSettled } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useTemplates, loadTemplates, createTemplate, templateChrome } from "@utsukta/spa-core/store/widget-templates";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
@@ -110,9 +110,9 @@ export default function WebpageComposer(props: Props) {
   // the preview, and are directly editable at the same time as the page
   // content — cleared on unmount so navigating away doesn't leak scoping.
   const templates = useTemplates();
-  createEffect(() => void loadTemplates());
+  onSettled(() => { void loadTemplates(); });
   const [layoutTemplate, setLayoutTemplate] = createSignal(props.initial?.layout_template ?? "");
-  createEffect(() => setCurrentPageTemplateId(layoutTemplate() || null));
+  createEffect(() => layoutTemplate() || null, (id) => { setCurrentPageTemplateId(id); });
   onCleanup(() => setCurrentPageTemplateId(null));
   const templateList = () => Object.entries(templates()?.templates ?? {});
   // A native <select>'s `value` only "sticks" once a matching <option> exists
@@ -126,9 +126,8 @@ export default function WebpageComposer(props: Props) {
   // plain effect (no memoization to skip a "same value" update) that fires
   // on every relevant change and force-syncs the DOM element directly.
   let selectRef: HTMLSelectElement | undefined;
-  createEffect(() => {
-    templateList(); // track — re-sync once the matching <option> exists
-    const val = layoutTemplate();
+  // templateList tracked too — re-sync once the matching <option> exists
+  createEffect(() => [templateList(), layoutTemplate()] as const, ([, val]) => {
     if (selectRef && selectRef.value !== val) selectRef.value = val;
   });
   const [creatingTemplate, setCreatingTemplate] = createSignal(false);
@@ -186,6 +185,18 @@ export default function WebpageComposer(props: Props) {
     props.onSaved?.();
   }, scope, {
     initialBody: props.initial?.body,
+    // Editing: the stored title/slug/format. New: the channel's default
+    // format, the same pconfig core reads for its own composer
+    // (system/page_mimetype — Webpages.php:134). isAuthorable, not a cast: an
+    // application/x-php page would otherwise land in a MimeType signal
+    // FormatSelect has no <option> for.
+    initialTitle: props.initial?.title,
+    initialSummary: props.initial?.summary,
+    initialSlug: props.initial ? props.initial.slug : undefined,
+    initialMimetype: (() => {
+      const m = props.initial ? props.initial.mimetype ?? "" : pageMimetype();
+      return isAuthorable(m) ? (m as MimeType) : undefined;
+    })(),
     mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
@@ -204,8 +215,7 @@ export default function WebpageComposer(props: Props) {
     return extra;
   }
 
-  createEffect(() => {
-    const extra = store.restoredExtra();
+  createEffect(() => store.restoredExtra(), (extra) => {
     if (!extra) return;
     if (typeof extra.aclMode === "string") acl.setMode(extra.aclMode as AclMode);
     if (Array.isArray(extra.allow)) acl.setAllowEntries(new Set(extra.allow as string[]));
@@ -215,19 +225,6 @@ export default function WebpageComposer(props: Props) {
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
-  const defaultPageMime = pageMimetype();
-  if (props.initial) {
-    store.setTitle(props.initial.title);
-    store.setSummary(props.initial.summary);
-    store.setSlug(props.initial.slug);
-    // isAuthorable, not a cast: an application/x-php page would otherwise land
-    // in a MimeType signal FormatSelect has no <option> for.
-    if (isAuthorable(props.initial.mimetype ?? "")) store.setMimetype(props.initial.mimetype as MimeType);
-  } else if (isAuthorable(defaultPageMime)) {
-    // New page: seed the channel's default format, the same pconfig core
-    // reads for its own composer (system/page_mimetype — Webpages.php:134).
-    store.setMimetype(defaultPageMime);
-  }
 
   // ── Mention + emoji autocomplete ─────────────────────────────────────────────
   const wiring = useMentionEmojiWiring({

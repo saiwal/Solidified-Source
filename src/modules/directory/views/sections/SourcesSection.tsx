@@ -7,7 +7,6 @@
 // from core's Zotlabs/Module/Sources.php so they match the Hubzilla docs.
 
 import { createSignal, For, Show, type Component } from "solid-js";
-import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import {
@@ -277,9 +276,9 @@ const SourceRow: Component<{
           <MdFillWarning size={13} class="mt-0.5 shrink-0" />
           <span>
             {t("sources.no_republish")}{" "}
-            <A href="/directory/connections" class="underline">
+            <a href="/directory/connections" class="underline">
               {t("sources.review_connection")}
-            </A>
+            </a>
           </span>
         </p>
       </Show>

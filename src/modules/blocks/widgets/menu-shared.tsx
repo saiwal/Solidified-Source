@@ -3,8 +3,8 @@
 // wherever the menu renders vertically (sidebar widget, collapsed mobile bar).
 // API types and fetchers live in @utsukta/spa-core/lib/menus.
 
-import { createSignal, For, Show, type JSX } from "solid-js";
-import { A } from "@solidjs/router";
+import { createSignal, For, Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdFillExpand_more, MdFillOpen_in_new } from "solid-icons/md";
 import type { MenuTreeItem } from "@utsukta/spa-core/lib/menus";
 
@@ -57,14 +57,14 @@ export function MenuLink(props: {
             </a>
           }
         >
-          <A
+          <a
             href={(h() as { path: string }).path}
             class={props.class}
             onClick={() => props.onNavigate?.()}
           >
             <span class="truncate">{props.item.label}</span>
             {props.children}
-          </A>
+          </a>
         </Show>
       )}
     </Show>
@@ -98,7 +98,7 @@ export function MenuAccordion(props: {
               when={item.items?.length}
               fallback={<MenuLink item={item} class={rowClass} onNavigate={props.onNavigate} />}
             >
-              <button onClick={() => toggle(i())} class={rowClass} aria-expanded={!!open()[i()]}>
+              <button onClick={() => toggle(i())} class={rowClass} aria-expanded={(!!open()[i()]) ? "true" : "false"}>
                 <span class="flex-1 truncate text-left">{item.label}</span>
                 <MdFillExpand_more
                   size={16}

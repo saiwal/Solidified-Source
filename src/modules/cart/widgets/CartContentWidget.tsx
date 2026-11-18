@@ -1,4 +1,4 @@
-import { createEffect, Show, For } from 'solid-js';
+import { Show, For, createEffect } from "solid-js";
 import { usePageNick } from '@utsukta/spa-core/store/site-config';
 import { tab, switchTab, loading, loadCatalog, selectedOrder } from '../store';
 import { CatalogGrid, CartContents, MyOrders } from '../views/Shop';
@@ -7,8 +7,7 @@ import { MyShop, OrderDetail } from '../views/Seller';
 export default function CartContentWidget() {
   const pageNick = usePageNick();
 
-  createEffect(() => {
-    const n = pageNick() ?? '';
+  createEffect(() => pageNick() ?? '', (n) => {
     if (n) loadCatalog(n);
   });
 

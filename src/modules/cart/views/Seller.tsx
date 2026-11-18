@@ -1,5 +1,5 @@
 // The owner's side of /cart ("My Shop"): orders, products, subscribers, payment settings.
-import { createEffect, createSignal, onMount, Show, For } from 'solid-js';
+import { createSignal, onSettled, Show, For, createEffect } from "solid-js";
 import {
   MdFillShopping_cart,
   MdFillAdd,
@@ -42,6 +42,7 @@ import { Stat } from "@ui/Stat";
 import { Toggle } from "@ui/Toggle";
 import { EmptyState } from "@ui/EmptyState";
 import { SubscriptionRow, useBillingText, TERMS } from './Shop';
+import { deepOf } from "@utsukta/spa-core/lib/deep";
 
 // ── My Shop (orders + catalog + settings toggle) ──────────────────────────────
 
@@ -279,7 +280,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
   const [saving, setSaving]           = createSignal(false);
   const [uploading, setUploading]     = createSignal(false);
 
-  onMount(() => { if (groups().length === 0) loadGroups(); });
+  onSettled(() => { if (groups().length === 0) loadGroups(); });
   const toggleGroup = (hash: string) =>
     setGrantGroups(g => g.includes(hash) ? g.filter(h => h !== hash) : [...g, hash]);
   const [uploadPct, setUploadPct]     = createSignal(0);
@@ -572,7 +573,7 @@ function CatalogItemForm(props: { sku: string | null; onClose: () => void }) {
         <For each={options()}>
           {(opt, i) => (
             <div class="flex items-center gap-2 flex-wrap">
-              <Input class="flex-1 min-w-40" type="text" maxLength={100} aria-label={t('cart.option_label')}
+              <Input class="flex-1 min-w-40" type="text" maxlength={100} aria-label={t('cart.option_label')}
                 placeholder={t('cart.option_label')} value={opt.label}
                 onChange={e => patchOption(i(), { label: e.currentTarget.value })} />
               <Chip size="sm" selected={opt.type === 'textarea'}
@@ -652,8 +653,7 @@ function PaymentSettingsPanel(props: { onClose: () => void }) {
 
   const [form, setForm] = createSignal<PaymentSettings>(paymentSettings() ?? defaults());
 
-  createEffect(() => {
-    const s = paymentSettings();
+  createEffect(() => deepOf(paymentSettings()), (s) => {
     if (s) setForm(s);
   });
 

@@ -1,6 +1,7 @@
 // modules/manage/store.ts
 
-import { createResource, createSignal } from "solid-js";
+import { createSignal } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import {
   fetchManageApi,

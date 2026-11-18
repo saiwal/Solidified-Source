@@ -8,7 +8,7 @@ export default function HelpTip(props: Props) {
   return (
     <Tooltip content={props.text} placement="top">
       <span
-        tabIndex={0}
+        tabindex={0}
         class="inline-flex items-center justify-center w-4 h-4 rounded-full
                bg-surface border border-rim
                cursor-default flex-shrink-0"

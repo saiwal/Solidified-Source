@@ -1,4 +1,4 @@
-import { For, Index, Show, createSignal, createEffect, batch } from "solid-js";
+import { For, Show, createSignal, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import {
   parse, compile, FIELD_OPS, CORE_FIELDS,
@@ -40,16 +40,13 @@ export default function FilterRuleBuilder(props: {
   let emitted = "";
 
   // Re-seed only on changes that didn't come from us (initial load, async fetch).
-  createEffect(() => {
-    const v = props.value ?? "";
+  createEffect(() => props.value ?? "", (v) => {
     if (v === emitted) return;
     emitted = v;
     const parsed = parse(v);
-    batch(() => {
-      setLocked(!parsed);
+    { setLocked(!parsed);
       if (!parsed) setRaw(true);
-      else setRules(parsed);
-    });
+      else setRules(parsed); }
   });
 
   const emit = (r: FilterRules) => {
@@ -97,7 +94,7 @@ export default function FilterRuleBuilder(props: {
         {/* Index, not For: every edit rebuilds the condition objects, so a keyed
             For would tear down the row being typed in and drop focus after each
             keystroke. Index keys by position, so the inputs survive. */}
-        <Index each={rules().conds}>
+        <For keyed={false} each={rules().conds}>
           {(c, i) => (
             <div class="flex flex-wrap items-center gap-2">
               <Select
@@ -138,7 +135,7 @@ export default function FilterRuleBuilder(props: {
               </IconButton>
             </div>
           )}
-        </Index>
+        </For>
 
         <Show when={!rules().conds.length}>
           <p class="text-xs text-muted">{t("filters.none")}</p>

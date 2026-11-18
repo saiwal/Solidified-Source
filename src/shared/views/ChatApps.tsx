@@ -2,7 +2,7 @@
 // address editor used by the profile editor (own) and connection editor
 // (private, per connection). Server side: Api/ChatAddresses.php.
 // Docs: src/docs/dev/en/4-features/chat-apps.md
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createSignal, createEffect } from "solid-js";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -127,7 +127,9 @@ export function ChatAddressFields(props: { xchan?: string }) {
 
   createEffect(() => {
     const mine = (q.data ?? []).filter((a) => !props.xchan || a.source === "private");
-    setValues(Object.fromEntries(TYPES.map((ty) => [ty, mine.find((a) => a.type === ty)?.value ?? ""])));
+    return Object.fromEntries(TYPES.map((ty) => [ty, mine.find((a) => a.type === ty)?.value ?? ""]));
+  }, (v) => {
+    setValues(v);
   });
 
   const invalid = (ty: ChatType) => {

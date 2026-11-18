@@ -52,7 +52,7 @@ export default function HtmlBlockConfig(props: WidgetConfigProps) {
           type="text"
           value={title()}
           onInput={(e) => setTitle(e.currentTarget.value)}
-          maxLength={100}
+          maxlength={100}
         />
       </label>
 
@@ -94,7 +94,7 @@ export default function HtmlBlockConfig(props: WidgetConfigProps) {
               class="mt-1 w-full font-mono resize-y"
               value={html()}
               onInput={(e) => setHtml(e.currentTarget.value)}
-              maxLength={MAX_HTML}
+              maxlength={MAX_HTML}
               rows={6}
             />
           </label>

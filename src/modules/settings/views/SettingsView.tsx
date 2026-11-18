@@ -1,5 +1,5 @@
-import { lazy, createMemo, Suspense } from "solid-js";
-import { Dynamic } from "solid-js/web";
+import { lazy, createMemo, Loading } from "solid-js";
+import { Dynamic } from "@solidjs/web";
 import { useLocation } from "@solidjs/router";
 import SubPageLayout from "@/shared/views/SubPageLayout";
 import { SETTINGS_ITEMS } from "../index";
@@ -35,9 +35,9 @@ export default function SettingsView() {
 
   return (
     <SubPageLayout base="/settings" items={SETTINGS_ITEMS} activeKey={activeKey()}>
-      <Suspense fallback={<SectionSkeleton />}>
+      <Loading fallback={<SectionSkeleton />}>
         <Dynamic component={SECTIONS[activeKey()]} />
-      </Suspense>
+      </Loading>
     </SubPageLayout>
   );
 }

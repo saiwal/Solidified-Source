@@ -1,6 +1,6 @@
 // src/shared/views/RemoteAuthBanner.tsx
 import { type Component, Show } from "solid-js";
-import { A, useLocation } from "@solidjs/router";
+import { useLocation } from "@solidjs/router";
 import type { ViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlinePublic, MdOutlineVisibility } from "solid-icons/md";
@@ -64,14 +64,14 @@ const RemoteAuthBanner: Component<Props> = (props) => {
               {t("ui.remote_guest", { nick: props.subjectNick })}
             </Show>
           </span>
-          <A
+          <a
             href={loginHref()}
             class="shrink-0 basis-full sm:basis-auto text-center sm:text-left px-3 py-1 rounded-lg text-xs font-medium
                    bg-warning-muted hover:bg-warning
                    transition-colors"
           >
             {t("nav.login")}
-          </A>
+          </a>
         </Show>
       </div>
 

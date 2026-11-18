@@ -1,4 +1,5 @@
-import { createSignal, createEffect, onCleanup, type JSX } from "solid-js";
+import { createSignal, onCleanup, createEffect } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useFloating } from "./useFloating";
 import type { Placement, ReferenceElement } from "@floating-ui/dom";
 
@@ -48,15 +49,15 @@ export function createPopover(options: { placement?: Placement } = {}) {
 
   // Solid runs render effects (the panel's ref) before user effects, so
   // floatEl is assigned by the time this fires after open() flips true.
-  createEffect(() => {
-    if (open() && anchorEl && floatEl) mount(anchorEl, floatEl);
+  createEffect(open, (isOpen) => {
+    if (isOpen && anchorEl && floatEl) mount(anchorEl, floatEl);
     else unmount();
   });
 
   // Entrance on the rising edge of `positioned` — the panel is hidden until
   // then, so animating from mount would play most of it invisibly.
-  createEffect(() => {
-    if (!positioned() || !floatEl || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  createEffect(positioned, (pos) => {
+    if (!pos || !floatEl || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     floatEl.animate(
       [{ opacity: 0, transform: "scale(0.95)" }, { opacity: 1, transform: "scale(1)" }],
       { duration: 150, easing: "ease-out" },

@@ -1,7 +1,7 @@
 // solidified's implementation of the badge contract (spa-core types/ui.types.ts).
 // Badge is a tag (rounded-md, so it follows the corner-radius setting);
 // CountBadge is the round unread bubble.
-import { Show, splitProps } from "solid-js";
+import { Show, omit } from "solid-js";
 import type { BadgeProps, BadgeTone, CountBadgeProps } from "@utsukta/spa-core/types/ui.types";
 
 const TONE: Record<BadgeTone, string> = {
@@ -20,7 +20,7 @@ export function badgeClass(tone: BadgeTone = "neutral", size: "sm" | "md" = "md"
 }
 
 export function Badge(props: BadgeProps) {
-  const [own, rest] = splitProps(props, ["tone", "size", "class"]);
+  const own = props, rest = omit(props, "tone", "size", "class");
   return <span class={`${badgeClass(own.tone, own.size)} ${own.class ?? ""}`} {...rest} />;
 }
 

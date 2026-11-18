@@ -1,6 +1,6 @@
 // Fixture for scripts/check-ui.mjs: server-renders the @ui primitives so their
 // label/id/aria wiring can be asserted without a browser or a test framework.
-import { renderToString } from "solid-js/web";
+import { renderToString } from "@solidjs/web";
 import { Field, Input, Select } from "./Field";
 import { Toggle } from "./Toggle";
 import { TabPanel, Tabs } from "./Tabs";

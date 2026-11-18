@@ -4,7 +4,7 @@
  */
 
 import { For, type Component } from "solid-js";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import type { TagItem } from "./useTag";
 
@@ -38,7 +38,7 @@ const TagPopup: Component<TagPopupProps> = (props) => {
             <button
               type="button"
               role="option"
-              aria-selected={i() === props.activeIdx}
+              aria-selected={(i() === props.activeIdx) ? "true" : "false"}
               onMouseDown={(e) => {
                 e.preventDefault();
                 props.onSelect(entry);

@@ -1,5 +1,5 @@
 // settings/store/FormHelpers.tsx
-import { type JSX } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdOutlineSave } from "solid-icons/md";
 import PageActions, { useMobileActions, useFloatingAction } from "@/shared/views/layout/PageActions";
 import { useI18n } from "@utsukta/spa-core/i18n";

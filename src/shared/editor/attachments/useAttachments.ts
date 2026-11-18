@@ -1,5 +1,4 @@
-import { createSignal, createMemo, createEffect } from "solid-js";
-import { createStore } from "solid-js/store";
+import { createSignal, createMemo, createStore, createEffect } from "solid-js";
 import { wallAttach, updatePermissions } from "@/modules/files/api";
 import type { FileMeta, FileAcl } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
@@ -140,16 +139,13 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
 
   // Load persisted attachments from IDB on init
   storageGet<DraftAttachment[]>(DRAFT_KEY, []).then((saved) => {
-    if (saved.length > 0) setState("items", saved.map(fromDraft));
+    if (saved.length > 0) setState((s) => { s.items = saved.map(fromDraft); });
     setDraftLoaded(true);
   });
 
   // Persist ready attachments whenever the list changes (after initial load)
-  createEffect(() => {
-    if (!draftLoaded()) return;
-    const data = state.items
-      .filter((a) => a.status === "ready")
-      .map(toSerializable);
+  createEffect(() => (draftLoaded() ? state.items.filter((a) => a.status === "ready").map(toSerializable) : null), (data) => {
+    if (!data) return;
     if (data.length > 0) void storageSet(DRAFT_KEY, data);
     else void storageDel(DRAFT_KEY);
   });
@@ -158,7 +154,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
   const uploading = createMemo(() => state.items.some((a) => a.status === "uploading"));
 
   function update(id: string, patch: Partial<Attachment>) {
-    setState("items", (a) => a.id === id, patch);
+    setState((s) => { for (const a of s.items) if (a.id === id) Object.assign(a, patch); });
   }
 
   /**
@@ -204,7 +200,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
       };
     });
 
-    setState("items", (prev) => [...prev, ...newItems]);
+    setState((s) => { s.items.push(...newItems); });
 
     for (const item of newItems) {
       void (async () => {
@@ -292,7 +288,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
         ? `${window.location.origin}/photos/${nick}/image/${f.hash}`
         : undefined,
     }));
-    setState("items", (prev) => [...prev, ...dedup(prev, newItems)]);
+    setState((s) => { s.items.push(...dedup(s.items, newItems)); });
     for (const item of newItems) {
       if (item.hash) applyAcl(item.hash);
     }
@@ -313,7 +309,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
       photoPageUrl: p.link,
       resourceId: p.resource_id,
     }));
-    setState("items", (prev) => [...prev, ...dedup(prev, newItems)]);
+    setState((s) => { s.items.push(...dedup(s.items, newItems)); });
     for (const item of newItems) {
       if (item.resourceId) applyAcl(item.resourceId);
     }
@@ -324,7 +320,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
     if (item?.source === "upload" && item.thumbUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(item.thumbUrl);
     }
-    setState("items", (prev) => prev.filter((a) => a.id !== id));
+    setState((s) => { s.items = s.items.filter((a) => a.id !== id); });
   }
 
   function setAltText(id: string, text: string) {
@@ -337,7 +333,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
    * actually says. No-op for images that aren't attachments of this composer.
    */
   function setAltByUrl(url: string, text: string) {
-    setState("items", (a) => a.insertUrl === url, { altText: text });
+    setState((s) => { for (const a of s.items) if (a.insertUrl === url) a.altText = text; });
   }
 
   function insertBBCode(id: string): string {
@@ -392,7 +388,7 @@ export function createAttachmentStore(nick: string, scope: string): AttachmentSt
         URL.revokeObjectURL(a.thumbUrl);
       }
     });
-    setState("items", []);
+    setState((s) => { s.items = []; });
     void storageDel(DRAFT_KEY);
   }
 

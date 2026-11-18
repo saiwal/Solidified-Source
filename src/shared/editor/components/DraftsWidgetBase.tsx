@@ -1,4 +1,4 @@
-import { createSignal, createEffect, on, For, Show, onMount } from "solid-js";
+import { createSignal, createEffect, For, Show, onSettled, untrack } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { storageSet } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
@@ -87,12 +87,13 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
 
   const loadable = (scope: string) => (props.isLoadable ? props.isLoadable(scope) : true);
 
-  onMount(() => props.apiRef?.({ reload: loadAll }));
+  const apiRef = untrack(() => props.apiRef);
+  onSettled(() => { apiRef?.({ reload: loadAll }); });
 
   // A draft deleted elsewhere (e.g. published from a routed composer that
   // navigated here, leaving this widget mounted) still needs to drop off
   // this list — refetch whenever any draft is deleted server-side.
-  createEffect(on(draftsVersion, () => void loadAll(), { defer: true }));
+  createEffect(draftsVersion, () => { void loadAll(); }, { defer: true });
 
   async function deleteDraft(scope: string, id: string) {
     setDeleting(id);
@@ -125,7 +126,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
             onClick={() => void loadAll()}
             disabled={data.fetching}
           >
-            <MdOutlineRefresh class="w-3.5 h-3.5" classList={{ "animate-spin": data.fetching }} />
+            <MdOutlineRefresh class={["w-3.5 h-3.5", { "animate-spin": data.fetching }]} />
           </IconButton>
         </>
       }
@@ -153,8 +154,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
               const canLoad = () => loadable(entry.scope);
 
               return (
-                <div class="px-(--ws-px) py-3 hover:bg-elevated group transition-colors"
-                  classList={{ "opacity-50 pointer-events-none": isDeleting() }}>
+                <div class={["px-(--ws-px) py-3 hover:bg-elevated group transition-colors", { "opacity-50 pointer-events-none": isDeleting() }]}>
 
                   {/* Line 1 + 2 — title & summary */}
                   <div

@@ -1,7 +1,7 @@
 // Same layout as the Cards header: title left, Articles | Series switcher in
 // the middle, search + New article on the right. Shown on the list and on the
 // series index; the filter line only on the list.
-import { createEffect, createSignal, Show } from "solid-js";
+import { createSignal, Show, createEffect } from "solid-js";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useNavigate, useSearchParams } from "@solidjs/router";
@@ -50,9 +50,11 @@ export default function ArticlesHeaderWidget() {
   const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
   const [searchInput, setSearchInput] = createSignal(activeSearch());
 
-  const submitSearch = (e?: Event) => {
+  // `query` is passed by callers that just set searchInput: Solid 2 batches
+  // the write, so reading the signal back here would still see the old text.
+  const submitSearch = (e?: Event, query = searchInput()) => {
     e?.preventDefault();
-    const q = searchInput().trim();
+    const q = query.trim();
     setSearchParams({ search: q || undefined, cat: undefined, tag: undefined, dbegin: undefined, dend: undefined });
     if (!q) setSearchOpen(false);
   };
@@ -62,8 +64,8 @@ export default function ArticlesHeaderWidget() {
   usePageSearch(() => (section() === "list") ? {
     value: activeSearch(),
     placeholder: t("articles.search_placeholder"),
-    onSearch: (q) => { setSearchInput(q); submitSearch(); },
-    onClear: () => { setSearchInput(""); submitSearch(); },
+    onSearch: (q) => { setSearchInput(q); submitSearch(undefined, q); },
+    onClear: () => { setSearchInput(""); submitSearch(undefined, ""); },
   } : undefined);
 
   const clearAllFilters = () => {
@@ -73,8 +75,8 @@ export default function ArticlesHeaderWidget() {
   };
 
   let initialized = false;
-  createEffect(() => {
-    if (auth.loading) return;
+  createEffect(() => auth.loading, (loading) => {
+    if (loading) return;
     if (initialized) return;
     initialized = true;
     if (searchParams.new === "1" && role() === "owner") openArticle();

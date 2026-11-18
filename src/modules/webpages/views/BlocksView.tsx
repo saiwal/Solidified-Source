@@ -4,8 +4,8 @@
 // structure as MenusView.tsx/LayoutTemplatesView.tsx (this is a secondary
 // nested route, not the header/content-widget split the plain page list uses).
 
-import { createEffect, For, Show } from "solid-js";
-import { useParams, A, useNavigate } from "@solidjs/router";
+import { For, Show, createEffect } from "solid-js";
+import { useParams, useNavigate } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { blocks, blocksLoading, loadBlocks, removeBlock } from "../store";
@@ -54,13 +54,13 @@ function BlockRow(props: { block: Block; nick: string; onDelete: (iid: number) =
       </span>
 
       <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-        <A
+        <a
           href={`/webpages/${props.nick}/blocks/edit/${props.block.iid}`}
           class="p-1.5 rounded text-muted hover:text-txt hover:bg-overlay transition-colors"
           title={t("webpages.edit") as string}
         >
           <MdOutlineEdit_note size={14} />
-        </A>
+        </a>
         <IconButton
           label={t("webpages.delete") as string}
           variant="danger"
@@ -82,14 +82,12 @@ export default function BlocksView() {
 
   const nick = () => params.nick || auth()?.nick || "";
 
-  createEffect(() => {
-    if ((auth as any).loading || !nick()) return;
-    if (auth()?.nick !== nick()) navigate(`/page/${nick()}/home`, { replace: true });
+  createEffect(() => ((auth as any).loading || !nick() ? null : { mine: auth()?.nick === nick(), nick: nick() }), (at) => {
+    if (at && !at.mine) navigate(`/page/${at.nick}/home`, { replace: true });
   });
 
-  createEffect(() => {
-    if ((auth as any).loading || !nick()) return;
-    loadBlocks(nick());
+  createEffect(() => ((auth as any).loading || !nick() ? null : nick()), (n) => {
+    if (n) loadBlocks(n);
   });
 
   async function handleDelete(iid: number) {
@@ -104,9 +102,9 @@ export default function BlocksView() {
       <div class="flex items-center justify-between gap-4">
         <div class="min-w-0">
           <h1 class="text-lg font-semibold text-txt">{t("webpages.manage_blocks")}</h1>
-          <A href={`/webpages/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
+          <a href={`/webpages/${nick()}`} class="text-xs text-muted hover:text-accent transition-colors">
             {t("webpages.back")}
-          </A>
+          </a>
         </div>
         <PageActions class="shrink-0" label={t("webpages.manage_blocks")} actions={[
           { label: t("webpages.new_block"), icon: MdFillAdd, href: `/webpages/${nick()}/blocks/new`, primary: true },
@@ -140,12 +138,12 @@ export default function BlocksView() {
             <div class="py-16 flex flex-col items-center gap-4 text-center">
               <MdOutlineView_module class="w-10 h-10 text-muted" />
               <p class="text-sm text-muted">{t("webpages.no_blocks")}</p>
-              <A
+              <a
                 href={`/webpages/${nick()}/blocks/new`}
                 class="px-4 py-1.5 rounded-lg bg-accent text-accent-fg text-sm hover:opacity-90 transition-opacity"
               >
                 {t("webpages.create_first_block")}
-              </A>
+              </a>
             </div>
           }
         >

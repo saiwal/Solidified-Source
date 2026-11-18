@@ -1,4 +1,4 @@
-import { Show, createSignal, onMount } from "solid-js";
+import { Show, createSignal, onSettled } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchNotificationSettings, saveNotificationSettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
@@ -184,10 +184,10 @@ function PushNotifyRow() {
   const supported = isPushSupported();
   const blocked = () => supported && desktopNotifyPermission() === "denied";
 
-  onMount(async () => {
+  onSettled(() => { void (async () => {
     if (!supported) return;
     setSubscribed(!!(await getCurrentPushSubscription()));
-  });
+  })(); });
 
   const toggle = async () => {
     if (busy() || blocked() || !supported) return;

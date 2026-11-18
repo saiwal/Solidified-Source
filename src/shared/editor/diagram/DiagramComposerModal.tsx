@@ -12,7 +12,7 @@
  * The toolbar builds the markup (it knows the body's format); this only
  * returns the source and, in image mode, the uploaded image.
  */
-import { createEffect, createSignal, createUniqueId, onCleanup, onMount, Show, type Component } from "solid-js";
+import { createSignal, createUniqueId, onCleanup, onSettled, Show, type Component, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -43,14 +43,13 @@ const DiagramComposerModal: Component<Props> = (props) => {
   let previewRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
 
-  onMount(() => textareaRef?.focus());
+  onSettled(() => { textareaRef?.focus(); });
 
   // Debounced: mermaid re-lays-out the whole diagram per call. `run` drops a
   // render that finishes after a newer keystroke started another.
   let timer: ReturnType<typeof setTimeout> | undefined;
   let run = 0;
-  createEffect(() => {
-    const src = unwrapDiagram(source());
+  createEffect(() => unwrapDiagram(source()), (src) => {
     clearTimeout(timer);
     if (!previewRef) return;
     if (!src.trim()) {

@@ -1,6 +1,6 @@
 // Settings for the social side of the player: profile now-playing audience,
 // the daily recap reminder, and the recap posts themselves.
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createSignal, createEffect } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
 import { MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -38,8 +38,7 @@ export function useRecapComposer() {
     else toast.info(t("jellyfin.recap_empty"));
   };
 
-  createEffect(() => {
-    const p = params.recap;
+  createEffect(() => params.recap, (p) => {
     if (p === "day" || p === "week") {
       setParams({ recap: undefined }, { replace: true });
       void open(p);

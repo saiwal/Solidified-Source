@@ -3,7 +3,7 @@
 // counts down to a target date; mode "world" lists several timezones at once.
 // Pure client-side.
 
-import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, For, onSettled, Show } from "solid-js";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -64,9 +64,9 @@ export default function ClockWidget(props: WidgetProps) {
   };
 
   const [now, setNow] = createSignal(Date.now());
-  onMount(() => {
+  onSettled(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
-    onCleanup(() => clearInterval(id));
+    return () => clearInterval(id);
   });
 
   const clockTime = () => {
@@ -119,7 +119,7 @@ export default function ClockWidget(props: WidgetProps) {
       }
     >
       <WidgetShell>
-      <div class="px-(--ws-px) py-4" classList={{ "text-center": mode() !== "world" }}>
+      <div class={["px-(--ws-px) py-4", { "text-center": mode() !== "world" }]}>
         <Show when={label()}>
           <p class="text-xs font-medium text-muted mb-1 truncate">{label()}</p>
         </Show>
@@ -133,11 +133,10 @@ export default function ClockWidget(props: WidgetProps) {
 
         <Show when={mode() === "countdown"}>
           <p
-            class="text-2xl font-semibold tabular-nums"
-            classList={{
+            class={["text-2xl font-semibold tabular-nums", {
               "text-accent": remainingMs() <= 0,
               "text-txt": remainingMs() > 0,
-            }}
+            }]}
           >
             {countdownText()}
           </p>

@@ -1,11 +1,5 @@
 // modules/directory/views/sections/PrivacyGroupDetailView.tsx
-import {
-  createSignal,
-  createEffect,
-  For,
-  Show,
-  type Component,
-} from "solid-js";
+import { createSignal, For, Show, type Component, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineDelete, MdFillSave } from "solid-icons/md";
 import {
@@ -48,8 +42,7 @@ const PrivacyGroupDetailView: Component<Props> = (props) => {
   const [membersOnly, setMembersOnly] = createSignal(false);
 
   // Reload whenever the id prop changes
-  createEffect(() => {
-    const id = parseInt(props.id, 10);
+  createEffect(() => parseInt(props.id, 10), (id) => {
     if (!id) return;
     loadGroup(id).then(() => {
       const g = activeGroup();

@@ -1,4 +1,4 @@
-import { createEffect } from "solid-js";
+import { createEffect, deep } from "solid-js";
 import { createQueryResource } from "./createQueryResource";
 import { applyBackgroundCSS, loadBackground, type BgFit } from "./background";
 import { applyTheme, applyCustomThemeColors } from "./useTheme";
@@ -37,8 +37,7 @@ async function fetchChannelSpa(nick: string): Promise<Record<string, string> | n
 export function useChannelTheme(channelNick: () => string) {
   const [channelSpa] = createQueryResource("channel-spa", channelNick, fetchChannelSpa);
 
-  createEffect(() => {
-    const spa = channelSpa();
+  createEffect(() => { const s = channelSpa(); return s ? deep(s) : s; }, (spa) => {
     if (spa === undefined) return; // still loading
 
     if (spa === null) {

@@ -3,7 +3,7 @@
 // so a Bootstrap or plain-CSS theme rewrites src/ui/, not every module.
 // An implementation must accept every prop here and pass the rest through to
 // the native element.
-import type { JSX } from "solid-js";
+import type { JSX } from "@solidjs/web";
 
 /** One primary per view; ghost for labelled secondary actions; danger to confirm a destructive one. */
 export type ButtonVariant = "primary" | "ghost" | "danger";
@@ -232,7 +232,7 @@ export interface MenuTriggerProps {
   ref: (el: HTMLElement) => void;
   onClick: (e?: MouseEvent) => void;
   "aria-haspopup": "menu";
-  "aria-expanded": boolean;
+  "aria-expanded": "true" | "false";
 }
 
 /**
@@ -283,7 +283,7 @@ export interface PopoverTriggerProps {
   /** Spread onto the trigger element. */
   ref: (el: HTMLElement) => void;
   onClick: (e: MouseEvent) => void;
-  "aria-expanded": boolean;
+  "aria-expanded": "true" | "false";
   "aria-controls": string;
   /** Derived from the panel role; absent for a plain disclosure. */
   "aria-haspopup"?: "dialog" | "listbox" | "menu";
@@ -399,7 +399,7 @@ export interface TabPanelProps<T extends string> {
 
 export interface CollapsibleTriggerProps {
   /** Spread onto every element that toggles the panel. */
-  "aria-expanded": boolean;
+  "aria-expanded": "true" | "false";
   "aria-controls": string;
   onClick: () => void;
 }

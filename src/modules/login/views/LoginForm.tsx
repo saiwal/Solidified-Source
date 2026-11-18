@@ -1,5 +1,4 @@
-import { createSignal, onMount } from "solid-js";
-import { A } from "@solidjs/router";
+import { createSignal, onSettled } from "solid-js";
 import { fetchLoginToken, submitLogin, submitRmagic } from "../api/api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -25,13 +24,13 @@ export default function LoginForm(props: LoginFormProps) {
   const [remoteAddr, setRemoteAddr] = createSignal("");
   const [remoteLoading, setRemoteLoading] = createSignal(false);
 
-  onMount(async () => {
+  onSettled(() => { void (async () => {
     try {
       setToken(await fetchLoginToken());
     } catch {
       toast.error(t("auth.load_form_error"));
     }
-  });
+  })(); });
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -88,7 +87,7 @@ export default function LoginForm(props: LoginFormProps) {
       </div>
 
       {/* Local login */}
-      <form onSubmit={handleSubmit} class="space-y-4" noValidate={false}>
+      <form onSubmit={handleSubmit} class="space-y-4" novalidate={false}>
         <div class="space-y-1">
           <label class="text-sm font-medium text-txt" for="login-username">
             {t("auth.email_or_username")}
@@ -111,9 +110,9 @@ export default function LoginForm(props: LoginFormProps) {
             <label class="text-sm font-medium text-txt" for="login-password">
               {t("auth.password")}
             </label>
-            <A href="/forgot-password" class="text-xs text-accent hover:underline">
+            <a href="/forgot-password" class="text-xs text-accent hover:underline">
               {t("auth.forgot_password_link")}
-            </A>
+            </a>
           </div>
           <Input
             class="w-full"
@@ -150,9 +149,9 @@ export default function LoginForm(props: LoginFormProps) {
       {/* Register link */}
       <p class="text-center text-sm text-muted mt-4">
         {t("auth.no_account_yet")}{" "}
-        <A href="/register" class="text-accent hover:underline font-medium">
+        <a href="/register" class="text-accent hover:underline font-medium">
           {t("auth.register_link")}
-        </A>
+        </a>
       </p>
 
       {/* Divider */}

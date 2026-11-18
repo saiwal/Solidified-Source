@@ -1,7 +1,7 @@
 // src/modules/help/widgets/HelpNavWidget.tsx
-import { createSignal, createEffect, Show, For } from "solid-js";
+import { createSignal, Show, For, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
-import { useLocation, A } from "@solidjs/router";
+import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchNav, type NavNode } from "../api";
 import { MdOutlineChevron_right } from "solid-icons/md";
@@ -19,8 +19,8 @@ function NavItem(props: {
   const [open, setOpen] = createSignal(isActive() || anyChildActive());
 
   // Keep open when a child becomes active
-  createEffect(() => {
-    if (anyChildActive()) setOpen(true);
+  createEffect(anyChildActive, (active) => {
+    if (active) setOpen(true);
   });
 
   const href = `/help/${props.section}/${props.node.path}`;
@@ -55,7 +55,7 @@ function NavItem(props: {
             </button>
           }
         >
-          <A
+          <a
             href={href}
             class={`flex-1 text-xs py-1 px-1.5 rounded transition-colors truncate
               ${
@@ -65,7 +65,7 @@ function NavItem(props: {
               }`}
           >
             {props.node.label}
-          </A>
+          </a>
         </Show>
       </div>
 

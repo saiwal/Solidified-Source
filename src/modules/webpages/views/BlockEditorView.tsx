@@ -1,5 +1,6 @@
-import { createResource, Show } from "solid-js";
-import { useParams, useNavigate, A } from "@solidjs/router";
+import { Show } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
+import { useParams, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import BlockComposer from "@/shared/editor/composers/BlockComposer";
 import { fetchBlockByIid } from "../api";
@@ -26,12 +27,12 @@ export default function BlockEditorView() {
     <div class="max-w-3xl mx-auto flex flex-col gap-4">
       {/* Breadcrumb */}
       <div class="flex items-center gap-2 text-sm text-muted">
-        <A
+        <a
           href={`/webpages/${nick()}/blocks`}
           class="hover:text-txt transition-colors"
         >
           {t("webpages.back")}
-        </A>
+        </a>
         <span>/</span>
         <span>{isEditing() ? t("webpages.edit_block_title") : t("webpages.new_block_title")}</span>
       </div>

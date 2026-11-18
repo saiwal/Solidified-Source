@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup, Show, For } from "solid-js";
+import { createSignal, onCleanup, Show, For, createEffect } from "solid-js";
 import { MdOutlinePerson, MdOutlineCleaning_services, MdOutlineOpen_in_full } from "solid-icons/md";
 import { useQuickActions, type QuickAction } from "../quick-actions";
 import { getNavIcon } from "@/shared/views/NavItem";
@@ -75,11 +75,13 @@ function HqComposer() {
   // Insert each image as soon as it's ready instead; files that aren't images
   // have no inline form and ride along as [attachment] tags at submit time.
   const inserted = new Set<string>();
-  createEffect(() => {
-    for (const a of attach.attachments()) {
-      if (a.status !== "ready" || !a.isImage || inserted.has(a.id)) continue;
-      inserted.add(a.id);
-      setBody(appendInsert(body(), bbcodeToInsert(attach.insertBBCode(a.id), MIME)));
+  createEffect(() => attach.attachments().filter((a) => a.status === "ready" && a.isImage).map((a) => a.id), (ready) => {
+    for (const id of ready) {
+      if (inserted.has(id)) continue;
+      inserted.add(id);
+      // Updater form: writes are batched, so a plain body() read would miss
+      // the insert just made for the previous image.
+      setBody((b) => appendInsert(b, bbcodeToInsert(attach.insertBBCode(id), MIME)));
     }
   });
 
@@ -96,8 +98,7 @@ function HqComposer() {
 
   // Auto-save draft
   let draftTimer: ReturnType<typeof setTimeout> | undefined;
-  createEffect(() => {
-    const snap = { body: body(), aclMode: acl.mode() };
+  createEffect(() => ({ body: body(), aclMode: acl.mode() }), (snap) => {
     clearTimeout(draftTimer);
     draftTimer = setTimeout(() => storageSet(DRAFT_KEY(), snap), 800);
   });

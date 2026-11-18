@@ -1,5 +1,5 @@
-import { lazy, For, Show, createEffect, createMemo, type Component, type ParentComponent } from "solid-js";
-import { Router, Route, useNavigate, useLocation } from "@solidjs/router";
+import { lazy, Show, createMemo, type Component, type ParentComponent, createEffect } from "solid-js";
+import { createRouter, useNavigate, useLocation } from "@solidjs/router";
 import { QueryClientProvider } from "@utsukta/spa-core/lib/query";
 import Layout from "./Layout";
 import { getRoutes } from "./router";
@@ -44,9 +44,7 @@ function RootRedirect() {
   const navData = useNavData();
   const navigate = useNavigate();
 
-  createEffect(() => {
-    const a = auth();
-    const nav = navData();
+  createEffect(() => [auth(), navData()] as const, ([a, nav]) => {
     if (!a || !nav) return; // still resolving — don't guess
 
     const dest = a.isLocal
@@ -69,8 +67,8 @@ const ModuleGuard: ParentComponent<{ moduleId: string }> = (props) => {
     isModuleActive(props.moduleId, installedApps(), disabledFrontendModules()),
   );
 
-  createEffect(() => {
-    if (!active()) navigate("/", { replace: true });
+  createEffect(active, (on) => {
+    if (!on) navigate("/", { replace: true });
   });
 
   return <Show when={active()}>{props.children}</Show>;
@@ -85,8 +83,8 @@ const AuthGuard: ParentComponent = (props) => {
 
   const loggedIn = createMemo(() => auth()?.isLoggedIn ?? null);
 
-  createEffect(() => {
-    if (loggedIn() === false) {
+  createEffect(loggedIn, (li) => {
+    if (li === false) {
       const next = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?next=${next}`, { replace: true });
     }
@@ -103,8 +101,7 @@ const LocaleSync: Component = () => {
   const navData = useNavData();
   const { setLocale } = useI18n();
 
-  createEffect(() => {
-    const data = navData();
+  createEffect(navData, (data) => {
     if (!data || hasStoredLocalePreference()) return;
     setLocale(resolveSupportedLocale(data.language));
   });
@@ -112,35 +109,43 @@ const LocaleSync: Component = () => {
   return null;
 };
 
+// Every module registers eagerly (the glob above), so the route table is
+// complete here and router 2's immutable tree is built once.
+// ponytail: a module registered after boot won't get a route — fine while
+// nothing does; runtime addons would need a lazy `children` subtree.
+function moduleRoutes() {
+  return getRoutes()().map((route) => {
+    const Comp = lazy(route.component);
+    const mid = route.moduleId;
+    const mod = mid ? getModule(mid) : null;
+
+    let Rendered: Component = Comp;
+    if (mod?.appUrlSlug || mod?.frontendFeature) {
+      const Inner = Rendered;
+      Rendered = () => <ModuleGuard moduleId={mid!}><Inner /></ModuleGuard>;
+    }
+    if (mod?.requiresAuth) {
+      const Inner = Rendered;
+      Rendered = () => <AuthGuard><Inner /></AuthGuard>;
+    }
+    return { path: route.path, component: Rendered };
+  });
+}
+
+const Router = createRouter({
+  routes: [
+    { path: "/", component: RootRedirect },
+    ...moduleRoutes(),
+    { path: "*404", component: NotFound },
+  ],
+});
+
 export default function App() {
   return (
   <QueryClientProvider client={queryClient}>
   <I18nProvider>
     <LocaleSync />
-    <Router>
-      <Route path="/" component={Layout}>
-        <Route path="/" component={RootRedirect} />
-        <For each={getRoutes()()}>
-          {(route) => {
-            const Comp = lazy(route.component);
-            const mid = route.moduleId;
-            const mod = mid ? getModule(mid) : null;
-
-            let Rendered: Component = Comp;
-            if (mod?.appUrlSlug || mod?.frontendFeature) {
-              const Inner = Rendered;
-              Rendered = () => <ModuleGuard moduleId={mid!}><Inner /></ModuleGuard>;
-            }
-            if (mod?.requiresAuth) {
-              const Inner = Rendered;
-              Rendered = () => <AuthGuard><Inner /></AuthGuard>;
-            }
-            return <Route path={route.path} component={Rendered} />;
-          }}
-        </For>
-        <Route path="*404" component={NotFound} />
-      </Route>
-    </Router>
+    <Router>{(props) => <Layout>{props.children}</Layout>}</Router>
     <QueryDevtools />
   </I18nProvider>
   </QueryClientProvider>

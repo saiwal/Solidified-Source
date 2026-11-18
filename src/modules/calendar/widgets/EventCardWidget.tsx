@@ -3,7 +3,6 @@
 // window (e.g. past events) show the unavailable hint in edit mode.
 
 import { Show } from "solid-js";
-import { A } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -71,13 +70,13 @@ export default function EventCardWidget(props: WidgetProps) {
                   </Show>
                 </div>
               </div>
-              <A
+              <a
                 href={`/cal/${nick()}`}
                 class="block px-(--ws-px) py-2 border-t border-rim text-center text-xs font-medium
                        text-accent-txt hover:bg-elevated transition-colors"
               >
                 {t("widgets.view_calendar")}
-              </A>
+              </a>
             </WidgetShell>
           )}
         </Show>

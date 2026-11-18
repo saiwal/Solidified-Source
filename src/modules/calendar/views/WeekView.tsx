@@ -1,4 +1,4 @@
-import { For, Show, createMemo, onMount } from "solid-js";
+import { For, Show, createMemo, onSettled } from "solid-js";
 import type { CalEvent } from "../api";
 import {
   HOUR_H, localDay, startOfWeek, addDays, isoDateStr, todayKey,
@@ -54,7 +54,7 @@ export default function WeekView(props: Props) {
   const cols = `${TIME_W}px repeat(7, minmax(0, 1fr))`;
 
   let gridRef!: HTMLDivElement;
-  onMount(() => gridRef?.scrollTo({ top: 7 * HOUR_H - 16 }));
+  onSettled(() => { gridRef?.scrollTo({ top: 7 * HOUR_H - 16 }); });
 
   return (
     <div class="flex flex-col h-full">

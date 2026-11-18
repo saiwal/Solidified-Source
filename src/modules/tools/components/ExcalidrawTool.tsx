@@ -1,4 +1,4 @@
-import { createSignal, lazy, Show, Suspense } from "solid-js";
+import { createSignal, lazy, Show, Loading } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import ExcalidrawCanvas, { type ExcalidrawExport } from "@/modules/excalidraw/ExcalidrawCanvas";
@@ -63,7 +63,7 @@ export function ExcalidrawTool() {
       </div>
 
       <Show when={saveOpen() && exportApi()}>
-        <Suspense>
+        <Loading>
           <SaveToCloudDialog
             nick={currentNick()}
             api={exportApi()!}
@@ -73,11 +73,11 @@ export function ExcalidrawTool() {
               if (!warning) setStatus(t("editor.excalidraw_saved"));
             }}
           />
-        </Suspense>
+        </Loading>
       </Show>
 
       <Show when={pickerOpen()}>
-        <Suspense>
+        <Loading>
           <FilePickerModal
             nick={currentNick()}
             accept="files"
@@ -91,7 +91,7 @@ export function ExcalidrawTool() {
               void run(() => openSceneFromCloud(currentNick(), api, f));
             }}
           />
-        </Suspense>
+        </Loading>
       </Show>
     </div>
   );

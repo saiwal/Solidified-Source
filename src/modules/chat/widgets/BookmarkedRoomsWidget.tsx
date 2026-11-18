@@ -1,5 +1,6 @@
 // src/modules/chat/widgets/BookmarkedRoomsWidget.tsx
-import { For, Show, onMount, type JSX } from "solid-js";
+import { For, Show, onSettled } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { isLocalUser } from "@utsukta/spa-core/store/auth-store";
@@ -82,7 +83,7 @@ export function BookmarkedRoomsList(props: {
   const { t } = useI18n();
   const navigate = useNavigate();
 
-  onMount(loadChatBookmarks);
+  onSettled(() => { void (loadChatBookmarks)(); });
 
   // A room on this hub opens in Messenger (/chat/:nick/:id). Rooms on
   // another hub can't (the chat API is local), so they open on their own hub,

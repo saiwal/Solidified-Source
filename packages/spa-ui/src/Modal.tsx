@@ -1,7 +1,5 @@
-import {
-  Show, createContext, createEffect, createSignal, createUniqueId, onCleanup, splitProps, useContext,
-} from "solid-js";
-import { Portal } from "solid-js/web";
+import { Show, createContext, createSignal, createUniqueId, onCleanup, useContext, omit, createEffect } from "solid-js";
+import { Portal } from "@solidjs/web";
 import { createDialogMode } from "@utsukta/spa-core/lib/dialog-mode";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import type { ModalPanelProps, ModalProps, ModalSize } from "@utsukta/spa-core/types/ui.types";
@@ -28,7 +26,7 @@ import { MdOutlineClose } from "solid-icons/md";
 
 // A ModalPanel with a `title` registers its heading here, so the dialog is
 // named without the call site wiring labelledBy.
-const ModalContext = createContext<{ title: (id: string) => void; description: (id: string) => void }>();
+const ModalContext = createContext<{ title: (id: string) => void; description: (id: string) => void } | null>(null);
 
 export function Modal(props: ModalProps) {
   const [titleId, setTitleId] = createSignal<string>();
@@ -42,7 +40,7 @@ export function Modal(props: ModalProps) {
   // Opening, and switching between modal and non-modal, is a small state
   // machine with an async-event trap in it — see dialog-mode.ts and its test.
   const dialog = createDialogMode(() => el, () => props.onClose());
-  createEffect(() => dialog.sync(props.modal !== false));
+  createEffect(() => props.modal !== false, (modal) => { dialog.sync(modal); });
   onCleanup(() => {
     dialog.teardown();
     const active = document.activeElement;
@@ -79,7 +77,7 @@ export function Modal(props: ModalProps) {
             "flex items-center justify-center"
       } ${props.class ?? ""}`}
     >
-      <ModalContext.Provider value={{ title: setTitleId, description: setDescId }}>{props.children}</ModalContext.Provider>
+      <ModalContext value={{ title: setTitleId, description: setDescId }}>{props.children}</ModalContext>
     </dialog>
     </Portal>
   );
@@ -93,7 +91,7 @@ export function modalPanelClass(size?: ModalSize): string {
 }
 
 export function ModalPanel(props: ModalPanelProps) {
-  const [own, rest] = splitProps(props, ["size", "title", "description", "onClose", "footer", "class", "children"]);
+  const own = props, rest = omit(props, "size", "title", "description", "onClose", "footer", "class", "children");
   const { t } = useI18n();
   const id = createUniqueId();
   const register = useContext(ModalContext);

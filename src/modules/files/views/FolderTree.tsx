@@ -1,4 +1,4 @@
-import { createSignal, createEffect, createMemo, onCleanup, For, Show } from "solid-js";
+import { createSignal, createMemo, For, Show, createEffect } from "solid-js";
 import { MdFillFolder, MdOutlineSearch, MdOutlineClose } from "solid-icons/md";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -29,19 +29,17 @@ export default function FolderTree(props: Props) {
   const currentPath = () => props.stack[props.stack.length - 1].displayPath;
 
   // Keep the path to the open folder expanded, however it was reached.
-  createEffect(() => {
-    const paths = props.stack.map((f) => f.displayPath);
+  createEffect(() => props.stack.map((f) => f.displayPath), (paths) => {
     setExpanded((prev) => new Set([...prev, ...paths]));
   });
 
   // Search box: whole-cloud name search; matches render as a pruned tree.
   const [query, setQuery] = createSignal("");
   const [term, setTerm] = createSignal("");
-  createEffect(() => {
-    const v = query().trim();
+  createEffect(() => query().trim(), (v) => {
     if (!v) { setTerm(""); return; }
     const id = setTimeout(() => setTerm(v), 250);
-    onCleanup(() => clearTimeout(id));
+    return () => clearTimeout(id);
   });
   const searching = () => term().length >= 2;
   const [hits] = createQueryResource(
@@ -80,7 +78,7 @@ export default function FolderTree(props: Props) {
     const leaf = () => open() && !!listing() && children().length === 0;
 
     return (
-      <li role="treeitem" aria-expanded={leaf() ? undefined : open()}>
+      <li role="treeitem" aria-expanded={leaf() ? undefined : open() ? "true" : "false"}>
         <div
           class={`flex items-center gap-1 rounded-md pr-2 py-1 text-sm cursor-pointer select-none
                   ${path === currentPath() ? "bg-accent/15 text-accent font-medium" : "text-txt hover:bg-overlay"}`}

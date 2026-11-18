@@ -21,13 +21,12 @@ interface Props {
 const CategoriesModal: Component<Props> = (props) => {
   const { t } = useI18n();
   const [category, setCategory] = createSignal("");
-  const [loaded, setLoaded] = createSignal(false);
+  const [loaded, setLoaded] = createSignal(!!props.items);
   const [busy, setBusy] = createSignal(false);
   const [err, setErr] = createSignal("");
 
   const bulk = () => props.items;
-  if (bulk()) setLoaded(true);
-  else getCategories(props.nick, props.item.hash)
+  if (!bulk()) getCategories(props.nick, props.item.hash)
     .then((cats) => { setCategory(cats.join(",")); setLoaded(true); })
     .catch((e) => setErr((e as Error).message));
 

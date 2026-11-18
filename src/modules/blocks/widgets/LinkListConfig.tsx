@@ -2,7 +2,7 @@
 // label/url rows. Save is blocked when the config would exceed the server's
 // 2 KB per-instance cap.
 
-import { createSignal, Index, Show } from "solid-js";
+import { createSignal, For, Show } from "solid-js";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdFillAdd, MdFillClose } from "solid-icons/md";
@@ -54,7 +54,7 @@ export default function LinkListConfig(props: WidgetConfigProps) {
           class="mt-1 w-full"
           type="text"
           value={title()}
-          maxLength={60}
+          maxlength={60}
           onInput={(e) => setTitle(e.currentTarget.value)}
         />
       </label>
@@ -62,7 +62,7 @@ export default function LinkListConfig(props: WidgetConfigProps) {
       <span class="text-xs text-muted">{t("widgets.cfg_links")}</span>
       {/* Index (not For): rows are recreated objects on every keystroke, and
           For would rebuild the DOM row — dropping focus from the input */}
-      <Index each={rows()}>
+      <For keyed={false} each={rows()}>
         {(row, i) => (
           <div class="flex items-center gap-1">
             <Input
@@ -71,7 +71,7 @@ export default function LinkListConfig(props: WidgetConfigProps) {
               type="text"
               placeholder={t("widgets.cfg_link_label")}
               value={row().label}
-              maxLength={60}
+              maxlength={60}
               onInput={(e) => setRow(i, { label: e.currentTarget.value })}
               style={{ "max-width": "35%" }}
             />
@@ -81,7 +81,7 @@ export default function LinkListConfig(props: WidgetConfigProps) {
               type="url"
               placeholder="https://…"
               value={row().url}
-              maxLength={200}
+              maxlength={200}
               onInput={(e) => setRow(i, { url: e.currentTarget.value })}
             />
             <IconButton
@@ -94,7 +94,7 @@ export default function LinkListConfig(props: WidgetConfigProps) {
             </IconButton>
           </div>
         )}
-      </Index>
+      </For>
 
       <Show when={rows().length < MAX_LINKS}>
         <Button variant="ghost" size="sm" class="self-start" onClick={addRow}>

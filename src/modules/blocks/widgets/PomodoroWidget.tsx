@@ -3,7 +3,7 @@
 // browser tab throttling can't drift the clock. visitorVisible: false —
 // this is a productivity tool for the page owner, not page content.
 
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { createSignal, onSettled } from "solid-js";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -34,7 +34,7 @@ export default function PomodoroWidget(props: WidgetProps) {
 
   const running = () => endsAt() !== null;
 
-  onMount(() => {
+  onSettled(() => {
     const id = setInterval(() => {
       setNow(Date.now());
       const e = endsAt();
@@ -52,7 +52,7 @@ export default function PomodoroWidget(props: WidgetProps) {
         }
       }
     }, 500);
-    onCleanup(() => clearInterval(id));
+    return () => clearInterval(id);
   });
 
   const remainingMs = () => {
@@ -88,11 +88,10 @@ export default function PomodoroWidget(props: WidgetProps) {
     <WidgetShell>
     <div class="px-(--ws-px) py-4 text-center">
       <p
-        class="text-xs font-medium mb-1"
-        classList={{
+        class={["text-xs font-medium mb-1", {
           "text-accent": phase() === "break",
           "text-muted": phase() === "work",
-        }}
+        }]}
       >
         {phase() === "work" ? t("widgets.pomo_work") : t("widgets.pomo_break")}
       </p>

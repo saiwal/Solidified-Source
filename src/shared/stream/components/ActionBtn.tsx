@@ -2,7 +2,8 @@
 // A reaction button (icon + count) and its click "pop". Shared by PostCard's
 // action bar and the article reading page, so reactions look and feel the
 // same everywhere.
-import { Show, createSignal, onCleanup, type JSX } from "solid-js";
+import { Show, createSignal, onCleanup } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { Button } from "@ui/Button";
 
 // Two-tap guard for actions that publish (repeat): the first tap arms — the

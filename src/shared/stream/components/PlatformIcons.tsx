@@ -5,7 +5,8 @@
 // fedidb.com/software's top 50 by user count gets a letter monogram instead
 // (see PLATFORM_MONOGRAMS below).
 
-import { Show, Suspense, type JSX } from "solid-js";
+import { Show, Loading } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { MdOutlineHelp_outline } from "solid-icons/md";
 import { usePlatformSoftware } from "@utsukta/spa-core/lib/usePlatformSoftware";
 import mastodonIcon from "@/assets/icons/platforms/mastodon.svg";
@@ -167,7 +168,7 @@ export function PlatformIcon(props: { url?: string; network?: string; size?: num
   // so without this every new host in an appended page (e.g. the next page of
   // connections) blanks the whole section and the scroll jumps to the top.
   return (
-    <Suspense>
+    <Loading>
     <Show
       when={iconSrc()}
       fallback={
@@ -192,6 +193,6 @@ export function PlatformIcon(props: { url?: string; network?: string; size?: num
     >
       {(src) => <IconChip src={src()} alt={platformLabel(software()!)} size={props.size ?? 12} />}
     </Show>
-    </Suspense>
+    </Loading>
   );
 }

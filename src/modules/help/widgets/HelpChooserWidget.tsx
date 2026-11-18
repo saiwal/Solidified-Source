@@ -1,6 +1,6 @@
 // src/modules/help/widgets/HelpChooserWidget.tsx
 import { createSignal, Show } from "solid-js";
-import { useLocation, useNavigate, useSearchParams, A } from "@solidjs/router";
+import { useLocation, useNavigate, useSearchParams } from "@solidjs/router";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Input } from "@ui/Field";
@@ -42,7 +42,7 @@ export default function HelpChooserWidget() {
 
       <div class="flex gap-1 p-1 bg-elevated rounded-lg w-fit mx-auto">
         {sections.map((s) => (
-          <A
+          <a
             href={`/help/${s.id}`}
             class={`px-3 text-center text-xs py-1 rounded-md transition-colors font-medium
               ${
@@ -52,7 +52,7 @@ export default function HelpChooserWidget() {
               }`}
           >
             {s.label()}
-          </A>
+          </a>
         ))}
       </div>
 

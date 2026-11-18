@@ -1,5 +1,6 @@
-import { createResource, Show } from "solid-js";
-import { useParams, useNavigate, A } from "@solidjs/router";
+import { Show } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
+import { useParams, useNavigate } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import WebpageComposer from "@/shared/editor/composers/WebpageComposer";
@@ -28,12 +29,12 @@ export default function WebpageEditorView() {
     <div class="max-w-3xl mx-auto flex flex-col gap-4">
       {/* Breadcrumb */}
       <div class="flex items-center gap-2 text-sm text-muted">
-        <A
+        <a
           href={`/webpages/${nick()}`}
           class="hover:text-txt transition-colors"
         >
           {t("webpages.back")}
-        </A>
+        </a>
         <span>/</span>
         <span>{isEditing() ? t("webpages.edit_page_title") : t("webpages.new_page_title")}</span>
       </div>

@@ -1,8 +1,8 @@
 // src/modules/messenger/DmPane.tsx
 // Right pane for a DM conversation: the person's threads (subjects) to pick
 // from, and the picked thread as chat bubbles with a reply box.
-import { For, Show, createEffect, createMemo, createSignal, on, onMount } from "solid-js";
-import { A, useNavigate } from "@solidjs/router";
+import { For, Show, createEffect, createMemo, createSignal, onSettled, untrack } from "solid-js";
+import { useNavigate } from "@solidjs/router";
 import { useQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMessages } from "@utsukta/spa-core/lib/message-store";
@@ -63,9 +63,9 @@ export function PinButton(props: { pinned: boolean; onClick: () => void; always?
 export function BackButton(props: { href: string }) {
   const { t } = useI18n();
   return (
-    <A href={props.href} class="md:hidden p-1.5 -ml-1.5 rounded-lg text-muted hover:text-txt hover:bg-elevated" aria-label={t("messenger.back") as string}>
+    <a href={props.href} class="md:hidden p-1.5 -ml-1.5 rounded-lg text-muted hover:text-txt hover:bg-elevated" aria-label={t("messenger.back") as string}>
       <MdOutlineArrow_back size={20} />
-    </A>
+    </a>
   );
 }
 
@@ -104,7 +104,9 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
   // One thread: skip the picker.
   createEffect(() => {
     const g = group();
-    if (!props.uuid && g?.threads.length === 1) navigate(`${base()}/${g.threads[0].b64mid}`, { replace: true });
+    return !props.uuid && g?.threads.length === 1 ? `${base()}/${g.threads[0].b64mid}` : null;
+  }, (to) => {
+    if (to) navigate(to, { replace: true });
   });
 
   // A new thread with the same people, composed in Messenger's own pane.
@@ -162,15 +164,15 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
           <div class="flex-1 overflow-y-auto divide-y divide-rim">
             <For each={group()?.threads}>
               {(th) => (
-                <A href={`${base()}/${th.b64mid}`} class="flex items-start gap-3 px-4 py-3 hover:bg-elevated transition-colors">
+                <a href={`${base()}/${th.b64mid}`} class="flex items-start gap-3 px-4 py-3 hover:bg-elevated transition-colors">
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm text-txt truncate" classList={{ "font-semibold": !!th.unseen || !!th.unseen_count }}>
+                    <p class={["text-sm text-txt truncate", { "font-semibold": !!th.unseen || !!th.unseen_count }]}>
                       {th.title || t("messenger.no_subject")}
                     </p>
                     <p class="text-xs text-muted truncate">{decodeHtmlEntities(th.summary)}</p>
                   </div>
                   <span class="text-[0.6875rem] text-muted shrink-0 tabular-nums">{shortTime(th.created, locale())}</span>
-                </A>
+                </a>
               )}
             </For>
           </div>
@@ -236,13 +238,12 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
     refetchInterval: 15_000,
   }));
 
-  onMount(() => {
-    if (props.unseen) void apiSetSeen(props.uuid, true).then(invalidateDms, () => {});
+  const unseenAtMount = untrack(() => (props.unseen ? props.uuid : null));
+  onSettled(() => {
+    if (unseenAtMount) void apiSetSeen(unseenAtMount, true).then(invalidateDms, () => {});
   });
 
-  createEffect(on(() => thread.data?.length, () =>
-    requestAnimationFrame(() => { if (scroller && pinned) scroller.scrollTop = scroller.scrollHeight; }),
-  ));
+  createEffect(() => thread.data?.length, () => { requestAnimationFrame(() => { if (scroller && pinned) scroller.scrollTop = scroller.scrollHeight; }); });
 
   const messages = createMemo(() => {
     const list = thread.data ?? [];
@@ -354,31 +355,30 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                   <div class="flex-1 h-px bg-rim" />
                 </div>
               </Show>
-              <div class="group flex items-start gap-2 py-px" classList={{ "justify-end": self, "mt-2.5": first }}>
+              <div class={["group flex items-start gap-2 py-px", { "justify-end": self, "mt-2.5": first }]}>
                 <Show when={!self}>
                   {/* Avatar with the name under it, in a fixed-width column so
                       a run's later messages stay aligned beneath it. */}
                   <Show when={first} fallback={<div class="w-12 shrink-0" />}>
-                    <A href={channelHref(m)} title={m.author?.name} class="w-12 shrink-0 flex flex-col items-center gap-0.5 group/author">
+                    <a href={channelHref(m)} title={m.author?.name} class="w-12 shrink-0 flex flex-col items-center gap-0.5 group/author">
                       <Avatar src={m.author?.photo?.src} name={m.author?.name ?? ""} size={7} />
                       <span class="w-full text-center text-[0.625rem] leading-tight text-muted truncate group-hover/author:text-txt group-hover/author:underline">
                         {m.author?.name}
                       </span>
-                    </A>
+                    </a>
                   </Show>
                 </Show>
-                <div class="max-w-[85%] min-w-0 flex flex-col" classList={{ "items-end": self }}>
+                <div class={["max-w-[85%] min-w-0 flex flex-col", { "items-end": self }]}>
                   {/* Bubble and its reply button share a row, so the button
                       lines up with the message's first line. */}
-                  <div class="flex items-start gap-1 max-w-full" classList={{ "flex-row-reverse": self }}>
+                  <div class={["flex items-start gap-1 max-w-full", { "flex-row-reverse": self }]}>
                   <div
                     data-mid={m.mid}
-                    class="min-w-0 px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words transition-shadow"
-                    classList={{
+                    class={["min-w-0 px-3 py-1.5 text-sm leading-relaxed rounded-2xl break-words transition-shadow", {
                       "bg-accent text-accent-fg": self,
                       "bg-elevated text-txt": !self,
                       "ring-2 ring-accent ring-offset-2 ring-offset-surface": flash() === m.mid,
-                    }}
+                    }]}
                   >
                     <Show when={quoted}>
                       {(q) => (
@@ -415,7 +415,7 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
                   </div>
                   {/* Time, likes, then edit/delete — small icons under the bubble,
                       so the row beside it holds only the reply button. */}
-                  <div class="flex flex-wrap items-center gap-x-2 text-[0.625rem] text-muted px-1" classList={{ "justify-end": self }}>
+                  <div class={["flex flex-wrap items-center gap-x-2 text-[0.625rem] text-muted px-1", { "justify-end": self }]}>
                     <span class="tabular-nums" title={itemDate(m.created).toLocaleString(locale())}>
                       {itemDate(m.created).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" })}
                     </span>

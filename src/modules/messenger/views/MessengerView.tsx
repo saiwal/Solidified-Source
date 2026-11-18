@@ -12,8 +12,9 @@
 // On your own nick it's your mailbox, rooms and bookmarks. On another channel
 // (local or remote visitor) it's your DMs with that channel and the rooms it
 // lets you into. Desktop shows list + pane side by side; below md, one at a time.
-import { For, Match, Show, Suspense, Switch, createEffect, createMemo, createSignal, lazy, on, onMount, type JSX } from "solid-js";
-import { A, useLocation, useNavigate } from "@solidjs/router";
+import { For, Match, Show, Loading, Switch, createEffect, createMemo, createSignal, lazy, onSettled } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { useLocation, useNavigate } from "@solidjs/router";
 import { useInfiniteQuery } from "@utsukta/spa-core/lib/query";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchMessages } from "@utsukta/spa-core/lib/message-store";
@@ -74,7 +75,7 @@ function RoomRow(props: {
         <div class="w-10 h-10 rounded-full bg-accent-muted text-accent flex items-center justify-center shrink-0">
           <MdFillChat size={18} />
         </div>
-        <span class="flex-1 min-w-0 text-sm text-txt truncate" classList={{ "font-semibold": props.unread }}>{props.name}</span>
+        <span class={["flex-1 min-w-0 text-sm text-txt truncate", { "font-semibold": props.unread }]}>{props.name}</span>
         <Show when={props.unread}>
           <span class="w-2 h-2 rounded-full bg-accent shrink-0" role="img" aria-label={t("chat.unread") as string} />
         </Show>
@@ -125,15 +126,14 @@ export default function MessengerView() {
   const path = createMemo(() => location.pathname.split("/").filter(Boolean).map(decodeURIComponent));
   const nick = () => path()[1] ?? "";
   // Bare /messenger: your own.
-  createEffect(() => { if (!nick() && currentNick()) navigate(`/messenger/${currentNick()}`, { replace: true }); });
+  createEffect(() => (nick() ? null : currentNick()), (n) => { if (n) navigate(`/messenger/${n}`, { replace: true }); });
   const base = () => `/messenger/${encodeURIComponent(nick())}`;
   const chatBase = () => `/chat/${encodeURIComponent(nick())}`;
   // Normalised selection: ["dm", …] or ["rooms"[, "new" | roomId]].
   const segs = () => (path()[0] === "chat" ? ["rooms", ...path().slice(2)] : path().slice(2));
   // Old urls (pins, history): /dms/… → /dm/…, /rooms[/new] → /chat/:nick[/new],
   // /rooms/:room/:roomId → /chat/:room/:roomId.
-  createEffect(() => {
-    const p = path();
+  createEffect(path, (p) => {
     if (p[0] !== "messenger") return;
     const rest = p.slice(3).map(encodeURIComponent).join("/");
     if (p[2] === "dms") navigate(`${base()}/dm${rest ? `/${rest}` : ""}`, { replace: true });
@@ -143,7 +143,7 @@ export default function MessengerView() {
   const urlTab = () => (segs()[0] === "rooms" ? "rooms" : segs()[0] === "matrix" ? "matrix" : "dms");
   // Local, so flipping tabs keeps the open conversation; follows the url.
   const [pickedTab, setTab] = createSignal<"dms" | "rooms" | "matrix">(urlTab());
-  createEffect(on(urlTab, setTab, { defer: true }));
+  createEffect(urlTab, (tab) => { setTab(tab); }, { defer: true });
   const selected = () => segs().length > 1;
   const [query, setQuery] = createSignal("");
 
@@ -179,7 +179,7 @@ export default function MessengerView() {
   // On your own, your bookmarked rooms (here or on other hubs) are its
   // pinned section, and a bookmarked room of yours is listed only there. ──
   const [own] = createQueryResource("chat-rooms", () => nick() || null, fetchRooms);
-  onMount(() => { if (auth()?.isLocal) void loadChatBookmarks(); });
+  onSettled(() => { if (auth()?.isLocal) void loadChatBookmarks(); });
   const matches = (name: string) => name.toLowerCase().includes(query().toLowerCase());
   const ownRooms = () =>
     (own.error ? [] : own()?.rooms ?? []).filter((r) => matches(r.name) && !(isOwner() && isRoomBookmarked(nick(), r.id)));
@@ -204,8 +204,8 @@ export default function MessengerView() {
   };
   // A /rooms url on a channel without the app: back to its DMs. Waits for this
   // nick's own answer (`loading` covers a previous channel's placeholder data).
-  createEffect(() => {
-    if (!own.loading && !roomsOn() && segs()[0] === "rooms") navigate(base(), { replace: true });
+  createEffect(() => !own.loading && !roomsOn() && segs()[0] === "rooms", (off) => {
+    if (off) navigate(base(), { replace: true });
   });
   const canCreateRoom = () => isOwner() && !own.error && own()?.is_owner && own()?.chatrooms_installed !== false;
   async function dropRoom(roomId: number, name: string) {
@@ -240,11 +240,11 @@ export default function MessengerView() {
   // One conversation row. The pin sits beside the link, not inside it.
   const dmRow = (g: DmGroup | undefined, key: string, title: string) => (
     <div class={pinRowClass(segs()[0] === "dm" && segs()[1] === key)}>
-      <A href={`${base()}/dm/${encodeURIComponent(key)}`} class="flex-1 min-w-0 flex items-center gap-3 py-2.5">
+      <a href={`${base()}/dm/${encodeURIComponent(key)}`} class="flex-1 min-w-0 flex items-center gap-3 py-2.5">
         <Avatar src={g?.people[0]?.photo} name={g ? groupName(g) : title} size={10} />
         <div class="flex-1 min-w-0">
           <div class="flex items-baseline gap-2">
-            <span class="flex-1 text-sm text-txt truncate" classList={{ "font-semibold": (g?.unread ?? 0) > 0 }}>{g ? groupName(g) : title}</span>
+            <span class={["flex-1 text-sm text-txt truncate", { "font-semibold": (g?.unread ?? 0) > 0 }]}>{g ? groupName(g) : title}</span>
             <Show when={g}>
               <span class="text-[0.6875rem] text-muted shrink-0 tabular-nums">{shortTime(g!.threads[0].created, locale())}</span>
             </Show>
@@ -263,7 +263,7 @@ export default function MessengerView() {
             </div>
           </Show>
         </div>
-      </A>
+      </a>
       <Show when={canPin()}>
         <PinButton pinned={!!pinFor(key)} onClick={() => void togglePin(key, g ? groupName(g) : title)} />
       </Show>
@@ -274,8 +274,7 @@ export default function MessengerView() {
     <Card class="flex h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem] overflow-hidden">
       {/* ── List ── */}
       <aside
-        class="flex-col w-full md:w-72 lg:w-80 shrink-0 md:border-r border-rim min-h-0"
-        classList={{ "hidden md:flex": selected(), flex: !selected() }}
+        class={["flex-col w-full md:w-72 lg:w-80 shrink-0 md:border-r border-rim min-h-0", { "hidden md:flex": selected(), flex: !selected() }]}
       >
         <div class="p-3 space-y-3 shrink-0">
           <label class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-rim focus-within:border-accent">
@@ -314,9 +313,9 @@ export default function MessengerView() {
         </div>
 
         <Show when={tab() === "matrix"}>
-          <Suspense fallback={<div class="flex-1" />}>
+          <Loading fallback={<div class="flex-1" />}>
             <MatrixList base={`${base()}/matrix`} query={query()} activeRoom={segs()[0] === "matrix" ? segs()[1] : undefined} />
-          </Suspense>
+          </Loading>
         </Show>
         <Show when={tab() !== "matrix"}>
         <div class="flex-1 overflow-y-auto min-h-0">
@@ -410,7 +409,7 @@ export default function MessengerView() {
       </aside>
 
       {/* ── Conversation ── */}
-      <main class="flex-1 min-w-0 flex-col min-h-0" classList={{ "hidden md:flex": !selected(), flex: selected() }}>
+      <main class={["flex-1 min-w-0 flex-col min-h-0", { "hidden md:flex": !selected(), flex: selected() }]}>
         <Switch fallback={
           <div class="flex-1 flex flex-col items-center justify-center gap-2 text-muted">
             <MdFillChat size={40} class="opacity-40" />
@@ -418,9 +417,9 @@ export default function MessengerView() {
           </div>
         }>
           <Match when={segs()[0] === "matrix" && segs()[1] && matrixOn()}>
-            <Suspense fallback={<div class="flex-1" />}>
+            <Loading fallback={<div class="flex-1" />}>
               <MatrixPane base={`${base()}/matrix`} segs={segs().slice(1)} />
-            </Suspense>
+            </Loading>
           </Match>
           <Match when={segs()[0] === "dm" && segs()[1] === "new" && auth()?.isLocal}>
             {/* Keyed on the navigation's state: each "new message" starts fresh. */}

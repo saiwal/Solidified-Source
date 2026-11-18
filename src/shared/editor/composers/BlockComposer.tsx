@@ -140,6 +140,17 @@ export default function BlockComposer(props: Props) {
     props.onSaved?.();
   }, scope, {
     initialBody: props.initial?.body,
+    // Editing: the stored title/slug/format. New: the channel's default
+    // format, the same pconfig core reads for its own composer
+    // (system/page_mimetype — Blocks.php:84). isAuthorable, not a cast: an
+    // application/x-php page would otherwise land in a MimeType signal
+    // FormatSelect has no <option> for.
+    initialTitle: props.initial?.title,
+    initialSlug: props.initial ? props.initial.name : undefined,
+    initialMimetype: (() => {
+      const m = props.initial ? props.initial.mimetype ?? "" : pageMimetype();
+      return isAuthorable(m) ? (m as MimeType) : undefined;
+    })(),
     mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
@@ -147,18 +158,6 @@ export default function BlockComposer(props: Props) {
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 
-  const defaultPageMime = pageMimetype();
-  if (props.initial) {
-    store.setTitle(props.initial.title);
-    store.setSlug(props.initial.name);
-    // isAuthorable, not a cast: an application/x-php page would otherwise land
-    // in a MimeType signal FormatSelect has no <option> for.
-    if (isAuthorable(props.initial.mimetype ?? "")) store.setMimetype(props.initial.mimetype as MimeType);
-  } else if (isAuthorable(defaultPageMime)) {
-    // New page: seed the channel's default format, the same pconfig core
-    // reads for its own composer (system/page_mimetype — Blocks.php:84).
-    store.setMimetype(defaultPageMime);
-  }
 
   // ── Draft extra — ACL, which createComposerStore doesn't know about ──────
   function buildDraftExtra(): Record<string, unknown> {
@@ -171,8 +170,7 @@ export default function BlockComposer(props: Props) {
     return extra;
   }
 
-  createEffect(() => {
-    const extra = store.restoredExtra();
+  createEffect(() => store.restoredExtra(), (extra) => {
     if (!extra) return;
     if (typeof extra.aclMode === "string") acl.setMode(extra.aclMode as AclMode);
     if (Array.isArray(extra.allow)) acl.setAllowEntries(new Set(extra.allow as string[]));

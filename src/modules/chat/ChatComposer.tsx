@@ -2,7 +2,7 @@
 // The chat input: rich editor, "Aa" formatting toolbar, emoji, mentions.
 // Shared by chatrooms and Messenger's DMs, so what it sends to, and whether
 // it uploads or encrypts, comes from the caller.
-import { createEffect, createSignal, Show, onCleanup, lazy } from "solid-js";
+import { createSignal, Show, onCleanup, lazy, createEffect } from "solid-js";
 import { createComposerStore } from "@/shared/editor/store/createComposerStore";
 import RichEditor from "@/shared/editor/core/RichEditor";
 import { CAPABILITIES } from "@/shared/editor/types/editor.types";
@@ -21,7 +21,7 @@ import type { EmojiEntry } from "@utsukta/spa-core/store/emoji-store";
 import { IconButton, SplitSubmitButton } from "@/shared/editor/components/buttons";
 
 const CameraCapture = lazy(() => import("@/shared/editor/attachments/CameraCapture"));
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { Button, IconButton as UiIconButton } from "@ui/Button";
@@ -61,8 +61,8 @@ export default function ChatComposer(props: Props) {
   let pwInput: HTMLInputElement | undefined;
   // The panel stays visibility:hidden until floating-ui has placed it, and a
   // hidden input can't take focus — so focus once it is actually shown.
-  createEffect(() => {
-    if (encPop.style().visibility === "visible") pwInput?.focus();
+  createEffect(() => encPop.style().visibility === "visible", (shown) => {
+    if (shown) pwInput?.focus();
   });
   const [sessionPwInput, setSessionPwInput]     = createSignal("");
   const [sessionHintInput, setSessionHintInput] = createSignal("");
@@ -230,7 +230,7 @@ export default function ChatComposer(props: Props) {
               pressed={!!sessionPassword()}
               ref={encPop.ref}
               aria-haspopup="dialog"
-              aria-expanded={sessionSetupOpen()}
+              aria-expanded={(sessionSetupOpen()) ? "true" : "false"}
               onClick={() => setSessionSetupOpen(!sessionSetupOpen())}
             >
               <MdOutlineLock class="w-4 h-4" />

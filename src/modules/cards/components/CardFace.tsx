@@ -9,7 +9,6 @@
 // authored before the field existed (and for federated ones that never had it).
 
 import { Show, For } from "solid-js";
-import { A } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineShare, MdOutlineFormat_quote, MdOutlineMenu_book,
          MdOutlineLink, MdOutlineNotes } from "solid-icons/md";
@@ -126,8 +125,7 @@ export default function CardFace(props: { card: Post; nick: string }) {
           {/* Untitled freeform cards are their text, so give it the full run;
               titled ones only get a teaser under the heading. */}
           <p
-            class="text-sm text-txt leading-relaxed"
-            classList={{ "line-clamp-4 text-muted": !!title() }}
+            class={["text-sm text-txt leading-relaxed", { "line-clamp-4 text-muted": !!title() }]}
           >
             {excerpt(props.card.summary?.trim() || raw(), title() ? 220 : 400)}
           </p>
@@ -146,12 +144,12 @@ export default function CardFace(props: { card: Post; nick: string }) {
 
         {/* ── Footer ── */}
         <div class="mt-auto flex items-center gap-2 pt-2 border-t border-rim">
-          <A
+          <a
             href={cardPath(props.nick, props.card)}
             class="text-xs font-medium text-accent hover:underline"
           >
             {t("cards.read_full_card")}
-          </A>
+          </a>
           <IconButton
             label={t("share.action")}
             size="sm"

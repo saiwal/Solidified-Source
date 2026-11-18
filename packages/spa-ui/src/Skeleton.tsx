@@ -2,7 +2,7 @@
 // (spa-core types/ui.types.ts). Decorative only: every block is aria-hidden, so
 // a page announces the wait once (a labelled role="status" wrapper) instead of
 // reading a pile of blank boxes.
-import { For, splitProps } from "solid-js";
+import { For, omit } from "solid-js";
 import type {
   SkeletonProps,
   SkeletonTextProps,
@@ -34,7 +34,7 @@ export function skeletonClass(
 }
 
 export function Skeleton(props: SkeletonProps) {
-  const [own, rest] = splitProps(props, ["rounded", "tone", "pulse", "class"]);
+  const own = props, rest = omit(props, "rounded", "tone", "pulse", "class");
   return (
     <div
       class={`${skeletonClass(own.rounded, own.tone, own.pulse)}${own.class ? ` ${own.class}` : ""}`}

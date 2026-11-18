@@ -5,7 +5,7 @@
  * same as LatexComposerModal's "image" mode), then insert a plain [img] tag
  * pointing at the hosted URL.
  */
-import { createSignal, lazy, onCleanup, Show, Suspense, type Component, createUniqueId } from "solid-js";
+import { createSignal, lazy, onCleanup, Show, Loading, createUniqueId, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { wallAttach } from "@/modules/files/api";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -93,13 +93,9 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
   return (
     <>
       <Modal onClose={props.onClose} labelledBy={titleId} class={`z-[80] ${maximized() ? "p-0!" : ""}`}>
-        <ModalPanel class="flex flex-col text-txt overflow-hidden transition-all"
-         
-          classList={
-            maximized()
+        <ModalPanel class={["flex flex-col text-txt overflow-hidden transition-all", maximized()
               ? { "max-w-none": true, "h-full": true, "rounded-none": true }
-              : { "max-w-3xl": true, "h-[80vh]": true }
-          }>
+              : { "max-w-3xl": true, "h-[80vh]": true }]}>
           <header class="flex items-center justify-between px-4 py-3 border-b border-rim shrink-0">
             <span id={titleId} class="text-sm font-semibold">{t("editor.excalidraw_modal_title")}</span>
             <div class="flex items-center gap-1">
@@ -165,7 +161,7 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
       </Modal>
 
       <Show when={saveOpen() && exportApi()}>
-        <Suspense>
+        <Loading>
           <SaveToCloudDialog
             nick={currentNick()}
             api={exportApi()!}
@@ -175,11 +171,11 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
               if (!warning) setStatus(t("editor.excalidraw_saved"));
             }}
           />
-        </Suspense>
+        </Loading>
       </Show>
 
       <Show when={pickerOpen()}>
-        <Suspense>
+        <Loading>
           <FilePickerModal
             nick={currentNick()}
             accept="files"
@@ -193,7 +189,7 @@ const ExcalidrawComposerModal: Component<Props> = (props) => {
               void run(() => openSceneFromCloud(currentNick(), api, f));
             }}
           />
-        </Suspense>
+        </Loading>
       </Show>
     </>
   );

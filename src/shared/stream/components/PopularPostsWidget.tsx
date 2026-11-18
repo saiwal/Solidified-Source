@@ -13,13 +13,7 @@
 // }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import {
-  type Component,
-  createEffect,
-  on,
-  For,
-  Show,
-} from "solid-js";
+import { createEffect, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -131,12 +125,10 @@ function PopularPostRow(props: {
         >
           {/* Rank badge */}
           <span
-            class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center
-                   text-[0.625rem] font-bold mt-0.5 transition-colors"
-            classList={{
+            class={["shrink-0 w-5 h-5 rounded-full flex items-center justify-center\n                   text-[0.625rem] font-bold mt-0.5 transition-colors", {
               "bg-accent text-accent-fg": props.rank === 1,
               "bg-elevated text-muted": props.rank !== 1,
-            }}
+            }]}
           >
             {props.rank}
           </span>
@@ -224,7 +216,7 @@ const PopularPostsWidget: Component<PopularPostsWidgetProps> = (props) => {
     (p) => (p ? fetchPopular(p) : Promise.resolve([])),
   );
 
-  createEffect(on(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); }));
+  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const appPath = () =>
     (props.type === "articles" || props.type === "cards") && props.channelNick

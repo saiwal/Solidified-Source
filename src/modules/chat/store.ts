@@ -1,5 +1,5 @@
 // src/modules/chat/store.ts
-import { createSignal, batch, onCleanup } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 import type { ChatRoom, ChatMessage, PresenceMember, ChatRoomAcl } from "./api";
 import type { MimeType } from "@utsukta/spa-core/lib/mimetypes";
 import { aclIsRestricted, type aclPayload } from "@/shared/editor/components/acl-mode";
@@ -35,11 +35,9 @@ export async function loadRooms(nick: string): Promise<void> {
   setRoomsLoading(true);
   try {
     const data = await fetchRooms(nick);
-    batch(() => {
-      setRooms(data.rooms);
+    { setRooms(data.rooms);
       setIsOwner(data.is_owner);
-      setChatroomsInstalled(data.chatrooms_installed);
-    });
+      setChatroomsInstalled(data.chatrooms_installed); }
   } finally {
     setRoomsLoading(false);
   }
@@ -71,8 +69,7 @@ export function createRoomSession(nick: string, roomId: number) {
     try {
       const data = await fetchMessages(nick, roomId, lastSince, 50);
       if (disposed) return;
-      batch(() => {
-        if (data.messages.length > 0) {
+      { if (data.messages.length > 0) {
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m.id));
             const next = [...prev, ...data.messages.filter((m) => !existingIds.has(m.id))];
@@ -81,8 +78,7 @@ export function createRoomSession(nick: string, roomId: number) {
           });
           lastSince = data.messages[data.messages.length - 1].created;
         }
-        setPresence(data.presence);
-      });
+        setPresence(data.presence); }
     } catch {
       // silently retry
     }
@@ -93,8 +89,7 @@ export function createRoomSession(nick: string, roomId: number) {
       await apiJoin(nick, roomId);
       const data = await fetchMessages(nick, roomId, undefined, 50);
       if (disposed) return;
-      batch(() => {
-        setMessages(data.messages);
+      { setMessages(data.messages);
         setPresence(data.presence);
         if (data.viewer_hash)           setViewerHash(data.viewer_hash);
         if (data.room_name)             setName(data.room_name);
@@ -103,8 +98,7 @@ export function createRoomSession(nick: string, roomId: number) {
         if (data.is_room_owner != null) setIsOwner(data.is_room_owner);
         if (data.room_acl)              setAcl(data.room_acl);
         if (data.messages.length > 0)
-          lastSince = data.messages[data.messages.length - 1].created;
-      });
+          lastSince = data.messages[data.messages.length - 1].created; }
     } catch {
       // fall through to polling — the next tick may succeed
     } finally {

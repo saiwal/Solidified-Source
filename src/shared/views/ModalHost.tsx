@@ -11,9 +11,9 @@
  *  - it renders `open={true}` permanently; visibility belongs to ComposerModal's
  *    mode classes now, not to the composer's own `<Show when={props.open}>`.
  */
-import { For, Show, createEffect, createSignal, lazy, on, type Component } from "solid-js";
+import { For, Show, createEffect, createSignal, lazy, type Component } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
-import { Portal } from "solid-js/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { setZenMode } from "@utsukta/spa-core/store/zen";
@@ -95,7 +95,7 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
   };
 
   return (
-    <ComposerFrameContext.Provider
+    <ComposerFrameContext
       value={{
         kind: props.entry.kind,
         mode: props.entry.mode,
@@ -123,7 +123,7 @@ function HostedComposer(props: { entry: ComposerEntry; dockIndex: () => number }
         onCreated={after("onCreated")}
         onEdited={after("onEdited")}
       />
-    </ComposerFrameContext.Provider>
+    </ComposerFrameContext>
   );
 }
 
@@ -219,10 +219,9 @@ export default function ModalHost(props: {
   // Boot sync: the user's own composer/post mode, else the hub default.
   const auth = useAuth();
   const isMode = (m: string): m is "modal" | "dock" | "page" => m === "modal" || m === "dock" || m === "page";
-  createEffect(() => {
-    const a = auth();
-    if (a && isMode(a.composerMode)) setDefaultComposerMode(a.composerMode);
-    if (a && isMode(a.postMode)) setDefaultPostMode(a.postMode);
+  createEffect(() => [auth()?.composerMode, auth()?.postMode] as const, ([composer, post]) => {
+    if (composer && isMode(composer)) setDefaultComposerMode(composer);
+    if (post && isMode(post)) setDefaultPostMode(post);
   });
   // Same breakpoint ComposerModal uses to decide that "dock" is too narrow to
   // be a panel and should render full-bleed instead.
@@ -266,13 +265,10 @@ export default function ModalHost(props: {
   // which then goes `hidden` and takes the pills with it.
   const [stripMount, setStripMount] = createSignal<Element>();
   createEffect(
-    on(
-      () => minimized().length > 0,
-      (show) => {
+    () => minimized().length > 0, (show) => {
         setStripMount(undefined);
         if (show) queueMicrotask(() => setStripMount(topLayer()));
       },
-    ),
   );
 
   return (

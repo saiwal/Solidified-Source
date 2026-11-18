@@ -7,7 +7,8 @@
 // entrance; `uuid` is any per-session-unique key there (xchan hash, site url).
 // In a grid pass class="grid" so the card still fills its cell; image tiles
 // pass waitForImage so they enter once the picture is there (see reveal.ts).
-import { Show, type JSX } from "solid-js";
+import { Show } from "solid-js";
+import type { JSX } from "@solidjs/web";
 import { Motion, Presence } from "@utsukta/spa-core/lib/motion-presets";
 import { reveal, isExiting, EXIT_MS } from "./reveal";
 
@@ -18,7 +19,7 @@ export default function CardShell(props: { uuid: string; class?: string; waitFor
         <Motion.div
           class={props.class}
           data-reveal-wait={props.waitForImage ? "" : undefined}
-          ref={(el) => reveal(el, () => props.uuid)}
+          ref={reveal(() => props.uuid)}
           exit={{ opacity: 0, height: 0, transition: { duration: EXIT_MS / 1000, easing: [0.4, 0, 0.2, 1] } }}
         >
           {props.children}

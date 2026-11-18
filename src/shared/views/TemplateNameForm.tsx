@@ -35,7 +35,7 @@ export default function TemplateNameForm(props: {
         class="w-full"
         type="text"
         value={name()}
-        maxLength={60}
+        maxlength={60}
         placeholder={t("webpages.template_name_placeholder") as string}
         onInput={(e) => setName(e.currentTarget.value)}
       />

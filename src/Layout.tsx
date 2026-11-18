@@ -1,4 +1,4 @@
-import { type ParentComponent, Show, ErrorBoundary, Suspense, createEffect } from "solid-js";
+import { Show, Errored, Loading, type ParentComponent, createEffect } from "solid-js";
 import { useLayoutChrome } from "@utsukta/spa-core/lib/useLayoutChrome";
 import { useAppliedBg } from "@utsukta/spa-core/lib/background";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
@@ -62,10 +62,9 @@ const Layout: ParentComponent = (props) => {
 
   // On mobile, page actions move to the floating button and the ⋮ menu; if
   // the nav chrome is hidden there, PageActions keeps rendering them inline.
-  // Set it once before the first render too, so mobile doesn't flash the
-  // actions inline while waiting for the effect.
-  setMobileNavAvailable(!hidesNavChrome());
-  createEffect(() => setMobileNavAvailable(!hidesNavChrome()));
+  // (Solid 2 forbids the synchronous pre-render write this used to do; the
+  // effect lands in the same flush, before paint.)
+  createEffect(hidesNavChrome, (hidden) => { setMobileNavAvailable(!hidden); });
 
   return (
     <div class="fixed inset-0 bg-base text-txt hz-app-root">
@@ -158,13 +157,12 @@ const Layout: ParentComponent = (props) => {
             ref={setMainRef}
             tabindex="-1"
             onScroll={onMainScroll}
-            class="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] p-4 lg:p-6 relative flex flex-col"
-            // Minimized-composer pills are fixed over the bottom edge; pad so
-            // the last row (and its action icons) can scroll clear of them.
-            classList={{
+            class={["flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] p-4 lg:p-6 relative flex flex-col", {
               "pb-16 lg:pb-6": !hasMinimized(),
               "pb-28 lg:pb-16": hasMinimized(),
-            }}
+            }]}
+            // Minimized-composer pills are fixed over the bottom edge; pad so
+            // the last row (and its action icons) can scroll clear of them.
           >
             <div class="flex flex-col flex-1">
               {/* Route changes swap <main> silently; without this a screen
@@ -190,7 +188,7 @@ const Layout: ParentComponent = (props) => {
               </Show>
 
               <div class="min-w-0">
-                <ErrorBoundary
+                <Errored
                   fallback={(_, reset) => (
                     <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8 text-center">
                       <span
@@ -217,8 +215,8 @@ const Layout: ParentComponent = (props) => {
                     </div>
                   )}
                 >
-                  <Suspense>{props.children}</Suspense>
-                </ErrorBoundary>
+                  <Loading>{props.children}</Loading>
+                </Errored>
               </div>
 
             </div>
@@ -299,7 +297,7 @@ const Layout: ParentComponent = (props) => {
           <Show when={!hidesRightSidebar()}>
           <button
             onClick={() => setRightOpen((o) => !o)}
-            aria-expanded={rightOpen()}
+            aria-expanded={(rightOpen()) ? "true" : "false"}
             aria-controls="right-sidebar"
             aria-label={rightOpen() ? "Close panel" : "Open panel"}
             ref={helpable(() => "nav.panel")}

@@ -1,5 +1,6 @@
-import { createSignal, createMemo, For, Show, onCleanup, useContext, type JSX } from "solid-js";
-import { Portal } from "solid-js/web";
+import { createSignal, createMemo, For, Show, onCleanup, useContext } from "solid-js";
+import type { JSX } from "@solidjs/web";
+import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineSchedule } from "solid-icons/md";
 import { createMediaQuery } from "@solid-primitives/media";

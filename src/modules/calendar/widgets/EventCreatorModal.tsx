@@ -1,4 +1,4 @@
-import { createSignal, Show, For, onMount } from "solid-js";
+import { createSignal, Show, For, onSettled } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createEvent, editEvent } from "../api";
@@ -158,7 +158,7 @@ export default function EventCreatorModal(props: Props) {
   });
 
   let titleRef!: HTMLInputElement;
-  onMount(() => titleRef?.focus());
+  onSettled(() => { titleRef?.focus(); });
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();

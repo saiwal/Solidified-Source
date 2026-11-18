@@ -4,7 +4,7 @@
 // playback, or — when nothing plays here — what another of the user's devices
 // is playing, controlled remotely. Renders nothing when neither.
 import { Show, onCleanup } from "solid-js";
-import { A, useNavigate } from "@solidjs/router";
+import { useNavigate } from "@solidjs/router";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { MdFillPlay_arrow, MdFillPause, MdFillSkip_next, MdFillSkip_previous, MdFillGroups } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -111,11 +111,11 @@ function Row(props: {
   const open = () => { if (props.local) openPlayer(); };
   return (
     <Motion.div {...slideUp} class="flex w-full items-start gap-3 p-2 rounded-2xl bg-surface ring-1 ring-rim/40">
-      <A href="/jellyfin" tabindex="-1" aria-hidden="true" class="shrink-0" onClick={open}>
+      <a href="/jellyfin" tabindex="-1" aria-hidden="true" class="shrink-0" onClick={open}>
         <Art src={props.s ? imageUrl(props.s, props.item, 160) : null} class="w-16 h-16" />
-      </A>
+      </a>
       <div class="min-w-0 flex-1 flex flex-col gap-1">
-        <A href="/jellyfin" title={t("jellyfin.open_player")} class="min-w-0 block" onClick={open}>
+        <a href="/jellyfin" title={t("jellyfin.open_player")} class="min-w-0 block" onClick={open}>
           <span class="flex items-start gap-1 text-sm font-medium leading-snug text-txt">
             <Show when={party()}>
               <span title={t("jellyfin.party_badge", { name: party()!.name })} class="shrink-0 mt-0.5 text-accent-txt"><MdFillGroups size={14} /></span>
@@ -128,7 +128,7 @@ function Row(props: {
           <Show when={props.item.Album && props.item.Album !== props.item.Name}>
             <span class="block text-xs text-subtle truncate">{props.item.Album}</span>
           </Show>
-        </A>
+        </a>
         <Show when={props.controllable}>
           <div class="flex items-center gap-1 -ml-1.5">
             <IconButton label={t("jellyfin.previous")} size="sm" onClick={() => props.onPrev()}>

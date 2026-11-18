@@ -1,7 +1,8 @@
 // /link/:title?nick= — where a rendered [[Title]] points. Resolves the title
 // against that channel's content and replaces itself with the target; a title
 // nothing answers to shows a "not written yet" page, as in Obsidian.
-import { createResource, Show } from "solid-js";
+import { Show } from "solid-js";
+import { createResource } from "@utsukta/spa-core/lib/resource";
 import { useNavigate, useParams, useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";

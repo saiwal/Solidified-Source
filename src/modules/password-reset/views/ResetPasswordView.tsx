@@ -1,5 +1,5 @@
 import { createSignal, Show, Switch, Match } from "solid-js";
-import { useParams, A } from "@solidjs/router";
+import { useParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchResetTokenState, confirmPasswordReset } from "../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -64,9 +64,9 @@ export default function ResetPasswordView() {
         <Show when={state.error}>
           <div class="text-center space-y-4">
             <p class="text-sm text-muted">{t("auth.reset_invalid")}</p>
-            <A href="/forgot-password" class="text-sm text-accent hover:underline">
+            <a href="/forgot-password" class="text-sm text-accent hover:underline">
               {t("auth.reset_request_title")}
-            </A>
+            </a>
           </div>
         </Show>
 
@@ -76,12 +76,12 @@ export default function ResetPasswordView() {
               <Match when={!s().valid}>
                 <div class="text-center space-y-4">
                   <p class="text-sm text-muted">{t("auth.reset_expired")}</p>
-                  <A
+                  <a
                     href="/forgot-password"
                     class="inline-block py-2 px-4 rounded-lg bg-accent text-accent-fg text-sm font-medium hover:opacity-90 transition-opacity"
                   >
                     {t("auth.reset_request_title")}
-                  </A>
+                  </a>
                 </div>
               </Match>
 

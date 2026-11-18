@@ -9,7 +9,7 @@
  * composing channel can't embed, so listing other people's cards here would
  * just be a way to earn a 422 on save.
  */
-import { createSignal, createMemo, onMount, Show, For, type Component } from "solid-js";
+import { createSignal, createMemo, onSettled, Show, For, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
@@ -49,7 +49,7 @@ const CardPickerModal: Component<Props> = (props) => {
     );
   });
 
-  onMount(() => inputRef?.focus());
+  onSettled(() => { inputRef?.focus(); });
 
   const choose = (iid: number) => {
     props.onInsert(iid);

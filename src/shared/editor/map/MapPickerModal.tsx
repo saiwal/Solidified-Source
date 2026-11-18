@@ -5,7 +5,7 @@
  * inserts core's `[map=lat lon]` BBCode — or hands the coordinates to
  * `onPick` (photo location, a post's location).
  */
-import { createSignal, onMount, Show, type Component } from "solid-js";
+import { createSignal, onSettled, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
 import { geocode, type Coord } from "@utsukta/spa-core/lib/osm";
@@ -35,7 +35,7 @@ const MapPickerModal: Component<Props> = (props) => {
   const [error, setError] = createSignal("");
   let inputRef: HTMLInputElement | undefined;
 
-  onMount(() => inputRef?.focus());
+  onSettled(() => { inputRef?.focus(); });
 
   const search = async () => {
     const q = place().trim();

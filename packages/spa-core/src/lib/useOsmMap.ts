@@ -9,7 +9,7 @@
 // post readable when the feature is off) and this hook swaps in an iframe
 // built as a DOM node, after sanitising, the way usePlyr enhances a body.
 
-import { createEffect, onCleanup } from "solid-js";
+import { createEffect, deep } from "solid-js";
 import { isModuleActive } from "../module-registry";
 import { useInstalledApps, useNavData } from "../store/nav-store";
 import { disabledFrontendModules } from "../store/disabled-frontend-modules";
@@ -68,18 +68,18 @@ export function useOsmMap(
   const enabled = useMapsEnabled();
 
   createEffect(() => {
-    body();
     const el = ref();
-    if (!el) return;
     // Off when the core openstreetmap addon is off site-wide — then its CSP
     // hook never whitelisted the tile server, so leave the plain links alone.
-    if (!enabled()) return;
-    const cfg = navData()!.osm!;
+    return { body: body(), el, cfg: el && enabled() ? deep(navData()!.osm!) : null, coord: coord?.() };
+  }, ({ el, cfg, coord: c }) => {
+    const cleanups: (() => void)[] = [];
+    if (!el || !cfg) return;
     const tms = cfg.tmsserver || DEFAULT_TMS;
     const zoom = cfg.zoom ?? 16;
     const marker = cfg.marker ?? 1;
 
-    const own = coord?.() ? parseCoord(coord()!) : null;
+    const own = c ? parseCoord(c) : null;
     if (own) {
       for (const div of el.querySelectorAll<HTMLElement>("div.map:empty")) {
         div.replaceWith(buildFrame(own, `${own.lat}, ${own.lon}`, tms, zoom, marker));
@@ -87,8 +87,9 @@ export function useOsmMap(
     }
 
     const ac = new AbortController();
-    onCleanup(() => ac.abort());
+    cleanups.push(() => ac.abort());
     hydrateMapEmbeds(el, { tms, zoom, marker }, ac.signal);
+    return () => cleanups.forEach((f) => f());
   });
 }
 

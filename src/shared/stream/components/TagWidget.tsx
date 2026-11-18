@@ -4,14 +4,7 @@
 // Response: { data: { tags: { name: string; count: number }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import {
-  type Component,
-  createEffect,
-  on,
-  createSignal,
-  For,
-  Show,
-} from "solid-js";
+import { createEffect, createSignal, For, Show, type Component } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -108,7 +101,7 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
     (p) => (p ? fetchTags(p) : Promise.resolve([])),
   );
 
-  createEffect(on(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); }));
+  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const tags = (): TagItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...tags().map((t) => t.count), 1);

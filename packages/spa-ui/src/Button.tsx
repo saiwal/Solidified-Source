@@ -3,7 +3,7 @@
 // filled button, labelled secondary actions are ghost buttons, everything else
 // is a bare icon. Every button also carries `hz-btn` hook classes, so CSS-only
 // re-skins can target them without depending on the utility classes.
-import { splitProps } from "solid-js";
+import { omit } from "solid-js";
 import type {
   ButtonProps,
   ButtonSize,
@@ -57,11 +57,11 @@ export const ghostPill = buttonClass("ghost");
 export const iconBtn = iconButtonClass();
 
 export function Button(props: ButtonProps) {
-  const [own, rest] = splitProps(props, ["variant", "size", "pressed", "class", "type"]);
+  const own = props, rest = omit(props, "variant", "size", "pressed", "class", "type");
   return (
     <button
       type={own.type ?? "button"}
-      aria-pressed={own.pressed}
+      aria-pressed={own.pressed === undefined ? undefined : own.pressed ? "true" : "false"}
       class={`${buttonClass(own.variant, own.size, own.pressed)} ${own.class ?? ""}`}
       {...rest}
     />
@@ -69,13 +69,13 @@ export function Button(props: ButtonProps) {
 }
 
 export function IconButton(props: IconButtonProps) {
-  const [own, rest] = splitProps(props, ["label", "variant", "size", "pressed", "class", "type"]);
+  const own = props, rest = omit(props, "label", "variant", "size", "pressed", "class", "type");
   return (
     <button
       type={own.type ?? "button"}
       title={own.label}
       aria-label={own.label}
-      aria-pressed={own.pressed}
+      aria-pressed={own.pressed === undefined ? undefined : own.pressed ? "true" : "false"}
       class={
         `${iconButtonClass(own.variant, own.size)} ${own.pressed ? "text-accent-txt!" : ""} ${own.class ?? ""}`
       }

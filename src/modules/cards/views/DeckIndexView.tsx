@@ -1,6 +1,6 @@
 // src/modules/cards/views/DeckIndexView.tsx
 import { Show, For } from "solid-js";
-import { useParams, A } from "@solidjs/router";
+import { useParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -21,12 +21,12 @@ export default function DeckIndexView() {
 
   return (
     <div class="space-y-6 max-w-3xl mx-auto">
-      <A
+      <a
         href={`/cards/${nick()}`}
         class="inline-flex items-center gap-1 text-sm text-muted hover:text-txt transition-colors"
       >
         {t("cards.all_cards")}
-      </A>
+      </a>
 
       <h1 class="text-xl font-bold text-txt">{t("cards.deck_index_title")}</h1>
 
@@ -38,14 +38,14 @@ export default function DeckIndexView() {
           <div class="space-y-2">
             <For each={data()}>
               {(deck) => (
-                <A
+                <a
                   href={`/cards/${nick()}/deck/${encodeURIComponent(deck.name)}`}
                   class="flex items-center justify-between gap-3 bg-surface border border-rim rounded-xl
                          px-4 py-3 hover:border-rim-strong hover:bg-elevated transition-colors"
                 >
                   <span class="text-sm font-medium text-txt">{deck.name}</span>
                   <span class="text-xs text-muted">{t("cards.deck_cards_count", { count: deck.count })}</span>
-                </A>
+                </a>
               )}
             </For>
           </div>

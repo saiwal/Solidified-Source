@@ -74,8 +74,7 @@ export default function ActivityHeatmapWidget() {
   // Default to showing the most recent activity (right edge) rather than
   // the oldest (left edge) the scroll container starts at.
   let scrollRef: HTMLDivElement | undefined;
-  createEffect(() => {
-    weeks();
+  createEffect(weeks, () => {
     if (scrollRef) scrollRef.scrollLeft = scrollRef.scrollWidth;
   });
 

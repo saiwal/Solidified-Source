@@ -56,7 +56,7 @@ export default function HeadingToolDropdown(props: HeadingToolDropdownProps) {
       <IconButton
         label={t("editor.heading")}
         size="sm"
-        aria-expanded={open()}
+        aria-expanded={(open()) ? "true" : "false"}
         class={open() ? "bg-elevated text-txt" : ""}
         ref={setTriggerRef}
         disabled={props.disabled}

@@ -22,7 +22,7 @@ export default function WeatherConfig(props: WidgetConfigProps) {
           class="mt-1 w-full"
           type="text"
           value={location()}
-          maxLength={100}
+          maxlength={100}
           placeholder="Berlin, Germany"
           onInput={(e) => setLocation(e.currentTarget.value)}
         />
