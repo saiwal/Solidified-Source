@@ -1,5 +1,7 @@
 import { Show, For, createSignal, createEffect } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
@@ -110,7 +112,7 @@ export default function ViewConnectionsContentWidget() {
 
   // Same key as the contact-card widget, so a visit from the channel page is a cache hit.
   const [profile] = createQueryResource("contact-card", () => nick(), fetchProfile);
-  const [data] = createQueryResource("channel-connections-all", () => nick(), (n: string) =>
+  const [data] = createAsyncResource("channel-connections-all", () => nick(), (n: string) =>
     fetchConnections(n, 0, PAGE),
   );
 
@@ -173,8 +175,7 @@ export default function ViewConnectionsContentWidget() {
         </div>
       </header>
 
-      <Show
-        when={!data.loading}
+      <AsyncBoundary
         fallback={
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             <For each={Array(8)}>{() => <CardSkeleton />}</For>
@@ -198,7 +199,7 @@ export default function ViewConnectionsContentWidget() {
             </div>
           </Show>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </div>
   );
 }

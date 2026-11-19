@@ -1,5 +1,6 @@
-import { createSignal, createEffect, For, Show, onSettled, untrack } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createEffect, For, Show, onSettled, untrack, createOptimistic, action, Loading } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { storageSet } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
 import type { SavedDraft } from "../store/createComposerStore";
@@ -66,7 +67,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
   // Cached per scope: a remount (leaving HQ and coming back) or a reload shows
   // the list it already has and revalidates behind it — the skeleton is for
   // the very first load only.
-  const [data, { refetch, mutate }] = createQueryResource(
+  const [data, { refetch, pending }] = createAsyncResource(
     "drafts",
     () => props.scopeType,
     async (scopeType): Promise<DraftEntry[]> => {
@@ -80,10 +81,10 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
     // Drafts are saved from composers that never invalidate this.
     { staleTime: 0 },
   );
-  const entries = () => data() ?? [];
-  const loading = () => data() === undefined;
-  const loadAll = async () => refetch();
-  const [deleting, setDeleting] = createSignal<string | null>(null);
+  // The fetched list, with a delete shown at once; a failed delete puts the
+  // draft back.
+  const [entries, setEntries] = createOptimistic((): DraftEntry[] => data() ?? []);
+  const loadAll = () => refetch();
 
   const loadable = (scope: string) => (props.isLoadable ? props.isLoadable(scope) : true);
 
@@ -95,15 +96,15 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
   // this list — refetch whenever any draft is deleted server-side.
   createEffect(draftsVersion, () => { void loadAll(); }, { defer: true });
 
-  async function deleteDraft(scope: string, id: string) {
-    setDeleting(id);
+  const deleteDraft = action(function* (scope: string, id: string) {
+    setEntries((list) => list.filter((e) => !(e.scope === scope && e.draft.id === id)));
     try {
-      void deleteServerDraft(id); // id === serverMid for server-only drafts
-      mutate((prev) => prev?.filter((e) => !(e.scope === scope && e.draft.id === id)));
-    } finally {
-      setDeleting(null);
+      yield deleteServerDraft(id); // id === serverMid for server-only drafts
+    } catch {
+      return;
     }
-  }
+    yield refetch();
+  });
 
   async function handleLoad(entry: DraftEntry) {
     await storageSet(channelKey(`pending-draft:${entry.scope}`), entry.draft);
@@ -117,28 +118,26 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
       title={props.title}
       actions={
         <>
-          <Show when={!loading() && entries().length > 0}>
-            <span class="text-xs text-muted tabular-nums">{entries().length}</span>
-          </Show>
+          <Loading>
+            <Show when={entries().length > 0}>
+              <span class="text-xs text-muted tabular-nums">{entries().length}</span>
+            </Show>
+          </Loading>
           <IconButton
             label={props.refreshTitle}
             size="sm"
             onClick={() => void loadAll()}
-            disabled={data.fetching}
+            disabled={pending()}
           >
-            <MdOutlineRefresh class={["w-3.5 h-3.5", { "animate-spin": data.fetching }]} />
+            <MdOutlineRefresh class={["w-3.5 h-3.5", { "animate-spin": pending() }]} />
           </IconButton>
         </>
       }
     >
 
-      {/* Loading skeletons */}
-      <Show when={loading()}>
-        <For each={[1, 2]}>{() => <SkeletonRow />}</For>
-      </Show>
-
+      <AsyncBoundary fallback={<For each={[1, 2]}>{() => <SkeletonRow />}</For>}>
       {/* Empty state */}
-      <Show when={!loading() && entries().length === 0}>
+      <Show when={entries().length === 0}>
         <div class="px-(--ws-px) py-6 flex flex-col items-center gap-2 text-muted">
           <MdOutlineDescription class="w-8 h-8 opacity-30" />
           <span class="text-xs">{props.emptyText}</span>
@@ -146,15 +145,14 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
       </Show>
 
       {/* Draft list */}
-      <Show when={!loading()}>
+      <Show when={entries().length > 0}>
         <div class="divide-y divide-rim max-h-[26rem] overflow-y-auto">
           <For each={entries()}>
             {(entry) => {
-              const isDeleting = () => deleting() === entry.draft.id;
               const canLoad = () => loadable(entry.scope);
 
               return (
-                <div class={["px-(--ws-px) py-3 hover:bg-elevated group transition-colors", { "opacity-50 pointer-events-none": isDeleting() }]}>
+                <div class="px-(--ws-px) py-3 hover:bg-elevated group transition-colors">
 
                   {/* Line 1 + 2 — title & summary */}
                   <div
@@ -190,14 +188,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
                         class="-m-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
                         onClick={() => void deleteDraft(entry.scope, entry.draft.id)}
                       >
-                        <Show
-                          when={!isDeleting()}
-                          fallback={
-                            <MdOutlineRefresh class="w-3 h-3 animate-spin" />
-                          }
-                        >
-                          <MdFillDelete size={12} />
-                        </Show>
+                        <MdFillDelete size={12} />
                       </IconButton>
                       <span
                         class="text-[0.625rem] text-muted/60 tabular-nums shrink-0"
@@ -213,6 +204,7 @@ export default function DraftsWidgetBase(props: DraftsWidgetBaseProps) {
           </For>
         </div>
       </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 }

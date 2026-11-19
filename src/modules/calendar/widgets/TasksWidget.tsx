@@ -4,10 +4,12 @@
  * imports) and every enabled CalDAV calendar, in one list: tick to complete,
  * add to either store, delete. Owner only — tasks are always private.
  */
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show, createOptimistic, action } from "solid-js";
 import { MdOutlineDelete, MdOutlineDone_all } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { WidgetShell } from "@ui/WidgetShell";
@@ -78,9 +80,8 @@ export default function TasksWidget() {
   const { t, locale } = useI18n();
   const role = useViewerRole();
   const [showDone, setShowDone] = createSignal(false);
-  // The source must never be `false`: createQueryResource reads a falsy
-  // source as "disabled" and keeps showing the previous data.
-  const [tasks, { refetch }] = createQueryResource(
+  // The source must never be `false`: a falsy source means "nothing to fetch".
+  const [tasks, { refetch }] = createAsyncResource(
     "tasks",
     () => (role() === "owner" ? (showDone() ? "all" : "open") : null),
     (mode) => fetchTasks(mode === "all"),
@@ -96,9 +97,13 @@ export default function TasksWidget() {
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // The fetched tasks, with a tick or a delete shown at once; a failed
+  // request rolls it back.
+  const [view, setView] = createOptimistic((): Task[] => tasks() ?? []);
+
   // Open before done, then by due date (none last), priority (unset last), newest.
   const sorted = createMemo(() =>
-    [...(tasks() ?? [])].sort((a, b) =>
+    [...view()].sort((a, b) =>
       Number(a.done) - Number(b.done)
       || (a.due ?? "9999").localeCompare(b.due ?? "9999")
       || (a.priority || 10) - (b.priority || 10)
@@ -124,17 +129,27 @@ export default function TasksWidget() {
     }
   }
 
-  async function run(fn: () => Promise<unknown>) {
-    try { await fn(); await refetch(); }
-    catch (err) { toast.error(err instanceof Error ? err.message : String(err)); }
-  }
-
-  const remove = (task: Task) => run(() => {
-    const ref = taskRef(task);
-    return ref.source === "channel"
-      ? deleteEvent(ref.id)
-      : deleteEvent(0, { calendarId: ref.calendarId, uri: ref.uri });
+  const run = action(function* (show: (list: Task[]) => Task[], fn: () => Promise<unknown>) {
+    setView(show);
+    try { yield fn(); }
+    catch (err) { toast.error(err instanceof Error ? err.message : String(err)); return; }
+    yield refetch();
   });
+
+  const toggle = (task: Task) => void run(
+    (list) => list.map((x) => (taskKey(x) === taskKey(task) ? { ...x, done: !x.done } : x)),
+    () => toggleTask(task),
+  );
+
+  const remove = (task: Task) => void run(
+    (list) => list.filter((x) => taskKey(x) !== taskKey(task)),
+    () => {
+      const ref = taskRef(task);
+      return ref.source === "channel"
+        ? deleteEvent(ref.id)
+        : deleteEvent(0, { calendarId: ref.calendarId, uri: ref.uri });
+    },
+  );
 
   const fmtDue = (d: string) =>
     new Date(`${d}T12:00:00`).toLocaleDateString(locale(), { day: "numeric", month: "short" });
@@ -178,7 +193,7 @@ export default function TasksWidget() {
           </Show>
         </form>
 
-        <Show when={sorted().length} fallback={<p class="text-xs text-muted">{t("calendar.tasks_empty")}</p>}>
+        <AsyncBoundary><Show when={sorted().length} fallback={<p class="text-xs text-muted">{t("calendar.tasks_empty")}</p>}>
           <ul class="space-y-1">
             <For each={sorted()}>
               {(task) => (
@@ -189,7 +204,7 @@ export default function TasksWidget() {
                     checked={task.done}
                     disabled={!task.editable}
                     aria-label={task.summary}
-                    onChange={() => run(() => toggleTask(task))}
+                    onChange={() => toggle(task)}
                   />
                   <Show when={editing() === taskKey(task)} fallback={
                   <div class="flex-1 min-w-0">
@@ -232,7 +247,7 @@ export default function TasksWidget() {
               )}
             </For>
           </ul>
-        </Show>
+        </Show></AsyncBoundary>
       </div>
 </WidgetShell>
     </Show>

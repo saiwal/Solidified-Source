@@ -7,7 +7,8 @@ import {
   WiFog, WiDayRain, WiNightAltRain, WiDayShowers, WiNightAltShowers,
   WiDaySnow, WiNightAltSnow, WiDayThunderstorm, WiNightAltThunderstorm, WiNa,
 } from "solid-icons/wi";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -65,7 +66,7 @@ export default function WeatherWidget(props: WidgetProps) {
   const location = () => String(props.config?.location ?? "");
   const unit = () => (props.config?.unit === "f" ? "f" : "c");
 
-  const [weather] = createQueryResource(
+  const [weather] = createAsyncResource(
     "weather",
     () => (location() ? { location: location(), unit: unit() } : null),
     fetchWeather,
@@ -86,22 +87,22 @@ export default function WeatherWidget(props: WidgetProps) {
     >
       <WidgetShell>
       <div class="px-(--ws-px) py-4">
-        <Show when={weather.loading}>
-          <div class="animate-pulse flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-elevated" />
-            <div class="h-5 w-16 bg-elevated rounded" />
-          </div>
-        </Show>
-
-        <Show when={weather.error}>
-          <p class="text-xs text-muted">
-            {weather.error instanceof WeatherFetchError && weather.error.status === 404
-              ? t("widgets.weather_not_found")
-              : t("widgets.load_error")}
-          </p>
-        </Show>
-
-        <Show when={!weather.loading && !weather.error && weather()}>
+        <AsyncBoundary
+          error={(err) => (
+            <p class="text-xs text-muted">
+              {err instanceof WeatherFetchError && err.status === 404
+                ? t("widgets.weather_not_found")
+                : t("widgets.load_error")}
+            </p>
+          )}
+          fallback={
+            <div class="animate-pulse flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-elevated" />
+              <div class="h-5 w-16 bg-elevated rounded" />
+            </div>
+          }
+        >
+        <Show when={weather()}>
           <div class="flex items-center gap-3">
             {icon()({ size: 40, class: "text-accent shrink-0" })}
             <div class="flex-1 min-w-0">
@@ -115,6 +116,7 @@ export default function WeatherWidget(props: WidgetProps) {
             {t("widgets.wind")}: {Math.round(weather()!.windspeed)} {unit() === "f" ? "mph" : "km/h"}
           </p>
         </Show>
+        </AsyncBoundary>
       </div>
       </WidgetShell>
     </Show>

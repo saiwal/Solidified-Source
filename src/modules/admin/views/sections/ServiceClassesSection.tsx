@@ -1,5 +1,6 @@
 import { createSignal, createUniqueId, For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { Modal } from "@ui/Modal";
 import {
@@ -22,7 +23,7 @@ const EMPTY_PROPS: ServiceClassProperties = {};
 
 export default function ServiceClassesSection() {
   const { t } = useI18n();
-  const [data, { refetch }] = createQueryResource("admin-service-classes", fetchAdminServiceClasses);
+  const [data, { refetch }] = createAsyncResource("admin-service-classes", fetchAdminServiceClasses);
 
   return (
     <SubPageContent
@@ -32,7 +33,7 @@ export default function ServiceClassesSection() {
       wide
     >
 		<Card class="p-5 space-y-4">
-      <Show when={data()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={data()}>
         {(d) => (
           <div class="rounded-lg border border-rim overflow-hidden">
             <div class="flex items-center justify-between px-3 py-2.5 border-b border-rim bg-elevated/30">
@@ -51,7 +52,7 @@ export default function ServiceClassesSection() {
             </Show>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
 		</Card>
     </SubPageContent>
   );

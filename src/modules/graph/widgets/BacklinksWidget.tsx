@@ -4,7 +4,8 @@
 import { For, Show } from "solid-js";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { subjectNickFromPath } from "@utsukta/spa-core/store/site-config";
 import { WidgetShell } from "@ui/WidgetShell";
 import { ListRow } from "@ui/ListRow";
@@ -24,11 +25,11 @@ function itemPath(path: string): string | null {
 export default function BacklinksWidget() {
   const { t } = useI18n();
   const location = useLocation();
-  const [data] = createQueryResource("links-backlinks", () => itemPath(location.pathname), fetchBacklinks);
+  const [data] = createAsyncResource("links-backlinks", () => itemPath(location.pathname), fetchBacklinks);
   const nick = () => subjectNickFromPath(location.pathname);
 
   return (
-    <Show when={itemPath(location.pathname) && data()?.from.length}>
+    <AsyncBoundary quiet><Show when={itemPath(location.pathname) && data()?.from.length}>
       <WidgetShell
         title={t("graph.linked_from")}
         icon={<MdOutlineHub size={16} />}
@@ -56,6 +57,6 @@ export default function BacklinksWidget() {
           </For>
         </ul>
       </WidgetShell>
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

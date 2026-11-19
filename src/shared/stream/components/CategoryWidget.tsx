@@ -4,10 +4,10 @@
 // Response: { data: { categories: { name: string; slug: string; count: number }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { createEffect, createSignal, For, Show, type Component } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Show, type Component } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { Button } from "@ui/Button";
 import { WidgetShell } from "@ui/WidgetShell";
@@ -92,7 +92,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
   const [expanded, setExpanded] = createSignal(false);
   const max = () => props.maxVisible ?? 20;
 
-  const [remote] = createQueryResource(
+  const [remote] = createAsyncResource(
     "stream-categories",
     () =>
       props.data
@@ -100,8 +100,6 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
         : { channelNick: props.channelNick, type: props.type },
     (p) => (p ? fetchCategories(p) : Promise.resolve([])),
   );
-
-  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const categories = (): CategoryItem[] => props.data ?? remote() ?? [];
   const total = () => categories().reduce((s, c) => s + c.count, 0);
@@ -111,12 +109,9 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
     <WidgetShell title={props.title ?? t("widgets.categories")}>
 
       {/* Loading */}
-      <Show when={!props.data && remote.loading}>
-        <CategorySkeleton />
-      </Show>
 
       {/* Content */}
-      <Show when={!remote.loading}>
+      <AsyncBoundary fallback={<CategorySkeleton />}>
         <Show
           when={categories().length > 0}
           fallback={
@@ -181,7 +176,7 @@ const CategoryWidget: Component<CategoryWidgetProps> = (props) => {
             </Button>
           </Show>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 };

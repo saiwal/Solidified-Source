@@ -11,7 +11,8 @@
  */
 import { createSignal, createMemo, onSettled, Show, For, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { currentNick } from "@utsukta/spa-core/store/auth-store";
 import { fetchCardsPickerList } from "@/modules/cards/api";
 
@@ -31,7 +32,7 @@ const CardPickerModal: Component<Props> = (props) => {
 
   const nick = currentNick;
 
-  const [cards] = createQueryResource(
+  const [cards] = createAsyncResource(
     "card-picker",
     () => nick() || null,
     (n) => fetchCardsPickerList(n),
@@ -76,15 +77,16 @@ const CardPickerModal: Component<Props> = (props) => {
         </CardHeader>
 
         <div class="flex-1 overflow-y-auto min-h-0">
-          <Show when={cards.loading}>
-            <div class="p-4 space-y-2">
-              <For each={Array(4).fill(0)}>
-                {() => <div class="h-10 rounded-lg bg-elevated animate-pulse" />}
-              </For>
-            </div>
-          </Show>
 
-          <Show when={!cards.loading}>
+          <AsyncBoundary
+            fallback={
+              <div class="p-4 space-y-2">
+                <For each={Array(4).fill(0)}>
+                  {() => <div class="h-10 rounded-lg bg-elevated animate-pulse" />}
+                </For>
+              </div>
+            }
+          >
             <Show
               when={filtered().length > 0}
               fallback={<p class="p-6 text-center text-sm text-muted">{t("cards.card_picker_empty")}</p>}
@@ -119,7 +121,7 @@ const CardPickerModal: Component<Props> = (props) => {
                 </For>
               </ul>
             </Show>
-          </Show>
+          </AsyncBoundary>
         </div>
 
         <div class="px-4 py-3 border-t border-rim flex justify-end shrink-0">

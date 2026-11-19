@@ -3,7 +3,8 @@
 // window (e.g. past events) show the unavailable hint in edit mode.
 
 import { Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -38,7 +39,7 @@ export default function EventCardWidget(props: WidgetProps) {
   const nick = usePageNick();
   const uri = () => String(props.config?.uri ?? "");
 
-  const [event] = createQueryResource(
+  const [event] = createAsyncResource(
     "calendar-event",
     () => (nick() && uri() ? { nick: nick(), uri: uri() } : null),
     async (p) => {
@@ -49,14 +50,16 @@ export default function EventCardWidget(props: WidgetProps) {
 
   return (
     <Show when={uri()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={event.loading}>
-        <WidgetShell><div class="p-4 space-y-2 animate-pulse">
-          <div class="h-3 bg-elevated rounded w-2/3" />
-          <div class="h-3 bg-elevated rounded w-1/2" />
-        </div></WidgetShell>
-      </Show>
 
-      <Show when={!event.loading}>
+      <AsyncBoundary
+        fallback={
+          <WidgetShell><div class="p-4 space-y-2 animate-pulse">
+            <div class="h-3 bg-elevated rounded w-2/3" />
+            <div class="h-3 bg-elevated rounded w-1/2" />
+          </div></WidgetShell>
+        }
+        error={<EditHint text={t("widgets.item_unavailable")} />}
+      >
         <Show when={event()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(ev) => (
             <WidgetShell>
@@ -80,7 +83,7 @@ export default function EventCardWidget(props: WidgetProps) {
             </WidgetShell>
           )}
         </Show>
-      </Show>
+      </AsyncBoundary>
     </Show>
   );
 }

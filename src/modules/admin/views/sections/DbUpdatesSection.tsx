@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminDbUpdates } from "../../api";
 import type { DbUpdate } from "../../types";
@@ -10,12 +11,12 @@ import { Card } from "@ui/Card";
 
 export default function DbUpdatesSection() {
   const { t } = useI18n();
-  const [updates] = createQueryResource("admin-db-updates", fetchAdminDbUpdates);
+  const [updates] = createAsyncResource("admin-db-updates", fetchAdminDbUpdates);
 
   return (
     <SubPageContent title={t("admin.db_title")} description={t("admin.db_desc")}>
 		<Card class="p-5 space-y-4">
-      <Show when={updates()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={updates()}>
         {(list) => (
           <div class="space-y-3">
             <p class="text-sm text-muted">{list().length} {t("admin.records")}</p>
@@ -34,7 +35,7 @@ export default function DbUpdatesSection() {
             </Show>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
 			</Card>
     </SubPageContent>
   );

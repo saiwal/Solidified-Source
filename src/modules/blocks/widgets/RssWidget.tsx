@@ -3,7 +3,8 @@
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
 import { For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -44,7 +45,7 @@ export default function RssWidget(props: WidgetProps) {
   const url = () => String(props.config?.url ?? "");
   const count = () => Math.max(1, Math.min(10, Number(props.config?.count ?? 5)));
 
-  const [feed] = createQueryResource(
+  const [feed, { peek }] = createAsyncResource(
     "rss-feed",
     () => (url() ? { url: url(), count: count() } : null),
     fetchFeed,
@@ -63,25 +64,22 @@ export default function RssWidget(props: WidgetProps) {
     >
       <WidgetShell
         title={
-          <Show when={feed()?.link} fallback={feed()?.title || t("widgets.rss_feed")}>
-            <a href={feed()!.link!} target="_blank" rel="noopener noreferrer" class="hover:text-accent transition-colors">
-              {feed()?.title || t("widgets.rss_feed")}
+          <Show when={peek()?.link} fallback={peek()?.title || t("widgets.rss_feed")}>
+            <a href={peek()!.link!} target="_blank" rel="noopener noreferrer" class="hover:text-accent transition-colors">
+              {peek()?.title || t("widgets.rss_feed")}
             </a>
           </Show>
         }
       >
 
-        <Show when={feed.loading}>
-          <div class="flex justify-center py-6">
-            <Spinner size="lg" tone="muted" label={t("ui.loading")} />
-          </div>
-        </Show>
-
-        <Show when={feed.error}>
-          <p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.load_error")}</p>
-        </Show>
-
-        <Show when={!feed.loading && !feed.error}>
+        <AsyncBoundary
+          fallback={
+            <div class="flex justify-center py-6">
+              <Spinner size="lg" tone="muted" label={t("ui.loading")} />
+            </div>
+          }
+          error={<p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.load_error")}</p>}
+        >
           <Show
             when={(feed()?.items.length ?? 0) > 0}
             fallback={<p class="px-(--ws-px) py-3 text-xs text-muted">{t("widgets.rss_empty")}</p>}
@@ -108,7 +106,7 @@ export default function RssWidget(props: WidgetProps) {
               </For>
             </ul>
           </Show>
-        </Show>
+        </AsyncBoundary>
       </WidgetShell>
     </Show>
   );

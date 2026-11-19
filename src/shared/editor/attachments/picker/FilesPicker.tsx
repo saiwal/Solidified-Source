@@ -1,5 +1,6 @@
 import { createSignal, Show, For, type Component, createEffect } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { listFolderMeta } from "@/modules/files/api";
 import type { FileMeta } from "@/modules/files/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -40,7 +41,7 @@ const FilesPicker: Component<Props> = (props) => {
   // with the files widget, and two fetchers on one key must return the same
   // shape or whichever populates it first hands the other a payload it can't
   // read (an object where an array is expected, which throws mid-render).
-  const [items] = createQueryResource(
+  const [items] = createAsyncResource(
     "files-folder",
     () => ({ nick: props.nick, hash: currentHash() }),
     ({ nick, hash }) => listFolderMeta(nick, hash),
@@ -109,10 +110,7 @@ const FilesPicker: Component<Props> = (props) => {
 
       {/* File listing */}
       <div class="flex-1 overflow-y-auto min-h-0 space-y-0.5">
-        <Show
-          when={!items.loading}
-          fallback={<ListSkeleton count={6} />}
-        >
+        <AsyncBoundary fallback={<ListSkeleton count={6} />}>
           <Show
             when={filtered().length > 0}
             fallback={
@@ -177,7 +175,7 @@ const FilesPicker: Component<Props> = (props) => {
               }}
             </For>
           </Show>
-        </Show>
+        </AsyncBoundary>
       </div>
     </div>
   );

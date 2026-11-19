@@ -4,10 +4,10 @@
 // Response: { data: { archive: { year: number; count: number; months: { month: number; count: number }[] }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { createEffect, createSignal, For, Show, type Component } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Show, type Component } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import { WidgetShell } from "@ui/WidgetShell";
 
 // ---------------------------------------------------------------------------
@@ -141,16 +141,10 @@ export interface ArchiveWidgetProps {
 const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
   const { t, locale } = useI18n();
 
-  const [remote] = createQueryResource(
+  const [remote] = createAsyncResource(
     "stream-archive",
     () => ({ channelNick: props.channelNick, type: props.type }),
     fetchArchive,
-  );
-
-  createEffect(
-    () => remote.error, (err) => {
-      if (err) toast.error((err as Error).message ?? t("widgets.load_error"));
-    },
   );
 
   const years = (): ArchiveYear[] => remote() ?? [];
@@ -178,11 +172,7 @@ const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
   return (
     <WidgetShell title={props.title ?? t("widgets.archive")}>
 
-      <Show when={remote.loading}>
-        <ArchiveSkeleton />
-      </Show>
-
-      <Show when={!remote.loading}>
+      <AsyncBoundary fallback={<ArchiveSkeleton />}>
         <Show
           when={years().length > 0}
           fallback={
@@ -247,7 +237,7 @@ const ArchiveWidget: Component<ArchiveWidgetProps> = (props) => {
             </For>
           </ul>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 };

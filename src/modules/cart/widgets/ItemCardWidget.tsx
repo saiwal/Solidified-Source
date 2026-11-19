@@ -2,7 +2,8 @@
 // panel (config: { sku }). multiInstance — a channel can place several cards.
 
 import { createSignal, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -44,7 +45,7 @@ export default function ItemCardWidget(props: WidgetProps) {
   const nick = usePageNick();
   const sku = () => String(props.config?.sku ?? "");
 
-  const [catalog] = createQueryResource(
+  const [catalog] = createAsyncResource(
     "cart-catalog",
     () => (nick() && sku() ? nick() : null),
     (n) => cachedCatalog(n),
@@ -67,17 +68,19 @@ export default function ItemCardWidget(props: WidgetProps) {
 
   return (
     <Show when={sku()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={catalog.loading}>
-        <WidgetShell><div class="animate-pulse">
-          <div class="h-32 bg-elevated" />
-          <div class="p-4 space-y-2">
-            <div class="h-3 bg-elevated rounded w-3/4" />
-            <div class="h-3 bg-elevated rounded w-1/3" />
-          </div>
-        </div></WidgetShell>
-      </Show>
 
-      <Show when={!catalog.loading}>
+      <AsyncBoundary
+        fallback={
+          <WidgetShell><div class="animate-pulse">
+            <div class="h-32 bg-elevated" />
+            <div class="p-4 space-y-2">
+              <div class="h-3 bg-elevated rounded w-3/4" />
+              <div class="h-3 bg-elevated rounded w-1/3" />
+            </div>
+          </div></WidgetShell>
+        }
+        error={<EditHint text={t("widgets.item_unavailable")} />}
+      >
         <Show when={item()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(it) => (
             <WidgetShell>
@@ -115,7 +118,7 @@ export default function ItemCardWidget(props: WidgetProps) {
             </WidgetShell>
           )}
         </Show>
-      </Show>
+      </AsyncBoundary>
     </Show>
   );
 }

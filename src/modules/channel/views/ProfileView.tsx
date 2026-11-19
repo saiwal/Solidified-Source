@@ -1,6 +1,7 @@
 // src/modules/channel/views/ProfileView.tsx
 import { createSignal, Show, For } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { MdFillLocation_on, MdFillPublic, MdFillRss_feed, MdOutlineMail, MdOutlineEdit, MdOutlineSettings } from "solid-icons/md";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
@@ -88,7 +89,7 @@ function renderBbcode(raw?: string): string {
 export default function ProfileView(props: { full?: boolean }) {
   const nick = usePageNick();
   const viewerRole = useViewerRole();
-  const [profile] = createQueryResource("channel-profile", () => nick(), fetchProfile);
+  const [profile] = createAsyncResource("channel-profile", () => nick(), fetchProfile);
 
   const isOwner = () => viewerRole() === "owner";
   const isVisitor = () => viewerRole() === "remote" || viewerRole() === "anonymous";
@@ -101,9 +102,7 @@ export default function ProfileView(props: { full?: boolean }) {
         { label: t("channel.edit_profile"), icon: MdOutlineEdit, href: "/settings/profile", show: isOwner() },
         { label: t("nav.settings"), icon: MdOutlineSettings, href: "/settings", show: isOwner() },
       ]} />
-      <Show when={profile.loading}>
-        <ProfileSkeleton />
-      </Show>
+      <AsyncBoundary quiet fallback={<ProfileSkeleton />}>
       <Show when={p() !== undefined && p() !== null}>
         <Show
           when={props.full}
@@ -114,6 +113,7 @@ export default function ProfileView(props: { full?: boolean }) {
           <FullCard p={p()!} isOwner={isOwner()} isVisitor={isVisitor()} />
         </Show>
       </Show>
+      </AsyncBoundary>
     </div>
   );
 }

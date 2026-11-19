@@ -2,7 +2,8 @@
 // section, in the order they're ticked. None ticked = no sections.
 
 import { createSignal, For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -15,7 +16,7 @@ export default function ChannelNewspaperConfig(props: WidgetConfigProps) {
   const initial = Array.isArray(props.config.categories) ? props.config.categories.map(String) : [];
   const [picked, setPicked] = createSignal<string[]>(initial);
 
-  const [categories] = createQueryResource(
+  const [categories] = createAsyncResource(
     "channel-newspaper-categories",
     () => nick() || null,
     (n) => fetchCategories({ channelNick: n, type: "posts" }),
@@ -29,7 +30,7 @@ export default function ChannelNewspaperConfig(props: WidgetConfigProps) {
       <fieldset class="flex flex-col gap-1">
         <legend class="text-xs text-muted">{t("widgets.cfg_newspaper_sections")}</legend>
         <p class="text-[0.6875rem] text-subtle">{t("widgets.cfg_newspaper_sections_hint")}</p>
-        <Show when={(categories() ?? []).length > 0} fallback={<p class="text-xs text-muted">{t("widgets.cfg_no_categories")}</p>}>
+        <AsyncBoundary><Show when={(categories() ?? []).length > 0} fallback={<p class="text-xs text-muted">{t("widgets.cfg_no_categories")}</p>}>
           <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1 max-h-48 overflow-y-auto">
             <For each={categories()}>
               {(c) => (
@@ -48,7 +49,7 @@ export default function ChannelNewspaperConfig(props: WidgetConfigProps) {
               )}
             </For>
           </div>
-        </Show>
+        </Show></AsyncBoundary>
       </fieldset>
       <Button size="sm" class="self-end" onClick={() => props.onSave({ categories: picked() })}>
         {t("widgets.cfg_save")}

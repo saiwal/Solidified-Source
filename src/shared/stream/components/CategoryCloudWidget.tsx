@@ -3,10 +3,10 @@
 // Alternate category layout: a tag-cloud of pills with font size scaled by
 // post count, instead of the row list in CategoryWidget. Same API and props.
 
-import { createEffect, createSignal, For, Show, type Component } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Show, type Component } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import {
   fetchCategories,
@@ -34,7 +34,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
   const [expanded, setExpanded] = createSignal(false);
   const max = () => props.maxVisible ?? 20;
 
-  const [remote] = createQueryResource(
+  const [remote] = createAsyncResource(
     "stream-categories",
     () =>
       props.data
@@ -43,8 +43,6 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
     (p) => (p ? fetchCategories(p) : Promise.resolve([])),
   );
 
-  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
-
   const categories = (): CategoryItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...categories().map((c) => c.count), 1);
   const visible = () => (expanded() ? categories() : categories().slice(0, max()));
@@ -52,11 +50,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
   return (
     <WidgetShell title={props.title ?? t("widgets.categories")}>
 
-      <Show when={!props.data && remote.loading}>
-        <CloudSkeleton />
-      </Show>
-
-      <Show when={!remote.loading}>
+      <AsyncBoundary fallback={<CloudSkeleton />}>
         <Show
           when={categories().length > 0}
           fallback={
@@ -94,7 +88,7 @@ const CategoryCloudWidget: Component<CategoryWidgetProps> = (props) => {
             </Button>
           </Show>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 };

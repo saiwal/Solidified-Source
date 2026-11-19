@@ -1,5 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import {
   fetchAdminThemes,
@@ -16,7 +17,7 @@ import { Card } from "@ui/Card";
 
 export default function ThemesSection() {
   const { t } = useI18n();
-  const [result, { refetch }] = createQueryResource("admin-themes", fetchAdminThemes);
+  const [result, { refetch }] = createAsyncResource("admin-themes", fetchAdminThemes);
   const [configTheme, setConfigTheme] = createSignal<string | null>(null);
 
   async function onToggle(name: string) {
@@ -26,7 +27,7 @@ export default function ThemesSection() {
 
   return (
     <SubPageContent title={t("admin.themes_title")} description={t("admin.themes_desc")}>
-      <Show when={result()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={result()}>
         {(r) => (
           <div class="space-y-2">
             <p class="text-sm text-muted">{r().themes.length} {t("admin.themes_found")}</p>
@@ -93,7 +94,7 @@ export default function ThemesSection() {
             </div>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
     </SubPageContent>
   );
 }

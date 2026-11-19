@@ -1,5 +1,6 @@
 import { For, Show, createSignal } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminAddons, toggleAddon } from "../../api";
 import HookSettingsForm from "./HookSettingsForm";
@@ -12,7 +13,7 @@ import { Badge } from "@ui/Badge";
 
 export default function AddonsSection() {
   const { t } = useI18n();
-  const [addons, { refetch }] = createQueryResource("admin-addons", fetchAdminAddons);
+  const [addons, { refetch }] = createAsyncResource("admin-addons", fetchAdminAddons);
   // One open panel at a time — these forms are tall and rarely compared.
   const [openSettings, setOpenSettings] = createSignal<string | null>(null);
 
@@ -25,7 +26,7 @@ export default function AddonsSection() {
 
   return (
     <SubPageContent panel={true} title={t("admin.addons_title")} description={t("admin.addons_desc")}>
-      <Show when={addons()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={addons()}>
         {(list) => (
           <div class="space-y-2">
             <p class="text-sm text-muted">{list().length} {t("admin.addons_found")}</p>
@@ -92,7 +93,7 @@ export default function AddonsSection() {
             </div>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
     </SubPageContent>
   );
 }

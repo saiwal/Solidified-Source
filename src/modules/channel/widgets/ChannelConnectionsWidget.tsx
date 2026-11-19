@@ -1,5 +1,6 @@
 import { Show, For } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { usePageNick, useViewerRole } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchConnections } from "../api";
@@ -11,7 +12,7 @@ export default function ChannelConnectionsWidget() {
   const viewerRole = useViewerRole();
   const { t } = useI18n();
 
-  const [data] = createQueryResource("channel-connections", () => nick(), (n: string) =>
+  const [data] = createAsyncResource("channel-connections", () => nick(), (n: string) =>
     fetchConnections(n),
   );
 
@@ -19,7 +20,7 @@ export default function ChannelConnectionsWidget() {
   const total = () => data()?.total ?? 0;
 
   return (
-    <Show when={!data.loading && !data()?.hidden && conns().length > 0}>
+    <AsyncBoundary quiet><Show when={!data()?.hidden && conns().length > 0}>
       <WidgetShell
         title={t("widgets.connections")}
         actions={total() > conns().length ? <span class="text-xs text-muted tabular-nums">{total()}</span> : undefined}
@@ -58,6 +59,6 @@ export default function ChannelConnectionsWidget() {
         </Show>
       </div>
 </WidgetShell>
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

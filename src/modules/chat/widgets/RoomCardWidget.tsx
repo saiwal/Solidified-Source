@@ -3,7 +3,8 @@
 
 import { Show } from "solid-js";
 import { openChat } from "@/shared/views/modal-host";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -29,7 +30,7 @@ export default function RoomCardWidget(props: WidgetProps) {
   const nick = usePageNick();
   const roomId = () => Number(props.config?.room ?? 0);
 
-  const [room] = createQueryResource(
+  const [room] = createAsyncResource(
     "chat-room",
     () => (nick() && roomId() ? { nick: nick(), id: roomId() } : null),
     async (p) => {
@@ -40,14 +41,16 @@ export default function RoomCardWidget(props: WidgetProps) {
 
   return (
     <Show when={roomId()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={room.loading}>
-        <WidgetShell><div class="p-4 space-y-2 animate-pulse">
-          <div class="h-3 bg-elevated rounded w-1/2" />
-          <div class="h-3 bg-elevated rounded w-1/3" />
-        </div></WidgetShell>
-      </Show>
 
-      <Show when={!room.loading}>
+      <AsyncBoundary
+        fallback={
+          <WidgetShell><div class="p-4 space-y-2 animate-pulse">
+            <div class="h-3 bg-elevated rounded w-1/2" />
+            <div class="h-3 bg-elevated rounded w-1/3" />
+          </div></WidgetShell>
+        }
+        error={<EditHint text={t("widgets.item_unavailable")} />}
+      >
         <Show when={room()} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
           {(r) => (
             <WidgetShell>
@@ -71,7 +74,7 @@ export default function RoomCardWidget(props: WidgetProps) {
             </WidgetShell>
           )}
         </Show>
-      </Show>
+      </AsyncBoundary>
     </Show>
   );
 }

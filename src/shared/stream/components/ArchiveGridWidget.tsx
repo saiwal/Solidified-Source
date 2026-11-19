@@ -4,10 +4,10 @@
 // has a post, plus prev/next month + prev/next year navigation. Clicking a
 // dotted day toggles a single-day dbegin/dend filter.
 
-import { createEffect, createMemo, createSignal, For, Show, type Component } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createMemo, createSignal, For, Show, type Component } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import {
   dayRange,
   fetchArchiveDays,
@@ -80,7 +80,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
     setViewMonth(today.getMonth() + 1);
   };
 
-  const [remote] = createQueryResource(
+  const [remote] = createAsyncResource(
     "stream-archive-days",
     () => ({
       channelNick: props.channelNick,
@@ -89,12 +89,6 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
       month: viewMonth(),
     }),
     fetchArchiveDays,
-  );
-
-  createEffect(
-    () => remote.error, (err) => {
-      if (err) toast.error((err as Error).message ?? t("widgets.load_error"));
-    },
   );
 
   const counts = createMemo(() => {
@@ -148,11 +142,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
         </div>
       </div>
 
-      <Show when={remote.loading}>
-        <CalendarSkeleton />
-      </Show>
-
-      <Show when={!remote.loading}>
+      <AsyncBoundary fallback={<CalendarSkeleton />}>
         <div class="px-3 pb-3">
           {/* Weekday header */}
           <div class="grid grid-cols-7 gap-1 mb-1">
@@ -205,7 +195,7 @@ const ArchiveGridWidget: Component<ArchiveCalendarProps> = (props) => {
             </For>
           </div>
         </div>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 };

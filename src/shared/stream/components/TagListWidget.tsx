@@ -4,10 +4,10 @@
 // CategoryWidget list style), instead of the size-scaled pill cloud in
 // TagWidget. Same API and props.
 
-import { createEffect, createSignal, For, Show, type Component } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Show, type Component } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { fetchTags, type TagItem, type TagWidgetProps } from "./TagWidget";
 import { Button } from "@ui/Button";
@@ -36,7 +36,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
   const [expanded, setExpanded] = createSignal(false);
   const max = () => props.maxVisible ?? 20;
 
-  const [remote] = createQueryResource(
+  const [remote] = createAsyncResource(
     "stream-tags",
     () =>
       props.data
@@ -44,8 +44,6 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
         : { channelNick: props.channelNick, type: props.type },
     (p) => (p ? fetchTags(p) : Promise.resolve([])),
   );
-
-  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const tags = (): TagItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...tags().map((t) => t.count), 1);
@@ -55,11 +53,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
   return (
     <WidgetShell title={props.title ?? t("widgets.tags")}>
 
-      <Show when={!props.data && remote.loading}>
-        <ListSkeleton />
-      </Show>
-
-      <Show when={!remote.loading}>
+      <AsyncBoundary fallback={<ListSkeleton />}>
         <Show
           when={tags().length > 0}
           fallback={
@@ -121,7 +115,7 @@ const TagListWidget: Component<TagWidgetProps> = (props) => {
             </Button>
           </Show>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 };

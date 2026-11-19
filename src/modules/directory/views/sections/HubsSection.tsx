@@ -1,5 +1,6 @@
 import { For, Show, createSignal, createMemo, lazy } from 'solid-js';
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchPubsites, type PubSite } from '../../hubs/api';
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineDns } from "solid-icons/md";
@@ -87,7 +88,7 @@ function HubCard(props: { site: PubSite; onOpen: () => void }) {
 
 export default function PubsitesView() {
   const { t } = useI18n();
-  const [sites] = createQueryResource("pubsites", fetchPubsites);
+  const [sites, { peek }] = createAsyncResource("pubsites", fetchPubsites);
   const [filter, setFilter] = createSignal('');
   const [accessFilter, setAccessFilter] = createSignal('all');
   const [registerFilter, setRegisterFilter] = createSignal('all');
@@ -99,15 +100,16 @@ export default function PubsitesView() {
   // streams do. Not on keystrokes — the search box would replay constantly.
   resetReveal();
 
-  const filtered = createMemo(() => {
+  const filteredOf = (list: NonNullable<ReturnType<typeof sites>>) => {
     const q = filter().toLowerCase();
-    return (sites() ?? []).filter((s) => {
+    return list.filter((s) => {
       const matchText = !q || s.urltext.toLowerCase().includes(q) || s.location?.toLowerCase().includes(q);
       const matchAccess = accessFilter() === 'all' || s.access === accessFilter();
       const matchReg = registerFilter() === 'all' || s.register === registerFilter();
       return matchText && matchAccess && matchReg;
     });
-  });
+  };
+  const filtered = createMemo(() => filteredOf(sites() ?? []));
 
   return (
     <Section
@@ -153,36 +155,38 @@ export default function PubsitesView() {
           <option value="approve">{t("directory.reg_approve")}</option>
           <option value="closed">{t("directory.reg_closed")}</option>
         </Select>
-        <Show when={!sites.loading && (sites()?.length ?? 0) > 0}>
+        <Show when={(peek()?.length ?? 0) > 0}>
           <p class="ml-auto text-xs text-muted tabular-nums">
-            {filtered().length} {t("directory.of_hubs")} {sites()!.length} {t("directory.hubs_label")}
+            {filteredOf(peek()!).length} {t("directory.of_hubs")} {peek()!.length} {t("directory.hubs_label")}
           </p>
         </Show>
       </div>
 
-      <Show when={sites.loading}>
-        <div class={GRID}>
+      <AsyncBoundary
+        fallback={
+          <div class={GRID}>
           <For each={Array(9).fill(0)}>{() => <SkeletonCard />}</For>
         </div>
-      </Show>
-
-      <Show when={!sites.loading && filtered().length === 0}>
+        }
+      >
+      <Show when={filtered().length === 0}>
         <EmptyState icon={<MdOutlineDns />}>{t("directory.no_hubs")}</EmptyState>
       </Show>
 
       {/* Map — a pin shared by several hubs narrows the grid to that place */}
-      <Show when={!sites.loading && filtered().length > 0 && showMap()}>
+      <Show when={filtered().length > 0 && showMap()}>
         <PlaceMap
           items={filtered().map((s) => ({ place: s.location ?? '', name: s.urltext, open: () => setSelected(s) }))}
           onGroup={(place) => { setFilter(place); setView('grid'); }}
         />
       </Show>
 
-      <Show when={!sites.loading && filtered().length > 0 && !showMap()}>
+      <Show when={filtered().length > 0 && !showMap()}>
         <div class={GRID}>
           <For each={filtered()}>{(site) => <CardShell uuid={site.url} class="grid"><HubCard site={site} onOpen={() => setSelected(site)} /></CardShell>}</For>
         </div>
       </Show>
+      </AsyncBoundary>
 
       <Show when={selected()}>
         {(s) => <HubInfoModal site={s()} onClose={() => setSelected(null)} />}

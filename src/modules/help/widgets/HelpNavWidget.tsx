@@ -1,6 +1,7 @@
 // src/modules/help/widgets/HelpNavWidget.tsx
 import { createSignal, Show, For, createEffect } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useLocation } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { fetchNav, type NavNode } from "../api";
@@ -115,7 +116,7 @@ export default function HelpNavWidget() {
   const topic = () => parts().slice(1).join("/");
   const lang = () => locale().split("-")[0]; // "en-US" → "en"
 
-  const [navData] = createQueryResource(
+  const [navData] = createAsyncResource(
     "help-nav",
     () => ({ section: section(), lang: lang() }),
     ({ section, lang }) => fetchNav(section, lang),
@@ -134,7 +135,7 @@ export default function HelpNavWidget() {
       title={t("widgets.help_nav")}
     >
 
-      <Show when={!navData.loading} fallback={<NavSkeleton />}>
+      <AsyncBoundary fallback={<NavSkeleton />}>
         <Show when={navData()} keyed>
           {(d) => (
             <ul class="px-3 pb-3.5 space-y-0.5 max-h-[60vh] overflow-y-auto">
@@ -151,7 +152,7 @@ export default function HelpNavWidget() {
             </ul>
           )}
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 }

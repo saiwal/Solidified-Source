@@ -1,6 +1,7 @@
 // src/modules/help/widgets/HelpContentWidget.tsx
 import { Show, For, createEffect } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useSearchParams, useLocation } from "@solidjs/router";
 import DOMPurify from "dompurify";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -53,13 +54,13 @@ export default function HelpContentWidget() {
   };
 
   // Skip the topic fetch while a search is active — its content isn't shown.
-  const [topicData] = createQueryResource(
+  const [topicData] = createAsyncResource(
     "help-topic",
     () => (query() ? null : { section: section(), lang: lang(), topic: topic() }),
     ({ section, lang, topic }) => fetchTopic(section, lang, topic),
   );
 
-  const [searchData] = createQueryResource(
+  const [searchData] = createAsyncResource(
     "help-search",
     () => (query() ? { section: section(), lang: lang(), q: query() } : null),
     ({ section, lang, q }) => fetchHelpSearch(section, lang, q),
@@ -96,11 +97,7 @@ export default function HelpContentWidget() {
                   {t("help.results_for", { query: query() })}
                 </h1>
 
-                <Show when={searchData.loading}>
-                  <ContentSkeleton />
-                </Show>
-
-                <Show when={!searchData.loading}>
+                <AsyncBoundary fallback={<ContentSkeleton />}>
                   <Show
                     when={(searchData()?.results.length ?? 0) > 0}
                     fallback={<p class="text-sm text-muted">{t("help.no_results")}</p>}
@@ -122,29 +119,23 @@ export default function HelpContentWidget() {
                       </For>
                     </ul>
                   </Show>
-                </Show>
+                </AsyncBoundary>
               </>
             }
           >
-            <Show when={topicData.loading}>
-              <ContentSkeleton />
-            </Show>
-
-            <Show when={topicData.error}>
-              <Card class="p-8 text-center space-y-3">
-                <p class="text-sm text-danger-txt">
-                  {topicData.error?.message ?? "Page not found."}
-                </p>
-                <a
-                  href={`/help/${section()}`}
-                  class="text-sm text-accent hover:underline"
-                >
-                  ← Back
-                </a>
-              </Card>
-            </Show>
-
-            <Show when={!topicData.loading && topicData()}>
+            <AsyncBoundary
+              fallback={<ContentSkeleton />}
+              error={(err) => (
+                <Card class="p-8 text-center space-y-3">
+                  <p class="text-sm text-danger-txt">
+                    {(err instanceof Error && err.message) || "Page not found."}
+                  </p>
+                  <a href={`/help/${section()}`} class="text-sm text-accent hover:underline">
+                    ← Back
+                  </a>
+                </Card>
+              )}
+            >
               <>
                 {/* Body */}
                 <div
@@ -158,7 +149,7 @@ export default function HelpContentWidget() {
                   innerHTML={rendered()}
                 />
               </>
-            </Show>
+            </AsyncBoundary>
           </Show>
         </article>
       </div>

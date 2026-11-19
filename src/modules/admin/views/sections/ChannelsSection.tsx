@@ -1,5 +1,6 @@
 import { createSignal, createMemo, For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminChannels, adminChannelAction } from "../../api";
 import type { AdminChannel } from "../../types";
@@ -9,13 +10,12 @@ import { Input } from "@ui/Field";
 import { Card } from "@ui/Card";
 import { Badge } from "@ui/Badge";
 import { EmptyState } from "@ui/EmptyState";
-import { Banner } from "@ui/Banner";
 
 export default function ChannelsSection() {
   const { t } = useI18n();
   const [page, setPage] = createSignal(0);
   const [search, setSearch] = createSignal("");
-  const [result, { refetch }] = createQueryResource("admin-channels", page, fetchAdminChannels);
+  const [result, { refetch }] = createAsyncResource("admin-channels", page, fetchAdminChannels);
 
   const filtered = createMemo(() => {
     const q = search().toLowerCase().trim();
@@ -39,13 +39,8 @@ export default function ChannelsSection() {
 
   return (
     <SubPageContent panel={false} title={t("admin.channels_title")} description={t("admin.channels_desc")}>
-      <Show when={result.error}>
-        <Banner tone="danger" role="alert">
-          Error: {String(result.error?.message ?? result.error)}
-        </Banner>
-      </Show>
 
-      <Show when={result()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={result()}>
         {(r) => (
           <div class="space-y-4">
             {/* Toolbar */}
@@ -107,7 +102,7 @@ export default function ChannelsSection() {
             </div>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
     </SubPageContent>
   );
 }

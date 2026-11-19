@@ -1,7 +1,8 @@
 import { createSignal, createMemo, For, Show, type Component } from "solid-js";
 import { MdFillFolder } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { listFolderMeta, moveItem, copyItem } from "../api";
 import type { FileMeta } from "../api";
 import { Modal, ModalPanel } from "@ui/Modal";
@@ -32,7 +33,7 @@ const MoveCopyModal: Component<Props> = (props) => {
   // with the files widget, and two fetchers on one key must return the same
   // shape or whichever populates it first hands the other a payload it can't
   // read (an object where an array is expected, which throws mid-render).
-  const [items] = createQueryResource(
+  const [items] = createAsyncResource(
     "files-folder",
     () => ({ nick: props.nick, hash: currentHash() }),
     ({ nick, hash }) => listFolderMeta(nick, hash),
@@ -124,7 +125,7 @@ const MoveCopyModal: Component<Props> = (props) => {
 
         {/* Folder listing */}
         <div class="flex-1 overflow-y-auto min-h-0 p-2 space-y-0.5">
-          <Show when={!items.loading} fallback={<EmptyState>…</EmptyState>}>
+          <AsyncBoundary fallback={<EmptyState>…</EmptyState>}>
             <Show
               when={folders().length > 0}
               fallback={<EmptyState>{t("files_mod.folder_empty")}</EmptyState>}
@@ -141,7 +142,7 @@ const MoveCopyModal: Component<Props> = (props) => {
                 )}
               </For>
             </Show>
-          </Show>
+          </AsyncBoundary>
         </div>
 
         <Show when={err()}>

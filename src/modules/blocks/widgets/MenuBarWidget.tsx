@@ -5,7 +5,8 @@
 
 import { createSignal, For, onSettled, Show, createEffect } from "solid-js";
 import { createMediaQuery } from "@solid-primitives/media";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -84,7 +85,7 @@ export default function MenuBarWidget(props: WidgetProps) {
   const title = () => String(props.config?.title ?? "");
   const isDesktop = createMediaQuery("(min-width: 768px)");
 
-  const [tree] = createQueryResource(
+  const [tree] = createAsyncResource(
     "menu-tree",
     () => (nick() && menuName() ? { nick: nick(), name: menuName() } : null),
     (p) => fetchMenuTree(p.nick, p.name),
@@ -104,7 +105,7 @@ export default function MenuBarWidget(props: WidgetProps) {
 
   return (
     <Show when={menuName()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={!tree.error} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
+      <AsyncBoundary error={<EditHint text={t("widgets.item_unavailable")} />}>
         <Show when={tree()?.items.length}>
           <Show
             when={isDesktop()}
@@ -155,7 +156,7 @@ export default function MenuBarWidget(props: WidgetProps) {
             </nav>
           </Show>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </Show>
   );
 }

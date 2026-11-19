@@ -5,7 +5,8 @@
  * /spa/geocode; nothing renders if that fails or maps are off.
  */
 import { Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { DEFAULT_TMS, geocode, osmEmbedSrc, osmLink, parseCoord } from "@utsukta/spa-core/lib/osm";
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
@@ -13,14 +14,14 @@ import { useNavData } from "@utsukta/spa-core/store/nav-store";
 export default function LocationMap(props: { location: string; class?: string; /** Link text; defaults to the location. */ label?: string }) {
   const enabled = useMapsEnabled();
   const navData = useNavData();
-  const [coord] = createQueryResource("geocode",
+  const [coord] = createAsyncResource("geocode",
     () => (enabled() && props.location.trim()) || null,
     async (loc) => parseCoord(loc) ?? (await geocode(loc).catch(() => null)),
   );
   const tms = () => navData()?.osm?.tmsserver || DEFAULT_TMS;
 
   return (
-    <Show when={coord()}>
+    <AsyncBoundary quiet><Show when={coord()}>
       {(c) => (
         <div class={props.class}>
           <iframe
@@ -35,6 +36,6 @@ export default function LocationMap(props: { location: string; class?: string; /
           </a>
         </div>
       )}
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

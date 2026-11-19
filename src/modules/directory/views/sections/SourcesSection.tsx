@@ -8,7 +8,8 @@
 
 import { createSignal, For, Show, type Component } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import {
   MdFillAdd,
   MdFillClose,
@@ -290,7 +291,7 @@ const SourceRow: Component<{
 
 const SourcesSection: Component = () => {
   const { t } = useI18n();
-  const [sources, { refetch }] = createQueryResource("sources", fetchSources);
+  const [sources, { refetch }] = createAsyncResource("sources", fetchSources);
   // null = closed, "new" = create, a Source = editing it.
   const [dialog, setDialog] = createSignal<Source | "new" | null>(null);
 
@@ -312,8 +313,7 @@ const SourcesSection: Component = () => {
         primary: true,
       }]}
     >
-      <Show
-        when={!sources.loading || sources()}
+      <AsyncBoundary
         fallback={
           <div class="space-y-0.5">
             <For each={[1, 2, 3]}>
@@ -353,7 +353,7 @@ const SourcesSection: Component = () => {
             </For>
           </div>
         </Show>
-      </Show>
+      </AsyncBoundary>
 
       <Show when={dialog()}>
         {(d) => (

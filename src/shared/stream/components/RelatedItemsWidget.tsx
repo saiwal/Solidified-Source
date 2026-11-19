@@ -8,7 +8,8 @@
 import { Show } from "solid-js";
 import { useLocation } from "@solidjs/router";
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import PopularPostsWidget, { type PopularPost } from "./PopularPostsWidget";
 
@@ -39,16 +40,16 @@ export async function fetchRelated(src: Source & { limit?: number }): Promise<Po
 export default function RelatedItemsWidget() {
   const { t } = useI18n();
   const location = useLocation();
-  const [related] = createQueryResource("stream-related", () => sourceFromPath(location.pathname), fetchRelated);
+  const [related] = createAsyncResource("stream-related", () => sourceFromPath(location.pathname), fetchRelated);
 
   return (
-    <Show when={related()?.length}>
+    <AsyncBoundary><Show when={related()?.length}>
       <PopularPostsWidget
         data={related()}
         title={t("widgets.related")}
         type={sourceFromPath(location.pathname)?.type}
         channelNick={sourceFromPath(location.pathname)?.nick}
       />
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

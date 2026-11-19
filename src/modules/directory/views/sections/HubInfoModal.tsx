@@ -1,6 +1,7 @@
 import { For, Show } from "solid-js";
 import type { JSX } from "@solidjs/web";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Modal, ModalPanel } from "@ui/Modal";
 import { buttonClass } from "@ui/Button";
@@ -79,7 +80,7 @@ function AdminTile(props: { admin: HubInfo["admin"][number] }) {
 
 export default function HubInfoModal(props: { site: PubSite; onClose: () => void }) {
   const { t, locale } = useI18n();
-  const [info, { refetch }] = createQueryResource("hub-info", () => props.site.host, fetchHubInfo);
+  const [info, { refetch, peek }] = createAsyncResource("hub-info", () => props.site.host, fetchHubInfo);
 
   // Core reports lastpoll as "Y-m-d H:i:s" in UTC; an unparseable value shows as-is.
   const localTime = (utc: string) => {
@@ -96,11 +97,11 @@ export default function HubInfoModal(props: { site: PubSite; onClose: () => void
     <Modal onClose={props.onClose}>
       <ModalPanel
         size="lg"
-        title={info()?.site_name || props.site.urltext}
+        title={peek()?.site_name || props.site.urltext}
         description={
           <span class="flex flex-wrap items-center gap-1.5">
             <span>{props.site.urltext}</span>
-            <Show when={info()}>
+            <Show when={peek()}>
               {(d) => (
                 <>
                   <Badge size="sm">{regLabel(d().register_policy)}</Badge>
@@ -132,14 +133,11 @@ export default function HubInfoModal(props: { site: PubSite; onClose: () => void
         }
       >
         <div class="max-h-[70vh] overflow-y-auto px-5 py-4 space-y-5">
-          <Show when={info.loading && !info()}>
-            <div class="flex justify-center py-12"><Spinner size="lg" label={t("directory.hub_loading")} /></div>
-          </Show>
 
-          <Show when={info.error}>
-            <ErrorState message={t("directory.hub_error")} retry={refetch} />
-          </Show>
-
+          <AsyncBoundary
+            fallback={<div class="flex justify-center py-12"><Spinner size="lg" label={t("directory.hub_loading")} /></div>}
+            error={<ErrorState message={t("directory.hub_error")} retry={refetch} />}
+          >
           <Show when={info()}>
             {(d) => (
               <>
@@ -234,6 +232,7 @@ export default function HubInfoModal(props: { site: PubSite; onClose: () => void
               </>
             )}
           </Show>
+          </AsyncBoundary>
         </div>
       </ModalPanel>
     </Modal>

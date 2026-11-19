@@ -1,7 +1,8 @@
 import { createSignal, Show, For, createEffect } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 import { MdOutlineAdd, MdOutlineDelete, MdOutlineEdit, MdOutlineKey, MdOutlineRefresh } from "solid-icons/md";
 import {
@@ -31,7 +32,7 @@ import { Skeleton } from "@ui/Skeleton";
 export default function GuestAccessSection() {
   const { t, locale } = useI18n();
 
-  const [data, { refetch }] = createQueryResource("guest-tokens", fetchTokens);
+  const [data, { refetch }] = createAsyncResource("guest-tokens", fetchTokens);
   const tokens = () => data()?.tokens ?? [];
   const roles  = () => data()?.meta.roles ?? [];
   const quota  = () => data()?.meta.quota;
@@ -53,8 +54,7 @@ export default function GuestAccessSection() {
         </p>
       </Show>
 
-      <Show
-        when={!data.loading || data()}
+      <AsyncBoundary
         fallback={
           <div class="space-y-0.5">
             <For each={[1, 2]}>
@@ -96,7 +96,7 @@ export default function GuestAccessSection() {
             </For>
           </div>
         </Show>
-      </Show>
+      </AsyncBoundary>
 
       <Banner title={t("guest_access.how_to_use")}>
         {t("guest_access.how_to_use_body")}

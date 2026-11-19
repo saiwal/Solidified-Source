@@ -1,5 +1,6 @@
 import { For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchAdminSummary } from "../../api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -9,12 +10,12 @@ import { Card } from "@ui/Card";
 
 export default function SummarySection() {
   const { t } = useI18n();
-  const [data] = createQueryResource("admin-summary", fetchAdminSummary);
+  const [data] = createAsyncResource("admin-summary", fetchAdminSummary);
 
   return (
     <SubPageContent title={t("admin.summary_title")} description={t("admin.summary_desc")}>
 		<Card class="p-5 space-y-4">
-      <Show when={data()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={data()}>
         {(d) => (
           <div class="space-y-6">
             <StatGrid
@@ -54,7 +55,7 @@ export default function SummarySection() {
             </Show>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
 		</Card>
     </SubPageContent>
   );

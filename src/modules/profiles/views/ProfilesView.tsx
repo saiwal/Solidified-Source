@@ -1,6 +1,7 @@
 import { createSignal, Show, For } from "solid-js";
 import { useNavigate } from "@solidjs/router";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
@@ -22,7 +23,7 @@ import { Switch } from "@ui/Toggle";
 export default function ProfilesView() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [result, { refetch }] = createQueryResource("profiles", fetchProfiles);
+  const [result, { refetch }] = createAsyncResource("profiles", fetchProfiles);
   const [creating, setCreating] = createSignal(false);
   const [togglingFeature, setTogglingFeature] = createSignal(false);
 
@@ -85,14 +86,10 @@ export default function ProfilesView() {
         }]} />
       </div>
 
-      <Show when={result.loading}>
-        <Skeleton />
-      </Show>
-
-      <Show when={result.error}>
-        <p class="text-sm text-muted">{t("profiles.load_error")}</p>
-      </Show>
-
+      <AsyncBoundary
+        fallback={<Skeleton />}
+        error={<p class="text-sm text-muted">{t("profiles.load_error")}</p>}
+      >
       <Show when={result()}>
         <div class="space-y-3">
           <For each={result()!.profiles}>
@@ -124,6 +121,7 @@ export default function ProfilesView() {
           />
         </Card>
       </Show>
+      </AsyncBoundary>
     </div>
     </SubPageLayout>
   );

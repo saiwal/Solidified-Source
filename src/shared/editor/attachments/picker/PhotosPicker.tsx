@@ -4,7 +4,8 @@ import {
   For,
   type Component,
 } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchAlbums, fetchPhotoAlbum, variantSrc } from "@/modules/photos/api/api";
 import type { Photo, Album } from "@/modules/photos/api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -21,9 +22,9 @@ const PhotosPicker: Component<Props> = (props) => {
   const { t } = useI18n();
   const [currentAlbum, setCurrentAlbum] = createSignal<Album | null>(null);
 
-  const [albums] = createQueryResource("photo-albums", () => props.nick, fetchAlbums);
+  const [albums] = createAsyncResource("photo-albums", () => props.nick, fetchAlbums);
 
-  const [albumPhotos] = createQueryResource(
+  const [albumPhotos] = createAsyncResource(
     "photo-album",
     () => {
       const a = currentAlbum();
@@ -56,10 +57,7 @@ const PhotosPicker: Component<Props> = (props) => {
       <div class="flex-1 overflow-y-auto min-h-0">
         <Show when={!currentAlbum()}>
           {/* Albums grid */}
-          <Show
-            when={!albums.loading}
-            fallback={<GridSkeleton count={6} />}
-          >
+          <AsyncBoundary fallback={<GridSkeleton count={6} />}>
             <Show
               when={(albums() ?? []).length > 0}
               fallback={<EmptyState icon={<MdOutlineSentiment_dissatisfied />}>{t("editor.no_albums")}</EmptyState>}
@@ -94,15 +92,12 @@ const PhotosPicker: Component<Props> = (props) => {
                 </For>
               </div>
             </Show>
-          </Show>
+          </AsyncBoundary>
         </Show>
 
         <Show when={currentAlbum()}>
           {/* Photos in album */}
-          <Show
-            when={!albumPhotos.loading}
-            fallback={<GridSkeleton count={9} />}
-          >
+          <AsyncBoundary fallback={<GridSkeleton count={9} />}>
             <Show
               when={(albumPhotos()?.photos ?? []).length > 0}
               fallback={<EmptyState icon={<MdOutlineSentiment_dissatisfied />}>{t("editor.no_album_photos")}</EmptyState>}
@@ -140,7 +135,7 @@ const PhotosPicker: Component<Props> = (props) => {
                 </For>
               </div>
             </Show>
-          </Show>
+          </AsyncBoundary>
         </Show>
       </div>
     </div>

@@ -5,7 +5,8 @@
  * post's thread. Renders nothing while maps are off (see useMapsEnabled).
  */
 import { lazy, Show, Loading } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { parseCoord } from "@utsukta/spa-core/lib/osm";
 import { useMapsEnabled } from "@utsukta/spa-core/lib/useOsmMap";
@@ -29,7 +30,7 @@ export default function ChannelPlacesWidget() {
   const { t } = useI18n();
   const nick = usePageNick();
   const enabled = useMapsEnabled();
-  const [data] = createQueryResource("channel-places", () => (enabled() && nick()) || null, fetchPlaces);
+  const [data] = createAsyncResource("channel-places", () => (enabled() && nick()) || null, fetchPlaces);
 
   const points = (): MapPoint[] =>
     (data() ?? []).flatMap((p) => {
@@ -38,7 +39,7 @@ export default function ChannelPlacesWidget() {
     });
 
   return (
-    <Show when={enabled() && !data.loading && data()}>
+    <AsyncBoundary quiet><Show when={enabled() && data()}>
       <WidgetShell title={t("widgets.channel_places")}>
 <div class="px-(--ws-px) py-3">
         <Show when={points().length} fallback={<p class="text-xs text-muted">{t("widgets.channel_places_empty")}</p>}>
@@ -48,6 +49,6 @@ export default function ChannelPlacesWidget() {
         </Show>
       </div>
 </WidgetShell>
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

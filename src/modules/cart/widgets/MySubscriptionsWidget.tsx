@@ -3,7 +3,8 @@ import { useNavigate } from '@solidjs/router';
 import { MdFillAutorenew } from 'solid-icons/md';
 import { useI18n } from '@utsukta/spa-core/i18n';
 import { usePageNick, useViewerRole } from '@utsukta/spa-core/store/site-config';
-import { createQueryResource } from '@utsukta/spa-core/lib/createQueryResource';
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { WidgetShell } from '@ui/WidgetShell';
 import { Button } from '@ui/Button';
 import { fetchMySubscriptions } from '../api';
@@ -21,7 +22,7 @@ export default function MySubscriptionsWidget() {
   const role = useViewerRole();
   const navigate = useNavigate();
 
-  const [subs] = createQueryResource(
+  const [subs] = createAsyncResource(
     'cart-my-subscriptions',
     () => (role() === 'local' || role() === 'remote') && pageNick(),
     (n: string) => fetchMySubscriptions(n).catch(() => []),
@@ -32,7 +33,7 @@ export default function MySubscriptionsWidget() {
     shopNick() === pageNick() ? renewSubscription(sku) : navigate(`/cart/${pageNick()}`);
 
   return (
-    <Show when={subs()?.length}>
+    <AsyncBoundary quiet><Show when={subs()?.length}>
       <WidgetShell icon={<MdFillAutorenew size={16} class="text-accent" />} title={t('cart.subs_title')}>
         <ul class="px-(--ws-px) py-3 flex flex-col gap-2.5">
           <For each={subs()}>
@@ -56,6 +57,6 @@ export default function MySubscriptionsWidget() {
           </For>
         </ul>
       </WidgetShell>
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

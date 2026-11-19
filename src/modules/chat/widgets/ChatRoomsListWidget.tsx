@@ -3,7 +3,8 @@
 // (openChat), so it works from HQ or any sidebar without leaving the page.
 import { For, Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { openChat } from "@/shared/views/modal-host";
 import { MdFillPeople } from "solid-icons/md";
@@ -14,11 +15,18 @@ import { WidgetShell } from "@ui/WidgetShell";
 export default function ChatRoomsListWidget() {
   const { t } = useI18n();
   const nick = usePageNick();
-  const [data] = createQueryResource("chat-rooms", () => nick() || null, fetchRooms);
+  const [data] = createAsyncResource("chat-rooms", () => nick() || null, fetchRooms);
+
+  const skeleton = () => (
+    <div class="px-(--ws-px) pb-3 space-y-2 animate-pulse">
+      <For each={[1, 2, 3]}>{() => <div class="h-3 bg-elevated rounded w-4/5" />}</For>
+    </div>
+  );
 
   return (
     // Hidden where the channel has no chatrooms app (or the fetch failed).
-    <Show when={data.error ? null : data()?.chatrooms_installed !== false}>
+    <AsyncBoundary quiet fallback={<WidgetShell title={t("chat.chatrooms")}>{skeleton()}</WidgetShell>}>
+    <Show when={data()?.chatrooms_installed !== false}>
       <WidgetShell
         title={t("chat.chatrooms")}
         actions={
@@ -27,13 +35,6 @@ export default function ChatRoomsListWidget() {
           </a>
         }
       >
-
-        <Show when={data.loading && !data()}>
-          <div class="px-(--ws-px) pb-3 space-y-2 animate-pulse">
-            <For each={[1, 2, 3]}>{() => <div class="h-3 bg-elevated rounded w-4/5" />}</For>
-          </div>
-        </Show>
-
         <Show when={data() && data()!.rooms.length === 0}>
           <p class="px-(--ws-px) pb-4 text-xs text-muted text-center">{t("chat.no_chatrooms")}</p>
         </Show>
@@ -60,5 +61,6 @@ export default function ChatRoomsListWidget() {
         </div>
       </WidgetShell>
     </Show>
+    </AsyncBoundary>
   );
 }

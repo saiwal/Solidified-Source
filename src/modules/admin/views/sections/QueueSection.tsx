@@ -1,5 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import SubPageContent from "@/shared/views/SubPageContent";
 import PageActions from "@/shared/views/layout/PageActions";
 import { MdOutlineRefresh } from "solid-icons/md";
@@ -12,7 +13,7 @@ import { Card } from "@ui/Card";
 
 export default function QueueSection() {
   const { t } = useI18n();
-  const [data, { refetch }] = createQueryResource("admin-queue", fetchAdminQueue);
+  const [data, { refetch }] = createAsyncResource("admin-queue", fetchAdminQueue);
   const [expert, setExpert] = createSignal(false);
 
   async function act(action: "drop" | "empty" | "deliver", posturl: string) {
@@ -59,7 +60,7 @@ export default function QueueSection() {
       action={<PageActions actions={[{ label: t("admin.refresh"), icon: MdOutlineRefresh, onClick: refetch }]} />}
     >
 		<Card class="p-5 space-y-4">
-      <Show when={data()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={data()}>
         {(d) => (
           <div class="space-y-4">
             <div class="flex items-center justify-between">
@@ -94,7 +95,7 @@ export default function QueueSection() {
             </Show>
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
 			</Card>
     </SubPageContent>
   );

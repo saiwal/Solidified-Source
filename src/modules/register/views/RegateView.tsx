@@ -1,6 +1,7 @@
 import { createSignal, Show, Switch, Match } from "solid-js";
 import { useParams } from "@solidjs/router";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchRegateState, submitRegate } from "../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
@@ -14,7 +15,7 @@ export default function RegateView() {
   const params = useParams<{ token: string }>();
   const token = () => params.token;
 
-  const [state] = createQueryResource("regate", token, fetchRegateState);
+  const [state] = createAsyncResource("regate", token, fetchRegateState);
 
   const [pin, setPin] = createSignal("");
   const [loading, setLoading] = createSignal(false);
@@ -59,21 +60,21 @@ export default function RegateView() {
           <h1 class="text-2xl font-bold text-txt">{t("auth.regate_title")}</h1>
         </div>
 
-        <Show when={state.loading}>
-          <div class="flex justify-center py-8">
-            <Spinner size="xl" tone="accent" label={t("ui.loading")} />
-          </div>
-        </Show>
-
-        <Show when={state.error}>
-          <div class="text-center space-y-4">
-            <p class="text-sm text-muted">{t("auth.regate_invalid")}</p>
-            <a href="/register" class="text-sm text-accent hover:underline">
-              {t("auth.register_link")}
-            </a>
-          </div>
-        </Show>
-
+        <AsyncBoundary
+          fallback={
+            <div class="flex justify-center py-8">
+              <Spinner size="xl" tone="accent" label={t("ui.loading")} />
+            </div>
+          }
+          error={
+            <div class="text-center space-y-4">
+              <p class="text-sm text-muted">{t("auth.regate_invalid")}</p>
+              <a href="/register" class="text-sm text-accent hover:underline">
+                {t("auth.register_link")}
+              </a>
+            </div>
+          }
+        >
         <Show when={state()}>
           {(s) => (
             <Switch>
@@ -170,6 +171,7 @@ export default function RegateView() {
             </Switch>
           )}
         </Show>
+        </AsyncBoundary>
 
       </Card>
     </div>

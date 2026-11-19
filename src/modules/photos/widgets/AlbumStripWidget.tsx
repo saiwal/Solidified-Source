@@ -2,7 +2,8 @@
 // small grid, linking into the gallery. multiInstance.
 
 import { For, Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -29,7 +30,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
   const nick = usePageNick();
   const album = () => String(props.config?.album ?? "");
 
-  const [data] = createQueryResource(
+  const [data] = createAsyncResource(
     "photo-album",
     () => (nick() && album() ? { nick: nick(), album: album() } : null),
     (p) => fetchPhotoAlbum(p.nick, p.album),
@@ -37,18 +38,19 @@ export default function AlbumStripWidget(props: WidgetProps) {
 
   return (
     <Show when={album()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={data.loading}>
-        <div class="bg-surface border border-rim rounded-xl p-3 animate-pulse">
-          <div class="h-3 bg-elevated rounded w-1/2 mb-2" />
-          <div class="grid grid-cols-3 gap-1">
-            <For each={Array.from({ length: 6 })}>
-              {() => <div class="aspect-square bg-elevated rounded" />}
-            </For>
-          </div>
-        </div>
-      </Show>
 
-      <Show when={!data.loading}>
+      <AsyncBoundary
+        fallback={
+          <div class="bg-surface border border-rim rounded-xl p-3 animate-pulse">
+            <div class="h-3 bg-elevated rounded w-1/2 mb-2" />
+            <div class="grid grid-cols-3 gap-1">
+              <For each={Array.from({ length: 6 })}>
+                {() => <div class="aspect-square bg-elevated rounded" />}
+              </For>
+            </div>
+          </div>
+        }
+      >
         <Show
           when={(data()?.photos.length ?? 0) > 0}
           fallback={<EditHint text={t("widgets.item_unavailable")} />}
@@ -87,7 +89,7 @@ export default function AlbumStripWidget(props: WidgetProps) {
             </div>
           </WidgetShell>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </Show>
   );
 }

@@ -1,5 +1,7 @@
 import { createSignal, For, Show } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { MdOutlineClose } from "solid-icons/md";
 import SubPageContent from "@/shared/views/SubPageContent";
 import {
@@ -14,7 +16,6 @@ import { MenuItem, MenuSeparator } from "@ui/Menu";
 import { MenuButton } from "@ui/MenuButton";
 import { Sheet } from "@ui/Sheet";
 import { Badge } from "@ui/Badge";
-import { Banner } from "@ui/Banner";
 import { DataTable } from "@ui/DataTable";
 import type { DataTableColumn } from "@utsukta/spa-core/types/ui.types";
 import { Card } from "@ui/Card";
@@ -22,7 +23,7 @@ import { Card } from "@ui/Card";
 export default function AccountsSection() {
   const { t } = useI18n();
   const [page, setPage] = createSignal(0);
-  const [result, { refetch }] = createQueryResource("admin-accounts", page, fetchAdminAccounts);
+  const [result, { refetch }] = createAsyncResource("admin-accounts", page, fetchAdminAccounts);
 
   async function act(account_id: number, action: "block" | "unblock" | "delete") {
     if (action === "delete" && !confirm(t("admin.delete_confirm"))) return;
@@ -42,13 +43,8 @@ export default function AccountsSection() {
   return (
     <SubPageContent title={t("admin.accounts_title")} description={t("admin.accounts_desc")} wide>
 		<Card class="p-5 space-y-4">
-      <Show when={result.error}>
-        <Banner tone="danger" role="alert" class="mb-4">
-          Error: {String(result.error?.message ?? result.error)}
-        </Banner>
-      </Show>
 
-      <Show when={result()} fallback={<Skeleton />}>
+      <AsyncBoundary fallback={<Skeleton />}><Show when={result()}>
         {(r) => (
           <div class="space-y-6">
 
@@ -109,7 +105,7 @@ export default function AccountsSection() {
 
           </div>
         )}
-      </Show>
+      </Show></AsyncBoundary>
 </Card>
 			</SubPageContent>
   );

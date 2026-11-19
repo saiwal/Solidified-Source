@@ -4,10 +4,10 @@
 // Response: { data: { tags: { name: string; count: number }[] } }
 
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { createEffect, createSignal, For, Show, type Component } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Show, type Component } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { toast } from "@utsukta/spa-core/store/toast";
 import { rainbowStyle } from "./rainbow";
 import { Button } from "@ui/Button";
 import { Chip } from "@ui/Chip";
@@ -92,7 +92,7 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
   const [expanded, setExpanded] = createSignal(false);
   const max = () => props.maxVisible ?? 20;
 
-  const [remote] = createQueryResource(
+  const [remote, { peek }] = createAsyncResource(
     "stream-tags",
     () =>
       props.data
@@ -100,8 +100,6 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
         : { channelNick: props.channelNick, type: props.type },
     (p) => (p ? fetchTags(p) : Promise.resolve([])),
   );
-
-  createEffect(() => remote.error, (err) => { if (err) toast.error(err.message ?? t("widgets.load_error")); });
 
   const tags = (): TagItem[] => props.data ?? remote() ?? [];
   const maxCount = () => Math.max(...tags().map((t) => t.count), 1);
@@ -112,7 +110,7 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
     <WidgetShell
       title={props.title ?? t("widgets.tags")}
       footer={
-        !remote.loading && tags().length > max() ? (
+        (props.data ?? peek() ?? []).length > max() ? (
           <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)}>
             {expanded()
               ? t("ui.show_less")
@@ -123,12 +121,9 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
     >
 
       {/* Loading */}
-      <Show when={!props.data && remote.loading}>
-        <TagSkeleton />
-      </Show>
 
       {/* Content */}
-      <Show when={!remote.loading}>
+      <AsyncBoundary fallback={<TagSkeleton />}>
         <Show
           when={tags().length > 0}
           fallback={
@@ -161,7 +156,7 @@ const TagWidget: Component<TagWidgetProps> = (props) => {
           </div>
 
         </Show>
-      </Show>
+      </AsyncBoundary>
     </WidgetShell>
   );
 };

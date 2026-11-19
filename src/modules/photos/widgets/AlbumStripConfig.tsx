@@ -1,8 +1,8 @@
 // Settings form for AlbumStripWidget instances: pick one of the channel's
 // photo albums.
 
-import { createSignal, For } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Loading } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -15,7 +15,7 @@ export default function AlbumStripConfig(props: WidgetConfigProps) {
   const nick = usePageNick();
   const [album, setAlbum] = createSignal(String(props.config.album ?? ""));
 
-  const [albums] = createQueryResource("photo-albums", () => nick() || null, fetchAlbums);
+  const [albums] = createAsyncResource("photo-albums", () => nick() || null, fetchAlbums);
 
   return (
     <div class="flex flex-col gap-2">
@@ -28,13 +28,13 @@ export default function AlbumStripConfig(props: WidgetConfigProps) {
           onChange={(e) => setAlbum(e.currentTarget.value)}
         >
           <option value="">—</option>
-          <For each={albums() ?? []}>
+          <Loading><For each={albums() ?? []}>
             {(a) => (
               <option value={a.folder}>
                 {a.album} ({a.total})
               </option>
             )}
-          </For>
+          </For></Loading>
         </Select>
       </label>
       <Button size="sm" class="self-end" onClick={() => props.onSave({ album: album() })} disabled={!album()}>

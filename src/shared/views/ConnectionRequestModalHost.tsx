@@ -1,5 +1,6 @@
 import { Show, lazy } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchConnectionById } from "@/modules/directory/connections/api";
 import { useConnectionRequestModal } from "@utsukta/spa-core/store/connection-request-modal";
 
@@ -8,7 +9,7 @@ const ConnectionEditorModal = lazy(() => import("./ConnectionEditorModal"));
 export default function ConnectionRequestModalHost() {
   const [abookId, setAbookId] = useConnectionRequestModal();
 
-  const [connection] = createQueryResource(
+  const [connection] = createAsyncResource(
     "connection-request-modal",
     () => abookId(),
     (id) => fetchConnectionById(id),
@@ -21,7 +22,7 @@ export default function ConnectionRequestModalHost() {
   // connection() alone would never let the modal close.
   return (
     <Show when={abookId() !== null}>
-      <Show when={connection()}>
+      <AsyncBoundary quiet><Show when={connection()}>
         {(conn) => (
           <ConnectionEditorModal
             connection={conn()}
@@ -32,7 +33,7 @@ export default function ConnectionRequestModalHost() {
             onDeleted={close}
           />
         )}
-      </Show>
+      </Show></AsyncBoundary>
     </Show>
   );
 }

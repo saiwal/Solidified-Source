@@ -1,6 +1,7 @@
 import { createSignal, Show, Switch, Match } from "solid-js";
 import { useParams } from "@solidjs/router";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { fetchResetTokenState, confirmPasswordReset } from "../api/api";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { Button } from "@ui/Button";
@@ -13,7 +14,7 @@ export default function ResetPasswordView() {
   const params = useParams<{ token: string }>();
   const token = () => params.token;
 
-  const [state] = createQueryResource("password-reset", token, fetchResetTokenState);
+  const [state] = createAsyncResource("password-reset", token, fetchResetTokenState);
 
   const [password, setPassword] = createSignal("");
   const [password2, setPassword2] = createSignal("");
@@ -55,21 +56,21 @@ export default function ResetPasswordView() {
           <h1 class="text-2xl font-bold text-txt">{t("auth.reset_new_password_title")}</h1>
         </div>
 
-        <Show when={state.loading}>
-          <div class="flex justify-center py-8">
-            <Spinner size="xl" tone="accent" label={t("ui.loading")} />
-          </div>
-        </Show>
-
-        <Show when={state.error}>
-          <div class="text-center space-y-4">
-            <p class="text-sm text-muted">{t("auth.reset_invalid")}</p>
-            <a href="/forgot-password" class="text-sm text-accent hover:underline">
-              {t("auth.reset_request_title")}
-            </a>
-          </div>
-        </Show>
-
+        <AsyncBoundary
+          fallback={
+            <div class="flex justify-center py-8">
+              <Spinner size="xl" tone="accent" label={t("ui.loading")} />
+            </div>
+          }
+          error={
+            <div class="text-center space-y-4">
+              <p class="text-sm text-muted">{t("auth.reset_invalid")}</p>
+              <a href="/forgot-password" class="text-sm text-accent hover:underline">
+                {t("auth.reset_request_title")}
+              </a>
+            </div>
+          }
+        >
         <Show when={state()}>
           {(s) => (
             <Switch>
@@ -139,6 +140,7 @@ export default function ResetPasswordView() {
             </Switch>
           )}
         </Show>
+        </AsyncBoundary>
       </Card>
     </div>
   );

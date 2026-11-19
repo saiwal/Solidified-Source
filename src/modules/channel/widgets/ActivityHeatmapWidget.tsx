@@ -3,7 +3,8 @@
 // already filtered through item_permissions_sql server-side).
 
 import { For, Show, createMemo, createEffect } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -63,7 +64,7 @@ export default function ActivityHeatmapWidget() {
   const nick = usePageNick();
   const { t } = useI18n();
 
-  const [data] = createQueryResource("activity-heatmap", () => nick(), fetchActivity);
+  const [data] = createAsyncResource("activity-heatmap", () => nick(), fetchActivity);
 
   const weeks = createMemo(() => buildWeeks(data()?.days ?? 371, data()?.counts ?? {}));
   const max = createMemo(() => Math.max(1, ...Object.values(data()?.counts ?? {})));
@@ -79,7 +80,7 @@ export default function ActivityHeatmapWidget() {
   });
 
   return (
-    <Show when={!data.loading && data()}>
+    <AsyncBoundary quiet><Show when={data()}>
       <WidgetShell title={t("widgets.activity_heatmap")}>
 <div class="px-(--ws-px) py-3">
 
@@ -109,6 +110,6 @@ export default function ActivityHeatmapWidget() {
         </Show>
       </div>
 </WidgetShell>
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

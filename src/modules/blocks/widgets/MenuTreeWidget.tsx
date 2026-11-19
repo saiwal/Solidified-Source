@@ -3,7 +3,8 @@
 // the form "menu:<name>") expand as an indented accordion.
 
 import { Show } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { editingWidgets } from "@utsukta/spa-core/store/widget-layout";
@@ -29,7 +30,7 @@ export default function MenuTreeWidget(props: WidgetProps) {
   const menuName = () => String(props.config?.menu ?? "");
   const title = () => String(props.config?.title ?? "");
 
-  const [tree] = createQueryResource(
+  const [tree] = createAsyncResource(
     "menu-tree",
     () => (nick() && menuName() ? { nick: nick(), name: menuName() } : null),
     (p) => fetchMenuTree(p.nick, p.name),
@@ -37,7 +38,7 @@ export default function MenuTreeWidget(props: WidgetProps) {
 
   return (
     <Show when={menuName()} fallback={<EditHint text={t("widgets.not_configured")} />}>
-      <Show when={!tree.error} fallback={<EditHint text={t("widgets.item_unavailable")} />}>
+      <AsyncBoundary error={<EditHint text={t("widgets.item_unavailable")} />}>
         <Show when={tree()?.items.length}>
           <WidgetShell title={title() || undefined}>
             <nav class="p-1.5" aria-label={title() || menuName()}>
@@ -45,7 +46,7 @@ export default function MenuTreeWidget(props: WidgetProps) {
             </nav>
           </WidgetShell>
         </Show>
-      </Show>
+      </AsyncBoundary>
     </Show>
   );
 }

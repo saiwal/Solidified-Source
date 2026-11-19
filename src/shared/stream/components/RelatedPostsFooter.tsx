@@ -4,21 +4,22 @@
 // when nothing relates. /display/ links open as a nested post in the modal.
 import { For, Show } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
+import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { bbcodeExcerpt } from "@utsukta/spa-core/lib/bbcode";
 import { Avatar } from "@ui/Avatar";
 import { fetchRelated } from "./RelatedItemsWidget";
 
 export default function RelatedPostsFooter(props: { uuid: string }) {
   const { t } = useI18n();
-  const [related] = createQueryResource(
+  const [related] = createAsyncResource(
     "stream-related-footer",
     () => ({ type: "posts" as const, item: props.uuid, limit: 3 }),
     fetchRelated,
   );
 
   return (
-    <Show when={related()?.length}>
+    <AsyncBoundary><Show when={related()?.length}>
       <nav aria-label={t("widgets.related_footer")} class="mt-4 pt-3 border-t border-rim">
         <p class="mb-1.5 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
           {t("widgets.related_footer")}
@@ -39,6 +40,6 @@ export default function RelatedPostsFooter(props: { uuid: string }) {
           </For>
         </ul>
       </nav>
-    </Show>
+    </Show></AsyncBoundary>
   );
 }

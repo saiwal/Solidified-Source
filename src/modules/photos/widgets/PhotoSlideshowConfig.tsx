@@ -1,7 +1,7 @@
 // Settings form for PhotoSlideshowWidget: album (or all) + seconds per photo.
 
-import { createSignal, For } from "solid-js";
-import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
+import { createSignal, For, Loading } from "solid-js";
+import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
 import type { WidgetConfigProps } from "@utsukta/spa-core/types/module.types";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -15,7 +15,7 @@ export default function PhotoSlideshowConfig(props: WidgetConfigProps) {
   const [album, setAlbum] = createSignal(String(props.config.album ?? ""));
   const [secs, setSecs] = createSignal(Number(props.config.interval ?? 10));
 
-  const [albums] = createQueryResource("photo-albums", () => nick() || null, fetchAlbums);
+  const [albums] = createAsyncResource("photo-albums", () => nick() || null, fetchAlbums);
 
   return (
     <div class="flex flex-col gap-2">
@@ -28,13 +28,13 @@ export default function PhotoSlideshowConfig(props: WidgetConfigProps) {
           onChange={(e) => setAlbum(e.currentTarget.value)}
         >
           <option value="">{t("widgets.cfg_all_albums")}</option>
-          <For each={albums() ?? []}>
+          <Loading><For each={albums() ?? []}>
             {(a) => (
               <option value={a.folder}>
                 {a.album} ({a.total})
               </option>
             )}
-          </For>
+          </For></Loading>
         </Select>
       </label>
       <label class="text-xs text-muted">
