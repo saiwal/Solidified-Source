@@ -1,6 +1,6 @@
 import { sanitizeHtml } from "@utsukta/spa-core/lib/sanitize";
 import { bbcodeDisplay } from "@utsukta/spa-core/lib/renderBody";
-import { createEffect, createMemo, createSignal, lazy, onSettled, onCleanup, Show, For } from "solid-js";
+import { createEffect, createMemo, createSignal, lazy, onSettled, onCleanup, Show, For, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useNavigate, useLocation } from "@solidjs/router";
 import { usePageNick } from "@utsukta/spa-core/store/site-config";
@@ -95,13 +95,14 @@ export default function PhotosContentWidget() {
   // know whether this channel has automatic upload folders. Keyed on nick
   // alone — refetching per photo flipped albumsLoading and blanked the
   // sidebar album list on every prev/next.
-  createEffect(() => nick() ?? '', (n) => { void loadAlbums(n); });
+  createEffect(() => nick() ?? '', (n) => { untrack(() => void loadAlbums(n)); });
 
-  createEffect(() => ({ n: nick() ?? '', d: datum() ?? '', type: datatype() }), ({ n, d, type }) => {
+  // The loaders read sort state imperatively; that's not a dependency here.
+  createEffect(() => ({ n: nick() ?? '', d: datum() ?? '', type: datatype() }), ({ n, d, type }) => untrack(() => {
     if (type === 'album') loadAlbum(n, d);
     else if (type === 'image' && d) loadImage(n, d);
     else loadSummary(n);
-  });
+  }));
 
   return (
     <div class="max-w-5xl mx-auto">
@@ -151,18 +152,15 @@ function SortToolbar(props: {
   children?: JSX.Element;
 }) {
   const { t } = useI18n();
-  const sortLabels: Record<SortKey, string> = {
-    date: t("photos.sort_date"),
-    name: t("photos.sort_name"),
-    size: t("photos.sort_size"),
-  };
+  // A function, so the labels follow a locale switch.
+  const sortLabel = (k: SortKey) => t(`photos.sort_${k}`);
   return (
     <div class="flex items-center gap-2 flex-wrap">
       <span class="text-xs text-muted">{t("photos.sort_by")}:</span>
       <For each={(['date', 'name', 'size'] as SortKey[])}>
         {(s) => (
           <Button variant="ghost" size="sm" pressed={props.sort === s} onClick={() => props.onSort(s)}>
-            {sortLabels[s]}
+            {sortLabel(s)}
           </Button>
         )}
       </For>

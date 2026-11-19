@@ -4,7 +4,7 @@
 // Guard loadCalendar() with events().length === 0 only when the nick hasn't
 // changed; a nick change always triggers a fresh fetch.
 
-import { createSignal } from "solid-js";
+import { createSignal, untrack } from "solid-js";
 import { fetchEvents } from "./api";
 import { toast } from "@utsukta/spa-core/store/toast";
 import type { CalEvent, CalRange } from "./api";
@@ -64,14 +64,14 @@ export async function loadCalendar(
   newRange?: CalRange,
   force = false,
 ): Promise<void> {
-  const nickChanged = nickname !== nick();
+  // Guard reads, not dependencies: callers run this from effects.
+  const nickChanged = nickname !== untrack(nick);
 
   // Avoid re-fetching the same nick + range pair (even when empty)
   if (
     !force &&
     !nickChanged &&
-    loaded() &&
-    rangesEqual(newRange, range())
+    untrack(() => loaded() && rangesEqual(newRange, range()))
   ) {
     return;
   }

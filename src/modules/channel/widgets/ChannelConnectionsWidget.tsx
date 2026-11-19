@@ -30,11 +30,9 @@ export default function ChannelConnectionsWidget() {
         <div class="grid grid-cols-4 gap-1.5">
           <For each={conns()}>
             {(conn) => {
-              const href = conn.local_nick
-                ? `/channel/${conn.local_nick}`
-                : conn.url;
+              const href = () => (conn.local_nick ? `/channel/${conn.local_nick}` : conn.url);
               return (
-                <a href={href} title={conn.name} class="group flex flex-col items-center gap-0.5">
+                <a href={href()} title={conn.name} class="group flex flex-col items-center gap-0.5">
                   <Avatar src={conn.photo} name={conn.name} size={11} class="ring-1 ring-rim group-hover:ring-2 group-hover:ring-accent transition-all" />
                   <span class="text-[0.625rem] text-muted leading-tight text-center w-full truncate group-hover:text-txt transition-colors">
                     {conn.name}

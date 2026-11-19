@@ -26,7 +26,7 @@ export default function ProfileNowPlaying() {
   const nick = usePageNick();
   const q = useQuery(() => ({
     queryKey: ["jellyfin-profile", "nowplaying", nick()],
-    queryFn: () => fetchNowPlaying(nick()),
+    queryFn: ({ queryKey }) => fetchNowPlaying(queryKey[2] as string),
     enabled: !!nick(),
     // Most owners never opt in: check rarely while there's nothing to show
     refetchInterval: (query) => (query.state.data ? 60_000 : 5 * 60_000),

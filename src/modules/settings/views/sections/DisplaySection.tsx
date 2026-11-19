@@ -1,4 +1,4 @@
-import { Show, For, createSignal, createEffect } from "solid-js";
+import { Show, For, createSignal, createEffect, untrack } from "solid-js";
 import SubPageContent from "@/shared/views/SubPageContent";
 import { fetchDisplaySettings, saveDisplaySettings } from "../../api/api";
 import { useSectionForm } from "../../store/useSectionForm";
@@ -641,12 +641,13 @@ function BackgroundPicker() {
   const bgUrl = useBgUrl();
   const bgFit = useBgFit();
 
-  const [kind, setKind] = createSignal<BgKind>(
+  // Seeds; the effect below follows later changes.
+  const [kind, setKind] = createSignal<BgKind>(untrack(() =>
     bgUrl().startsWith(PATTERN_FOLDER) || bgFit() === "tile" ? "pattern" : "background"
-  );
-  const [customUrlVal, setCustomUrlVal] = createSignal(
+  ));
+  const [customUrlVal, setCustomUrlVal] = createSignal(untrack(() =>
     bgUrl() && !bgUrl().startsWith(PATTERN_FOLDER) && !bgUrl().startsWith(BG_FOLDER) ? bgUrl() : ""
-  );
+  ));
 
   createEffect(bgUrl, (url) => {
     if (url.startsWith(PATTERN_FOLDER)) setKind("pattern");
@@ -698,8 +699,9 @@ function BackgroundPicker() {
         <div class="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-64 overflow-y-auto pr-0.5">
           <For each={presets()}>
             {(name) => {
-              const url = folder() + name;
-              const selected = () => bgUrl() === url;
+              // Accessor: a name in both the pattern and background sets keeps its button.
+              const url = () => folder() + name;
+              const selected = () => bgUrl() === url();
               const label = name.replace(/\.[^.]+$/, "").replace(/-/g, " ");
               return (
                 <button
@@ -709,7 +711,7 @@ function BackgroundPicker() {
                   class={`relative aspect-square rounded-md overflow-hidden border-2 transition-all focus:outline-none
                     ${selected() ? "border-accent" : "border-rim hover:border-accent/60"}`}
                   style={{
-                    "background-image": `url(${url})`,
+                    "background-image": `url(${url()})`,
                     "background-size": kind() === "pattern" ? "auto" : "cover",
                     "background-repeat": kind() === "pattern" ? "repeat" : "no-repeat",
                     "background-position": "center",

@@ -1,7 +1,7 @@
 // The frame every directory section shares: one header row (title, tools,
 // page actions), an optional description, then the section's own content.
 // The mobile back bar already names the section, so the title is md+ only.
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { createMediaQuery } from "@solid-primitives/media";
 import { MdOutlineClose, MdOutlineSearch } from "solid-icons/md";
@@ -63,9 +63,11 @@ export function SearchToggle(props: {
   extra?: (input: () => string, clear: () => void) => JSX.Element;
 }) {
   const { t } = useI18n();
-  const [open, setOpen] = createSignal(!!props.applied);
+  // Seeds: the field is local state once the user types.
+  const initial = untrack(() => props.applied);
+  const [open, setOpen] = createSignal(!!initial);
   const phone = createMediaQuery("(max-width: 767px)");
-  const [input, setInput] = createSignal(props.applied);
+  const [input, setInput] = createSignal(initial);
   const update = (q: string) => {
     setInput(q);
     props.onInput?.(q);

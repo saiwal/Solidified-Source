@@ -126,13 +126,16 @@ export default function DesktopMenu(props: { chrome: LayoutChrome }) {
   };
 
   const [openGroups, setOpenGroups] = createSignal(readOpenGroups());
-  const setGroupOpen = (id: string, open: boolean) => {
-    const next = new Set(openGroups());
-    if (open) next.add(id);
-    else next.delete(id);
-    setOpenGroups(next);
-    writeOpenGroups(next);
-  };
+  // Updater form: this runs from an effect's apply, where reading
+  // openGroups() would be an untracked read.
+  const setGroupOpen = (id: string, open: boolean) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (open) next.add(id);
+      else next.delete(id);
+      writeOpenGroups(next);
+      return next;
+    });
   // Navigating into an app opens its group, so the active item is never
   // hidden; closing it again afterwards is up to the user.
   createEffect(() => {

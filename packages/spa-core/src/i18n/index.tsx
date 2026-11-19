@@ -1,4 +1,4 @@
-import { createContext, useContext, createSignal, createStore, type ParentComponent, createEffect } from "solid-js";
+import { createContext, useContext, createSignal, createStore, type ParentComponent, createEffect, untrack } from "solid-js";
 import * as i18n from "@solid-primitives/i18n";
 import { localeRegistry } from "./locales/index";
 import type { Locale, RawDictionary } from "./locales/index";
@@ -61,7 +61,13 @@ const pending = new Map<string, Promise<void>>();
 
 /** Loads the given namespaces for a locale (default: the current one).
  *  Unknown namespaces resolve as no-ops, so callers can pass module ids blindly. */
-export function ensureNamespaces(nss: readonly string[], loc: Locale = locale()): Promise<void> {
+export function ensureNamespaces(nss: readonly string[], loc?: Locale): Promise<void> {
+  // A loader, not a read: callers run it from component setup and effects,
+  // where reading locale/dicts must not subscribe.
+  return untrack(() => ensureUntracked(nss, loc ?? locale()));
+}
+
+function ensureUntracked(nss: readonly string[], loc: Locale): Promise<void> {
   return Promise.all(
     nss.map((ns) => {
       if (dicts[loc]?.[ns]) return;
@@ -149,7 +155,7 @@ const setLocale = (l: Locale) => {
   } catch {}
   // Load what the current locale already shows before switching, so the
   // previous language stays up instead of a flash of raw keys.
-  const shown = Object.keys(dicts[locale()] ?? {});
+  const shown = untrack(() => Object.keys(dicts[locale()] ?? {}));
   void ensureNamespaces(shown, l).then(() => setLocaleSignal(l));
 };
 

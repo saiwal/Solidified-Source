@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createStore, createEffect } from "solid-js";
+import { createSignal, createMemo, createStore, createEffect, untrack } from "solid-js";
 import { wallAttach, updatePermissions } from "@/modules/files/api";
 import type { FileMeta, FileAcl } from "@/modules/files/api";
 import type { Photo } from "@/modules/photos/api/api";
@@ -123,7 +123,7 @@ function uid(): string {
 // ── Store factory ─────────────────────────────────────────────────────────────
 
 export function createAttachmentStore(nick: string, scope: string): AttachmentStore {
-  const DRAFT_KEY = channelKey(`draft-att:${scope}`);
+  const DRAFT_KEY = untrack(() => channelKey(`draft-att:${scope}`));
 
   const [state, setState] = createStore<{ items: Attachment[] }>({ items: [] });
 

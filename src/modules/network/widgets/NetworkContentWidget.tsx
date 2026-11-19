@@ -1,4 +1,4 @@
-import { createEffect, onCleanup, Show, For, Switch, Match } from "solid-js";
+import { createEffect, onCleanup, Show, For, Switch, Match, untrack } from "solid-js";
 import { useLocation, useSearchParams } from "@solidjs/router";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -46,24 +46,28 @@ export default function NetworkContentWidget() {
     initialized = true;
     // A bare /network starts from the remembered sort. Merge it into the params
     // directly too — setSearchParams hasn't landed by the time we read them.
-    const pref = sortPref();
-    const params = searchParams.order ? searchParams : { ...searchParams, ...pref };
-    if (!searchParams.order && pref.order) setSearchParams(pref, { replace: true });
-    applyNetwork(parseNetworkParams(params));
+    // One-shot init from the URL and the remembered sort, not dependencies.
+    untrack(() => {
+      const pref = sortPref();
+      const params = searchParams.order ? searchParams : { ...searchParams, ...pref };
+      if (!searchParams.order && pref.order) setSearchParams(pref, { replace: true });
+      applyNetwork(parseNetworkParams(params));
+    });
   });
 
   // Links from outside the filter controls (a forum's "See all" in the
   // notifications panel, saved-search-style URLs) only change the URL.
   // `search` is left to the search box, which debounces its own apply.
   const location = useLocation();
-  createEffect(() => location.search, () => {
+  // The URL is the trigger; the params and loaded state are read, not tracked.
+  createEffect(() => location.search, () => untrack(() => {
     const loaded = loadedNetworkParams();
     if (!loaded) return;
     const next = parseNetworkParams(searchParams);
     const { search: _a, ...a } = next;
     const { search: _b, ...b } = loaded;
     if (JSON.stringify(a) !== JSON.stringify(b)) applyNetwork(next);
-  }, { defer: true });
+  }), { defer: true });
 
   onCleanup(() => resetPosts());
 

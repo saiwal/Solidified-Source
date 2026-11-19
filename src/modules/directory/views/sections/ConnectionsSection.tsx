@@ -1,4 +1,4 @@
-import { For, Show, Switch, Match, createSignal, createMemo, onSettled } from "solid-js";
+import { For, Show, Switch, Match, createSignal, createMemo, onSettled, untrack } from "solid-js";
 import {
   connections, loading, loadingMore, total,
   loadConnections, loadMoreConnections,
@@ -423,7 +423,7 @@ export default function ConnectionsSection() {
   const [addError, setAddError] = createSignal<string | null>(null);
   const [newConn, setNewConn] = createSignal<Connection | null>(null);
   const [importOpen, setImportOpen] = createSignal(false);
-  const [permsOpen, setPermsOpen] = createSignal(perms().length > 0);
+  const [permsOpen, setPermsOpen] = createSignal(untrack(() => perms().length > 0));
   const [searchParams, setSearchParams] = useSearchParams();
 
   let sentinelRef!: HTMLDivElement;

@@ -1,5 +1,5 @@
 import { apiError } from "@utsukta/spa-core/lib/fetch";
-import { createSignal, createUniqueId, Show, For, Switch, Match } from "solid-js";
+import { createSignal, createUniqueId, Show, For, Switch, Match, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -324,7 +324,7 @@ function Section(props: { label: string; children: JSX.Element }) {
 
 function ChannelCalendarRow(props: { cal: CdavCalendar }) {
   const { t } = useI18n();
-  const [enabled, setEnabled] = createSignal(props.cal.enabled);
+  const [enabled, setEnabled] = createSignal(untrack(() => props.cal.enabled));
 
   async function handleToggle() {
     const next = !enabled();

@@ -1,4 +1,4 @@
-import { createSignal, Show, createEffect } from "solid-js";
+import { createSignal, Show, createEffect, untrack } from "solid-js";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useSearchParams } from "@solidjs/router";
@@ -48,8 +48,8 @@ export default function CardsHeaderWidget() {
         },
       },
     });
-  const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
-  const [searchInput, setSearchInput] = createSignal(activeSearch());
+  const [searchOpen, setSearchOpen] = createSignal(untrack(() => !!activeSearch()));
+  const [searchInput, setSearchInput] = createSignal(untrack(activeSearch));
 
   // `query` is passed by callers that just set searchInput: Solid 2 batches
   // the write, so reading the signal back here would still see the old text.
@@ -80,7 +80,8 @@ export default function CardsHeaderWidget() {
     if (loading) return;
     if (initialized) return;
     initialized = true;
-    if (searchParams.new === "1" && role() === "owner") openCard();
+    // One-shot: ?new=1 opens the composer once.
+    if (untrack(() => searchParams.new === "1" && role() === "owner")) openCard();
   });
 
   return (

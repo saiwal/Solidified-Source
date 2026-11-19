@@ -1,4 +1,4 @@
-import { createSignal, createUniqueId, For, Show, createMemo, onCleanup, createStore, reconcile, snapshot, createEffect } from "solid-js";
+import { createSignal, createUniqueId, For, Show, createMemo, onCleanup, createStore, reconcile, snapshot, createEffect, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -460,11 +460,11 @@ function StreamGroup(props: {
   createEffect(() => open() && !hasOpened(), (first) => {
     if (first) {
       setHasOpened(true);
-      void load("reset");
+      untrack(() => void load("reset"));
     }
   });
 
-  let prevCount = props.bucket.count;
+  let prevCount = untrack(() => props.bucket.count);
   createEffect(() => [props.bucket.count, fetchable(), open()] as const, ([count, canFetch, isOpen]) => {
     const was = prevCount;
     prevCount = count;
@@ -477,15 +477,18 @@ function StreamGroup(props: {
       setNextOffset(0);
       return;
     }
-    if (isOpen && count > was) void load("refresh");
+    if (isOpen && count > was) untrack(() => void load("refresh"));
   });
 
   // Switching a filter on can leave almost nothing visible; core pulls more
   // pages until enough rows survive it.
   createEffect(() => [visibleCount(rows()) >= MIN_VISIBLE, open(), fetchable()] as const, ([enough, isOpen, canFetch]) => {
     if (!isOpen || !canFetch || enough) return;
-    if (loading() || nextOffset() <= 0) return;
-    void load("more");
+    // Guards and the loader's own reads: checks, not dependencies.
+    untrack(() => {
+      if (loading() || nextOffset() <= 0) return;
+      void load("more");
+    });
   });
 
   const allRows = (): HzNotification[] =>
@@ -1072,7 +1075,7 @@ export default function NotificationsAside() {
     fetchNotices,
   );
 
-  const [seenAnnouncementId, setSeenAnnouncementId] = createSignal(getLastSeenAnnouncementId());
+  const [seenAnnouncementId, setSeenAnnouncementId] = createSignal(untrack(getLastSeenAnnouncementId));
 
   // Other channels of this account needing attention. /spa/manage 403s for
   // delegated sessions — the error just means "no section", never a toast.

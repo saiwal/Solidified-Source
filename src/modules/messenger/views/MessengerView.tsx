@@ -12,7 +12,7 @@
 // On your own nick it's your mailbox, rooms and bookmarks. On another channel
 // (local or remote visitor) it's your DMs with that channel and the rooms it
 // lets you into. Desktop shows list + pane side by side; below md, one at a time.
-import { For, Match, Show, Loading, Switch, createEffect, createMemo, createSignal, lazy, onSettled } from "solid-js";
+import { For, Match, Show, Loading, Switch, createEffect, createMemo, createSignal, lazy, onSettled, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { useInfiniteQuery } from "@utsukta/spa-core/lib/query";
@@ -136,13 +136,14 @@ export default function MessengerView() {
   createEffect(path, (p) => {
     if (p[0] !== "messenger") return;
     const rest = p.slice(3).map(encodeURIComponent).join("/");
-    if (p[2] === "dms") navigate(`${base()}/dm${rest ? `/${rest}` : ""}`, { replace: true });
-    else if (p[2] === "rooms") navigate(p.length > 4 ? `/chat/${rest}` : `${chatBase()}${rest ? `/${rest}` : ""}`, { replace: true });
+    const n = encodeURIComponent(p[1] ?? "");
+    if (p[2] === "dms") navigate(`/messenger/${n}/dm${rest ? `/${rest}` : ""}`, { replace: true });
+    else if (p[2] === "rooms") navigate(p.length > 4 ? `/chat/${rest}` : `/chat/${n}${rest ? `/${rest}` : ""}`, { replace: true });
   });
   const isOwner = () => !!auth()?.isLocal && nick() === currentNick();
   const urlTab = () => (segs()[0] === "rooms" ? "rooms" : segs()[0] === "matrix" ? "matrix" : "dms");
   // Local, so flipping tabs keeps the open conversation; follows the url.
-  const [pickedTab, setTab] = createSignal<"dms" | "rooms" | "matrix">(urlTab());
+  const [pickedTab, setTab] = createSignal<"dms" | "rooms" | "matrix">(untrack(urlTab));
   createEffect(urlTab, (tab) => { setTab(tab); }, { defer: true });
   const selected = () => segs().length > 1;
   const [query, setQuery] = createSignal("");
@@ -150,10 +151,10 @@ export default function MessengerView() {
   // ── DMs ──
   const dms = useInfiniteQuery(() => ({
     queryKey: ["messenger-dms", nick()],
-    queryFn: ({ pageParam }) => fetchMessages({
+    queryFn: ({ pageParam }) => untrack(() => fetchMessages({
       offset: pageParam, type: "direct", file: "", search: "",
       channel: isOwner() ? undefined : nick(),
-    }),
+    })),
     enabled: !!nick(),
     initialPageParam: 0,
     getNextPageParam: (last) => (last.offset >= 0 ? last.offset : undefined),

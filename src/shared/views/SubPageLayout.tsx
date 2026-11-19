@@ -1,4 +1,4 @@
-import { Show, createMemo, createSignal, createEffect } from "solid-js";
+import { Show, createMemo, createSignal, createEffect, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useLocation, useNavigate } from "@solidjs/router";
 import { createMediaQuery } from "@solid-primitives/media";
@@ -80,7 +80,7 @@ export default function SubPageLayout(props: Props) {
   // the module from elsewhere reopens that section on desktop.
   // Only record while the URL really is under this base: ProfilesView renders
   // with base="/settings" from /profiles and would otherwise poison the map.
-  const [lastKey, setLastKey] = createSignal(lastKeyByBase.get(props.base) ?? props.activeKey);
+  const [lastKey, setLastKey] = createSignal(untrack(() => lastKeyByBase.get(props.base) ?? props.activeKey));
   createEffect(() => (location.pathname.startsWith(props.base + "/") ? [props.base, props.activeKey] as const : null), (at) => {
     if (!at) return;
     setLastKey(at[1]);

@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createEffect } from "solid-js";
+import { createSignal, createMemo, createEffect, untrack } from "solid-js";
 import { useLocation, useIsRouting } from "@solidjs/router";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useNav, useNavActionItems } from "./useNav";
@@ -131,7 +131,8 @@ export function useLayoutChrome() {
   // left off.
   createEffect(
     () => location.pathname, () => {
-        const el = mainRef();
+        // Only a navigation scrolls; the ref itself is set once at mount.
+        const el = untrack(mainRef);
         if (el) el.scrollTop = 0;
         setShowScrollTop(false);
         // A SPA navigation swaps <main>'s contents without moving focus, so a

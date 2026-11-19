@@ -63,7 +63,9 @@ export function createAsyncResource<T, S>(
 
   const q = useAsyncQuery(() => ({
     queryKey: key(),
-    queryFn: () => fetcher(source() as S),
+    // From the key, not source(): queryFn runs inside the query's effect,
+    // where a source() read would be an untracked read.
+    queryFn: ({ queryKey }) => fetcher(queryKey[1] as S),
     enabled: !off(),
     ...(options.refetchOnWindowFocus !== undefined && { refetchOnWindowFocus: options.refetchOnWindowFocus }),
     ...(options.refetchOnReconnect !== undefined && { refetchOnReconnect: options.refetchOnReconnect }),

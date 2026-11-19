@@ -50,7 +50,7 @@ export default function CardDeckWidget() {
   const nick = usePageNick();
   const navigate = useNavigate();
 
-  const q = useAsyncQuery(() => ({ queryKey: ["stream-decks", nick()], queryFn: () => fetchDecks(nick()) }));
+  const q = useAsyncQuery(() => ({ queryKey: ["stream-decks", nick()], queryFn: ({ queryKey }) => fetchDecks(queryKey[1] as string) }));
   const data = () => q.data;
 
   // ponytail: fetches the deck on click rather than prefetching every deck's

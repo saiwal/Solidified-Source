@@ -103,15 +103,17 @@ export default function ProfileView(props: { full?: boolean }) {
         { label: t("nav.settings"), icon: MdOutlineSettings, href: "/settings", show: isOwner() },
       ]} />
       <AsyncBoundary quiet fallback={<ProfileSkeleton />}>
-      <Show when={p() !== undefined && p() !== null}>
-        <Show
-          when={props.full}
-          fallback={
-            <CompactCard p={p()!} isOwner={isOwner()} isVisitor={isVisitor()} />
-          }
-        >
-          <FullCard p={p()!} isOwner={isOwner()} isVisitor={isVisitor()} />
-        </Show>
+      {/* Keyed: the cards read the profile once at setup, so a refetched
+          profile has to remount them. */}
+      <Show when={p()} keyed>
+        {(prof) => (
+          <Show
+            when={props.full}
+            fallback={<CompactCard p={prof} isOwner={isOwner()} isVisitor={isVisitor()} />}
+          >
+            <FullCard p={prof} isOwner={isOwner()} isVisitor={isVisitor()} />
+          </Show>
+        )}
       </Show>
       </AsyncBoundary>
     </div>

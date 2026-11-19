@@ -1,4 +1,4 @@
-import { createSignal, createMemo, For, Show, createEffect } from "solid-js";
+import { createSignal, createMemo, For, Show, createEffect, untrack } from "solid-js";
 import { MdFillFolder, MdOutlineSearch, MdOutlineClose } from "solid-icons/md";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -59,8 +59,9 @@ export default function FolderTree(props: Props) {
   const rowPad = (depth: number) => ({ "padding-left": `${depth * 14 + 4}px` });
 
   function Node(p: { frame: FolderFrame; ancestors: FolderFrame[]; depth: number }) {
-    const isRoot = p.depth === 0;
-    const path = p.frame.displayPath;
+    // One node per frame: its depth and path never change.
+    const isRoot = untrack(() => p.depth === 0);
+    const path = untrack(() => p.frame.displayPath);
     const open = () => expanded().has(path);
     const chain = () => (isRoot ? [] : [...p.ancestors, p.frame]);
 

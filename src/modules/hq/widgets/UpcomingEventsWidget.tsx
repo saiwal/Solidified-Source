@@ -53,7 +53,7 @@ export default function UpcomingEventsWidget() {
   // Cached: returning to HQ shows the list at once and revalidates behind it.
   const q = useAsyncQuery(() => ({
     queryKey: ["hq-upcoming-events", currentNick() || null],
-    queryFn: async () => (await fetchEvents(currentNick(), next30DaysRange())).slice(0, 8),
+    queryFn: async ({ queryKey }) => (await fetchEvents(queryKey[1] as string, next30DaysRange())).slice(0, 8),
     enabled: !!currentNick(),
     staleTime: 0, // events change in the calendar module
   }));

@@ -1,5 +1,5 @@
 // src/modules/wiki/store.ts
-import { createSignal } from "solid-js";
+import { createSignal, untrack } from "solid-js";
 import {
   fetchWikis,
   fetchWikiPages,
@@ -24,7 +24,8 @@ const [wikisError, setWikisError]     = createSignal<string>("");
 export { wikis, wikisLoading, isOwner, canCreate, wikisError };
 
 export async function loadWikis(nick: string): Promise<void> {
-  if (wikisNick() === nick && wikis().length > 0) return;
+  // Guard reads, not dependencies: callers run this from effects.
+  if (untrack(() => wikisNick() === nick && wikis().length > 0)) return;
   setWikisNick(nick);
   setWikisLoading(true);
   setWikisError("");

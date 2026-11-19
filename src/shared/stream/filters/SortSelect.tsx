@@ -1,5 +1,5 @@
 import { For, Show, createSignal, type Component } from "solid-js";
-import { Portal } from "@solidjs/web";
+import { Dynamic, Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import {
@@ -51,7 +51,8 @@ export default function SortSelect(props: {
       : ALL_ORDERS;
 
   const current = () => ALL_ORDERS.find((o) => o.id === props.order) ?? ALL_ORDERS[0];
-  const CurrentIcon = () => { const I = current().icon; return <I size={14} />; };
+  // Dynamic: the icon follows the picked order.
+  const CurrentIcon = () => <Dynamic component={current().icon} size={14} />;
   const range = () => resolveRange(props.order, props.range) ?? DEFAULT_RANGE;
 
   // Range-aware orders are split buttons: the label picks the order, the

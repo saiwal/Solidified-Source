@@ -206,14 +206,16 @@ function MainButton(props: { action: PageAction }) {
   const a = () => props.action;
   const cls = `${ROUND} text-accent-txt`;
   const icon = () => actionIcon(a());
-  return a().href ? (
-    <a href={a().href} download={a().download} title={a().label} aria-label={a().label} class={cls}>
-      {icon()}
-    </a>
-  ) : (
-    <button type="button" title={a().label} aria-label={a().label} disabled={a().disabled} class={cls} onClick={() => a().onClick?.()}>
-      {icon()}
-    </button>
+  return (
+    <Show when={a().href} fallback={
+      <button type="button" title={a().label} aria-label={a().label} disabled={a().disabled} class={cls} onClick={() => a().onClick?.()}>
+        {icon()}
+      </button>
+    }>
+      <a href={a().href} download={a().download} title={a().label} aria-label={a().label} class={cls}>
+        {icon()}
+      </a>
+    </Show>
   );
 }
 

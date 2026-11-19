@@ -50,7 +50,8 @@ export default function MonthView(props: Props) {
               <div class="grid grid-cols-7">
                 <For each={weekDates}>
                   {(date) => {
-                    const inMonth = date.startsWith(monthPrefix());
+                    // An accessor: a date shared by two months' grids keeps its cell.
+                    const inMonth = () => date.startsWith(monthPrefix());
                     const isToday = date === todayK;
                     const day = parseInt(date.slice(8));
                     const dayEvs = () => layout().singleDay.get(date) ?? [];
@@ -69,7 +70,7 @@ export default function MonthView(props: Props) {
                         <span
                           class={`text-xs w-7 h-7 flex items-center justify-center rounded-full tabular-nums
                             ${isToday ? "bg-accent text-accent-fg font-semibold"
-                              : inMonth ? "text-txt" : "text-muted/50"}`}
+                              : inMonth() ? "text-txt" : "text-muted/50"}`}
                         >
                           {day}
                         </span>

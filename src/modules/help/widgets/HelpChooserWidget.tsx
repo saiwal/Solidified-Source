@@ -1,5 +1,5 @@
 // src/modules/help/widgets/HelpChooserWidget.tsx
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, untrack } from "solid-js";
 import { useLocation, useNavigate, useSearchParams } from "@solidjs/router";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -17,7 +17,7 @@ export default function HelpChooserWidget() {
     const v = searchParams.q;
     return v ? String(Array.isArray(v) ? v[0] : v) : "";
   };
-  const [query, setQuery] = createSignal(currentQuery());
+  const [query, setQuery] = createSignal(untrack(currentQuery));
 
   const submitSearch = (e: Event) => {
     e.preventDefault();

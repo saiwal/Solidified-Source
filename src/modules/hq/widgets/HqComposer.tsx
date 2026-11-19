@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, Show, For, createEffect } from "solid-js";
+import { createSignal, onCleanup, Show, For, createEffect, untrack } from "solid-js";
 import { MdOutlinePerson, MdOutlineCleaning_services, MdOutlineOpen_in_full } from "solid-icons/md";
 import { useQuickActions, type QuickAction } from "../quick-actions";
 import { getNavIcon } from "@/shared/views/NavItem";
@@ -44,13 +44,13 @@ function HqComposer() {
   const auth = useAuth();
   // Same rule as PostComposer: markdown when the channel has the feature on,
   // which is also what turns on RichEditor's live markdown rendering.
-  const MIME = isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode";
+  const MIME = untrack(() => isFeatureEnabled("markdown")) ? "text/markdown" : "text/bbcode";
   const viewer = useNavViewer();
   const quickActions = useQuickActions();
   const [body, setBody] = createSignal("");
   // Starts on the channel's own default audience, like classic's editor.
   const defaultAclMode = useDefaultAclMode();
-  const acl = useAclState({ mode: defaultAclMode(), resync: () => ({ mode: defaultAclMode() }) });
+  const acl = useAclState({ mode: untrack(defaultAclMode), resync: () => ({ mode: defaultAclMode() }) });
   const [submitting, setSubmitting] = createSignal(false);
   const [expanded, setExpandedRaw] = createSignal(false);
   // Swapping placeholder ↔ editor changes the card's height in one frame; glide
@@ -68,7 +68,7 @@ function HqComposer() {
   }
   const [tab, setTab] = createSignal<EditorTab>("wysiwyg");
 
-  const attach = createAttachmentStore(currentNick(), "hq:quick");
+  const attach = createAttachmentStore(untrack(currentNick), "hq:quick");
 
   // No AttachmentBar here — the bar is where an upload is normally inserted by
   // hand, so without it a pasted image would upload and then sit invisible.
@@ -86,7 +86,7 @@ function HqComposer() {
   });
 
   // Load draft on mount
-  storageGet<{ body?: string; aclMode?: string }>(DRAFT_KEY(), {}).then((d) => {
+  storageGet<{ body?: string; aclMode?: string }>(untrack(DRAFT_KEY), {}).then((d) => {
     if (d.body && !body()) {
       setBody(d.body);
       setExpanded(true);

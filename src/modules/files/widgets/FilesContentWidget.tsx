@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createEffect, For, Show, type Component } from "solid-js";
+import { createSignal, createMemo, createEffect, For, Show, untrack, type Component } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useLocation, useNavigate, useSearchParams } from "@solidjs/router";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -524,8 +524,8 @@ export default function FilesContentWidget() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const rootFrame = (): FolderFrame => ({ hash: "", displayPath: "", label: nick() });
-  const [navStack, setNavStack] = createSignal<FolderFrame[]>([rootFrame()]);
+  const rootFrame = (n = nick()): FolderFrame => ({ hash: "", displayPath: "", label: n });
+  const [navStack, setNavStack] = createSignal<FolderFrame[]>([untrack(() => rootFrame())]);
 
   const current = createMemo(() => navStack()[navStack().length - 1]);
 
@@ -535,11 +535,11 @@ export default function FilesContentWidget() {
   let resolveSeq = 0;
   createEffect(() => ({ nick: nick(), segs: cloudPathSegments(location.pathname, nick()) }), ({ nick: n, segs }) => {
     const seq = ++resolveSeq;
-    if (segs.join("/") === current().displayPath) return; // our own navigate()
-    if (!segs.length) { setNavStack([rootFrame()]); return; }
+    if (segs.join("/") === untrack(current).displayPath) return; // our own navigate()
+    if (!segs.length) { setNavStack([rootFrame(n)]); return; }
     resolveFolderPath(n, segs).then(({ frames, file }) => {
       if (seq !== resolveSeq) return;
-      setNavStack([rootFrame(), ...frames]);
+      setNavStack([rootFrame(n), ...frames]);
       // A file URL (e.g. a bookmark) previews it. Never window.open() here —
       // outside a click it is popup-blocked, so other files just show in place.
       if (file && classifyPreview(file.filetype, file.filename) !== "none") setPreviewItem(file);

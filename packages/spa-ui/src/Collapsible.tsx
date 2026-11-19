@@ -3,7 +3,7 @@
 // section headers carry links and buttons beside the toggle target — markup
 // that cannot live inside a <button>. Spread the trigger props onto each
 // toggle so aria-expanded/aria-controls are wired once.
-import { Show, createEffect, createSignal, createUniqueId, onCleanup } from "solid-js";
+import { Show, createEffect, createSignal, createUniqueId, onCleanup, untrack } from "solid-js";
 import type {
   CollapsibleProps,
   CollapsibleTriggerProps,
@@ -29,11 +29,13 @@ export function Collapsible(props: CollapsibleProps) {
   // The panel animates its height via grid-template-rows 0fr ↔ 1fr, so it
   // stays mounted through the close and unmounts once that finishes — a
   // closed panel still has no DOM, as the contract says.
-  const [mounted, setMounted] = createSignal(props.open);
-  const [expanded, setExpanded] = createSignal(props.open);
+  // Seeds only: the effect below follows later changes.
+  const initial = untrack(() => props.open);
+  const [mounted, setMounted] = createSignal(initial);
+  const [expanded, setExpanded] = createSignal(initial);
   // Clip only while moving: a settled-open panel mustn't cut off focus rings
   // or popovers inside it.
-  const [settled, setSettled] = createSignal(props.open);
+  const [settled, setSettled] = createSignal(initial);
   let timer: ReturnType<typeof setTimeout> | undefined;
   let frame: number | undefined;
   onCleanup(() => {

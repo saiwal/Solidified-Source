@@ -1,4 +1,4 @@
-import { createSignal } from 'solid-js';
+import { createSignal, untrack } from 'solid-js';
 import { fetchWebpages, deleteWebPage, fetchBlocks, deleteBlock, type WebPage, type Block } from './api';
 import { toast } from "@utsukta/spa-core/store/toast";
 
@@ -37,7 +37,8 @@ export {
 
 export async function loadWebpages(nick: string, force = false) {
   // Avoid wiping already-loaded data when navigating back to the same channel
-  if (!force && currentNick() === nick && pages().length > 0) return;
+  // Guard reads, not dependencies: callers run this from effects.
+  if (!force && untrack(() => currentNick() === nick && pages().length > 0)) return;
 
   setCurrentNick(nick);
   setLoading(true);

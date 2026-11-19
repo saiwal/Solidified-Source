@@ -95,7 +95,7 @@ function motionElement(tag: string, props: MotionOptions & { ref?: unknown }): J
     ref(el: Element) {
       for (const r of refs) r(el);
       if (o.exit) exits.set(el, o);
-      if (!appear || appear()) animateIn(el, o);
+      if (!appear || untrack(appear)) animateIn(el, o);
     },
   }));
 }

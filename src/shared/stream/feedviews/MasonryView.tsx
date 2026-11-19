@@ -1,5 +1,5 @@
 // src/shared/stream/feedviews/MasonryView.tsx
-import { For, Show, createSignal, createMemo, onSettled } from "solid-js";
+import { For, Show, createSignal, createMemo, onSettled, untrack } from "solid-js";
 import { rowSpan, splitIntoColumns, useColumnCount as useMasonryColumnCount } from "@utsukta/spa-core/lib/masonry";
 import type { ThreadNode } from "@utsukta/spa-core/lib/thread";
 import { countAllComments, isRootPost } from "@utsukta/spa-core/lib/thread";
@@ -30,7 +30,8 @@ function MasonryCard(props: {
   handlers: StreamHandlers;
   onOpenModal: () => void;
 }) {
-  const p = props.post;
+  // A store node: its fields stay reactive; the card is keyed per post.
+  const p = untrack(() => props.post);
   const auth = useAuth();
   const canInteract = () => auth()?.isLoggedIn === true;
   const [repeatArmed, confirmRepeat] = createConfirmTap();

@@ -1,7 +1,7 @@
 import { markItemSeen } from '@utsukta/spa-core/lib/markSeen';
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { MdOutlineChevron_left, MdOutlineExpand_less, MdOutlineExpand_more, MdOutlineMenu, MdOutlineSearch, MdOutlineWarning } from "solid-icons/md";
-import { createSignal, createMemo, onCleanup, lazy, For, Show, Loading, type Component, createEffect, createOptimisticStore, deep } from "solid-js";
+import { createSignal, createMemo, onCleanup, lazy, For, Show, Loading, type Component, createEffect, createOptimisticStore, deep, untrack } from "solid-js";
 const PostDetailModal = lazy(() => import("@/shared/views/PostDetailModal"));
 import { openPost } from "@/shared/views/modal-host";
 
@@ -281,6 +281,8 @@ const MessageItem: Component<{
 }> = (props) => {
   const { t } = useI18n();
   const e = () => props.entry;
+  // Hoisted: a ref callback must not read props (each read is a memo).
+  const registerRef = untrack(() => props.registerRef);
   const [locallyRead, setLocallyRead] = createSignal(false);
 
   // unseen_count is a real number when there are unseen replies, but a
@@ -311,7 +313,7 @@ const MessageItem: Component<{
       {/* A div, not a button: the action rail, the checkbox and the folder
           menu are themselves buttons and cannot nest inside one. */}
       <div
-        ref={props.registerRef}
+        ref={(el) => registerRef?.(el)}
         role="button"
         tabindex="-1"
         onClick={handleClick}
@@ -321,7 +323,7 @@ const MessageItem: Component<{
             handleClick(ev as unknown as MouseEvent);
           }
         }}
-        onPointerDown={props.onPointerDown}
+        onPointerDown={(e) => props.onPointerDown?.(e)}
         style={props.swipeDx ? { transform: `translateX(${props.swipeDx}px)` } : undefined}
         class={[`
           group w-full text-left px-3.5 py-2 flex items-start gap-2
@@ -877,7 +879,7 @@ export const MessageList: Component<{
     clearSelection();
     setCursor(-1);
     setCursorVisible(false);
-    loadPage(true);
+    untrack(() => loadPage(true));
   });
 
   function onScroll() {
@@ -1000,7 +1002,9 @@ export const MessageList: Component<{
               {(entry) => {
                 // Here, not in registerRef: a ref callback has no owner in
                 // Solid 2, so onCleanup there throws and halts the app.
-                onCleanup(() => rowEls.delete(entry.b64mid));
+                // The row's key, read once: the ref callback must not read the store.
+                const mid = untrack(() => entry.b64mid);
+                onCleanup(() => rowEls.delete(mid));
                 return (
                 <MessageItem
                   entry={entry}
@@ -1015,7 +1019,7 @@ export const MessageList: Component<{
                   dragging={drag.draggingId() === entry.b64mid}
                   swipeDx={drag.swipeOffset(entry.b64mid)}
                   onPointerDown={mailable() ? drag.onRowPointerDown(entry.b64mid) : undefined}
-                  registerRef={(el) => { rowEls.set(entry.b64mid, el); }}
+                  registerRef={(el) => { rowEls.set(mid, el); }}
                 />
                 );
               }}

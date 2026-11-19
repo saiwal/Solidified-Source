@@ -25,7 +25,7 @@ import {
   MdFillLock,
   MdFillRss_feed,
 } from "solid-icons/md";
-import { createSignal, createEffect, createMemo, For, Show } from "solid-js";
+import { createSignal, createEffect, createMemo, For, Show, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useInfiniteQuery, useQuery } from "@utsukta/spa-core/lib/query";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
@@ -318,13 +318,13 @@ export default function StreamFiltersWidget() {
   const cmin   = () => str(searchParams.cmin);
   const cmax   = () => str(searchParams.cmax);
 
-  const [folderOpen,    setFolderOpen]    = createSignal(!!str(searchParams.file));
-  const [groupsOpen,    setGroupsOpen]    = createSignal(!!str(searchParams.gid));
-  const [forumsOpen,    setForumsOpen]    = createSignal(!!str(searchParams.cid) || allForums());
-  const [tagOpen,       setTagOpen]       = createSignal(!!str(searchParams.tag));
-  const [langOpen,      setLangOpen]      = createSignal(!!str(searchParams.lang));
-  const [dateOpen,      setDateOpen]      = createSignal(!!(str(searchParams.dbegin) || str(searchParams.dend)));
-  const [affinityOpen,  setAffinityOpen]  = createSignal(!!(str(searchParams.cmin) || str(searchParams.cmax)));
+  const [folderOpen,    setFolderOpen]    = createSignal(untrack(() => !!str(searchParams.file)));
+  const [groupsOpen,    setGroupsOpen]    = createSignal(untrack(() => !!str(searchParams.gid)));
+  const [forumsOpen,    setForumsOpen]    = createSignal(untrack(() => !!str(searchParams.cid) || allForums()));
+  const [tagOpen,       setTagOpen]       = createSignal(untrack(() => !!str(searchParams.tag)));
+  const [langOpen,      setLangOpen]      = createSignal(untrack(() => !!str(searchParams.lang)));
+  const [dateOpen,      setDateOpen]      = createSignal(untrack(() => !!(str(searchParams.dbegin) || str(searchParams.dend))));
+  const [affinityOpen,  setAffinityOpen]  = createSignal(untrack(() => !!(str(searchParams.cmin) || str(searchParams.cmax))));
 
   createEffect(() => !!(file()), (on) => { if (on) setFolderOpen(true); });
   createEffect(() => !!(str(searchParams.gid)), (on) => { if (on) setGroupsOpen(true); });
@@ -339,7 +339,7 @@ export default function StreamFiltersWidget() {
   const gid        = () => str(searchParams.gid);
   const xchanLabel = () => str(searchParams.xchan_label);
 
-  const [connOpen, setConnOpen] = createSignal(!!(str(searchParams.cid) || str(searchParams.gid)));
+  const [connOpen, setConnOpen] = createSignal(untrack(() => !!(str(searchParams.cid) || str(searchParams.gid))));
   const people = usePeoplePages(connOpen);
   const [connInput, setConnInput] = createSignal("");
   const [debouncedConnQuery, setDebouncedConnQuery] = createSignal("");

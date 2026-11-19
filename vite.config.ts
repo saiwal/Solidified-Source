@@ -224,7 +224,7 @@ export default defineConfig({
     outDir: OUT_DIR,
     emptyOutDir: true,
     // SOLID_DEV=1: Solid's dev runtime (diagnostics) in a readable bundle.
-    ...(process.env.SOLID_DEV === "1" && { minify: false }),
+    ...(process.env.SOLID_DEV === "1" && { minify: false, sourcemap: true }),
     // Split: a lazy chunk's CSS (Excalidraw ~134 KB, KaTeX, Leaflet,
     // PhotoSwipe) loads with it — Vite's preload helper fetches it before the
     // import resolves, so no unstyled flash — instead of riding in the one

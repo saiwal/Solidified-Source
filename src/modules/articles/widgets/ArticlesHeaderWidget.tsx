@@ -1,7 +1,7 @@
 // Same layout as the Cards header: title left, Articles | Series switcher in
 // the middle, search + New article on the right. Shown on the list and on the
 // series index; the filter line only on the list.
-import { createSignal, Show, createEffect } from "solid-js";
+import { createSignal, Show, createEffect, untrack } from "solid-js";
 import { MdFillSearch, MdFillClose } from "solid-icons/md";
 import { BiRegularEdit } from "solid-icons/bi";
 import { useNavigate, useSearchParams } from "@solidjs/router";
@@ -47,8 +47,8 @@ export default function ArticlesHeaderWidget() {
         },
       },
     });
-  const [searchOpen, setSearchOpen] = createSignal(!!activeSearch());
-  const [searchInput, setSearchInput] = createSignal(activeSearch());
+  const [searchOpen, setSearchOpen] = createSignal(untrack(() => !!activeSearch()));
+  const [searchInput, setSearchInput] = createSignal(untrack(activeSearch));
 
   // `query` is passed by callers that just set searchInput: Solid 2 batches
   // the write, so reading the signal back here would still see the old text.
@@ -79,7 +79,8 @@ export default function ArticlesHeaderWidget() {
     if (loading) return;
     if (initialized) return;
     initialized = true;
-    if (searchParams.new === "1" && role() === "owner") openArticle();
+    // One-shot: ?new=1 opens the composer once.
+    if (untrack(() => searchParams.new === "1" && role() === "owner")) openArticle();
   });
 
   const SECTIONS = [

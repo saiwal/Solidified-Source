@@ -211,7 +211,8 @@ export default function PostCard(props: {
 }) {
   const [replyOpen, setReplyOpen] = createSignal(false);
   const [replyQuote, setReplyQuote] = createSignal("");
-  const initiallyOpen =
+  // Seeds for local state below: read once, on purpose.
+  const initiallyOpen = untrack(() =>
     !!props.initiallyExpanded ||
     // openedByMid is session-wide (the detail modal marks its root open too),
     // so only honour it when this card actually has the comments to show —
@@ -220,11 +221,11 @@ export default function PostCard(props: {
     (!props.compact && !!props.highlightUuid) ||
     (!!props.compact &&
       !!props.highlightUuid &&
-      subtreeContainsUuid(props.post.children, props.highlightUuid));
+      subtreeContainsUuid(props.post.children, props.highlightUuid)));
   const [showComments, setShowComments] = createSignal(initiallyOpen);
   if (initiallyOpen) { const mid = untrack(() => props.post.mid); onSettled(() => { setOpened(mid, true); }); }
   const [commentsLoaded, setCommentsLoaded] = createSignal(
-    props.post.children.length > 0,
+    untrack(() => props.post.children.length > 0),
   );
   const [commentsLoading, setCommentsLoading] = createSignal(false);
   // Derived, not local state: only ever meaningful on the thread root (only
@@ -257,7 +258,7 @@ export default function PostCard(props: {
   const [eventEditLoading, setEventEditLoading] = createSignal(false);
   const [refreshing, setRefreshing] = createSignal(false);
   const [following, setFollowing] = createSignal(
-    props.post.viewerFollowing ?? false,
+    untrack(() => props.post.viewerFollowing ?? false),
   );
   const [followPending, setFollowPending] = createSignal(false);
   const [showStats, setShowStats] = createSignal(false);
@@ -844,7 +845,7 @@ export default function PostCard(props: {
   // re-measure when the user changes the post-height setting
   createEffect(() => (props.compact || props.seamless ? null : [postHeightPx(), bodyRef()] as const), (at) => {
     if (!at) return;
-    checkBodyOverflow();
+    untrack(checkBodyOverflow);
     const imgs = at[1]?.querySelectorAll("img");
     imgs?.forEach((img) => {
       if (!img.complete)

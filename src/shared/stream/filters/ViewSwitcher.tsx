@@ -1,5 +1,5 @@
 import { For, Show, type Component } from "solid-js";
-import { Portal } from "@solidjs/web";
+import { Dynamic, Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createMediaQuery } from "@solid-primitives/media";
 import {
@@ -38,7 +38,8 @@ export default function ViewSwitcher(props: {
       : ALL_VIEWS;
 
   const current = () => views().find((v) => v.id === props.viewMode) ?? views()[0];
-  const CurrentIcon = () => { const I = current().icon; return <I size={15} />; };
+  // Dynamic: the icon follows the picked view.
+  const CurrentIcon = () => <Dynamic component={current().icon} size={15} />;
 
   const pick = (v: ViewMode) => { props.onChange(v); setOpen(false); };
 

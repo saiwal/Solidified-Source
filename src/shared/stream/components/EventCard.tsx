@@ -1,5 +1,5 @@
 // src/shared/stream/components/EventCard.tsx
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
 import { apiRsvpAttend, apiRsvpDecline, apiRsvpMaybe } from "@utsukta/spa-core/lib/item-api";
@@ -29,12 +29,14 @@ export default function EventCard(props: {
 
   const canRsvp = () => auth()?.isLocal === true && !!props.post.uuid;
 
-  const [attending,    setAttending]    = createSignal(props.post.viewerAttending ?? false);
-  const [declining,    setDeclining]    = createSignal(props.post.viewerDeclining ?? false);
-  const [maybe,        setMaybe]        = createSignal(props.post.viewerMaybe     ?? false);
-  const [attendCount,  setAttendCount]  = createSignal(props.post.attendCount  ?? 0);
-  const [declineCount, setDeclineCount] = createSignal(props.post.declineCount ?? 0);
-  const [maybeCount,   setMaybeCount]   = createSignal(props.post.maybeCount   ?? 0);
+  // Local RSVP state, seeded once from the post.
+  const seed = untrack(() => ({ ...props.post }));
+  const [attending,    setAttending]    = createSignal(seed.viewerAttending ?? false);
+  const [declining,    setDeclining]    = createSignal(seed.viewerDeclining ?? false);
+  const [maybe,        setMaybe]        = createSignal(seed.viewerMaybe     ?? false);
+  const [attendCount,  setAttendCount]  = createSignal(seed.attendCount  ?? 0);
+  const [declineCount, setDeclineCount] = createSignal(seed.declineCount ?? 0);
+  const [maybeCount,   setMaybeCount]   = createSignal(seed.maybeCount   ?? 0);
   const [pending,      setPending]      = createSignal(false);
 
   async function rsvp(verb: "accept" | "reject" | "tentativeaccept") {

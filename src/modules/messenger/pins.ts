@@ -37,7 +37,7 @@ async function fetchPins(base: string): Promise<DmPin[]> {
 export function usePins(base: () => string) {
   return useQuery(() => ({
     queryKey: [...KEY, base()],
-    queryFn: () => fetchPins(base()),
+    queryFn: ({ queryKey }) => fetchPins(queryKey[queryKey.length - 1] as string),
     enabled: isLocalUser(),
   }));
 }

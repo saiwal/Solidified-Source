@@ -1,5 +1,5 @@
 // src/modules/help/widgets/HelpNavWidget.tsx
-import { createSignal, Show, For, createEffect } from "solid-js";
+import { createSignal, Show, For, createEffect, untrack } from "solid-js";
 import { createAsyncResource } from "@utsukta/spa-core/lib/createAsyncResource";
 import AsyncBoundary from "@/shared/views/AsyncBoundary";
 import { useLocation } from "@solidjs/router";
@@ -17,22 +17,22 @@ function NavItem(props: {
   const isActive = () => props.activePath === props.node.path;
   const anyChildActive = () =>
     props.activePath.startsWith(props.node.path + "/");
-  const [open, setOpen] = createSignal(isActive() || anyChildActive());
+  const [open, setOpen] = createSignal(untrack(() => isActive() || anyChildActive()));
 
   // Keep open when a child becomes active
   createEffect(anyChildActive, (active) => {
     if (active) setOpen(true);
   });
 
-  const href = `/help/${props.section}/${props.node.path}`;
-  const hasChildren = props.node.children.length > 0;
-  const indent = `${props.depth * 12}px`;
+  const href = () => `/help/${props.section}/${props.node.path}`;
+  const hasChildren = () => props.node.children.length > 0;
+  const indent = () => `${props.depth * 12}px`;
 
   return (
     <li>
-      <div class="flex items-center gap-1" style={{ "padding-left": indent }}>
+      <div class="flex items-center gap-1" style={{ "padding-left": indent() }}>
         {/* Expand toggle — only shown when has children */}
-        <Show when={hasChildren} fallback={<span class="w-4 shrink-0" />}>
+        <Show when={hasChildren()} fallback={<span class="w-4 shrink-0" />}>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -57,7 +57,7 @@ function NavItem(props: {
           }
         >
           <a
-            href={href}
+            href={href()}
             class={`flex-1 text-xs py-1 px-1.5 rounded transition-colors truncate
               ${
                 isActive()
@@ -70,7 +70,7 @@ function NavItem(props: {
         </Show>
       </div>
 
-      <Show when={hasChildren && open()}>
+      <Show when={hasChildren() && open()}>
         <ul class="mt-0.5">
           <For each={props.node.children}>
             {(child) => (

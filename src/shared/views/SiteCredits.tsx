@@ -19,7 +19,7 @@ export default function SiteCredits() {
       <p>
         &copy; {year}{" "}
         <Show when={info()} fallback="…">
-          {(d) => d().site_name}
+          {(d) => <>{d().site_name}</>}
         </Show>
         {" · "}
         {t("ui.siteinfo_powered_by")}{" "}

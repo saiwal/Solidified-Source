@@ -1,5 +1,5 @@
 // src/modules/channel/widgets/ChannelFeedShell.tsx
-import { createSignal, onCleanup, Show, type Component, createEffect } from "solid-js";
+import { createSignal, onCleanup, Show, type Component, createEffect, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useSearchParams, useNavigate } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -59,8 +59,8 @@ export default function ChannelFeedShell(props: {
 
   const currentSearch = () => str("search") ?? "";
 
-  const [searchOpen, setSearchOpen] = createSignal(!!searchParams.search);
-  const [searchInput, setSearchInput] = createSignal(currentSearch());
+  const [searchOpen, setSearchOpen] = createSignal(untrack(() => !!searchParams.search));
+  const [searchInput, setSearchInput] = createSignal(untrack(currentSearch));
   const auth = useAuth();
   const viewerRole = useViewerRole();
   // profileUid() (from the loaded-posts stream) is 0 until a post loads, so an

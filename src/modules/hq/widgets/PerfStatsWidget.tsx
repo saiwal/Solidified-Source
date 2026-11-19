@@ -1,6 +1,6 @@
 import { apiError } from "@utsukta/spa-core/lib/fetch";
 import { isAdmin } from "@utsukta/spa-core/store/auth-store";
-import { createSignal, createEffect, onSettled, For, Show } from "solid-js";
+import { createSignal, createEffect, onSettled, For, Show, untrack } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { WidgetShell } from "@ui/WidgetShell";
@@ -179,7 +179,9 @@ function PerfStatsPanelInner(props: { style: PlotStyle }) {
       {/* Cards */}
       <Show when={latest()} keyed>
         {(s) => {
-          const pts = points();
+          // Keyed on latest(): the cards rebuild per sample, and points()
+          // grows in the same write.
+          const pts = untrack(points);
           const lastPt = pts[pts.length - 1];
 
           const graphs = [
