@@ -17,7 +17,7 @@ export default function CardShowcaseConfig(props: WidgetConfigProps) {
 
   const q = useAsyncQuery(() => ({
     queryKey: ["cards-list", nick()],
-    queryFn: async () => (await fetchCards(nick())).cards,
+    queryFn: async ({ queryKey: [, n] }) => (await fetchCards(n as string)).cards,
     enabled: !!nick(),
   }));
 

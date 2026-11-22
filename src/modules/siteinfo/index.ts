@@ -24,6 +24,7 @@ registerModule({
   widgets: [
     {
       id: "siteinfo.header",
+      helpTarget: "nav.siteinfo",
       label: () => useI18n().t("widgets.siteinfo_header"),
       loader: () => import("./widgets/SiteinfoHeaderWidget"),
       slot: "header",

@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, onCleanup, createEffect } from "solid-js";
+import { createSignal, createMemo, Show, onCleanup, createEffect, untrack } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { fetchSeriesList } from "@/modules/articles/api";
@@ -80,12 +80,12 @@ export default function ArticleComposer(props: Props) {
   const isEditing = () => !!props.initial?.uuid;
 
   // ── Scope (shared by both stores for matching IDB keys) ─────────────────────
-  const scope = props.initial?.uuid
+  const scope = untrack(() => props.initial?.uuid
     ? `article:edit:${props.initial.uuid}`
-    : "article:new";
+    : "article:new");
 
   // ── Attachment store ─────────────────────────────────────────────────────────
-  const attach = createAttachmentStore(props.nick, scope);
+  const attach = untrack(() => createAttachmentStore(props.nick, scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");
@@ -103,10 +103,12 @@ export default function ArticleComposer(props: Props) {
   const initialEntries = () =>
     aclEntryKeys(props.initial ?? {}, initialAclMode());
 
+  // Seeds (resync below follows /spa/nav landing later).
+  const seed = untrack(() => ({ mode: initialAclMode(), ...initialEntries() }));
   const acl = useAclState({
-    mode: initialAclMode(),
-    allowEntries: initialEntries().allow,
-    denyEntries: initialEntries().deny,
+    mode: seed.mode,
+    allowEntries: seed.allow,
+    denyEntries: seed.deny,
     // /spa/nav may not have answered yet; re-derive once the viewer's hash
     // lands, unless the user has already touched the picker.
     resync: () => selfHash()?.hash
@@ -116,10 +118,10 @@ export default function ArticleComposer(props: Props) {
 
   // ── Language + series — local to this composer (articles-only fields,
   // not part of the generic createComposerStore shared with other post types) ──
-  const [lang, setLang] = createSignal(props.initial?.lang ?? "");
-  const [series, setSeries] = createSignal(props.initial?.series?.name ?? "");
+  const [lang, setLang] = createSignal(untrack(() => props.initial?.lang ?? ""));
+  const [series, setSeries] = createSignal(untrack(() => props.initial?.series?.name ?? ""));
   const [seriesOrder, setSeriesOrder] =
-    createSignal<number | null>(props.initial?.series?.order ?? null);
+    createSignal<number | null>(untrack(() => props.initial?.series?.order ?? null));
 
   // ── Series suggestions — existing series names for this channel ─────────────
   const [existingSeries] = createQueryResource("composer-series", () => props.nick, fetchSeriesList);
@@ -239,7 +241,7 @@ export default function ArticleComposer(props: Props) {
 
     attach.clear();
     props.onSaved?.();
-  }, scope, {
+  }, scope, untrack(() => ({
     // Seed from initial if editing. Without the mimetype the toolbar (and the
     // WYSIWYG probe) read text/bbcode on every edit, so reopening a markdown
     // article spelled its buttons in bbcode.
@@ -253,7 +255,7 @@ export default function ArticleComposer(props: Props) {
     }),
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
-  });
+  })));
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 

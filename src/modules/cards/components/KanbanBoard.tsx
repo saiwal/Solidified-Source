@@ -41,7 +41,7 @@ export default function KanbanBoard(props: { nick: string }) {
 
   // Same cache keys the header/content widgets read through createQueryResource.
   const configKey = () => ["kanban-config", props.nick] as const;
-  const configQ = useAsyncQuery(() => ({ queryKey: configKey(), queryFn: () => fetchKanban(props.nick) }));
+  const configQ = useAsyncQuery(() => ({ queryKey: configKey(), queryFn: ({ queryKey: [, n] }) => fetchKanban(n as string) }));
   // The saved board list, with an edit shown at once; a failed save rolls it back.
   const [boards, setBoards] = createOptimistic((): KanbanBoardDef[] => configQ.data?.boards ?? []);
 
@@ -62,7 +62,7 @@ export default function KanbanBoard(props: { nick: string }) {
   const cardsKey = () => ["kanban-cards", { nick: props.nick, board: activeBoard() }] as const;
   const cardsQ = useAsyncQuery(() => ({
     queryKey: cardsKey(),
-    queryFn: async () => (activeBoard() ? (await fetchCards(props.nick, { cat: activeBoard() })).cards : []),
+    queryFn: async ({ queryKey: [, k] }) => (k.board ? (await fetchCards(k.nick, { cat: k.board })).cards : []),
   }));
   const refetchCards = () => invalidate(cardsKey());
   // The fetched cards, with a drop shown at once until the write settles.
@@ -358,6 +358,7 @@ export default function KanbanBoard(props: { nick: string }) {
           stay editable in the composer's own fields. */}
       <Show when={composeIn() !== null}>
         <ComposerModal
+          helpTarget="cards.kanban_boards"
           title={t("cards.new_card")}
           onClose={() => setComposeIn(null)}
           widthClass="max-w-3xl"

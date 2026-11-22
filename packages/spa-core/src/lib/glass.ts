@@ -8,10 +8,20 @@ const LS_KEY = "hz-glass";
 
 const on = (v: unknown) => v === true || v === 1 || v === "1";
 
+// Backdrop blur is redrawn every frame anything moves over or under it; on a
+// weak phone GPU that made drawers and scrolling stutter. Such devices get
+// opaque surfaces whatever the pref says (the pref itself is kept).
+// ponytail: core/memory count is a rough proxy — deviceMemory is Chromium-only
+// and Safari caps hardwareConcurrency, so iPhones mostly pass as capable.
+const lowEnd =
+  typeof matchMedia !== "undefined" &&
+  matchMedia("(pointer: coarse)").matches &&
+  (((navigator as { deviceMemory?: number }).deviceMemory ?? 8) <= 4 || (navigator.hardwareConcurrency ?? 8) <= 4);
+
 /** Screen only — a visited channel's choice; the viewer's cache stays. */
 export function applyGlassCSS(v: unknown): void {
   if (typeof document === "undefined") return;
-  document.documentElement.toggleAttribute("data-glass", on(v));
+  document.documentElement.toggleAttribute("data-glass", on(v) && !lowEnd);
 }
 
 /** The viewer's own choice: shown and cached. */

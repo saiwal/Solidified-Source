@@ -63,7 +63,7 @@ export default function ConnectionsShellView() {
   });
 
   return (
-    <SubPageLayout base="/directory" items={CONNECTIONS_ITEMS} activeKey={activeKey()}>
+    <SubPageLayout base="/directory" items={CONNECTIONS_ITEMS} activeKey={activeKey()} help={(p) => `connections.${p}`}>
       <Loading fallback={<SectionSkeleton />}>
         <Show
           when={groupId() !== null}

@@ -21,6 +21,7 @@ registerModule({
   widgets: [
     {
       id: "pubstream.content",
+      helpTarget: "nav.pubstream",
       label: () => useI18n().t("widgets.pubstream_content"),
       loader: () => import("./widgets/PubstreamContentWidget"),
       slot: "contentTop",

@@ -216,10 +216,9 @@ const THUMB_CLS = [
 
 function AffinitySlider(props: { min: number; max: number; onChange: (min: number, max: number) => void }) {
   const { t } = useI18n();
-  const [lo, setLo] = createSignal(props.min);
-  const [hi, setHi] = createSignal(props.max);
-  createEffect(() => props.min, (v) => { setLo(v); });
-  createEffect(() => props.max, (v) => { setHi(v); });
+  // Follow the applied range; dragging writes locally until it's applied.
+  const [lo, setLo] = createSignal(() => props.min);
+  const [hi, setHi] = createSignal(() => props.max);
 
   const commit = () => props.onChange(lo(), hi());
   const lPct = () => `${(lo() / AFFINITY_MAX) * 100}%`;

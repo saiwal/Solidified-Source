@@ -1,7 +1,7 @@
 // solidified's implementation of the tabs contract (spa-core types/ui.types.ts).
 // Selection follows focus (automatic activation): the arrow keys pick the next
 // tab, and only the selected tab sits in the Tab order.
-import { For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { TabPanelProps, TabsProps } from "@utsukta/spa-core/types/ui.types";
 import { CountBadge } from "@ui/Badge";
 
@@ -12,9 +12,13 @@ const panelId = (tabs: string, value: string) => `${tabs}-panel-${value}`;
 export function Tabs<T extends string>(props: TabsProps<T>) {
   let list!: HTMLDivElement;
   const segmented = () => props.variant !== "underline";
+  // Memoized: items often carry JSX labels, and every read of the prop
+  // re-evaluates them. Read from a key handler (no owner), each press built
+  // effects nothing would ever dispose (NO_OWNER_EFFECT).
+  const items = createMemo(() => props.items);
 
   const onKeyDown = (e: KeyboardEvent) => {
-    const values = props.items.map((i) => i.value);
+    const values = items().map((i) => i.value);
     const i = values.indexOf(props.value);
     const next =
       e.key === "ArrowRight" ? (i + 1) % values.length
@@ -40,7 +44,7 @@ export function Tabs<T extends string>(props: TabsProps<T>) {
           : "hz-tabs-underline flex gap-6 overflow-x-auto [scrollbar-width:none]"
       } ${props.class ?? ""}`}
     >
-      <For each={props.items}>
+      <For each={items()}>
         {(item) => {
           const on = () => item.value === props.value;
           return (

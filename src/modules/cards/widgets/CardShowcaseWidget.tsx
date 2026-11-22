@@ -29,7 +29,7 @@ export default function CardShowcaseWidget(props: WidgetProps) {
 
   const q = useAsyncQuery(() => ({
     queryKey: ["card-showcase", { nick: nick(), uuid: uuid() }],
-    queryFn: async () => (await fetchCard(nick(), uuid())).card,
+    queryFn: async ({ queryKey: [, k] }) => { const { nick, uuid } = k as { nick: string; uuid: string }; return (await fetchCard(nick, uuid)).card; },
     enabled: !!nick() && !!uuid(),
   }));
 

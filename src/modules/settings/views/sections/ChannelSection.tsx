@@ -70,6 +70,7 @@ export default function ChannelSection() {
             <Group
               icon={<MdOutlineManage_accounts size={18} />}
               title={t("settings.channel_role_title")}
+              help="settings.channel_role"
               desc={t("settings.channel_role_desc")}
             >
               <div class="py-2.5">
@@ -117,6 +118,7 @@ export default function ChannelSection() {
             <Group
               icon={<MdOutlineTune size={18} />}
               title={t("settings.channel_basic_title")}
+              help="settings.channel_basics"
               desc={t("settings.channel_basic_desc")}
             >
               <div class="py-2.5 space-y-4">
@@ -162,6 +164,7 @@ export default function ChannelSection() {
             <Group
               icon={<MdOutlineFilter_alt size={18} />}
               title={t("settings.channel_content_title")}
+              help="settings.content_and_import"
               desc={t("settings.channel_content_desc")}
             >
               <div class="py-2.5 space-y-4">

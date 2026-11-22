@@ -32,6 +32,7 @@ registerModule({
   widgets: [
     {
       id: "wiki.header",
+      helpTarget: "wiki",
       label: () => useI18n().t("widgets.wiki_header"),
       loader: () => import("./widgets/WikiHeaderWidget"),
       slot: "header",
@@ -41,6 +42,7 @@ registerModule({
     },
     {
       id: "wiki.content",
+      helpTarget: "wiki",
       label: () => useI18n().t("widgets.wiki_content"),
       loader: () => import("./widgets/WikiContentWidget"),
       slot: "contentTop",

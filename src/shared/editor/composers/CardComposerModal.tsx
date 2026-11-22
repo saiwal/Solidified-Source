@@ -13,7 +13,7 @@ export default function CardComposerModal(props: {
   onSaved: () => void;
 }) {
   return (
-    <ComposerModal title={props.heading} onClose={props.onClose} widthClass="max-w-3xl">
+    <ComposerModal title={props.heading} onClose={props.onClose} widthClass="max-w-3xl" helpTarget="cards">
       <CardComposer
         profileUid={props.uid}
         nick={props.nick}

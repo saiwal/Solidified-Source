@@ -34,7 +34,7 @@ export default function SettingsView() {
   });
 
   return (
-    <SubPageLayout base="/settings" items={SETTINGS_ITEMS} activeKey={activeKey()}>
+    <SubPageLayout base="/settings" items={SETTINGS_ITEMS} activeKey={activeKey()} help={(p) => `settings.${p}`}>
       <Loading fallback={<SectionSkeleton />}>
         <Dynamic component={SECTIONS[activeKey()]} />
       </Loading>

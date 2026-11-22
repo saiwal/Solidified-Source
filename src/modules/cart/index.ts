@@ -19,6 +19,7 @@ registerModule({
   widgets: [
     {
       id: "cart.header",
+      helpTarget: "cart",
       label: () => useI18n().t("widgets.cart_header"),
       loader: () => import("./widgets/CartHeaderWidget"),
       slot: "header",
@@ -28,6 +29,7 @@ registerModule({
     },
     {
       id: "cart.content",
+      helpTarget: "cart",
       label: () => useI18n().t("widgets.cart_content"),
       loader: () => import("./widgets/CartContentWidget"),
       slot: "contentTop",
@@ -40,11 +42,12 @@ registerModule({
       label: () => useI18n().t("widgets.shopping_cart"),
       loader: () => import("./widgets/CartWidget"),
       slot: "right",
-      helpTarget: "cart.shopping_cart_widget",
+      helpTarget: "cart.widgets",
     },
     {
       // The viewer's subscriptions at this channel's shop; empty = renders nothing
       id: "cart.my_subscriptions",
+      helpTarget: "widgets.my_subscriptions",
       label: () => useI18n().t("widgets.my_subscriptions"),
       loader: () => import("./widgets/MySubscriptionsWidget"),
       slot: "right",
@@ -53,6 +56,7 @@ registerModule({
     },
     {
       id: "cart.subscribers",
+      helpTarget: "widgets.shop_subscribers",
       label: () => useI18n().t("widgets.shop_subscribers"),
       loader: () => import("./widgets/SubscribersWidget"),
       slot: "right",

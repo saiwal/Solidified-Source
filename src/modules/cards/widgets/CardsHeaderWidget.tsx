@@ -81,7 +81,7 @@ export default function CardsHeaderWidget() {
     if (initialized) return;
     initialized = true;
     // One-shot: ?new=1 opens the composer once.
-    if (untrack(() => searchParams.new === "1" && role() === "owner")) openCard();
+    if (untrack(() => searchParams.new === "1" && role() === "owner")) untrack(openCard);
   });
 
   return (

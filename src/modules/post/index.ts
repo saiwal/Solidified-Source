@@ -14,6 +14,7 @@ registerModule({
       // Items sharing hashtags/categories with the one on screen; renders
       // nothing off a single-item page.
       id: "post.related",
+      helpTarget: "links-and-graph.related_posts",
       label: () => useI18n().t("widgets.related"),
       loader: () => import("@/shared/stream/components/RelatedItemsWidget"),
       slot: ["right", "footer"],

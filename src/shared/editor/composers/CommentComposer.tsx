@@ -1,4 +1,4 @@
-import { Show, onCleanup } from "solid-js";
+import { Show, onCleanup, untrack } from "solid-js";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { createComposerStore } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
@@ -33,8 +33,8 @@ export default function CommentComposer(props: Props) {
   const viewer = useNavViewer();
   const caps = CAPABILITIES.comment;
 
-  const scope = `comment:${props.parentUuid ?? "new"}`;
-  const attach = createAttachmentStore(currentNick(), scope);
+  const scope = untrack(() => `comment:${props.parentUuid ?? "new"}`);
+  const attach = untrack(() => createAttachmentStore(currentNick(), scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
@@ -76,7 +76,8 @@ export default function CommentComposer(props: Props) {
       );
     },
     scope,
-    {
+    // Seeds, read once.
+    untrack(() => ({
       initialBody: props.initialBody,
       autosave: false,
       // The seed is "@{author} " plus an optional quote of the selected text.
@@ -89,7 +90,7 @@ export default function CommentComposer(props: Props) {
       // Same "Markdown" feature as PostComposer (the mdpost addon's toggle);
       // the server converts to bbcode on save (ContentTypes::toBbcode).
       initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
-    },
+    })),
   );
 
   // ── Mention + emoji autocomplete ─────────────────────────────────────────

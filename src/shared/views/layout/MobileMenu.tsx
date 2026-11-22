@@ -67,7 +67,8 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
   // ── Favorites sheet ──────────────────────────────────────────────────────
   // Page actions live in the floating column and the title row's ⋮
   // (FloatingActions / PageActions), so this sheet only ever holds favorites.
-  const [favOpen, setFavOpen] = createSignal(false);
+  // Closes on navigation: re-derives to false when the path changes.
+  const [favOpen, setFavOpen] = createSignal(() => (void location.pathname, false));
   const [sheetRef, setSheetRef] = createSignal<HTMLElement>();
   let favButtonRef: HTMLButtonElement | undefined;
 
@@ -89,7 +90,6 @@ export default function MobileMenu(props: { chrome: LayoutChrome }) {
         }
       }, { defer: true },
   );
-  createEffect(() => location.pathname, () => { setFavOpen(false); }, { defer: true });
 
   const toggleDrawer = () => {
     const next = !moreOpen();

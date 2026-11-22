@@ -14,6 +14,7 @@ registerModule({
   widgets: [
     {
       id: "jellyfin-profile.nowplaying",
+      helpTarget: "jellyfin.now_playing",
       label: () => useI18n().t("widgets.jellyfin_profile"),
       loader: () => import("./ProfileNowPlaying"),
       slot: "right",

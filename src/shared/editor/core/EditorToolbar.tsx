@@ -27,6 +27,7 @@ import { diagramKind } from "../diagram/renderMermaidImage";
 import { spell, bbcodeTokensWork, linkText, type Kind } from "./markup";
 import { Spinner } from "@ui/Spinner";
 import { IconButton } from "@ui/Button";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 
 const LatexComposerModal = lazy(() => import("../latex/LatexComposerModal"));
 const DiagramComposerModal = lazy(() => import("../diagram/DiagramComposerModal"));
@@ -835,15 +836,15 @@ export default function EditorToolbar(props: Props) {
     <Show when={props.attach}>
       {(a) => (
         <>
-          <Btn title={t("editor.attach_file_title")} onPress={() => a().openFile()}>
+          <Btn help="composing-posts.attachments" title={t("editor.attach_file_title")} onPress={() => a().openFile()}>
             <MdOutlineAttach_file class="w-4 h-4" />
           </Btn>
           <Show when={a().canBrowse}>
-            <Btn title={t("editor.attach_browse_title")} onPress={() => a().openBrowse()}>
+            <Btn help="composing-posts.attachments" title={t("editor.attach_browse_title")} onPress={() => a().openBrowse()}>
               <MdOutlineImage class="w-4 h-4" />
             </Btn>
           </Show>
-          <Btn title={t("editor.cam_btn_title")} onPress={() => a().openCamera()}>
+          <Btn help="composing-posts.attachments" title={t("editor.cam_btn_title")} onPress={() => a().openCamera()}>
             <MdOutlinePhoto_camera class="w-4 h-4" />
           </Btn>
         </>
@@ -1098,6 +1099,7 @@ export default function EditorToolbar(props: Props) {
     <div
       role="toolbar"
       aria-label={t("editor.toolbar_label")}
+      ref={helpable(() => "composing-posts.formatting_toolbar")}
       onKeyDown={toolbarArrows}
       class="flex flex-wrap items-center gap-0.5 px-2 py-2 shrink-0 border-t border-rim rounded-b-lg bg-surface"
     >
@@ -1263,27 +1265,27 @@ export default function EditorToolbar(props: Props) {
               show where bbcode is still expanded; LaTeX and diagrams: see
               showLatex/showDiagram. */}
           <Show when={showLatex()}>
-          <Btn title={t("editor.latex_toolbar_title")} onPress={() => setLatexOpen(true)}>
+          <Btn help="composing-posts.math_and_latex" title={t("editor.latex_toolbar_title")} onPress={() => setLatexOpen(true)}>
             <MdOutlineFunctions class="w-4 h-4" />
           </Btn>
           </Show>
           <Show when={showDiagram()}>
-          <Btn title={t("editor.diagram_toolbar_title")} onPress={() => setDiagramOpen(true)}>
+          <Btn help="diagrams.the_diagram_button" title={t("editor.diagram_toolbar_title")} onPress={() => setDiagramOpen(true)}>
             <MdOutlineAccount_tree class="w-4 h-4" />
           </Btn>
           </Show>
           <Show when={showCardPicker()}>
-            <Btn title={t("editor.card_toolbar_title")} onPress={() => setCardPickerOpen(true)}>
+            <Btn help="composing-posts.embedding_cards_and_posts" title={t("editor.card_toolbar_title")} onPress={() => setCardPickerOpen(true)}>
               <MdOutlineStyle class="w-4 h-4" />
             </Btn>
           </Show>
           <Show when={showExcalidraw()}>
-            <Btn title={t("editor.excalidraw_toolbar_title")} onPress={() => setExcalidrawOpen(true)}>
+            <Btn help="excalidraw.drawing_from_the_post_composer" title={t("editor.excalidraw_toolbar_title")} onPress={() => setExcalidrawOpen(true)}>
               <MdOutlineBrush class="w-4 h-4" />
             </Btn>
           </Show>
           <Show when={showMap()}>
-            <Btn title={t("editor.map_toolbar_title")} onPress={() => setMapOpen(true)}>
+            <Btn help="composing-posts.maps" title={t("editor.map_toolbar_title")} onPress={() => setMapOpen(true)}>
               <MdOutlineMap class="w-4 h-4" />
             </Btn>
           </Show>
@@ -1427,6 +1429,8 @@ function Sep() {
 
 function Btn(props: {
   title: string;
+  /** Help-mode target ("<doc>.<section>"); without one the toolbar's own applies. */
+  help?: string;
   onPress: (e: MouseEvent) => void;
   children: any;
   disabled?: boolean;
@@ -1436,6 +1440,7 @@ function Btn(props: {
   return (
     <IconButton
       label={props.title}
+      ref={helpable(() => props.help)}
       size="sm"
       pressed={props.active}
       disabled={props.disabled}

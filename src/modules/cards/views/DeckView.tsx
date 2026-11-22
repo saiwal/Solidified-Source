@@ -26,7 +26,7 @@ export default function DeckView() {
   const isOwner = () => role() === "owner";
 
   const key = () => ["deck-detail", { nick: nick(), name: name() }] as const;
-  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchDeckDetail(nick(), name()) }));
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: ({ queryKey: [, k] }) => fetchDeckDetail(k.nick, k.name) }));
 
   // The fetched order, with a move shown at once; a failed save rolls it back.
   const [order, setOrder] = createOptimistic((): Post[] => q.data.cards);

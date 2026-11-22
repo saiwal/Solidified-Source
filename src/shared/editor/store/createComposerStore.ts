@@ -1,5 +1,5 @@
 import { truncateError } from "@utsukta/spa-core/lib/fetch";
-import { createSignal, onCleanup, useContext, createEffect } from "solid-js";
+import { createSignal, onCleanup, useContext, createEffect, untrack } from "solid-js";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { storageGet, storageSet, storageDel } from "@utsukta/spa-core/lib/storage";
 import { channelKey } from "@utsukta/spa-core/store/auth-store";
@@ -21,6 +21,8 @@ export type SubmitFn = (body: string, meta: ComposerMeta) => Promise<void>;
  * one flashes the badge in both; make it a per-scope map if that ever matters.
  */
 export const [draftSavedAt, setDraftSavedAt] = createSignal(0);
+/** Draft saves in flight — the header shows "Saving draft…" while > 0. */
+export const [draftSaving, setDraftSaving] = createSignal(0);
 
 export type ComposerStore = ReturnType<typeof createComposerStore>;
 
@@ -121,7 +123,7 @@ export function createComposerStore(
     validate?: () => void;
   },
 ) {
-  const DRAFT_KEY = channelKey(`draft:${scope}`);
+  const DRAFT_KEY = untrack(() => channelKey(`draft:${scope}`)); // fixed per composer
 
   const [body, setBody]         = createSignal(options?.initialBody ?? options?.seedBody ?? "");
   const [title, setTitle]       = createSignal(options?.initialTitle ?? "");
@@ -164,7 +166,7 @@ export function createComposerStore(
 
   // On init, a pending-draft (written cross-navigation by the HQ DraftsWidget) takes
   // priority over the regular auto-save; fall back to auto-save if none present.
-  const PENDING_KEY = channelKey(`pending-draft:${scope}`);
+  const PENDING_KEY = untrack(() => channelKey(`pending-draft:${scope}`));
   storageGet<SavedDraft | null>(PENDING_KEY, null).then(async (pending) => {
     if (pending && !options?.initialBody) {
       setBody(pending.body);
@@ -245,7 +247,10 @@ export function createComposerStore(
   createEffect(() => {
     if (!initialized() || options?.autosave === false) return null;
     const draftBody = options?.autosaveBody?.() ?? body();
-    return { draftBody, snapshot: [draftBody, title(), summary(), slug(), category()].join("\u0000"), submitting: submitting() };
+    // The composer's own extras (CardComposer's card #/deck/template, ACL…)
+    // count too — otherwise changing only those never reached the draft.
+    const extra = JSON.stringify(options?.autosaveExtra?.() ?? null);
+    return { draftBody, snapshot: [draftBody, title(), summary(), slug(), category(), extra].join("\u0000"), submitting: submitting() };
   }, (at) => {
     if (!at) return;
     const { draftBody, snapshot } = at;
@@ -353,7 +358,8 @@ export function createComposerStore(
       mimetype: mimetype(),
       extra: extra ?? null,
     };
-    const serverMid = await saveServerDraft(tempDraft, scope);
+    setDraftSaving((n) => n + 1);
+    const serverMid = await saveServerDraft(tempDraft, scope).finally(() => setDraftSaving((n) => n - 1));
     if (!serverMid) {
       if (!silent) toast.error("Failed to save draft");
       return;

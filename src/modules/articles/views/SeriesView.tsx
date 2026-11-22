@@ -77,7 +77,7 @@ export default function SeriesView() {
   const [renaming, setRenaming] = createSignal(false);
 
   const key = () => ["series-detail", { nick: nick(), name: name() }] as const;
-  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchSeriesDetail(nick(), name()) }));
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: ({ queryKey: [, k] }) => fetchSeriesDetail(k.nick, k.name) }));
 
   // The fetched order, with a move shown at once; a failed save rolls it back.
   const [order, setOrder] = createOptimistic((): Post[] => q.data.articles);

@@ -22,6 +22,7 @@ registerModule({
     {
       // Opt-in: connections' birthdays in the next 30 days — your own pages only
       id: "hq.birthdays",
+      helpTarget: "widgets.birthdays",
       label: () => useI18n().t("widgets.birthdays"),
       loader: () => import("./widgets/BirthdaysWidget"),
       slot: "right",
@@ -32,6 +33,7 @@ registerModule({
     {
       // Opt-in: recent outgoing delivery success + the sites that keep failing
       id: "hq.delivery_health",
+      helpTarget: "widgets.delivery_health",
       label: () => useI18n().t("widgets.delivery_health"),
       loader: () => import("./widgets/DeliveryHealthWidget"),
       slot: "right",
@@ -87,7 +89,7 @@ registerModule({
       defaultModules: ["hq"],
       contexts: ["hq"],
       configComponent: () => import("./widgets/HqMessagesConfig"),
-      helpTarget: "widgets.recent_posts",
+      helpTarget: "hq.messages_widget",
     },
     {
       id: "hq.channel_activities",
@@ -126,6 +128,7 @@ registerModule({
     {
       // Opt-in, one card per saved search — see FilteredPostsList.tsx
       id: "hq.saved_search_posts",
+      helpTarget: "widgets.saved_search_posts",
       label: () => useI18n().t("widgets.saved_search_posts"),
       loader: () => import("./widgets/SavedSearchPostsWidget"),
       slot: "contentTop",
@@ -139,6 +142,7 @@ registerModule({
     {
       // Opt-in, one card per stream filter preset (+ optional group/forum)
       id: "hq.filter_posts",
+      helpTarget: "widgets.filter_posts",
       label: () => useI18n().t("widgets.filter_posts"),
       loader: () => import("./widgets/FilterPostsWidget"),
       slot: "contentTop",
@@ -190,7 +194,7 @@ registerModule({
       defaultModules: ["hq"],
       contexts: ["hq"],
       configComponent: () => import("./widgets/PerfStatsConfig"),
-      helpTarget: "widgets.perf_stats",
+      helpTarget: "hq.performance_widget",
     },
 
   ],

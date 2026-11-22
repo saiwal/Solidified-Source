@@ -4,14 +4,14 @@ import { MdFillLive_help } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { IconButton } from "@ui/Button";
 
-export default function HelpTrigger() {
+export default function HelpTrigger(props: { class?: string }) {
   const { t } = useI18n();
   const { helpMode, enter, exit } = useHelpMode();
   return (
     <IconButton
       label={t("ui.help_mode")}
       pressed={helpMode()}
-      class="px-[12px] py-[8px]"
+      class={props.class ?? "px-[12px] py-[8px]"}
       onClick={() => helpMode() ? exit() : enter()}
     >
     <MdFillLive_help size={17}/>

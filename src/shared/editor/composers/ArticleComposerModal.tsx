@@ -14,7 +14,7 @@ export default function ArticleComposerModal(props: {
   onSaved: () => void;
 }) {
   return (
-    <ComposerModal title={props.heading} onClose={props.onClose} widthClass="max-w-3xl">
+    <ComposerModal title={props.heading} onClose={props.onClose} widthClass="max-w-3xl" helpTarget="articles.writing_an_article">
       <ArticleComposer
         profileUid={props.uid}
         nick={props.nick}

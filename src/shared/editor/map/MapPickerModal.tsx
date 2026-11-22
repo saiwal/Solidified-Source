@@ -5,7 +5,7 @@
  * inserts core's `[map=lat lon]` BBCode — or hands the coordinates to
  * `onPick` (photo location, a post's location).
  */
-import { createSignal, onSettled, Show, type Component } from "solid-js";
+import { createSignal, onSettled, Show, type Component, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useNavData } from "@utsukta/spa-core/store/nav-store";
 import { geocode, type Coord } from "@utsukta/spa-core/lib/osm";
@@ -29,7 +29,7 @@ const MapPickerModal: Component<Props> = (props) => {
   const { t } = useI18n();
   const navData = useNavData();
   const [place, setPlace] = createSignal("");
-  const [coord, setCoord] = createSignal<Coord | null>(props.initial ?? null);
+  const [coord, setCoord] = createSignal<Coord | null>(untrack(() => props.initial ?? null));
   const [zoom, setZoom] = createSignal(navData()?.osm?.zoom ?? 16);
   const [busy, setBusy] = createSignal<"search" | "locate" | null>(null);
   const [error, setError] = createSignal("");

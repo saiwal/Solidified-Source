@@ -1,7 +1,7 @@
 // Same layout as the Cards header: the title (the server's name), the
 // Music / Video switcher in the middle, and search, other devices and a ⋯
 // for servers, settings and signing out on the right.
-import { createSignal, Show, createEffect } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { Portal } from "@solidjs/web";
 import { useSearchParams } from "@solidjs/router";
 import { MdFillSearch, MdFillClose, MdOutlineDevices, MdFillCheck, MdFillAdd, MdOutlineSettings, MdOutlineLogout, MdOutlineCloud_off } from "solid-icons/md";
@@ -30,8 +30,7 @@ export default function JellyfinHeaderWidget() {
   // ── search: an icon until wanted, then a quiet underlined field ──
   const activeSearch = () => String(params.search ?? "");
   const [searching, setSearching] = createSignal(!!activeSearch());
-  const [input, setInput] = createSignal(activeSearch());
-  createEffect(activeSearch, (q) => { setInput(q); }); // follow Back/Forward
+  const [input, setInput] = createSignal(() => activeSearch()); // follows Back/Forward
   let field: HTMLInputElement | undefined;
   const openSearch = () => { setSearching(true); queueMicrotask(() => field?.focus()); };
   const submit = (e: Event) => {

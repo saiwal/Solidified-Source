@@ -57,7 +57,7 @@ export default function StreamFilters() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div class="space-y-1.5 pb-4 max-w-5xl mx-auto" ref={helpable(() => "network/index.activity-filters")}>
+    <div class="space-y-1.5 pb-4 max-w-5xl mx-auto" ref={helpable(() => "network.quick_filter_toggles")}>
 
       <PageActions mobileOnly actions={[
         { label: t("network.refresh"), icon: MdFillRefresh, onClick: softRefresh, disabled: loading() || refreshing() },

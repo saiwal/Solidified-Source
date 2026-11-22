@@ -38,7 +38,9 @@ export function widgetLabel(w: RegisteredWidget): string {
 }
 
 export function widgetHelpTarget(w: RegisteredWidget): string {
-  return w.helpTarget ?? `widgets.${w.id}`;
+  // Ids are dotted ("hq.delivery_health") and a target splits on its first
+  // dot only, so the fallback slug swaps the dots for underscores.
+  return w.helpTarget ?? `widgets.${w.id.replace(/\./g, "_")}`;
 }
 
 const SPAN_LABELS = {
@@ -118,6 +120,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
                 onChange={(e) => onSetSpan()(props.index(), Number(e.currentTarget.value))}
                 aria-label={t("widgets.widget_width")}
                 title={t("widgets.widget_width")}
+                ref={helpable(() => "widgets.widget_width")}
               >
                 <For each={SPAN_OPTIONS}>
                   {(span) => <option value={String(span)}>{t(SPAN_LABELS[span])}</option>}
@@ -130,6 +133,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
               onClick={() => props.onToggleConfig(props.entry.key)}
               aria-expanded={(configOpen()) ? "true" : "false"}
               aria-label={t("widgets.configure_widget")}
+              ref={helpable(() => "widgets.widgets_with_multiple_instances")}
               title={t("widgets.configure_widget")}
               class={[editButtonClass, { "text-accent": configOpen() }]}
             >
@@ -140,6 +144,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
             onClick={() => props.onMove(props.index(), -1)}
             disabled={props.index() === 0}
             aria-label={t("widgets.move_up")}
+            ref={helpable(() => "widgets.reordering_widgets")}
             title={t("widgets.move_up")}
             class={editButtonClass}
           >
@@ -149,6 +154,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
             onClick={() => props.onMove(props.index(), 1)}
             disabled={props.index() === props.entriesLength() - 1}
             aria-label={t("widgets.move_down")}
+            ref={helpable(() => "widgets.reordering_widgets")}
             title={t("widgets.move_down")}
             class={editButtonClass}
           >
@@ -158,6 +164,7 @@ const WidgetCard: Component<WidgetCardProps> = (props) => {
             <button
               onClick={() => props.onRemove(props.index())}
               aria-label={t("widgets.remove_widget")}
+              ref={helpable(() => "widgets.removing_a_widget")}
               title={t("widgets.remove_widget")}
               class={editButtonClass}
             >
@@ -209,6 +216,7 @@ const WidgetPickerFooter: Component<WidgetPickerFooterProps> = (props) => {
     <div class="space-y-2" ref={rowSpan(16)}>
       <button
         onClick={props.onTogglePicker}
+        ref={helpable(() => "widgets.adding_a_widget")}
         aria-expanded={(props.pickerOpen) ? "true" : "false"}
         class="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl
                border border-dashed border-rim rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 hover:opacity-90 transition-opacity text-xs font-medium"
@@ -242,7 +250,7 @@ const WidgetPickerFooter: Component<WidgetPickerFooterProps> = (props) => {
 
       <Show when={props.onReset}>
         {(onReset) => (
-          <Button variant="ghost" size="sm" class="w-full" onClick={() => onReset()()}>
+          <Button variant="ghost" size="sm" class="w-full" onClick={() => onReset()()} ref={helpable(() => "widgets.resetting_to_defaults")}>
             <MdFillRefresh size={14} />
             {t("widgets.reset_layout")}
           </Button>

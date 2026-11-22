@@ -107,7 +107,7 @@ export interface WidgetDef {
    * optional — omit it to show the whole doc). Resolved the same way as the
    * `use:helpable` directive: fetches src/docs/user|dev/en/<docModule>.md and,
    * if a section is given, extracts the "## <section>" heading (underscores
-   * become spaces). Falls back to `widgets.<id>` when unset.
+   * become spaces). Falls back to `widgets.<id, dots as underscores>` when unset.
    */
   helpTarget?: string;
 }

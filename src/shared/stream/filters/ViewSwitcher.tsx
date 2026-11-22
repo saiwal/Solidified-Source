@@ -11,6 +11,7 @@ import type { ViewMode } from "@/shared/stream/types";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createPopover } from "@utsukta/spa-core/lib/createPopover";
 import { Button } from "@ui/Button";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 
 type IconType = Component<{ size?: number; class?: string }>;
 
@@ -44,7 +45,7 @@ export default function ViewSwitcher(props: {
   const pick = (v: ViewMode) => { props.onChange(v); setOpen(false); };
 
   return (
-    <div class="shrink-0" ref={ref}>
+    <div class="shrink-0" ref={[ref, helpable(() => "network.view_modes")]}>
       <Show
         when={wide()}
         fallback={

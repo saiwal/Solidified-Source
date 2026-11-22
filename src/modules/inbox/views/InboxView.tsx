@@ -206,6 +206,7 @@ export default function InboxView() {
   return (
     <SubPageLayout
       base="/inbox"
+      help={(p) => (p === "rules" ? "inbox.message_rules" : "inbox")}
       sidebarHeader={
         <div class="flex items-center gap-1.5">
           {/* Post has no routed module of its own — gate on the raw app,

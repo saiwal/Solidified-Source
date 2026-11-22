@@ -13,7 +13,7 @@ File: `packages/spa-core/src/lib/query-client.ts` — a single shared `QueryClie
 | Option | Value | Meaning |
 |---|---|---|
 | `staleTime` | 60 s | Data younger than this is served from cache with **no network request**. Older data still renders instantly but triggers a background refetch on next use. |
-| `gcTime` | 30 min | Unused cache entries are garbage-collected after this. Returning later means a cold fetch. |
+| `gcTime` | 5 min | Unused cache entries are garbage-collected after this — short for low-RAM devices; `offline-fallback.ts` (IndexedDB) still covers back-navigation. Returning later means a cold fetch. |
 | `retry` | 2 | Failed queries retry twice with exponential backoff before erroring. |
 | `refetchOnWindowFocus` | true | Stale data refetches when the tab regains focus. |
 | `refetchOnReconnect` | true | Stale data refetches when the network comes back. |

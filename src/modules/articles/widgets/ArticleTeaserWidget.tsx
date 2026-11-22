@@ -31,7 +31,7 @@ export default function ArticleTeaserWidget(props: WidgetProps) {
 
   const q = useAsyncQuery(() => ({
     queryKey: ["article-teaser", { nick: nick(), uuid: uuid() }],
-    queryFn: async () => (await fetchArticle(nick(), uuid())).article,
+    queryFn: async ({ queryKey: [, k] }) => { const { nick, uuid } = k as { nick: string; uuid: string }; return (await fetchArticle(nick, uuid)).article; },
     enabled: !!nick() && !!uuid(),
   }));
   const article = () => q.data;

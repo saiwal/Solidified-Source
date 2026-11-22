@@ -48,6 +48,7 @@ export function NavUtilityIcons(props: { moduleId?: string; class?: string }) {
           class="p-[8px]"
           onClick={() => setEditingWidgets(!editingWidgets())}
           data-tour="nav.edit_layout"
+          ref={helpable(() => "widgets.entering_edit_mode")}
         >
           <Show when={editingWidgets()} fallback={<MdOutlineEdit size={18} />}>
             <MdFillCheck size={18} />

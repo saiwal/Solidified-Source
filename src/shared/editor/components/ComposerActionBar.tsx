@@ -19,6 +19,7 @@ import { BiRegularEraser } from "solid-icons/bi";
 import { MdOutlineDelete } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { IconButton, SplitSubmitButton } from "./buttons";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 
 export interface ComposerActionBarProps {
   /** Left-aligned scope control — the ACL picker where there is one. */
@@ -44,7 +45,7 @@ const ComposerActionBar: Component<ComposerActionBarProps> = (props) => {
         <div class="flex items-center gap-2 min-w-0">{props.leading}</div>
       </Show>
 
-      <div class="flex items-center gap-2 ml-auto shrink-0">
+      <div class="flex items-center gap-2 ml-auto shrink-0" ref={helpable(() => "composing-posts.post_options")}>
         <Show when={props.onCancel}>
           <IconButton
             title={props.cancelLabel ?? t("editor.discard")}

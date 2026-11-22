@@ -1,7 +1,7 @@
 // Per-item "⋯" menu: Play next, Add to queue, Add to playlist, Instant mix,
 // Play on <device>. One popover instead of a row of icon buttons, so track rows
 // stay usable at phone width.
-import { For, Show, createSignal } from "solid-js";
+import { For, Show, createSignal, untrack } from "solid-js";
 import { useQuery, useQueryClient } from "@utsukta/spa-core/lib/query";
 import {
   MdFillMore_vert, MdFillQueue_play_next, MdFillPlaylist_add, MdFillRadio, MdFillCast, MdFillQueue_music,
@@ -40,7 +40,7 @@ export default function TrackMenu(props: {
 
   const playlists = useQuery(() => ({
     queryKey: ["jellyfin", props.s.server, props.s.userId, "playlists"],
-    queryFn: () => listPlaylists(props.s),
+    queryFn: () => listPlaylists(untrack(() => props.s)),
     enabled: open() && panel() === "playlists",
     ...jfQuery,
   }));

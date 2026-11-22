@@ -19,6 +19,7 @@ registerModule({
   widgets: [
     {
       id: "notepad.header",
+      helpTarget: "notepad",
       label: () => useI18n().t("widgets.notepad_header"),
       loader: () => import("./widgets/NotepadHeaderWidget"),
       slot: "header",
@@ -28,6 +29,7 @@ registerModule({
     },
     {
       id: "notepad.content",
+      helpTarget: "notepad",
       label: () => useI18n().t("widgets.notepad_content"),
       loader: () => import("./widgets/NotepadContentWidget"),
       slot: "contentTop",

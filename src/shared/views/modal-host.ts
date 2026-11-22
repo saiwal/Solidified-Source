@@ -16,7 +16,7 @@
  * also why resetting zen lives in ModalHost's frame wrapper rather than
  * here.
  */
-import { createContext, createSignal, type Accessor, type Setter } from "solid-js";
+import { createContext, createSignal, untrack, type Accessor, type Setter } from "solid-js";
 // Package import, not the "@/" alias: node resolves it through the workspace
 // symlink + exports map, so modal-host.test.ts still runs.
 import { persistedSignal, oneOf } from "@utsukta/spa-core/lib/persisted";
@@ -191,7 +191,13 @@ let seq = 0;
  *
  * The returned id is stable for the composer's whole life, across mode changes.
  */
+// An imperative call, often made from an effect (?new=1) or a handler: its
+// reads of the composer list and modes are checks, never dependencies.
 export function openComposer(spec: OpenComposerSpec): string {
+  return untrack(() => openComposerNow(spec));
+}
+
+function openComposerNow(spec: OpenComposerSpec): string {
   const existing = findByScope(entries(), spec.scope);
   if (existing) {
     // Reopening an active scope must not create a second composer on the same

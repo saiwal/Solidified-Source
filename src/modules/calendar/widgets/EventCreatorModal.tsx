@@ -1,4 +1,4 @@
-import { createSignal, Show, For, onSettled } from "solid-js";
+import { createSignal, Show, For, onSettled, untrack } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { createEvent, editEvent } from "../api";
@@ -63,7 +63,7 @@ function isoToTime(iso: string, tz: string) {
 
 export default function EventCreatorModal(props: Props) {
   const { t } = useI18n();
-  const ev = props.event;
+  const ev = untrack(() => props.event); // the event being edited, read once
   const isEdit = !!ev;
   const tzSelectable = isFeatureEnabled("event_tz_select");
   // Editing an event authored in a different zone: show/edit its wall-clock
@@ -92,7 +92,7 @@ export default function EventCreatorModal(props: Props) {
   const [category, setCategory] = createSignal(ev?.categories?.join(", ") ?? "");
   const [description, setDescription] = createSignal(ev?.description ?? "");
   const [descriptionTab, setDescriptionTab] = createSignal<EditorTab>("wysiwyg");
-  const attach = createAttachmentStore(currentNick(), `event:${ev?.id ?? "new"}`);
+  const attach = untrack(() => createAttachmentStore(currentNick(), `event:${ev?.id ?? "new"}`));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
@@ -260,6 +260,7 @@ export default function EventCreatorModal(props: Props) {
   // opened through openEvent() — the dock/page/minimize modes.
   return (
     <ComposerModal
+      helpTarget="calendar.creating_an_event"
       title={(isEdit ? t("calendar.edit_event") : t("calendar.new_event")) as string}
       onClose={props.onClose}
       widthClass="max-w-md"

@@ -1,16 +1,16 @@
 // solidified's implementation of the avatar contract (spa-core types/ui.types.ts).
 // Sizes go through inline style (size 8 = 2rem), so any of the many sizes the
 // app uses works without a Tailwind class having to exist for it.
-import { Show, createEffect, createSignal, omit } from "solid-js";
+import { Show, createSignal, omit } from "solid-js";
 import { MdFillPerson } from "solid-icons/md";
 import { avatarHue, initials } from "@utsukta/spa-core/lib/avatar";
 import type { AvatarProps } from "@utsukta/spa-core/types/ui.types";
 
 export function Avatar(props: AvatarProps) {
   const own = props, rest = omit(props, "src", "name", "size", "shape", "alt", "class", "style");
-  const [failed, setFailed] = createSignal(false);
-  // A new photo URL gets a fresh chance to load.
-  createEffect(() => own.src, () => { setFailed(false); }, { defer: true });
+  // Derived and writable: a new photo URL resets it, so it gets a fresh
+  // chance to load (no frame of the old fallback, as an effect would give).
+  const [failed, setFailed] = createSignal(() => (void own.src, false));
 
   const rem = () => (own.size ?? 8) / 4;
   const photo = () => !!own.src && !failed();

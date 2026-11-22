@@ -123,8 +123,7 @@ export default function PostView() {
   const navViewer = useNavViewer();
 
   // A comment link opens in context; "show all" swaps in the paged thread.
-  const [fullThread, setFullThread] = createSignal(false);
-  createEffect(() => params.uuid, () => { setFullThread(false); }, { defer: true });
+  const [fullThread, setFullThread] = createSignal(() => (void params.uuid, false));
 
   const [node, { refetch, mutate }] = createQueryResource(
     "post",

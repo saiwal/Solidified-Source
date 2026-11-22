@@ -89,9 +89,9 @@ export default function DmPane(props: { base: string; channel?: string; groupKey
   // ponytail: first page (30 threads) per person; page it if anyone has more.
   const person = useQuery(() => ({
     queryKey: ["messenger-person", props.channel ?? "", props.groupKey],
-    queryFn: () => fetchMessages({
+    queryFn: ({ queryKey: [, channel, groupKey] }) => fetchMessages({
       offset: 0, type: "direct", file: "", search: "",
-      ...(props.channel ? { channel: props.channel } : { xchan: props.groupKey }),
+      ...(channel ? { channel: channel as string } : { xchan: groupKey as string }),
     }),
   }));
   const group = createMemo<DmGroup | undefined>(() =>
@@ -228,10 +228,10 @@ export function DmThread(props: { uuid: string; unseen: boolean; onGone: () => v
   // Replies to something other than the root carry a quote of it instead.
   const thread = useQuery(() => ({
     queryKey: ["messenger-thread", props.uuid],
-    queryFn: async () => {
+    queryFn: async ({ queryKey: [, uuid] }) => {
       const [root, c] = await Promise.all([
-        fetchDisplayItem(props.uuid),
-        fetchComments(props.uuid).catch(() => ({ comments: [] as any[] })),
+        fetchDisplayItem(uuid as string),
+        fetchComments(uuid as string).catch(() => ({ comments: [] as any[] })),
       ]);
       return [root, ...(c.comments ?? [])].filter((m: any) => m?.body);
     },

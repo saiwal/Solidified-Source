@@ -59,6 +59,7 @@ export default function NotificationsSection() {
             <Group
               icon={<MdOutlineCampaign size={18} />}
               title={t("settings.notif_autopost_title")}
+              help="settings.auto_post_activity"
               desc={t("settings.notif_autopost_desc")}
             >
               <Toggle name="post_newfriend"     label={t("settings.notif_friend_request")} checked={!!d().post_newfriend} />
@@ -70,6 +71,7 @@ export default function NotificationsSection() {
             <Group
               icon={<MdOutlineEmail size={18} />}
               title={t("settings.notif_email_title")}
+              help="settings.email_notifications"
               desc={t("settings.notif_email_desc")}
               columns
             >
@@ -88,6 +90,7 @@ export default function NotificationsSection() {
             <Group
               icon={<MdOutlineNotifications size={18} />}
               title={t("settings.notif_visual_title")}
+              help="settings.visual_notifications"
               desc={t("settings.notif_visual_desc")}
               columns
             >
@@ -116,6 +119,7 @@ export default function NotificationsSection() {
             <Group
               icon={<MdOutlineTune size={18} />}
               title={t("settings.notif_other_title")}
+              help="settings.other_notification_options"
               desc={t("settings.notif_other_desc")}
             >
               <Toggle name="always_show_in_notices"    label={t("settings.notif_show_in_notices")}  checked={!!d().always_show_in_notices} />

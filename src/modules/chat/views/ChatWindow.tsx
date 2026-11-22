@@ -13,6 +13,7 @@ export default function ChatWindow(props: { nick: string; roomId: number; onClos
 	const room = createRoomSession(props.nick, props.roomId);
 	return (
 		<ComposerModal
+			helpTarget="chat.inside_a_chatroom"
 			title={room.name() || (room.loading() ? (t("calendar.loading") as string) : (t("chat.chatroom") as string))}
 			onClose={props.onClose}
 			widthClass="max-w-3xl"

@@ -21,6 +21,7 @@ import { Spinner } from "@ui/Spinner";
 import { IconButton, buttonClass } from "@ui/Button";
 import { MdOutlineCenter_focus_strong, MdOutlineClose, MdOutlineFit_screen } from "solid-icons/md";
 import { fetchGraph, NODE_TYPES, TYPE_COLOR, type Graph, type GraphNode, type NodeType } from "../api";
+import { NodeShape, SHAPE, isHollow } from "../NodeShape";
 
 type SimNode = GraphNode & SimulationNodeDatum & { degree: number };
 type SimLink = SimulationLinkDatum<SimNode>;
@@ -38,12 +39,14 @@ export default function GraphView() {
   const [graph] = createQueryResource("links-graph", nick, fetchGraph);
 
   // Hidden types persist per browser, so the filter survives navigating away.
-  const HIDDEN_KEY = "hz-graph-hidden";
+  // v2: "Not yet written" became hidden by default; the new key lets every browser pick that up.
+  const HIDDEN_KEY = "hz-graph-hidden-v2";
   // Node types, plus a pseudo-filter for posts with no links.
   type Filter = NodeType | "unlinked";
   const readHidden = (): Set<Filter> => {
     try {
-      const v = JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? "[]");
+      // Nothing saved yet: "Not yet written" starts hidden — it is clutter until you go looking for it.
+      const v = JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '["missing"]');
       return new Set(Array.isArray(v) ? v.filter((x) => x === "unlinked" || NODE_TYPES.includes(x)) : []);
     } catch {
       return new Set();
@@ -64,8 +67,29 @@ export default function GraphView() {
     return n;
   });
 
-  const visible = createMemo<Graph | null>(() => {
+  // Drafts only ever reach the owner; off until they switch them on (per browser).
+  const DRAFTS_KEY = "hz-graph-drafts";
+  const [showDrafts, setShowDrafts] = createSignal((() => {
+    try { return localStorage.getItem(DRAFTS_KEY) === "1"; } catch { return false; }
+  })());
+  const toggleDrafts = () => setShowDrafts((v) => {
+    try { localStorage.setItem(DRAFTS_KEY, v ? "0" : "1"); } catch { /* won't persist */ }
+    return !v;
+  });
+  const hasDrafts = createMemo(() => !!graph()?.nodes.some((n) => n.draft));
+  // The graph minus drafts when they're off — and minus any [[missing]] only a
+  // draft wrote (Links::withoutDrafts() does the same server-side).
+  const base = createMemo<Graph | null>(() => {
     const g = graph();
+    if (!g || showDrafts() || !hasDrafts()) return g ?? null;
+    const drafts = new Set(g.nodes.filter((n) => n.draft).map((n) => n.id));
+    const edges = g.edges.filter((e) => !drafts.has(e.source) && !drafts.has(e.target));
+    const used = new Set(edges.flatMap((e) => [e.source, e.target]));
+    return { nodes: g.nodes.filter((n) => !n.draft && (n.type !== "missing" || used.has(n.id))), edges };
+  });
+
+  const visible = createMemo<Graph | null>(() => {
+    const g = base();
     if (!g) return null;
     const h = hidden();
     const nodes = g.nodes.filter((n) => !h.has(n.type));
@@ -81,7 +105,7 @@ export default function GraphView() {
     }
     return { nodes: kept, edges };
   });
-  const presentTypes = createMemo(() => NODE_TYPES.filter((ty) => graph()?.nodes.some((n) => n.type === ty)));
+  const presentTypes = createMemo(() => NODE_TYPES.filter((ty) => base()?.nodes.some((n) => n.type === ty)));
 
   // The selected node and its neighbours, from what's currently visible — a
   // node hidden by a type filter closes the panel.
@@ -110,6 +134,10 @@ export default function GraphView() {
   let resetView = () => {};
   let fitAll = () => {};
   let redraw = () => {};
+  // Survive the layout rebuild a filter toggle causes: nodes keep their spot
+  // and the view its pan/zoom, so a toggle doesn't re-scatter the map.
+  const lastPos = new Map<string, { x: number; y: number }>();
+  let view = { x: 0, y: 0, k: 1 };
 
   // Re-highlight on search without restarting the layout (a tracked effect
   // can't create another one, so this lives here and calls the current draw).
@@ -124,7 +152,8 @@ export default function GraphView() {
       deg.set(e.source, (deg.get(e.source) ?? 0) + 1);
       deg.set(e.target, (deg.get(e.target) ?? 0) + 1);
     }
-    const nodes: SimNode[] = g.nodes.map((n) => ({ ...n, degree: deg.get(n.id) ?? 0 }));
+    const nodes: SimNode[] = g.nodes.map((n) => ({ ...n, ...lastPos.get(n.id), degree: deg.get(n.id) ?? 0 }));
+    const warm = nodes.some((n) => lastPos.has(n.id));
     const links: SimLink[] = g.edges.map((e) => ({ ...e }));
     const neighbours = new Map<string, Set<string>>();
     for (const e of g.edges) {
@@ -132,8 +161,8 @@ export default function GraphView() {
       (neighbours.get(e.target) ?? neighbours.set(e.target, new Set()).get(e.target)!).add(e.source);
     }
     const radius = (n: SimNode) => 4 + Math.sqrt(n.degree) * 2.5;
+    const paths = Object.fromEntries(NODE_TYPES.map((ty) => [ty, new Path2D(SHAPE[ty])])) as Record<NodeType, Path2D>;
     // Drawn size never drops below ~3px on screen, or a zoomed-out map is specks.
-    let view = { x: 0, y: 0, k: 1 };
     const drawR = (n: SimNode) => Math.max(radius(n), 3 / view.k);
 
     let w = 0, h = 0, dpr = 1;
@@ -150,6 +179,8 @@ export default function GraphView() {
       .force("center", forceCenter(0, 0))
       .force("collide", forceCollide<SimNode>((n) => radius(n) + 2))
       .on("tick", draw);
+    // Re-laid out after a toggle: settle gently from where things were.
+    if (warm) sim.alpha(0.3);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       sim.stop();
       sim.tick(300);
@@ -188,14 +219,22 @@ export default function GraphView() {
       }
       for (const n of nodes) {
         ctx.globalAlpha = lit(n) ? 1 : 0.15;
-        ctx.fillStyle = TYPE_COLOR[n.type];
-        ctx.beginPath();
-        ctx.arc(n.x!, n.y!, drawR(n), 0, Math.PI * 2);
-        ctx.fill();
-        if (n.type === "missing") {
-          ctx.strokeStyle = txt;
-          ctx.stroke();
+        // The shape is unit-size; scaled by r, so line widths divide by it.
+        const r = drawR(n);
+        ctx.save();
+        ctx.translate(n.x!, n.y!);
+        ctx.scale(r, r);
+        if (isHollow(n)) {
+          const px = 1 / (view.k * r);
+          ctx.lineWidth = 2 * px;
+          if (n.type === "missing") ctx.setLineDash([3 * px, 2 * px]);
+          ctx.strokeStyle = TYPE_COLOR[n.type];
+          ctx.stroke(paths[n.type]);
+        } else {
+          ctx.fillStyle = TYPE_COLOR[n.type];
+          ctx.fill(paths[n.type]);
         }
+        ctx.restore();
         if (n.id === sel) {
           ctx.globalAlpha = 1;
           ctx.strokeStyle = accent;
@@ -332,6 +371,7 @@ export default function GraphView() {
     redraw = draw;
 
     cleanups.push(() => {
+      for (const n of nodes) lastPos.set(n.id, { x: n.x!, y: n.y! });
       redraw = () => {};
       sim.stop();
       ro.disconnect();
@@ -351,7 +391,7 @@ export default function GraphView() {
           <h1 class="text-xl font-semibold text-txt">{owner() === null ? t("graph.title_mine") : t("graph.title_of", { name: owner()! })}</h1>
           <p class="text-sm text-muted">{owner() === null ? t("graph.subtitle") : t("graph.subtitle_of", { name: owner()! })}</p>
         </div>
-        <Show when={graph()}>
+        <Show when={base()}>
           {(g) => <span class="text-xs text-muted">{t("graph.stats", { nodes: g().nodes.length, edges: g().edges.length })}</span>}
         </Show>
       </div>
@@ -360,15 +400,21 @@ export default function GraphView() {
         <For each={presentTypes()}>
           {(ty) => (
             <Chip size="sm" selected={!hidden().has(ty)} onClick={() => toggle(ty)}
-              icon={<span class="inline-block w-2.5 h-2.5 rounded-full" style={{ background: TYPE_COLOR[ty] }} />}>
+              icon={<NodeShape type={ty} />}>
               {t(`graph.type_${ty}`)}
             </Chip>
           )}
         </For>
         <Show when={presentTypes().includes("post")}>
           <Chip size="sm" selected={!hidden().has("unlinked")} onClick={() => toggle("unlinked")}
-            icon={<span class="inline-block w-2.5 h-2.5 rounded-full" style={{ background: TYPE_COLOR.post, opacity: 0.45 }} />}>
+            icon={<NodeShape type="post" style={{ opacity: 0.45 }} />}>
             {t("graph.unlinked_posts")}
+          </Chip>
+        </Show>
+        <Show when={hasDrafts()}>
+          <Chip size="sm" selected={showDrafts()} onClick={toggleDrafts}
+            icon={<NodeShape type="post" draft />}>
+            {t("graph.drafts")}
           </Chip>
         </Show>
         <div class="ml-auto w-full sm:w-56">
@@ -405,9 +451,11 @@ export default function GraphView() {
               class={`${cardClass(true)} absolute bottom-2 left-2 right-2 sm:right-auto sm:w-80 max-h-[60%] flex flex-col overflow-clip`}
             >
               <header class="flex items-start gap-2 p-3 border-b border-rim">
-                <span class="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0" style={{ background: TYPE_COLOR[d().node.type] }} />
+                <NodeShape type={d().node.type} draft={d().node.draft} size={12} class="mt-1" />
                 <div class="min-w-0 flex-1">
-                  <p class="text-xs text-muted">{t(`graph.type_${d().node.type}`)}</p>
+                  <p class="text-xs text-muted">{d().node.draft
+                    ? t("graph.draft_of", { type: t(`graph.type_${d().node.type}`) })
+                    : t(`graph.type_${d().node.type}`)}</p>
                   <h2 class="text-sm font-semibold text-txt line-clamp-3 break-words">{d().node.title}</h2>
                 </div>
                 <IconButton size="sm" label={t("layout.close")} onClick={() => setSelectedId(null)}>
@@ -431,7 +479,7 @@ export default function GraphView() {
         </Show>
         <ul class="sr-only">
           <For each={visible()?.nodes.filter((n) => n.url)}>
-            {(n) => <li><a href={n.url!}>{t(`graph.type_${n.type}`)}: {n.title}</a></li>}
+            {(n) => <li><a href={n.url!}>{n.draft ? t("graph.draft_of", { type: t(`graph.type_${n.type}`) }) : t(`graph.type_${n.type}`)}: {n.title}</a></li>}
           </For>
         </ul>
       </div>
@@ -455,7 +503,7 @@ function NodeList(props: { label: string; nodes: GraphNode[]; onPick: (id: strin
                 class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm text-txt hover:bg-elevated transition-colors"
                 onClick={() => props.onPick(n.id)}
               >
-                <span class="w-2 h-2 rounded-full shrink-0" style={{ background: TYPE_COLOR[n.type] }} />
+                <NodeShape type={n.type} draft={n.draft} />
                 <span class="min-w-0 truncate">{n.title}</span>
               </button>
             </li>

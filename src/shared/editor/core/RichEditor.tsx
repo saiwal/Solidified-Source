@@ -1,5 +1,5 @@
 import { POST_PROSE } from "@/shared/lib/prose";
-import { createEffect, createSignal, onCleanup, useContext, For, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, useContext, For, Show, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import EditorStats, { ZenToggleButton } from "../components/EditorStats";
 import { ZenHostContext } from "../components/ComposerShell";
@@ -193,7 +193,9 @@ export default function RichEditor(props: Props) {
     if (osm) hydrateMapEmbeds(el, { tms: osm.tmsserver || DEFAULT_TMS, zoom: osm.zoom ?? 16, marker: osm.marker ?? 1 });
   };
 
-  const seedEditor = (el: HTMLDivElement) => {
+  // A ref: fills the surface once per mount from the current body. Later body
+  // changes reach the DOM through the sync effect, so these reads are a seed.
+  const seedEditor = (el: HTMLDivElement) => untrack(() => {
     editorRef = el;
     checksObserver.disconnect();
     checksObserver.observe(el, { childList: true, subtree: true });
@@ -203,7 +205,7 @@ export default function RichEditor(props: Props) {
     hydrateEmbeds(el);
     if (props.capabilities.latexMode === "live") hydrateLatexEmbeds(el);
     setImgSel(null);
-  };
+  });
 
   // The caret as a text offset into the surface. A Range wouldn't do: the
   // blur pass (opening a picker blurs the editor) replaces every node, so a
@@ -468,7 +470,7 @@ export default function RichEditor(props: Props) {
       ? { body, mode: "source", sel: textareaRef ? [textareaRef.selectionStart, textareaRef.selectionEnd] : null }
       : { body, mode: "wysiwyg", sel: surfaceSel() };
 
-  let last: Snapshot = { body: props.body, mode: tab(), sel: null };
+  let last: Snapshot = untrack(() => ({ body: props.body, mode: tab(), sel: null }));
   createEffect(() => props.body, (body) => {
     if (restoring || body === last.body) return;
     history.change(last, typed);

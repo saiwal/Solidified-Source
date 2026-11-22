@@ -13,6 +13,7 @@ registerModule({
   widgets: [
     {
       id: "viewconnections.content",
+      helpTarget: "connections.your_connections",
       label: () => useI18n().t("widgets.viewconnections_content"),
       loader: () => import("./widgets/ViewConnectionsContentWidget"),
       slot: "contentTop",

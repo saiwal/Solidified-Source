@@ -16,7 +16,7 @@ export default function NoteComposerModal(props: {
   onSaved: () => void;
 }) {
   return (
-    <ComposerModal title={props.heading} onClose={props.onClose}>
+    <ComposerModal title={props.heading} onClose={props.onClose} helpTarget="notepad.writing_a_note">
       <NoteComposer
         nick={props.nick}
         initial={props.initial}

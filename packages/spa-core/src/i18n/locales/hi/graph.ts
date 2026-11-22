@@ -20,6 +20,8 @@ export const graph: RawDictionary["graph"] = {
   missing_hint: "[[लिंक]] उसी शीर्षक वाले विकि पेज, लेख या कार्ड पर जाते हैं।",
   resolving: "“{{title}}” खोजा जा रहा है…",
   unlinked_posts: "बिना लिंक वाली पोस्ट",
+  drafts: "ड्राफ़्ट",
+  draft_of: "ड्राफ़्ट · {{type}}",
   links_to: "इनसे लिंक",
   linked_from: "यहाँ से लिंक",
   stats: "{{nodes}} आइटम · {{edges}} लिंक",

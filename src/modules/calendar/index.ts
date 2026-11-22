@@ -22,6 +22,7 @@ registerModule({
   widgets: [
     {
       id: "cal.header",
+      helpTarget: "calendar",
       label: () => useI18n().t("widgets.cal_header"),
       loader: () => import("./widgets/CalendarHeaderWidget"),
       slot: "header",
@@ -31,6 +32,7 @@ registerModule({
     },
     {
       id: "cal.content",
+      helpTarget: "calendar",
       label: () => useI18n().t("widgets.cal_content"),
       loader: () => import("./widgets/CalendarContentWidget"),
       slot: "contentTop",
@@ -41,6 +43,7 @@ registerModule({
     {
       // Channel tasks + CalDAV to-dos; renders only for the owner
       id: "cal.tasks",
+      helpTarget: "widgets.tasks",
       label: () => useI18n().t("widgets.tasks"),
       loader: () => import("./widgets/TasksWidget"),
       slot: "right",

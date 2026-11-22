@@ -109,7 +109,7 @@ export default function ArticleView() {
   // pending reads settle — Back changed the URL but never the screen.
   const uuid = createMemo((prev?: string) => params.uuid || prev || "");
   const key = () => ["article-detail", { nick: nick(), uuid: uuid() }] as const;
-  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchArticle(nick(), uuid()) }));
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: ({ queryKey: [, k] }) => fetchArticle(k.nick, k.uuid) }));
   const data = () => q.data;
   /** Refetch the article + comments; resolves once they've landed. */
   const reload = () => invalidate(key());

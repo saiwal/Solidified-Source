@@ -7,6 +7,7 @@ import { useInstalledApps } from "@utsukta/spa-core/store/nav-store";
 import { isAppInstalled } from "@utsukta/spa-core/module-registry";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { CardHeader } from "@ui/Card";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 
 export type SubPageContext = "owner" | "local" | "remote" | "anonymous" | "all";
 
@@ -41,6 +42,10 @@ interface Props {
   sidebarFooter?: JSX.Element;
   /** Override the content area wrapper classes. Default: "flex-1 overflow-y-auto" */
   contentClass?: string;
+  /** Help-mode target ("<doc>.<section>") for a section path — used on its
+   *  nav row and on the whole page while it's open. Nested targets (a
+   *  settings Group, a button) still win inside the page. */
+  help?: (path: string) => string | undefined;
 }
 
 // Each section path (e.g. "/settings/integrations") is registered as its own
@@ -126,6 +131,7 @@ export default function SubPageLayout(props: Props) {
           base={props.base}
           items={visibleItems()}
           activeKey={highlightKey()}
+          help={props.help}
         />
         <Show when={props.sidebarFooter}>
           <div class="px-4 pb-3 mt-auto">{props.sidebarFooter}</div>
@@ -168,7 +174,7 @@ export default function SubPageLayout(props: Props) {
             instance's onCleanup — the survivor then renders blank forever.
             Mobile hides <main> at the base path anyway. */}
         <Show when={!atBase()}>
-          <div class={props.contentClass ?? "flex-1 min-w-0"}>
+          <div class={props.contentClass ?? "flex-1 min-w-0"} ref={helpable(() => props.help?.(props.activeKey))}>
             {props.children}
           </div>
         </Show>
@@ -183,6 +189,7 @@ function SubPageNav(props: {
   base: string;
   items: SubPageItem[];
   activeKey: string;
+  help?: (path: string) => string | undefined;
 }) {
   const { t } = useI18n();
   return (
@@ -192,7 +199,7 @@ function SubPageNav(props: {
         return (
           <>
             <a
-              ref={item.ref}
+              ref={[item.ref, helpable(() => props.help?.(item.path))]}
               href={`${props.base}/${item.path}`}
               class={[
                 "flex items-center gap-3 mx-2 px-3 py-2 rounded-xl text-sm",

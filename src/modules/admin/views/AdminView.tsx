@@ -39,7 +39,7 @@ export default function AdminView() {
 
   return (
     <Show when={auth()?.isAdmin}>
-      <SubPageLayout base="/admin" items={ADMIN_ITEMS} activeKey={activeKey()}>
+      <SubPageLayout base="/admin" items={ADMIN_ITEMS} activeKey={activeKey()} help={(p) => `admin.${p}`}>
         <Loading fallback={<SectionSkeleton />}>
           <Dynamic component={SECTIONS[activeKey()]} />
         </Loading>

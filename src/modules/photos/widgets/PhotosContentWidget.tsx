@@ -1252,8 +1252,7 @@ function ImageView() {
   const isOwner = () => !!auth()?.nick && auth()!.nick === nick();
 
   // NSFW blur — revealed per photo, resets when navigating to a sibling
-  const [nsfwRevealed, setNsfwRevealed] = createSignal(false);
-  createEffect(() => d()?.resource_id, () => { setNsfwRevealed(false); });
+  const [nsfwRevealed, setNsfwRevealed] = createSignal(() => (void d()?.resource_id, false));
   const nsfwBlurred = () => !!d()?.is_nsfw && !nsfwRevealed();
 
   async function openLightbox() {

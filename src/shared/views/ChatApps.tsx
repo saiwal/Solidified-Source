@@ -37,7 +37,7 @@ export function ChatAppsButton(props: { xchan: string | null | undefined; size?:
   const { t } = useI18n();
   const q = useQuery(() => ({
     queryKey: ["chatids", props.xchan],
-    queryFn: () => getChatIds(`xchan=${encodeURIComponent(props.xchan!)}`),
+    queryFn: ({ queryKey: [, x] }) => getChatIds(`xchan=${encodeURIComponent(x as string)}`),
     enabled: !!props.xchan,
     staleTime: 10 * 60_000,
   }));
@@ -96,7 +96,7 @@ export function ChatMenuItems(props: { xchan: string }) {
   const { t } = useI18n();
   const q = useQuery(() => ({
     queryKey: ["chatids", props.xchan],
-    queryFn: () => getChatIds(`xchan=${encodeURIComponent(props.xchan)}`),
+    queryFn: ({ queryKey: [, x] }) => getChatIds(`xchan=${encodeURIComponent(x as string)}`),
     staleTime: 10 * 60_000,
   }));
   return (
@@ -119,7 +119,7 @@ export function ChatAddressFields(props: { xchan?: string }) {
   const key = () => (props.xchan ? ["chatids", props.xchan] : ["chatids", "self"]);
   const q = useQuery(() => ({
     queryKey: key(),
-    queryFn: () => getChatIds(props.xchan ? `xchan=${encodeURIComponent(props.xchan)}` : "self=1"),
+    queryFn: ({ queryKey: [, x] }) => getChatIds(x === "self" ? "self=1" : `xchan=${encodeURIComponent(x as string)}`),
     refetchOnWindowFocus: false, // seeds inputs; a refetch would clobber edits
   }));
   const [values, setValues] = createSignal<Record<string, string>>({});

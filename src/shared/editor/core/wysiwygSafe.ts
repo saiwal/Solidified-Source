@@ -19,7 +19,7 @@
  * A body that fails isn't locked out: the toggle asks before switching, so
  * the writer chooses the rewrite (see createWysiwygGate).
  */
-import { createEffect, createMemo, createSignal, untrack, type Accessor } from "solid-js";
+import { createMemo, createSignal, untrack, type Accessor } from "solid-js";
 import { canUseWysiwyg } from "@utsukta/spa-core/lib/mimetypes";
 import { sourceToHtml } from "./sourceToHtml";
 import { htmlToSource } from "./htmlToSource";
@@ -93,9 +93,8 @@ export function createWysiwygGate(
       return LOST.test(b) ? ("blocked" as const) : ("confirm" as const);
     });
   });
-  const [forced, setForced] = createSignal(false);
-  // A new format is a new question.
-  createEffect(mime, () => { setForced(false); }, { defer: true });
+  // A new format is a new question: re-derives to false when mime changes.
+  const [forced, setForced] = createSignal(() => (void mime(), false));
   return {
     available: () => mode() === "clean" || (forced() && mode() === "confirm"),
     mode,

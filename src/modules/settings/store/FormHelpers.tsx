@@ -4,6 +4,7 @@ import { MdOutlineSave } from "solid-icons/md";
 import PageActions, { useMobileActions, useFloatingAction } from "@/shared/views/layout/PageActions";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { cardClass } from "@ui/Card";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 
 /**
  * A form's Save, always in reach without a bar over the page: the round
@@ -50,10 +51,12 @@ export function Group(props: {
   title: string;
   desc: string;
   columns?: boolean;
+  /** Help-mode target ("<doc>.<section>") for the whole group. */
+  help?: string;
   children: JSX.Element;
 }) {
   return (
-    <section class={cardClass()}>
+    <section class={cardClass()} ref={helpable(() => props.help)}>
       <header class="flex items-center gap-3 px-4 py-3 border-b border-rim">
         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-muted text-accent">
           {props.icon}

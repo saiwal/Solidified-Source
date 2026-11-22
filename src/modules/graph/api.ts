@@ -8,6 +8,8 @@ export interface GraphNode {
   title: string;
   /** null for a missing [[Title]] (nothing to open yet). */
   url: string | null;
+  /** The owner's unpublished draft (owner's own graph only). */
+  draft?: boolean;
 }
 export interface GraphEdge { source: string; target: string }
 export interface Graph { nodes: GraphNode[]; edges: GraphEdge[] }

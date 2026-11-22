@@ -973,8 +973,12 @@ export default function FilesContentWidget() {
       </div>
 
       {/* ── Toolbar (sticky): selection + what acts on it + view + create ──
-          Sticky so a selection deep in a long folder stays actionable. */}
-      <div class="sticky top-0 z-20 -mx-1 px-1 py-1.5 bg-base flex items-center gap-1.5 flex-wrap">
+          Sticky so a selection deep in a long folder stays actionable. A card
+          like the list below it, so pinned it reads as a panel, not a strip.
+          Sticky offsets count from inside the scroller's padding, so the
+          negative top cancels <main>'s p-4 lg:p-6 (Layout.tsx, both themes)
+          and the bar pins flush, with no gap for rows to show through. */}
+      <div class={`sticky -top-4 lg:-top-6 z-20 ${cardClass(true)} p-1.5 flex items-center gap-1.5 flex-wrap`}>
         <div class={GROUP}>
           <Show when={sortedFiles().length}>
             <ToolButton

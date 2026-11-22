@@ -11,7 +11,7 @@
  * - Submits to POST /spa/item (SPA Item handler) with JSON body + CSRF token
  */
 
-import { createSignal, onCleanup, useContext, Show, Loading, lazy, type Component, createEffect } from "solid-js";
+import { createSignal, onCleanup, useContext, Show, Loading, lazy, type Component, createEffect, untrack } from "solid-js";
 import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { MdOutlineClose, MdOutlineMap, MdOutlineRemove_circle_outline, MdOutlineSchedule, MdOutlineTimer } from "solid-icons/md";
@@ -138,17 +138,17 @@ const PostComposer: Component<ComposerProps> = (props) => {
     !isEdit() && feature("markdown") ? "text/markdown" : "text/bbcode";
 
   // ── Scope (shared by both stores for matching IDB keys) ───────────────────
-  const scope =
+  const scope = untrack(() =>
     props.scopeKey ??
-    (props.parentId ? `post:reply:${props.parentId}` : "post:new");
+    (props.parentId ? `post:reply:${props.parentId}` : "post:new"));
 
   // ── Attachment store ───────────────────────────────────────────────────────
   // A visitor uploads into the wall owner's storage, as core's jot does —
   // core's fix_attached_permissions() only finds files with uid = owner.
   // Browsing is off for them: it would pick the visitor's own files.
-  const attachNick = props.wallOwner?.nick ?? currentNick();
-  const canAttach = !props.wallOwner || props.wallOwner.writeStorage;
-  const attach = createAttachmentStore(attachNick, scope);
+  const attachNick = untrack(() => props.wallOwner?.nick ?? currentNick());
+  const canAttach = untrack(() => !props.wallOwner || props.wallOwner.writeStorage);
+  const attach = untrack(() => createAttachmentStore(attachNick, scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, () => attachNick, () => "both", !props.wallOwner);
@@ -349,7 +349,8 @@ const PostComposer: Component<ComposerProps> = (props) => {
       props.onClose();
     },
     scope,
-    {
+    // Seeds, read once.
+    untrack(() => ({
       initialBody: props.initialBody,
       initialTitle: props.initialTitle,
       initialSummary: props.initialSummary,
@@ -368,7 +369,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
         }
         poll.toFormPayload(); // throws on fewer than two answers
       },
-    },
+    })),
   );
 
 
@@ -501,7 +502,7 @@ const PostComposer: Component<ComposerProps> = (props) => {
         }
         ariaLabel={t("editor.composer_label")}
         onClose={props.onClose}
-        helpTarget="shared/post-composer"
+        helpTarget="composing-posts"
         manageEscape={false}
       >
         {/* Single flex-col root for all body content — mirrors ArticleComposer's

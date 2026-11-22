@@ -143,8 +143,7 @@ export default function MessengerView() {
   const isOwner = () => !!auth()?.isLocal && nick() === currentNick();
   const urlTab = () => (segs()[0] === "rooms" ? "rooms" : segs()[0] === "matrix" ? "matrix" : "dms");
   // Local, so flipping tabs keeps the open conversation; follows the url.
-  const [pickedTab, setTab] = createSignal<"dms" | "rooms" | "matrix">(untrack(urlTab));
-  createEffect(urlTab, (tab) => { setTab(tab); }, { defer: true });
+  const [pickedTab, setTab] = createSignal<"dms" | "rooms" | "matrix">(() => urlTab());
   const selected = () => segs().length > 1;
   const [query, setQuery] = createSignal("");
 

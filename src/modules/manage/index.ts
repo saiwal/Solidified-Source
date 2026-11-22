@@ -23,6 +23,7 @@ registerModule({
   widgets: [
     {
       id: "manage.header",
+      helpTarget: "manage",
       label: () => useI18n().t("widgets.manage_header"),
       loader: () => import("./widgets/ManageHeaderWidget"),
       slot: "header",
@@ -32,6 +33,7 @@ registerModule({
     },
     {
       id: "manage.content",
+      helpTarget: "manage",
       label: () => useI18n().t("widgets.manage_content"),
       loader: () => import("./widgets/ManageContentWidget"),
       slot: "contentTop",

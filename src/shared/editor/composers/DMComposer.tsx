@@ -14,7 +14,7 @@
  * shared thread between the copies — that is what makes them blind.
  */
 
-import { createSignal, createEffect, onCleanup, useContext, Show, For, type Component } from "solid-js";
+import { createSignal, createEffect, onCleanup, useContext, Show, For, type Component, untrack } from "solid-js";
 import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { createComposerStore } from "../store/createComposerStore";
@@ -68,8 +68,9 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   const { t } = useI18n();
   const caps = CAPABILITIES.dm;
 
-  const scope = props.scopeKey ?? "dm:new";
-  const attach = createAttachmentStore(currentNick(), scope);
+  // Read once: a composer instance belongs to one draft scope and channel.
+  const scope = untrack(() => props.scopeKey ?? "dm:new");
+  const attach = createAttachmentStore(untrack(currentNick), scope);
   // Delayed delivery. /spa/item stores a future `created` with item_delayed = 1
   // regardless of scope, so a scheduled DM needs nothing on the server.
   const [publishAt, setPublishAt] = createSignal("");
@@ -77,7 +78,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, currentNick, () => "both");
 
-  const [recipients, setRecipients] = createSignal<AclEntry[]>(props.initialRecipients ?? []);
+  const [recipients, setRecipients] = createSignal<AclEntry[]>(untrack(() => props.initialRecipients ?? []));
   const [bcc, setBcc] = createSignal<AclEntry[]>([]);
   const [showBcc, setShowBcc] = createSignal(false);
   const allRecipients = () => [...recipients(), ...bcc()];
@@ -207,7 +208,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     props.onSent?.(iid, sentUuid);
     attach.clear();
     props.onClose();
-  }, scope, {
+  }, scope, untrack(() => ({
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     // Read lazily, so it can reference buildDraftExtra declared below.
     autosaveExtra: () => buildDraftExtra(),
@@ -215,10 +216,10 @@ const DMComposer: Component<DMComposerProps> = (props) => {
     // addon's toggle); a DM goes through the same POST and the server converts
     // it to bbcode on save. Missing here, a DM was always text/bbcode, so
     // ==highlight==, **bold** and the rest were stored literally.
-    initialMimetype: isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
+    initialMimetype: untrack(() => isFeatureEnabled("markdown")) ? "text/markdown" : "text/bbcode",
     initialBody: props.initialBody,
     initialTitle: props.initialTitle,
-  });
+  })));
 
   // Recipients are the one part of a DM draft the composer store knows
   // nothing about, so they ride in the draft's `extra` bag — whole entries,
@@ -275,7 +276,7 @@ const DMComposer: Component<DMComposerProps> = (props) => {
       <ComposerModal
         title={t("editor.dm_new_message")}
         onClose={props.onClose}
-        helpTarget="shared/dm-composer"
+        helpTarget="composing-posts.direct_messages"
         manageEscape={false}
       >
         <ComposerShell

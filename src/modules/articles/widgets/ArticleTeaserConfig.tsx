@@ -17,7 +17,7 @@ export default function ArticleTeaserConfig(props: WidgetConfigProps) {
 
   const q = useAsyncQuery(() => ({
     queryKey: ["articles-list", nick()],
-    queryFn: async () => (await fetchArticles(nick())).articles,
+    queryFn: async ({ queryKey: [, n] }) => (await fetchArticles(n as string)).articles,
     enabled: !!nick(),
   }));
 

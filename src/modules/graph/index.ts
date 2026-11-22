@@ -29,6 +29,7 @@ registerModule({
     {
       // "Linked from" — renders nothing off a single-item page or with no backlinks.
       id: "graph.backlinks",
+      helpTarget: "widgets.backlinks",
       label: () => useI18n().t("widgets.backlinks"),
       loader: () => import("./widgets/BacklinksWidget"),
       slot: ["right", "footer"],

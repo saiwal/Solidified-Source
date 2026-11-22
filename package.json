@@ -17,7 +17,8 @@
     "typecheck": "tsc -b --watch",
     "games:download": "node scripts/download-puzzles.mjs",
     "theme:create": "node scripts/create-theme.mjs",
-    "test:php": "bash scripts/test-php.sh"
+    "test:php": "bash scripts/test-php.sh",
+    "check:help": "node scripts/check-help-targets.mjs"
   },
   "dependencies": {
     "@bbob/html": "^4.3.1",

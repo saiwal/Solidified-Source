@@ -80,6 +80,7 @@ import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { EmptyState } from "@ui/EmptyState";
 import { Menu, MenuItem } from "@ui/Menu";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 import { Tabs, TabPanel } from "@ui/Tabs";
 
 export type { StreamHandlers as PostActions };
@@ -1337,7 +1338,7 @@ export default function PostCard(props: {
         </Show>
 
         {/* Compact action bar */}
-        <div class="mt-2 flex items-center gap-0.5 flex-wrap">
+        <div class="mt-2 flex items-center gap-0.5 flex-wrap" ref={helpable(() => "composing-posts.reacting_to_posts")}>
           <Show when={canInteract()}>
             <CompactActionBtn
               icon={
@@ -1462,7 +1463,7 @@ export default function PostCard(props: {
             label={t("post.more_actions")}
             class="min-w-[11rem]"
             trigger={(p, open) => (
-              <IconButton label={t("post.more_actions")} size="sm" pressed={open()} {...p}>
+              <IconButton label={t("post.more_actions")} size="sm" pressed={open()} {...p} ref={[p.ref, helpable(() => "composing-posts.post_menu")]}>
                 <MdFillMore_vert size={14} />
               </IconButton>
             )}
@@ -1951,7 +1952,7 @@ export default function PostCard(props: {
       </Show>
 
       {/* Action bar */}
-      <div class="mt-4 pt-3 border-t border-rim flex flex-wrap items-center gap-0.5 wide:gap-1">
+      <div class="mt-4 pt-3 border-t border-rim flex flex-wrap items-center gap-0.5 wide:gap-1" ref={helpable(() => "composing-posts.reacting_to_posts")}>
         {/* ── Like / Dislike / Star / Repeat ── */}
         <Show when={canInteract()}>
           <ActionBtn
@@ -2086,7 +2087,7 @@ export default function PostCard(props: {
           label={t("post.more_actions")}
           class="min-w-[11rem]"
           trigger={(p, open) => (
-            <IconButton label={t("post.more_actions")} pressed={open()} {...p}>
+            <IconButton label={t("post.more_actions")} pressed={open()} {...p} ref={[p.ref, helpable(() => "composing-posts.post_menu")]}>
               <MdFillMore_vert size={18} />
             </IconButton>
           )}

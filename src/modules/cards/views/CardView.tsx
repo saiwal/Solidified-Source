@@ -97,7 +97,7 @@ export default function CardView() {
   // key doesn't change mid-navigation, which would hold the router forever.
   const uuid = createMemo((prev?: string) => params.uuid || prev || "");
   const key = () => ["card-detail", { nick: nick(), uuid: uuid() }] as const;
-  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: () => fetchCard(nick(), uuid()) }));
+  const q = useAsyncQuery(() => ({ queryKey: key(), queryFn: ({ queryKey: [, k] }) => fetchCard(k.nick, k.uuid) }));
   const data = () => q.data;
   const reload = () => invalidate(key());
 

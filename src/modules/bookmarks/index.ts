@@ -27,6 +27,7 @@ registerModule({
   widgets: [
     {
       id: "bookmarks.header",
+      helpTarget: "bookmarks",
       label: () => useI18n().t("widgets.bookmarks_header"),
       loader: () => import("./widgets/BookmarksHeaderWidget"),
       slot: "header",
@@ -36,6 +37,7 @@ registerModule({
     },
     {
       id: "bookmarks.content",
+      helpTarget: "bookmarks",
       label: () => useI18n().t("widgets.bookmarks_content"),
       loader: () => import("./widgets/BookmarksContentWidget"),
       slot: "contentTop",

@@ -3,13 +3,14 @@ import type { JSX } from "@solidjs/web";
 import { createMediaQuery } from "@solid-primitives/media";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { helpable } from "@utsukta/spa-core/lib/helpable";
+import HelpTrigger from "@/shared/views/HelpTrigger";
 import { IconButton } from "./buttons";
 import {
   ComposerFrameContext,
   type ComposerKind,
   type ComposerMode,
 } from "@/shared/views/modal-host";
-import { draftSavedAt } from "../store/createComposerStore";
+import { draftSavedAt, draftSaving } from "../store/createComposerStore";
 import { MdOutlineArticle, MdOutlineCalendar_today, MdOutlineChat, MdOutlineChat_bubble_outline, MdOutlineClose, MdOutlineDescription, MdOutlineForum, MdOutlineEdit, MdOutlineMail_outline, MdOutlineRemove } from "solid-icons/md";
 
 import { Modal } from "@ui/Modal";
@@ -234,14 +235,18 @@ export default function ComposerModal(props: ComposerModalProps) {
                 {(f) => <ComposerKindIcon kind={f().kind} />}
               </Show>
               <h2 class="text-sm font-semibold text-txt truncate">{props.title}</h2>
-              <Show when={isComposer && savedFlash()}>
-                <span class="shrink-0 text-xs text-muted animate-pulse">
-                  {t("editor.draft_saved")}
+              <Show when={isComposer && (draftSaving() > 0 || savedFlash())}>
+                <span class="shrink-0 text-xs text-muted animate-pulse" role="status">
+                  {draftSaving() > 0 ? t("editor.saving_draft") : t("editor.draft_saved")}
                 </span>
               </Show>
             </div>
             <div class="flex items-center gap-1 shrink-0">
               {props.headerExtra}
+              {/* The dialog is modal, so the nav's help button is out of reach. */}
+              <Show when={props.helpTarget}>
+                <span ref={helpable(() => "nav.help_mode")}><HelpTrigger class="p-1.5" /></span>
+              </Show>
               <Show when={frame}>
                 {(f) => (
                   <>

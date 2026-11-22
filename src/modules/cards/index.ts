@@ -36,6 +36,7 @@ registerModule({
   widgets: [
     {
       id: "cards.header",
+      helpTarget: "cards",
       label: () => useI18n().t("widgets.cards_header"),
       loader: () => import("./widgets/CardsHeaderWidget"),
       slot: "header",
@@ -45,6 +46,7 @@ registerModule({
     },
     {
       id: "cards.content",
+      helpTarget: "cards",
       label: () => useI18n().t("widgets.cards_content"),
       loader: () => import("./widgets/CardsContentWidget"),
       slot: "contentTop",
@@ -64,6 +66,7 @@ registerModule({
       // Items sharing hashtags/categories with the one on screen; renders
       // nothing off a single-item page.
       id: "cards.related",
+      helpTarget: "links-and-graph.related_posts",
       label: () => useI18n().t("widgets.related"),
       loader: () => import("@/shared/stream/components/RelatedItemsWidget"),
       slot: ["right", "footer"],

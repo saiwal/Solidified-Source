@@ -53,6 +53,12 @@ function timing(t: Transition | undefined, fill: FillMode): KeyframeAnimationOpt
     duration: (t?.duration ?? 0.3) * 1000,
     easing: Array.isArray(e) ? `cubic-bezier(${e.join(",")})` : (e as string | undefined) ?? "ease",
     fill,
+    // Solid 2 clones new DOM from a <template>, so a ref callback sees an
+    // element still owned by the template's inert document. An animation
+    // started there binds to that document's timeline, which never ticks:
+    // it stays at its first frame (opacity 0) after insertion. Pin the
+    // page's timeline.
+    timeline: document.timeline,
   };
 }
 

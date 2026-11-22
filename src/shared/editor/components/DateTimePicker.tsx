@@ -1,4 +1,4 @@
-import { createSignal, createMemo, For, Show, onCleanup, useContext } from "solid-js";
+import { createSignal, createMemo, For, Show, onCleanup, useContext, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
@@ -49,7 +49,7 @@ export default function DateTimePicker(props: Props) {
   const [open, setOpen] = createSignal(false);
   const coarse = createMediaQuery("(pointer: coarse)");
   const selected = createMemo(() => parseValue(props.value));
-  const [viewMonth, setViewMonth] = createSignal(startOfMonth(selected() ?? new Date()));
+  const [viewMonth, setViewMonth] = createSignal(untrack(() => startOfMonth(selected() ?? new Date())));
   // Trigger rect at open time — the popup renders in a body Portal with fixed
   // positioning so overflow-hidden/scroll ancestors (modals) can't crop it.
   const [anchor, setAnchor] = createSignal<DOMRect | null>(null);

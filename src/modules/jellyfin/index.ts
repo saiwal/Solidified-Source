@@ -26,6 +26,7 @@ registerModule({
   widgets: [
     {
       id: "jellyfin.header",
+      helpTarget: "jellyfin",
       label: () => useI18n().t("widgets.jellyfin_header"),
       loader: () => import("./widgets/JellyfinHeaderWidget"),
       slot: "header",
@@ -35,6 +36,7 @@ registerModule({
     },
     {
       id: "jellyfin.content",
+      helpTarget: "jellyfin",
       label: () => useI18n().t("widgets.jellyfin_content"),
       loader: () => import("./widgets/JellyfinContentWidget"),
       slot: "contentTop",
@@ -46,6 +48,7 @@ registerModule({
       // Global so it stays mounted across navigation; renders nothing until a
       // track is loaded. Playback itself lives in store.ts, not here.
       id: "jellyfin.nowplaying",
+      helpTarget: "jellyfin.listening",
       label: () => useI18n().t("widgets.jellyfin_nowplaying"),
       loader: () => import("./widgets/NowPlayingWidget"),
       slot: "right",

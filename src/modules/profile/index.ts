@@ -21,6 +21,7 @@ registerModule({
       // No separable title/action row exists in this view — just the
       // profile card, so unlike other modules there's no "header" widget.
       id: "profile.content",
+      helpTarget: "channel.profile_detail",
       label: () => useI18n().t("widgets.profile_content"),
       loader: () => import("./widgets/ProfileContentWidget"),
       slot: "contentTop",

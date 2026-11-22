@@ -14,7 +14,7 @@ export default function DeckIndexView() {
   const nick = () => params.nick || pageNick();
   const { t } = useI18n();
 
-  const q = useAsyncQuery(() => ({ queryKey: ["deck-list", nick()], queryFn: () => fetchDeckList(nick()) }));
+  const q = useAsyncQuery(() => ({ queryKey: ["deck-list", nick()], queryFn: ({ queryKey: [, n] }) => fetchDeckList(n as string) }));
   const data = () => q.data;
 
   return (

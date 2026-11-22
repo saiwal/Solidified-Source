@@ -38,7 +38,7 @@ export interface FindReplaceProps {
 
 export default function FindReplace(props: FindReplaceProps) {
   const { t } = useI18n();
-  const [query, setQuery] = createSignal(props.initial);
+  const [query, setQuery] = createSignal(untrack(() => props.initial));
   const [replace, setReplace] = createSignal("");
   const [matchCase, setMatchCase] = createSignal(false);
   const [ranges, setRanges] = createSignal<Range[]>([]);

@@ -1,7 +1,7 @@
 // Library pages: the tabbed browser (Home / Albums / Artists / Playlists /
 // Movies / Shows / Favourites) and the album, artist, playlist, movie, series,
 // player and search pages.
-import { createMemo, createSignal, For, Show, Switch, Match, createEffect } from "solid-js";
+import { createMemo, createSignal, For, Show, Switch, Match, createEffect, untrack } from "solid-js";
 import type { JSX } from "@solidjs/web";
 import { useSearchParams } from "@solidjs/router";
 import { useQuery, useInfiniteQuery } from "@utsukta/spa-core/lib/query";
@@ -29,6 +29,8 @@ import { Button, IconButton } from "@ui/Button";
 import { Select } from "@ui/Field";
 import { Tabs } from "@ui/Tabs";
 
+// queryFns read their inputs back from the key; the session itself (it holds
+// the token, which isn't in the key) is read with untrack.
 const key = (s: JellyfinSession, ...rest: unknown[]) => ["jellyfin", s.server, s.userId, ...rest];
 
 export function Browser(props: { s: JellyfinSession }) {
@@ -122,7 +124,7 @@ function Library(props: { s: JellyfinSession }) {
 
 type Shelfq = ReturnType<typeof useShelf>;
 function useShelf(s: () => JellyfinSession, name: string, fn: (s: JellyfinSession) => Promise<JfPage>) {
-  return useQuery(() => ({ queryKey: key(s(), "home", name), queryFn: () => fn(s()), ...jfQuery }));
+  return useQuery(() => ({ queryKey: key(s(), "home", name), queryFn: () => fn(untrack(s)), ...jfQuery }));
 }
 
 /** Shelves, each appearing as soon as its own data lands — a skeleton until then. */
@@ -203,7 +205,7 @@ function Paged(props: { s: JellyfinSession; kind: PagedKind }) {
   const sortCtl = useSort(() => (typeof props.kind === "string" ? props.kind : "library"));
   const q = useInfiniteQuery(() => ({
     queryKey: key(props.s, typeof props.kind === "string" ? props.kind : `lib:${props.kind.library}`, sortCtl.sort()),
-    queryFn: ({ pageParam }) => pagedFetch(props.s, props.kind, pageParam, sortCtl.sort()),
+    queryFn: ({ pageParam, queryKey }) => untrack(() => pagedFetch(props.s, props.kind, pageParam, queryKey[4] as never)),
     initialPageParam: 0,
     getNextPageParam: (last: JfPage, all: JfPage[]) => {
       const loaded = all.length * PAGE_SIZE;
@@ -353,7 +355,7 @@ function trackActions(s: JellyfinSession, tracks: () => JfItem[], t: ReturnType<
 }
 
 function useItem(s: () => JellyfinSession, id: () => string) {
-  return useQuery(() => ({ queryKey: key(s(), "item", id()), queryFn: () => getItem(s(), id()), ...jfQuery }));
+  return useQuery(() => ({ queryKey: key(s(), "item", id()), queryFn: ({ queryKey }) => getItem(untrack(s), queryKey[4] as string), ...jfQuery }));
 }
 
 function ArtistDetail(props: { s: JellyfinSession; id: string }) {
@@ -502,7 +504,7 @@ function SeriesDetail(props: { s: JellyfinSession; id: string }) {
   });
   const eps = useQuery(() => ({
     queryKey: key(props.s, "episodes", props.id, season()),
-    queryFn: () => episodes(props.s, props.id, season()!),
+    queryFn: ({ queryKey }) => episodes(untrack(() => props.s), queryKey[4] as string, queryKey[5] as string),
     enabled: !!season(),
     ...jfQuery,
   }));

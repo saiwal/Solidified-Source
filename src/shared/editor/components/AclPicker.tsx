@@ -24,6 +24,7 @@ import { RemovableChip } from "@ui/Chip";
 import { SearchField } from "@ui/SearchField";
 import { Badge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
+import { helpable } from "@utsukta/spa-core/lib/helpable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ const AclPicker: Component<AclPickerProps> = (props) => {
   const current = () => modes.find((m) => m.mode === props.mode) ?? modes[0];
 
   return (
-    <div class="shrink-0">
+    <div class="shrink-0" ref={helpable(() => "composing-posts.privacy_controls")}>
       {/* Trigger — shows the active mode */}
       <Button
         variant="ghost"

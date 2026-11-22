@@ -80,7 +80,7 @@ export default function ArticlesHeaderWidget() {
     if (initialized) return;
     initialized = true;
     // One-shot: ?new=1 opens the composer once.
-    if (untrack(() => searchParams.new === "1" && role() === "owner")) openArticle();
+    if (untrack(() => searchParams.new === "1" && role() === "owner")) untrack(openArticle);
   });
 
   const SECTIONS = [

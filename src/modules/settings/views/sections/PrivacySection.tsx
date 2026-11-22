@@ -67,6 +67,7 @@ export default function PrivacySection() {
           <Group
             icon={<MdOutlineTune size={18} />}
             title={t("settings.privacy_advanced")}
+            help="settings.advanced_privacy"
             desc={t("settings.privacy_advanced_desc")}
           >
             <Toggle name="autoperms"                     label={t("settings.privacy_autoperms")}         hint={t("settings.privacy_autoperms_hint")}         checked={!!data()!.autoperms} />
@@ -81,6 +82,7 @@ export default function PrivacySection() {
           <Group
             icon={<MdOutlineVisibility_off size={18} />}
             title={t("settings.privacy_local_only_group")}
+            help="settings.local_only_posts"
             desc={t("settings.privacy_local_only_group_desc")}
           >
             <Toggle name="local_only_posts" label={t("settings.privacy_local_only_posts")} hint={t("settings.privacy_local_only_posts_hint")} checked={!!data()!.local_only_posts} />

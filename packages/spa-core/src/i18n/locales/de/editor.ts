@@ -49,6 +49,7 @@ export const editor = {
   outline:                "Inhalt",
   fewer_tools:            "Weniger Optionen",
   draft_saved:            "Entwurf gespeichert",
+  saving_draft:           "Entwurf wird gespeichert…",
   more_options:           "Weitere Optionen",
   // Presentation modes (ComposerModal / ModalHost)
   minimize:               "Minimieren",

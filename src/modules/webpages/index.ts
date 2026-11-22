@@ -29,6 +29,7 @@ registerModule({
   widgets: [
     {
       id: "webpages.header",
+      helpTarget: "webpages",
       label: () => useI18n().t("widgets.webpages_header"),
       loader: () => import("./widgets/WebpagesHeaderWidget"),
       slot: "header",
@@ -38,6 +39,7 @@ registerModule({
     },
     {
       id: "webpages.content",
+      helpTarget: "webpages",
       label: () => useI18n().t("widgets.webpages_content"),
       loader: () => import("./widgets/WebpagesContentWidget"),
       slot: "contentTop",

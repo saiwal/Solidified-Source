@@ -44,7 +44,9 @@ export function Modal(props: ModalProps) {
   onCleanup(() => {
     dialog.teardown();
     const active = document.activeElement;
-    if (!active || active === document.body) opener?.focus({ preventScroll: true });
+    // The opener may have been re-rendered away meanwhile; focusing a
+    // detached node does nothing.
+    if ((!active || active === document.body) && opener?.isConnected) opener.focus({ preventScroll: true });
   });
 
   // Portaled to <body>, never rendered where the caller happens to sit: a
@@ -95,8 +97,10 @@ export function ModalPanel(props: ModalPanelProps) {
   const { t } = useI18n();
   const id = createUniqueId();
   const register = useContext(ModalContext);
-  if (own.title !== undefined) register?.title(id);
-  if (own.description !== undefined) register?.description(`${id}-desc`);
+  // Register from effects: a signal write in the component body is
+  // REACTIVE_WRITE_IN_OWNED_SCOPE, and these follow a title added later.
+  createEffect(() => own.title !== undefined, (has) => { if (has) register?.title(id); });
+  createEffect(() => own.description !== undefined, (has) => { if (has) register?.description(`${id}-desc`); });
   return (
     <div class={`${modalPanelClass(own.size)} ${own.class ?? ""}`} {...rest}>
       <Show when={own.title !== undefined}>

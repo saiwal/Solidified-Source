@@ -17,6 +17,7 @@ registerModule({
   widgets: [
     {
       id: "network.content",
+      helpTarget: "network",
       label: () => useI18n().t("widgets.network_content"),
       loader: () => import("./widgets/NetworkContentWidget"),
       slot: "contentTop",

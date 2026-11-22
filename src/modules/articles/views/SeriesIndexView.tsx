@@ -18,7 +18,7 @@ export default function SeriesIndexView() {
   const nick = () => params.nick || pageNick();
   const { t } = useI18n();
 
-  const q = useAsyncQuery(() => ({ queryKey: ["series-list", nick()], queryFn: () => fetchSeriesList(nick()) }));
+  const q = useAsyncQuery(() => ({ queryKey: ["series-list", nick()], queryFn: ({ queryKey: [, n] }) => fetchSeriesList(n as string) }));
   const data = () => q.data;
 
   return (

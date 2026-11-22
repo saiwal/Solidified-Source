@@ -55,7 +55,7 @@ export function FilteredPostsList(props: {
   const key = () => ["hq-filtered", props.params] as const;
   const q = useAsyncQuery(() => ({
     queryKey: key(),
-    queryFn: () => fetchNetworkStream(parseNetworkParams(props.params!)).then((r) => r.items),
+    queryFn: ({ queryKey: [, params] }) => fetchNetworkStream(parseNetworkParams(params!)).then((r) => r.items),
     enabled: !!props.params,
   }));
   const shown = () => q.data.slice(0, props.count ?? 5);

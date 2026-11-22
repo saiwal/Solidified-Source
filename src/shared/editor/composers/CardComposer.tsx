@@ -1,4 +1,4 @@
-import { createSignal, createMemo, Show, For, onCleanup, createEffect } from "solid-js";
+import { createSignal, createMemo, Show, For, onCleanup, createEffect, untrack } from "solid-js";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { fetchCategories } from "@/shared/stream/components/CategoryWidget";
 import { fetchDeckList } from "@/modules/cards/api";
@@ -83,12 +83,12 @@ export default function CardComposer(props: Props) {
   const isEditing = () => !!props.initial?.uuid;
 
   // ── Scope (shared by both stores for matching IDB keys) ─────────────────────
-  const scope = props.initial?.uuid
+  const scope = untrack(() => props.initial?.uuid
     ? `card:edit:${props.initial.uuid}`
-    : "card:new";
+    : "card:new");
 
   // ── Attachment store ─────────────────────────────────────────────────────────
-  const attach = createAttachmentStore(props.nick, scope);
+  const attach = untrack(() => createAttachmentStore(props.nick, scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");
@@ -106,10 +106,12 @@ export default function CardComposer(props: Props) {
   const initialEntries = () =>
     aclEntryKeys(props.initial ?? {}, initialAclMode());
 
+  // Seeds (resync below follows /spa/nav landing later).
+  const seed = untrack(() => ({ mode: initialAclMode(), ...initialEntries() }));
   const acl = useAclState({
-    mode: initialAclMode(),
-    allowEntries: initialEntries().allow,
-    denyEntries: initialEntries().deny,
+    mode: seed.mode,
+    allowEntries: seed.allow,
+    denyEntries: seed.deny,
     // /spa/nav may not have answered yet; re-derive once the viewer's hash
     // lands, unless the user has already touched the picker.
     resync: () => selfHash()?.hash
@@ -119,10 +121,10 @@ export default function CardComposer(props: Props) {
 
   // ── Template + deck — local to this composer (cards-only fields,
   // not part of the generic createComposerStore shared with other post types) ──
-  const [template, setTemplate] = createSignal<CardTemplate>(
+  const [template, setTemplate] = createSignal<CardTemplate>(untrack(() =>
     props.initial?.template
       ?? (props.initial?.body ? sniffTemplate(props.initial.body) : null)
-      ?? "freeform",
+      ?? "freeform"),
   );
 
   // Template sub-form fields. Freeform writes store.body directly; the other
@@ -131,7 +133,7 @@ export default function CardComposer(props: Props) {
   // without unpacking the stored body back into their sub-forms, reopening a
   // quote/definition/link card for editing would show empty fields and save
   // an empty body over it. Seeded at creation: Solid 2 forbids render writes.
-  const parsedInitial = props.initial ? parseTemplate(props.initial.body) : null;
+  const parsedInitial = untrack(() => (props.initial ? parseTemplate(props.initial.body) : null));
   const [fields, setFields] = createSignal<TemplateFields>({ ...emptyTemplateFields(), ...parsedInitial });
   const setField = (k: keyof TemplateFields) => (v: string) =>
     setFields((f) => ({ ...f, [k]: v }));
@@ -199,9 +201,9 @@ export default function CardComposer(props: Props) {
     if (data.text && (force || !store.summary().trim())) store.setSummary(data.text);
     setFields((f) => ({ ...f, linkImage: data.image }));
   }
-  const [deck, setDeck] = createSignal(props.initial?.deck?.name ?? "");
+  const [deck, setDeck] = createSignal(untrack(() => props.initial?.deck?.name ?? ""));
   const [deckOrder, setDeckOrder] =
-    createSignal<number | null>(props.initial?.deck?.order ?? null);
+    createSignal<number | null>(untrack(() => props.initial?.deck?.order ?? null));
 
   // ── Deck suggestions — existing deck names for this channel ─────────────
   const [existingDecks] = createQueryResource("composer-decks", () => props.nick, fetchDeckList);
@@ -309,7 +311,7 @@ export default function CardComposer(props: Props) {
 
     attach.clear();
     props.onSaved?.();
-  }, scope, {
+  }, scope, untrack(() => ({
     // Seed from initial if editing. Without the mimetype the toolbar (and the
     // WYSIWYG probe) read text/bbcode on every edit, so reopening a markdown
     // card spelled its buttons in bbcode.
@@ -324,7 +326,7 @@ export default function CardComposer(props: Props) {
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
     autosaveBody: () => composedBody(),
-  });
+  })));
 
   const enc = useEncrypt(() => store.body(), store.setBody);
 

@@ -10,7 +10,8 @@ import { subjectNickFromPath } from "@utsukta/spa-core/store/site-config";
 import { WidgetShell } from "@ui/WidgetShell";
 import { ListRow } from "@ui/ListRow";
 import { MdOutlineHub } from "solid-icons/md";
-import { fetchBacklinks, TYPE_COLOR } from "../api";
+import { fetchBacklinks } from "../api";
+import { NodeShape } from "../NodeShape";
 
 // Single-item pages only; list/index pages have nothing to be linked to.
 function itemPath(path: string): string | null {
@@ -48,7 +49,7 @@ export default function BacklinksWidget() {
                 <ListRow
                   href={n.url ?? undefined}
                   class="px-(--ws-px)"
-                  leading={<span class="mt-1.5 block w-2 h-2 rounded-full" style={{ background: TYPE_COLOR[n.type] }} />}
+                  leading={<NodeShape type={n.type} class="mt-1.5 block" />}
                   title={n.title}
                   meta={t(`graph.type_${n.type}`)}
                 />

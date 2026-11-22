@@ -1049,6 +1049,7 @@ export type RawDictionary = {
     outline:                string;
     fewer_tools:            string;
     draft_saved:            string;
+    saving_draft:           string;
     more_options:           string;
     minimize:               string;
     restore:                string;
@@ -4188,6 +4189,8 @@ export type RawDictionary = {
     missing_hint: string;
     resolving: string;
     unlinked_posts: string;
+    drafts: string;
+    draft_of: string;
     links_to: string;
     linked_from: string;
     stats: string;

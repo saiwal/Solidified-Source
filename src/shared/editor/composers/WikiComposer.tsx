@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import RichEditor from "../core/RichEditor";
 import { CAPABILITIES } from "../types/editor.types";
@@ -41,8 +41,8 @@ export default function WikiComposer(props: Props) {
   const { t } = useI18n();
   const caps = CAPABILITIES.wiki;
 
-  const [body, setBody] = createSignal(props.initialBody);
-  const [commitMsg, setCommitMsg] = createSignal(props.initialCommitMsg ?? "");
+  const [body, setBody] = createSignal(untrack(() => props.initialBody));
+  const [commitMsg, setCommitMsg] = createSignal(untrack(() => props.initialCommitMsg ?? ""));
 
   // Seeded from the wiki's format; only movable while allowFormatChange is on.
   const [mimeOverride, setMimeOverride] = createSignal<string | null>(null);
@@ -57,7 +57,7 @@ export default function WikiComposer(props: Props) {
   // A wiki page is plain stored text with no item `attach` array, so uploads
   // are only ever referenced from the body — inserted as markup for the page's
   // own format by bbcodeToInsert().
-  const attach = createAttachmentStore(props.nick, props.scope);
+  const attach = untrack(() => createAttachmentStore(props.nick, props.scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");

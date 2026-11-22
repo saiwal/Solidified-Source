@@ -22,6 +22,7 @@ registerModule({
   widgets: [
     {
       id: "help.chooser",
+      helpTarget: "nav.help",
       label: () => useI18n().t("widgets.help_chooser"),
       loader: () => import("./widgets/HelpChooserWidget"),
       slot: ["header"],
@@ -29,6 +30,7 @@ registerModule({
     },
     {
       id: "help.content",
+      helpTarget: "nav.help",
       label: () => useI18n().t("widgets.help_content"),
       loader: () => import("./widgets/HelpContentWidget"),
       slot: "contentTop",

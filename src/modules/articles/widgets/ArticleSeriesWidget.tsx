@@ -31,7 +31,7 @@ export default function ArticleSeriesWidget() {
   const { t } = useI18n();
   const nick = usePageNick();
 
-  const q = useAsyncQuery(() => ({ queryKey: ["stream-series", nick()], queryFn: () => fetchSeries(nick()) }));
+  const q = useAsyncQuery(() => ({ queryKey: ["stream-series", nick()], queryFn: ({ queryKey: [, n] }) => fetchSeries(n as string) }));
   const data = () => q.data;
 
   return (

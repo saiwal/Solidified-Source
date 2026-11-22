@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { Show, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { createComposerStore, resumeEdit } from "../store/createComposerStore";
 import RichEditor from "../core/RichEditor";
@@ -48,11 +48,11 @@ export default function NoteComposer(props: Props) {
   const { t } = useI18n();
   const caps = CAPABILITIES.note;
   const isEditing = () => !!props.initial?.mid;
-  const scope = props.initial?.mid
+  const scope = untrack(() => props.initial?.mid
     ? `note:edit:${props.initial.mid}`
-    : "note:new";
+    : "note:new");
 
-  const attach = props.minimal ? null : createAttachmentStore(currentNick(), scope);
+  const attach = props.minimal ? null : untrack(() => createAttachmentStore(currentNick(), scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach!, currentNick, () => "both");
@@ -101,7 +101,7 @@ export default function NoteComposer(props: Props) {
 
     attach?.clear();
     props.onSaved?.();
-  }, scope, {
+  }, scope, untrack(() => ({
     initialBody: props.initial?.body,
     mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     initialCategory: props.initial?.categories?.join(","),
@@ -111,7 +111,7 @@ export default function NoteComposer(props: Props) {
     initialMimetype: props.initial?.mimetype && isAuthorable(props.initial.mimetype)
       ? (props.initial.mimetype as MimeType)
       : isFeatureEnabled("markdown") ? "text/markdown" : "text/bbcode",
-  });
+  })));
 
   const enc = useEncrypt(store.body, store.setBody);
 

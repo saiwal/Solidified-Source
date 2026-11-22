@@ -28,6 +28,7 @@ registerModule({
   widgets: [
     {
       id: "channel.details",
+      helpTarget: "channel.profile_detail",
       label: () => useI18n().t("widgets.channel_details"),
       loader: () => import("./widgets/ChannelDetailsWidget"),
       slot: "contentTop",
@@ -167,6 +168,7 @@ registerModule({
     {
       // Opt-in map of geotagged wall posts — picker only, no default placement.
       id: "channel.places",
+      helpTarget: "widgets.places",
       label: () => useI18n().t("widgets.channel_places"),
       loader: () => import("./widgets/ChannelPlacesWidget"),
       slot: ["right", "contentTop"],

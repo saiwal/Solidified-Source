@@ -51,6 +51,7 @@ export const editor: RawDictionary["editor"] = {
   outline:                "विषय-सूची",
   fewer_tools:            "कम विकल्प",
   draft_saved:            "ड्राफ़्ट सहेजा गया",
+  saving_draft:           "ड्राफ़्ट सहेजा जा रहा है…",
   more_options:           "अधिक विकल्प",
   // Presentation modes (ComposerModal / ModalHost)
   minimize:               "छोटा करें",

@@ -21,6 +21,7 @@ registerModule({
   widgets: [
     {
       id: "cloud.header",
+      helpTarget: "files",
       label: () => useI18n().t("widgets.cloud_header"),
       loader: () => import("./widgets/FilesHeaderWidget"),
       slot: "header",
@@ -30,6 +31,7 @@ registerModule({
     },
     {
       id: "cloud.content",
+      helpTarget: "files",
       label: () => useI18n().t("widgets.cloud_content"),
       loader: () => import("./widgets/FilesContentWidget"),
       slot: "contentTop",
@@ -40,6 +42,7 @@ registerModule({
     {
       // Bookmarks whose URL is a /cloud/ path — viewer-private, so local users only
       id: "cloud.bookmarks",
+      helpTarget: "widgets.bookmarked_files",
       label: () => useI18n().t("widgets.cloud_bookmarks"),
       loader: () => import("./widgets/CloudBookmarksWidget"),
       slot: "right",
@@ -50,6 +53,7 @@ registerModule({
     {
       // Categories in use; a click filters the open folder's subtree via ?cat=
       id: "cloud.categories",
+      helpTarget: "widgets.file_categories",
       label: () => useI18n().t("widgets.cloud_categories"),
       loader: () => import("./widgets/CloudCategoriesWidget"),
       slot: "right",

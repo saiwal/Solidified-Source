@@ -1,4 +1,4 @@
-import { Show, onCleanup, createSignal, For, createEffect, onSettled } from "solid-js";
+import { Show, onCleanup, createSignal, For, createEffect, onSettled, untrack } from "solid-js";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useTemplates, loadTemplates, createTemplate, templateChrome } from "@utsukta/spa-core/store/widget-templates";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
@@ -67,11 +67,11 @@ export default function WebpageComposer(props: Props) {
   const { t } = useI18n();
   const caps = CAPABILITIES.webpage;
   const isEditing = () => !!props.initial?.uuid;
-  const scope = props.initial?.uuid
+  const scope = untrack(() => props.initial?.uuid
     ? `webpage:edit:${props.initial.uuid}`
-    : "webpage:new";
+    : "webpage:new");
 
-  const attach = createAttachmentStore(props.nick, scope);
+  const attach = untrack(() => createAttachmentStore(props.nick, scope));
   // Owned here so the editor toolbar and the attachment bar drive the same
   // upload/browse/camera flows (the buttons live in the toolbar now).
   const attachActions = useAttachmentActions(() => attach, () => props.nick, () => "both");
@@ -111,7 +111,7 @@ export default function WebpageComposer(props: Props) {
   // content — cleared on unmount so navigating away doesn't leak scoping.
   const templates = useTemplates();
   onSettled(() => { void loadTemplates(); });
-  const [layoutTemplate, setLayoutTemplate] = createSignal(props.initial?.layout_template ?? "");
+  const [layoutTemplate, setLayoutTemplate] = createSignal(untrack(() => props.initial?.layout_template ?? ""));
   createEffect(() => layoutTemplate() || null, (id) => { setCurrentPageTemplateId(id); });
   onCleanup(() => setCurrentPageTemplateId(null));
   const templateList = () => Object.entries(templates()?.templates ?? {});
@@ -183,7 +183,7 @@ export default function WebpageComposer(props: Props) {
 
     attach.clear();
     props.onSaved?.();
-  }, scope, {
+  }, scope, untrack(() => ({
     initialBody: props.initial?.body,
     // Editing: the stored title/slug/format. New: the channel's default
     // format, the same pconfig core reads for its own composer
@@ -200,7 +200,7 @@ export default function WebpageComposer(props: Props) {
     mergeDraft: resumeEdit, // only reached when editing (initial.body set)
     // Autosaved every 5s of quiet — the manual "Save as draft" button is gone.
     autosaveExtra: () => buildDraftExtra(),
-  });
+  })));
 
 
   // ── Draft extra — layout template + ACL, which createComposerStore

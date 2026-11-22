@@ -262,7 +262,7 @@ export default function VideoPlayer(props: { s: JellyfinSession; id: string; sta
   // The season this episode belongs to, as a strip beneath the player
   const season = useQuery(() => ({
     queryKey: ["jellyfin", props.s.server, props.s.userId, "episodes", item.data?.SeriesId, item.data?.SeasonId],
-    queryFn: () => episodes(props.s, item.data!.SeriesId!, item.data!.SeasonId!),
+    queryFn: ({ queryKey }) => episodes(untrack(() => props.s), queryKey[4] as string, queryKey[5] as string),
     enabled: !!item.data?.SeriesId && !!item.data?.SeasonId,
     ...jfQuery,
   }));

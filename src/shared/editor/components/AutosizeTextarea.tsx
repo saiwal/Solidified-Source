@@ -26,8 +26,16 @@ export interface AutosizeTextareaProps {
 const AutosizeTextarea: Component<AutosizeTextareaProps> = (props) => {
   let ref: HTMLTextAreaElement | undefined;
 
+  let retried = false;
   function resize() {
     if (!ref) return;
+    // Not in the page yet (a ref or first effect run on a fresh clone, or a
+    // composer still mounting into its portal): scrollHeight reads 0. Measure
+    // on the next frame instead, once.
+    if (!ref.isConnected) {
+      if (!retried) { retried = true; requestAnimationFrame(resize); }
+      return;
+    }
     const style = window.getComputedStyle(ref);
     const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2;
     const paddingTop = parseFloat(style.paddingTop) || 0;

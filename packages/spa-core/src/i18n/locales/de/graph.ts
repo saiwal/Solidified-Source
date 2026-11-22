@@ -20,6 +20,8 @@ export const graph: RawDictionary["graph"] = {
   missing_hint: "[[Links]] führen zu einer Wiki-Seite, einem Artikel oder einer Karte mit diesem Titel.",
   resolving: "Suche „{{title}}“…",
   unlinked_posts: "Unverlinkte Beiträge",
+  drafts: "Entwürfe",
+  draft_of: "Entwurf · {{type}}",
   links_to: "Verweist auf",
   linked_from: "Verlinkt von",
   stats: "{{nodes}} Einträge · {{edges}} Links",

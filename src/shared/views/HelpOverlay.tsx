@@ -3,12 +3,13 @@ import { Show, Loading } from "solid-js";
 import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
 import { marked } from "marked";
-import { useHelpMode, type DocType } from "@utsukta/spa-core/store/help-mode";
+import { useHelpMode } from "@utsukta/spa-core/store/help-mode";
 import { useDocs } from "@utsukta/spa-core/lib/useDocs";
 import { useI18n } from "@utsukta/spa-core/i18n";
 
 import { Modal, ModalPanel } from "@ui/Modal";
-import { Button } from "@ui/Button";
+import { IconButton } from "@ui/Button";
+import { MdFillLive_help, MdOutlineClose } from "solid-icons/md";
 export default function HelpOverlay() {
   const { t } = useI18n();
   const { helpMode, helpTarget, exit } = useHelpMode();
@@ -45,44 +46,52 @@ export default function HelpOverlay() {
   );
 }
 
+/** Heading text without inline markdown (`*Solidified*` → `Solidified`). */
+const plain = (h: string) => h.replace(/[*_`]/g, "").trim();
+/** Fallback label from a slug while the doc loads: `account_menu` → `Account menu`. */
+const humanize = (slug = "") => {
+  const s = slug.replace(/[_-]+/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 function HelpModalHeader(props: { target: string; onClose: () => void }) {
   const { t } = useI18n();
-  const { docType, setDocType } = useHelpMode();
+  const { docType } = useHelpMode();
+  const module = () => props.target.split(".")[0];
+  const section = () => props.target.split(".")[1];
+  const [md] = useDocs(module, docType);
 
-  const tabs: { id: DocType; label: () => string }[] = [
-    { id: "user", label: () => t("help.user_guide") },
-  ];
+  const docTitle = () => {
+    const h1 = md()?.match(/^#\s+(.+)$/m)?.[1];
+    return h1 ? plain(h1) : humanize(module());
+  };
+  // The matched heading, or the page title when the target is a whole page
+  // (or its section didn't match and the whole page is shown).
+  const title = () => {
+    if (!section()) return docTitle();
+    const found = md() ? extractSection(md()!, section()).title : undefined;
+    return found ? plain(found) : humanize(section());
+  };
 
   return (
-    <div class="border-b border-rim">
-      {/* top row: breadcrumb + close */}
-      <div class="flex items-center justify-between px-5 pt-4 pb-3">
-        <span id="help-modal-title" class="text-sm font-medium text-txt">
-          {props.target.split(".").join(" › ")}
-        </span>
-        <button
-          onClick={props.onClose}
-          aria-label={t("layout.close")}
-          class="text-muted hover:text-txt transition-colors leading-none"
-        >
-          ✕
-        </button>
+    <div class="flex items-start gap-3 px-5 py-4 border-b border-rim bg-elevated/40">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-muted text-accent-txt" aria-hidden="true">
+        <MdFillLive_help size={18} />
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-medium uppercase tracking-wide text-muted truncate">
+          {t("help.user_guide")}
+          <Show when={section()}>
+            <span aria-hidden="true"> · </span>{docTitle()}
+          </Show>
+        </p>
+        <h2 id="help-modal-title" class="text-base font-semibold text-txt leading-snug">
+          {title()}
+        </h2>
       </div>
-
-      {/* tab row */}
-      <div class="flex gap-1 px-5 pb-0">
-        {tabs.map((tab) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            pressed={docType() === tab.id}
-            class="rounded-t-md"
-            onClick={() => setDocType(tab.id)}
-          >
-            {tab.label()}
-          </Button>
-        ))}
-      </div>
+      <IconButton label={t("layout.close")} onClick={props.onClose} class="-mr-1.5 -mt-0.5">
+        <MdOutlineClose size={18} />
+      </IconButton>
     </div>
   );
 }
@@ -95,7 +104,7 @@ function DocContent(props: { target: string }) {
   const [md] = useDocs(module, docType);
 
   function renderHtml(): string {
-    const html = marked.parse(extractSection(md()!, section())) as string;
+    const html = marked.parse(extractSection(md()!, section()).body) as string;
 
     // module is the doc path relative to the lang root (e.g. "hq" for
     // docs/user/en/hq.md, or "network/index" for docs/user/en/network/index.md).
@@ -131,8 +140,8 @@ function DocContent(props: { target: string }) {
   );
 }
 
-function extractSection(md: string, section?: string): string {
-  if (!section) return md;
+function extractSection(md: string, section?: string): { title?: string; body: string } {
+  if (!section) return { body: md };
   // Docs are per-locale, so heading text can be fully translated and won't
   // text-match the (English) target slug. A `<!-- section_slug -->` comment
   // right before a heading pins it to the target independent of wording —
@@ -144,6 +153,7 @@ function extractSection(md: string, section?: string): string {
   let insideLevel = -1;
   let pendingAnchor: string | null = null;
   const result: string[] = [];
+  let title: string | undefined;
   for (const line of lines) {
     const anchor = line.match(/^<!--\s*([\w-]+)\s*-->\s*$/);
     if (anchor) {
@@ -161,6 +171,7 @@ function extractSection(md: string, section?: string): string {
       pendingAnchor = null;
       if (isMatch) {
         insideLevel = level;
+        title = heading[2];
         continue;
       }
     } else if (line.trim() !== "") {
@@ -168,5 +179,6 @@ function extractSection(md: string, section?: string): string {
     }
     if (insideLevel !== -1) result.push(line);
   }
-  return result.join("\n").trim() || md;
+  const body = result.join("\n").trim();
+  return body ? { title, body } : { body: md };
 }

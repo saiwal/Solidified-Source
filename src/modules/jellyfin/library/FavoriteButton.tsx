@@ -1,6 +1,6 @@
 // Heart toggle, synced with Jellyfin. Optimistic — flips at once, reverts if
 // the server refuses — and refreshes the Favourites tab afterwards.
-import { createSignal, createEffect } from "solid-js";
+import { createSignal } from "solid-js";
 import { useQueryClient } from "@utsukta/spa-core/lib/query";
 import { MdFillFavorite, MdOutlineFavorite_border } from "solid-icons/md";
 import { useI18n } from "@utsukta/spa-core/i18n";
@@ -10,8 +10,7 @@ import { IconButton } from "@ui/Button";
 export default function FavoriteButton(props: { s: JellyfinSession; item: JfItem; size?: number }) {
   const { t } = useI18n();
   const qc = useQueryClient();
-  const [fav, setFav] = createSignal(!!props.item.UserData?.IsFavorite);
-  createEffect(() => !!props.item.UserData?.IsFavorite, (f) => { setFav(f); });
+  const [fav, setFav] = createSignal(() => !!props.item.UserData?.IsFavorite);
 
   const flip = async (e: MouseEvent) => {
     e.stopPropagation();
