@@ -13,7 +13,6 @@ import { defaultComposerMode, setDefaultComposerMode, defaultPostMode, setDefaul
 import { applyCornerRadius, type CornerRadius } from "@utsukta/spa-core/lib/corner-radius";
 import { applyWidgetShell, widgetShell, WIDGET_SHELLS } from "@utsukta/spa-core/lib/widget-shell";
 import { applyGlass } from "@utsukta/spa-core/lib/glass";
-import { Toggle } from "@ui/Toggle";
 import { useBgUrl, useBgFit, setBgUrl, setBgFit } from "@utsukta/spa-core/lib/background";
 import { setEmojiAsImages } from "@utsukta/spa-core/store/emoji-as-images";
 import { setReplyMention } from "@utsukta/spa-core/store/reply-mention";
@@ -71,7 +70,7 @@ export default function DisplaySection() {
       "update_interval", "itemspage", "post_height",
       "start_menu", "show_emoji_images", "reply_mention", "glass_ui",
     ],
-    checkboxFields: ["start_menu", "show_emoji_images", "reply_mention", "glass_ui"],
+    checkboxFields: ["start_menu", "show_emoji_images", "reply_mention"],
     reloadOn: (prev, next) => prev?.theme !== next.theme,
   });
 
@@ -345,14 +344,24 @@ export default function DisplaySection() {
             </Select>
           </Field>
 
-          {/* Translucent surfaces (lib/glass.ts) — previews live, saved with the form */}
-          <Toggle
-            name="glass_ui"
-            label={t("settings.glass_ui")}
-            hint={t("settings.glass_ui_hint")}
-            checked={!!data()!.glass_ui}
-            onChange={(on) => applyGlass(on)}
-          />
+          {/* Surfaces (lib/glass.ts): 0 solid, 2 see-through, 1 frosted — previews live, saved with the form */}
+          <Field label={t("settings.glass_ui")} hint={t("settings.glass_ui_hint")}>
+            <div class="flex flex-wrap gap-x-4 gap-y-1">
+              {([["0", "solid"], ["2", "tint"], ["1", "frosted"]] as const).map(([value, key]) => (
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="glass_ui"
+                    value={value}
+                    checked={String(data()!.glass_ui ?? 0) === value}
+                    onChange={() => applyGlass(value)}
+                    class="accent-accent cursor-pointer"
+                  />
+                  <span class="text-sm text-txt">{t(`settings.glass_ui_${key}`)}</span>
+                </label>
+              ))}
+            </div>
+          </Field>
 
           {/* Corner roundness */}
           <Field label={t("settings.corner_radius")} hint={t("settings.corner_radius_hint")}>

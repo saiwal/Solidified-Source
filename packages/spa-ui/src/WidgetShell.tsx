@@ -46,7 +46,7 @@ const TITLE = "flex-1 min-w-0 truncate font-semibold text-txt";
 
 // Flush to the sidebar edge under a rule. No fill on purpose: the right
 // sidebar is itself bg-surface, so a surface fill there is invisible.
-// hz-ws-clear: frosted by index.css under "Translucent surfaces".
+// hz-ws-clear: frosted by index.css under the "Surfaces" setting.
 const SECTION_ROOT = "hz-ws-clear group/ws overflow-hidden border-t border-rim-strong pt-0.5 [--ws-px:0.25rem]";
 const SECTION_HEADER = "gap-2 min-h-10 px-(--ws-px) pt-2 pb-0.5";
 const SECTION_ACTIONS =
@@ -83,7 +83,7 @@ const LOOKS: Record<WidgetShellId, Look> = {
     rail: true,
   },
   glass: {
-    // Opaque: see-through is the separate "Translucent surfaces" setting.
+    // Opaque: see-through is the separate "Surfaces" setting.
     root:
       "hz-ws-fill rounded-2xl overflow-hidden [--ws-px:1rem] bg-elevated " +
       "border border-txt/10 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.25)]",
@@ -95,7 +95,7 @@ const LOOKS: Record<WidgetShellId, Look> = {
   // line, actions, corner — so the title interrupts the line without a
   // background patch behind it, and it works over a wallpaper too.
   legend: {
-    // hz-ws-legend: frosted by index.css under "Translucent surfaces" — as one
+    // hz-ws-legend: frosted by index.css under the "Surfaces" setting — as one
     // layer under the whole outline, so the tab rail and corners are covered.
     root: "hz-ws-legend [--ws-px:1rem]",
     // Fixed height, not min-h: the corner pieces size with a % of it.

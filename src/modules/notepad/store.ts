@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import { fetchNotes, deleteNote, type Note, type NoteFilters } from "./api";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { resetReveal, exitCard } from "@/shared/stream/reveal";
 
@@ -9,7 +10,8 @@ const [notes, setNotes]     = createSignal<Note[]>([]);
 const [loading, setLoading] = createSignal(false);
 const [hasMore, setHasMore] = createSignal(false);
 const [offset, setOffset]   = createSignal(0);
-const [filters, setFilters] = createSignal<NoteFilters>({});
+// Sync: loadNotes() sets it and fetches with it in the same step.
+const [filters, setFilters] = createSyncSignal<NoteFilters>({});
 
 export { notes, loading, hasMore, filters };
 

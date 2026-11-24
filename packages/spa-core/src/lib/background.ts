@@ -1,16 +1,19 @@
-import { createSignal, untrack } from "solid-js";
+import { untrack } from "solid-js";
+import { createSyncSignal } from "./syncSignal";
 
 export type BgFit = "tile" | "cover";
 
-const [bgUrl, setBgUrlSignal] = createSignal(localStorage.getItem("hz-bg-url") ?? "");
-const [bgFit, setBgFitSignal] = createSignal<BgFit>(
+// Sync: setBgUrl + setBgFit run back to back and each reads the other's
+// value — a batched signal handed the second call the previous wallpaper.
+const [bgUrl, setBgUrlSignal] = createSyncSignal(localStorage.getItem("hz-bg-url") ?? "");
+const [bgFit, setBgFitSignal] = createSyncSignal<BgFit>(
   (localStorage.getItem("hz-bg-fit") as BgFit) ?? "cover"
 );
 
 // What is on screen right now — the viewer's own wallpaper or a visited
 // channel's. A theme that draws a "cover" wallpaper as an <img> reads this
 // (and hides its CSS layer under html[data-bg-fit="cover"]).
-const [appliedBg, setAppliedBg] = createSignal<{ url: string; fit: BgFit }>({ url: "", fit: "cover" });
+const [appliedBg, setAppliedBg] = createSyncSignal<{ url: string; fit: BgFit }>({ url: "", fit: "cover" });
 export function useAppliedBg() { return appliedBg; }
 
 export function useBgUrl() { return bgUrl; }

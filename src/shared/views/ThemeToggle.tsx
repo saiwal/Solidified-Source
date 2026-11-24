@@ -37,9 +37,13 @@ const ThemeToggle = () => {
         <BiRegularPalette size={18} />
       </IconButton>
 
+      {/* Portal outside Presence: Presence keeps only Element children, and
+          dropping the Portal's placeholder node leaves <body> unregistered for
+          Solid's event delegation — the panel shows but its clicks do nothing.
+          `open()` in the mount re-picks the target dialog on each open. */}
+      <Portal mount={(void open(), topLayer())}>
       <Presence>
         <Show when={open()}>
-          <Portal mount={topLayer()}>
           <Motion.div
             ref={(el: HTMLDivElement) => setPanelRef(el)}
             {...scalePreset}
@@ -110,9 +114,9 @@ const ThemeToggle = () => {
               </button>
             </div>
           </Motion.div>
-          </Portal>
         </Show>
       </Presence>
+      </Portal>
     </>
   );
 };

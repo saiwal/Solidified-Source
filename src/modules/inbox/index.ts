@@ -6,7 +6,8 @@ const inboxView = () => import("./views/InboxView");
 
 registerModule({
   id: "inbox",
-  i18n: ["hq"],
+  // network: the shared filter panel's labels.
+  i18n: ["hq", "network"],
   // One view, one route per section — SubPageLayout's mobile "< Back" relies
   // on the bare base path being its own route (see SettingsView).
   routes: [
@@ -32,5 +33,16 @@ registerModule({
     description: () => useI18n().t("nav.inbox_desc"),
     defaultEnabled: false,
   },
+  widgets: [
+    {
+      id: "inbox.filters",
+      label: () => useI18n().t("widgets.inbox_filters"),
+      loader: () => import("./widgets/InboxFiltersWidget"),
+      slot: "right",
+      visitorVisible: false,
+      helpTarget: "widgets.filters",
+      locked: true,
+    },
+  ],
   permissions: [],
 });

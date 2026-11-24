@@ -44,6 +44,13 @@ export const network: RawDictionary["network"] = {
   // Advanced filters
   more_filters:         "Weitere Filter",
   clear_filters:        "Filter zurücksetzen",
+  filters_show:         "Anzeigen",
+  filters_type:         "Beitragsart",
+  filters_from:         "Von",
+  filters_refine:       "Eingrenzen",
+  filters_match_all:    "Alle zutreffend",
+  filters_match_any:    "Eine davon",
+  filters_one_source:   "Jeweils eine",
   tag:                  "Tags",
   tag_placeholder:      "z. B. solidjs",
   language:             "Sprache",

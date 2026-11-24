@@ -266,15 +266,14 @@ All responses use a consistent JSON envelope — `Response::send()`, `Response::
 
 | Area | Library | Version |
 |---|---|---|
-| Framework | Solid.js | 1.9.15 |
-| Router | @solidjs/router | 1.0.0 |
-| Data fetching | @tanstack/solid-query | 5.102.3 |
-| List virtualization | @tanstack/solid-virtual | 3.13.37 |
+| Framework | Solid.js (`solid-js` + `@solidjs/web`) | 2.0.1 |
+| Router | @solidjs/router | 2.0.0 |
+| Data fetching | @tanstack/solid-query | 6.0.0-rc.6 |
 | Styling | Tailwind CSS | 4.3.3 |
-| Icons | solid-icons | 1.2.0 |
-| Animations | solid-motionone | 1.0.4 |
-| i18n | @solid-primitives/i18n | 2.2.1 |
-| Responsive/media queries | @solid-primitives/media | 2.3.6 |
+| Icons | solid-icons | 2.0.0 |
+| Animations | Web Animations API (`lib/motion-presets.ts`) | — |
+| i18n | @solid-primitives/i18n | 3.0.0 |
+| Responsive/media queries | @solid-primitives/media | 4.0.0 |
 | Markdown | marked | 18.0.11 |
 | HTML sanitization | dompurify | 3.4.14 |
 | BBCode | @bbob/parser + @bbob/html | 4.4.1 |
@@ -288,7 +287,7 @@ All responses use a consistent JSON envelope — `Response::send()`, `Response::
 | QR codes | qrcode | 1.5.4 |
 | End-to-end encryption | libsodium-wrappers | 0.8.4 |
 | Service worker | Workbox | 7.4.1 |
-| Build tool | Vite | 8.2.2 |
+| Build tool | Vite | 8.3.5 |
 | TypeScript | — | 7.0.2 |
 
 ---

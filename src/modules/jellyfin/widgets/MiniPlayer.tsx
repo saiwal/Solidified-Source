@@ -3,7 +3,7 @@
 // where NowPlayingPanel has the full controls), prev/play-pause/next below. Shows local
 // playback, or — when nothing plays here — what another of the user's devices
 // is playing, controlled remotely. Renders nothing when neither.
-import { Show, onCleanup } from "solid-js";
+import { Show, onCleanup, untrack } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { toast } from "@utsukta/spa-core/store/toast";
 import { MdFillPlay_arrow, MdFillPause, MdFillSkip_next, MdFillSkip_previous, MdFillGroups } from "solid-icons/md";
@@ -35,12 +35,16 @@ function useRecapReminder() {
 
 export default function MiniPlayer() {
   const { t } = useI18n();
-  useRemotePolling();
-  usePresence();
-  useRecapReminder();
-  usePartyNotices();
-  // Sign this browser in to servers stored on the hub (once per page load)
-  void syncFromHub();
+  // One-shot setup: these read the store/reminder signals once to start
+  // timers and sessions, not to render — untracked on purpose.
+  untrack(() => {
+    useRemotePolling();
+    usePresence();
+    useRecapReminder();
+    usePartyNotices();
+    // Sign this browser in to servers stored on the hub (once per page load)
+    void syncFromHub();
+  });
   const navigate = useNavigate();
   setPartyNavigator((path) => navigate(path));
   onCleanup(() => setPartyNavigator(null));

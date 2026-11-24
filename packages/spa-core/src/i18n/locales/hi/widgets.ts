@@ -31,6 +31,7 @@ export const widgets: RawDictionary["widgets"] = {
   notifications:      "सूचनाएँ",
   chatrooms_list:     "चैटरूम",
   stream_filters:     "स्ट्रीम फ़िल्टर",
+  inbox_filters:      "इनबॉक्स फ़िल्टर",
   saved_searches:     "सहेजी गई खोजें",
   article_drafts:     "लेख ड्राफ्ट",
   card_drafts:        "कार्ड ड्राफ्ट",

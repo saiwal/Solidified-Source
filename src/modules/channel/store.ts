@@ -1,6 +1,7 @@
 // src/modules/channel/store.ts
 import { createSignal } from "solid-js";
 import { storageGet, storageSet } from "@utsukta/spa-core/lib/storage";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 import { createStreamStore } from "@/shared/stream/store/createStreamStore";
 import { fetchChannelPosts } from "./api";
 import type { ChannelParams, ChannelStreamResult, WallCompose } from "./api";
@@ -10,7 +11,8 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import type { ViewMode, StreamHandlers } from "@/shared/stream/types";
 
 // ── nick signal (channel-specific) ───────────────────────────────────────────
-const [nick, setNick] = createSignal<string>("");
+// Sync: loadChannel() sets it and the fetcher reads it straight after.
+const [nick, setNick] = createSyncSignal<string>("");
 export { nick };
 
 // ── can_post_wall signal ──────────────────────────────────────────────────────

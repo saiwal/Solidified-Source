@@ -229,14 +229,20 @@ export type NetworkStreamResult = {
   limit: number;
   nouveau: boolean;
 };
+/**
+ * `event` and `poll` are UI-only flags for one filter group (post type):
+ * alternatives, so the backend gets them as one comma-separated verb list.
+ * Shared with the inbox, whose /spa/hq-messages reads the same `verb`.
+ */
+export function postTypeVerb(p: { event?: unknown; poll?: unknown }): string | undefined {
+  const isOn = (v: unknown) => v === 1 || v === "1";
+  return [isOn(p.event) && ".Event", isOn(p.poll) && ".Question"].filter(Boolean).join(",") || undefined;
+}
+
 export async function fetchNetworkStream(params: NetworkParams = {}): Promise<NetworkStreamResult> {
-  // `event` and `poll` are UI-only convenience flags — translate to backend verb filter
   const { event, poll, ...rest } = params;
-  const apiParams = event
-    ? { ...rest, verb: '.Event' }
-    : poll
-      ? { ...rest, verb: '.Question' }
-      : rest;
+  const verb = postTypeVerb(params);
+  const apiParams = verb ? { ...rest, verb } : rest;
 
   const qs = new URLSearchParams();
   Object.entries(apiParams).forEach(([k, v]) => {

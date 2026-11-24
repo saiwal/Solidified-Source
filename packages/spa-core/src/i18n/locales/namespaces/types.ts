@@ -566,6 +566,7 @@ export type RawDictionary = {
     notifications:      string;
     chatrooms_list:     string;
     stream_filters:     string;
+    inbox_filters: string;
     saved_searches:     string;
     article_drafts:     string;
     card_drafts:        string;
@@ -1617,6 +1618,9 @@ export type RawDictionary = {
     widget_shell_hint:       string;
     glass_ui:                string;
     glass_ui_hint:           string;
+    glass_ui_solid:          string;
+    glass_ui_tint:           string;
+    glass_ui_frosted:        string;
     widget_shell_card: string;
     widget_shell_section: string;
     widget_shell_banded: string;
@@ -1911,6 +1915,13 @@ export type RawDictionary = {
     fetching_post:        string;
     more_filters:         string;
     clear_filters:        string;
+    filters_show: string;
+    filters_type: string;
+    filters_from: string;
+    filters_refine: string;
+    filters_match_all: string;
+    filters_match_any: string;
+    filters_one_source: string;
     tag:                  string;
     tag_placeholder:      string;
     language:             string;

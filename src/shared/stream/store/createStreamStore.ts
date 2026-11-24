@@ -8,6 +8,7 @@ import { toast } from "@utsukta/spa-core/store/toast";
 import { RANKED_ORDERS } from "@/shared/stream/filters/ranked";
 import { apiFetch } from "@utsukta/spa-core/lib/fetch";
 import { visibleUuids, prependWithMotion, resetReveal } from "@/shared/stream/reveal";
+import { createSyncSignal } from "@utsukta/spa-core/lib/syncSignal";
 
 interface LiveCounts {
   like_count: number;
@@ -114,7 +115,9 @@ export function createStreamStore<P extends StreamParams>(
   const [hasMore, setHasMore] = createSignal(true);
   const [newPosts, setNewPosts] = createSignal<ThreadNode[]>([]);
   const [profileUid, setProfileUid] = createSignal<number>(0);
-  const [params, setParams] = createSignal<P>({} as Exclude<P, Function>);
+  // Sync: load() sets params and fetches with them in the same step — a
+  // batched signal would hand the fetcher the previous filter.
+  const [params, setParams] = createSyncSignal<P>({} as P);
 
   let currentOffset = 0;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;

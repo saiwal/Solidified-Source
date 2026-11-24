@@ -54,17 +54,72 @@ import { WidgetShell } from "@ui/WidgetShell";
 import { Badge, CountBadge } from "@ui/Badge";
 import { Avatar } from "@ui/Avatar";
 import { Menu, MenuItem } from "@ui/Menu";
+import { Chip } from "@ui/Chip";
+import type { WidgetProps } from "@utsukta/spa-core/types/module.types";
 
-const CHIPS = [
+// The widget is laid out by how filters combine (see the backend's
+// Concerns/StreamFilters.php): "Show" flags each narrow the stream (AND),
+// post types are alternatives (OR — one comma-separated verb list), a stream
+// comes from one source at a time, and refinements narrow it further.
+type FilterChip = { key: string; labelKey: string; Icon: typeof MdFillStar; /** URL value when on; "1" by default. */ value?: string };
+const SHOW_CHIPS: readonly FilterChip[] = [
   { key: "star",  labelKey: "network.starred",         Icon: MdFillStar          },
-  { key: "pf",   labelKey: "network.following",        Icon: MdFillNotifications },
-  { key: "conv", labelKey: "network.conversations",    Icon: MdFillPerson        },
-  { key: "dm",   labelKey: "network.direct_messages",  Icon: MdFillMail          },
-  { key: "event",labelKey: "network.events",           Icon: MdFillEvent         },
-  { key: "poll", labelKey: "network.polls",            Icon: MdFillPoll          },
-  // Sets net=rss (parseNetworkParams); shown only when the hub allows feed connections.
-  { key: "rss",  labelKey: "network.rss_feeds",        Icon: MdFillRss_feed      },
-] as const;
+  { key: "pf",    labelKey: "network.following",       Icon: MdFillNotifications },
+  { key: "conv",  labelKey: "network.conversations",   Icon: MdFillPerson        },
+  { key: "dm",    labelKey: "network.direct_messages", Icon: MdFillMail          },
+];
+const TYPE_CHIPS: readonly FilterChip[] = [
+  { key: "event", labelKey: "network.events",          Icon: MdFillEvent         },
+  { key: "poll",  labelKey: "network.polls",           Icon: MdFillPoll          },
+];
+
+/**
+ * What differs between the pages this panel filters. Everything else — the
+ * groups, sources, refinements — is shared: both /spa/network and
+ * /spa/hq-messages read the same params through Concerns/StreamFilters.
+ */
+export interface FilterHost {
+  /** Re-fetch after a URL change; a host whose list reads the URL itself passes a no-op. */
+  apply: (params: Record<string, string | string[] | undefined>) => void;
+  /** The "Show" group's flags. */
+  show: readonly FilterChip[];
+  /** Extra URL keys the host filters by, so Clear and the dot know them. */
+  extraKeys?: readonly string[];
+  /** Folder filter (the inbox has folders as sections instead). */
+  folders?: boolean;
+  /** RSS as a source (the inbox has it as a section instead). */
+  rss?: boolean;
+  /** Network-only: paste a post URL to import it, save a search. */
+  importAndSave?: boolean;
+  searchPlaceholderKey?: string;
+}
+
+export const NETWORK_HOST: FilterHost = {
+  apply: (params) => applyNetwork(parseNetworkParams(params)),
+  show: SHOW_CHIPS,
+  folders: true,
+  rss: true,
+  importAndSave: true,
+};
+
+// Every key the panel can set — Clear empties them, the header dot reads them.
+const FILTER_KEYS = [
+  "order", "range", "search", "tag", "lang", "file", "event", "poll", "rss",
+  "dbegin", "dend", "cmin", "cmax", "cid", "gid", "forums", "xchan_label",
+];
+
+/** One labelled filter group; the hint says how its filters combine. */
+function FilterGroup(props: { label: string; hint: string; children: JSX.Element }) {
+  return (
+    <section role="group" aria-label={props.label} class="py-2">
+      <div class="flex items-baseline justify-between gap-2 px-2.5 pb-1.5">
+        <h3 class="text-xs font-semibold text-txt">{props.label}</h3>
+        <span class="text-[0.6875rem] text-muted">{props.hint}</span>
+      </div>
+      {props.children}
+    </section>
+  );
+}
 
 const str = (v: string | string[] | undefined): string =>
   Array.isArray(v) ? (v[0] ?? "") : (v ?? "");
@@ -271,9 +326,12 @@ function AffinitySlider(props: { min: number; max: number; onChange: (min: numbe
   );
 }
 
-export default function StreamFiltersWidget() {
+export default function StreamFiltersWidget(props: WidgetProps & { host?: FilterHost }) {
   const { t, locale } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
+  // A widget's host is fixed for its lifetime — read once.
+  const host = untrack(() => props.host) ?? NETWORK_HOST;
+  const allKeys = [...FILTER_KEYS, ...host.show.map((c) => c.key), ...(host.extraKeys ?? [])];
   const [folders] = createQueryResource("network-folders", fetchFolders);
   const [langs] = createQueryResource("network-langs", fetchStreamLangs);
   // "de" → "German" in the UI language; a code Intl doesn't know stays a code.
@@ -301,11 +359,15 @@ export default function StreamFiltersWidget() {
     const all = forums.data?.items ?? [];
     return (q ? all.filter((f) => f.name.toLowerCase().includes(q) || f.address?.toLowerCase().includes(q)) : [...all]).sort(byUnseen);
   });
+  // A stream comes from one source at a time: picking one clears the rest.
+  const pickSource = (patch: Record<string, string | undefined>) => {
+    sp({ cid: undefined, gid: undefined, forums: undefined, rss: undefined, xchan_label: undefined, ...patch });
+    setTimeout(applyNow, 0);
+  };
   // Clicking the active forum/connection again clears the filter.
   const selectListed = (c: ForumConnection) => {
     const off = str(searchParams.cid) === String(c.id);
-    sp({ cid: off ? undefined : String(c.id), xchan_label: off ? undefined : c.name, gid: undefined, forums: undefined });
-    setTimeout(applyNow, 0);
+    pickSource(off ? {} : { cid: String(c.id), xchan_label: c.name });
   };
   const allForums = () => searchParams.forums === "1";
 
@@ -365,23 +427,15 @@ export default function StreamFiltersWidget() {
     setSearchParams({ ...overrides }, { replace: true });
   }
 
-  const hasAnyFilter = () =>
-    (str(searchParams.order) || "created") !== "created" || !!searchParams.range || !!searchParams.search ||
-    searchParams.star === "1" || searchParams.pf === "1" ||
-    searchParams.conv === "1" || searchParams.dm === "1" || searchParams.event === "1" || searchParams.poll === "1" || searchParams.rss === "1" ||
-    !!(tag() || lang() || file() || dbegin() || dend() || cmin() || cmax()) ||
-    !!(searchParams.cid || searchParams.gid || allForums());
-
-  function applyNow() {
-    applyNetwork(parseNetworkParams(searchParams));
-  }
+  const hasAnyFilter = () => allKeys.some((k) => !!str(searchParams[k]));
+  const applyNow = () => host.apply(searchParams);
 
   let searchTimer: ReturnType<typeof setTimeout>;
   function onSearchInput(val: string) {
     sp({ search: val || undefined });
     clearTimeout(searchTimer);
     // Don't trigger stream search for URLs — wait for Enter
-    if (!isUrl(val)) searchTimer = setTimeout(applyNow, 400);
+    if (!(host.importAndSave && isUrl(val))) searchTimer = setTimeout(applyNow, 400);
   }
 
   async function handleUrlImport(url: string) {
@@ -405,30 +459,27 @@ export default function StreamFiltersWidget() {
   // floating search button too (pasting a post URL imports it, as here).
   usePageSearch(() => ({
     value: search(),
-    placeholder: t("network.search_placeholder"),
+    placeholder: t((host.searchPlaceholderKey ?? "network.search_placeholder") as any),
     onSearch: (q) => {
       sp({ search: q || undefined });
-      if (isUrl(q)) void handleUrlImport(q);
+      if (host.importAndSave && isUrl(q)) void handleUrlImport(q);
       else setTimeout(applyNow, 0);
     },
     onClear: () => { sp({ search: undefined }); setTimeout(applyNow, 0); },
   }));
 
   function selectConnection(c: AclConnection) {
-    sp({
+    pickSource({
       cid:         c.type === "c" ? String(c.id) : undefined,
       gid:         c.type === "g" ? String(c.id) : undefined,
       xchan_label: c.name,
-      forums:      undefined,
     });
     setConnInput("");
-    setTimeout(applyNow, 0);
   }
 
   function clearConnection() {
-    sp({ cid: undefined, gid: undefined, xchan_label: undefined });
+    pickSource({});
     setConnInput("");
-    setTimeout(applyNow, 0);
   }
 
   const hasSaveableSearch = () => !!(search() || tag() || xchanLabel());
@@ -448,7 +499,7 @@ export default function StreamFiltersWidget() {
     if (tag())        return `#${tag()}`;
     if (xchanLabel()) return xchanLabel();
     const parts: string[] = [];
-    for (const chip of CHIPS) if (searchParams[chip.key] === "1") parts.push(t(chip.labelKey as any));
+    for (const chip of [...host.show, ...TYPE_CHIPS]) if (searchParams[chip.key] === (chip.value ?? "1")) parts.push(t(chip.labelKey as any));
     return parts.join(", ") || t("network.save_search");
   }
 
@@ -458,24 +509,15 @@ export default function StreamFiltersWidget() {
   }
 
   function clearAll() {
-    saveSortPref();
-    setSearchParams(
-      {
-        order: undefined, range: undefined, search: undefined, tag: undefined, lang: undefined, file: undefined,
-        star: undefined, pf: undefined, conv: undefined, dm: undefined, event: undefined, poll: undefined, rss: undefined,
-        dbegin: undefined, dend: undefined,
-        cmin: undefined, cmax: undefined,
-        cid: undefined, gid: undefined, forums: undefined, xchan_label: undefined,
-      },
-      { replace: true },
-    );
+    if (host === NETWORK_HOST) saveSortPref();
+    setSearchParams(Object.fromEntries(allKeys.map((k) => [k, undefined])), { replace: true });
     setConnInput("");
     setTimeout(applyNow, 0);
   }
 
-  function toggle(key: string) {
-    const current = searchParams[key] === "1";
-    setSearchParams({ [key]: current ? undefined : "1" }, { replace: true });
+  const isOn = (c: FilterChip) => searchParams[c.key] === (c.value ?? "1");
+  function toggle(c: FilterChip) {
+    setSearchParams({ [c.key]: isOn(c) ? undefined : (c.value ?? "1") }, { replace: true });
     setTimeout(applyNow, 0);
   }
 
@@ -495,9 +537,9 @@ export default function StreamFiltersWidget() {
       <PageActions mobileOnly actions={[
         { label: t("network.clear_filters"), icon: MdFillFilter_alt_off, onClick: clearAll, show: hasAnyFilter() },
       ]} />
-      <div class="px-3 py-2 space-y-1">
+      <div class="px-3 py-1 divide-y divide-rim">
         {/* Search — plain text, or paste a post URL and press Enter to import */}
-        <div class="px-0.5 pb-1">
+        <div class="px-0.5 pt-1 pb-2">
           <Show
             when={!importing()}
             fallback={
@@ -508,26 +550,27 @@ export default function StreamFiltersWidget() {
             }
           >
             <div class="relative">
-              <span class={["absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none", { "text-success-txt": isUrl(search()), "text-muted": !isUrl(search()) }]}>
+              <span class={["absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none", { "text-success-txt": !!host.importAndSave && isUrl(search()), "text-muted": !(host.importAndSave && isUrl(search())) }]}>
                 <MdFillSearch size={13} />
               </span>
               <input
                 type="search"
-                placeholder={t("network.search_placeholder")}
+                placeholder={t((host.searchPlaceholderKey ?? "network.search_placeholder") as any)}
+                data-stream-filter-search
                 value={search()}
                 onInput={(e) => onSearchInput(e.currentTarget.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && isUrl(search())) {
+                  if (e.key === "Enter" && host.importAndSave && isUrl(search())) {
                     e.preventDefault();
                     handleUrlImport(search());
                   }
                 }}
                 class={[`${INPUT_CLS} pl-6`, {
-                  "border-success focus:ring-success": isUrl(search()),
+                  "border-success focus:ring-success": !!host.importAndSave && isUrl(search()),
                   "pr-7": hasSaveableSearch(),
                 }]}
               />
-              <Show when={hasSaveableSearch()}>
+              <Show when={host.importAndSave && hasSaveableSearch()}>
                 <button onClick={() => void saveSearch()} title={t("network.save_search")}
                   class="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md
                          text-muted hover:text-accent hover:bg-elevated transition-colors">
@@ -538,24 +581,33 @@ export default function StreamFiltersWidget() {
           </Show>
         </div>
 
-        <For each={CHIPS.filter((c) => c.key !== "rss" || isFeedContactsEnabled())}>
-          {(chip) => {
-            const active = () => searchParams[chip.key] === "1";
-            return (
-              <button
-                onClick={() => toggle(chip.key)}
-                class={["w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm\n                       transition-colors text-left", {
-                  "bg-accent-muted text-accent font-medium": active(),
-                  "text-muted hover:bg-elevated hover:text-txt": !active(),
-                }]}
-              >
-                <chip.Icon size={15} class="shrink-0" />
-                <span>{t(chip.labelKey as any)}</span>
-              </button>
-            );
-          }}
-        </For>
+        <FilterGroup label={t("network.filters_show")} hint={t("network.filters_match_all")}>
+          <div class="flex flex-wrap gap-1.5 px-2.5">
+            <For each={host.show}>
+              {(chip) => (
+                <Chip size="md" selected={isOn(chip)} onClick={() => toggle(chip)}
+                  icon={<chip.Icon size={13} />}>
+                  {t(chip.labelKey as any)}
+                </Chip>
+              )}
+            </For>
+          </div>
+        </FilterGroup>
 
+        <FilterGroup label={t("network.filters_type")} hint={t("network.filters_match_any")}>
+          <div class="flex flex-wrap gap-1.5 px-2.5">
+            <For each={TYPE_CHIPS}>
+              {(chip) => (
+                <Chip size="md" selected={isOn(chip)} onClick={() => toggle(chip)}
+                  icon={<chip.Icon size={13} />}>
+                  {t(chip.labelKey as any)}
+                </Chip>
+              )}
+            </For>
+          </div>
+        </FilterGroup>
+
+        <FilterGroup label={t("network.filters_from")} hint={t("network.filters_one_source")}>
         {/* Connection */}
         <div>
           <button
@@ -626,53 +678,6 @@ export default function StreamFiltersWidget() {
           </Show>
         </div>
 
-        <Show when={!folders.loading && (folders() ?? []).length > 0}>
-          <div>
-            <button
-              onClick={() => setFolderOpen((o) => !o)}
-              class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm
-                     transition-colors text-left text-muted hover:bg-elevated hover:text-txt"
-            >
-              <MdFillFolder size={15} class="shrink-0" />
-              <span class="flex-1">{t("network.folder")}</span>
-              <Show when={!!file()}>
-                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-              </Show>
-              <Show
-                when={folderOpen()}
-                fallback={<MdFillKeyboard_arrow_right size={15} class="shrink-0" />}
-              >
-                <MdFillKeyboard_arrow_down size={15} class="shrink-0" />
-              </Show>
-            </button>
-            <Show when={folderOpen()}>
-              <div class="pl-6 pt-1 pb-0.5 flex flex-wrap gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  pressed={!file()}
-                  onClick={() => { sp({ file: undefined }); setTimeout(applyNow, 0); }}
-                >
-                  {t("network.folder_all")}
-                </Button>
-                <For each={folders() ?? []}>
-                  {(folder) => (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      pressed={file() === folder}
-                      onClick={() => { sp({ file: folder }); setTimeout(applyNow, 0); }}
-                    >
-                      <MdFillFolder size={11} class="shrink-0" />
-                      <span class="truncate max-w-[120px]">{folder}</span>
-                    </Button>
-                  )}
-                </For>
-              </div>
-            </Show>
-          </div>
-        </Show>
-
         <Show when={privacyGroupsInstalled() && !privacyGroups.loading && (privacyGroups() ?? []).length > 0}>
           <div>
             <button
@@ -695,7 +700,7 @@ export default function StreamFiltersWidget() {
             <Show when={groupsOpen()}>
               <div class="pl-6 pt-1 pb-0.5 space-y-0.5">
                 <button
-                  onClick={() => { sp({ gid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
+                  onClick={() => pickSource({})}
                   class={["w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                     "bg-accent text-accent-fg font-medium": !str(searchParams.gid),
                     "text-muted hover:bg-elevated hover:text-txt": !!str(searchParams.gid),
@@ -708,10 +713,7 @@ export default function StreamFiltersWidget() {
                     const active = () => str(searchParams.gid) === String(group.id);
                     return (
                       <button
-                        onClick={() => {
-                          sp({ gid: String(group.id), xchan_label: group.name, cid: undefined });
-                          setTimeout(applyNow, 0);
-                        }}
+                        onClick={() => pickSource({ gid: String(group.id), xchan_label: group.name })}
                         class={["w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                           "bg-accent-muted text-accent font-medium": active(),
                           "text-muted hover:bg-elevated hover:text-txt": !active(),
@@ -763,7 +765,7 @@ export default function StreamFiltersWidget() {
                 {/* Posts from every forum (forums=1); toggles off when active. Also
                     clears a single-forum filter whose entry isn't listed. */}
                 <button
-                  onClick={() => { sp({ forums: allForums() ? undefined : "1", cid: undefined, gid: undefined, xchan_label: undefined }); setTimeout(applyNow, 0); }}
+                  onClick={() => pickSource({ forums: allForums() ? undefined : "1" })}
                   aria-pressed={(allForums()) ? "true" : "false"}
                   class={["w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left", {
                     "bg-accent-muted text-accent font-medium": allForums(),
@@ -780,6 +782,69 @@ export default function StreamFiltersWidget() {
                   onSelect={selectListed}
                   extra={(f) => <ForumPostMenu forum={f} />}
                 />
+              </div>
+            </Show>
+          </div>
+        </Show>
+
+        <Show when={host.rss && isFeedContactsEnabled()}>
+          <button
+            onClick={() => pickSource({ rss: searchParams.rss === "1" ? undefined : "1" })}
+            aria-pressed={searchParams.rss === "1" ? "true" : "false"}
+            class={["w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors text-left", {
+              "bg-accent-muted text-accent font-medium": searchParams.rss === "1",
+              "text-muted hover:bg-elevated hover:text-txt": searchParams.rss !== "1",
+            }]}
+          >
+            <MdFillRss_feed size={15} class="shrink-0" />
+            <span>{t("network.rss_feeds")}</span>
+          </button>
+        </Show>
+        </FilterGroup>
+
+        <FilterGroup label={t("network.filters_refine")} hint={t("network.filters_match_all")}>
+        <Show when={host.folders && !folders.loading && (folders() ?? []).length > 0}>
+          <div>
+            <button
+              onClick={() => setFolderOpen((o) => !o)}
+              class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm
+                     transition-colors text-left text-muted hover:bg-elevated hover:text-txt"
+            >
+              <MdFillFolder size={15} class="shrink-0" />
+              <span class="flex-1">{t("network.folder")}</span>
+              <Show when={!!file()}>
+                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+              </Show>
+              <Show
+                when={folderOpen()}
+                fallback={<MdFillKeyboard_arrow_right size={15} class="shrink-0" />}
+              >
+                <MdFillKeyboard_arrow_down size={15} class="shrink-0" />
+              </Show>
+            </button>
+            <Show when={folderOpen()}>
+              <div class="pl-6 pt-1 pb-0.5 flex flex-wrap gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  pressed={!file()}
+                  onClick={() => { sp({ file: undefined }); setTimeout(applyNow, 0); }}
+                >
+                  {t("network.folder_all")}
+                </Button>
+                <For each={folders() ?? []}>
+                  {(folder) => (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      pressed={file() === folder}
+                      onClick={() => { sp({ file: folder }); setTimeout(applyNow, 0); }}
+                    >
+                      <MdFillFolder size={11} class="shrink-0" />
+                      <span class="truncate max-w-[120px]">{folder}</span>
+                    </Button>
+                  )}
+                </For>
               </div>
             </Show>
           </div>
@@ -935,6 +1000,7 @@ export default function StreamFiltersWidget() {
             </Show>
           </div>
         </Show>
+        </FilterGroup>
       </div>
     </WidgetShell>
   );

@@ -6,12 +6,13 @@
 // The list does the mail behaviour itself (star/trash/file, selection, keys,
 // drag, and the full-width reader) - see MessageList's `actions`/`selectable`/
 // `reader` props. This view owns the chrome around it: the feed + folder
-// sidebar (which doubles as the drag-and-drop target list), InboxSearchBar,
-// and Empty Trash.
+// sidebar (which doubles as the drag-and-drop target list), the toolbar and
+// Empty Trash. Filtering is the right-sidebar filter panel (InboxFiltersWidget),
+// which writes the URL this view reads.
 import { createSignal, createMemo, onSettled, onCleanup, Show, type Component } from "solid-js";
 import { Portal } from "@solidjs/web";
 import { topLayer } from "@utsukta/spa-core/lib/top-layer";
-import { useLocation } from "@solidjs/router";
+import { useLocation, useSearchParams } from "@solidjs/router";
 import { useI18n } from "@utsukta/spa-core/i18n";
 import { useOnlineStatus } from "@utsukta/spa-core/lib/useOnlineStatus";
 import { syncInbox, setInboxActive, syncProgress } from "@utsukta/spa-core/lib/message-store";
@@ -25,8 +26,8 @@ import { openComposer } from "@/shared/views/modal-host";
 import SubPageLayout, { type SubPageItem } from "@/shared/views/SubPageLayout";
 import { TRASH, emptyFolder } from "../actions";
 import { parseQuery } from "../query";
+import { postTypeVerb } from "@/modules/network/api";
 import { createFolderCounts } from "../folders";
-import InboxSearchBar from "../InboxSearchBar";
 import RulesPane from "../RulesPane";
 import { dragPreview, hoverFolder, registerDropTarget } from "../useDragToFolder";
 import {
@@ -84,20 +85,28 @@ export default function InboxView() {
     () => location.pathname.replace(/^\/inbox\/?/, "").replace(/\/$/, "") || "all",
   );
 
-  // One string holds the whole filter state — `from:alice is:unread words` —
-  // so the box always shows exactly what the list is filtered by, and the pills
-  // below are just shortcuts for editing it.
-  const [query, setQuery] = createSignal("");
+  // The filter panel's URL params, plus any operators typed into its search
+  // box (`from:alice is:liked budget`) — typed ones win, being the more specific.
+  const [searchParams] = useSearchParams();
   const [reloadKey, setReloadKey] = createSignal(0);
   const [reading, setReading] = createSignal(false);
-  const parsed = createMemo(() => parseQuery(query()));
+  const params = createMemo<Record<string, string>>(() => {
+    const url: Record<string, string> = {};
+    for (const [k, v] of Object.entries(searchParams)) {
+      const s = Array.isArray(v) ? v[0] : v;
+      if (s) url[k] = s;
+    }
+    // xchan_label is the panel's display name for cid/gid; event/poll become verb.
+    const { search, xchan_label: _l, event: _e, poll: _p, ...rest } = url;
+    const verb = postTypeVerb(url);
+    return { ...rest, ...(verb && { verb }), ...parseQuery(search ?? "").params };
+  });
   // `author` and `unread` are MessageList's own props (HQ's cards use the first
   // and the second is thread-aware); everything else rides through as filters.
   const filters = createMemo(() => {
-    const { author: _a, unread: _u, ...rest } = parsed().params;
+    const { author: _a, unread: _u, ...rest } = params();
     return activeKey() === RSS_KEY ? { ...rest, net: "rss" } : rest;
   });
-  let searchRef: HTMLInputElement | undefined;
 
   // counts=1 also carries the per-feed unread totals in `meta`, so the whole
   // sidebar - folders and feeds - is one request, shared with HQ's Folders tab.
@@ -251,51 +260,43 @@ export default function InboxView() {
         // Reading panel, like a webpage — readable over a wallpaper.
         class={[`${cardClass()} flex flex-col overflow-hidden`, { "h-[calc(100dvh-10rem)] md:h-[calc(100dvh-8rem)] min-h-[20rem]": !reading() }]}
       >
-        <InboxSearchBar
-          query={query()}
-          onQuery={setQuery}
-          folders={folderNames()}
-          inputRef={(el) => (searchRef = el)}
-          actions={
-            <>
-              <Show when={!online()}>
-                <Badge size="sm" class="shrink-0">
-                  {t("layout.offline")}
-                </Badge>
-              </Show>
+        <div class="px-4 py-1.5 shrink-0 flex items-center justify-end gap-2 border-b border-rim">
+          <Show when={!online()}>
+            <Badge size="sm" class="shrink-0">
+              {t("layout.offline")}
+            </Badge>
+          </Show>
 
-              <Show when={selection().file === TRASH && !mobileActions()}>
-                <button
-                  type="button"
-                  onClick={() => void doEmptyTrash()}
-                  disabled={emptying() || trashCount() === 0}
-                  class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
-                         bg-overlay text-muted hover:bg-elevated hover:text-danger-txt
-                         disabled:opacity-40 disabled:hover:bg-overlay disabled:hover:text-muted"
-                >
-                  {emptying() ? t("hq.emptying") : t("hq.empty_trash")}
-                </button>
-              </Show>
+          <Show when={selection().file === TRASH && !mobileActions()}>
+            <button
+              type="button"
+              onClick={() => void doEmptyTrash()}
+              disabled={emptying() || trashCount() === 0}
+              class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors
+                     bg-overlay text-muted hover:bg-elevated hover:text-danger-txt
+                     disabled:opacity-40 disabled:hover:bg-overlay disabled:hover:text-muted"
+            >
+              {emptying() ? t("hq.emptying") : t("hq.empty_trash")}
+            </button>
+          </Show>
 
-              <Show when={syncProgress()?.total}>
-                <span class="shrink-0 text-[0.625rem] text-muted tabular-nums">
-                  {syncProgress()!.done}/{syncProgress()!.total}
-                </span>
-              </Show>
-              <button
-                type="button"
-                onClick={refresh}
-                title={syncProgress() ? t("hq.syncing_offline") : t("hq.refresh")}
-                class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted hover:bg-overlay hover:text-txt"
-              >
-                {/* Spins while syncInbox walks the feeds and stores bodies. */}
-                <span class={["block", { "animate-spin": !!syncProgress() }]}>
-                  <Icon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </span>
-              </button>
-            </>
-          }
-        />
+          <Show when={syncProgress()?.total}>
+            <span class="shrink-0 text-[0.625rem] text-muted tabular-nums">
+              {syncProgress()!.done}/{syncProgress()!.total}
+            </span>
+          </Show>
+          <button
+            type="button"
+            onClick={refresh}
+            title={syncProgress() ? t("hq.syncing_offline") : t("hq.refresh")}
+            class="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted hover:bg-overlay hover:text-txt"
+          >
+            {/* Spins while syncInbox walks the feeds and stores bodies. */}
+            <span class={["block", { "animate-spin": !!syncProgress() }]}>
+              <Icon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </span>
+          </button>
+        </div>
 
         {/* Offline sync progress: pulses while the feed indexes refresh (size
             unknown), then fills as message bodies are stored. */}
@@ -315,16 +316,16 @@ export default function InboxView() {
         <MessageList
           type={selection().type}
           file={selection().file}
-          authorFilter={parsed().params.author ?? ""}
+          authorFilter={params().author ?? ""}
           reloadKey={reloadKey()}
           actions
           selectable
           reader
           onReaderChange={setReading}
           folders={folderNames()}
-          unread={parsed().params.unread === "1"}
+          unread={params().unread === "1"}
           filters={filters()}
-          onFocusSearch={() => searchRef?.focus()}
+          onFocusSearch={() => document.querySelector<HTMLInputElement>("[data-stream-filter-search]")?.focus()}
         />
 
         <p class="hidden md:block shrink-0 px-3.5 py-1 text-[0.625rem] text-muted border-t border-rim truncate">

@@ -917,7 +917,7 @@ export const MessageList: Component<{
       // scroll container loses scrollTop, so going back would jump to the top.
       onScroll={onScroll}
       tabindex={mailable() && props.selectable ? 0 : undefined}
-      onKeyDown={mailable() && props.selectable ? onKeyDown : undefined}
+      onKeyDown={(e) => { if (mailable() && props.selectable) onKeyDown(e); }}
     >
       {/* Bulk bar — takes over the top of the list while rows are selected. */}
       <Show when={mailable() && props.selectable && selected().size > 0}>
@@ -1018,7 +1018,7 @@ export const MessageList: Component<{
                   active={openMid() === entry.b64mid}
                   dragging={drag.draggingId() === entry.b64mid}
                   swipeDx={drag.swipeOffset(entry.b64mid)}
-                  onPointerDown={mailable() ? drag.onRowPointerDown(entry.b64mid) : undefined}
+                  onPointerDown={(e) => { if (mailable()) drag.onRowPointerDown(entry.b64mid)(e); }}
                   registerRef={(el) => { rowEls.set(mid, el); }}
                 />
                 );

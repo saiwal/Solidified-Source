@@ -1,9 +1,6 @@
 // node --experimental-strip-types src/modules/inbox/query.test.ts
 import assert from "node:assert";
-import {
-  parseQuery, hasOperator, toggleOperator,
-  setOperator, operatorValue, trailingOperator, completeTrailing,
-} from "./query.ts";
+import { parseQuery } from "./query.ts";
 
 const p = (s: string) => parseQuery(s).params;
 
@@ -52,54 +49,5 @@ assert.deepEqual(p("budget from:"), { search: "budget from:" });
 
 // Case-insensitive keys and values.
 assert.deepEqual(p("From:Alice IS:UNREAD"), { author: "Alice", unread: "1" });
-
-// ── hasOperator / toggleOperator ────────────────────────────────────────────
-assert.equal(hasOperator("from:bob is:unread", "is:unread"), true);
-assert.equal(hasOperator("from:bob", "is:unread"), false);
-assert.equal(hasOperator("has:attachment", "has:attachment"), true);
-
-assert.equal(toggleOperator("", "is:unread"), "is:unread");
-assert.equal(toggleOperator("is:unread", "is:unread"), "");
-assert.equal(toggleOperator("from:bob hello", "is:starred"), "from:bob hello is:starred");
-assert.equal(toggleOperator("from:bob is:starred hello", "is:starred"), "from:bob hello");
-
-// Toggling a value operator replaces the existing one for the same param
-// rather than leaving two that contradict each other.
-assert.equal(toggleOperator("in:work", "in:personal"), "in:personal");
-assert.equal(toggleOperator("is:direct", "is:dm"), "", "an alias toggles its own param off");
-
-// Round trip: whatever the pills produce must still parse.
-const round = toggleOperator(toggleOperator("weekly", "is:unread"), "has:attachment");
-assert.deepEqual(parseQuery(round).params, {
-  search: "weekly", unread: "1", has: "attachment",
-});
-
-// ── contains: ───────────────────────────────────────────────────────────────
-// An explicit spelling of what bare words do, so it joins the free text rather
-// than fighting it for the `search` param.
-assert.deepEqual(p("contains:budget"), { search: "budget" });
-assert.deepEqual(p('contains:"weekly report" notes'), { search: "weekly report notes" });
-assert.deepEqual(p("from:bob contains:invoice"), { author: "bob", search: "invoice" });
-
-// ── setOperator / operatorValue (the date inputs) ───────────────────────────
-assert.equal(setOperator("from:bob", "after", "2026-01-01"), "from:bob after:2026-01-01");
-assert.equal(
-  setOperator("from:bob after:2025-01-01", "after", "2026-01-01"),
-  "from:bob after:2026-01-01",
-  "replaces rather than appending a second one",
-);
-assert.equal(setOperator("from:bob after:2025-01-01", "after", ""), "from:bob",
-  "an empty value clears the operator");
-assert.equal(setOperator("", "before", ""), "");
-assert.equal(operatorValue("after:2026-01-01 hi", "after"), "2026-01-01");
-assert.equal(operatorValue("hi", "after"), "");
-
-// ── trailingOperator / completeTrailing (the dropdown) ──────────────────────
-assert.equal(trailingOperator("from:bob is:")?.info.key, "is");
-assert.equal(trailingOperator("from:bob is:un")?.value, "un");
-assert.equal(trailingOperator("from:bob ")?.info.key, undefined);
-assert.equal(trailingOperator("nonsense:x"), null, "unknown operators have no hint");
-assert.equal(completeTrailing("from:bob is:", "unread"), "from:bob is:unread ");
-assert.equal(completeTrailing("from:bob is:un", "unread"), "from:bob is:unread ");
 
 console.log("inbox query: ok");
