@@ -27,6 +27,16 @@ registerModule({
   },
   widgets: [
     {
+      // The map's filters (types, hashtags, categories, drafts). Locked: the
+      // map has no other place to change them.
+      id: "graph.filters",
+      label: () => useI18n().t("widgets.graph_filters"),
+      loader: () => import("./widgets/GraphFiltersWidget"),
+      slot: "right",
+      defaultModules: ["graph"],
+      locked: true,
+    },
+    {
       // "Linked from" — renders nothing off a single-item page or with no backlinks.
       id: "graph.backlinks",
       helpTarget: "widgets.backlinks",

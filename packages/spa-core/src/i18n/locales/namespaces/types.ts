@@ -783,6 +783,7 @@ export type RawDictionary = {
     // Notepad header (notepad.header) / composer+list (notepad.content)
     notepad_header:  string;
     notepad_content: string;
+    graph_filters:   string;
     backlinks:       string;
     related_footer:  string;
     // Jellyfin header / library browser / global mini-player
@@ -4197,6 +4198,16 @@ export type RawDictionary = {
     type_note: string;
     type_missing: string;
     missing_page: string;
+    type_tag: string;
+    type_category: string;
+    item_types: string;
+    tags_hint: string;
+    categories_hint: string;
+    show_terms: string;
+    pick_terms: string;
+    show_drafts: string;
+    tagged: string;
+    terms: string;
     missing_hint: string;
     resolving: string;
     unlinked_posts: string;

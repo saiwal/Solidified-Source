@@ -247,6 +247,7 @@ export const widgets: RawDictionary["widgets"] = {
   // Notepad header (notepad.header) / composer+list (notepad.content)
   notepad_header:  "Notepad Header",
   notepad_content: "Notepad Content",
+  graph_filters:   "Graph filters",
   backlinks:       "Linked from",
   related_footer:  "Related posts",
   jellyfin_header:     "Jellyfin Header",

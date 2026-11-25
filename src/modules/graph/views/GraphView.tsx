@@ -13,18 +13,18 @@ import { usePageNick } from "@utsukta/spa-core/store/site-config";
 import { usePageOwnerName } from "@/shared/lib/pageOwnerName";
 import { createQueryResource } from "@utsukta/spa-core/lib/createQueryResource";
 import { cardClass } from "@ui/Card";
-import { Chip } from "@ui/Chip";
 import { SearchField } from "@ui/SearchField";
 import { EmptyState } from "@ui/EmptyState";
 import { ErrorState } from "@ui/ErrorState";
 import { Spinner } from "@ui/Spinner";
 import { IconButton, buttonClass } from "@ui/Button";
 import { MdOutlineCenter_focus_strong, MdOutlineClose, MdOutlineFit_screen } from "solid-icons/md";
-import { fetchGraph, NODE_TYPES, TYPE_COLOR, type Graph, type GraphNode, type NodeType } from "../api";
+import { fetchGraph, NODE_TYPES, TYPE_COLOR, type GraphNode, type NodeType } from "../api";
 import { NodeShape, SHAPE, isHollow } from "../NodeShape";
+import { baseGraph, hidden, showDrafts, visibleGraph } from "../filters";
 
 type SimNode = GraphNode & SimulationNodeDatum & { degree: number };
-type SimLink = SimulationLinkDatum<SimNode>;
+type SimLink = SimulationLinkDatum<SimNode> & { kind?: "tag" };
 
 // Below this many visible nodes every label fits; above it only hubs, focus
 // and zoomed-in views are labelled, or the names pile up unreadably.
@@ -38,74 +38,12 @@ export default function GraphView() {
   const nick = () => params.nick || pageNick() || null;
   const [graph] = createQueryResource("links-graph", nick, fetchGraph);
 
-  // Hidden types persist per browser, so the filter survives navigating away.
-  // v2: "Not yet written" became hidden by default; the new key lets every browser pick that up.
-  const HIDDEN_KEY = "hz-graph-hidden-v2";
-  // Node types, plus a pseudo-filter for posts with no links.
-  type Filter = NodeType | "unlinked";
-  const readHidden = (): Set<Filter> => {
-    try {
-      // Nothing saved yet: "Not yet written" starts hidden — it is clutter until you go looking for it.
-      const v = JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? '["missing"]');
-      return new Set(Array.isArray(v) ? v.filter((x) => x === "unlinked" || NODE_TYPES.includes(x)) : []);
-    } catch {
-      return new Set();
-    }
-  };
-  const [hidden, setHidden] = createSignal<Set<Filter>>(readHidden());
+  // Filters live in ../filters, shared with the sidebar widget that toggles them.
   const [query, setQuery] = createSignal("");
   // Clicking a dot selects it and opens the details panel; it doesn't leave the map.
   const [selectedId, setSelectedId] = createSignal<string | null>(null);
-  const toggle = (ty: Filter) => setHidden((s) => {
-    const n = new Set(s);
-    n.has(ty) ? n.delete(ty) : n.add(ty);
-    try {
-      localStorage.setItem(HIDDEN_KEY, JSON.stringify([...n]));
-    } catch {
-      // private mode / storage full — the filter just won't persist
-    }
-    return n;
-  });
-
-  // Drafts only ever reach the owner; off until they switch them on (per browser).
-  const DRAFTS_KEY = "hz-graph-drafts";
-  const [showDrafts, setShowDrafts] = createSignal((() => {
-    try { return localStorage.getItem(DRAFTS_KEY) === "1"; } catch { return false; }
-  })());
-  const toggleDrafts = () => setShowDrafts((v) => {
-    try { localStorage.setItem(DRAFTS_KEY, v ? "0" : "1"); } catch { /* won't persist */ }
-    return !v;
-  });
-  const hasDrafts = createMemo(() => !!graph()?.nodes.some((n) => n.draft));
-  // The graph minus drafts when they're off — and minus any [[missing]] only a
-  // draft wrote (Links::withoutDrafts() does the same server-side).
-  const base = createMemo<Graph | null>(() => {
-    const g = graph();
-    if (!g || showDrafts() || !hasDrafts()) return g ?? null;
-    const drafts = new Set(g.nodes.filter((n) => n.draft).map((n) => n.id));
-    const edges = g.edges.filter((e) => !drafts.has(e.source) && !drafts.has(e.target));
-    const used = new Set(edges.flatMap((e) => [e.source, e.target]));
-    return { nodes: g.nodes.filter((n) => !n.draft && (n.type !== "missing" || used.has(n.id))), edges };
-  });
-
-  const visible = createMemo<Graph | null>(() => {
-    const g = base();
-    if (!g) return null;
-    const h = hidden();
-    const nodes = g.nodes.filter((n) => !h.has(n.type));
-    const ids = new Set(nodes.map((n) => n.id));
-    let edges = g.edges.filter((e) => ids.has(e.source) && ids.has(e.target));
-    // "Unlinked posts" off: drop posts with no *visible* link — including one
-    // whose links all went to a type that's hidden right now.
-    const linked = new Set(edges.flatMap((e) => [e.source, e.target]));
-    const kept = h.has("unlinked") ? nodes.filter((n) => n.type !== "post" || linked.has(n.id)) : nodes;
-    if (kept.length !== nodes.length) {
-      const keptIds = new Set(kept.map((n) => n.id));
-      edges = edges.filter((e) => keptIds.has(e.source) && keptIds.has(e.target));
-    }
-    return { nodes: kept, edges };
-  });
-  const presentTypes = createMemo(() => NODE_TYPES.filter((ty) => base()?.nodes.some((n) => n.type === ty)));
+  const base = createMemo(() => baseGraph(graph(), showDrafts()));
+  const visible = createMemo(() => visibleGraph(base(), hidden()));
 
   // The selected node and its neighbours, from what's currently visible — a
   // node hidden by a type filter closes the panel.
@@ -116,10 +54,15 @@ export default function GraphView() {
     if (!g || !node) return null;
     const byId = new Map(g.nodes.map((n) => [n.id, n]));
     const pick = (ids: string[]) => ids.map((x) => byId.get(x)).filter((n): n is GraphNode => !!n);
+    const out = g.edges.filter((e) => e.source === node.id);
+    const inc = g.edges.filter((e) => e.target === node.id);
     return {
       node,
-      out: pick(g.edges.filter((e) => e.source === node.id).map((e) => e.target)),
-      inc: pick(g.edges.filter((e) => e.target === node.id).map((e) => e.source)),
+      out: pick(out.filter((e) => !e.kind).map((e) => e.target)),
+      // A tag/category's items, or an item's tags and categories.
+      terms: pick(out.filter((e) => e.kind).map((e) => e.target)),
+      inc: pick(inc.filter((e) => !e.kind).map((e) => e.source)),
+      tagged: pick(inc.filter((e) => e.kind).map((e) => e.source)),
     };
   });
   createEffect(() => !!selected(), (open) => {
@@ -174,7 +117,13 @@ export default function GraphView() {
     const draw = () => untrack(paint);
 
     const sim = forceSimulation(nodes)
-      .force("link", forceLink<SimNode, SimLink>(links).id((n) => n.id).distance(50))
+      // Shared-term edges pull a third as hard and sit further out, so a
+      // busy tag gathers its items without crushing the real link structure.
+      // (d3's default strength is 1 / min(degree of either end) — kept.)
+      .force("link", forceLink<SimNode, SimLink>(links).id((n) => n.id)
+        .distance((l) => (l.kind ? 70 : 50))
+        .strength((l) => (l.kind ? 0.33 : 1) / Math.max(1, Math.min(
+          deg.get((l.source as SimNode).id) ?? 1, deg.get((l.target as SimNode).id) ?? 1))))
       .force("charge", forceManyBody().strength(-90))
       .force("center", forceCenter(0, 0))
       .force("collide", forceCollide<SimNode>((n) => radius(n) + 2))
@@ -211,12 +160,16 @@ export default function GraphView() {
         const s = l.source as SimNode, d = l.target as SimNode;
         const on = center && (s === center || d === center);
         ctx.strokeStyle = on ? accent : rim;
-        ctx.globalAlpha = on ? 0.9 : focus || q ? 0.15 : 0.5;
+        // Shared-term edges are dashed and fainter: a link is a claim the
+        // author made, a shared tag only a hint.
+        ctx.globalAlpha = on ? 0.9 : focus || q ? 0.15 : l.kind ? 0.3 : 0.5;
+        ctx.setLineDash(l.kind ? [4 / view.k, 3 / view.k] : []);
         ctx.beginPath();
         ctx.moveTo(s.x!, s.y!);
         ctx.lineTo(d.x!, d.y!);
         ctx.stroke();
       }
+      ctx.setLineDash([]);
       for (const n of nodes) {
         ctx.globalAlpha = lit(n) ? 1 : 0.15;
         // The shape is unit-size; scaled by r, so line widths divide by it.
@@ -391,33 +344,7 @@ export default function GraphView() {
           <h1 class="text-xl font-semibold text-txt">{owner() === null ? t("graph.title_mine") : t("graph.title_of", { name: owner()! })}</h1>
           <p class="text-sm text-muted">{owner() === null ? t("graph.subtitle") : t("graph.subtitle_of", { name: owner()! })}</p>
         </div>
-        <Show when={base()}>
-          {(g) => <span class="text-xs text-muted">{t("graph.stats", { nodes: g().nodes.length, edges: g().edges.length })}</span>}
-        </Show>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2" role="group" aria-label={t("graph.filter")}>
-        <For each={presentTypes()}>
-          {(ty) => (
-            <Chip size="sm" selected={!hidden().has(ty)} onClick={() => toggle(ty)}
-              icon={<NodeShape type={ty} />}>
-              {t(`graph.type_${ty}`)}
-            </Chip>
-          )}
-        </For>
-        <Show when={presentTypes().includes("post")}>
-          <Chip size="sm" selected={!hidden().has("unlinked")} onClick={() => toggle("unlinked")}
-            icon={<NodeShape type="post" style={{ opacity: 0.45 }} />}>
-            {t("graph.unlinked_posts")}
-          </Chip>
-        </Show>
-        <Show when={hasDrafts()}>
-          <Chip size="sm" selected={showDrafts()} onClick={toggleDrafts}
-            icon={<NodeShape type="post" draft />}>
-            {t("graph.drafts")}
-          </Chip>
-        </Show>
-        <div class="ml-auto w-full sm:w-56">
+        <div class="w-full sm:w-56">
           <SearchField value={query()} onInput={setQuery} label={t("graph.find_node")}
             placeholder={t("graph.find_node")} clearLabel={t("layout.clear_search")} />
         </div>
@@ -432,10 +359,18 @@ export default function GraphView() {
         <Show when={graph.loading && !graph()}>
           <div class="absolute inset-0 grid place-items-center"><Spinner /></div>
         </Show>
-        <Show when={graph() && graph()!.edges.length === 0}>
+        {/* No links at all — shared tags alone don't count, the hint is about [[links]]. */}
+        <Show when={graph() && !graph()!.edges.some((e) => !e.kind) && !visible()?.edges.length}>
           <EmptyState class="absolute inset-0 m-auto h-fit max-w-md">{t("graph.empty")}</EmptyState>
         </Show>
         <canvas ref={canvas} class="block w-full h-full" aria-hidden="true" />
+        <Show when={visible()}>
+          {(g) => (
+            <span class="absolute top-3 left-3 text-xs text-muted pointer-events-none">
+              {t("graph.stats", { nodes: g().nodes.length, edges: g().edges.length })}
+            </span>
+          )}
+        </Show>
         <div class="absolute top-2 right-2 flex gap-1">
           <IconButton label={t("graph.fit_all")} onClick={() => fitAll()}>
             <MdOutlineFit_screen size={18} />
@@ -468,6 +403,8 @@ export default function GraphView() {
                 </Show>
                 <NodeList label={t("graph.links_to")} nodes={d().out} onPick={setSelectedId} />
                 <NodeList label={t("graph.linked_from")} nodes={d().inc} onPick={setSelectedId} />
+                <NodeList label={t("graph.tagged")} nodes={d().tagged} onPick={setSelectedId} />
+                <NodeList label={t("graph.terms")} nodes={d().terms} onPick={setSelectedId} />
               </div>
               <Show when={d().node.url}>
                 <div class="flex justify-end p-2 border-t border-rim">

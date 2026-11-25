@@ -20,6 +20,8 @@ export const SHAPE: Record<NodeType, string> = {
   note: poly(3, () => 1.25),
   wiki: poly(10, (i) => (i % 2 ? 0.55 : 1.3)),
   missing: CIRCLE,
+  tag: "M-0.38 -1.1H0.38V-0.38H1.1V0.38H0.38V1.1H-0.38V0.38H-1.1V-0.38H-0.38Z",
+  category: poly(5, () => 1.15),
 };
 
 /** Outline-only nodes: drafts and missing titles (dashed). */

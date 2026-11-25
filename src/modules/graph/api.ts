@@ -1,7 +1,7 @@
 // API: /spa/links/* — see packages/spa-core/php/Api/Handlers/Links.php.
 import { apiFetch, apiError } from "@utsukta/spa-core/lib/fetch";
 
-export type NodeType = "post" | "article" | "card" | "webpage" | "wiki" | "note" | "missing";
+export type NodeType = "post" | "article" | "card" | "webpage" | "wiki" | "note" | "missing" | "tag" | "category";
 export interface GraphNode {
   id: string;
   type: NodeType;
@@ -11,10 +11,14 @@ export interface GraphNode {
   /** The owner's unpublished draft (owner's own graph only). */
   draft?: boolean;
 }
-export interface GraphEdge { source: string; target: string }
+/** kind "tag": item → the hashtag/category it carries; absent = a real link. */
+export interface GraphEdge { source: string; target: string; kind?: "tag" }
 export interface Graph { nodes: GraphNode[]; edges: GraphEdge[] }
 
-export const NODE_TYPES: NodeType[] = ["wiki", "article", "card", "webpage", "note", "post", "missing"];
+/** What items are; tags and categories are what they carry (TERM_TYPES). */
+export const ITEM_TYPES: NodeType[] = ["wiki", "article", "card", "webpage", "note", "post", "missing"];
+export const TERM_TYPES: NodeType[] = ["tag", "category"];
+export const NODE_TYPES: NodeType[] = [...ITEM_TYPES, ...TERM_TYPES];
 
 // Categories, so raw palette colours (CLAUDE.md "Colour tokens"). Okabe–Ito,
 // the colour-blind-safe set; its yellow is skipped (vanishes on light themes),
@@ -22,6 +26,9 @@ export const NODE_TYPES: NodeType[] = ["wiki", "article", "card", "webpage", "no
 export const TYPE_COLOR: Record<NodeType, string> = {
   wiki: "#0072B2", article: "#56B4E9", card: "#E69F00", webpage: "#D55E00",
   note: "#009E73", post: "#CC79A7", missing: "#999999",
+  // Past Okabe–Ito's seven: mid-lightness so both read on light and dark
+  // themes; their shapes (plus, pentagon) carry the difference anyway.
+  tag: "#8E6BBF", category: "#6B8E23",
 };
 
 async function get<T>(path: string): Promise<T> {
