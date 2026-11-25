@@ -143,7 +143,7 @@ const Layout: ParentComponent = (props) => {
           <Show when={!online()}>
             <div
               role="alert"
-              class="fixed top-0 inset-x-0 z-[100] flex items-center justify-center gap-2
+              class="flex items-center justify-center gap-2
                    bg-warning text-warning-fg text-sm font-medium py-1.5 select-none"
             >
               <svg

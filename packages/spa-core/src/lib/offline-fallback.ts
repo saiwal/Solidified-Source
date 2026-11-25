@@ -47,7 +47,10 @@ export async function clearOfflineData(): Promise<void> {
 }
 
 export function isCacheableGet(method: string, url: string): boolean {
-  if (method.toUpperCase() !== "GET" || SKIP.test(url)) return false;
+  return method.toUpperCase() === "GET" && !SKIP.test(url) && isSpaUrl(url);
+}
+
+export function isSpaUrl(url: string): boolean {
   try {
     return new URL(url, location.href).pathname.startsWith("/spa/");
   } catch {
@@ -55,18 +58,75 @@ export function isCacheableGet(method: string, url: string): boolean {
   }
 }
 
+// Hub reachability. navigator.onLine only knows whether the device has a
+// link; a hub that is down (or a captive portal) still reads "online". So a
+// /spa/ fetch that throws marks the hub unreachable, and any real response
+// marks it reachable again. useOnlineStatus listens for REACHABILITY_EVENT.
+//
+// A cacheable GET can resolve from the service worker's NetworkFirst cache
+// while the hub is down, so such a response proves nothing. Recovery comes
+// from uncached requests (polls, writes) or the HEAD probe below — Workbox
+// only routes GETs, so a HEAD always reaches the network, and any HTTP
+// status (even an error) means the hub answered.
+export const REACHABILITY_EVENT = "hz-hub-reachability";
+const PROBE_MS = 15_000;
+let reachable = true;
+let probeTimer: ReturnType<typeof setInterval> | undefined;
+
+export function hubReachable(): boolean {
+  return reachable;
+}
+
 export function installOfflineFallback(): void {
   const nativeFetch = window.fetch.bind(window);
+
+  const setReachable = (v: boolean) => {
+    if (v === reachable) return;
+    reachable = v;
+    window.dispatchEvent(new CustomEvent(REACHABILITY_EVENT, { detail: v }));
+    clearInterval(probeTimer);
+    probeTimer = v
+      ? undefined
+      : setInterval(() => {
+          nativeFetch("/spa/siteinfo", { method: "HEAD", cache: "no-store" })
+            .then(() => setReachable(true))
+            .catch(() => {});
+        }, PROBE_MS);
+  };
+  // The device coming back online is worth an immediate look rather than
+  // waiting out the probe interval.
+  window.addEventListener("online", () => {
+    if (!reachable) {
+      nativeFetch("/spa/siteinfo", { method: "HEAD", cache: "no-store" })
+        .then(() => setReachable(true))
+        .catch(() => {});
+    }
+  });
+
+  const tracked = async (input: RequestInfo | URL, init: RequestInit | undefined, swCached: boolean) => {
+    try {
+      const res = await nativeFetch(input, init);
+      if (!swCached) setReachable(true);
+      return res;
+    } catch (err) {
+      // An abort is the caller's choice, not the network's.
+      if ((err as Error)?.name !== "AbortError") setReachable(false);
+      throw err;
+    }
+  };
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = (
       init?.method ?? (input instanceof Request ? input.method : "GET")
     ).toUpperCase();
     const url = requestUrl(input);
-    if (!isCacheableGet(method, url)) return nativeFetch(input, init);
+    if (!isSpaUrl(url)) return nativeFetch(input, init);
+    const cacheable = isCacheableGet(method, url);
+    if (!cacheable) return tracked(input, init, false);
+    const swCached = !!navigator.serviceWorker?.controller;
 
     try {
-      const res = await nativeFetch(input, init);
+      const res = await tracked(input, init, swCached);
       if (res.ok) {
         // Fire-and-forget: never make a live response wait on a disk write.
         res

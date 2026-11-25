@@ -3,7 +3,7 @@ import assert from "node:assert";
 
 (globalThis as any).location = { href: "https://example.org/network" };
 
-const { isCacheableGet } = await import("./offline-fallback.ts");
+const { isCacheableGet, isSpaUrl } = await import("./offline-fallback.ts");
 
 assert(isCacheableGet("GET", "/spa/network?star=1"));
 assert(isCacheableGet("get", "https://example.org/spa/hq-messages?offset=0"));
@@ -16,5 +16,10 @@ assert(!isCacheableGet("POST", "/spa/item"));
 // classic API and non-API paths are none of our business
 assert(!isCacheableGet("GET", "/api/z/1.0/channel/stream"));
 assert(!isCacheableGet("GET", "/photo/abc"));
+
+// reachability tracks every /spa/ request, cacheable or not
+assert(isSpaUrl("/spa/item"));
+assert(isSpaUrl("/spa/network?dbegin=x"));
+assert(!isSpaUrl("/api/z/1.0/channel/stream"));
 
 console.log("offline-fallback: ok");
