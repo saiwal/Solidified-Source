@@ -201,12 +201,27 @@ const { count, size } = await generateSW({
       },
     },
     {
+      // Puzzles: each <game>.js only runs with the <game>.wasm of the same
+      // upstream build, and `npm run games:download` replaces both under the
+      // same names. CacheFirst served an old .js beside a new .wasm (or the
+      // reverse, once eviction split a pair) and the game showed "Puzzle not
+      // loading…" until a hard refresh. NetworkFirst keeps the pair matched
+      // online (a 304 is cheap) and still plays offline. 41 games × 2 files.
+      urlPattern: /\/assets\/puzzles\//,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'hz-puzzles',
+        expiration: { maxEntries: 100, maxAgeSeconds: 30 * 86400 },
+        cacheableResponse: { statuses: [0, 200] },
+      },
+    },
+    {
       // Bulk theme assets, pulled out of the precache: whichever font family,
-      // background pattern or puzzle the user actually loads gets kept, rather
-      // than shipping all of them to every device up front.
+      // or background pattern the user actually loads gets kept, rather than
+      // shipping all of them to every device up front.
       // ponytail: CacheFirst on unhashed paths — a changed pattern/font file
       // keeps serving stale for 30 days; hash them if that ever matters.
-      urlPattern: /\/assets\/(fonts|patterns|bg|puzzles)\//,
+      urlPattern: /\/assets\/(fonts|patterns|bg)\//,
       handler: 'CacheFirst',
       options: {
         cacheName: 'hz-assets',

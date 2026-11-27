@@ -8,7 +8,7 @@ import NotFound from "@/shared/views/NotFound";
 import { getModule, isModuleActive } from "@utsukta/spa-core/module-registry";
 import { useInstalledApps, useNavData } from "@utsukta/spa-core/store/nav-store";
 import { useAuth } from "@utsukta/spa-core/store/auth-store";
-import { disabledFrontendModules } from "@utsukta/spa-core/store/disabled-frontend-modules";
+import { disabledFrontendModules, frontendModulesLoaded } from "@utsukta/spa-core/store/disabled-frontend-modules";
 import { queryClient } from "@utsukta/spa-core/lib/query-client";
 
 const QueryDevtools = import.meta.env.DEV
@@ -67,9 +67,12 @@ const ModuleGuard: ParentComponent<{ moduleId: string }> = (props) => {
     isModuleActive(props.moduleId, installedApps(), disabledFrontendModules()),
   );
 
-  createEffect(active, (on) => {
-    if (!on) navigate("/", { replace: true });
-  });
+  // Redirect only once the user's module toggles are known (see
+  // frontendModulesLoaded); until then an inactive module just renders nothing.
+  createEffect(
+    () => active() || !frontendModulesLoaded(),
+    (ok) => { if (!ok) navigate("/", { replace: true }); },
+  );
 
   return <Show when={active()}>{props.children}</Show>;
 };

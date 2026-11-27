@@ -44,13 +44,18 @@ function writeCache(ids: string[]): void {
 }
 
 const [disabledFrontendModules, setDisabledFrontendModules] = createSignal<Set<string>>(readCache());
-export { disabledFrontendModules };
+// False until the server value lands. The cache is empty on a fresh browser,
+// so before then a default-off module the user switched on reads as off —
+// ModuleGuard must not redirect on that guess.
+const [frontendModulesLoaded, setFrontendModulesLoaded] = createSignal(false);
+export { disabledFrontendModules, frontendModulesLoaded };
 
 // Called from auth-store with the pconfig value at boot — the server wins,
 // including its absence (a reset on another device must clear this cache too).
 export function initDisabledFrontendModules(raw: string | undefined): void {
   const parsed = raw !== undefined ? parseIds(raw) : [];
   setDisabledFrontendModules(new Set(parsed));
+  setFrontendModulesLoaded(true);
   writeCache(parsed);
 }
 

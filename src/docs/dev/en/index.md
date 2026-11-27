@@ -53,6 +53,7 @@ This is the developer reference for **hubzilla-spa**, a Solid.js single-page app
 ### Roadmap
 
 - [To do](todo): Planned-but-not-yet-built work, with design decisions and implementation shape
+- [Third-party client compatibility](client-api-compat): Making the API usable from ActivityPub C2S and Mastodon-API clients: OAuth/bearer auth, outbox POST, `/api/v1` adapters
 
 ## Quick Start
 
